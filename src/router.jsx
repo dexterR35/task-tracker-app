@@ -1,58 +1,82 @@
-import { createBrowserRouter } from 'react-router-dom';
-import Login from './pages/Login';
-import UserDashboard from './pages/UserDashboard';
-import AdminPanel from './pages/AdminPanel';
-import ProtectedRoute from './auth/ProtectedRoute';
-import AdminRoute from './auth/AdminRoute';
-import Root from './pages/Root';
-import TaskForm from './components/TaskForm';
-import UserTaskTable from './components/UserTaskTable';
-import UserArchive from './components/UserArchive';
+import React from 'react';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
-const options = {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true,
-    v7_partialHydration: true,
-    v7_normalizeFormMethod: true,
-    v7_fetcherPersist: true,
-    v7_skipActionErrorRevalidation: true,
+import Layout from './components/Layout';
+
+import LoginPage from './pages/LoginPage';
+import AdminPage from './pages/AdminPage';
+import DashboardPage from './pages/UserDashBoard';
+import GuestPage from './pages/GuestPage';
+import HomePage from './pages/HomePage';
+
+import { AdminRoute, UserRoute, GuestRoute } from './features/auth/ProtectedRoutes';
+import AuthRedirectHandler from './features/auth/AuthRedirect';
+
+const router = createBrowserRouter([
+  // Login route - only accessible if NOT logged in
+  {
+    path: '/login',
+    element: (
+      <GuestRoute>
+        <LoginPage />
+      </GuestRoute>
+    ),
   },
-};
 
-export const router = createBrowserRouter(
-  [
-    {
-      path: '/',
-      element: <Root />,
-    },
-    {
-      path: '/login',
-      element: <Login />,
-    },
-    {
-      path: '/dashboard/:userId',
-      element: (
-        <ProtectedRoute>
-          <UserDashboard />
-        </ProtectedRoute>
-      ),
-      children: [
-        { index: true, element: <UserTaskTable /> },
-        { path: 'archive', element: <UserArchive /> },
-        { path: 'new-task', element: <TaskForm /> },
-      ],
-    },
-    {
-      path: '/admin',
-      element: (
-        <AdminRoute>
-          <AdminPanel />
-        </AdminRoute>
-      ),
-    },
-  ],
-  options
-);
+  // Routes wrapped in Layout + AuthRedirectHandler for redirect after login
+  {
+    element: (
+      <>
+        <AuthRedirectHandler />
+        <Layout />
+      </>
+    ),
+    children: [
+      // Public home page
+      {
+        path: '/',
+        element: <HomePage />,
+      },
+
+      // Protected routes for admin
+      {
+        path: '/admin',
+        element: (
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        ),
+      },
+
+      // Protected routes for user
+      {
+        path: '/dashboard/:uid',
+        element: (
+          <UserRoute>
+            <DashboardPage />
+          </UserRoute>
+        ),
+      },
+
+      // Protected route for guest role
+      {
+        path: '/guest',
+        element: (
+          <UserRoute allowedRoles={['guest']}>
+            <GuestPage />
+          </UserRoute>
+        ),
+      },
+    ],
+  },
+
+  // Catch-all unknown routes:  
+  // Redirect to homepage for unauthenticated users,
+  // or to their default page if authenticated.
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
+  },
+]);
 
 export default router;
