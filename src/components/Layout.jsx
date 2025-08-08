@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser } from '../features/auth/authSlice';
-import { useNavigate, Outlet } from 'react-router-dom';  // <-- import Outlet here
+import { useNavigate, Outlet } from 'react-router-dom';
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -14,18 +14,22 @@ const Layout = () => {
     navigate('/', { replace: true });
   };
 
-  if (loading) return <div>Loading...</div>;
+  const isLoading = Object.values(loading).some(Boolean);
+
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <div>
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '1rem',
-        background: '#222',
-        color: 'white',
-      }}>
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1rem',
+          background: '#222',
+          color: 'white',
+        }}
+      >
         {isAuthenticated ? (
           <>
             <div>
@@ -50,7 +54,7 @@ const Layout = () => {
         )}
       </header>
       <main style={{ padding: '1rem' }}>
-        <Outlet />  {/* <-- This renders the child route components */}
+        <Outlet />
       </main>
     </div>
   );

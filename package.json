@@ -13,6 +13,8 @@
     "@firebase/firestore": "^4.9.0",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/vite": "^4.1.11",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
     "firebase": "^10.14.1",
     "formik": "^2.4.6",
     "react": "^18.3.1",

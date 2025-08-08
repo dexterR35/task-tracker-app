@@ -1,78 +1,98 @@
+// src/redux/features/auth/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  getIdTokenResult 
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  browserSessionPersistence,
+  getIdTokenResult,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
-import { registerErrorSlice } from '../../utils/errorRegistry';
+import { doc, getDoc } from 'firebase/firestore';
+import { normalizeUser, upsertUsers } from '../../dixie/db';
 
-// Helper function as before
-async function fetchUserData(user) {
-  if (!user) return null;
-  const userDoc = await getDoc(doc(db, 'users', user.uid));
-  if (!userDoc.exists()) return null;
-
-  const tokenResult = await getIdTokenResult(user);
-  const expirationTime = new Date(tokenResult.expirationTime);
-  if (expirationTime < new Date()) throw new Error('Session expired, please login again.');
-
+// Fetch user data from Firestore users collection by uid
+async function fetchUserFromFirestore(uid) {
+  const userDoc = await getDoc(doc(db, 'users', uid));
+  if (!userDoc.exists()) throw new Error('User not found');
   const userData = userDoc.data();
-  const createdAt = userData.createdAt ? userData.createdAt.toDate().toISOString() : null;
-
-  if (!userData.role) throw new Error('User role is undefined');
-
-  return {
-    uid: user.uid,
-    email: user.email,
-    name: userData.name || '',
-    role: userData.role.toLowerCase(),
-    ...userData,
-    createdAt,
-  };
+  if (!userData.role) throw new Error('User role not defined');
+  return userData;
 }
 
+// Normalize and cache user locally in IndexedDB (Dexie)
+async function fetchAndCacheUser(firebaseUser) {
+  const userData = await fetchUserFromFirestore(firebaseUser.uid);
+
+  // Normalize createdAt field if exists
+  const createdAtIso = userData.createdAt
+    ? (typeof userData.createdAt.toDate === 'function'
+        ? userData.createdAt.toDate().toISOString()
+        : new Date(userData.createdAt).toISOString())
+    : null;
+
+  const normalizedUser = normalizeUser({
+    uid: firebaseUser.uid,
+    email: firebaseUser.email,
+    name: userData.name || '',
+    role: userData.role,
+    createdAt: createdAtIso,
+  });
+
+  await upsertUsers([normalizedUser]);
+  return normalizedUser;
+}
+
+// Observe Firebase Auth state, fetch Firestore user, and cache locally
 export const fetchCurrentUser = createAsyncThunk(
   'auth/fetchCurrentUser',
-  async (_, { rejectWithValue }) => {
-    return new Promise((resolve, reject) => {
+  async (_, { rejectWithValue }) =>
+    new Promise((resolve, reject) => {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         unsubscribe();
-        if (!user) return resolve(null);
+        if (!user) return resolve(null); // No logged in user
 
         try {
-          const userData = await fetchUserData(user);
-          resolve(userData);
+          const tokenResult = await getIdTokenResult(user);
+          if (new Date(tokenResult.expirationTime) < new Date()) throw new Error('Session expired');
+          const normalizedUser = await fetchAndCacheUser(user);
+          resolve(normalizedUser);
         } catch (error) {
           reject(error);
         }
       }, reject);
-    }).catch((error) => rejectWithValue(error.message));
-  }
+    }).catch((error) => rejectWithValue(error.message))
 );
 
+// Login user with email/password and fetch/cache user data
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ email, password }, { rejectWithValue }) => {
     try {
+      await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userData = await fetchUserData(userCredential.user);
-      return userData;
+      const normalizedUser = await fetchAndCacheUser(userCredential.user);
+      return normalizedUser;
     } catch (error) {
-      return rejectWithValue(error.message || 'Login failed');
+      // Provide clearer error messages
+      const msg = error?.message || 'Login failed';
+      return rejectWithValue(msg);
     }
   }
 );
 
+// Logout user from Firebase and optionally clear Dexie cache
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
       await signOut(auth);
+      // If you want to clear Dexie cache on logout, uncomment below:
+      // await dexieDB.users.clear();
+      return true;
     } catch (error) {
-      return rejectWithValue(error.message || 'Logout failed');
+      return rejectWithValue(error?.message || 'Logout failed');
     }
   }
 );
@@ -81,26 +101,45 @@ const initialState = {
   user: null,
   role: null,
   isAuthenticated: false,
-  loading: false,
-  error: null,
+  loading: {
+    fetchCurrentUser: false,
+    loginUser: false,
+    logoutUser: false,
+  },
+  error: {
+    fetchCurrentUser: null,
+    loginUser: null,
+    logoutUser: null,
+  },
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    clearError(state) {
-      state.error = null;
+    clearError(state, action) {
+      const key = action.payload;
+      if (key && state.error[key]) {
+        state.error[key] = null;
+      }
+    },
+    resetAuth(state) {
+      state.user = null;
+      state.role = null;
+      state.isAuthenticated = false;
+      Object.keys(state.loading).forEach((k) => (state.loading[k] = false));
+      Object.keys(state.error).forEach((k) => (state.error[k] = null));
     },
   },
   extraReducers: (builder) => {
     builder
+      // fetchCurrentUser lifecycle
       .addCase(fetchCurrentUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading.fetchCurrentUser = true;
+        state.error.fetchCurrentUser = null;
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
-        state.loading = false;
+        state.loading.fetchCurrentUser = false;
         if (action.payload) {
           state.user = action.payload;
           state.role = action.payload.role;
@@ -112,48 +151,47 @@ const authSlice = createSlice({
         }
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || action.error.message;
+        state.loading.fetchCurrentUser = false;
+        state.error.fetchCurrentUser = action.payload || action.error.message;
         state.user = null;
         state.role = null;
         state.isAuthenticated = false;
       })
 
+      // loginUser lifecycle
       .addCase(loginUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading.loginUser = true;
+        state.error.loginUser = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading = false;
+        state.loading.loginUser = false;
         state.user = action.payload;
         state.role = action.payload.role;
         state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || action.error.message;
+        state.loading.loginUser = false;
+        state.error.loginUser = action.payload || action.error.message;
       })
 
+      // logoutUser lifecycle
       .addCase(logoutUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading.logoutUser = true;
+        state.error.logoutUser = null;
       })
       .addCase(logoutUser.fulfilled, (state) => {
-        state.loading = false;
+        state.loading.logoutUser = false;
         state.user = null;
         state.role = null;
         state.isAuthenticated = false;
       })
       .addCase(logoutUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || action.error.message;
+        state.loading.logoutUser = false;
+        state.error.logoutUser = action.payload || action.error.message;
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
-
-// Register auth slice error for global error toast handling
-registerErrorSlice('auth', (state) => state.auth.error, clearError);
+export const { clearError, resetAuth } = authSlice.actions;
 
 export default authSlice.reducer;
