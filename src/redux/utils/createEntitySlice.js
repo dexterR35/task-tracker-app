@@ -1,42 +1,27 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 /**
- * Generic entity slice with async fetch and Dexie cache sync.
+ * Generic entity slice with async fetch functionality.
  */
-export function createEntitySlice({ entityName, fetchFn, dexieUpsertFn, dexieGetFn, extraReducers = {} }) {
+export function createEntitySlice({ entityName, fetchFn, extraReducers = {} }) {
   const fetchEntity = createAsyncThunk(
     `${entityName}/fetch${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`,
     async ({ userId, lastSync, lastDoc } = {}, { rejectWithValue }) => {
       try {
-        // Load cached data first
-        const cachedData = await dexieGetFn(userId);
-
         if (!navigator.onLine) {
-          return { data: cachedData, lastDoc: null, hasMore: false };
+          return { data: [], lastDoc: null, hasMore: false };
         }
 
         const { data: fetchedData, lastDoc: newLastDoc, hasMore } = await fetchFn(entityName, userId, lastSync || '1970-01-01T00:00:00Z', 50, lastDoc);
 
-        await dexieUpsertFn(fetchedData);
-
-        const map = new Map();
-        cachedData.forEach(item => {
-          const key = item.id || item.taskId || item.uid;
-          if (key) map.set(key, item);
-        });
-        fetchedData.forEach(item => {
-          const key = item.id || item.taskId || item.uid;
-          if (key) map.set(key, item);
-        });
-
-        const mergedArray = Array.from(map.values()).sort((a, b) => {
+        const sortedData = fetchedData.sort((a, b) => {
           const aDate = a.createdAt || a.updatedAt || '';
           const bDate = b.createdAt || b.updatedAt || '';
           return bDate.localeCompare(aDate);
         });
 
         return {
-          data: mergedArray,
+          data: sortedData,
           lastDoc: newLastDoc,
           hasMore,
         };

@@ -1,5 +1,4 @@
 import { useParams } from 'react-router-dom';
-import DebugDexieData from "../dixie/DebugDexieData";
 
 function UserDashboard() {
   const { userId } = useParams();
@@ -7,8 +6,7 @@ function UserDashboard() {
 
   return (
     <>
-      <h1>User Dashboard for {userId}</h1>;
-      <DebugDexieData />
+      <h1>User Dashboard for {userId}</h1>
     </>
   );
 }

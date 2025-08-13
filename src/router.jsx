@@ -1,12 +1,15 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 
 import Layout from './components/Layout';
+import PageLoader from './components/PageLoader';
 
-import LoginPage from './pages/LoginPage';
-import AdminPage from './pages/AdminPage';
-import DashboardPage from './pages/UserDashBoard';
-import GuestPage from './pages/GuestPage';
-import HomePage from './pages/HomePage';
+// Dynamic imports for better code splitting
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const DashboardPage = lazy(() => import('./pages/UserDashBoard'));
+const GuestPage = lazy(() => import('./pages/GuestPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
 
 import { AdminRoute, UserRoute, GuestRoute } from './features/auth/ProtectedRoutes';
 import AuthRedirectHandler from './features/auth/AuthRedirect';
@@ -17,7 +20,9 @@ const router = createBrowserRouter(
       path: '/login',
       element: (
         <GuestRoute>
-          <LoginPage />
+          <Suspense fallback={<PageLoader message="Loading login..." />}>
+            <LoginPage />
+          </Suspense>
         </GuestRoute>
       ),
     },
@@ -29,12 +34,21 @@ const router = createBrowserRouter(
         </>
       ),
       children: [
-        { path: '/', element: <HomePage /> },
+        { 
+          path: '/', 
+          element: (
+            <Suspense fallback={<PageLoader message="Loading home..." />}>
+              <HomePage />
+            </Suspense>
+          ) 
+        },
         {
           path: '/admin',
           element: (
             <AdminRoute>
-              <AdminPage />
+              <Suspense fallback={<PageLoader message="Loading admin..." />}>
+                <AdminPage />
+              </Suspense>
             </AdminRoute>
           ),
         },
@@ -42,7 +56,9 @@ const router = createBrowserRouter(
           path: '/dashboard/:uid',
           element: (
             <UserRoute>
-              <DashboardPage />
+              <Suspense fallback={<PageLoader message="Loading dashboard..." />}>
+                <DashboardPage />
+              </Suspense>
             </UserRoute>
           ),
         },
@@ -50,7 +66,9 @@ const router = createBrowserRouter(
           path: '/guest',
           element: (
             <UserRoute allowedRoles={['guest']}>
-              <GuestPage />
+              <Suspense fallback={<PageLoader message="Loading guest area..." />}>
+                <GuestPage />
+              </Suspense>
             </UserRoute>
           ),
         },

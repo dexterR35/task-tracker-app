@@ -10,7 +10,6 @@ import {
 } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { normalizeUser, upsertUsers } from '../../dixie/db';
 
 // Fetch user data from Firestore users collection by uid
 async function fetchUserFromFirestore(uid) {
@@ -21,8 +20,8 @@ async function fetchUserFromFirestore(uid) {
   return userData;
 }
 
-// Normalize and cache user locally in IndexedDB (Dexie)
-async function fetchAndCacheUser(firebaseUser) {
+// Fetch user data from Firestore and normalize
+async function fetchAndNormalizeUser(firebaseUser) {
   const userData = await fetchUserFromFirestore(firebaseUser.uid);
 
   // Normalize createdAt field if exists
@@ -32,19 +31,16 @@ async function fetchAndCacheUser(firebaseUser) {
         : new Date(userData.createdAt).toISOString())
     : null;
 
-  const normalizedUser = normalizeUser({
+  return {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
     name: userData.name || '',
     role: userData.role,
     createdAt: createdAtIso,
-  });
-
-  await upsertUsers([normalizedUser]);
-  return normalizedUser;
+  };
 }
 
-// Observe Firebase Auth state, fetch Firestore user, and cache locally
+// Observe Firebase Auth state and fetch Firestore user
 export const fetchCurrentUser = createAsyncThunk(
   'auth/fetchCurrentUser',
   async (_, { rejectWithValue }) =>
@@ -56,7 +52,7 @@ export const fetchCurrentUser = createAsyncThunk(
         try {
           const tokenResult = await getIdTokenResult(user);
           if (new Date(tokenResult.expirationTime) < new Date()) throw new Error('Session expired');
-          const normalizedUser = await fetchAndCacheUser(user);
+          const normalizedUser = await fetchAndNormalizeUser(user);
           resolve(normalizedUser);
         } catch (error) {
           reject(error);
@@ -65,14 +61,14 @@ export const fetchCurrentUser = createAsyncThunk(
     }).catch((error) => rejectWithValue(error.message))
 );
 
-// Login user with email/password and fetch/cache user data
+// Login user with email/password and fetch user data
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ email, password }, { rejectWithValue }) => {
     try {
       await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const normalizedUser = await fetchAndCacheUser(userCredential.user);
+      const normalizedUser = await fetchAndNormalizeUser(userCredential.user);
       return normalizedUser;
     } catch (error) {
       // Provide clearer error messages
@@ -82,14 +78,12 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Logout user from Firebase and optionally clear Dexie cache
+// Logout user from Firebase
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
       await signOut(auth);
-      // If you want to clear Dexie cache on logout, uncomment below:
-      // await dexieDB.users.clear();
       return true;
     } catch (error) {
       return rejectWithValue(error?.message || 'Logout failed');
