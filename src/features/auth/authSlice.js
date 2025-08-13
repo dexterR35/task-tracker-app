@@ -9,14 +9,25 @@ import {
   getIdTokenResult,
 } from 'firebase/auth';
 import { auth, db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
-// Fetch user data from Firestore users collection by uid
+// Fetch user data from Firestore users collection by userUID field
 async function fetchUserFromFirestore(uid) {
-  const userDoc = await getDoc(doc(db, 'users', uid));
-  if (!userDoc.exists()) throw new Error('User not found');
+  // Query users collection where userUID field equals the Firebase Auth UID
+  const usersQuery = query(collection(db, 'users'), where('userUID', '==', uid));
+  const querySnapshot = await getDocs(usersQuery);
+  
+  if (querySnapshot.empty) {
+    throw new Error('User not found');
+  }
+  
+  const userDoc = querySnapshot.docs[0];
   const userData = userDoc.data();
-  if (!userData.role) throw new Error('User role not defined');
+  
+  if (!userData.role) {
+    throw new Error('User role not defined');
+  }
+  
   return userData;
 }
 

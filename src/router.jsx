@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const DashboardPage = lazy(() => import('./pages/UserDashBoard'));
 const HomePage = lazy(() => import('./pages/HomePage'));
+const ManageUsersPage = lazy(() => import('./pages/ManageUsersPage'));
 
 import { AdminRoute, UserRoute } from './features/auth/ProtectedRoutes';
 import AuthRedirectHandler from './features/auth/AuthRedirect';
@@ -64,6 +65,16 @@ const router = createBrowserRouter([
           <AdminRoute>
             <Suspense fallback={<PageLoader message="Loading admin..." />}>
               <AdminPage />
+            </Suspense>
+          </AdminRoute>
+        ),
+      },
+      {
+        path: 'manage-users',
+        element: (
+          <AdminRoute>
+            <Suspense fallback={<PageLoader message="Loading user management..." />}>
+              <ManageUsersPage />
             </Suspense>
           </AdminRoute>
         ),

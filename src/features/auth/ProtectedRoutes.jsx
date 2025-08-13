@@ -11,7 +11,7 @@ export const ProtectedRoute = ({ children, allowedRoles = ['admin', 'user'] }) =
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (!allowedRoles.includes(role)) {

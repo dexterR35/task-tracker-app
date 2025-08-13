@@ -1,83 +1,118 @@
 
 import React from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 function AdminPage() {
   const { user } = useSelector((state) => state.auth);
 
+  const adminActions = [
+    {
+      title: 'Manage Users',
+      description: 'Create, edit, and manage user accounts',
+      to: '/manage-users',
+      color: 'bg-blue-500',
+      hoverColor: 'hover:bg-blue-600'
+    },
+    {
+      title: 'View All Tasks',
+      description: 'Monitor and manage all tasks across the system',
+      to: '/admin/tasks',
+      color: 'bg-green-500',
+      hoverColor: 'hover:bg-green-600'
+    },
+    {
+      title: 'Analytics',
+      description: 'View system analytics and reports',
+      to: '/admin/analytics',
+      color: 'bg-purple-500',
+      hoverColor: 'hover:bg-purple-600'
+    },
+    {
+      title: 'System Settings',
+      description: 'Configure system-wide settings',
+      to: '/admin/settings',
+      color: 'bg-gray-500',
+      hoverColor: 'hover:bg-gray-600'
+    }
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Welcome to the administrative control panel, {user?.name || user?.email}</p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          Admin Dashboard
+        </h1>
+        <p className="text-xl text-gray-600">
+          Welcome back, {user?.name || user?.email}
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <span className="text-blue-600 font-bold text-lg">👥</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-gray-900">Total Users</h3>
+              <p className="text-2xl font-bold text-blue-600">2</p>
+            </div>
+          </div>
         </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Users Management */}
-          <div className="bg-blue-50 p-6 rounded-lg">
-            <h2 className="text-lg font-semibold text-blue-900 mb-3">User Management</h2>
-            <p className="text-blue-700 text-sm mb-4">Manage user accounts and permissions</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-              Manage Users
-            </button>
-          </div>
-
-          {/* System Settings */}
-          <div className="bg-green-50 p-6 rounded-lg">
-            <h2 className="text-lg font-semibold text-green-900 mb-3">System Settings</h2>
-            <p className="text-green-700 text-sm mb-4">Configure application settings</p>
-            <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
-              Settings
-            </button>
-          </div>
-
-          {/* Analytics */}
-          <div className="bg-purple-50 p-6 rounded-lg">
-            <h2 className="text-lg font-semibold text-purple-900 mb-3">Analytics</h2>
-            <p className="text-purple-700 text-sm mb-4">View system analytics and reports</p>
-            <button className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors">
-              View Analytics
-            </button>
-          </div>
-
-          {/* Task Overview */}
-          <div className="bg-orange-50 p-6 rounded-lg">
-            <h2 className="text-lg font-semibold text-orange-900 mb-3">Task Overview</h2>
-            <p className="text-orange-700 text-sm mb-4">Monitor all user tasks</p>
-            <button className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 transition-colors">
-              View Tasks
-            </button>
-          </div>
-
-          {/* System Status */}
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">System Status</h2>
-            <p className="text-gray-700 text-sm mb-4">Monitor system health</p>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">All systems operational</span>
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <span className="text-green-600 font-bold text-lg">📋</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-gray-900">Total Tasks</h3>
+              <p className="text-2xl font-bold text-green-600">0</p>
             </div>
           </div>
-
-          {/* Quick Stats */}
-          <div className="bg-indigo-50 p-6 rounded-lg">
-            <h2 className="text-lg font-semibold text-indigo-900 mb-3">Quick Stats</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-indigo-700">Total Users:</span>
-                <span className="font-medium">--</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-indigo-700">Active Tasks:</span>
-                <span className="font-medium">--</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-indigo-700">System Uptime:</span>
-                <span className="font-medium">99.9%</span>
-              </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <span className="text-purple-600 font-bold text-lg">📊</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-gray-900">Active Projects</h3>
+              <p className="text-2xl font-bold text-purple-600">0</p>
             </div>
           </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <span className="text-gray-600 font-bold text-lg">⚙️</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
+              <p className="text-lg font-semibold text-green-600">Online</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Admin Actions */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Admin Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {adminActions.map((action, index) => (
+            <Link
+              key={index}
+              to={action.to}
+              className={`${action.color} ${action.hoverColor} text-white p-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105`}
+            >
+              <div className="flex items-center mb-4">
+                <h3 className="text-xl font-semibold">{action.title}</h3>
+              </div>
+              <p className="text-white/90">{action.description}</p>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
