@@ -43,22 +43,29 @@ async function fetchAndNormalizeUser(firebaseUser) {
 // Observe Firebase Auth state and fetch Firestore user
 export const fetchCurrentUser = createAsyncThunk(
   'auth/fetchCurrentUser',
-  async (_, { rejectWithValue }) =>
-    new Promise((resolve, reject) => {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        unsubscribe();
-        if (!user) return resolve(null); // No logged in user
+  async (_, { rejectWithValue }) => {
+    try {
+      return await new Promise((resolve, reject) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          unsubscribe();
+          if (!user) return resolve(null); // No logged in user
 
-        try {
-          const tokenResult = await getIdTokenResult(user);
-          if (new Date(tokenResult.expirationTime) < new Date()) throw new Error('Session expired');
-          const normalizedUser = await fetchAndNormalizeUser(user);
-          resolve(normalizedUser);
-        } catch (error) {
-          reject(error);
-        }
-      }, reject);
-    }).catch((error) => rejectWithValue(error.message))
+          try {
+            const tokenResult = await getIdTokenResult(user);
+            if (new Date(tokenResult.expirationTime) < new Date()) {
+              throw new Error('Session expired');
+            }
+            const normalizedUser = await fetchAndNormalizeUser(user);
+            resolve(normalizedUser);
+          } catch (error) {
+            reject(error);
+          }
+        }, reject);
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
 );
 
 // Login user with email/password and fetch user data

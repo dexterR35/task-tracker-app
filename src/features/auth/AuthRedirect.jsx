@@ -16,7 +16,6 @@ const AuthRedirectHandler = () => {
     if (location.pathname === '/login' || location.pathname === '/') {
       if (role === 'admin') navigate('/admin', { replace: true });
       else if (role === 'user') navigate(`/dashboard/${user.uid}`, { replace: true });
-      else if (role === 'guest') navigate('/guest', { replace: true });
     }
   }, [isAuthenticated, role, user, location, navigate, loading]);
 
