@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { UserPlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { createNewUser, getAllUsers, sendUserPasswordReset } from '../services/userService';
+import { UserPlusIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { createNewUser, getAllUsers } from '../services/userService';
+import { requireReauth } from '../features/auth/authSlice';
 
 function ManageUsersPage() {
   const { user: currentUser } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -24,11 +28,14 @@ function ManageUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const usersData = await getAllUsers();
-      setUsers(usersData);
+      const result = await getAllUsers();
+      // Handle the new return format { users, hasMore }
+      const usersList = result?.users || result || [];
+      setUsers(Array.isArray(usersList) ? usersList : []);
     } catch (error) {
       toast.error('Failed to load users');
       console.error('Error loading users:', error);
+      setUsers([]); // Ensure users is always an array
     } finally {
       setLoading(false);
     }
@@ -43,10 +50,20 @@ function ManageUsersPage() {
       const result = await createNewUser(userData);
       
       if (result.success) {
-        toast.success('User created successfully!');
+        toast.success(result.message || 'User created successfully!');
         setFormData({ name: '', email: '', password: '' });
         setShowCreateModal(false);
-        loadUsers(); // Refresh the users list
+        
+        // Check if admin re-authentication is required (free tier)
+        if (result.requiresAdminReauth) {
+          toast.info('Please sign back in to continue as admin', { autoClose: 5000 });
+          dispatch(requireReauth({ 
+            message: `User created successfully! Please sign back in as ${result.adminEmail || 'admin'} to continue.` 
+          }));
+          navigate('/login');
+        } else {
+          loadUsers(); // Refresh the users list only if still authenticated
+        }
       }
     } catch (error) {
       toast.error(error.message || 'Failed to create user');
@@ -56,14 +73,10 @@ function ManageUsersPage() {
     }
   };
 
-  const handleSendPasswordReset = async (email) => {
-    try {
-      await sendUserPasswordReset(email);
-      toast.success(`Password reset email sent to ${email}`);
-    } catch (error) {
-      toast.error('Failed to send password reset email');
-      console.error('Error sending password reset:', error);
-    }
+  const handleViewUserDashboard = (user) => {
+    // Navigate to user dashboard using existing route pattern
+    toast.info(`Viewing ${user.name}'s dashboard...`);
+    navigate(`/dashboard/${user.userUID}`);
   };
 
   const handleInputChange = (e) => {
@@ -161,9 +174,9 @@ function ManageUsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleSendPasswordReset(user.email)}
-                          className="text-green-600 hover:text-green-800"
-                          title="Send password reset email"
+                          onClick={() => handleViewUserDashboard(user)}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="View user dashboard"
                         >
                           <EyeIcon className="w-4 h-4" />
                         </button>

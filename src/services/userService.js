@@ -1,27 +1,36 @@
 import { 
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  createUserWithEmailAndPassword,
   updateProfile,
-  deleteUser as deleteAuthUser
+  deleteUser as deleteAuthUser,
+  signOut,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { 
   doc, 
-  setDoc, 
-  collection, 
+  collection,
+  setDoc,
   getDocs, 
   deleteDoc, 
   updateDoc,
   query,
   orderBy,
   where,
-  writeBatch,
   limit,
-  startAfter
+  startAfter,
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, secondaryAuth, db } from '../firebase';
 
-// Create a new user using Firestore Batched Writes for atomicity
+// Create user using secondary auth instance (preserves admin session)
 export const createNewUser = async (userData) => {
+  console.log('� Creating user with secondary auth (admin session preserved)');
+  return createUserWithSecondaryAuth(userData);
+};
+
+// Create user with secondary auth instance - admin session preserved
+const createUserWithSecondaryAuth = async (userData) => {
   let createdAuthUser = null;
   
   try {
@@ -32,98 +41,89 @@ export const createNewUser = async (userData) => {
       throw new Error('Email, password, and name are required');
     }
 
-    // Get current authenticated user (the admin creating this user)
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    // Get the current admin user (on primary auth)
+    const adminUser = auth.currentUser;
+    if (!adminUser) {
       throw new Error('You must be logged in to create users');
     }
 
-    console.log('🚀 Starting batched user creation for:', email);
-    console.log('👤 Creating user as admin:', currentUser.uid);
+    const adminUID = adminUser.uid;
+    console.log('🚀 Starting user creation with secondary auth for:', email);
+    console.log('👤 Admin session preserved:', adminUser.email);
 
-    // STEP 1: Create user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    createdAuthUser = user; // Store for potential rollback
+    // STEP 1: Create user in Firebase Auth using secondary auth instance
+    // This won't affect the admin's session on the primary auth instance
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const newUser = userCredential.user;
+    createdAuthUser = newUser;
 
-    console.log('✅ User created in Firebase Auth:', user.uid);
+    console.log('✅ User created in Firebase Auth (secondary):', newUser.uid);
 
-    // STEP 2: Update user profile
-    await updateProfile(user, {
+    // STEP 2: Update user profile on secondary auth
+    await updateProfile(newUser, {
       displayName: name
     });
 
     console.log('✅ User profile updated');
 
-    // STEP 3: Create Firestore batch for atomic writes
-    const batch = writeBatch(db);
+    // STEP 3: Use transaction to create user document atomically
+    const result = await runTransaction(db, async (transaction) => {
+      const userDocRef = doc(collection(db, 'users'));
+      const userDoc = {
+        userUID: newUser.uid,
+        email: newUser.email,
+        name: name,
+        role: role,
+        createdAt: new Date().toISOString(),
+        createdBy: adminUID,
+        isActive: true
+      };
 
-    // Create user document with auto-generated ID
-    const userDocRef = doc(collection(db, 'users'));
-    const userDoc = {
-      userUID: user.uid,
-      email: user.email,
-      name: name,
-      role: role,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.uid, // Dynamic admin UID
-      isActive: true
-    };
+      // Create user document
+      transaction.set(userDocRef, userDoc);
+      
+      console.log('✅ User document prepared in transaction');
+      
+      return { 
+        userDoc: { ...userDoc, id: userDocRef.id },
+        authUID: newUser.uid
+      };
+    });
 
-    // Add user document to batch
-    batch.set(userDocRef, userDoc);
-    console.log('📝 Added user document to batch:', userDocRef.id);
+    console.log('✅ Transaction completed successfully');
 
-    // Create initial task collection document for the user
-    const taskDocRef = doc(collection(db, 'tasks'));
-    const initialTaskDoc = {
-      userId: user.uid, // Reference to the user
-      title: 'Welcome Task',
-      description: 'Welcome to the task tracker! This is your first task.',
-      status: 'pending',
-      priority: 'low',
-      createdAt: new Date().toISOString(),
-      createdBy: user.uid,
-      assignedTo: user.uid,
-      isActive: true
-    };
+    // STEP 4: Sign out the user from secondary auth (cleanup)
+    await signOut(secondaryAuth);
+    console.log('🔄 Signed out user from secondary auth');
 
-    // Add task document to batch
-    batch.set(taskDocRef, initialTaskDoc);
-    console.log('📝 Added welcome task to batch:', taskDocRef.id);
-
-    // STEP 4: Commit the batch (atomic operation)
-    console.log('🔄 Committing batch write...');
-    await batch.commit();
-
-    console.log('✅ Batch write completed successfully!');
-    console.log('✅ User document created in Firestore');
-    console.log('✅ Welcome task created for user');
+    // Admin session remains intact on primary auth!
+    console.log('✅ Admin session preserved on primary auth');
 
     return { 
       success: true, 
-      user: { ...userDoc, id: userDocRef.id },
-      welcomeTask: { ...initialTaskDoc, id: taskDocRef.id }
+      user: result.userDoc,
+      message: `User ${email} created successfully! Admin session preserved.`,
+      requiresAdminReauth: false,
+      adminEmail: adminUser.email,
+      newUserUID: result.authUID
     };
 
   } catch (error) {
-    console.error('❌ Error during batched user creation:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
+    console.error('❌ Error during secondary auth user creation:', error);
 
-    // ROLLBACK: If we created Auth user but batch failed, delete the Auth user
+    // ROLLBACK: Delete Auth user if Firestore transaction failed
     if (createdAuthUser) {
       try {
-        console.log('🔄 Rolling back: Deleting Auth user due to batch failure...');
+        console.log('🔄 Rolling back: Deleting Auth user...');
         await deleteAuthUser(createdAuthUser);
         console.log('✅ Auth user successfully deleted (rollback complete)');
       } catch (rollbackError) {
         console.error('❌ CRITICAL: Failed to rollback Auth user:', rollbackError);
-        throw new Error(`User created in Auth but batch failed. Please contact admin. Auth UID: ${createdAuthUser.uid}`);
+        throw new Error(`User created in Auth but failed to save to database. Contact admin. Auth UID: ${createdAuthUser.uid}`);
       }
     }
 
-    // Provide user-friendly error messages
+    // User-friendly error messages
     if (error.code === 'auth/email-already-in-use') {
       throw new Error('Email address is already in use');
     } else if (error.code === 'auth/weak-password') {
@@ -136,36 +136,64 @@ export const createNewUser = async (userData) => {
   }
 };
 
-// Get all users with pagination for better performance
-export const getAllUsers = async (limit = 10, startAfter = null) => {
+// Get all users using client-side Firestore query
+export const getAllUsers = async (limitCount = 10, startAfterDoc = null) => {
   try {
+    console.log('📊 Fetching users with client-side Firestore query');
+    
+    // Get current authenticated user to verify admin permission
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('You must be logged in to view users');
+    }
+
+    // Build query for users collection
     let usersQuery = query(
-      collection(db, 'users'), 
+      collection(db, 'users'),
       orderBy('createdAt', 'desc'),
-      limit(limit) // Limit results to save reads
+      limit(limitCount)
     );
 
-    // Add pagination if startAfter is provided
-    if (startAfter) {
-      usersQuery = query(usersQuery, startAfter(startAfter));
+    // Add pagination if startAfterDoc is provided
+    if (startAfterDoc) {
+      usersQuery = query(
+        collection(db, 'users'),
+        orderBy('createdAt', 'desc'),
+        startAfter(startAfterDoc),
+        limit(limitCount)
+      );
     }
 
     const querySnapshot = await getDocs(usersQuery);
-    
     const users = [];
+    
     querySnapshot.forEach((doc) => {
-      users.push({ id: doc.id, ...doc.data() });
+      const userData = doc.data();
+      users.push({
+        id: doc.id,
+        ...userData,
+        // Normalize createdAt if it's a Firestore timestamp
+        createdAt: userData.createdAt?.toDate?.() 
+          ? userData.createdAt.toDate().toISOString() 
+          : userData.createdAt
+      });
     });
     
-    console.log(`📊 Retrieved ${users.length} users (saved reads with pagination)`);
-    return { users, hasMore: querySnapshot.docs.length === limit };
+    console.log(`✅ Retrieved ${users.length} users via client-side query`);
+    return { users, hasMore: users.length === limitCount };
+    
   } catch (error) {
-    console.error('Error fetching users:', error);
-    throw new Error('Failed to fetch users');
+    console.error('❌ Error fetching users:', error);
+    
+    if (error.code === 'permission-denied') {
+      throw new Error('Permission denied. Please check your admin privileges.');
+    } else {
+      throw new Error('Failed to fetch users');
+    }
   }
 };
 
-// Update user role
+// Update user role (client-side)
 export const updateUserRole = async (uid, newRole) => {
   try {
     if (!['admin', 'user'].includes(newRole)) {
@@ -192,7 +220,7 @@ export const updateUserRole = async (uid, newRole) => {
     await updateDoc(userRef, { 
       role: newRole,
       updatedAt: new Date().toISOString(),
-      updatedBy: currentUser.uid // Dynamic admin UID
+      updatedBy: currentUser.uid
     });
 
     return { success: true };
@@ -202,7 +230,7 @@ export const updateUserRole = async (uid, newRole) => {
   }
 };
 
-// Delete user
+// Delete user (client-side)
 export const deleteUser = async (uid) => {
   try {
     // Find the user document by userUID field

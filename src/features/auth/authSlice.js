@@ -142,6 +142,13 @@ const authSlice = createSlice({
       Object.keys(state.loading).forEach((k) => (state.loading[k] = false));
       Object.keys(state.error).forEach((k) => (state.error[k] = null));
     },
+    // Handle admin re-auth after user creation
+    requireReauth(state, action) {
+      state.user = null;
+      state.role = null;
+      state.isAuthenticated = false;
+      state.error.fetchCurrentUser = action.payload?.message || 'Please sign back in to continue';
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -204,6 +211,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, resetAuth } = authSlice.actions;
+export const { clearError, resetAuth, requireReauth } = authSlice.actions;
 
 export default authSlice.reducer;

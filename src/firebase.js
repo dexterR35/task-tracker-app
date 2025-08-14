@@ -15,15 +15,28 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+// Initialize secondary app for user creation
+const secondaryApp = initializeApp(firebaseConfig, "secondary");
 
 // Initialize Firebase services
 export const auth = getAuth(app);
+export const secondaryAuth = getAuth(secondaryApp);
 export const db = getFirestore(app);
+
+// Analytics (optional)
+let analytics = null;
+try {
+  analytics = getAnalytics(app);
+} catch (error) {
+  console.warn('Analytics not available');
+}
 
 // Enable logging in development
 if (process.env.NODE_ENV === 'development') {
-  console.log('Firebase initialized with config:', { ...firebaseConfig, apiKey: '[HIDDEN]' });
+  console.log('🔥 Firebase initialized for Free Tier (Client-side only)');
+  console.log('🔄 Secondary auth instance created for user creation');
+  console.log('Firebase config:', { ...firebaseConfig, apiKey: '[HIDDEN]' });
 }
 
 export default app;

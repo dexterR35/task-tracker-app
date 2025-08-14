@@ -14,6 +14,7 @@ const LoginPage = () => {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.auth.loading.loginUser);
   const error = useSelector((state) => state.auth.error.loginUser);
+  const fetchError = useSelector((state) => state.auth.error.fetchCurrentUser);
 
   useEffect(() => {
     if (error) {
@@ -26,6 +27,14 @@ const LoginPage = () => {
     <div className="container-center">
       <div className="card w-full max-w-md">
         <h2 className="title">Login</h2>
+        
+        {/* Show admin re-auth message if needed */}
+        {fetchError && fetchError.includes('sign back in') && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
+            <p className="text-sm">{fetchError}</p>
+          </div>
+        )}
+        
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={validationSchema}
