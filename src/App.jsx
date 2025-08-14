@@ -4,16 +4,20 @@ import { RouterProvider } from 'react-router-dom';
 import store from './redux/store';
 import router from './router';
 import { AuthProvider } from './features/auth/AuthProvider';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import GlobalLoader from './components/GlobalLoader';
+import NotificationContainer from './components/NotificationContainer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const App = () => (
-  <Provider store={store}>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-    <ToastContainer position="top-right" autoClose={5000} />
-  </Provider>
+  <ErrorBoundary>
+    <Provider store={store}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <GlobalLoader />
+        <NotificationContainer />
+      </AuthProvider>
+    </Provider>
+  </ErrorBoundary>
 );
 
 export default App;

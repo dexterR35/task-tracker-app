@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -13,30 +13,41 @@ const firebaseConfig = {
   measurementId: "G-CVVRHVRMNB"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize (or reuse) primary app
+let appInstance;
+if (!getApps().length) {
+  appInstance = initializeApp(firebaseConfig);
+} else {
+  appInstance = getApp();
+}
 
-// Initialize secondary app for user creation
-const secondaryApp = initializeApp(firebaseConfig, "secondary");
+// Initialize (or reuse) secondary app for user creation
+let secondaryAppInstance;
+try {
+  secondaryAppInstance = getApp('secondary');
+} catch {
+  secondaryAppInstance = initializeApp(firebaseConfig, 'secondary');
+}
 
 // Initialize Firebase services
-export const auth = getAuth(app);
-export const secondaryAuth = getAuth(secondaryApp);
-export const db = getFirestore(app);
+export const auth = getAuth(appInstance);
+export const secondaryAuth = getAuth(secondaryAppInstance);
+export const db = getFirestore(appInstance);
 
-// Analytics (optional)
+// Analytics (optional, only in browser and only if available)
 let analytics = null;
-try {
-  analytics = getAnalytics(app);
-} catch (error) {
-  console.warn('Analytics not available');
+if (typeof window !== 'undefined') {
+  try { analytics = getAnalytics(appInstance); } catch { /* ignore */ }
 }
 
-// Enable logging in development
+// Helper (optional) to verify both auth instances
+export const verifyAuthInstances = () => ({ primaryReady: !!auth, secondaryReady: !!secondaryAuth });
+
+// Enable logging in development (hide sensitive keys)
 if (process.env.NODE_ENV === 'development') {
-  console.log('🔥 Firebase initialized for Free Tier (Client-side only)');
-  console.log('🔄 Secondary auth instance created for user creation');
-  console.log('Firebase config:', { ...firebaseConfig, apiKey: '[HIDDEN]' });
+  console.log('🔥 Firebase initialized');
+  console.log('Primary app name:', appInstance.name);
+  console.log('Secondary app name:', secondaryAppInstance.name);
 }
 
-export default app;
+export default appInstance;

@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { UserPlusIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { createNewUser, getAllUsers } from '../services/userService';
-import { requireReauth } from '../features/auth/authSlice';
+import { useAuth } from '../hooks/useAuth';
+import { useUsers } from '../hooks/useFirestore';
+import { useNotifications } from '../hooks/useNotifications';
+import DynamicButton from '../components/DynamicButton';
+import ErrorDisplay from '../components/ErrorDisplay';
 
 function ManageUsersPage() {
-  const { user: currentUser } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
+  const { user: currentUser, reset: resetAuth } = useAuth();
+  const { data: users, fetchData: fetchUsers, loading: usersLoading } = useUsers();
+  const { addSuccess, addError, addInfo } = useNotifications();
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
+  
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: ''
-    // Removed role - will always be 'user'
   });
 
   // Load users on component mount
@@ -27,17 +29,13 @@ function ManageUsersPage() {
 
   const loadUsers = async () => {
     try {
-      setLoading(true);
-      const result = await getAllUsers();
-      // Handle the new return format { users, hasMore }
-      const usersList = result?.users || result || [];
-      setUsers(Array.isArray(usersList) ? usersList : []);
+      await fetchUsers({
+        orderBy: [['createdAt', 'desc']]
+      });
+      addSuccess('Users loaded successfully!');
     } catch (error) {
-      toast.error('Failed to load users');
+      addError('Failed to load users');
       console.error('Error loading users:', error);
-      setUsers([]); // Ensure users is always an array
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -50,23 +48,21 @@ function ManageUsersPage() {
       const result = await createNewUser(userData);
       
       if (result.success) {
-        toast.success(result.message || 'User created successfully!');
+        addSuccess(result.message || 'User created successfully!');
         setFormData({ name: '', email: '', password: '' });
         setShowCreateModal(false);
         
         // Check if admin re-authentication is required (free tier)
         if (result.requiresAdminReauth) {
-          toast.info('Please sign back in to continue as admin', { autoClose: 5000 });
-          dispatch(requireReauth({ 
-            message: `User created successfully! Please sign back in as ${result.adminEmail || 'admin'} to continue.` 
-          }));
+          addInfo('Please sign back in to continue as admin');
+          resetAuth();
           navigate('/login');
         } else {
           loadUsers(); // Refresh the users list only if still authenticated
         }
       }
     } catch (error) {
-      toast.error(error.message || 'Failed to create user');
+      addError(error.message || 'Failed to create user');
       console.error('Error creating user:', error);
     } finally {
       setLoading(false);
@@ -74,8 +70,7 @@ function ManageUsersPage() {
   };
 
   const handleViewUserDashboard = (user) => {
-    // Navigate to user dashboard using existing route pattern
-    toast.info(`Viewing ${user.name}'s dashboard...`);
+    addInfo(`Viewing ${user.name}'s dashboard...`);
     navigate(`/dashboard/${user.userUID}`);
   };
 
@@ -95,13 +90,15 @@ function ManageUsersPage() {
           <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
           <p className="text-gray-600 mt-1">Create and manage user accounts (all users have 'user' role)</p>
         </div>
-        <button
+        <DynamicButton
+          id="create-user-btn"
+          variant="primary"
+          icon={UserPlusIcon}
           onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+          className="flex items-center space-x-2"
         >
-          <UserPlusIcon className="w-5 h-5" />
           <span>Create User</span>
-        </button>
+        </DynamicButton>
       </div>
 
       {/* Users Table */}
@@ -110,7 +107,7 @@ function ManageUsersPage() {
           <h2 className="text-lg font-semibold text-gray-900">Users ({users.length})</h2>
         </div>
         
-        {loading ? (
+        {usersLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading users...</p>
@@ -173,13 +170,15 @@ function ManageUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-2">
-                        <button
+                        <DynamicButton
+                          id={`view-user-${user.id}`}
+                          variant="outline"
+                          size="sm"
+                          icon={EyeIcon}
                           onClick={() => handleViewUserDashboard(user)}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="View user dashboard"
-                        >
-                          <EyeIcon className="w-4 h-4" />
-                        </button>
+                          className="p-1"
+                          successMessage={`Navigating to ${user.name}'s dashboard`}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -247,21 +246,26 @@ function ManageUsersPage() {
               </div>
               
               <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
+                <DynamicButton
+                  id="cancel-create-user"
+                  variant="secondary"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
                   disabled={loading}
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </DynamicButton>
+                <DynamicButton
+                  id="submit-create-user"
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  disabled={loading}
+                  variant="primary"
+                  loading={loading}
+                  loadingText="Creating..."
+                  successMessage="User created successfully!"
+                  className="flex-1"
                 >
-                  {loading ? 'Creating...' : 'Create User'}
-                </button>
+                  Create User
+                </DynamicButton>
               </div>
             </form>
           </div>

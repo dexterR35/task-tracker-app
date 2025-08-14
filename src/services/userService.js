@@ -1,10 +1,11 @@
 import { 
-  sendPasswordResetEmail,
   createUserWithEmailAndPassword,
   updateProfile,
   deleteUser as deleteAuthUser,
   signOut,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  setPersistence,
+  inMemoryPersistence
 } from 'firebase/auth';
 import { 
   doc, 
@@ -24,115 +25,62 @@ import {
 import { auth, secondaryAuth, db } from '../firebase';
 
 // Create user using secondary auth instance (preserves admin session)
-export const createNewUser = async (userData) => {
-  console.log('� Creating user with secondary auth (admin session preserved)');
-  return createUserWithSecondaryAuth(userData);
+export const createNewUser = async (userData, options = {}) => {
+  console.log('👤 Creating user (secondary auth session retained unless cleared)');
+  return createUserWithSecondaryAuth(userData, options);
 };
 
-// Create user with secondary auth instance - admin session preserved
-const createUserWithSecondaryAuth = async (userData) => {
+// Create user with secondary auth instance - retain session unless options.clearSecondarySession === true
+const createUserWithSecondaryAuth = async (userData, { clearSecondarySession = false } = {}) => {
   let createdAuthUser = null;
-  
   try {
     const { email, password, name, role = 'user' } = userData;
-    
-    // Validate input
-    if (!email || !password || !name) {
-      throw new Error('Email, password, and name are required');
-    }
-
-    // Get the current admin user (on primary auth)
+    if (!email || !password || !name) throw new Error('Email, password, and name are required');
     const adminUser = auth.currentUser;
-    if (!adminUser) {
-      throw new Error('You must be logged in to create users');
-    }
-
+    if (!adminUser) throw new Error('You must be logged in to create users');
     const adminUID = adminUser.uid;
-    console.log('🚀 Starting user creation with secondary auth for:', email);
-    console.log('👤 Admin session preserved:', adminUser.email);
 
-    // STEP 1: Create user in Firebase Auth using secondary auth instance
-    // This won't affect the admin's session on the primary auth instance
+    await setPersistence(secondaryAuth, inMemoryPersistence);
+
     const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     const newUser = userCredential.user;
     createdAuthUser = newUser;
+    await updateProfile(newUser, { displayName: name });
 
-    console.log('✅ User created in Firebase Auth (secondary):', newUser.uid);
-
-    // STEP 2: Update user profile on secondary auth
-    await updateProfile(newUser, {
-      displayName: name
-    });
-
-    console.log('✅ User profile updated');
-
-    // STEP 3: Use transaction to create user document atomically
     const result = await runTransaction(db, async (transaction) => {
       const userDocRef = doc(collection(db, 'users'));
       const userDoc = {
         userUID: newUser.uid,
         email: newUser.email,
-        name: name,
-        role: role,
+        name,
+        role,
         createdAt: new Date().toISOString(),
         createdBy: adminUID,
         isActive: true
       };
-
-      // Create user document
       transaction.set(userDocRef, userDoc);
-      
-      console.log('✅ User document prepared in transaction');
-      
-      return { 
-        userDoc: { ...userDoc, id: userDocRef.id },
-        authUID: newUser.uid
-      };
+      return { userDoc: { ...userDoc, id: userDocRef.id }, authUID: newUser.uid };
     });
 
-    console.log('✅ Transaction completed successfully');
+    if (clearSecondarySession) {
+      try { await signOut(secondaryAuth); console.log('🔄 Secondary auth session cleared (option enabled)'); } catch { /* ignore */ }
+    } else {
+      console.log('➡️ Secondary auth session kept (new user remains on secondaryAuth).');
+    }
 
-    // STEP 4: Sign out the user from secondary auth (cleanup)
-    await signOut(secondaryAuth);
-    console.log('🔄 Signed out user from secondary auth');
-
-    // Admin session remains intact on primary auth!
-    console.log('✅ Admin session preserved on primary auth');
-
-    return { 
-      success: true, 
+    return {
+      success: true,
       user: result.userDoc,
-      message: `User ${email} created successfully! Admin session preserved.`,
-      requiresAdminReauth: false,
+      message: `User ${email} created successfully. Secondary session: ${clearSecondarySession ? 'cleared' : 'kept'}.`,
       adminEmail: adminUser.email,
       newUserUID: result.authUID
     };
-
   } catch (error) {
-    console.error('❌ Error during secondary auth user creation:', error);
-
-    // ROLLBACK: Delete Auth user if Firestore transaction failed
-    if (createdAuthUser) {
-      try {
-        console.log('🔄 Rolling back: Deleting Auth user...');
-        await deleteAuthUser(createdAuthUser);
-        console.log('✅ Auth user successfully deleted (rollback complete)');
-      } catch (rollbackError) {
-        console.error('❌ CRITICAL: Failed to rollback Auth user:', rollbackError);
-        throw new Error(`User created in Auth but failed to save to database. Contact admin. Auth UID: ${createdAuthUser.uid}`);
-      }
-    }
-
-    // User-friendly error messages
-    if (error.code === 'auth/email-already-in-use') {
-      throw new Error('Email address is already in use');
-    } else if (error.code === 'auth/weak-password') {
-      throw new Error('Password is too weak');
-    } else if (error.code === 'permission-denied') {
-      throw new Error('Database permission denied. Please check Firestore rules.');
-    } else {
-      throw new Error(error.message);
-    }
+    if (createdAuthUser) { try { await deleteAuthUser(createdAuthUser); } catch { /* ignore */ } }
+    if (error.code === 'auth/email-already-in-use') throw new Error('Email address is already in use');
+    if (error.code === 'auth/weak-password') throw new Error('Password is too weak');
+    if (error.code === 'permission-denied') throw new Error('Database permission denied. Please check Firestore rules.');
+    throw new Error(error.message);
   }
 };
 
@@ -249,16 +197,5 @@ export const deleteUser = async (uid) => {
   } catch (error) {
     console.error('Error deleting user:', error);
     throw new Error('Failed to delete user');
-  }
-};
-
-// Send password reset email
-export const sendUserPasswordReset = async (email) => {
-  try {
-    await sendPasswordResetEmail(auth, email);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending password reset:', error);
-    throw new Error('Failed to send password reset email');
   }
 };

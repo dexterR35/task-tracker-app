@@ -1,77 +1,107 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as yup from 'yup';
-import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, clearError } from '../features/auth/authSlice';
-import { toast } from 'react-toastify';
+import * as Yup from 'yup';
+import { useAuth } from '../hooks/useAuth';
+import { useNavigate, Link } from 'react-router-dom';
+import DynamicButton from '../components/DynamicButton';
 
-const validationSchema = yup.object({
-  email: yup.string().email('Must be a valid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+const LoginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('Invalid email format')
+    .required('Email is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required')
 });
 
 const LoginPage = () => {
-  const dispatch = useDispatch();
-  const isLoading = useSelector((state) => state.auth.loading.loginUser);
-  const error = useSelector((state) => state.auth.error.loginUser);
-  const fetchError = useSelector((state) => state.auth.error.fetchCurrentUser);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-      dispatch(clearError('loginUser'));
+  const handleSubmit = async (values, { setSubmitting }) => {
+    try {
+      await login(values);
+      navigate('/');
+    } catch (error) {
+      console.error('Login failed:', error);
+    } finally {
+      setSubmitting(false);
     }
-  }, [error, dispatch]);
+  };
 
   return (
     <div className="container-center">
       <div className="card w-full max-w-md">
-        <h2 className="title">Login</h2>
-        
-        {/* Show admin re-auth message if needed */}
-        {fetchError && fetchError.includes('sign back in') && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
-            <p className="text-sm">{fetchError}</p>
-          </div>
-        )}
+        <h1 className="title">Sign In</h1>
         
         <Formik
           initialValues={{ email: '', password: '' }}
-          validationSchema={validationSchema}
-          validateOnChange={false}
-          validateOnBlur={false}
-          onSubmit={async (values, { setSubmitting }) => {
-            if (isLoading) {
-              setSubmitting(false);
-              return;
-            }
-            try {
-              await dispatch(loginUser(values)).unwrap();
-              toast.success('Login successful!');
-            } catch {}
-            setSubmitting(false);
-          }}
+          validationSchema={LoginSchema}
+          onSubmit={handleSubmit}
         >
           {({ isSubmitting }) => (
-            <Form className="form-col" noValidate>
-              <Field type="email" name="email" placeholder="Email" disabled={isSubmitting || isLoading} className="input-default" />
-              <ErrorMessage name="email" component="div" className="text-red-600 text-sm" />
+            <Form className="space-y-6">
+              <div>
+                <label className="label" htmlFor="email">
+                  Email Address
+                </label>
+                <Field
+                  id="email"
+                  name="email"
+                  type="email"
+                  className="input w-full"
+                  placeholder="Enter your email"
+                />
+                <ErrorMessage 
+                  name="email" 
+                  component="div" 
+                  className="text-red-500 text-sm mt-1" 
+                />
+              </div>
 
-              <Field
-                type="password"
-                name="password"
-                placeholder="Password"
-                disabled={isSubmitting || isLoading}
-                className="input-default"
-              />
-              <ErrorMessage name="password" component="div" className="text-red-600 text-sm" />
+              <div>
+                <label className="label" htmlFor="password">
+                  Password
+                </label>
+                <Field
+                  id="password"
+                  name="password"
+                  type="password"
+                  className="input w-full"
+                  placeholder="Enter your password"
+                />
+                <ErrorMessage 
+                  name="password" 
+                  component="div" 
+                  className="text-red-500 text-sm mt-1" 
+                />
+              </div>
 
-              <button type="submit" disabled={isSubmitting || isLoading} className="btn-primary">
-                {isSubmitting || isLoading ? 'Logging in...' : 'Login'}
-              </button>
+              <DynamicButton
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                loadingText="Signing in..."
+                successMessage="Login successful!"
+                errorMessage="Login failed. Please try again."
+              >
+                Sign In
+              </DynamicButton>
             </Form>
           )}
         </Formik>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

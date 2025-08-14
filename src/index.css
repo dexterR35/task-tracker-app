@@ -1,25 +1,62 @@
 
 @import "tailwindcss";
-button{
-  @apply bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition;
+
+/* Base styles with regular CSS since @apply might not work in v4 */
+.input {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s;
 }
 
-input{
-  @apply px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition;
+.input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
 }
 
 .card {
-  @apply bg-white rounded-xl shadow-lg p-10;
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
 }
 
 .container-center {
-  @apply min-h-screen bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-600 flex justify-center items-center p-6;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #4f46e5, #7c3aed, #ec4899);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
 }
 
 .title {
-  @apply text-2xl font-bold mb-8 text-center text-gray-800;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: #1f2937;
 }
 
+.input-error {
+  border-color: #ef4444;
+}
+
+.input-error:focus {
+  box-shadow: 0 0 0 2px #ef4444;
+}
+
+
 .form-col {
-  @apply flex flex-col space-y-6;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }

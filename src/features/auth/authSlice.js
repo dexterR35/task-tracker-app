@@ -1,4 +1,4 @@
-// src/redux/features/auth/authSlice.js
+// src/features/auth/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   signInWithEmailAndPassword,

@@ -1,131 +1,102 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser } from '../features/auth/authSlice';
-import { useNavigate, Outlet, Link } from 'react-router-dom';
-import PageLoader from './PageLoader';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import DynamicButton from './DynamicButton';
+import GlobalLoader from './GlobalLoader';
+import { 
+  HomeIcon, 
+  ChartBarIcon, 
+  UserGroupIcon, 
+  ArrowRightOnRectangleIcon,
+  ViewColumnsIcon 
+} from '@heroicons/react/24/outline';
 
 const Layout = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const { user, role, isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { user, role, isAuthenticated, logout, loading } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await dispatch(logoutUser()).unwrap();
-      navigate('/', { replace: true });
+      await logout();
+      navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
 
-  const isLoading = Object.values(loading).some(Boolean);
+  // Show loading if authentication is being checked
+  if (loading.fetchCurrentUser) {
+    return <GlobalLoader />;
+  }
 
-  if (isLoading) return <PageLoader message="Initializing app..." />;
+  if (!isAuthenticated) {
+    return <Outlet />;
+  }
+
+  const navigation = [
+    { name: 'Home', href: '/', icon: HomeIcon },
+    { name: 'Dashboard', href: '/dashboard', icon: ViewColumnsIcon },
+    ...(role === 'admin' ? [
+      { name: 'Admin', href: '/admin', icon: ChartBarIcon },
+      { name: 'Manage Users', href: '/manage-users', icon: UserGroupIcon }
+    ] : [])
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo/Brand */}
+          <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">TT</span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">Task Tracker</span>
-              </Link>
-            </div>
-
-            {/* Navigation */}
-            {isAuthenticated && (
-              <nav className="hidden md:flex space-x-6">
-                <Link 
-                  to="/" 
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Home
+              <div className="flex-shrink-0">
+                <Link to="/" className="text-xl font-bold text-gray-900">
+                  Task Tracker
                 </Link>
-                {role === 'admin' && (
-                  <Link 
-                    to="/admin" 
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Admin Panel
-                  </Link>
-                )}
-                {role === 'user' && (
-                  <Link 
-                    to={`/dashboard/${user?.uid}`} 
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                )}
-              </nav>
-            )}
-
-            {/* User Info & Actions */}
-            <div className="flex items-center space-x-4">
-              {isAuthenticated ? (
-                <>
-                  <div className="hidden sm:flex flex-col text-right">
-                    <span className="text-sm font-medium text-gray-900">
-                      {user?.name || user?.email}
-                    </span>
-                    <span className="text-xs text-gray-500 capitalize">
-                      {role}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">TT</span>
               </div>
-              <span className="text-gray-600 text-sm">© 2025 Task Tracker. All rights reserved.</span>
+              <div className="hidden md:ml-6 md:flex md:space-x-8">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             </div>
             
-            <div className="flex space-x-6 text-sm text-gray-600">
-              <span>Version 1.0.0</span>
-              {isAuthenticated && (
-                <span>
-                  Logged in as <span className="font-medium">{role}</span>
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:block">
+                <span className="text-sm text-gray-700">
+                  {user?.name || user?.email}
                 </span>
-              )}
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {role}
+                </span>
+              </div>
+              
+              <DynamicButton
+                id="logout-nav-btn"
+                variant="outline"
+                size="sm"
+                icon={ArrowRightOnRectangleIcon}
+                onClick={handleLogout}
+                successMessage="Logged out successfully"
+              >
+                Logout
+              </DynamicButton>
             </div>
           </div>
         </div>
-      </footer>
+      </nav>
+
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <Outlet />
+      </main>
     </div>
   );
 };

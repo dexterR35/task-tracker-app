@@ -1,100 +1,147 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
-import { useSelector } from 'react-redux';
+import { Suspense } from 'react';
+import { useAuth } from './hooks/useAuth';
 
 import Layout from './components/Layout';
-import PageLoader from './components/PageLoader';
+import GlobalLoader from './components/GlobalLoader';
 
-// Dynamic imports for better code splitting
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
-const DashboardPage = lazy(() => import('./pages/UserDashBoard'));
-const HomePage = lazy(() => import('./pages/HomePage'));
-const ManageUsersPage = lazy(() => import('./pages/ManageUsersPage'));
-
-import { AdminRoute, UserRoute } from './features/auth/ProtectedRoutes';
-import AuthRedirectHandler from './features/auth/AuthRedirect';
+// Import components directly instead of lazy loading
+import LoginPage from './pages/LoginPage';
+import AdminPage from './pages/AdminPage';
+import DashboardPage from './pages/DashboardPage';
+import HomePage from './pages/HomePage';
+import ManageUsersPage from './pages/ManageUsersPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import TaskDetailPage from './pages/TaskDetailPage';
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading } = useAuth();
   
   if (loading.fetchCurrentUser) {
-    return <PageLoader message="Checking authentication..." />;
+    return <GlobalLoader />;
   }
   
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+  return isAuthenticated ? <Navigate to="/" replace /> : children;
+};
+
+// Component to protect routes that require authentication
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const { isAuthenticated, role, loading } = useAuth();
+  
+  if (loading.fetchCurrentUser) {
+    return <GlobalLoader />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (requiredRole && role !== requiredRole) {
+    return <Navigate to="/unauthorized" replace />;
   }
   
   return children;
 };
 
-// React Router v7 routing object with createBrowserRouter
+// Component for admin-only routes
+const AdminRoute = ({ children }) => (
+  <ProtectedRoute requiredRole="admin">
+    {children}
+  </ProtectedRoute>
+);
+
+// Component for authenticated user routes
+const UserRoute = ({ children }) => (
+  <ProtectedRoute>
+    {children}
+  </ProtectedRoute>
+);
+
+// Component to handle redirects based on auth state
+const AuthRedirectHandler = () => {
+  const { isAuthenticated, role, loading } = useAuth();
+  
+  if (loading.fetchCurrentUser) {
+    return <GlobalLoader />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect based on role
+  if (role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  
+  return <Navigate to="/dashboard" replace />;
+};
+
 const router = createBrowserRouter([
   {
-    path: '/login',
-    element: (
-      <LoginRoute>
-        <Suspense fallback={<PageLoader message="Loading login..." />}>
-          <LoginPage />
-        </Suspense>
-      </LoginRoute>
-    ),
-  },
-  {
     path: '/',
-    element: (
-      <>
-        <AuthRedirectHandler />
-        <Layout />
-      </>
-    ),
+    element: <Layout />,
+    errorElement: <div>Something went wrong!</div>,
     children: [
-      { 
-        index: true, // v7 preferred syntax for index routes
+      {
+        index: true,
+        element: <HomePage />
+      },
+      {
+        path: 'login',
         element: (
-          <Suspense fallback={<PageLoader message="Loading home..." />}>
-            <HomePage />
-          </Suspense>
-        ) 
+          <LoginRoute>
+            <LoginPage />
+          </LoginRoute>
+        )
+      },
+      {
+        path: 'dashboard',
+        element: (
+          <UserRoute>
+            <DashboardPage />
+          </UserRoute>
+        )
+      },
+      {
+        path: 'dashboard/:userId',
+        element: (
+          <UserRoute>
+            <DashboardPage />
+          </UserRoute>
+        )
       },
       {
         path: 'admin',
         element: (
           <AdminRoute>
-            <Suspense fallback={<PageLoader message="Loading admin..." />}>
-              <AdminPage />
-            </Suspense>
+            <AdminPage />
           </AdminRoute>
-        ),
+        )
       },
       {
         path: 'manage-users',
         element: (
           <AdminRoute>
-            <Suspense fallback={<PageLoader message="Loading user management..." />}>
-              <ManageUsersPage />
-            </Suspense>
+            <ManageUsersPage />
           </AdminRoute>
-        ),
+        )
       },
       {
-        path: 'dashboard/:uid',
+        path: 'task/:monthId/:taskId',
         element: (
           <UserRoute>
-            <Suspense fallback={<PageLoader message="Loading dashboard..." />}>
-              <DashboardPage />
-            </Suspense>
+            <TaskDetailPage />
           </UserRoute>
-        ),
+        )
       },
-    ],
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
+      {
+        path: 'unauthorized',
+        element: <UnauthorizedPage />
+      }
+    ]
+  }
 ]);
 
 export default router;

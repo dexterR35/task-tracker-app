@@ -1,119 +1,174 @@
-
-import React from 'react';
-import { useSelector } from 'react-redux';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { fetchUsersForAnalytics, fetchTasksForAnalytics, calculateAnalytics } from '../redux/slices/adminSlice';
+import DynamicButton from '../components/DynamicButton';
+import { 
+  UserGroupIcon, 
+  ChartBarIcon, 
+  DocumentDuplicateIcon,
+  ClockIcon,
+  CpuChipIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 
 function AdminPage() {
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useAuth();
+  const dispatch = useDispatch();
+  const { analytics, loading } = useSelector((state) => state.admin);
+
+  useEffect(() => {
+    // Fetch data for analytics
+    dispatch(fetchUsersForAnalytics());
+    dispatch(fetchTasksForAnalytics());
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Calculate analytics when data is loaded
+    if (!loading.fetchUsersForAnalytics && !loading.fetchTasksForAnalytics) {
+      dispatch(calculateAnalytics());
+    }
+  }, [loading.fetchUsersForAnalytics, loading.fetchTasksForAnalytics, dispatch]);
 
   const adminActions = [
     {
       title: 'Manage Users',
       description: 'Create, edit, and manage user accounts',
       to: '/manage-users',
-      color: 'bg-blue-500',
-      hoverColor: 'hover:bg-blue-600'
+      icon: UserGroupIcon,
+      variant: 'primary'
     },
     {
-      title: 'View All Tasks',
-      description: 'Monitor and manage all tasks across the system',
-      to: '/admin/tasks',
-      color: 'bg-green-500',
-      hoverColor: 'hover:bg-green-600'
+      title: 'View Dashboard',
+      description: 'Access the main dashboard with task creation',
+      to: '/dashboard',
+      icon: DocumentDuplicateIcon,
+      variant: 'success'
     },
     {
       title: 'Analytics',
       description: 'View system analytics and reports',
       to: '/admin/analytics',
-      color: 'bg-purple-500',
-      hoverColor: 'hover:bg-purple-600'
+      icon: ChartBarIcon,
+      variant: 'secondary'
     },
-    {
-      title: 'System Settings',
-      description: 'Configure system-wide settings',
-      to: '/admin/settings',
-      color: 'bg-gray-500',
-      hoverColor: 'hover:bg-gray-600'
-    }
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Admin Dashboard
-        </h1>
-        <p className="text-xl text-gray-600">
-          Welcome back, {user?.name || user?.email}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <p className="text-gray-600 mt-2">
+          Welcome back, {user?.name}. Manage your system and view analytics.
         </p>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-lg">👥</span>
+      {analytics?.userStats && analytics?.taskStats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <UserGroupIcon className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-semibold text-gray-900">{analytics.userStats.total}</p>
+              </div>
             </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">Total Users</h3>
-              <p className="text-2xl font-bold text-blue-600">2</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <DocumentDuplicateIcon className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+                <p className="text-2xl font-semibold text-gray-900">{analytics.taskStats.total}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <CpuChipIcon className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">AI Usage</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {Math.round((analytics.taskStats.aiUsageStats.withAI / analytics.taskStats.total) * 100)}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Rework Rate</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {Math.round(analytics.taskStats.reworkRate)}%
+                </p>
+              </div>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <span className="text-green-600 font-bold text-lg">📋</span>
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">Total Tasks</h3>
-              <p className="text-2xl font-bold text-green-600">0</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <span className="text-purple-600 font-bold text-lg">📊</span>
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">Active Projects</h3>
-              <p className="text-2xl font-bold text-purple-600">0</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-gray-600 font-bold text-lg">⚙️</span>
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
-              <p className="text-lg font-semibold text-green-600">Online</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Admin Actions */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Admin Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {adminActions.map((action, index) => (
-            <Link
-              key={index}
-              to={action.to}
-              className={`${action.color} ${action.hoverColor} text-white p-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105`}
-            >
-              <div className="flex items-center mb-4">
-                <h3 className="text-xl font-semibold">{action.title}</h3>
-              </div>
-              <p className="text-white/90">{action.description}</p>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {adminActions.map((action, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center mb-4">
+              <action.icon className="h-8 w-8 text-gray-600" />
+              <h3 className="ml-3 text-lg font-semibold text-gray-900">{action.title}</h3>
+            </div>
+            <p className="text-gray-600 mb-4">{action.description}</p>
+            <Link to={action.to}>
+              <DynamicButton
+                variant={action.variant}
+                className="w-full"
+              >
+                {action.title}
+              </DynamicButton>
             </Link>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">System Overview</h2>
+        
+        {loading.fetchUsersForAnalytics || loading.fetchTasksForAnalytics ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading analytics...</p>
+          </div>
+        ) : analytics?.userStats && analytics?.taskStats ? (
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">User Statistics</h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>Total Users: {analytics.userStats.total}</li>
+                <li>Admins: {analytics.userStats.admins}</li>
+                <li>Regular Users: {analytics.userStats.users}</li>
+                <li>Recently Joined: {analytics.userStats.recentlyJoined}</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">Task Analytics</h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>Total Tasks: {analytics.taskStats.total}</li>
+                <li>With AI: {analytics.taskStats.aiUsageStats.withAI}</li>
+                <li>Avg Completion Time: {Math.round(analytics.taskStats.averageCompletionTime * 10) / 10}h</li>
+                <li>Rework Rate: {Math.round(analytics.taskStats.reworkRate)}%</li>
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500">No analytics data available yet.</p>
+        )}
       </div>
     </div>
   );
