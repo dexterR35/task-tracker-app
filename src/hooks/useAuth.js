@@ -20,7 +20,7 @@ export const useAuth = () => {
       const result = await dispatch(loginUser(credentials)).unwrap();
       dispatch(addNotification({
         type: 'success',
-        message: `Welcome back, ${result.name || result.email}!`
+        message: `Welcome, ${result.name || result.email}!`
       }));
       return result;
     } catch (error) {

@@ -10,6 +10,15 @@ const __firestoreCache = new Map(); // key -> { data, lastDoc, timestamp }
 
 export const getFirestoreCacheEntry = (key) => __firestoreCache.get(key);
 
+// Utility to invalidate cache entries by predicate
+export const invalidateFirestoreCache = (predicate) => {
+  for (const key of __firestoreCache.keys()) {
+    if (typeof predicate === 'function' ? predicate(key) : key === predicate) {
+      __firestoreCache.delete(key);
+    }
+  }
+};
+
 export const useFirestore = (collectionName) => {
   const dispatch = useDispatch();
   const [data, setData] = useState([]);
@@ -17,30 +26,29 @@ export const useFirestore = (collectionName) => {
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async (queryOptions = {}) => {
+    const {
+      where: whereFilters,
+      orderBy: orderByFilters,
+      limit: limitValue,
+      startAfter: startAfterDoc,
+      append,
+      cacheKey,
+      force = false,
+      useCache = true
+    } = queryOptions;
+
+    const effectiveCacheKey = cacheKey || collectionName;
+
+    if (!force && useCache && __firestoreCache.has(effectiveCacheKey) && !append) {
+      const cached = __firestoreCache.get(effectiveCacheKey);
+      setData(cached.data);
+      return { results: cached.data, lastDoc: cached.lastDoc, fromCache: true };
+    }
+
     try {
       setLoading(true);
       setError(null);
       dispatch(setGlobalLoading(true));
-
-      const {
-        where: whereFilters,
-        orderBy: orderByFilters,
-        limit: limitValue,
-        startAfter: startAfterDoc,
-        append,
-        cacheKey,
-        force = false,
-        useCache = true
-      } = queryOptions;
-
-      const effectiveCacheKey = cacheKey || collectionName;
-
-      // Serve from cache if allowed
-      if (!force && useCache && __firestoreCache.has(effectiveCacheKey) && !append) {
-        const cached = __firestoreCache.get(effectiveCacheKey);
-        setData(cached.data);
-        return { results: cached.data, lastDoc: cached.lastDoc, fromCache: true };
-      }
 
       let firestoreQuery = collection(db, collectionName);
 
@@ -216,17 +224,48 @@ export const useMonthlyTasks = (monthId) => {
   const [error, setError] = useState(null);
   const pageStateRef = useState({ lastDoc: null })[0];
 
+  // Helper: build base cache key prefix for this month
+  const monthCachePrefix = useMemo(() => `monthly:${monthId}:`, [monthId]);
+  const makeCacheKey = (cacheKey = 'default') => `${monthCachePrefix}${cacheKey}`;
+
+  const invalidateMonthCache = useCallback(() => {
+    // Remove every cache entry for this month
+    for (const key of __firestoreCache.keys()) {
+      if (key.startsWith(monthCachePrefix)) {
+        __firestoreCache.delete(key);
+      }
+    }
+  }, [monthCachePrefix]);
+
   const ensureMonthDoc = useCallback(async () => {
     try { await setDoc(doc(db, 'tasks', monthId), { monthId }, { merge: true }); } catch { /* ignore */ }
   }, [monthId]);
 
-  const fetchData = useCallback(async ({ where: whereFilters = [], limit: limitValue = 10, startAfter: startAfterDoc = null, append = false, orderBy: orderByFilters = [['createdAt','desc']] } = {}) => {
+  const fetchData = useCallback(async ({
+    where: whereFilters = [],
+    limit: limitValue = 10,
+    startAfter: startAfterDoc = null,
+    append = false,
+    orderBy: orderByFilters = [['createdAt','desc']],
+    cacheKey,
+    force = false,
+    useCache = true
+  } = {}) => {
+    const effectiveCacheKey = makeCacheKey(cacheKey || JSON.stringify({ where: whereFilters, orderBy: orderByFilters }));
+
+    if (!force && useCache && __firestoreCache.has(effectiveCacheKey) && !append) {
+      const cached = __firestoreCache.get(effectiveCacheKey);
+      setData(cached.data);
+      pageStateRef.lastDoc = cached.lastDoc;
+      return { results: cached.data, lastDoc: cached.lastDoc, fromCache: true };
+    }
+
     try {
       setLoading(true);
       setError(null);
       dispatch(setGlobalLoading(true));
 
-      let colRef = collection(db, 'tasks', monthId, 'monthTasks');
+      const colRef = collection(db, 'tasks', monthId, 'monthTasks');
       let qRef = colRef;
 
       whereFilters.forEach(([f, op, v]) => { qRef = query(qRef, where(f, op, v)); });
@@ -238,8 +277,12 @@ export const useMonthlyTasks = (monthId) => {
       const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       const finalData = append ? [...data, ...results] : results;
       setData(finalData);
-      pageStateRef.lastDoc = snap.docs[snap.docs.length - 1] || null;
-      return { results: finalData, lastDoc: pageStateRef.lastDoc };
+      const lastDocRef = snap.docs[snap.docs.length - 1] || null;
+      pageStateRef.lastDoc = lastDocRef;
+
+      __firestoreCache.set(effectiveCacheKey, { data: finalData, lastDoc: lastDocRef, timestamp: Date.now() });
+
+      return { results: finalData, lastDoc: lastDocRef, fromCache: false };
     } catch (err) {
       const msg = err.message || 'Failed to fetch monthly tasks';
       setError(msg);
@@ -249,7 +292,7 @@ export const useMonthlyTasks = (monthId) => {
       setLoading(false);
       dispatch(setGlobalLoading(false));
     }
-  }, [monthId, data, dispatch, pageStateRef]);
+  }, [monthId, data, dispatch, pageStateRef, makeCacheKey]);
 
   const addDocument = useCallback(async (taskData) => {
     try {
@@ -263,6 +306,7 @@ export const useMonthlyTasks = (monthId) => {
       const sanitizedAiModel = taskData.aiUsed ? (taskData.aiModel || 'Unknown') : 'Unknown';
       const docData = { ...taskData, timeSpentOnAI: sanitizedTimeSpentOnAI, aiModel: sanitizedAiModel, monthId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
       const docRef = await addDoc(colRef, docData);
+      invalidateMonthCache(); // Invalidate cache so next fetch reflects new task
       dispatch(addNotification({ type: 'success', message: 'task created successfully' }));
       return { id: docRef.id, ...docData };
     } catch (err) {
@@ -274,7 +318,7 @@ export const useMonthlyTasks = (monthId) => {
       setLoading(false);
       dispatch(setGlobalLoading(false));
     }
-  }, [monthId, ensureMonthDoc, dispatch]);
+  }, [monthId, ensureMonthDoc, dispatch, invalidateMonthCache]);
 
   const updateDocument = useCallback(async (id, updates) => {
     try {
@@ -287,6 +331,7 @@ export const useMonthlyTasks = (monthId) => {
       const sanitizedAiModel = updates.aiUsed ? (updates.aiModel || 'Unknown') : 'Unknown';
       const updateData = { ...updates, timeSpentOnAI: sanitizedTimeSpentOnAI, aiModel: sanitizedAiModel, updatedAt: serverTimestamp() };
       await updateDoc(ref, updateData);
+      invalidateMonthCache(); // ensure stale cache removed
       dispatch(addNotification({ type: 'success', message: 'task updated successfully' }));
       return { id, ...updateData };
     } catch (err) {
@@ -298,13 +343,14 @@ export const useMonthlyTasks = (monthId) => {
       setLoading(false);
       dispatch(setGlobalLoading(false));
     }
-  }, [monthId, dispatch]);
+  }, [monthId, dispatch, invalidateMonthCache]);
 
   const deleteDocument = useCallback(async (id) => {
     try {
       setLoading(true);
       dispatch(setGlobalLoading(true));
       await deleteDoc(doc(db, 'tasks', monthId, 'monthTasks', id));
+      invalidateMonthCache();
       dispatch(addNotification({ type: 'success', message: 'task deleted successfully' }));
       return id;
     } catch (err) {
@@ -316,7 +362,7 @@ export const useMonthlyTasks = (monthId) => {
       setLoading(false);
       dispatch(setGlobalLoading(false));
     }
-  }, [monthId, dispatch]);
+  }, [monthId, dispatch, invalidateMonthCache]);
 
   const clearError = useCallback(() => setError(null), []);
 

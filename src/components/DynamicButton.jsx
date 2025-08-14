@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useUI } from '../hooks/useUI';
 import { useNotifications } from '../hooks/useNotifications';
 
@@ -39,8 +39,8 @@ const DynamicButton = ({
     ${className}
   `.trim();
 
-  const handleClick = async (e) => {
-    if (isDisabled || !onClick) return;
+  const handleClick = useCallback(async (e) => {
+    if (isLoading || isDisabled || !onClick) return; // strengthened guard
 
     try {
       if (id) {
@@ -62,10 +62,10 @@ const DynamicButton = ({
       addError(message);
 
       if (id) {
-        setButtonState(id, { 
-          loading: false, 
-          error: message,
-          retryFunction: retryFunction || (() => handleClick(e))
+        setButtonState(id, {
+          loading: false,
+            error: message,
+          retryFunction: retryFunction || onClick // safe retry (no stale event)
         });
       }
     } finally {
@@ -73,7 +73,7 @@ const DynamicButton = ({
         setLoading(id, false);
       }
     }
-  };
+  }, [id, isLoading, isDisabled, onClick, successMessage, errorMessage, retryFunction, setLoading, setButtonState, addSuccess, addError]);
 
   const renderIcon = () => {
     if (isLoading) {
@@ -94,6 +94,8 @@ const DynamicButton = ({
       className={buttonClasses}
       onClick={handleClick}
       disabled={isDisabled}
+      aria-disabled={isDisabled}
+      aria-busy={isLoading}
       {...props}
     >
       <div className="flex items-center justify-center gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useMonthlyTasks, useUsers } from '../hooks/useFirestore';
 import { useNotifications } from '../hooks/useNotifications';
@@ -8,14 +8,30 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
+// Hook: keeps track of current monthId and updates automatically when month changes (checked every minute)
+const useCurrentMonthId = () => {
+  const [monthId, setMonthId] = useState(() => dayjs().format('YYYY-MM'));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = dayjs().format('YYYY-MM');
+      setMonthId(prev => (prev !== current ? current : prev));
+    }, 60 * 1000); // check every minute
+    return () => clearInterval(interval);
+  }, []);
+  return monthId;
+};
+
 const DashboardPage = () => {
   const { user, logout } = useAuth();
-  const monthId = dayjs().format('YYYY-MM');
+  const monthId = useCurrentMonthId();
   const { data: tasks, fetchData: fetchTasks, loading: tasksLoading } = useMonthlyTasks(monthId);
   const { addSuccess, addError } = useNotifications();
   const { data: usersList, fetchData: fetchUsers } = useUsers();
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [dateRange, setDateRange] = useState({ start: dayjs().startOf('month'), end: dayjs().endOf('month') });
+  // Derive month boundaries from monthId (always current month enforced)
+  const monthStart = dayjs(monthId + '-01');
+  const monthEnd = monthStart.endOf('month');
+  const [dateRange, setDateRange] = useState({ start: monthStart, end: monthEnd });
   const [selectedUser, setSelectedUser] = useState('');
   const [indexError, setIndexError] = useState(false);
   const indexLink = 'https://console.firebase.google.com/u/0/project/task-tracker-app-eb03e/firestore/indexes';
@@ -23,22 +39,21 @@ const DashboardPage = () => {
   const lastQueryHashRef = useRef(null);
   const navigate = useNavigate();
 
-  // Build where clauses based on role, selected user, and date range
-  const buildTaskQuery = () => {
+  // Build where clauses based on role, selected user, and date range (within current month only)
+  const buildTaskQuery = useCallback(() => {
     const whereClauses = [];
     if (user?.role === 'admin') {
-      if (selectedUser) {
-        whereClauses.push(['userUID', '==', selectedUser]);
-      }
+      if (selectedUser) whereClauses.push(['userUID', '==', selectedUser]);
     } else if (user?.uid) {
       whereClauses.push(['userUID', '==', user.uid]);
     }
-    if (dateRange.start && dateRange.end) {
-      whereClauses.push(['createdAt', '>=', dateRange.start.toDate()]);
-      whereClauses.push(['createdAt', '<=', dateRange.end.toDate()]);
-    }
+    // Enforce month boundaries regardless of user-picked dates (clamped)
+    const start = dateRange.start.isBefore(monthStart) ? monthStart : dateRange.start;
+    const end = dateRange.end.isAfter(monthEnd) ? monthEnd : dateRange.end;
+    whereClauses.push(['createdAt', '>=', start.toDate()]);
+    whereClauses.push(['createdAt', '<=', end.toDate()]);
     return whereClauses;
-  };
+  }, [user, selectedUser, dateRange, monthStart, monthEnd]);
 
   const queryHash = () => JSON.stringify({ u: user?.role === 'admin' ? selectedUser || 'ALL' : user?.uid, s: dateRange.start.format('YYYYMMDD'), e: dateRange.end.format('YYYYMMDD') });
 
@@ -76,9 +91,21 @@ const DashboardPage = () => {
     }
   }, [user]);
 
+  // Reload tasks automatically when monthId rolls over (day 1 new month)
+  useEffect(() => {
+    if (user && initialLoadedRef.current) {
+      // Clear previous month tasks view (fresh board)
+      lastQueryHashRef.current = null;
+      loadTasks();
+    }
+  }, [monthId]);
+
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    setDateRange(prev => ({ ...prev, [name]: dayjs(value) }));
+    const picked = dayjs(value);
+    // Clamp inside current month
+    const clamped = picked.isBefore(monthStart) ? monthStart : picked.isAfter(monthEnd) ? monthEnd : picked;
+    setDateRange(prev => ({ ...prev, [name]: clamped }));
   };
 
   const applyDateFilter = () => {
@@ -94,6 +121,10 @@ const DashboardPage = () => {
   const handleLogout = async () => {
     try { await logout(); } catch { addError('Logout failed'); }
   };
+
+  // Disable picking outside current month via min/max
+  const startInputProps = { min: monthStart.format('YYYY-MM-DD'), max: monthEnd.format('YYYY-MM-DD') };
+  const endInputProps = startInputProps;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -113,11 +144,11 @@ const DashboardPage = () => {
         <div className="bg-white rounded-lg shadow-md p-4 mb-6 flex flex-col md:flex-row flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input type="date" name="start" value={dateRange.start.format('YYYY-MM-DD')} onChange={handleDateChange} className="border rounded px-3 py-2" />
+            <input type="date" name="start" value={dateRange.start.format('YYYY-MM-DD')} onChange={handleDateChange} className="border rounded px-3 py-2" {...startInputProps} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input type="date" name="end" value={dateRange.end.format('YYYY-MM-DD')} onChange={handleDateChange} className="border rounded px-3 py-2" />
+            <input type="date" name="end" value={dateRange.end.format('YYYY-MM-DD')} onChange={handleDateChange} className="border rounded px-3 py-2" {...endInputProps} />
           </div>
           {user?.role === 'admin' && (
             <div>

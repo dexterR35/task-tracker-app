@@ -142,41 +142,41 @@ export const getAllUsers = async (limitCount = 10, startAfterDoc = null) => {
 };
 
 // Update user role (client-side)
-export const updateUserRole = async (uid, newRole) => {
-  try {
-    if (!['admin', 'user'].includes(newRole)) {
-      throw new Error('Invalid role');
-    }
+// export const updateUserRole = async (uid, newRole) => {
+//   try {
+//     if (!['admin', 'user'].includes(newRole)) {
+//       throw new Error('Invalid role');
+//     }
 
-    // Get current authenticated user
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error('You must be logged in to update users');
-    }
+//     // Get current authenticated user
+//     const currentUser = auth.currentUser;
+//     if (!currentUser) {
+//       throw new Error('You must be logged in to update users');
+//     }
 
-    // Find the user document by userUID field
-    const usersQuery = query(collection(db, 'users'), where('userUID', '==', uid));
-    const querySnapshot = await getDocs(usersQuery);
+//     // Find the user document by userUID field
+//     const usersQuery = query(collection(db, 'users'), where('userUID', '==', uid));
+//     const querySnapshot = await getDocs(usersQuery);
     
-    if (querySnapshot.empty) {
-      throw new Error('User not found');
-    }
+//     if (querySnapshot.empty) {
+//       throw new Error('User not found');
+//     }
     
-    const userDoc = querySnapshot.docs[0];
-    const userRef = doc(db, 'users', userDoc.id);
+//     const userDoc = querySnapshot.docs[0];
+//     const userRef = doc(db, 'users', userDoc.id);
     
-    await updateDoc(userRef, { 
-      role: newRole,
-      updatedAt: new Date().toISOString(),
-      updatedBy: currentUser.uid
-    });
+//     await updateDoc(userRef, { 
+//       role: newRole,
+//       updatedAt: new Date().toISOString(),
+//       updatedBy: currentUser.uid
+//     });
 
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating user role:', error);
-    throw new Error('Failed to update user role');
-  }
-};
+//     return { success: true };
+//   } catch (error) {
+//     console.error('Error updating user role:', error);
+//     throw new Error('Failed to update user role');
+//   }
+// };
 
 // Delete user (client-side)
 export const deleteUser = async (uid) => {
