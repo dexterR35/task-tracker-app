@@ -1,5 +1,4 @@
 import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom';
-import { Suspense } from 'react';
 import { useAuth } from './hooks/useAuth';
 
 import Layout from './components/Layout';

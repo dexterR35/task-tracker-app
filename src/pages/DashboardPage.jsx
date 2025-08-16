@@ -21,7 +21,7 @@ import ErrorDisplay from '../components/notification/error/ErrorDisplay';
 const LazyTaskCharts = React.lazy(() => import('../components/task/TaskCharts'));
 
 
-const useCurrentMonthId = () => dayjs().format('YYYY-MM');
+const useCurrentMonthId = () =>  dayjs().format('YYYY-MM'); //dayjs().format('YYYY-MM')
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -52,7 +52,7 @@ const DashboardPage = () => {
     try {
       await dispatch(fetchMonthTasksIfNeeded({ monthId, force }));
     } catch (err) {
-      if (err?.code === 'failed-precondition' || /index/i.test(err?.message || '')) ;
+      if (err?.code === 'failed-precondition' || /index/i.test(err?.message || ''));
     } finally {
     }
   };
@@ -160,6 +160,14 @@ const DashboardPage = () => {
 
   // Handler to generate preview (admin only)
   const handleGeneratePreview = () => {
+      if (!monthReady) {
+    addError('You must generate the month before previewing.');
+    return;
+  }
+    if (filteredTasks.length === 0) {
+      addError('No tasks available for preview.');
+      return;
+    }
     // For now, just use filteredTasks and a timestamp as previewData
     setPreviewData({
       generatedAt: new Date().toISOString(),
@@ -256,7 +264,22 @@ const DashboardPage = () => {
           )}
           {/* Admin-only Generate Preview button */}
           {user?.role === 'admin' && (
-            <DynamicButton variant="primary" onClick={handleGeneratePreview} className="ml-2">Generate Preview</DynamicButton>
+            <div>
+              <DynamicButton
+                variant="primary"
+                onClick={handleGeneratePreview}
+            
+                title={!monthReady ? "You must generate the month before previewing." : undefined}
+                className="ml-2"
+              >
+                Generate Preview
+              </DynamicButton>
+              {!monthReady && (
+                <span className="ml-2 text-xs text-red-500 mt-1">
+                  You must generate the month before previewing.
+                </span>
+              )}
+            </div>
           )}
         </div>
         {/* Preview Panel (admin only, after Generate Preview) */}
@@ -295,7 +318,7 @@ const DashboardPage = () => {
         )}
         {/* List of saved previews (admin only) */}
         {user?.role === 'admin' && previews.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 hidden">
             <h2 className="text-lg font-bold mb-4">Saved Previews</h2>
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100">
@@ -356,7 +379,7 @@ const DashboardPage = () => {
             </div>
           )}
           {user?.role === 'admin' && !monthReady && !checkingMonth && (
-            <DynamicButton id="generate-month-btn" variant="primary" onClick={handleGenerateMonth} loading={generating} loadingText="Generating...">Generate {monthId}</DynamicButton>
+            <DynamicButton id="generate-month-btn" variant="primary" onClick={handleGenerateMonth} loading={generating} loadingText="Generating...">Create new Board - {monthId}</DynamicButton>
           )}
         </div>
 
