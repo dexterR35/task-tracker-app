@@ -1,16 +1,17 @@
 import React from 'react';
-import { useUI } from '../hooks/useUI';
+import { useSelector } from 'react-redux';
 
 const GlobalLoader = () => {
-  const { globalLoading } = useUI();
-
-  if (!globalLoading) return null;
-
+  const count = useSelector(s => s.loading.count);
+  if (count <= 0) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <div className="text-gray-700 font-medium">Loading...S</div>
+    <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-12 w-12 relative">
+          <div className="absolute inset-0 rounded-full border-4 border-blue-200" />
+          <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
+        </div>
+        <p className="text-sm font-medium text-gray-700 tracking-wide">Loading...</p>
       </div>
     </div>
   );

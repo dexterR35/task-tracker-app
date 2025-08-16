@@ -4,17 +4,23 @@ import { useNotifications } from '../hooks/useNotifications';
 const NotificationContainer = () => {
   const { items, config, remove } = useNotifications();
 
-  useEffect(() => {
-    items.forEach(notification => {
-      if (notification.autoClose && notification.autoClose > 0) {
-        const timer = setTimeout(() => {
-          remove(notification.id);
-        }, notification.autoClose);
+useEffect(() => {
+  const timers = [];
 
-        return () => clearTimeout(timer);
-      }
-    });
-  }, [items, remove]);
+  items.forEach(notification => {
+    if (notification.autoClose && notification.autoClose > 0) {
+      const timer = setTimeout(() => {
+        remove(notification.id);
+      }, notification.autoClose);
+      timers.push(timer);
+    }
+  });
+
+  return () => {
+    timers.forEach(clearTimeout);
+  };
+}, [items, remove]);
+
 
   const getNotificationStyles = (type) => {
     const baseStyles = "mb-4 p-4 rounded-lg shadow-lg border flex items-start space-x-3 transition-all duration-300";
@@ -74,11 +80,14 @@ const NotificationContainer = () => {
   if (items.length === 0) return null;
 
   return (
-    <div className={positionStyles[config.position] || positionStyles['top-right']}>
+    <div className={positionStyles[config.position] || positionStyles['top-right']} role="region" aria-label="Notifications">
       {items.map(notification => (
         <div
           key={notification.id}
-          className={getNotificationStyles(notification.type)}
+          className={`${getNotificationStyles(notification.type)} group`}
+          role="alert"
+          aria-live={notification.type === 'error' ? 'assertive' : 'polite'}
+          tabIndex={0}
         >
           <div className="flex-shrink-0">
             {getIcon(notification.type)}
@@ -88,6 +97,14 @@ const NotificationContainer = () => {
               <h4 className="font-medium mb-1">{notification.title}</h4>
             )}
             <p className="text-sm">{notification.message}</p>
+            {notification.autoClose && (
+        <div className="mt-2 h-1 w-full bg-white/40 rounded overflow-hidden">
+                <div
+          className="h-full bg-current origin-left notification-progress pause-on-hover"
+                  style={{ animationDuration: `${notification.autoClose}ms` }}
+                />
+              </div>
+            )}
           </div>
           {config.closeOnClick && (
             <button

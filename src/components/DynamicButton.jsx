@@ -1,5 +1,4 @@
-import React, { useCallback } from 'react';
-import { useUI } from '../hooks/useUI';
+import React, { useState, useCallback } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 
 const DynamicButton = ({
@@ -20,15 +19,34 @@ const DynamicButton = ({
   retryFunction,
   ...props
 }) => {
-  const { componentConfig, loading: globalLoading, buttonStates, setLoading, setButtonState } = useUI();
+  const [localLoading, setLocalLoading] = useState(false);
   const { addSuccess, addError } = useNotifications();
   
-  const buttonConfig = componentConfig.buttons || {};
-  const isLoading = loading || globalLoading[id] || buttonStates[id]?.loading;
+  // Simple static configuration
+  const buttonConfig = {
+    baseClasses: 'px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2',
+    variants: {
+      primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm',
+      secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
+      success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm',
+      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm',
+      warning: 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 shadow-sm',
+      outline: 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500',
+    },
+    sizes: {
+      xs: 'px-2 py-1 text-xs',
+      sm: 'px-3 py-1.5 text-sm',
+      md: 'px-4 py-2 text-sm',
+      lg: 'px-6 py-3 text-base',
+      xl: 'px-8 py-4 text-lg',
+    }
+  };
+
+  const isLoading = loading || localLoading;
   const isDisabled = disabled || isLoading;
 
-  const baseClasses = buttonConfig.baseClasses || 'px-4 py-2 rounded font-medium transition-colors';
-  const variantClasses = buttonConfig.variants?.[variant] || 'bg-blue-600 text-white hover:bg-blue-700';
+  const baseClasses = buttonConfig.baseClasses;
+  const variantClasses = buttonConfig.variants?.[variant] || buttonConfig.variants.primary;
   const sizeClasses = buttonConfig.sizes?.[size] || 'px-4 py-2 text-sm';
   
   const buttonClasses = `
@@ -40,40 +58,22 @@ const DynamicButton = ({
   `.trim();
 
   const handleClick = useCallback(async (e) => {
-    if (isLoading || isDisabled || !onClick) return; // strengthened guard
+    if (isLoading || isDisabled || !onClick) return;
 
     try {
-      if (id) {
-        setLoading(id, true);
-        setButtonState(id, { loading: true, error: null });
-      }
-
+      setLocalLoading(true);
       await onClick(e);
 
       if (successMessage) {
         addSuccess(successMessage);
       }
-
-      if (id) {
-        setButtonState(id, { loading: false, success: true });
-      }
     } catch (error) {
       const message = errorMessage || error.message || 'An error occurred';
       addError(message);
-
-      if (id) {
-        setButtonState(id, {
-          loading: false,
-            error: message,
-          retryFunction: retryFunction || onClick // safe retry (no stale event)
-        });
-      }
     } finally {
-      if (id) {
-        setLoading(id, false);
-      }
+      setLocalLoading(false);
     }
-  }, [id, isLoading, isDisabled, onClick, successMessage, errorMessage, retryFunction, setLoading, setButtonState, addSuccess, addError]);
+  }, [isLoading, isDisabled, onClick, successMessage, errorMessage, addSuccess, addError, setLocalLoading]);
 
   const renderIcon = () => {
     if (isLoading) {

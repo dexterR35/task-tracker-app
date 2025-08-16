@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const MAX_NOTIFICATIONS = 5;
+
 const initialState = {
   items: [],
   config: {
@@ -30,6 +32,13 @@ const notificationSlice = createSlice({
         state.items.unshift(notification);
       } else {
         state.items.push(notification);
+      }
+
+      // Trim overflow
+      if (state.items.length > MAX_NOTIFICATIONS) {
+        state.items = state.config.newestOnTop
+          ? state.items.slice(0, MAX_NOTIFICATIONS)
+          : state.items.slice(-MAX_NOTIFICATIONS);
       }
     },
     removeNotification: (state, action) => {

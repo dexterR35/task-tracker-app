@@ -1,6 +1,7 @@
 
 @import "tailwindcss";
 
+
 /* Base styles with regular CSS since @apply might not work in v4 */
 .input {
   padding: 1rem;
@@ -60,3 +61,34 @@
   flex-direction: column;
   gap: 1.5rem;
 }
+
+/* Soft skeleton shimmer */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f9fafb 0%, #f1f5f9 50%, #f9fafb 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Dark mode soft variant */
+.dark .skeleton {
+  background: linear-gradient(90deg, #1f2937 0%, #273549 50%, #1f2937 100%);
+}
+
+@keyframes notificationProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.notification-progress { animation: notificationProgress linear forwards; }
+.group:hover .pause-on-hover { animation-play-state: paused; }

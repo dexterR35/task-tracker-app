@@ -1,13 +1,12 @@
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  fetchCurrentUser, 
-  loginUser, 
-  logoutUser, 
+import {
+  loginUser,
+  logoutUser,
   clearError as clearAuthError,
-  resetAuth 
+  resetAuth,
+  initAuthListener
 } from '../features/auth/authSlice';
-import { setGlobalLoading } from '../redux/slices/uiSlice';
 import { addNotification } from '../redux/slices/notificationSlice';
 
 export const useAuth = () => {
@@ -16,7 +15,6 @@ export const useAuth = () => {
 
   const login = useCallback(async (credentials) => {
     try {
-      dispatch(setGlobalLoading(true));
       const result = await dispatch(loginUser(credentials)).unwrap();
       dispatch(addNotification({
         type: 'success',
@@ -30,13 +28,12 @@ export const useAuth = () => {
       }));
       throw error;
     } finally {
-      dispatch(setGlobalLoading(false));
+      /* no global overlay */
     }
   }, [dispatch]);
 
   const logout = useCallback(async () => {
     try {
-      dispatch(setGlobalLoading(true));
       await dispatch(logoutUser()).unwrap();
       dispatch(addNotification({
         type: 'success',
@@ -47,22 +44,16 @@ export const useAuth = () => {
         type: 'error',
         message: error || 'Logout failed'
       }));
-    } finally {
-      dispatch(setGlobalLoading(false));
-    }
+    } finally {/* no overlay */}
   }, [dispatch]);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      dispatch(setGlobalLoading(true));
-      return await dispatch(fetchCurrentUser()).unwrap();
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      return null;
-    } finally {
-      dispatch(setGlobalLoading(false));
-    }
-  }, [dispatch]);
+  // Legacy one-shot auth fetch removed; persistent listener handles auth state.
+  const checkAuth = useCallback(async () => null, []);
+
+  const startListener = useCallback(async () => {
+    if (auth.listenerActive) return;
+    try { await dispatch(initAuthListener()).unwrap(); } catch (e) { /* handled in slice */ }
+  }, [dispatch, auth.listenerActive]);
 
   const clearError = useCallback((errorKey) => {
     dispatch(clearAuthError(errorKey));
@@ -76,11 +67,15 @@ export const useAuth = () => {
     user: auth.user,
     role: auth.role,
     isAuthenticated: auth.isAuthenticated,
+  listenerActive: auth.listenerActive,
+  initialAuthResolved: auth.initialAuthResolved,
+  reauthRequired: auth.reauthRequired,
     loading: auth.loading,
     error: auth.error,
     login,
     logout,
     checkAuth,
+  startListener,
     clearError,
     reset
   };

@@ -1,33 +1,35 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { beginLoading, endLoading } from '../redux/slices/loadingSlice';
 import { useAuth } from '../hooks/useAuth';
 import DynamicButton from './DynamicButton';
 import GlobalLoader from './GlobalLoader';
 import { 
   HomeIcon, 
-  ChartBarIcon, 
-  UserGroupIcon, 
   ArrowRightOnRectangleIcon,
   ViewColumnsIcon 
 } from '@heroicons/react/24/outline';
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { user, role, isAuthenticated, logout, loading } = useAuth();
+  const { user, role, isAuthenticated, logout, loading, listenerActive } = useAuth();
+  const dispatch = useDispatch();
 
   const handleLogout = async () => {
     try {
+      dispatch(beginLoading());
       await logout();
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
+    } finally {
+      dispatch(endLoading());
     }
   };
 
-  // Show loading if authentication is being checked
-  if (loading.fetchCurrentUser) {
-    return <GlobalLoader />;
-  }
+  // Global loader overlay for auth listener boot
+  const isBooting = !listenerActive && loading.initListener;
 
   if (!isAuthenticated) {
     return <Outlet />;
@@ -36,14 +38,12 @@ const Layout = () => {
   const navigation = [
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Dashboard', href: '/dashboard', icon: ViewColumnsIcon },
-    ...(role === 'admin' ? [
-      { name: 'Admin', href: '/admin', icon: ChartBarIcon },
-      { name: 'Manage Users', href: '/manage-users', icon: UserGroupIcon }
-    ] : [])
+  // Manage Users removed
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <GlobalLoader />
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,8 +94,8 @@ const Layout = () => {
       </nav>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <Outlet />
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
+        {isBooting ? <div className="flex items-center justify-center py-24 text-gray-500 text-sm">Initializing…</div> : <Outlet />}
       </main>
     </div>
   );

@@ -1,46 +1,45 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom';
 import { Suspense } from 'react';
 import { useAuth } from './hooks/useAuth';
 
 import Layout from './components/Layout';
-import GlobalLoader from './components/GlobalLoader';
+
+// Simple inline loading component
+const SimpleLoader = () => (
+  <div className="flex items-center justify-center py-24">
+    <div className="h-8 w-8 relative">
+      <div className="absolute inset-0 rounded-full border-4 border-blue-200" />
+      <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
+    </div>
+  </div>
+);
 
 // Import components directly instead of lazy loading
 import LoginPage from './pages/LoginPage';
-import AdminPage from './pages/AdminPage';
 import DashboardPage from './pages/DashboardPage';
 import HomePage from './pages/HomePage';
-import ManageUsersPage from './pages/ManageUsersPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading.fetchCurrentUser) {
-    return <GlobalLoader />;
+  const { isAuthenticated, loading, listenerActive, initialAuthResolved } = useAuth();
+  const location = useLocation();
+  if (!initialAuthResolved) return <SimpleLoader />;
+  if (isAuthenticated) {
+    const from = location.state?.from || '/dashboard';
+    return <Navigate to={from} replace />;
   }
-  
-  return isAuthenticated ? <Navigate to="/" replace /> : children;
+  return children;
 };
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, role, loading } = useAuth();
-  
-  if (loading.fetchCurrentUser) {
-    return <GlobalLoader />;
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (requiredRole && role !== requiredRole) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-  
+  const { isAuthenticated, role, loading, listenerActive, initialAuthResolved } = useAuth();
+  const location = useLocation();
+  if (!initialAuthResolved) return <SimpleLoader />;
+  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname + location.search + location.hash }} />;
+  if (requiredRole && role !== requiredRole) return <Navigate to="/unauthorized" replace />;
   return children;
 };
 
@@ -58,24 +57,12 @@ const UserRoute = ({ children }) => (
   </ProtectedRoute>
 );
 
-// Component to handle redirects based on auth state
-const AuthRedirectHandler = () => {
-  const { isAuthenticated, role, loading } = useAuth();
-  
-  if (loading.fetchCurrentUser) {
-    return <GlobalLoader />;
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // Redirect based on role
-  if (role === 'admin') {
-    return <Navigate to="/admin" replace />;
-  }
-  
-  return <Navigate to="/dashboard" replace />;
+// Root index wrapper: redirect authenticated users directly to dashboard without flicker
+const RootIndex = () => {
+  const { isAuthenticated, initialAuthResolved } = useAuth();
+  if (!initialAuthResolved) return <SimpleLoader />;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <HomePage />;
 };
 
 const router = createBrowserRouter([
@@ -86,7 +73,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />
+        element: <RootIndex />
       },
       {
         path: 'login',
@@ -110,22 +97,6 @@ const router = createBrowserRouter([
           <UserRoute>
             <DashboardPage />
           </UserRoute>
-        )
-      },
-      {
-        path: 'admin',
-        element: (
-          <AdminRoute>
-            <AdminPage />
-          </AdminRoute>
-        )
-      },
-      {
-        path: 'manage-users',
-        element: (
-          <AdminRoute>
-            <ManageUsersPage />
-          </AdminRoute>
         )
       },
       {

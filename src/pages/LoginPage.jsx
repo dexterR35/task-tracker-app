@@ -51,6 +51,7 @@ const LoginPage = () => {
                   type="email"
                   className="input w-full"
                   placeholder="Enter your email"
+                  autoComplete="email"
                 />
                 <ErrorMessage 
                   name="email" 
@@ -69,6 +70,7 @@ const LoginPage = () => {
                   type="password"
                   className="input w-full"
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                 />
                 <ErrorMessage 
                   name="password" 

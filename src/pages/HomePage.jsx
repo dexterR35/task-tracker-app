@@ -3,11 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import DynamicButton from '../components/DynamicButton';
 import { 
-  ChartBarIcon, 
-  UserGroupIcon, 
-  PlusIcon, 
-  ViewColumnsIcon,
-  ArrowRightOnRectangleIcon 
+  ViewColumnsIcon
 } from '@heroicons/react/24/outline';
 
 const HomePage = () => {
@@ -31,17 +27,7 @@ const HomePage = () => {
             <div className="bg-blue-50 p-6 rounded-lg">
               <h2 className="text-lg font-semibold text-blue-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
-                {role === 'admin' && (
-                  <Link to="/admin">
-                    <DynamicButton
-                      variant="primary"
-                      icon={ChartBarIcon}
-                      className="w-full"
-                    >
-                      Go to Admin Panel
-                    </DynamicButton>
-                  </Link>
-                )}
+                {/* Admin panel removed */}
                 
                 <Link to="/dashboard">
                   <DynamicButton
@@ -53,17 +39,7 @@ const HomePage = () => {
                   </DynamicButton>
                 </Link>
 
-                {role === 'admin' && (
-                  <Link to="/manage-users">
-                    <DynamicButton
-                      variant="secondary"
-                      icon={UserGroupIcon}
-                      className="w-full"
-                    >
-                      Manage Users
-                    </DynamicButton>
-                  </Link>
-                )}
+                {/* Manage Users removed */}
               </div>
             </div>            <div className="bg-green-50 p-6 rounded-lg">
               <h2 className="text-lg font-semibold text-green-900 mb-2">Account Info</h2>

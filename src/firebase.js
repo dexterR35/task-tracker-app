@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -9,8 +8,7 @@ const firebaseConfig = {
   projectId: "task-tracker-app-eb03e",
   storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
   messagingSenderId: "976694748809",
-  appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
-  measurementId: "G-CVVRHVRMNB"
+  appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858"
 };
 
 // Initialize (or reuse) primary app
@@ -21,33 +19,25 @@ if (!getApps().length) {
   appInstance = getApp();
 }
 
-// Initialize (or reuse) secondary app for user creation
-let secondaryAppInstance;
-try {
-  secondaryAppInstance = getApp('secondary');
-} catch {
-  secondaryAppInstance = initializeApp(firebaseConfig, 'secondary');
-}
-
-// Initialize Firebase services
+// Initialize Firebase services (single app only)
 export const auth = getAuth(appInstance);
-export const secondaryAuth = getAuth(secondaryAppInstance);
 export const db = getFirestore(appInstance);
 
-// Analytics (optional, only in browser and only if available)
-let analytics = null;
-if (typeof window !== 'undefined') {
-  try { analytics = getAnalytics(appInstance); } catch { /* ignore */ }
-}
-
-// Helper (optional) to verify both auth instances
-export const verifyAuthInstances = () => ({ primaryReady: !!auth, secondaryReady: !!secondaryAuth });
-
-// Enable logging in development (hide sensitive keys)
+// Enable logging in development
 if (process.env.NODE_ENV === 'development') {
-  console.log('🔥 Firebase initialized');
-  console.log('Primary app name:', appInstance.name);
-  console.log('Secondary app name:', secondaryAppInstance.name);
+  console.log('🔥 Firebase initialized (single app)');
+  console.log('App name:', appInstance.name);
 }
+
+// --- Persistence: use local persistence (survives browser restarts) ---
+(async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Failed to set local persistence:', e?.message || e);
+    }
+  }
+})();
 
 export default appInstance;

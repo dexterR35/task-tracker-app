@@ -1,21 +1,13 @@
 import React from 'react';
-import { useUI } from '../hooks/useUI';
 
 const ErrorDisplay = ({ error, errorKey, onRetry, onDismiss, className = '' }) => {
-  const { clearError } = useUI();
-
   const handleDismiss = () => {
     if (onDismiss) {
       onDismiss();
-    } else if (errorKey) {
-      clearError(errorKey);
     }
   };
 
   const handleRetry = () => {
-    if (errorKey) {
-      clearError(errorKey);
-    }
     if (onRetry) {
       onRetry();
     }
@@ -65,13 +57,9 @@ const ErrorDisplay = ({ error, errorKey, onRetry, onDismiss, className = '' }) =
   );
 };
 
+// Simple error handler hook without UI Redux dependency
 export const useErrorHandler = () => {
-  const { errors, setError, clearError } = useUI();
-
   return {
-    errors,
-    setError,
-    clearError,
     ErrorDisplay
   };
 };
