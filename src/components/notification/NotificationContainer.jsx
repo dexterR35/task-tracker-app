@@ -1,30 +1,30 @@
 import React, { useEffect } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const NotificationContainer = () => {
   const { items, config, remove } = useNotifications();
 
-useEffect(() => {
-  const timers = [];
+  useEffect(() => {
+    const timers = [];
 
-  items.forEach(notification => {
-    if (notification.autoClose && notification.autoClose > 0) {
-      const timer = setTimeout(() => {
-        remove(notification.id);
-      }, notification.autoClose);
-      timers.push(timer);
-    }
-  });
+    items.forEach(notification => {
+      if (notification.autoClose && notification.autoClose > 0) {
+        const timer = setTimeout(() => {
+          remove(notification.id);
+        }, notification.autoClose);
+        timers.push(timer);
+      }
+    });
 
-  return () => {
-    timers.forEach(clearTimeout);
-  };
-}, [items, remove]);
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, [items, remove]);
 
 
   const getNotificationStyles = (type) => {
     const baseStyles = "mb-4 p-4 rounded-lg shadow-lg border flex items-start space-x-3 transition-all duration-300";
-    
+
     switch (type) {
       case 'success':
         return `${baseStyles} bg-green-50 border-green-200 text-green-800`;
@@ -98,9 +98,9 @@ useEffect(() => {
             )}
             <p className="text-sm">{notification.message}</p>
             {notification.autoClose && (
-        <div className="mt-2 h-1 w-full bg-white/40 rounded overflow-hidden">
+              <div className="mt-2 h-1 w-full bg-white/40 rounded overflow-hidden">
                 <div
-          className="h-full bg-current origin-left notification-progress pause-on-hover"
+                  className="h-full bg-current origin-left notification-progress pause-on-hover"
                   style={{ animationDuration: `${notification.autoClose}ms` }}
                 />
               </div>

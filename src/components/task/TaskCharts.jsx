@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { selectMarketChartData, selectProductChartData } from '../redux/slices/tasksSlice';
+import { selectMarketChartData, selectProductChartData } from '../../redux/slices/tasksSlice';
 import { Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 

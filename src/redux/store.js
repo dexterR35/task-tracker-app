@@ -6,6 +6,7 @@ import usersReducer from './slices/usersSlice';
 import tasksReducer from './slices/tasksSlice';
 import loadingReducer, { beginLoading, endLoading } from './slices/loadingSlice';
 
+const pendingCounts = {};
 // Dynamic reducer registry for hot module replacement
 const staticReducers = {
   auth: authReducer,
@@ -33,12 +34,25 @@ const errorNotificationMiddleware = storeAPI => next => action => {
 };
 
 // Global loading middleware: counts pending async thunks (RTK lifecycle actions)
+
+
 const globalLoadingMiddleware = storeAPI => next => action => {
-  const isPending = /\/pending$/.test(action.type);
-  const isDone = /\/(fulfilled|rejected)$/.test(action.type);
-  if (isPending) storeAPI.dispatch(beginLoading());
   const result = next(action);
-  if (isDone) storeAPI.dispatch(endLoading());
+  const actionKey = action.type.replace(/\/(pending|fulfilled|rejected)$/, '');
+
+  if (/\/pending$/.test(action.type)) {
+    pendingCounts[actionKey] = (pendingCounts[actionKey] || 0) + 1;
+    storeAPI.dispatch(beginLoading());
+  } else if (/\/(fulfilled|rejected)$/.test(action.type)) {
+    if (pendingCounts[actionKey]) {
+      pendingCounts[actionKey] -= 1;
+      if (pendingCounts[actionKey] === 0) {
+        delete pendingCounts[actionKey];
+        storeAPI.dispatch(endLoading());
+      }
+    }
+  }
+
   return result;
 };
 
@@ -57,6 +71,10 @@ const store = configureStore({
 // Add dynamic reducer injection capability
 store.asyncReducers = {};
 store.injectReducer = (key, asyncReducer) => {
+  if (store.asyncReducers[key]) {
+    console.warn(`[store] Reducer for key "${key}" already exists. Skipping injection.`);
+    return;
+  }
   store.asyncReducers[key] = asyncReducer;
   store.replaceReducer(createReducer(store.asyncReducers));
   return store;

@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import DynamicButton from './DynamicButton';
-import { useAuth } from '../hooks/useAuth';
+import DynamicButton from '../DynamicButton';
+import { useAuth } from '../../hooks/useAuth';
 import dayjs from 'dayjs';
 import { useDispatch } from 'react-redux';
-import { beginLoading, endLoading } from '../redux/slices/loadingSlice';
-import { createTask, updateTask } from '../redux/slices/tasksSlice';
-import { useNotifications } from '../hooks/useNotifications';
-import { marketOptions, productOptions, taskNameOptions, aiModelOptions } from '../constants/taskOptions';
+import { beginLoading, endLoading } from '../../redux/slices/loadingSlice';
+import { createTask, updateTask } from '../../redux/slices/tasksSlice';
+import { useNotifications } from '../../hooks/useNotifications';
+import { marketOptions, productOptions, taskNameOptions, aiModelOptions } from '../../constants/taskOptions';
 
 // Clean TaskForm component (UI slice removed)
 const TaskForm = ({ onSubmit: customOnSubmit, initialValues: customInitialValues, isEdit = false }) => {

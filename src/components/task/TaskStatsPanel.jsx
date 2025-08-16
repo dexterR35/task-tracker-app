@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { selectMonthTotalTasks, selectMonthTotalHours, selectMonthMarketSummary, selectMonthProductSummary } from '../redux/slices/tasksSlice';
+import { selectMonthTotalTasks, selectMonthTotalHours, selectMonthMarketSummary, selectMonthProductSummary } from '../../redux/slices/tasksSlice';
 
 const StatBox = ({ label, value }) => (
   <div className="p-4 bg-white rounded-lg shadow-sm border">

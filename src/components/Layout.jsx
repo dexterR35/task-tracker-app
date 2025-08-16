@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { beginLoading, endLoading } from '../redux/slices/loadingSlice';
 import { useAuth } from '../hooks/useAuth';
 import DynamicButton from './DynamicButton';
-import GlobalLoader from './GlobalLoader';
+
 import { 
   HomeIcon, 
   ArrowRightOnRectangleIcon,
@@ -43,7 +43,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <GlobalLoader />
+
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

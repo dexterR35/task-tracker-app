@@ -45,9 +45,9 @@ export const useFirestore = (collectionName) => {
     }
 
     try {
-  setLoading(true);
+      setLoading(true);
       setError(null);
-  // global overlay removed
+      // global overlay removed
 
       let firestoreQuery = collection(db, collectionName);
 
@@ -95,16 +95,16 @@ export const useFirestore = (collectionName) => {
       }));
       throw err;
     } finally {
-  setLoading(false);
-  // overlay removed
+      setLoading(false);
+      // overlay removed
     }
   }, [collectionName, dispatch, data]);
 
   const addDocument = useCallback(async (data) => {
     try {
-  setLoading(true);
-  
-  // overlay removed
+      setLoading(true);
+
+      // overlay removed
 
       const docData = {
         ...data,
@@ -113,7 +113,7 @@ export const useFirestore = (collectionName) => {
       };
 
       const docRef = await addDoc(collection(db, collectionName), docData);
-      
+
       dispatch(addNotification({
         type: 'success',
         message: `${collectionName.slice(0, -1)} created successfully`
@@ -129,17 +129,17 @@ export const useFirestore = (collectionName) => {
       }));
       throw err;
     } finally {
-  setLoading(false);
-  
-  // overlay removed
+      setLoading(false);
+
+      // overlay removed
     }
   }, [collectionName, dispatch]);
 
   const updateDocument = useCallback(async (id, data) => {
     try {
-  setLoading(true);
-  
-  // overlay removed
+      setLoading(true);
+
+      // overlay removed
 
       const updateData = {
         ...data,
@@ -147,7 +147,7 @@ export const useFirestore = (collectionName) => {
       };
 
       await updateDoc(doc(db, collectionName, id), updateData);
-      
+
       dispatch(addNotification({
         type: 'success',
         message: `${collectionName.slice(0, -1)} updated successfully`
@@ -163,20 +163,20 @@ export const useFirestore = (collectionName) => {
       }));
       throw err;
     } finally {
-  setLoading(false);
-  
-  // overlay removed
+      setLoading(false);
+
+      // overlay removed
     }
   }, [collectionName, dispatch]);
 
   const deleteDocument = useCallback(async (id) => {
     try {
-  setLoading(true);
-  
-  // overlay removed
+      setLoading(true);
+
+      // overlay removed
 
       await deleteDoc(doc(db, collectionName, id));
-      
+
       dispatch(addNotification({
         type: 'success',
         message: `${collectionName.slice(0, -1)} deleted successfully`
@@ -192,9 +192,9 @@ export const useFirestore = (collectionName) => {
       }));
       throw err;
     } finally {
-  setLoading(false);
-  
-  // overlay removed
+      setLoading(false);
+
+      // overlay removed
     }
   }, [collectionName, dispatch]);
 
@@ -251,7 +251,7 @@ export const useMonthlyTasks = (monthId) => {
     limit: limitValue = 10,
     startAfter: startAfterDoc = null,
     append = false,
-    orderBy: orderByFilters = [['createdAt','desc']],
+    orderBy: orderByFilters = [['createdAt', 'desc']],
     cacheKey,
     force = false,
     useCache = true
@@ -268,7 +268,7 @@ export const useMonthlyTasks = (monthId) => {
     try {
       setLoading(true);
       setError(null);
-  // overlay removed
+      // overlay removed
 
       const colRef = collection(db, 'tasks', monthId, 'monthTasks');
       let qRef = colRef;
@@ -295,14 +295,14 @@ export const useMonthlyTasks = (monthId) => {
       throw err;
     } finally {
       setLoading(false);
-  // overlay removed
+      // overlay removed
     }
   }, [monthId, data, dispatch, pageStateRef, makeCacheKey]);
 
   const addDocument = useCallback(async (taskData) => {
     try {
       setLoading(true);
-  // overlay removed
+      // overlay removed
       await ensureMonthDoc();
       const colRef = collection(db, 'tasks', monthId, 'monthTasks');
       const sanitizedTimeSpentOnAI = (
@@ -321,14 +321,14 @@ export const useMonthlyTasks = (monthId) => {
       throw err;
     } finally {
       setLoading(false);
-  // overlay removed
+      // overlay removed
     }
   }, [monthId, ensureMonthDoc, dispatch, invalidateMonthCache]);
 
   const updateDocument = useCallback(async (id, updates) => {
     try {
       setLoading(true);
-  // overlay removed
+      // overlay removed
       const ref = doc(db, 'tasks', monthId, 'monthTasks', id);
       const sanitizedTimeSpentOnAI = (
         typeof updates.timeSpentOnAI === 'number' && !isNaN(updates.timeSpentOnAI)
@@ -346,14 +346,14 @@ export const useMonthlyTasks = (monthId) => {
       throw err;
     } finally {
       setLoading(false);
-  // overlay removed
+      // overlay removed
     }
   }, [monthId, dispatch, invalidateMonthCache]);
 
   const deleteDocument = useCallback(async (id) => {
     try {
       setLoading(true);
-  // overlay removed
+      // overlay removed
       await deleteDoc(doc(db, 'tasks', monthId, 'monthTasks', id));
       invalidateMonthCache();
       dispatch(addNotification({ type: 'success', message: 'task deleted successfully' }));
@@ -365,7 +365,7 @@ export const useMonthlyTasks = (monthId) => {
       throw err;
     } finally {
       setLoading(false);
-  // overlay removed
+      // overlay removed
     }
   }, [monthId, dispatch, invalidateMonthCache]);
 

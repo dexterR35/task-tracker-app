@@ -16,7 +16,7 @@ let authUnsubscribe = null;
 // --- Helpers & Config ---
 const SESSION_EXPIRY_TOLERANCE_MS = 30 * 1000; // 30s grace for clock skew
 const SOFT_MAX_SESSION_MS = 3 * 60 * 60 * 1000; // 3 hours desired lifespan
-const VALID_ROLES = ['admin','user'];
+const VALID_ROLES = ['admin', 'user'];
 
 // Fetch user data from Firestore users collection by userUID field
 async function fetchUserFromFirestore(uid) {
@@ -41,8 +41,8 @@ async function fetchAndNormalizeUser(firebaseUser) {
   if (!VALID_ROLES.includes(raw.role)) throw new Error('Invalid role');
   const createdAtMs = raw.createdAt
     ? (typeof raw.createdAt.toDate === 'function'
-        ? raw.createdAt.toDate().getTime()
-        : (typeof raw.createdAt === 'number' ? raw.createdAt : new Date(raw.createdAt).getTime()))
+      ? raw.createdAt.toDate().getTime()
+      : (typeof raw.createdAt === 'number' ? raw.createdAt : new Date(raw.createdAt).getTime()))
     : null;
   return {
     uid: firebaseUser.uid,
@@ -131,15 +131,15 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ email, password }, { rejectWithValue }) => {
     try {
-  console.log('[auth] login:start', { email });
+      console.log('[auth] login:start', { email });
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const normalizedUser = await fetchAndNormalizeUser(userCredential.user);
-  console.log('[auth] login:success', { uid: normalizedUser.uid });
+      console.log('[auth] login:success', { uid: normalizedUser.uid });
       return normalizedUser;
     } catch (error) {
       // Provide clearer error messages
       const msg = error?.message || 'Login failed';
-  console.log('[auth] login:error', msg);
+      console.log('[auth] login:error', msg);
       return rejectWithValue(msg);
     }
   }
@@ -150,12 +150,12 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-  console.log('[auth] logout:start');
+      console.log('[auth] logout:start');
       await signOut(auth);
-  console.log('[auth] logout:success');
+      console.log('[auth] logout:success');
       return true;
     } catch (error) {
-  console.log('[auth] logout:error', error?.message);
+      console.log('[auth] logout:error', error?.message);
       return rejectWithValue(error?.message || 'Logout failed');
     }
   }
@@ -210,17 +210,17 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // persistent listener internal events
-    .addCase(authStateChanged, (state, action) => {
+      .addCase(authStateChanged, (state, action) => {
         const user = action.payload;
         if (user) {
-      state.user = user; state.role = user.role; state.isAuthenticated = true; state.reauthRequired = false;
-      if (!state.sessionStartedAt) state.sessionStartedAt = Date.now();
-  console.log('[auth] stateChanged:login', { uid: user.uid, role: user.role });
+          state.user = user; state.role = user.role; state.isAuthenticated = true; state.reauthRequired = false;
+          if (!state.sessionStartedAt) state.sessionStartedAt = Date.now();
+          console.log('[auth] stateChanged:login', { uid: user.uid, role: user.role });
         } else {
-      state.user = null; state.role = null; state.isAuthenticated = false; state.sessionStartedAt = null;
-  console.log('[auth] stateChanged:logout');
+          state.user = null; state.role = null; state.isAuthenticated = false; state.sessionStartedAt = null;
+          console.log('[auth] stateChanged:logout');
         }
-  state.initialAuthResolved = true;
+        state.initialAuthResolved = true;
       })
       .addCase(authErrorOccurred, (state, action) => {
         state.error.initListener = action.payload;
@@ -233,7 +233,7 @@ const authSlice = createSlice({
       })
       .addCase(initAuthListener.rejected, (state, action) => {
         state.loading.initListener = false; state.error.initListener = action.payload || action.error.message;
-  })
+      })
 
       // loginUser lifecycle
       .addCase(loginUser.pending, (state) => {
@@ -262,7 +262,7 @@ const authSlice = createSlice({
         state.user = null;
         state.role = null;
         state.isAuthenticated = false;
-  state.reauthRequired = false;
+        state.reauthRequired = false;
         state.sessionStartedAt = null;
       })
       .addCase(logoutUser.rejected, (state, action) => {
@@ -286,7 +286,7 @@ export const { clearError, resetAuth, requireReauth } = authSlice.actions;
 export const unsubscribeAuthListener = () => {
   if (authUnsubscribe) {
     try { authUnsubscribe(); console.log('[auth] listener:unsubscribed'); }
-    catch(e){ console.log('[auth] listener:unsubscribe-error', e?.message); }
+    catch (e) { console.log('[auth] listener:unsubscribe-error', e?.message); }
     authUnsubscribe = null; authListenerRegistered = false;
   }
 };
