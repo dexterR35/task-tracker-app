@@ -3,37 +3,32 @@ import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc,
 import { db } from '../../firebase';
 
 // Refresh month tasks every 5 minutes
-const STALE_MS = 5 * 60 * 1000;
+// const STALE_MS = 5 * 60 * 1000;
 
-/* State shape:
- tasks: {
-   months: {
-     [monthId]: { byId, allIds, status, error, lastFetched, paramsSignature, agg }
-   }
- }
-*/
+
 
 // Fetch ALL tasks for the month (single network hit); client filtering occurs in components
-export const fetchMonthTasks = createAsyncThunk('tasks/fetchMonth', async ({ monthId }, { rejectWithValue }) => {
-  try {
-    console.log('[tasks] fetchMonthTasks:start', { monthId, mode: 'all-month' });
-    const colRef = collection(db, 'tasks', monthId, 'monthTasks');
-    const snap = await getDocs(query(colRef, orderBy('createdAt','desc')));
-    const tasks = snap.docs.map(d => {
-      const raw = d.data();
-      const createdAt = raw.createdAt?.toDate ? raw.createdAt.toDate().getTime() : (typeof raw.createdAt === 'number' ? raw.createdAt : null);
-      const updatedAt = raw.updatedAt?.toDate ? raw.updatedAt.toDate().getTime() : (typeof raw.updatedAt === 'number' ? raw.updatedAt : null);
-      return { id: d.id, monthId, ...raw, createdAt, updatedAt };
-    });
-    console.log('[tasks] fetchMonthTasks:success', { monthId, count: tasks.length });
-    return { monthId, tasks };
-  } catch (e) {
-    console.log('[tasks] fetchMonthTasks:error', { monthId, error: e.message });
-    return rejectWithValue({ monthId, message: e.message || 'Failed to load tasks' });
-  }
-});
+export const fetchMonthTasks = createAsyncThunk(
+  'tasks/fetchMonth',
+  async ({ monthId }, { rejectWithValue }) => {
+    try {
+      const colRef = collection(db, 'tasks', monthId, 'monthTasks');
+      const snap = await getDocs(query(colRef, orderBy('createdAt', 'desc')));
+      const tasks = snap.docs.map(d => {
+        const raw = d.data();
+        const createdAt = raw.createdAt?.toDate ? raw.createdAt.toDate().getTime() : raw.createdAt || null;
+        const updatedAt = raw.updatedAt?.toDate ? raw.updatedAt.toDate().getTime() : raw.updatedAt || null;
+        return { id: d.id, monthId, ...raw, createdAt, updatedAt };
+      });
 
-export const fetchMonthTasksIfNeeded = ({ monthId, force } ) => (dispatch, getState) => {
+      return { monthId, tasks, fromCache: false };
+    } catch (e) {
+      return rejectWithValue({ monthId, message: e.message || 'Failed to fetch tasks' });
+    }
+  }
+);
+
+export const fetchMonthTasksIfNeeded = ({ monthId, force }) => (dispatch, getState) => {
   const state = getState().tasks;
   if (state.fetchingMonths?.[monthId]) return null; // silent skip (no log noise)
   const st = state.months[monthId];
@@ -68,7 +63,7 @@ export const createTask = (task) => async (dispatch) => {
     // Surface error immediately
     throw err;
   }
-  const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const optimisticTask = { ...task, id: tempId, optimistic: true, createdAt: Date.now(), updatedAt: Date.now() };
   console.log('[tasks] createTask:optimistic', { tempId, monthId: task.monthId });
   dispatch(slice.actions.taskAddedOptimistic(optimisticTask));
@@ -76,10 +71,10 @@ export const createTask = (task) => async (dispatch) => {
     const colRef = collection(db, 'tasks', task.monthId, 'monthTasks');
     const docData = { ...task, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     const ref = await addDoc(colRef, docData);
-  console.log('[tasks] createTask:reconciled', { tempId, realId: ref.id });
+    console.log('[tasks] createTask:reconciled', { tempId, realId: ref.id });
     dispatch(slice.actions.taskAddReconciled({ tempId, realId: ref.id, monthId: task.monthId }));
   } catch (e) {
-  console.log('[tasks] createTask:failed', { tempId, error: e.message });
+    console.log('[tasks] createTask:failed', { tempId, error: e.message });
     dispatch(slice.actions.taskAddFailed({ tempId, monthId: task.monthId }));
     throw e;
   }
@@ -94,9 +89,9 @@ export const updateTask = (monthId, id, updates) => async (dispatch, getState) =
   try {
     const ref = doc(db, 'tasks', monthId, 'monthTasks', id);
     await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
-  console.log('[tasks] updateTask:success', { monthId, id });
+    console.log('[tasks] updateTask:success', { monthId, id });
   } catch (e) {
-  console.log('[tasks] updateTask:revert', { monthId, id, error: e.message });
+    console.log('[tasks] updateTask:revert', { monthId, id, error: e.message });
     dispatch(slice.actions.taskUpdateRevert({ monthId, id, prev }));
     throw e;
   }
@@ -111,9 +106,9 @@ export const deleteTask = (monthId, id) => async (dispatch, getState) => {
   try {
     const ref = doc(db, 'tasks', monthId, 'monthTasks', id);
     await deleteDoc(ref);
-  console.log('[tasks] deleteTask:success', { monthId, id });
+    console.log('[tasks] deleteTask:success', { monthId, id });
   } catch (e) {
-  console.log('[tasks] deleteTask:revert', { monthId, id, error: e.message });
+    console.log('[tasks] deleteTask:revert', { monthId, id, error: e.message });
     dispatch(slice.actions.taskDeleteRevert({ monthId }));
     throw e;
   }
@@ -130,7 +125,8 @@ const slice = createSlice({
         const t = action.payload;
         const monthId = t.monthId;
         if (!state.months[monthId]) {
-          state.months[monthId] = { byId:{}, allIds:[], status:'idle', error:null, lastFetched:Date.now(), paramsSignature:null, agg:null }; }
+          state.months[monthId] = { byId: {}, allIds: [], status: 'idle', error: null, lastFetched: Date.now(), paramsSignature: null, agg: null };
+        }
         const st = state.months[monthId];
         if (!st.byId[t.id]) { st.allIds.unshift(t.id); }
         st.byId[t.id] = t;
@@ -141,7 +137,7 @@ const slice = createSlice({
       const { tempId, realId, monthId } = action.payload;
       const st = state.months[monthId];
       if (st && st.byId[tempId]) {
-        st.byId[realId] = { ...st.byId[tempId], id: realId, optimistic:false };
+        st.byId[realId] = { ...st.byId[tempId], id: realId, optimistic: false };
         st.allIds = st.allIds.map(id => id === tempId ? realId : id);
         delete st.byId[tempId];
       }
@@ -158,7 +154,7 @@ const slice = createSlice({
       const { monthId, id, updates } = action.payload;
       const st = state.months[monthId];
       if (st && st.byId[id]) {
-        st.byId[id] = { ...st.byId[id], ...updates, _optimistic:true };
+        st.byId[id] = { ...st.byId[id], ...updates, _optimistic: true };
       }
     },
     taskUpdateRevert(state, action) {
@@ -200,7 +196,7 @@ const slice = createSlice({
           state.months[monthId].error = null;
         }
       })
-  .addCase(fetchMonthTasks.fulfilled, (state, action) => {
+      .addCase(fetchMonthTasks.fulfilled, (state, action) => {
         const { monthId, tasks } = action.payload;
         delete state.fetchingMonths[monthId];
         const st = state.months[monthId];
@@ -209,8 +205,8 @@ const slice = createSlice({
         let totalHours = 0; let aiTasks = 0; let aiHours = 0; let reworked = 0;
         tasks.forEach(t => {
           // Coerce numeric fields
-            const timeInHours = Number(t.timeInHours) || 0;
-            const timeSpentOnAI = Number(t.timeSpentOnAI) || 0;
+          const timeInHours = Number(t.timeInHours) || 0;
+          const timeSpentOnAI = Number(t.timeSpentOnAI) || 0;
           st.byId[t.id] = { ...t, timeInHours, timeSpentOnAI };
           st.allIds.push(t.id);
           totalHours += timeInHours;
@@ -233,7 +229,7 @@ const slice = createSlice({
           }
         });
         st.status = 'succeeded'; st.error = null; st.lastFetched = Date.now();
-  st.paramsSignature = 'ALL';
+        st.paramsSignature = 'ALL';
         st.agg = {
           totalTasks: st.allIds.length,
           totalHours,
@@ -263,23 +259,23 @@ export default slice.reducer;
 const monthsRoot = s => s.tasks.months;
 export const selectMonthTasksState = monthId => state => monthsRoot(state)[monthId];
 export const selectMonthTasks = monthId => createSelector(selectMonthTasksState(monthId), st => st ? st.allIds.map(id => st.byId[id]) : []);
-export const selectMonthAggregates = monthId => createSelector(selectMonthTasksState(monthId), st => st?.agg || { totalTasks: 0, totalHours: 0, ai: { tasks:0, hours:0 }, reworked:0, byUser: {}, markets: {}, products: {} });
+export const selectMonthAggregates = monthId => createSelector(selectMonthTasksState(monthId), st => st?.agg || { totalTasks: 0, totalHours: 0, ai: { tasks: 0, hours: 0 }, reworked: 0, byUser: {}, markets: {}, products: {} });
 export const selectMonthTotalTasks = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.totalTasks);
 export const selectMonthTotalHours = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.totalHours);
-export const selectMonthMarketSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => Object.entries(agg.markets).map(([market,v]) => ({ market, ...v })));
-export const selectMonthProductSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => Object.entries(agg.products).map(([product,v]) => ({ product, ...v })));
-export const selectMonthAiSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.ai || { tasks:0, hours:0 });
+export const selectMonthMarketSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => Object.entries(agg.markets).map(([market, v]) => ({ market, ...v })));
+export const selectMonthProductSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => Object.entries(agg.products).map(([product, v]) => ({ product, ...v })));
+export const selectMonthAiSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.ai || { tasks: 0, hours: 0 });
 export const selectMonthReworkedCount = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.reworked || 0);
-export const makeSelectTopMarkets = (monthId, n=5) => createSelector(selectMonthMarketSummary(monthId), list => [...list].sort((a,b)=>b.count-a.count).slice(0,n));
-export const makeSelectTopProducts = (monthId, n=5) => createSelector(selectMonthProductSummary(monthId), list => [...list].sort((a,b)=>b.count-a.count).slice(0,n));
+export const makeSelectTopMarkets = (monthId, n = 5) => createSelector(selectMonthMarketSummary(monthId), list => [...list].sort((a, b) => b.count - a.count).slice(0, n));
+export const makeSelectTopProducts = (monthId, n = 5) => createSelector(selectMonthProductSummary(monthId), list => [...list].sort((a, b) => b.count - a.count).slice(0, n));
 // Chart dataset selectors (labels + hours arrays limited to top N by hours)
-export const selectMarketChartData = (monthId, top=8) => createSelector(selectMonthAggregates(monthId), agg => {
-  const arr = Object.entries(agg.markets || {}).map(([k,v]) => ({ key:k, hours:v.hours||0, count:v.count||0 })).sort((a,b)=>b.hours-a.hours).slice(0,top);
-  return { labels: arr.map(a=>a.key), hours: arr.map(a=>Math.round(a.hours*10)/10), counts: arr.map(a=>a.count) };
+export const selectMarketChartData = (monthId, top = 8) => createSelector(selectMonthAggregates(monthId), agg => {
+  const arr = Object.entries(agg.markets || {}).map(([k, v]) => ({ key: k, hours: v.hours || 0, count: v.count || 0 })).sort((a, b) => b.hours - a.hours).slice(0, top);
+  return { labels: arr.map(a => a.key), hours: arr.map(a => Math.round(a.hours * 10) / 10), counts: arr.map(a => a.count) };
 });
-export const selectProductChartData = (monthId, top=8) => createSelector(selectMonthAggregates(monthId), agg => {
-  const arr = Object.entries(agg.products || {}).map(([k,v]) => ({ key:k, hours:v.hours||0, count:v.count||0 })).sort((a,b)=>b.hours-a.hours).slice(0,top);
-  return { labels: arr.map(a=>a.key), hours: arr.map(a=>Math.round(a.hours*10)/10), counts: arr.map(a=>a.count) };
+export const selectProductChartData = (monthId, top = 8) => createSelector(selectMonthAggregates(monthId), agg => {
+  const arr = Object.entries(agg.products || {}).map(([k, v]) => ({ key: k, hours: v.hours || 0, count: v.count || 0 })).sort((a, b) => b.hours - a.hours).slice(0, top);
+  return { labels: arr.map(a => a.key), hours: arr.map(a => Math.round(a.hours * 10) / 10), counts: arr.map(a => a.count) };
 });
 export const makeSelectUserTasks = (monthId, userUID) => createSelector(selectMonthTasks(monthId), tasks => tasks.filter(t => t.userUID === userUID));
 export const makeSelectUserSummary = (monthId, userUID) => createSelector(selectMonthAggregates(monthId), agg => {

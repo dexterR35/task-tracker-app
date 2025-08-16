@@ -51,6 +51,7 @@ const DashboardPage = () => {
     if (!force && tasksState?.status === 'succeeded') return;
     try {
       await dispatch(fetchMonthTasksIfNeeded({ monthId, force }));
+      console.log(monthId,"fsa")
     } catch (err) {
       if (err?.code === 'failed-precondition' || /index/i.test(err?.message || ''));
     } finally {
