@@ -2,12 +2,7 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-// Refresh month tasks every 5 minutes
-// const STALE_MS = 5 * 60 * 1000;
 
-
-
-// Fetch ALL tasks for the month (single network hit); client filtering occurs in components
 export const fetchMonthTasks = createAsyncThunk(
   'tasks/fetchMonth',
   async ({ monthId }, { rejectWithValue }) => {
@@ -30,13 +25,12 @@ export const fetchMonthTasks = createAsyncThunk(
 
 export const fetchMonthTasksIfNeeded = ({ monthId, force }) => (dispatch, getState) => {
   const state = getState().tasks;
-  if (state.fetchingMonths?.[monthId]) return null; // silent skip (no log noise)
+  if (state.fetchingMonths?.[monthId]) return null; // already fetching
   const st = state.months[monthId];
-  if (force) return dispatch(fetchMonthTasks({ monthId }));
-  if (!st) return dispatch(fetchMonthTasks({ monthId }));
-  const stale = Date.now() - st.lastFetched > STALE_MS;
-  if (stale) return dispatch(fetchMonthTasks({ monthId }));
-  return null;
+  if (force || !st) {
+    return dispatch(fetchMonthTasks({ monthId }));
+  }
+  return null; // data exists, do nothing
 };
 
 // Generate month document (admin action)
@@ -257,27 +251,42 @@ export default slice.reducer;
 
 // Selectors
 const monthsRoot = s => s.tasks.months;
+
 export const selectMonthTasksState = monthId => state => monthsRoot(state)[monthId];
+
 export const selectMonthTasks = monthId => createSelector(selectMonthTasksState(monthId), st => st ? st.allIds.map(id => st.byId[id]) : []);
+
 export const selectMonthAggregates = monthId => createSelector(selectMonthTasksState(monthId), st => st?.agg || { totalTasks: 0, totalHours: 0, ai: { tasks: 0, hours: 0 }, reworked: 0, byUser: {}, markets: {}, products: {} });
+
 export const selectMonthTotalTasks = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.totalTasks);
+
 export const selectMonthTotalHours = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.totalHours);
+
 export const selectMonthMarketSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => Object.entries(agg.markets).map(([market, v]) => ({ market, ...v })));
+
 export const selectMonthProductSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => Object.entries(agg.products).map(([product, v]) => ({ product, ...v })));
+
 export const selectMonthAiSummary = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.ai || { tasks: 0, hours: 0 });
+
 export const selectMonthReworkedCount = monthId => createSelector(selectMonthAggregates(monthId), agg => agg.reworked || 0);
+
 export const makeSelectTopMarkets = (monthId, n = 5) => createSelector(selectMonthMarketSummary(monthId), list => [...list].sort((a, b) => b.count - a.count).slice(0, n));
+
 export const makeSelectTopProducts = (monthId, n = 5) => createSelector(selectMonthProductSummary(monthId), list => [...list].sort((a, b) => b.count - a.count).slice(0, n));
 // Chart dataset selectors (labels + hours arrays limited to top N by hours)
+
 export const selectMarketChartData = (monthId, top = 8) => createSelector(selectMonthAggregates(monthId), agg => {
   const arr = Object.entries(agg.markets || {}).map(([k, v]) => ({ key: k, hours: v.hours || 0, count: v.count || 0 })).sort((a, b) => b.hours - a.hours).slice(0, top);
   return { labels: arr.map(a => a.key), hours: arr.map(a => Math.round(a.hours * 10) / 10), counts: arr.map(a => a.count) };
 });
+
 export const selectProductChartData = (monthId, top = 8) => createSelector(selectMonthAggregates(monthId), agg => {
   const arr = Object.entries(agg.products || {}).map(([k, v]) => ({ key: k, hours: v.hours || 0, count: v.count || 0 })).sort((a, b) => b.hours - a.hours).slice(0, top);
   return { labels: arr.map(a => a.key), hours: arr.map(a => Math.round(a.hours * 10) / 10), counts: arr.map(a => a.count) };
 });
+
 export const makeSelectUserTasks = (monthId, userUID) => createSelector(selectMonthTasks(monthId), tasks => tasks.filter(t => t.userUID === userUID));
+
 export const makeSelectUserSummary = (monthId, userUID) => createSelector(selectMonthAggregates(monthId), agg => {
   const u = agg.byUser[userUID];
   return u ? { userUID, ...u } : { userUID, count: 0, hours: 0 };

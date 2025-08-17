@@ -1,10 +1,15 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { combineReducers } from '@reduxjs/toolkit';
-import authReducer from '../features/auth/authSlice';
-import notificationReducer, { addNotification } from './slices/notificationSlice';
-import usersReducer from './slices/usersSlice';
-import tasksReducer from './slices/tasksSlice';
-import loadingReducer, { beginLoading, endLoading } from './slices/loadingSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers } from "@reduxjs/toolkit";
+import authReducer from "../features/auth/authSlice";
+import notificationReducer, {
+  addNotification,
+} from "./slices/notificationSlice";
+import usersReducer from "./slices/usersSlice";
+import tasksReducer from "./slices/tasksSlice";
+import loadingReducer, {
+  beginLoading,
+  endLoading,
+} from "./slices/loadingSlice";
 
 const pendingCounts = {};
 // Dynamic reducer registry for hot module replacement
@@ -24,21 +29,24 @@ function createReducer(asyncReducers = {}) {
 }
 
 // Error notification middleware (skip if action.meta?.suppressGlobalError)
-const errorNotificationMiddleware = storeAPI => next => action => {
+const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
   const result = next(action);
   if (/_rejected$/i.test(action.type) && !action.meta?.suppressGlobalError) {
-    const message = action.error?.message || action.payload?.message || action.payload || 'Operation failed';
-    storeAPI.dispatch(addNotification({ type: 'error', message }));
+    const message =
+      action.error?.message ||
+      action.payload?.message ||
+      action.payload ||
+      "Operation failed";
+    storeAPI.dispatch(addNotification({ type: "error", message }));
   }
   return result;
 };
 
 // Global loading middleware: counts pending async thunks (RTK lifecycle actions)
 
-
-const globalLoadingMiddleware = storeAPI => next => action => {
+const globalLoadingMiddleware = (storeAPI) => (next) => (action) => {
   const result = next(action);
-  const actionKey = action.type.replace(/\/(pending|fulfilled|rejected)$/, '');
+  const actionKey = action.type.replace(/\/(pending|fulfilled|rejected)$/, "");
 
   if (/\/pending$/.test(action.type)) {
     pendingCounts[actionKey] = (pendingCounts[actionKey] || 0) + 1;
@@ -58,21 +66,23 @@ const globalLoadingMiddleware = storeAPI => next => action => {
 
 const store = configureStore({
   reducer: createReducer(),
-  middleware: (getDefaultMiddleware) => 
+  middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-        ignoredPaths: ['auth.user', 'notifications.items'],
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredPaths: ["auth.user", "notifications.items"],
       },
-  }).concat(errorNotificationMiddleware, globalLoadingMiddleware),
-  devTools: process.env.NODE_ENV !== 'production',
+    }).concat(errorNotificationMiddleware, globalLoadingMiddleware),
+  devTools: process.env.NODE_ENV !== "production",
 });
 
 // Add dynamic reducer injection capability
 store.asyncReducers = {};
 store.injectReducer = (key, asyncReducer) => {
   if (store.asyncReducers[key]) {
-    console.warn(`[store] Reducer for key "${key}" already exists. Skipping injection.`);
+    console.warn(
+      `[store] Reducer for key "${key}" already exists. Skipping injection.`
+    );
     return;
   }
   store.asyncReducers[key] = asyncReducer;

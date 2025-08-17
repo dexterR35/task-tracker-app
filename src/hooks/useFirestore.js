@@ -1,22 +1,21 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { collection, getDocs, query, where, orderBy, addDoc, updateDoc, deleteDoc, doc, Timestamp, limit, startAfter as fsStartAfter, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import { addNotification } from '../redux/slices/notificationSlice';
-
-// Global in-memory cache for firestore queries
-const __firestoreCache = new Map(); // key -> { data, lastDoc, timestamp }
-
-export const getFirestoreCacheEntry = (key) => __firestoreCache.get(key);
-
-// Utility to invalidate cache entries by predicate
-export const invalidateFirestoreCache = (predicate) => {
-  for (const key of __firestoreCache.keys()) {
-    if (typeof predicate === 'function' ? predicate(key) : key === predicate) {
-      __firestoreCache.delete(key);
-    }
-  }
-};
+import { useState, useCallback } from "react";
+import { useDispatch } from "react-redux";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter as fsStartAfter,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { addNotification } from "../redux/slices/notificationSlice";
 
 export const useFirestore = (collectionName) => {
   const dispatch = useDispatch();
@@ -24,183 +23,149 @@ export const useFirestore = (collectionName) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchData = useCallback(async (queryOptions = {}) => {
-    const {
+  const fetchData = useCallback(
+    async ({
       where: whereFilters,
       orderBy: orderByFilters,
       limit: limitValue,
       startAfter: startAfterDoc,
-      append,
-      cacheKey,
-      force = false,
-      useCache = true
-    } = queryOptions;
+      append = false,
+    } = {}) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    const effectiveCacheKey = cacheKey || collectionName;
+        let colRef = collection(db, collectionName);
+        let q = colRef;
+console.log(`Fetching data from collection: ${collectionName}`);
+console.log(`Where filters: ${JSON.stringify(whereFilters)}`);
+console.log(`Order by filters: ${JSON.stringify(orderByFilters)}`);
+console.log(`Limit: ${limitValue}`);
+console.log(`q: ${q}`);
+        if (whereFilters) {
+          whereFilters.forEach(([field, op, value]) => {
+            q = query(q, where(field, op, value));
+          });
+        }
 
-    if (!force && useCache && __firestoreCache.has(effectiveCacheKey) && !append) {
-      const cached = __firestoreCache.get(effectiveCacheKey);
-      setData(cached.data);
-      return { results: cached.data, lastDoc: cached.lastDoc, fromCache: true };
-    }
+        if (orderByFilters) {
+          orderByFilters.forEach(([field, dir = "asc"]) => {
+            q = query(q, orderBy(field, dir));
+          });
+        }
 
-    try {
-      setLoading(true);
-      setError(null);
-      // global overlay removed
+        if (limitValue) q = query(q, limit(limitValue));
+        if (startAfterDoc) q = query(q, fsStartAfter(startAfterDoc));
 
-      let firestoreQuery = collection(db, collectionName);
+        const snapshot = await getDocs(q);
+     
+        const results = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+          
+          createdAt:
+            d.data().createdAt?.toDate?.() || new Date(d.data().createdAt),
+          updatedAt:
+            d.data().updatedAt?.toDate?.() || new Date(d.data().updatedAt),
+        }));
 
-      if (whereFilters) {
-        whereFilters.forEach(([field, operator, value]) => {
-          firestoreQuery = query(firestoreQuery, where(field, operator, value));
-        });
+        setData(append ? [...data, ...results] : results);
+        return results;
+      } catch (err) {
+        const msg = err.message || "Failed to fetch data";
+        setError(msg);
+        dispatch(addNotification({ type: "error", message: msg }));
+        throw err;
+      } finally {
+        console.log(`Data fetched from collection: ${results}`);
+        setLoading(false);
       }
+    },
+    [collectionName, dispatch, data]
+  );
 
-      if (orderByFilters) {
-        orderByFilters.forEach(([field, direction = 'asc']) => {
-          firestoreQuery = query(firestoreQuery, orderBy(field, direction));
-        });
+  const addDocument = useCallback(
+    async (docData) => {
+      try {
+        setLoading(true);
+        const dataWithTimestamps = {
+          ...docData,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        const docRef = await addDoc(
+          collection(db, collectionName),
+          dataWithTimestamps
+        );
+        dispatch(
+          addNotification({
+            type: "success",
+            message: `${collectionName.slice(0, -1)} created successfully`,
+          })
+        );
+        return { id: docRef.id, ...dataWithTimestamps };
+      } catch (err) {
+        const msg = err.message || "Failed to create document";
+        setError(msg);
+        dispatch(addNotification({ type: "error", message: msg }));
+        throw err;
+      } finally {
+        setLoading(false);
       }
+    },
+    [collectionName, dispatch]
+  );
 
-      if (limitValue) {
-        firestoreQuery = query(firestoreQuery, limit(limitValue));
+  const updateDocument = useCallback(
+    async (id, updates) => {
+      try {
+        setLoading(true);
+        const updateData = { ...updates, updatedAt: serverTimestamp() };
+        await updateDoc(doc(db, collectionName, id), updateData);
+        dispatch(
+          addNotification({
+            type: "success",
+            message: `${collectionName.slice(0, -1)} updated successfully`,
+          })
+        );
+        return { id, ...updateData };
+      } catch (err) {
+        const msg = err.message || "Failed to update document";
+        setError(msg);
+        dispatch(addNotification({ type: "error", message: msg }));
+        throw err;
+      } finally {
+        setLoading(false);
       }
+    },
+    [collectionName, dispatch]
+  );
 
-      if (startAfterDoc) {
-        firestoreQuery = query(firestoreQuery, fsStartAfter(startAfterDoc));
+  const deleteDocument = useCallback(
+    async (id) => {
+      try {
+        setLoading(true);
+        await deleteDoc(doc(db, collectionName, id));
+        dispatch(
+          addNotification({
+            type: "success",
+            message: `${collectionName.slice(0, -1)} deleted successfully`,
+          })
+        );
+        return id;
+      } catch (err) {
+        const msg = err.message || "Failed to delete document";
+        setError(msg);
+        dispatch(addNotification({ type: "error", message: msg }));
+        throw err;
+      } finally {
+        setLoading(false);
       }
+    },
+    [collectionName, dispatch]
+  );
 
-      const querySnapshot = await getDocs(firestoreQuery);
-      const results = querySnapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-        createdAt: docSnap.data().createdAt?.toDate?.() || new Date(docSnap.data().createdAt),
-        updatedAt: docSnap.data().updatedAt?.toDate?.() || new Date(docSnap.data().updatedAt)
-      }));
-
-      const finalData = append ? [...data, ...results] : results;
-      setData(finalData);
-
-      const lastDocRef = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
-      __firestoreCache.set(effectiveCacheKey, { data: finalData, lastDoc: lastDocRef, timestamp: Date.now() });
-
-      return { results: finalData, lastDoc: lastDocRef, fromCache: false };
-    } catch (err) {
-      const errorMessage = err.message || 'Failed to fetch data';
-      setError(errorMessage);
-      dispatch(addNotification({
-        type: 'error',
-        message: errorMessage
-      }));
-      throw err;
-    } finally {
-      setLoading(false);
-      // overlay removed
-    }
-  }, [collectionName, dispatch, data]);
-
-  const addDocument = useCallback(async (data) => {
-    try {
-      setLoading(true);
-
-      // overlay removed
-
-      const docData = {
-        ...data,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      };
-
-      const docRef = await addDoc(collection(db, collectionName), docData);
-
-      dispatch(addNotification({
-        type: 'success',
-        message: `${collectionName.slice(0, -1)} created successfully`
-      }));
-
-      return { id: docRef.id, ...docData };
-    } catch (err) {
-      const errorMessage = err.message || 'Failed to create document';
-      setError(errorMessage);
-      dispatch(addNotification({
-        type: 'error',
-        message: errorMessage
-      }));
-      throw err;
-    } finally {
-      setLoading(false);
-
-      // overlay removed
-    }
-  }, [collectionName, dispatch]);
-
-  const updateDocument = useCallback(async (id, data) => {
-    try {
-      setLoading(true);
-
-      // overlay removed
-
-      const updateData = {
-        ...data,
-        updatedAt: Timestamp.now()
-      };
-
-      await updateDoc(doc(db, collectionName, id), updateData);
-
-      dispatch(addNotification({
-        type: 'success',
-        message: `${collectionName.slice(0, -1)} updated successfully`
-      }));
-
-      return { id, ...updateData };
-    } catch (err) {
-      const errorMessage = err.message || 'Failed to update document';
-      setError(errorMessage);
-      dispatch(addNotification({
-        type: 'error',
-        message: errorMessage
-      }));
-      throw err;
-    } finally {
-      setLoading(false);
-
-      // overlay removed
-    }
-  }, [collectionName, dispatch]);
-
-  const deleteDocument = useCallback(async (id) => {
-    try {
-      setLoading(true);
-
-      // overlay removed
-
-      await deleteDoc(doc(db, collectionName, id));
-
-      dispatch(addNotification({
-        type: 'success',
-        message: `${collectionName.slice(0, -1)} deleted successfully`
-      }));
-
-      return id;
-    } catch (err) {
-      const errorMessage = err.message || 'Failed to delete document';
-      setError(errorMessage);
-      dispatch(addNotification({
-        type: 'error',
-        message: errorMessage
-      }));
-      throw err;
-    } finally {
-      setLoading(false);
-
-      // overlay removed
-    }
-  }, [collectionName, dispatch]);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     data,
@@ -210,166 +175,11 @@ export const useFirestore = (collectionName) => {
     addDocument,
     updateDocument,
     deleteDocument,
-    clearError
+    clearError,
   };
 };
 
-export const useTasks = () => {
-  return useFirestore('tasks');
-};
+// Convenience hooks
+export const useTasks = () => useFirestore("tasks");
+export const useUsers = () => useFirestore("users");
 
-export const useUsers = () => {
-  return useFirestore('users');
-};
-
-export const useMonthlyTasks = (monthId) => {
-  const dispatch = useDispatch();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const pageStateRef = useState({ lastDoc: null })[0];
-
-  // Helper: build base cache key prefix for this month
-  const monthCachePrefix = useMemo(() => `monthly:${monthId}:`, [monthId]);
-  const makeCacheKey = (cacheKey = 'default') => `${monthCachePrefix}${cacheKey}`;
-
-  const invalidateMonthCache = useCallback(() => {
-    // Remove every cache entry for this month
-    for (const key of __firestoreCache.keys()) {
-      if (key.startsWith(monthCachePrefix)) {
-        __firestoreCache.delete(key);
-      }
-    }
-  }, [monthCachePrefix]);
-
-  const ensureMonthDoc = useCallback(async () => {
-    try { await setDoc(doc(db, 'tasks', monthId), { monthId }, { merge: true }); } catch { /* ignore */ }
-  }, [monthId]);
-
-  const fetchData = useCallback(async ({
-    where: whereFilters = [],
-    limit: limitValue = 10,
-    startAfter: startAfterDoc = null,
-    append = false,
-    orderBy: orderByFilters = [['createdAt', 'desc']],
-    cacheKey,
-    force = false,
-    useCache = true
-  } = {}) => {
-    const effectiveCacheKey = makeCacheKey(cacheKey || JSON.stringify({ where: whereFilters, orderBy: orderByFilters }));
-
-    if (!force && useCache && __firestoreCache.has(effectiveCacheKey) && !append) {
-      const cached = __firestoreCache.get(effectiveCacheKey);
-      setData(cached.data);
-      pageStateRef.lastDoc = cached.lastDoc;
-      return { results: cached.data, lastDoc: cached.lastDoc, fromCache: true };
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      // overlay removed
-
-      const colRef = collection(db, 'tasks', monthId, 'monthTasks');
-      let qRef = colRef;
-
-      whereFilters.forEach(([f, op, v]) => { qRef = query(qRef, where(f, op, v)); });
-      orderByFilters.forEach(([f, dir]) => { qRef = query(qRef, orderBy(f, dir)); });
-      if (startAfterDoc) qRef = query(qRef, fsStartAfter(startAfterDoc));
-      if (limitValue) qRef = query(qRef, limit(limitValue));
-
-      const snap = await getDocs(qRef);
-      const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const finalData = append ? [...data, ...results] : results;
-      setData(finalData);
-      const lastDocRef = snap.docs[snap.docs.length - 1] || null;
-      pageStateRef.lastDoc = lastDocRef;
-
-      __firestoreCache.set(effectiveCacheKey, { data: finalData, lastDoc: lastDocRef, timestamp: Date.now() });
-
-      return { results: finalData, lastDoc: lastDocRef, fromCache: false };
-    } catch (err) {
-      const msg = err.message || 'Failed to fetch monthly tasks';
-      setError(msg);
-      dispatch(addNotification({ type: 'error', message: msg }));
-      throw err;
-    } finally {
-      setLoading(false);
-      // overlay removed
-    }
-  }, [monthId, data, dispatch, pageStateRef, makeCacheKey]);
-
-  const addDocument = useCallback(async (taskData) => {
-    try {
-      setLoading(true);
-      // overlay removed
-      await ensureMonthDoc();
-      const colRef = collection(db, 'tasks', monthId, 'monthTasks');
-      const sanitizedTimeSpentOnAI = (
-        typeof taskData.timeSpentOnAI === 'number' && !isNaN(taskData.timeSpentOnAI)
-      ) ? taskData.timeSpentOnAI : 0;
-      const sanitizedAiModel = taskData.aiUsed ? (taskData.aiModel || 'Unknown') : 'Unknown';
-      const docData = { ...taskData, timeSpentOnAI: sanitizedTimeSpentOnAI, aiModel: sanitizedAiModel, monthId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      const docRef = await addDoc(colRef, docData);
-      invalidateMonthCache(); // Invalidate cache so next fetch reflects new task
-      dispatch(addNotification({ type: 'success', message: 'task created successfully' }));
-      return { id: docRef.id, ...docData };
-    } catch (err) {
-      const msg = err.message || 'Failed to create task';
-      setError(msg);
-      dispatch(addNotification({ type: 'error', message: msg }));
-      throw err;
-    } finally {
-      setLoading(false);
-      // overlay removed
-    }
-  }, [monthId, ensureMonthDoc, dispatch, invalidateMonthCache]);
-
-  const updateDocument = useCallback(async (id, updates) => {
-    try {
-      setLoading(true);
-      // overlay removed
-      const ref = doc(db, 'tasks', monthId, 'monthTasks', id);
-      const sanitizedTimeSpentOnAI = (
-        typeof updates.timeSpentOnAI === 'number' && !isNaN(updates.timeSpentOnAI)
-      ) ? updates.timeSpentOnAI : 0;
-      const sanitizedAiModel = updates.aiUsed ? (updates.aiModel || 'Unknown') : 'Unknown';
-      const updateData = { ...updates, timeSpentOnAI: sanitizedTimeSpentOnAI, aiModel: sanitizedAiModel, updatedAt: serverTimestamp() };
-      await updateDoc(ref, updateData);
-      invalidateMonthCache(); // ensure stale cache removed
-      dispatch(addNotification({ type: 'success', message: 'task updated successfully' }));
-      return { id, ...updateData };
-    } catch (err) {
-      const msg = err.message || 'Failed to update task';
-      setError(msg);
-      dispatch(addNotification({ type: 'error', message: msg }));
-      throw err;
-    } finally {
-      setLoading(false);
-      // overlay removed
-    }
-  }, [monthId, dispatch, invalidateMonthCache]);
-
-  const deleteDocument = useCallback(async (id) => {
-    try {
-      setLoading(true);
-      // overlay removed
-      await deleteDoc(doc(db, 'tasks', monthId, 'monthTasks', id));
-      invalidateMonthCache();
-      dispatch(addNotification({ type: 'success', message: 'task deleted successfully' }));
-      return id;
-    } catch (err) {
-      const msg = err.message || 'Failed to delete task';
-      setError(msg);
-      dispatch(addNotification({ type: 'error', message: msg }));
-      throw err;
-    } finally {
-      setLoading(false);
-      // overlay removed
-    }
-  }, [monthId, dispatch, invalidateMonthCache]);
-
-  const clearError = useCallback(() => setError(null), []);
-
-  return { data, loading, error, fetchData, addDocument, updateDocument, deleteDocument, clearError, lastDoc: pageStateRef.lastDoc };
-};

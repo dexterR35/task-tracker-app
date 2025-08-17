@@ -57,7 +57,7 @@ const ErrorDisplay = ({ error, errorKey, onRetry, onDismiss, className = '' }) =
   );
 };
 
-// Simple error handler hook without UI Redux dependency
+
 export const useErrorHandler = () => {
   return {
     ErrorDisplay

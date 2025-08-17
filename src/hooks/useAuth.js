@@ -89,10 +89,7 @@ export const useAuth = () => {
     dispatch(resetAuth());
   }, [dispatch]);
 
-  /**
-   * 🔑 Reauthenticate the current user
-   * Useful for sensitive actions (delete account, change email, change password)
-   */
+
   const reauthenticate = useCallback(async (password) => {
     const user = auth.currentUser;
     if (!user?.email) {

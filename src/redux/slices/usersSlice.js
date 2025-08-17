@@ -2,44 +2,29 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-// Refresh users every 10 minutes by default
-const STALE_MS = 10 * 60 * 1000;
-
 // Async thunk to fetch all users
-export const fetchUsers = createAsyncThunk('users/fetchAll', async (_, { rejectWithValue }) => {
-  try {
-    console.log('[users] fetchUsers:start');
-    const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')));
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    console.log('[users] fetchUsers:success', { count: list.length });
-    return list;
-  } catch (e) {
-    console.log('[users] fetchUsers:error', e.message);
-    return rejectWithValue(e.message || 'Failed to load users');
+export const fetchUsers = createAsyncThunk(
+  'users/fetchAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('[users] fetchUsers:start');
+      const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('[users] fetchUsers:success', { count: list.length });
+      return list;
+    } catch (e) {
+      console.log('[users] fetchUsers:error', e.message);
+      return rejectWithValue(e.message || 'Failed to load users');
+    }
   }
-});
+);
 
-// Thunk to fetch users if stale or forced
+// Thunk to fetch users if needed or forced
 export const fetchUsersIfNeeded = (force = false) => (dispatch, getState) => {
   const { users } = getState();
   if (force) return dispatch(fetchUsers());
-  if (!users.lastFetched) return dispatch(fetchUsers());
-  const stale = Date.now() - users.lastFetched > STALE_MS;
-  if (stale) return dispatch(fetchUsers());
+  if (!users.lastFetched || !users.allIds.length) return dispatch(fetchUsers());
   return null;
-};
-
-// Auto-refresh every 10 minutes
-let autoRefreshInterval;
-export const startAutoRefreshUsers = () => (dispatch) => {
-  dispatch(fetchUsersIfNeeded());
-  if (!autoRefreshInterval) {
-    autoRefreshInterval = setInterval(() => dispatch(fetchUsersIfNeeded()), STALE_MS);
-  }
-};
-export const stopAutoRefreshUsers = () => {
-  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-  autoRefreshInterval = null;
 };
 
 // Users slice
@@ -68,7 +53,10 @@ const usersSlice = createSlice({
         state.status = 'succeeded';
         state.error = null;
         state.lastFetched = Date.now();
-        state.byId = action.payload.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+        state.byId = action.payload.reduce((acc, u) => {
+          acc[u.id] = u;
+          return acc;
+        }, {});
         state.allIds = action.payload.map(u => u.id);
         console.log('[users] state:fulfilled', { total: state.allIds.length });
       })
