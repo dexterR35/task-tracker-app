@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useUsers } from "../hooks/useFirestore";
 import { useNotifications } from "../hooks/useNotifications";
@@ -145,7 +140,8 @@ const DashboardPage = () => {
       ? monthEnd.valueOf()
       : dateRange.end.valueOf();
     // Use impersonatedUserId if it exists, otherwise fall back to the currently logged in user
-    const targetUser = user?.role === "admin" ? impersonatedUserId || selectedUser : user?.uid;
+    const targetUser =
+      user?.role === "admin" ? impersonatedUserId || selectedUser : user?.uid;
     return (tasks || []).filter((t) => {
       if (targetUser && t.userUID !== targetUser) return false;
       const created = t.createdAt || 0;
@@ -168,7 +164,7 @@ const DashboardPage = () => {
     if (userId) {
       navigate(`/dashboard/${userId}`);
     } else {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   };
 
@@ -183,11 +179,19 @@ const DashboardPage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex justify-between items-start flex-col">
+            <div className="flex flex-row items-center justify-between w-full gap-2">
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600 mt-1">Role: {user?.role}</p>
             </div>
+
+            {tasksStatus === "succeeded" && filteredTasks.length > 0 && (
+              <div className="mt-4 w-full">
+                <h2 className="text-xl font-semibold text-gray-800 mb-3">
+                  Summary
+                </h2>
+                <AnalyticsSummary tasks={filteredTasks} />
+              </div>
+            )}
           </div>
         </div>
         {/* Filters */}
@@ -301,14 +305,14 @@ const DashboardPage = () => {
               onRetry={() => loadTasks({ force: true })}
             />
           )}
-          {tasksStatus === "succeeded" && filteredTasks.length > 0 && (
+          {/* {tasksStatus === "succeeded" && filteredTasks.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-3">
                 Summary
               </h2>
               <AnalyticsSummary tasks={filteredTasks} />
             </div>
-          )}
+          )} */}
           {tasksStatus === "succeeded" && filteredTasks.length === 0 && (
             <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
               No tasks found for selected filters.
