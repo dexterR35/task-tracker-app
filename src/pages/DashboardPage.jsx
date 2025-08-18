@@ -96,29 +96,32 @@ const DashboardPage = () => {
 
   const hasBootstrappedRef = useRef(false);
 
-  useEffect(() => {
-    if (!user) return;
-    // Admin user list fetch only once
-    if (user.role === "admin" && !hasBootstrappedRef.current) {
-      fetchUsers({ orderBy: [["createdAt", "desc"]], limit: 200 }).catch(
-        () => {}
-      );
+useEffect(() => {
+  if (!user) return;
+  // Admin user list fetch only once
+  if (user.role === "admin" && !hasBootstrappedRef.current) {
+    fetchUsers({ orderBy: [["createdAt", "desc"]], limit: 200 })
+      .then(() => {
+        hasBootstrappedRef.current = true;
+      })
+      .catch(() => {
+        hasBootstrappedRef.current = true;
+      });
+  }
+  if (impersonatedUserId && selectedUser !== impersonatedUserId) {
+    setSelectedUser(impersonatedUserId);
+  }
+  const run = async () => {
+    dispatch(beginLoading());
+    try {
+      await checkMonthExists();
+      await loadTasks();
+    } finally {
+      dispatch(endLoading());
     }
-    if (impersonatedUserId && selectedUser !== impersonatedUserId) {
-      setSelectedUser(impersonatedUserId);
-    }
-    const run = async () => {
-      dispatch(beginLoading());
-      try {
-        await checkMonthExists();
-        await loadTasks();
-      } finally {
-        dispatch(endLoading());
-      }
-    };
-    run();
-    hasBootstrappedRef.current = true;
-  }, [user, monthId, impersonatedUserId]);
+  };
+  run();
+}, [user, monthId, impersonatedUserId]);
 
   const checkMonthExists = async () => {
     setCheckingMonth(true);
