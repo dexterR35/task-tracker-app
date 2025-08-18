@@ -2,59 +2,35 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useCallback,
-  Suspense,
   useMemo,
 } from "react";
-import ReactPaginate from "react-paginate";
 import { useAuth } from "../hooks/useAuth";
 import { useUsers } from "../hooks/useFirestore";
 import { useNotifications } from "../hooks/useNotifications";
 import DynamicButton from "../components/DynamicButton";
 import TaskForm from "../components/task/TaskForm";
-// Use modularized components
 import AnalyticsSummary from "../components/AnalyticsSummary";
 import TasksTable from "../components/task/TasksTable";
-
-import {
-  PlusIcon
-} from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchMonthTasksIfNeeded,
   selectMonthTasks,
-  updateTask,
-  deleteTask,
   generateMonth,
   selectMonthTasksState,
 } from "../redux/slices/tasksSlice";
-
 import { beginLoading, endLoading } from "../redux/slices/loadingSlice";
-
-import {
-  doc,
-  getDoc,
-  collection,
-  addDoc,
-  getDocs,
-  orderBy,
-  query,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import ErrorDisplay from "../components/notification/error/ErrorDisplay";
 
-const LazyTaskCharts = React.lazy(() =>
-  import("../components/task/TaskCharts")
-);
-
-const useCurrentMonthId = () => dayjs().format("YYYY-MM"); 
-
 const DashboardPage = () => {
   const { user } = useAuth();
-  const { userId: impersonatedUserId } = useParams(); 
-  const monthId = useCurrentMonthId();
+  const { userId: impersonatedUserId } = useParams(); // Use this to read the URL parameter
+  const monthId = useMemo(() => dayjs().format("YYYY-MM"), []);
+
   const dispatch = useDispatch();
   const tasks = useSelector(selectMonthTasks(monthId));
   const { addSuccess, addError } = useNotifications();
@@ -66,6 +42,7 @@ const DashboardPage = () => {
   const tasksState = useSelector(selectMonthTasksState(monthId));
   const tasksStatus = tasksState?.status;
   const tasksError = tasksState?.error;
+
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [monthReady, setMonthReady] = useState(true);
   const [checkingMonth, setCheckingMonth] = useState(true);
@@ -75,11 +52,10 @@ const DashboardPage = () => {
     start: monthStart,
     end: monthEnd,
   });
-  const [selectedUser, setSelectedUser] = useState(impersonatedUserId || "");
+  const [selectedUser, setSelectedUser] = useState(impersonatedUserId || ""); // Correctly initializes state from URL param
 
   const navigate = useNavigate();
 
-  // All tasks fetched once per month; rest is client-side filtering
   const loadTasks = async ({ force } = {}) => {
     if (!force && tasksState?.status === "succeeded") return;
     try {
@@ -104,9 +80,7 @@ const DashboardPage = () => {
         () => {}
       );
     }
-    if (impersonatedUserId && selectedUser !== impersonatedUserId) {
-      setSelectedUser(impersonatedUserId);
-    }
+
     const run = async () => {
       dispatch(beginLoading());
       try {
@@ -114,11 +88,12 @@ const DashboardPage = () => {
         await loadTasks();
       } finally {
         dispatch(endLoading());
+        console.log("Current month ID:", monthId);
       }
     };
     run();
     hasBootstrappedRef.current = true;
-  }, [user, monthId, impersonatedUserId]);
+  }, [user, monthId, impersonatedUserId]); // Added impersonatedUserId to dependencies
 
   const checkMonthExists = async () => {
     setCheckingMonth(true);
@@ -162,7 +137,6 @@ const DashboardPage = () => {
     setDateRange((prev) => ({ ...prev, [name]: clamped }));
   };
 
-  // Memoize filtered tasks
   const filteredTasks = useMemo(() => {
     const start = dateRange.start.isBefore(monthStart)
       ? monthStart.valueOf()
@@ -170,10 +144,8 @@ const DashboardPage = () => {
     const end = dateRange.end.isAfter(monthEnd)
       ? monthEnd.valueOf()
       : dateRange.end.valueOf();
-    const targetUser =
-      user?.role === "admin"
-        ? impersonatedUserId || selectedUser || null
-        : user?.uid;
+    // Use impersonatedUserId if it exists, otherwise fall back to the currently logged in user
+    const targetUser = user?.role === "admin" ? impersonatedUserId || selectedUser : user?.uid;
     return (tasks || []).filter((t) => {
       if (targetUser && t.userUID !== targetUser) return false;
       const created = t.createdAt || 0;
@@ -190,97 +162,16 @@ const DashboardPage = () => {
     monthEnd,
   ]);
 
-  // Preview state
-  const [previewMode, setPreviewMode] = useState(false);
-  const [previewData, setPreviewData] = useState(null);
-  const [previewName, setPreviewName] = useState("");
-  const [savingPreview, setSavingPreview] = useState(false);
-  const [previews, setPreviews] = useState([]);
-
-  // Fetch previews (admin only)
-  const fetchPreviews = useCallback(async () => {
-    try {
-      const q = query(collection(db, "previews"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setPreviews(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    } catch (e) {
-      addError("Failed to load previews");
-    }
-  }, [addError]);
-
-  useEffect(() => {
-    if (user?.role === "admin") fetchPreviews();
-  }, [user, fetchPreviews]);
-
-  // Handler to generate preview (admin only)
-  const handleGeneratePreview = () => {
-    if (!monthReady) {
-      addError("You must generate the month before previewing.");
-      return;
-    }
-    if (filteredTasks.length === 0) {
-      addError("No tasks available for preview.");
-      return;
-    }
-    // For now, just use filteredTasks and a timestamp as previewData
-    setPreviewData({
-      generatedAt: new Date().toISOString(),
-      tasks: filteredTasks,
-      summary: {
-        count: filteredTasks.length,
-        totalHours: filteredTasks.reduce(
-          (s, t) => s + (parseFloat(t.timeInHours) || 0),
-          0
-        ),
-        aiTasks: filteredTasks.filter((t) => t.aiUsed).length,
-        // Add more calculations as needed
-      },
-    });
-    setPreviewMode(true);
-  };
-
-  // Handler for Generate Full: prompt for name, save to Firestore
-  const handleGenerateFull = async () => {
-    if (!previewName.trim()) {
-      addError("Please enter a name for this preview.");
-      return;
-    }
-    setSavingPreview(true);
-    try {
-      // Only save summary and filter, not full tasks array
-      const previewDoc = {
-        name: previewName.trim(),
-        generatedAt: new Date().toISOString(),
-        summary: previewData.summary,
-        filter: {
-          dateRange: {
-            start: dateRange.start.format("YYYY-MM-DD"),
-            end: dateRange.end.format("YYYY-MM-DD"),
-          },
-          selectedUser,
-        },
-        createdBy: user?.uid,
-        createdByName: user?.name || user?.email,
-        createdAt: new Date().toISOString(),
-      };
-      const docRef = await addDoc(collection(db, "previews"), previewDoc);
-      addSuccess("Preview saved!");
-      setPreviewMode(false);
-      setPreviewName("");
-      fetchPreviews();
-    } catch (e) {
-      console.error("Failed to save preview:", e);
-      addError("Failed to save preview: " + (e?.message || e));
-    } finally {
-      setSavingPreview(false);
-    }
-  };
-
   const handleUserSelect = (e) => {
-    setSelectedUser(e.target.value);
+    const userId = e.target.value;
+    setSelectedUser(userId);
+    if (userId) {
+      navigate(`/dashboard/${userId}`);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
-  // Disable picking outside current month via min/max
   const startInputProps = {
     min: monthStart.format("YYYY-MM-DD"),
     max: monthEnd.format("YYYY-MM-DD"),
@@ -299,8 +190,7 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
-
-        {/* Filters + Admin Preview Button */}
+        {/* Filters */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6 flex flex-col md:flex-row flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -329,7 +219,6 @@ const DashboardPage = () => {
             />
           </div>
           {user?.role === "admin" &&
-            !impersonatedUserId &&
             (usersLoading ? (
               <div className="text-sm text-gray-500">Loading users…</div>
             ) : (
@@ -338,7 +227,7 @@ const DashboardPage = () => {
                   User
                 </label>
                 <select
-                  value={selectedUser}
+                  value={impersonatedUserId || ""} // Ensure the select value matches the URL
                   onChange={handleUserSelect}
                   className="border rounded px-3 py-2 min-w-[200px]"
                 >
@@ -351,138 +240,7 @@ const DashboardPage = () => {
                 </select>
               </div>
             ))}
-          {/* Admin-only Generate Preview button */}
-          {user?.role === "admin" && (
-            <div>
-              <DynamicButton
-                variant="primary"
-                onClick={handleGeneratePreview}
-                title={
-                  !monthReady
-                    ? "You must generate the month before previewing."
-                    : undefined
-                }
-                className="ml-2"
-              >
-                Generate Preview
-              </DynamicButton>
-              {!monthReady && (
-                <span className="ml-2 text-xs text-red-500 mt-1">
-                  You must generate the month before previewing.
-                </span>
-              )}
-            </div>
-          )}
         </div>
-        {/* Preview Panel (admin only, after Generate Preview) */}
-        {previewMode && previewData && (
-          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-yellow-800">
-                Preview Analytics
-              </h2>
-            </div>
-            <div className="mb-4 text-sm text-gray-700">
-              Preview generated at:{" "}
-              {new Date(previewData.generatedAt).toLocaleString()}
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preview Name
-              </label>
-              <input
-                type="text"
-                value={previewName}
-                onChange={(e) => setPreviewName(e.target.value)}
-                className="border rounded px-3 py-2 w-full max-w-xs"
-                placeholder="e.g. Q3 AI Analysis"
-                disabled={savingPreview}
-              />
-            </div>
-            <div className="mb-4">
-              <strong>Summary:</strong>
-              <ul className="list-disc ml-6">
-                <li>Total Tasks: {previewData.summary.count}</li>
-                <li>Total Hours: {previewData.summary.totalHours}</li>
-                <li>AI Tasks: {previewData.summary.aiTasks}</li>
-                {/* Add more summary items/calculations here */}
-              </ul>
-            </div>
-            {/* Example: reuse existing charts for preview */}
-            <div className="mb-4">
-              <Suspense fallback={<div>Loading charts…</div>}>
-                <LazyTaskCharts monthId={monthId} tasks={previewData.tasks} />
-              </Suspense>
-            </div>
-            <div className="flex gap-4">
-              <DynamicButton
-                variant="success"
-                onClick={handleGenerateFull}
-                loading={savingPreview}
-                disabled={savingPreview}
-              >
-                Generate Full
-              </DynamicButton>
-              <DynamicButton
-                variant="outline"
-                onClick={() => setPreviewMode(false)}
-                disabled={savingPreview}
-              >
-                Cancel
-              </DynamicButton>
-            </div>
-            {/* Placeholder for more advanced analytics/calculations */}
-            <div className="text-xs text-gray-500 mt-2">
-              (More analytics and export options coming soon…)
-            </div>
-          </div>
-        )}
-        {/* List of saved previews (admin only) */}
-        {user?.role === "admin" && previews.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 hidden">
-            <h2 className="text-lg font-bold mb-4">Saved Previews</h2>
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-3 py-2 text-left">Name</th>
-                  <th className="px-3 py-2 text-left">Created</th>
-                  <th className="px-3 py-2 text-left">Summary</th>
-                  <th className="px-3 py-2 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {previews.map((p) => (
-                  <tr key={p.id} className="border-t">
-                    <td className="px-3 py-2 font-medium">{p.name}</td>
-                    <td className="px-3 py-2">
-                      {p.createdAt
-                        ? new Date(p.createdAt).toLocaleString()
-                        : ""}
-                    </td>
-                    <td className="px-3 py-2">
-                      {p.summary ? (
-                        <ul className="list-disc ml-4">
-                          <li>Tasks: {p.summary.count}</li>
-                          <li>Hours: {p.summary.totalHours}</li>
-                          <li>AI: {p.summary.aiTasks}</li>
-                        </ul>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {/* TODO: CSV/PDF download buttons */}
-                      <span className="text-xs text-gray-400">
-                        (Export coming soon)
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
         {/* Impersonation banner for admins */}
         {user?.role === "admin" && impersonatedUserId && (
           <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-sm px-4 py-2 rounded mb-6 flex justify-between items-center">
@@ -499,7 +257,6 @@ const DashboardPage = () => {
             </DynamicButton>
           </div>
         )}
-
         {/* Action Buttons (only show create form toggle) */}
         <div className="mb-6 flex flex-col md:flex-row gap-4 items-start">
           {monthReady && (
@@ -531,13 +288,11 @@ const DashboardPage = () => {
             </DynamicButton>
           )}
         </div>
-
         {showTaskForm && monthReady && (
           <div className="mb-6">
             <TaskForm />
           </div>
         )}
-
         {/* Client-side filtering (memoized) */}
         <div className="space-y-8">
           {tasksStatus === "failed" && (
@@ -559,24 +314,6 @@ const DashboardPage = () => {
               No tasks found for selected filters.
             </div>
           )}
-          {user?.role === "admin" &&
-            tasksStatus === "succeeded" &&
-            filteredTasks.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-3">
-                  Charts (Admin)
-                </h2>
-                <Suspense
-                  fallback={
-                    <div className="p-4 bg-white border rounded text-sm text-gray-500">
-                      Loading charts...
-                    </div>
-                  }
-                >
-                  <LazyTaskCharts monthId={monthId} />
-                </Suspense>
-              </div>
-            )}
           {tasksStatus === "succeeded" && filteredTasks.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-3">

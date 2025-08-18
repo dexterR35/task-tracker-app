@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const ErrorDisplay = ({ error, errorKey, onRetry, onDismiss, className = '' }) => {
   const handleDismiss = () => {

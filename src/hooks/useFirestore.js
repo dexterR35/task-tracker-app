@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import {
   collection,
@@ -22,6 +22,13 @@ export const useFirestore = (collectionName) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // ✅ stable reference to prevent stale closures with `data`
+  const dataRef = useRef([]);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
   const fetchData = useCallback(
     async ({
       where: whereFilters,
@@ -37,16 +44,19 @@ export const useFirestore = (collectionName) => {
 
         let colRef = collection(db, collectionName);
         let q = colRef;
+
         if (whereFilters) {
           whereFilters.forEach(([field, op, value]) => {
             q = query(q, where(field, op, value));
           });
         }
+
         if (orderByFilters) {
           orderByFilters.forEach(([field, dir = "asc"]) => {
             q = query(q, orderBy(field, dir));
           });
         }
+
         if (limitValue) q = query(q, limit(limitValue));
         if (startAfterDoc) q = query(q, fsStartAfter(startAfterDoc));
 
@@ -61,7 +71,9 @@ export const useFirestore = (collectionName) => {
             d.data().updatedAt?.toDate?.() || new Date(d.data().updatedAt),
         }));
 
-        setData(append ? [...data, ...results] : results);
+        // ✅ use ref to avoid stale data problem
+        setData(append ? [...dataRef.current, ...results] : results);
+
         return results;
       } catch (err) {
         const msg = err.message || "Failed to fetch data";
@@ -70,12 +82,11 @@ export const useFirestore = (collectionName) => {
         throw err;
       } finally {
         setLoading(false);
-        // Only log if results is defined
-        console.log(`Data fetched from collection:`, results);
       }
     },
-    [collectionName, dispatch, data]
+    [collectionName, dispatch] // ✅ removed `data` from deps (safe now)
   );
+
   const addDocument = useCallback(
     async (docData) => {
       try {
@@ -158,6 +169,13 @@ export const useFirestore = (collectionName) => {
   );
 
   const clearError = useCallback(() => setError(null), []);
+
+  // ✅ debug log only when `data` changes
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && data.length > 0) {
+      console.log(`📦 Data updated in ${collectionName}:`, data);
+    }
+  }, [data, collectionName]);
 
   return {
     data,

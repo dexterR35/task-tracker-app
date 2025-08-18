@@ -1,30 +1,17 @@
+// src/router.jsx
 import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-
 import Layout from './components/Layout';
-
-// Simple inline loading component
-const SimpleLoader = () => (
-  <div className="flex items-center justify-center py-24">
-    <div className="h-8 w-8 relative">
-      <div className="absolute inset-0 rounded-full border-4 border-blue-200" />
-      <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
-    </div>
-  </div>
-);
-
-// Import components directly instead of lazy loading
+// Import all components needed
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import HomePage from './pages/HomePage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
-  const { isAuthenticated, loading, listenerActive, initialAuthResolved } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
-  if (!initialAuthResolved) return <SimpleLoader />;
   if (isAuthenticated) {
     const from = location.state?.from || '/dashboard';
     return <Navigate to={from} replace />;
@@ -34,9 +21,14 @@ const LoginRoute = ({ children }) => {
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, role, loading, listenerActive, initialAuthResolved } = useAuth();
+  const { isAuthenticated, role, initialAuthResolved } = useAuth();
   const location = useLocation();
-  if (!initialAuthResolved) return <SimpleLoader />;
+  
+  if (!initialAuthResolved) {
+    // This is the key change: show a loader while auth state is being resolved
+    return <SimpleLoader />; 
+  }
+  
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname + location.search + location.hash }} />;
   if (requiredRole && role !== requiredRole) return <Navigate to="/unauthorized" replace />;
   return children;
@@ -56,12 +48,14 @@ const UserRoute = ({ children }) => (
   </ProtectedRoute>
 );
 
-// Root index wrapper: redirect authenticated users directly to dashboard without flicker
+// Root index wrapper: redirect authenticated users directly to dashboard
 const RootIndex = () => {
   const { isAuthenticated, initialAuthResolved } = useAuth();
-  if (!initialAuthResolved) return <SimpleLoader />;
+  if (!initialAuthResolved) {
+    return <SimpleLoader />;
+  }
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-  return <HomePage />;
+  return <Navigate to="/login" replace />;
 };
 
 const router = createBrowserRouter([

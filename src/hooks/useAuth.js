@@ -8,7 +8,7 @@ import {
   initAuthListener,
 } from '../features/auth/authSlice';
 import { addNotification } from '../redux/slices/notificationSlice';
-import { auth } from '../firebase'; // <-- make sure you have this exported
+import { auth } from '../firebase'; 
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -63,18 +63,9 @@ export const useAuth = () => {
     }
   }, [dispatch]);
 
-  /** Legacy check (listener handles auth state now) */
-  const checkAuth = useCallback(async () => null, []);
 
-  /** Attach persistent listener */
-  const startListener = useCallback(async () => {
-    if (authState.listenerActive) return;
-    try {
-      await dispatch(initAuthListener()).unwrap();
-    } catch {
-      /* errors are already handled in slice */
-    }
-  }, [dispatch, authState.listenerActive]);
+
+
 
   /** Clear specific error key */
   const clearError = useCallback(
@@ -136,8 +127,7 @@ export const useAuth = () => {
 
       login,
       logout,
-      checkAuth,
-      startListener,
+     
       clearError,
       reset,
       reauthenticate,
@@ -147,8 +137,7 @@ export const useAuth = () => {
       isReady,
       login,
       logout,
-      checkAuth,
-      startListener,
+    
       clearError,
       reset,
       reauthenticate,
