@@ -22,58 +22,60 @@ export const useFirestore = (collectionName) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-const fetchData = useCallback(
-  async ({
-    where: whereFilters,
-    orderBy: orderByFilters,
-    limit: limitValue,
-    startAfter: startAfterDoc,
-    append = false,
-  } = {}) => {
-    let results = [];
-    try {
-      setLoading(true);
-      setError(null);
+  const fetchData = useCallback(
+    async ({
+      where: whereFilters,
+      orderBy: orderByFilters,
+      limit: limitValue,
+      startAfter: startAfterDoc,
+      append = false,
+    } = {}) => {
+      let results = [];
+      try {
+        setLoading(true);
+        setError(null);
 
-      let colRef = collection(db, collectionName);
-      let q = colRef;
-      if (whereFilters) {
-        whereFilters.forEach(([field, op, value]) => {
-          q = query(q, where(field, op, value));
-        });
+        let colRef = collection(db, collectionName);
+        let q = colRef;
+        if (whereFilters) {
+          whereFilters.forEach(([field, op, value]) => {
+            q = query(q, where(field, op, value));
+          });
+        }
+        if (orderByFilters) {
+          orderByFilters.forEach(([field, dir = "asc"]) => {
+            q = query(q, orderBy(field, dir));
+          });
+        }
+        if (limitValue) q = query(q, limit(limitValue));
+        if (startAfterDoc) q = query(q, fsStartAfter(startAfterDoc));
+
+        const snapshot = await getDocs(q);
+
+        results = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+          createdAt:
+            d.data().createdAt?.toDate?.() || new Date(d.data().createdAt),
+          updatedAt:
+            d.data().updatedAt?.toDate?.() || new Date(d.data().updatedAt),
+        }));
+
+        setData(append ? [...data, ...results] : results);
+        return results;
+      } catch (err) {
+        const msg = err.message || "Failed to fetch data";
+        setError(msg);
+        dispatch(addNotification({ type: "error", message: msg }));
+        throw err;
+      } finally {
+        setLoading(false);
+        // Only log if results is defined
+        console.log(`Data fetched from collection:`, results);
       }
-      if (orderByFilters) {
-        orderByFilters.forEach(([field, dir = "asc"]) => {
-          q = query(q, orderBy(field, dir));
-        });
-      }
-      if (limitValue) q = query(q, limit(limitValue));
-      if (startAfterDoc) q = query(q, fsStartAfter(startAfterDoc));
-
-      const snapshot = await getDocs(q);
-
-      results = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-        createdAt: d.data().createdAt?.toDate?.() || new Date(d.data().createdAt),
-        updatedAt: d.data().updatedAt?.toDate?.() || new Date(d.data().updatedAt),
-      }));
-
-      setData(append ? [...data, ...results] : results);
-      return results;
-    } catch (err) {
-      const msg = err.message || "Failed to fetch data";
-      setError(msg);
-      dispatch(addNotification({ type: "error", message: msg }));
-      throw err;
-    } finally {
-      setLoading(false);
-      // Only log if results is defined
-      console.log(`Data fetched from collection:`, results);
-    }
-  },
-  [collectionName, dispatch, data]
-);
+    },
+    [collectionName, dispatch, data]
+  );
   const addDocument = useCallback(
     async (docData) => {
       try {
@@ -172,4 +174,3 @@ const fetchData = useCallback(
 // Convenience hooks
 export const useTasks = () => useFirestore("tasks");
 export const useUsers = () => useFirestore("users");
-

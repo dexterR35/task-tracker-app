@@ -2,29 +2,29 @@
 // Modify here to propagate changes across the app.
 
 export const marketOptions = [
-  { value: 'north-america', label: 'North America' },
-  { value: 'europe', label: 'Europe' },
-  { value: 'asia-pacific', label: 'Asia Pacific' },
-  { value: 'latin-america', label: 'Latin America' },
-  { value: 'middle-east', label: 'Middle East' },
-  { value: 'africa', label: 'Africa' },
-  { value: 'global', label: 'Global' },
-  { value: 'australia', label: 'Australia' },
-  { value: 'canada', label: 'Canada' },
-  { value: 'uk', label: 'United Kingdom' }
+  { value: 'ro', label: 'ro' },
+  { value: 'com', label: 'com' },
+  { value: 'uk', label: 'uk' },
+  { value: 'ie', label: 'ie' },
+  { value: 'fi', label: 'fi' },
+  { value: 'dk', label: 'dk' },
+  { value: 'de', label: 'de' },
+  { value: 'at', label: 'at' },
+  { value: 'it', label: 'it' },
+  { value: 'gr', label: 'gr' },
+  { value: 'fr', label: 'fr' },
+  { value: 'misc', label: 'misc' }
 ];
 
 export const productOptions = [
-  { value: 'web-app', label: 'Web Application' },
-  { value: 'mobile-app', label: 'Mobile Application' },
-  { value: 'desktop-app', label: 'Desktop Application' },
-  { value: 'api', label: 'API/Backend' },
-  { value: 'database', label: 'Database' },
-  { value: 'infrastructure', label: 'Infrastructure' },
-  { value: 'analytics', label: 'Analytics Platform' },
-  { value: 'ecommerce', label: 'E-commerce Platform' },
-  { value: 'cms', label: 'Content Management System' },
-  { value: 'crm', label: 'Customer Relationship Management' }
+  { value: 'mkt c', label: 'mkt c' },
+  { value: 'mkt s', label: 'mkt p' },
+  { value: 'acq c', label: 'acq c' },
+  { value: 'acq s', label: 'acq s' },
+  { value: 'prod c', label: 'prod c' },
+  { value: 'prod s', label: 'prod s' },
+  { value: 'prod p', label: 'prod p' },
+  { value: 'misc', label: 'misc ' }
 ];
 
 export const taskNameOptions = [
@@ -34,14 +34,15 @@ export const taskNameOptions = [
 ];
 
 export const aiModelOptions = [
-  { value: 'gpt-4', label: 'GPT-4' },
-  { value: 'gpt-3.5', label: 'GPT-3.5' },
-  { value: 'claude-3', label: 'Claude 3' },
-  { value: 'claude-2', label: 'Claude 2' },
-  { value: 'gemini-pro', label: 'Gemini Pro' },
-  { value: 'llama-2', label: 'Llama 2' },
-  { value: 'codex', label: 'Codex' },
-  { value: 'copilot', label: 'GitHub Copilot' },
-  { value: 'midjourney', label: 'Midjourney' },
-  { value: 'stable-diffusion', label: 'Stable Diffusion' }
+  { value: 'DALL-E', label: 'DAll' },
+  { value: 'Photoshop', label: 'Photoshop' },
+  { value: 'FireFly', label: 'FireFly' },
+  { value: 'ChatGpt', label: 'ChatGpt' },
+  { value: 'PicLumen', label: 'PicLumen' },
+  { value: 'LeonardoAi', label: 'LeonardoAi' },
+  { value: 'ShutterStock', label: 'ShutterStock' },
+  { value: 'Midjourney', label: 'Midjourney' },
+  { value: 'NightCafe', label: 'NightCafe' },
+  { value: 'FreePick', label: 'FreePick' },
+  { value: 'Cursor', label: 'Cursor' }
 ];
