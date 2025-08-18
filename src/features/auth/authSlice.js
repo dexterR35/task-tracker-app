@@ -1,5 +1,4 @@
-// src/features/auth/authSlice.js
-import { createSlice, createAsyncThunk, createAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -76,13 +75,16 @@ export const initAuthListener = createAsyncThunk(
   "auth/initListener",
   (_, { dispatch, getState }) => {
     if (authListenerRegistered) {
-      return authUnsubscribe;
+      return;
     }
 
     authUnsubscribe = onAuthStateChanged(auth, async (user) => {
-      // This is now purely reactive, responding to auth changes
       if (!user) {
         dispatch(authSlice.actions.authLogout());
+        // Always resolve auth state even on logout
+        if (!getState().auth.initialAuthResolved) {
+          dispatch(authSlice.actions.setInitialResolved());
+        }
         return;
       }
       try {
@@ -99,17 +101,19 @@ export const initAuthListener = createAsyncThunk(
       } catch (err) {
         dispatch(authSlice.actions.authErrorOccurred(err.message));
         dispatch(authSlice.actions.authLogout());
+      } finally {
+        // Ensure the initial state is marked as resolved after the first check
+        if (!getState().auth.initialAuthResolved) {
+          dispatch(authSlice.actions.setInitialResolved());
+        }
       }
     });
 
     authListenerRegistered = true;
     
-    // THIS IS THE KEY FIX: Dispatch the action immediately after registering the listener.
-    // This resolves the state as soon as possible, preventing the flicker.
-    dispatch(authSlice.actions.setInitialResolved());
-
-    // This returns the unsubscribe function to the calling component
-    return authUnsubscribe;
+    // ❌ DO NOT return authUnsubscribe here.
+    // This was causing the non-serializable error.
+    // The thunk's job is to start the listener, not return a function.
   }
 );
 

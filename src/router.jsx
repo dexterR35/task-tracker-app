@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 // Import all components needed
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import UnauthorizedPage from './pages/UnauthorizedPage';
+// import UnauthorizedPage from './pages/UnauthorizedPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 
 // Component to protect login page from authenticated users
@@ -100,10 +100,10 @@ const router = createBrowserRouter([
           </UserRoute>
         )
       },
-      {
-        path: 'unauthorized',
-        element: <UnauthorizedPage />
-      }
+      // {
+      //   path: 'unauthorized',
+      //   element: <UnauthorizedPage />
+      // }
     ]
   }
 ]);
