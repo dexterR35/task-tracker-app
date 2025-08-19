@@ -27,14 +27,6 @@ const AnalyticsSummary = ({ tasks }) => {
       <div className={cardBase}><span className="text-xs text-gray-500">AI Hours</span><span className="mt-1 text-2xl font-semibold">{numberFmt(aiHours)}</span></div>
       <div className={cardBase}><span className="text-xs text-gray-500">Reworked</span><span className="mt-1 text-2xl font-semibold">{reworked}</span></div>
       <div className={cardBase}><span className="text-xs text-gray-500">Avg Hours/Task</span><span className="mt-1 text-2xl font-semibold">{numberFmt(avgHours)}</span></div>
-      {/* <div className="md:col-span-3 lg:col-span-3 p-4 bg-white rounded-lg shadow-sm border">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Top Markets</h3>
-        {markets.length ? <ul className="space-y-1 text-sm max-h-40 overflow-y-auto">{markets.map(m => <li key={m.key} className="flex justify-between"><span className="truncate pr-2">{m.key}</span><span className="font-medium">{m.count}</span></li>)}</ul> : <p className="text-xs text-gray-400">None</p>}
-      </div> */}
-      {/* <div className="md:col-span-3 lg:col-span-3 p-4 bg-white rounded-lg shadow-sm border">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Top Products</h3>
-        {products.length ? <ul className="space-y-1 text-sm max-h-40 overflow-y-auto">{products.map(p => <li key={p.key} className="flex justify-between"><span className="truncate pr-2">{p.key}</span><span className="font-medium">{p.count}</span></li>)}</ul> : <p className="text-xs text-gray-400">None</p>}
-      </div> */}
     </div>
   );
 };

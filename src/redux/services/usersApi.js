@@ -1,5 +1,6 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { collection, getDocs, orderBy, query as fsQuery, doc, setDoc, getDocFromServer, serverTimestamp } from 'firebase/firestore';
+import { normalizeTimestamp } from '../../utils/time';
 import { db, auth } from '../../firebase';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -15,9 +16,11 @@ export const usersApi = createApi({
           const snap = await getDocs(fsQuery(collection(db, 'users'), orderBy('createdAt', 'desc')));
           const users = snap.docs.map(d => {
             const raw = d.data();
-            const createdAt = raw.createdAt?.toDate ? raw.createdAt.toDate().getTime() : (typeof raw.createdAt === 'number' ? raw.createdAt : (raw.createdAt ? new Date(raw.createdAt).getTime() : null));
-            const updatedAt = raw.updatedAt?.toDate ? raw.updatedAt.toDate().getTime() : (typeof raw.updatedAt === 'number' ? raw.updatedAt : (raw.updatedAt ? new Date(raw.updatedAt).getTime() : null));
-            return { id: d.id, ...raw, createdAt, updatedAt };
+            const createdAt = normalizeTimestamp(raw.createdAt);
+            const updatedAt = normalizeTimestamp(raw.updatedAt);
+            const lastActive = normalizeTimestamp(raw.lastActive);
+            const lastLogin = normalizeTimestamp(raw.lastLogin);
+            return { id: d.id, ...raw, createdAt, updatedAt, lastActive, lastLogin };
           });
           return { data: users };
         } catch (error) {
@@ -51,10 +54,13 @@ export const usersApi = createApi({
           // Read back the doc to normalize server timestamps
           const fresh = await getDocFromServer(userDocRef);
           const raw = fresh.data() || {};
-          const createdAt = raw.createdAt?.toDate ? raw.createdAt.toDate().getTime() : null;
+          const createdAt = normalizeTimestamp(raw.createdAt);
+          const updatedAt = normalizeTimestamp(raw.updatedAt);
+          const lastActive = normalizeTimestamp(raw.lastActive);
+          const lastLogin = normalizeTimestamp(raw.lastLogin);
           // Sign out the secondary auth to clean up, preserving the admin session on primary auth
           try { await signOut(secondaryAuth); } catch (_) {}
-          return { data: { id: uid, ...raw, createdAt } };
+          return { data: { id: uid, ...raw, createdAt, updatedAt, lastActive, lastLogin } };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to create user' } };
         }

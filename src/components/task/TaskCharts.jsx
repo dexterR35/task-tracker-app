@@ -1,9 +1,6 @@
 import React from 'react';
 import { useGetMonthTasksQuery } from '../../redux/services/tasksApi';
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
-
-const baseOptions = { responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ ticks:{ precision:0 }}}};
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 const TaskCharts = ({ monthId }) => {
   const { data: tasks = [] } = useGetMonthTasksQuery({ monthId });
@@ -21,18 +18,38 @@ const TaskCharts = ({ monthId }) => {
   };
   const marketsArr = sumBy(tasks, 'market');
   const productsArr = sumBy(tasks, 'product');
-  const marketData = { labels: marketsArr.map(a => a.label), hours: marketsArr.map(a => Math.round(a.hours * 10) / 10) };
-  const productData = { labels: productsArr.map(a => a.label), hours: productsArr.map(a => Math.round(a.hours * 10) / 10) };
+  const marketData = marketsArr.map(a => ({ name: a.label, hours: Math.round(a.hours * 10) / 10 }));
+  const productData = productsArr.map(a => ({ name: a.label, hours: Math.round(a.hours * 10) / 10 }));
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="p-4 bg-white border rounded-lg shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Hours by Market</h3>
-        <Bar data={{ labels: marketData.labels, datasets:[{ data: marketData.hours, backgroundColor:'#6366f1'}] }} options={baseOptions} />
+        <div style={{ width: '100%', height: 280 }}>
+          <ResponsiveContainer>
+            <BarChart data={marketData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="hours" fill="#6366f1" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
       <div className="p-4 bg-white border rounded-lg shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Hours by Product</h3>
-        <Bar data={{ labels: productData.labels, datasets:[{ data: productData.hours, backgroundColor:'#10b981'}] }} options={baseOptions} />
+        <div style={{ width: '100%', height: 280 }}>
+          <ResponsiveContainer>
+            <BarChart data={productData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="hours" fill="#10b981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
     </div>

@@ -1,30 +1,16 @@
-import React, { useMemo, useRef } from 'react';
+import React from 'react';
 import { useListAllAnalyticsQuery, useGetMonthAnalyticsQuery } from '../redux/services/tasksApi';
 import DynamicButton from '../components/DynamicButton';
-import { Chart, registerables } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
 import { jsPDF } from 'jspdf';
-Chart.register(...registerables);
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend } from 'recharts';
+import useTime from '../hooks/useTime';
 
 const AdminAnalyticsPage = () => {
-  const formatSavedAt = (ms) => {
-    if (!Number.isFinite(ms)) return '-';
-    const d = new Date(ms);
-    const datePart = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-    const tzOffsetMin = -d.getTimezoneOffset();
-    const sign = tzOffsetMin >= 0 ? '+' : '-';
-    const abs = Math.abs(tzOffsetMin);
-    const hrs = Math.floor(abs / 60);
-    const mins = abs % 60;
-    const tz = `UTC${sign}${hrs}${mins ? ':' + String(mins).padStart(2, '0') : ''}`;
-    return `${datePart} at ${timePart} ${tz}`;
-  };
+  const { format } = useTime();
   const { data: all = [], isLoading } = useListAllAnalyticsQuery();
   const [selected, setSelected] = React.useState(null);
   const { data: current } = useGetMonthAnalyticsQuery(selected ? { monthId: selected } : { monthId: '' }, { skip: !selected });
-  const barRef = useRef(null);
-  const doughnutRef = useRef(null);
+  const COLORS = ['#6366f1', '#10b981', '#ef4444', '#f59e0b', '#14b8a6', '#8b5cf6', '#3b82f6', '#22c55e'];
 
   const handleDownloadPdf = () => {
     if (!current) return;
@@ -39,12 +25,6 @@ const AdminAnalyticsPage = () => {
       `AI Tasks: ${s.ai?.tasks || 0}  |  AI Hours: ${Math.round((s.ai?.hours || 0) * 10) / 10}`,
       `Reworked: ${s.reworked || 0}`,
     ].forEach(line => { doc.text(line, margin, y); y += 18; });
-    y += 10;
-    const barImg = barRef.current?.toBase64Image?.();
-    const doughnutImg = doughnutRef.current?.toBase64Image?.();
-    const imgWidth = 240; const imgHeight = 160;
-    if (barImg) doc.addImage(barImg, 'PNG', margin, y, imgWidth, imgHeight);
-    if (doughnutImg) doc.addImage(doughnutImg, 'PNG', margin + imgWidth + 20, y, imgWidth, imgHeight);
     doc.save(`Analytics_${current.monthId}.pdf`);
   };
 
@@ -79,7 +59,7 @@ const AdminAnalyticsPage = () => {
                   all.map(row => (
                     <tr key={row.monthId} className="border-t">
                       <td className="px-3 py-2 font-medium">{row.monthId}</td>
-                      <td className="px-3 py-2">{formatSavedAt(row.savedAt)}</td>
+                      <td className="px-3 py-2">{format(row.savedAt, 'YYYY-MM-DD HH:mm')}</td>
                       <td className="px-3 py-2">
                         <DynamicButton variant="outline" onClick={() => setSelected(row.monthId)}>Preview</DynamicButton>
                       </td>
@@ -106,17 +86,39 @@ const AdminAnalyticsPage = () => {
             {(() => {
               const markets = current.markets || {};
               const products = current.products || {};
-              const marketData = { labels: Object.keys(markets), datasets: [{ label: '# Tasks', data: Object.values(markets).map(v => v.count || 0), backgroundColor: 'rgba(99,102,241,0.6)'}] };
-              const productData = { labels: Object.keys(products), datasets: [{ label: '# Tasks', data: Object.values(products).map(v => v.count || 0), backgroundColor: 'rgba(16,185,129,0.6)'}] };
+              const marketData = Object.keys(markets).map(k => ({ name: k, count: markets[k]?.count || 0 }));
+              const productData = Object.keys(products).map(k => ({ name: k, count: products[k]?.count || 0 }));
               return (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     <h4 className="text-sm font-medium mb-2 text-center">Tasks by Market</h4>
-                    <Bar ref={barRef} data={marketData} />
+                    <div style={{ width: '100%', height: 300 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={marketData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#6366f1" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium mb-2 text-center">Tasks by Product</h4>
-                    <Doughnut ref={doughnutRef} data={productData} />
+                    <div style={{ width: '100%', height: 300 }}>
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie data={productData} dataKey="count" nameKey="name" outerRadius={110} label>
+                            {productData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               );
