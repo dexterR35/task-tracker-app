@@ -5,8 +5,7 @@ import DynamicButton from "../DynamicButton";
 import { useAuth } from "../../hooks/useAuth";
 import dayjs from "dayjs";
 import { useDispatch } from "react-redux";
-import { beginLoading, endLoading } from "../../redux/slices/loadingSlice";
-import { createTask, updateTask } from "../../redux/slices/tasksSlice";
+import { useCreateTaskMutation, useUpdateTaskMutation } from "../../redux/services/tasksApi";
 import { useNotifications } from "../../hooks/useNotifications";
 import {
   marketOptions,
@@ -26,6 +25,8 @@ const TaskForm = ({
   const { addError } = useNotifications();
   const monthId = dayjs().format("YYYY-MM");
   const dispatch = useDispatch();
+  const [createTask] = useCreateTaskMutation();
+  const [updateTask] = useUpdateTaskMutation();
 
   const defaultInitialValues = {
     jiraLink: "",
@@ -34,9 +35,10 @@ const TaskForm = ({
     taskName: "",
     aiUsed: false,
     timeSpentOnAI: "",
-    aiModel: "",
+    aiModels: [],
     timeInHours: "",
     reworked: false,
+    deliverable: "",
   };
 
   const initialValues = customInitialValues || defaultInitialValues;
@@ -54,18 +56,19 @@ const TaskForm = ({
       then: (schema) =>
         schema
           .required("Time spent on AI is required when AI is used")
-          .min(0, "Time must be positive"),
+          .min(0.5, "Minimum is 0.5h"),
       otherwise: (schema) => schema.notRequired(),
     }),
-    aiModel: Yup.string().when("aiUsed", {
+    aiModels: Yup.array().of(Yup.string()).when("aiUsed", {
       is: true,
-      then: (schema) => schema.required("AI model is required when AI is used"),
-      otherwise: (schema) => schema.notRequired(),
+      then: (schema) => schema.min(1, "Select at least one AI model"),
+      otherwise: (schema) => schema.optional(),
     }),
     timeInHours: Yup.number()
       .required("Task completion time is required")
-      .min(0.1, "Time must be at least 0.1 hours"),
+      .min(0.5, "Minimum is 0.5h"),
     reworked: Yup.boolean(),
+    deliverable: Yup.string().required("Deliverable is required"),
   });
 
   const creatingRef = useRef(false);
@@ -73,18 +76,23 @@ const TaskForm = ({
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       setOuterSubmitting(true);
-      dispatch(beginLoading());
+      const quantize = (n) => {
+        if (typeof n !== 'number' || Number.isNaN(n)) return 0;
+        return Math.round(n * 2) / 2;
+      };
+
       const taskData = {
         ...values,
         timeSpentOnAI: (() => {
           if (!values.aiUsed) return 0;
           const n = parseFloat(values.timeSpentOnAI);
-          return isNaN(n) ? 0 : n;
+          return isNaN(n) ? 0 : quantize(n);
         })(),
         timeInHours: (() => {
           const n = parseFloat(values.timeInHours);
-          return isNaN(n) ? 0 : n;
+          return isNaN(n) ? 0 : quantize(n);
         })(),
+        aiModels: Array.isArray(values.aiModels) ? values.aiModels : (values.aiModels ? [values.aiModels] : []),
         createdBy: user?.uid,
         createdByName: user?.name || user?.email,
         userUID: user?.uid,
@@ -102,12 +110,11 @@ const TaskForm = ({
       } else if (isEdit && initialValues.id) {
         if (creatingRef.current) return;
         creatingRef.current = true;
-     await dispatch(updateTask({ monthId, id: initialValues.id, data: taskData }));
-
+        await updateTask({ monthId, id: initialValues.id, updates: taskData }).unwrap();
       } else {
         if (creatingRef.current) return;
         creatingRef.current = true;
-        await dispatch(createTask(taskData));
+        await createTask(taskData).unwrap();
       }
 
       if (!isEdit) resetForm();
@@ -125,7 +132,6 @@ const TaskForm = ({
       creatingRef.current = false;
       setSubmitting(false);
       setOuterSubmitting(false);
-      dispatch(endLoading());
     }
   };
 
@@ -174,27 +180,36 @@ const TaskForm = ({
                 );
               }}
             </Field>
-            <Field name="market">
+            <Field name="markets">
               {(field) => {
                 const { baseInputClasses } = renderField(field);
+                const selected = field.form.values.markets || [];
+                const addMarket = (val) => {
+                  if (!val) return;
+                  if (selected.includes(val)) return;
+                  field.form.setFieldValue('markets', [...selected, val]);
+                };
+                const removeMarket = (val) => {
+                  field.form.setFieldValue('markets', selected.filter((m) => m !== val));
+                };
                 return (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Market *
-                    </label>
-                    <select {...field.field} className={baseInputClasses}>
-                      <option value="">Select a market</option>
-                      {marketOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Markets *</label>
+                    <select className={baseInputClasses} value="" onChange={(e) => addMarket(e.target.value)}>
+                      <option value="">Add a market…</option>
+                      {marketOptions.filter(o => !selected.includes(o.value)).map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
-                    <ErrorMessage
-                      name="market"
-                      component="div"
-                      className="text-red-500 text-sm mt-1"
-                    />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selected.map((m) => (
+                        <span key={m} className="inline-flex items-center px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs">
+                          {m}
+                          <button type="button" onClick={() => removeMarket(m)} className="ml-1 text-blue-600">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <ErrorMessage name="markets" component="div" className="text-red-500 text-sm mt-1" />
                   </div>
                 );
               }}
@@ -293,24 +308,39 @@ const TaskForm = ({
                     );
                   }}
                 </Field>
-                <Field name="aiModel">
+                <Field name="aiModels">
                   {(field) => {
                     const { baseInputClasses } = renderField(field);
+                    const selected = field.form.values.aiModels || [];
+                    const addModel = (val) => {
+                      if (!val) return;
+                      if (selected.includes(val)) return;
+                      field.form.setFieldValue('aiModels', [...selected, val]);
+                    };
+                    const removeModel = (val) => {
+                      field.form.setFieldValue('aiModels', selected.filter((m) => m !== val));
+                    };
                     return (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          AI Model *
+                          AI Model(s) *
                         </label>
-                        <select {...field.field} className={baseInputClasses}>
-                          <option value="">Select AI model</option>
-                          {aiModelOptions.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
+                        <select className={baseInputClasses} value="" onChange={(e) => addModel(e.target.value)}>
+                          <option value="">Add a model…</option>
+                          {aiModelOptions.filter(o => !selected.includes(o.value)).map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
                           ))}
                         </select>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selected.map((m) => (
+                            <span key={m} className="inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-800 text-xs">
+                              {m}
+                              <button type="button" onClick={() => removeModel(m)} className="ml-1 text-green-600">×</button>
+                            </span>
+                          ))}
+                        </div>
                         <ErrorMessage
-                          name="aiModel"
+                          name="aiModels"
                           component="div"
                           className="text-red-500 text-sm mt-1"
                         />
@@ -331,8 +361,8 @@ const TaskForm = ({
                     <input
                       {...field.field}
                       type="number"
-                      step="0.1"
-                      min="0.1"
+                      step="0.5"
+                      min="0.5"
                       placeholder="e.g., 8.0"
                       className={baseInputClasses}
                     />
@@ -361,6 +391,23 @@ const TaskForm = ({
                   </label>
                 </div>
               )}
+            </Field>
+            <Field name="deliverable">
+              {(field) => {
+                const { baseInputClasses } = renderField(field);
+                return (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Deliverable *</label>
+                    <select {...field.field} className={baseInputClasses}>
+                      <option value="">Select</option>
+                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                        <option key={n} value={String(n)}>{n}</option>
+                      ))}
+                    </select>
+                    <ErrorMessage name="deliverable" component="div" className="text-red-500 text-sm mt-1" />
+                  </div>
+                );
+              }}
             </Field>
             <div className="flex justify-end space-x-3 pt-6">
               <DynamicButton

@@ -1,0 +1,44 @@
+import React, { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
+import { useAuth } from '../hooks/useAuth';
+import { useGetMonthTasksQuery } from '../redux/services/tasksApi';
+import TaskForm from '../components/task/TaskForm';
+import TasksTable from '../components/task/TasksTable';
+import AnalyticsSummary from '../components/AnalyticsSummary';
+import DynamicButton from '../components/DynamicButton';
+
+const UserDashboardPage = () => {
+  const { user } = useAuth();
+  const monthId = useMemo(() => dayjs().format('YYYY-MM'), []);
+  const { data: tasks = [] } = useGetMonthTasksQuery({ monthId });
+  const [showTaskForm, setShowTaskForm] = useState(false);
+
+  const myTasks = useMemo(() => (tasks || []).filter(t => t.userUID === user?.uid), [tasks, user]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-3xl font-bold text-gray-900">My Dashboard</h2>
+        </div>
+        <div className="mb-6">
+          <DynamicButton variant="success" onClick={() => setShowTaskForm(!showTaskForm)}>{showTaskForm ? 'Hide Form' : 'Create Task'}</DynamicButton>
+        </div>
+        {showTaskForm && <div className="mb-6"><TaskForm /></div>}
+        <div className="space-y-8">
+          <AnalyticsSummary tasks={myTasks} />
+          {myTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">Tasks ({myTasks.length})</h2>
+              <TasksTable tasks={myTasks} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserDashboardPage;
+
+

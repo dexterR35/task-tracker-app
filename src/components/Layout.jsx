@@ -1,7 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { beginLoading, endLoading } from '../redux/slices/loadingSlice';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
 import DynamicButton from './DynamicButton';
 
@@ -14,17 +13,15 @@ import {
 const Layout = () => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated, logout, loading, listenerActive } = useAuth();
+  const apiLoading = useSelector((state) => state["tasksApi"]?.queries || state["usersApi"]?.queries);
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
     try {
-      dispatch(beginLoading());
       await logout();
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
-    } finally {
-      dispatch(endLoading());
     }
   };
 
@@ -36,9 +33,13 @@ const Layout = () => {
   }
 
   const navigation = [
-    { name: 'Home', href: '/', icon: HomeIcon },
-    { name: 'Dashboard', href: '/dashboard', icon: ViewColumnsIcon },
-  // Manage Users removed
+    ...(role === 'admin'
+      ? [
+          { name: 'Admin', href: '/admin', icon: ViewColumnsIcon },
+          { name: 'Analytics', href: '/admin/analytics', icon: ViewColumnsIcon },
+        ]
+      : [{ name: 'My Dashboard', href: '/me', icon: ViewColumnsIcon }]),
+    { name: 'Profile', href: '/profile', icon: ViewColumnsIcon },
   ];
 
   return (
@@ -93,9 +94,10 @@ const Layout = () => {
         </div>
       </nav>
 
-      {/* Main content */}
+      {/* Main content with simple global loader overlay */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
-        {isBooting ? <div className="flex items-center justify-center py-24 text-gray-500 text-sm">Initializing…</div> : <Outlet />}
+        {isBooting && <div className="flex items-center justify-center py-24 text-gray-500 text-sm">Initializing…</div>}
+        <Outlet />
       </main>
     </div>
   );

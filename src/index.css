@@ -1,6 +1,25 @@
 
 @import "tailwindcss";
 
+/* Tailwind components using @apply for consistent modern UI */
+.btn { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-primary { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500; }
+.btn-outline { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-400; }
+.btn-danger { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
+.btn-success { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 text-white hover:bg-green-700 focus:ring-green-500; }
+
+.card {
+  @apply bg-white rounded-xl shadow-lg p-10;
+}
+.title { @apply text-2xl font-bold mb-8 text-center text-gray-800; }
+.label { @apply block text-sm font-medium text-gray-700 mb-2; }
+.input { @apply w-full px-4 py-3 border rounded-lg transition focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300; }
+.input-error { @apply border-red-500 focus:ring-red-500; }
+.container-center { @apply min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-6; }
+.form-col { @apply flex flex-col gap-6; }
+
+form select option {@apply uppercase}
+form > div span {@apply uppercase}
 
 /* Base styles with regular CSS since @apply might not work in v4 */
 .input {

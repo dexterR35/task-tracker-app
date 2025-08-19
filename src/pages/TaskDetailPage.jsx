@@ -62,31 +62,22 @@ const TaskDetailPage = () => {
       <div className="space-y-4 text-sm mb-8">
         <div><span className="font-medium text-gray-700">ID:</span> {task.id}</div>
         <div><span className="font-medium text-gray-700">Jira Link:</span> <a href={task.jiraLink} target="_blank" rel="noreferrer" className="text-blue-600 underline">{task.jiraLink}</a></div>
-        <div><span className="font-medium text-gray-700">Market:</span> {task.market}</div>
+        <div><span className="font-medium text-gray-700">Markets:</span> {Array.isArray(task.markets) ? task.markets.join(', ') : (task.market || '-')}</div>
         <div><span className="font-medium text-gray-700">Product:</span> {task.product}</div>
         <div><span className="font-medium text-gray-700">Task Name:</span> {task.taskName}</div>
         <div><span className="font-medium text-gray-700">User UID:</span> {task.userUID}</div>
         <div><span className="font-medium text-gray-700">Month ID:</span> {task.monthId}</div>
         <div><span className="font-medium text-gray-700">Created By:</span> {task.createdByName || task.createdBy}</div>
         <div><span className="font-medium text-gray-700">AI Used:</span> {task.aiUsed ? 'Yes' : 'No'}</div>
-        <div><span className="font-medium text-gray-700">AI Model:</span> {task.aiUsed ? (task.aiModel || 'Unknown') : 'Unknown'}</div>
+        <div><span className="font-medium text-gray-700">AI Models:</span> {task.aiUsed ? ((Array.isArray(task.aiModels) ? task.aiModels.join(', ') : (task.aiModel || 'Unknown'))) : 'Unknown'}</div>
+        <div><span className="font-medium text-gray-700">Deliverable:</span> {task.deliverable || '-'}</div>
         <div><span className="font-medium text-gray-700">Time Spent On AI (h):</span> {task.timeSpentOnAI}</div>
         <div><span className="font-medium text-gray-700">Time In Hours:</span> {task.timeInHours}</div>
         <div><span className="font-medium text-gray-700">Reworked:</span> {task.reworked ? 'Yes' : 'No'}</div>
         <div><span className="font-medium text-gray-700">Created At:</span> {task.createdAt ? dayjs(task.createdAt?.toDate?.() || task.createdAt).format('YYYY-MM-DD HH:mm') : 'N/A'}</div>
         <div><span className="font-medium text-gray-700">Updated At:</span> {task.updatedAt ? dayjs(task.updatedAt?.toDate?.() || task.updatedAt).format('YYYY-MM-DD HH:mm') : 'N/A'}</div>
       </div>
-      <div>
-        <h2 className="text-lg font-semibold mb-2">All Fields (Raw)</h2>
-        <div className="border rounded-md divide-y">
-          {allFields.map(([k,v]) => (
-            <div key={k} className="flex text-xs md:text-sm p-2 gap-4">
-              <div className="w-40 font-medium text-gray-600 break-all">{k}</div>
-              <div className="flex-1 break-all text-gray-800">{formatValue(v)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+  
     </div>
   );
 };

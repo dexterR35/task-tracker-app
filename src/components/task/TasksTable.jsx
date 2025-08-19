@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { useDispatch } from 'react-redux';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { updateTask, deleteTask } from '../../redux/slices/tasksSlice';
+import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions } from '../../constants/taskOptions';
 import dayjs from 'dayjs';
 
@@ -11,6 +12,13 @@ const numberFmt = (n) => (Number.isFinite(n) ? (Math.round(n * 10) / 10) : 0);
 
 const TasksTable = ({ tasks, onSelect }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const handleSelect = (t) => {
+    if (typeof onSelect === 'function') return onSelect(t);
+    navigate(`/task/${t.monthId}/${t.id}`);
+  };
+  const [updateTask] = useUpdateTaskMutation();
+  const [deleteTask] = useDeleteTaskMutation();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
@@ -34,12 +42,12 @@ const TasksTable = ({ tasks, onSelect }) => {
   };
   const handlePageChange = (sel) => { const np = sel.selected; setPage(np); syncState(np, pageSize); };
   const handlePageSizeChange = (e) => { const ns = parseInt(e.target.value, 10) || 25; setPageSize(ns); setPage(0); syncState(0, ns); };
-  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', market: t.market || '', product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModel: t.aiModel || '', reworked: !!t.reworked }); };
+  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', markets: t.markets || [], product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModels: t.aiModels || [], reworked: !!t.reworked, deliverable: t.deliverable || '' }); };
   const cancelEdit = () => { setEditingId(null); setForm({}); };
   const saveEdit = async (t) => {
     try {
       setRowActionId(t.id);
-      await dispatch(updateTask(t.monthId, t.id, { ...form, timeInHours: Number(form.timeInHours) || 0, timeSpentOnAI: form.aiUsed ? (Number(form.timeSpentOnAI) || 0) : 0, aiModel: form.aiUsed ? form.aiModel : '' }));
+      await updateTask({ monthId: t.monthId, id: t.id, updates: { ...form, timeInHours: Number(form.timeInHours) || 0, timeSpentOnAI: form.aiUsed ? (Number(form.timeSpentOnAI) || 0) : 0, aiModels: form.aiUsed ? (form.aiModels || []) : [], deliverable: form.deliverable || '', markets: form.markets || [] } }).unwrap();
     } catch (e) {
       console.error(e);
     } finally {
@@ -51,7 +59,7 @@ const TasksTable = ({ tasks, onSelect }) => {
     if (!window.confirm('Delete this task?')) return;
     try {
       setRowActionId(t.id);
-      await dispatch(deleteTask(t.monthId, t.id));
+      await deleteTask({ monthId: t.monthId, id: t.id }).unwrap();
     } catch (e) {
       console.error(e);
     } finally {
@@ -99,7 +107,7 @@ const TasksTable = ({ tasks, onSelect }) => {
                       <option value="">Select task</option>
                       {taskNameOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
-                  ) : <button className="text-left w-full" onClick={() => onSelect(t)}>{t.taskName}</button>}
+                  ) : <button className="text-left w-full" onClick={() => handleSelect(t)}>{t.taskName}</button>}
                 </td>
                 <td className="px-3 py-2">{isEdit ? (
                   <select className="border px-2 py-1 rounded w-full" value={form.market} onChange={e => setForm(f => ({ ...f, market: e.target.value }))}>

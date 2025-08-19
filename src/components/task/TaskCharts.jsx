@@ -1,14 +1,28 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { selectMarketChartData, selectProductChartData,selectMonthTotalTasks } from '../../redux/slices/tasksSlice';
+import { useGetMonthTasksQuery } from '../../redux/services/tasksApi';
 import { Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 
 const baseOptions = { responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ ticks:{ precision:0 }}}};
 
 const TaskCharts = ({ monthId }) => {
-  const marketData = useSelector(selectMarketChartData(monthId));
-  const productData = useSelector(selectProductChartData(monthId));
+  const { data: tasks = [] } = useGetMonthTasksQuery({ monthId });
+  const sumBy = (items, key) => {
+    const map = new Map();
+    for (const t of items) {
+      const k = t[key];
+      if (!k) continue;
+      const prev = map.get(k) || 0;
+      map.set(k, prev + (Number(t.timeInHours) || 0));
+    }
+    const arr = Array.from(map.entries()).map(([label, hours]) => ({ label, hours }));
+    arr.sort((a, b) => b.hours - a.hours);
+    return arr.slice(0, 8);
+  };
+  const marketsArr = sumBy(tasks, 'market');
+  const productsArr = sumBy(tasks, 'product');
+  const marketData = { labels: marketsArr.map(a => a.label), hours: marketsArr.map(a => Math.round(a.hours * 10) / 10) };
+  const productData = { labels: productsArr.map(a => a.label), hours: productsArr.map(a => Math.round(a.hours * 10) / 10) };
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">

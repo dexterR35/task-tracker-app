@@ -4,9 +4,13 @@ import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
 // Import all components needed
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
 // import UnauthorizedPage from './pages/UnauthorizedPage';
 import TaskDetailPage from './pages/TaskDetailPage';
+import HomePage from './pages/HomePage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import ProfilePage from './pages/ProfilePage';
+import UserDashboardPage from './pages/UserDashboardPage';
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
@@ -50,12 +54,11 @@ const UserRoute = ({ children }) => (
 
 // Root index wrapper: redirect authenticated users directly to dashboard
 const RootIndex = () => {
-  const { isAuthenticated, initialAuthResolved } = useAuth();
-  if (!initialAuthResolved) {
-    return <SimpleLoader />;
-  }
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-  return <Navigate to="/login" replace />;
+  const { isAuthenticated, role, initialAuthResolved } = useAuth();
+  if (!initialAuthResolved) return <SimpleLoader />;
+  if (!isAuthenticated) return <HomePage />;
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  return <Navigate to="/me" replace />;
 };
 
 const router = createBrowserRouter([
@@ -77,19 +80,27 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: 'dashboard',
+        path: 'me',
         element: (
           <UserRoute>
-            <DashboardPage />
+            <UserDashboardPage />
           </UserRoute>
         )
       },
       {
-        path: 'dashboard/:userId',
+        path: 'admin',
         element: (
-          <UserRoute>
-            <DashboardPage />
-          </UserRoute>
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        )
+      },
+      {
+        path: 'admin/analytics',
+        element: (
+          <AdminRoute>
+            <AdminAnalyticsPage />
+          </AdminRoute>
         )
       },
       {
@@ -97,6 +108,14 @@ const router = createBrowserRouter([
         element: (
           <UserRoute>
             <TaskDetailPage />
+          </UserRoute>
+        )
+      },
+      {
+        path: 'profile',
+        element: (
+          <UserRoute>
+            <ProfilePage />
           </UserRoute>
         )
       },
