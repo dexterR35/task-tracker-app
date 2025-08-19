@@ -5,6 +5,8 @@ import { jsPDF } from 'jspdf';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, LineChart, Line, ScatterChart, Scatter } from 'recharts';
 import useTime from '../hooks/useTime';
 import { useNotifications } from '../hooks/useNotifications';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const AdminAnalyticsPage = () => {
   const { format } = useTime();
@@ -66,8 +68,8 @@ const AdminAnalyticsPage = () => {
                 {isLoading ? (
                   <tr>
                     <td className="px-3 py-3" colSpan={3}>
-                      <div className="h-5 w-40 skeleton rounded mb-2" />
-                      <div className="h-5 w-64 skeleton rounded" />
+                      <Skeleton height={20} width={160} className="mb-2" />
+                      <Skeleton height={20} width={256} />
                     </td>
                   </tr>
                 ) : all.length === 0 ? (

@@ -1,5 +1,4 @@
-// Centralized time helpers for Timestamp normalization and formatting helpers
-// Note: Keep these functions free of React to allow reuse in non-React modules
+
 
 /**
  * Convert a Firestore Timestamp, Date, number, or string into milliseconds since epoch.

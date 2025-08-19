@@ -6,6 +6,9 @@ import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/servic
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../constants/taskOptions';
 import useTime from '../../hooks/useTime';
 import usePagination from '../../hooks/usePagination';
+import { useNotifications } from '../../hooks/useNotifications';
+import LoadingWrapper from '../ui/LoadingWrapper';
+
 
 const useFormatDay = () => {
   const { format } = useTime();
@@ -13,8 +16,10 @@ const useFormatDay = () => {
 };
 const numberFmt = (n) => (Number.isFinite(n) ? (Math.round(n * 10) / 10) : 0);
 
-const TasksTable = ({ tasks, onSelect }) => {
+const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
   const navigate = useNavigate();
+  const { addSuccess, addError } = useNotifications();
+  
   const handleSelect = (t) => {
     if (typeof onSelect === 'function') return onSelect(t);
     navigate(`/task/${t.monthId}/${t.id}`);
@@ -76,14 +81,16 @@ const TasksTable = ({ tasks, onSelect }) => {
         if (updates.timeSpentOnAI < 0.5) errs.push('AI Hours ≥ 0.5');
       }
       if (errs.length) {
-        window.alert('Please complete: ' + errs.join(', '));
+        addError('Please complete: ' + errs.join(', '));
         setRowActionId(null);
         return;
       }
       await updateTask({ monthId: t.monthId, id: t.id, updates }).unwrap();
       console.log('[TasksTable] updated task', { id: t.id, monthId: t.monthId, updates });
+      addSuccess('Task updated successfully!');
     } catch (e) {
       console.error(e);
+      addError('Failed to update task. Please try again.');
     } finally {
       setEditingId(null);
       setRowActionId(null);
@@ -94,8 +101,10 @@ const TasksTable = ({ tasks, onSelect }) => {
     try {
       setRowActionId(t.id);
       await deleteTask({ monthId: t.monthId, id: t.id }).unwrap();
+      addSuccess('Task deleted successfully!');
     } catch (e) {
       console.error(e);
+      addError('Failed to delete task. Please try again.');
     } finally {
       setRowActionId(null);
     }

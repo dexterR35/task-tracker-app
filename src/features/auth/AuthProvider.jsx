@@ -4,23 +4,9 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { initAuthListener, unsubscribeAuthListener } from './authSlice';
 
-// A soft skeleton to prevent flicker
-const SimpleLoader = () => (
-  <div className="min-h-screen p-8">
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="h-8 w-56 skeleton rounded" />
-      <div className="h-5 w-72 skeleton rounded" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <div className="h-24 skeleton rounded" />
-        <div className="h-24 skeleton rounded" />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="h-32 skeleton rounded" />
-        <div className="h-32 skeleton rounded" />
-        <div className="h-32 skeleton rounded" />
-      </div>
-    </div>
-  </div>
+// Spinner loader component using Tailwind CSS
+const Spinner = () => (
+  <div className="border-4 border-t-4 border-gray-300 border-t-blue-500 rounded-full w-12 h-12 animate-spin"></div>
 );
 
 export const AuthProvider = ({ children }) => {
@@ -38,9 +24,13 @@ export const AuthProvider = ({ children }) => {
     };
   }, [dispatch]);
 
-  // If auth state hasn't been resolved, show the loader
+  // If auth state hasn't been resolved, show the spinner
   if (!initialAuthResolved) {
-    return <SimpleLoader />;
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-[#141C33]">
+        <Spinner />
+      </div>
+    );
   }
 
   // Once resolved, render the rest of the app

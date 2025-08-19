@@ -1,12 +1,19 @@
 // tailwind.config.js
-/** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     './index.html',
-    './src/**/*.{js,jsx,ts,tsx}', // This line ensures all your source files are scanned.
+    './src/**/*.{js,jsx,ts,tsx}',  // Ensure all source files are included
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: '#141C33', // Custom primary color
+        secondary: '#FF5733', // Example secondary color
+      },
+      backgroundColor: {
+        primary: '#141C33', // Use primary color for background
+      },
+    },
   },
   plugins: [],
 };

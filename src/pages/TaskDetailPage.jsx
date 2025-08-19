@@ -4,6 +4,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import DynamicButton from '../components/DynamicButton';
 import dayjs from 'dayjs';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();
@@ -36,11 +38,11 @@ const TaskDetailPage = () => {
   if (loading) return (
     <div className="p-6">
       <div className="max-w-3xl mx-auto space-y-4">
-        <div className="h-8 w-56 skeleton rounded" />
-        <div className="h-5 w-72 skeleton rounded" />
+        <Skeleton height={32} width={224} />
+        <Skeleton height={20} width={288} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-10 skeleton rounded" />
+            <Skeleton key={i} height={40} />
           ))}
         </div>
       </div>
@@ -49,21 +51,8 @@ const TaskDetailPage = () => {
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!task) return null;
 
-  const formatValue = (val) => {
-    if (val == null || val === '') return '—';
-    if (typeof val === 'object') {
-      // Firestore Timestamp
-      if (val?.toDate) {
-        try { return dayjs(val.toDate()).format('YYYY-MM-DD HH:mm'); } catch { return 'Invalid Date'; }
-      }
-      return JSON.stringify(val);
-    }
-    if (typeof val === 'boolean') return val ? 'true' : 'false';
-    return String(val);
-  };
 
-  // Build full field list (including id) from task object
-  const allFields = Object.entries({ id: task.id, ...task });
+
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">

@@ -5,6 +5,8 @@ import DynamicButton from '../components/DynamicButton';
 import { useNotifications } from '../hooks/useNotifications';
 import { jsPDF } from 'jspdf';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, LineChart, Line, ScatterChart, Scatter } from 'recharts';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const PreviewPage = () => {
   const { monthId } = useParams();
@@ -88,7 +90,7 @@ const PreviewPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <div className="text-xl font-semibold mb-4">Generating Analytics Preview...</div>
-            <div className="h-8 w-64 skeleton rounded mx-auto"></div>
+            <Skeleton height={32} width={256} className="mx-auto" />
           </div>
         </div>
       </div>

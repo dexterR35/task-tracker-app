@@ -2,9 +2,7 @@ import { useCallback } from 'react';
 import dayjs from 'dayjs';
 import { normalizeTimestamp } from '../utils/time';
 
-/**
- * React hook with helpers to normalize and format time consistently.
- */
+
 export const useTime = () => {
   const toMs = useCallback((value) => normalizeTimestamp(value), []);
 

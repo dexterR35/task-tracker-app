@@ -3,6 +3,8 @@ import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
 import DynamicButton from './DynamicButton';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 import { 
   HomeIcon, 
@@ -13,7 +15,6 @@ import {
 const Layout = () => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated, logout, loading, listenerActive } = useAuth();
-  // const apiLoading = useSelector((state) => state["tasksApi"]?.queries || state["usersApi"]?.queries);
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
@@ -25,7 +26,7 @@ const Layout = () => {
     }
   };
 
-  // Soft boot overlay state
+
   const isBooting = !listenerActive && loading.initListener;
 
   if (!isAuthenticated) {
@@ -99,10 +100,10 @@ const Layout = () => {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
         {isBooting && (
           <div className="space-y-6">
-            <div className="h-8 w-64 skeleton rounded" />
+            <Skeleton height={32} width={256} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="h-24 skeleton rounded" />
-              <div className="h-24 skeleton rounded" />
+              <Skeleton height={96} />
+              <Skeleton height={96} />
             </div>
           </div>
         )}

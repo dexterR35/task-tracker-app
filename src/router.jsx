@@ -13,20 +13,22 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import ProfilePage from './pages/ProfilePage';
 import UserDashboardPage from './pages/UserDashboardPage';
 import PreviewPage from './pages/PreviewPage';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 // Soft full-page skeleton to prevent route flicker
 const FullPageSkeleton = () => (
   <div className="min-h-screen p-8">
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="h-8 w-64 skeleton rounded" />
+      <Skeleton height={32} width={256} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="h-24 skeleton rounded" />
-        <div className="h-24 skeleton rounded" />
+        <Skeleton height={96} />
+        <Skeleton height={96} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="h-32 skeleton rounded" />
-        <div className="h-32 skeleton rounded" />
-        <div className="h-32 skeleton rounded" />
+        <Skeleton height={128} />
+        <Skeleton height={128} />
+        <Skeleton height={128} />
       </div>
     </div>
   </div>

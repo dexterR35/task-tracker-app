@@ -9,6 +9,8 @@ import TaskForm from '../components/task/TaskForm';
 import TasksTable from '../components/task/TasksTable';
 import AnalyticsSummary from '../components/AnalyticsSummary';
 import { useNotifications } from '../hooks/useNotifications';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -68,8 +70,8 @@ const AdminDashboardPage = () => {
           </div>
           {usersLoading ? (
             <div className="space-y-2">
-              <div className="h-5 w-40 skeleton rounded" />
-              <div className="h-9 w-64 skeleton rounded" />
+              <Skeleton height={20} width={160} />
+              <Skeleton height={36} width={256} />
             </div>
           ) : (
             <div>
@@ -103,10 +105,10 @@ const AdminDashboardPage = () => {
           <AnalyticsSummary tasks={filteredTasks} />
           {tasksLoading ? (
             <div className="bg-white border rounded-lg p-6">
-              <div className="h-6 w-40 skeleton rounded mb-3" />
+              <Skeleton height={24} width={160} className="mb-3" />
               <div className="space-y-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-9 skeleton rounded" />
+                  <Skeleton key={i} height={36} />
                 ))}
               </div>
             </div>
