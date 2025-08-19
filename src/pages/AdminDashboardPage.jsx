@@ -2,14 +2,14 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useGetUsersQuery } from '../redux/services/usersApi';
+import { useGetUsersQuery, useCreateUserMutation } from '../redux/services/usersApi';
 import { useGetMonthTasksQuery, useGetMonthBoardExistsQuery, useGenerateMonthBoardMutation, useComputeMonthAnalyticsMutation, useSaveMonthAnalyticsMutation, useGetMonthAnalyticsQuery } from '../redux/services/tasksApi';
 import DynamicButton from '../components/DynamicButton';
 import TaskForm from '../components/task/TaskForm';
 import TasksTable from '../components/task/TasksTable';
 import AnalyticsSummary from '../components/AnalyticsSummary';
 import { Chart, registerables } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line, Bubble } from 'react-chartjs-2';
 import { useNotifications } from '../hooks/useNotifications';
 import { jsPDF } from 'jspdf';
 Chart.register(...registerables);
@@ -21,6 +21,7 @@ const AdminDashboardPage = () => {
   const impersonatedUserId = searchParams.get('user') || '';
   const monthId = useMemo(() => dayjs().format('YYYY-MM'), []);
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery();
+  const [createUser, { isLoading: creatingUser }] = useCreateUserMutation();
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({ monthId });
   const { data: board = { exists: true }, refetch: refetchBoard, isLoading: boardLoading } = useGetMonthBoardExistsQuery({ monthId });
   const [generateBoard, { isLoading: generatingBoard }] = useGenerateMonthBoardMutation();
@@ -80,6 +81,24 @@ const AdminDashboardPage = () => {
   const handleUserSelect = (e) => {
     const uid = e.target.value;
     navigate(uid ? `/admin?user=${uid}` : '/admin');
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get('email') || '').trim();
+    const password = String(form.get('password') || '').trim();
+    const name = String(form.get('name') || '').trim();
+    const role = String(form.get('role') || 'user');
+    if (!email || !password) { addError('Email and password are required'); return; }
+    if (password.length < 6) { addError('Password must be at least 6 characters'); return; }
+    try {
+      await createUser({ email, password, name, role }).unwrap();
+      addSuccess('User created');
+      e.currentTarget.reset();
+    } catch (err) {
+      addError(err?.data?.message || err?.message || 'Failed to create user');
+    }
   };
 
   const handleDownloadPdf = () => {
@@ -148,6 +167,8 @@ const AdminDashboardPage = () => {
           )}
         </div>
 
+        {/* Create User section moved to Admin Users page */}
+
         <div className="mb-6 flex flex-col md:flex-row gap-4 items-start">
           <DynamicButton
             variant="success"
@@ -201,11 +222,26 @@ const AdminDashboardPage = () => {
                 const products = (analyticsPreview.products) || {};
                 const aiModels = (analyticsPreview.aiModels) || {};
                 const deliverables = (analyticsPreview.deliverables) || {};
+                const aiByProduct = analyticsPreview.aiBreakdownByProduct || {};
+                const aiByMarket = analyticsPreview.aiBreakdownByMarket || {};
+                const daily = analyticsPreview.daily || {};
                 const m = flatten(markets); const p = flatten(products); const ai = flatten(aiModels); const d = flatten(deliverables);
                 const mData = { labels: m.labels, datasets: [{ label: '# Tasks', data: m.values.map(v => v.count || 0), backgroundColor: 'rgba(99,102,241,0.6)'}] };
                 const pData = { labels: p.labels, datasets: [{ label: '# Tasks', data: p.values.map(v => v.count || 0), backgroundColor: 'rgba(16,185,129,0.6)'}] };
                 const aiData = { labels: ai.labels, datasets: [{ label: '# Tasks', data: ai.values, backgroundColor: 'rgba(234,88,12,0.6)'}] };
                 const dData = { labels: d.labels, datasets: [{ label: '# Deliverables', data: d.values, backgroundColor: 'rgba(139,92,246,0.6)'}] };
+                const prodKeys = Object.keys(aiByProduct);
+                const prodAiTasks = prodKeys.map(k => aiByProduct[k]?.aiTasks || 0);
+                const prodNonAiTasks = prodKeys.map(k => aiByProduct[k]?.nonAiTasks || 0);
+                const prodStacked = { labels: prodKeys, datasets: [ { label: 'AI Tasks', data: prodAiTasks, backgroundColor: 'rgba(99,102,241,0.7)' }, { label: 'Non-AI Tasks', data: prodNonAiTasks, backgroundColor: 'rgba(203,213,225,0.9)' } ] };
+                const marketKeys = Object.keys(aiByMarket);
+                const marketAiTasks = marketKeys.map(k => aiByMarket[k]?.aiTasks || 0);
+                const marketNonAiTasks = marketKeys.map(k => aiByMarket[k]?.nonAiTasks || 0);
+                const marketStacked = { labels: marketKeys, datasets: [ { label: 'AI Tasks', data: marketAiTasks, backgroundColor: 'rgba(16,185,129,0.7)' }, { label: 'Non-AI Tasks', data: marketNonAiTasks, backgroundColor: 'rgba(203,213,225,0.9)' } ] };
+                const dayKeys = Object.keys(daily).sort();
+                const dayCounts = dayKeys.map(k => daily[k]?.count || 0);
+                const lineDaily = { labels: dayKeys, datasets: [ { label: 'Tasks / Day', data: dayCounts, borderColor: 'rgba(99,102,241,1)', backgroundColor: 'rgba(99,102,241,0.2)', tension: 0.25 } ] };
+                const bubbleData = { datasets: prodKeys.map(k => ({ label: k, data: [{ x: aiByProduct[k]?.totalHours || 0, y: aiByProduct[k]?.aiHours || 0, r: Math.max(4, Math.min(20, (aiByProduct[k]?.totalTasks || 0))) }], backgroundColor: 'rgba(234,88,12,0.4)', borderColor: 'rgba(234,88,12,1)' })) };
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
@@ -223,6 +259,22 @@ const AdminDashboardPage = () => {
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-center">Deliverables (count)</h4>
                       <Bar data={dData} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">AI vs Non-AI by Product (tasks)</h4>
+                      <Bar data={prodStacked} options={{ responsive: true, plugins: { legend: { position: 'top' } }, scales: { x: { stacked: true }, y: { stacked: true } } }} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">AI vs Non-AI by Market (tasks)</h4>
+                      <Bar data={marketStacked} options={{ responsive: true, plugins: { legend: { position: 'top' } }, scales: { x: { stacked: true }, y: { stacked: true } } }} />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <h4 className="text-sm font-medium mb-2 text-center">Daily Tasks Trend</h4>
+                      <Line data={lineDaily} />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <h4 className="text-sm font-medium mb-2 text-center">Product Hours vs AI Hours (bubble)</h4>
+                      <Bubble data={bubbleData} />
                     </div>
                   </div>
                 );

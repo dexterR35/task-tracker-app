@@ -37,6 +37,7 @@ const Layout = () => {
       ? [
           { name: 'Admin', href: '/admin', icon: ViewColumnsIcon },
           { name: 'Analytics', href: '/admin/analytics', icon: ViewColumnsIcon },
+          { name: 'Users', href: '/admin/users', icon: ViewColumnsIcon },
         ]
       : [{ name: 'My Dashboard', href: '/me', icon: ViewColumnsIcon }]),
     { name: 'Profile', href: '/profile', icon: ViewColumnsIcon },

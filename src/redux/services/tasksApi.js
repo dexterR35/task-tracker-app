@@ -169,6 +169,9 @@ export const tasksApi = createApi({
             products: {},
             aiModels: {},
             deliverables: {},
+            aiBreakdownByProduct: {}, // { product: { aiTasks, aiHours, nonAiTasks, nonAiHours, totalTasks, totalHours } }
+            aiBreakdownByMarket: {},  // { market: { aiTasks, aiHours, nonAiTasks, nonAiHours, totalTasks, totalHours } }
+            daily: {}, // { YYYY-MM-DD: { count, hours } }
           };
 
           for (const t of tasks) {
@@ -183,6 +186,21 @@ export const tasksApi = createApi({
               if (!agg.byUser[t.userUID]) agg.byUser[t.userUID] = { count: 0, hours: 0 };
               agg.byUser[t.userUID].count += 1;
               agg.byUser[t.userUID].hours += Number(t.timeInHours) || 0;
+            }
+            // daily
+            const createdDay = (() => {
+              const ms = t.createdAt || 0;
+              if (!ms) return null;
+              const d = new Date(ms);
+              if (isNaN(d.getTime())) return null;
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              return `${d.getFullYear()}-${m}-${day}`;
+            })();
+            if (createdDay) {
+              if (!agg.daily[createdDay]) agg.daily[createdDay] = { count: 0, hours: 0 };
+              agg.daily[createdDay].count += 1;
+              agg.daily[createdDay].hours += Number(t.timeInHours) || 0;
             }
             const addCountHours = (map, key) => {
               if (!map[key]) map[key] = { count: 0, hours: 0 };
@@ -199,6 +217,31 @@ export const tasksApi = createApi({
               agg.products[t.product].count += 1;
               agg.products[t.product].hours += Number(t.timeInHours) || 0;
             }
+            // AI breakdown by product/market
+            const ensureBreakdown = (map, key) => {
+              if (!map[key]) map[key] = { aiTasks: 0, aiHours: 0, nonAiTasks: 0, nonAiHours: 0, totalTasks: 0, totalHours: 0 };
+              return map[key];
+            };
+            const applyBreakdown = (entry, task) => {
+              entry.totalTasks += 1;
+              entry.totalHours += Number(task.timeInHours) || 0;
+              if (task.aiUsed) {
+                entry.aiTasks += 1;
+                entry.aiHours += Number(task.timeSpentOnAI) || 0;
+              } else {
+                entry.nonAiTasks += 1;
+                entry.nonAiHours += Number(task.timeInHours) || 0;
+              }
+            };
+            if (t.product) {
+              const e = ensureBreakdown(agg.aiBreakdownByProduct, t.product);
+              applyBreakdown(e, t);
+            }
+            const marketsList = Array.isArray(t.markets) ? t.markets : (t.market ? [t.market] : []);
+            marketsList.forEach((mk) => {
+              const e = ensureBreakdown(agg.aiBreakdownByMarket, mk || 'N/A');
+              applyBreakdown(e, t);
+            });
             if (Array.isArray(t.aiModels)) {
               t.aiModels.forEach((m) => {
                 const key = m || 'N/A';

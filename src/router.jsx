@@ -9,6 +9,7 @@ import TaskDetailPage from './pages/TaskDetailPage';
 import HomePage from './pages/HomePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import ProfilePage from './pages/ProfilePage';
 import UserDashboardPage from './pages/UserDashboardPage';
 
@@ -118,6 +119,14 @@ const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminAnalyticsPage />
+          </AdminRoute>
+        )
+      },
+      {
+        path: 'admin/users',
+        element: (
+          <AdminRoute>
+            <AdminUsersPage />
           </AdminRoute>
         )
       },
