@@ -4,8 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import DynamicButton from '../components/DynamicButton';
 import dayjs from 'dayjs';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import Skeleton from '../components/ui/Skeleton';
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();
@@ -38,11 +37,11 @@ const TaskDetailPage = () => {
   if (loading) return (
     <div className="p-6">
       <div className="max-w-3xl mx-auto space-y-4">
-        <Skeleton height={32} width={224} />
-        <Skeleton height={20} width={288} />
+        <Skeleton variant="title" width="224px" height="32px" />
+        <Skeleton variant="text" width="288px" height="20px" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} height={40} />
+            <Skeleton key={i} variant="input" height="40px" />
           ))}
         </div>
       </div>
@@ -50,10 +49,6 @@ const TaskDetailPage = () => {
   );
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!task) return null;
-
-
-
-
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-start mb-4">

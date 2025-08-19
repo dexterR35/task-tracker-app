@@ -9,8 +9,8 @@ import TaskForm from '../components/task/TaskForm';
 import TasksTable from '../components/task/TasksTable';
 import AnalyticsSummary from '../components/AnalyticsSummary';
 import { useNotifications } from '../hooks/useNotifications';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import Skeleton from '../components/ui/Skeleton';
+
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -70,8 +70,8 @@ const AdminDashboardPage = () => {
           </div>
           {usersLoading ? (
             <div className="space-y-2">
-              <Skeleton height={20} width={160} />
-              <Skeleton height={36} width={256} />
+              <Skeleton variant="text" width="160px" height="20px" />
+              <Skeleton variant="input" width="256px" />
             </div>
           ) : (
             <div>
@@ -102,20 +102,11 @@ const AdminDashboardPage = () => {
         {showTaskForm && <div className="mb-6"><TaskForm /></div>}
 
         <div className="space-y-8">
-          <AnalyticsSummary tasks={filteredTasks} />
-          {tasksLoading ? (
-            <div className="bg-white border rounded-lg p-6">
-              <Skeleton height={24} width={160} className="mb-3" />
-              <div className="space-y-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} height={36} />
-                ))}
-              </div>
-            </div>
-          ) : filteredTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
+          <AnalyticsSummary tasks={filteredTasks} loading={tasksLoading} />
+          {!tasksLoading && filteredTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-3">Tasks ({filteredTasks.length})</h2>
-              <TasksTable tasks={filteredTasks} />
+              <TasksTable tasks={filteredTasks} loading={tasksLoading} />
             </div>
           )}
         </div>

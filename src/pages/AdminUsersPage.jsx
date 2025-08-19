@@ -1,8 +1,7 @@
 import React from 'react';
 import { useGetUsersQuery, useCreateUserMutation } from '../redux/services/usersApi';
 import DynamicButton from '../components/DynamicButton';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import Skeleton from '../components/ui/Skeleton';
 
 const AdminUsersPage = () => {
   const { data: users = [], isLoading } = useGetUsersQuery();
@@ -62,8 +61,10 @@ const AdminUsersPage = () => {
               <tbody>
                 {isLoading ? (
                   <tr><td className="px-3 py-3" colSpan={4}>
-                    <Skeleton height={20} width={160} className="mb-2" />
-                    <Skeleton height={20} width={256} />
+                    <div className="space-y-2">
+                      <Skeleton variant="text" width="160px" height="20px" />
+                      <Skeleton variant="text" width="256px" height="20px" />
+                    </div>
                   </td></tr>
                 ) : users.length === 0 ? (
                   <tr><td className="px-3 py-3" colSpan={4}>No users found.</td></tr>

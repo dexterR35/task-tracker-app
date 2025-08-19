@@ -9,7 +9,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Vendor chunks
+          // Vendor chunks - more granular splitting
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom')) {
               return 'react-vendor';
@@ -29,7 +29,39 @@ export default defineConfig({
             if (id.includes('react-toastify')) {
               return 'ui-vendor';
             }
-            return 'vendor';
+            if (id.includes('tailwindcss') || id.includes('postcss')) {
+              return 'css-vendor';
+            }
+            if (id.includes('recharts')) {
+              return 'recharts-vendor';
+            }
+            // Split remaining vendor dependencies into smaller chunks
+            if (id.includes('lodash') || id.includes('date-fns')) {
+              return 'utils-vendor';
+            }
+            if (id.includes('@emotion') || id.includes('styled-components')) {
+              return 'styling-vendor';
+            }
+            if (id.includes('moment') || id.includes('dayjs') || id.includes('luxon')) {
+              return 'date-vendor';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('http')) {
+              return 'http-vendor';
+            }
+            if (id.includes('uuid') || id.includes('nanoid') || id.includes('crypto')) {
+              return 'crypto-vendor';
+            }
+            if (id.includes('jspdf') || id.includes('pdf') || id.includes('file-saver')) {
+              return 'pdf-vendor';
+            }
+            if (id.includes('buffer') || id.includes('stream') || id.includes('util')) {
+              return 'node-vendor';
+            }
+            if (id.includes('@heroicons') || id.includes('heroicons')) {
+              return 'icons-vendor';
+            }
+            // Default vendor chunk for other dependencies
+            return 'other-vendor';
           }
 
           // Feature chunks
@@ -39,9 +71,18 @@ export default defineConfig({
           if (id.includes('/features/user/') || id.includes('/features/task/')) {
             return 'data-features';
           }
+          if (id.includes('/components/ui/')) {
+            return 'ui-components';
+          }
+          if (id.includes('/pages/')) {
+            return 'pages';
+          }
         },
       },
     },
-    chunkSizeWarningLimit: 1000, // Increase warning limit to 1MB
+    chunkSizeWarningLimit: 800, // Reduce warning limit to 800KB
+    minify: 'esbuild', // Use esbuild minifier (default)
+    sourcemap: false, // Disable sourcemaps for production
   },
 });
+

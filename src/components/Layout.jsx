@@ -3,8 +3,7 @@ import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
 import DynamicButton from './DynamicButton';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import Skeleton from './ui/Skeleton';
 
 import { 
   HomeIcon, 
@@ -100,10 +99,10 @@ const Layout = () => {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
         {isBooting && (
           <div className="space-y-6">
-            <Skeleton height={32} width={256} />
+            <Skeleton variant="title" width="256px" height="32px" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Skeleton height={96} />
-              <Skeleton height={96} />
+              <Skeleton variant="card" height="96px" />
+              <Skeleton variant="card" height="96px" />
             </div>
           </div>
         )}

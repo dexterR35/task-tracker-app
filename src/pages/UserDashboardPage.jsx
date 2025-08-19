@@ -11,7 +11,7 @@ import DynamicButton from '../components/DynamicButton';
 const UserDashboardPage = () => {
   const { user } = useAuth();
   const monthId = useMemo(() => dayjs().format('YYYY-MM'), []);
-  const { data: tasks = [] } = useGetMonthTasksQuery({ monthId });
+  const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({ monthId });
   const { data: board = { exists: true } } = useGetMonthBoardExistsQuery({ monthId });
   const [showTaskForm, setShowTaskForm] = useState(false);
   const { addError } = useNotifications();
@@ -43,11 +43,11 @@ const UserDashboardPage = () => {
         </div>
         {showTaskForm && board?.exists && <div className="mb-6"><TaskForm /></div>}
         <div className="space-y-8">
-          <AnalyticsSummary tasks={myTasks} />
-          {myTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
+          <AnalyticsSummary tasks={myTasks} loading={tasksLoading} />
+          {!tasksLoading && myTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-3">Tasks ({myTasks.length})</h2>
-              <TasksTable tasks={myTasks} />
+              <TasksTable tasks={myTasks} loading={tasksLoading} />
             </div>
           )}
         </div>

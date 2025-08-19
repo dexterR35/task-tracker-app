@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import Skeleton from './ui/Skeleton';
 
 const DynamicButton = ({
   id,
@@ -82,7 +81,7 @@ const DynamicButton = ({
 
   const renderIcon = () => {
     if (isLoading) {
-      return <Skeleton width={16} height={16} circle />;
+      return <Skeleton variant="avatar" width="16px" height="16px" circle />;
     }
     return Icon ? <Icon className="w-4 h-4" /> : null;
   };

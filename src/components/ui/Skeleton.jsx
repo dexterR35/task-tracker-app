@@ -36,7 +36,7 @@ const Skeleton = ({
   };
 
   const variantClass = variants[variant] || variants.text;
-  const finalClasses = `${baseClasses} ${variantClass} ${className}`;
+  let finalClasses = `${baseClasses} ${variantClass} ${className}`;
   
   if (width) {
     finalClasses += ` w-${width}`;
