@@ -8,14 +8,14 @@ const AdminUsersPage = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     const name = String(form.get('name') || '').trim();
     const email = String(form.get('email') || '').trim();
     const password = String(form.get('password') || '').trim();
-    const role = String(form.get('role') || 'user');
     if (!email || !password) return;
-    await createUser({ email, password, name, role }).unwrap();
-    e.currentTarget.reset();
+    await createUser({ email, password, name }).unwrap();
+    if (formEl && typeof formEl.reset === 'function') formEl.reset();
   };
 
   return (
@@ -39,13 +39,6 @@ const AdminUsersPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password*</label>
               <input name="password" type="password" className="border rounded px-3 py-2 w-full" placeholder="min 6 chars" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select name="role" className="border rounded px-3 py-2 w-full" defaultValue="user">
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
             </div>
             <div className="sm:col-span-2 lg:col-span-5">
               <DynamicButton type="submit" variant="primary" loading={creating} loadingText="Creating...">Create User</DynamicButton>

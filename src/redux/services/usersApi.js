@@ -27,7 +27,7 @@ export const usersApi = createApi({
       providesTags: ['Users'],
     }),
     createUser: builder.mutation({
-      async queryFn({ email, password, name, role = 'user' }) {
+      async queryFn({ email, password, name }) {
         try {
           // Use a secondary app to avoid switching the current admin session
           const primary = getApp();
@@ -43,10 +43,9 @@ export const usersApi = createApi({
           const uid = cred.user.uid;
           const userDocRef = doc(collection(db, 'users'), uid);
           const createdBy = auth.currentUser?.uid || null;
-          const safeRole = role === 'admin' ? 'admin' : 'user';
           await setDoc(
             userDocRef,
-            { userUID: uid, email, name: name || '', role: safeRole, isActive: true, createdBy, createdAt: serverTimestamp() },
+            { userUID: uid, email, name: name || '', role: 'user', isActive: true, createdBy, createdAt: serverTimestamp() },
             { merge: true }
           );
           // Read back the doc to normalize server timestamps
