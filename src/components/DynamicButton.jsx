@@ -58,6 +58,9 @@ const DynamicButton = ({
   `.trim();
 
   const handleClick = useCallback(async (e) => {
+    // Don't handle click for submit buttons - let the form handle it
+    if (type === 'submit') return;
+    
     if (isLoading || isDisabled || !onClick) return;
 
     try {
@@ -73,7 +76,7 @@ const DynamicButton = ({
     } finally {
       setLocalLoading(false);
     }
-  }, [isLoading, isDisabled, onClick, successMessage, errorMessage, addSuccess, addError, setLocalLoading]);
+  }, [isLoading, isDisabled, onClick, successMessage, errorMessage, addSuccess, addError, setLocalLoading, type]);
 
   const renderIcon = () => {
     if (isLoading) {

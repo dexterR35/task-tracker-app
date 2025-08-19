@@ -12,6 +12,7 @@ import {
   productOptions,
   taskNameOptions,
   aiModelOptions,
+  deliverables,
 } from "../../constants/taskOptions";
 
 // Clean TaskForm component (UI slice removed)
@@ -47,7 +48,10 @@ const TaskForm = ({
     jiraLink: Yup.string()
       .url("Must be a valid URL")
       .required("Jira link is required"),
-    markets: Yup.array().of(Yup.string()).min(1, "Select at least one market"),
+    markets: Yup.array()
+      .of(Yup.string().required())
+      .min(1, "Select at least one market")
+      .required("Markets are required"),
     product: Yup.string().required("Product selection is required"),
     taskName: Yup.string().required("Task name is required"),
     aiUsed: Yup.boolean(),
@@ -68,12 +72,41 @@ const TaskForm = ({
       .required("Task completion time is required")
       .min(0.5, "Minimum is 0.5h"),
     reworked: Yup.boolean(),
-    deliverables: Yup.array().of(Yup.string()).min(1, "Select at least one deliverable"),
+    deliverables: Yup.array()
+      .of(Yup.string().required())
+      .min(1, "Select at least one deliverable")
+      .required("Deliverables are required"),
   });
 
   const creatingRef = useRef(false);
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+    // Additional validation check
+    if (!values.deliverables || values.deliverables.length === 0) {
+      addError("Please select at least one deliverable");
+      return;
+    }
+    
+    if (!values.markets || values.markets.length === 0) {
+      addError("Please select at least one market");
+      return;
+    }
+    
+    if (!values.product) {
+      addError("Please select a product");
+      return;
+    }
+    
+    if (!values.taskName) {
+      addError("Please select a task name");
+      return;
+    }
+    
+    if (!values.timeInHours) {
+      addError("Please enter task completion time");
+      return;
+    }
+    
     try {
       setOuterSubmitting(true);
       const quantize = (n) => {
@@ -103,7 +136,7 @@ const TaskForm = ({
 
       console.log("[TaskForm] submit", {
         isEdit,
-        id: initialValues.id,
+        ...(isEdit ? { id: initialValues.id } : {}),
         monthId,
         taskData,
       });
@@ -112,11 +145,13 @@ const TaskForm = ({
       } else if (isEdit && initialValues.id) {
         if (creatingRef.current) return;
         creatingRef.current = true;
-        await updateTask({ monthId, id: initialValues.id, updates: taskData }).unwrap();
+        const updated = await updateTask({ monthId, id: initialValues.id, updates: taskData }).unwrap();
+        console.log('[TaskForm] updated', updated);
       } else {
         if (creatingRef.current) return;
         creatingRef.current = true;
-        await createTask(taskData).unwrap();
+        const created = await createTask(taskData).unwrap();
+        console.log('[TaskForm] created', { id: created?.id, monthId: created?.monthId });
       }
 
       if (!isEdit) resetForm();
@@ -157,7 +192,7 @@ const TaskForm = ({
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ isSubmitting, values }) => (
+        {({ isSubmitting, values, isValid, errors, touched }) => (
           <Form className="space-y-6">
             <Field name="jiraLink">
               {(field) => {
@@ -185,7 +220,7 @@ const TaskForm = ({
             <Field name="markets">
               {(field) => {
                 const { baseInputClasses } = renderField(field);
-                const selected = field.form.values.markets || [];
+                const selected = field.field.value || [];
                 const addMarket = (val) => {
                   if (!val) return;
                   if (selected.includes(val)) return;
@@ -313,7 +348,7 @@ const TaskForm = ({
                 <Field name="aiModels">
                   {(field) => {
                     const { baseInputClasses } = renderField(field);
-                    const selected = field.form.values.aiModels || [];
+                    const selected = field.field.value || [];
                     const addModel = (val) => {
                       if (!val) return;
                       if (selected.includes(val)) return;
@@ -397,7 +432,7 @@ const TaskForm = ({
             <Field name="deliverables">
               {(field) => {
                 const { baseInputClasses } = renderField(field);
-                const selected = field.form.values.deliverables || [];
+                const selected = field.field.value || [];
                 const addDeliv = (val) => {
                   if (!val) return;
                   if (selected.includes(val)) return;
@@ -410,18 +445,21 @@ const TaskForm = ({
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Deliverables *</label>
                     <select className={baseInputClasses} value="" onChange={(e) => addDeliv(e.target.value)}>
-                      <option value="">Add</option>
-                      {[1,2,3,4,5,6,7,8,9,10].filter(n => !selected.includes(String(n))).map(n => (
-                        <option key={n} value={String(n)}>{n}</option>
+                      <option value="">Add a deliverable…</option>
+                      {deliverables.filter(o => !selected.includes(o.value)).map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {selected.map((d) => (
-                        <span key={d} className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs">
-                          {d}
-                          <button type="button" onClick={() => removeDeliv(d)} className="ml-1 text-purple-600">×</button>
-                        </span>
-                      ))}
+                      {selected.map((d) => {
+                        const deliverable = deliverables.find(o => o.value === d);
+                        return (
+                          <span key={d} className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs">
+                            {deliverable ? deliverable.label : d}
+                            <button type="button" onClick={() => removeDeliv(d)} className="ml-1 text-purple-600">×</button>
+                          </span>
+                        );
+                      })}
                     </div>
                     <ErrorMessage name="deliverables" component="div" className="text-red-500 text-sm mt-1" />
                   </div>
@@ -441,6 +479,7 @@ const TaskForm = ({
                     ? "Task updated successfully!"
                     : "Task created successfully!"
                 }
+                disabled={!isValid}
               >
                 {isEdit ? "Update Task" : "Create Task"}
               </DynamicButton>

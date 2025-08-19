@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { useDispatch } from 'react-redux';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions } from '../../constants/taskOptions';
-import dayjs from 'dayjs';
+import useTime from '../../hooks/useTime';
+import usePagination from '../../hooks/usePagination';
 
-const formatDay = (ts) => ts ? dayjs(ts).format('MMM D') : '-';
+const useFormatDay = () => {
+  const { format } = useTime();
+  return useMemo(() => ((ts) => ts ? format(ts, 'MMM D') : '-'), [format]);
+};
 const numberFmt = (n) => (Number.isFinite(n) ? (Math.round(n * 10) / 10) : 0);
 
 const TasksTable = ({ tasks, onSelect }) => {
@@ -22,14 +26,14 @@ const TasksTable = ({ tasks, onSelect }) => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
-  const params = new URLSearchParams(window.location.search);
-  const initialPageSize = parseInt(params.get('ps') || localStorage.getItem('tt_pageSize') || '25', 10);
-  const initialPage = parseInt(params.get('p') || localStorage.getItem('tt_page') || '0', 10);
-  const [page, setPage] = useState(isNaN(initialPage) ? 0 : initialPage);
-  const [pageSize, setPageSize] = useState(isNaN(initialPageSize) ? 25 : initialPageSize);
-  const pageCount = Math.ceil(tasks.length / pageSize) || 1;
+  const formatDay = useFormatDay();
+  const { page, pageSize, pageCount, currentPageItems: currentPageTasks, handlePageChange, handlePageSizeChange } = usePagination(tasks, {
+    defaultSize: 25,
+    queryParamPage: 'p',
+    queryParamSize: 'ps',
+    storageKeyPrefix: 'tt_'
+  });
   const startIdx = page * pageSize;
-  const currentPageTasks = tasks.slice(startIdx, startIdx + pageSize);
 
   const syncState = (newPage, newSize) => {
     const search = new URLSearchParams(window.location.search);
@@ -40,9 +44,21 @@ const TasksTable = ({ tasks, onSelect }) => {
     localStorage.setItem('tt_page', String(newPage));
     localStorage.setItem('tt_pageSize', String(newSize));
   };
-  const handlePageChange = (sel) => { const np = sel.selected; setPage(np); syncState(np, pageSize); };
-  const handlePageSizeChange = (e) => { const ns = parseInt(e.target.value, 10) || 25; setPageSize(ns); setPage(0); syncState(0, ns); };
-  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', markets: Array.isArray(t.markets) ? t.markets : (t.market ? [t.market] : []), product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModels: Array.isArray(t.aiModels) ? t.aiModels : (t.aiModel ? [t.aiModel] : []), reworked: !!t.reworked, deliverables: Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [String(t.deliverable)] : []) }); };
+  
+  const startEdit = (t) => {
+    setEditingId(t.id);
+    setForm({
+      taskName: t.taskName || '',
+      markets: Array.isArray(t.markets) ? t.markets : (t.market ? [t.market] : []),
+      product: t.product || '',
+      timeInHours: t.timeInHours || 0,
+      timeSpentOnAI: t.timeSpentOnAI || 0,
+      aiUsed: Boolean(t.aiUsed),
+      aiModels: Array.isArray(t.aiModels) ? t.aiModels : (t.aiModel ? [t.aiModel] : []),
+      reworked: Boolean(t.reworked),
+      deliverables: Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [String(t.deliverable)] : []),
+    });
+  };
   const cancelEdit = () => { setEditingId(null); setForm({}); };
   const saveEdit = async (t) => {
     try {
@@ -54,10 +70,10 @@ const TasksTable = ({ tasks, onSelect }) => {
         taskName: form.taskName || '',
         product: form.product || '',
         markets: Array.isArray(form.markets) ? form.markets : [],
-        aiUsed: !!form.aiUsed,
+        aiUsed: Boolean(form.aiUsed),
         aiModels: form.aiUsed ? (Array.isArray(form.aiModels) ? form.aiModels : []) : [],
         deliverables: Array.isArray(form.deliverables) ? form.deliverables : [],
-        reworked: !!form.reworked,
+        reworked: Boolean(form.reworked),
         timeInHours: quant(form.timeInHours),
         timeSpentOnAI: form.aiUsed ? quant(form.timeSpentOnAI) : 0,
       };
@@ -76,6 +92,7 @@ const TasksTable = ({ tasks, onSelect }) => {
         return;
       }
       await updateTask({ monthId: t.monthId, id: t.id, updates }).unwrap();
+      console.log('[TasksTable] updated task', { id: t.id, monthId: t.monthId, updates });
     } catch (e) {
       console.error(e);
     } finally {

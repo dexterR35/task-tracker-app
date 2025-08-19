@@ -46,3 +46,16 @@ export const aiModelOptions = [
   { value: 'FreePick', label: 'FreePick' },
   { value: 'Cursor', label: 'Cursor' }
 ];
+
+export const deliverables = [
+  { value: 'design', label: 'Design' },
+  { value: 'development', label: 'Development' },
+  { value: 'testing', label: 'Testing' },
+  { value: 'documentation', label: 'Documentation' },
+  { value: 'deployment', label: 'Deployment' },
+  { value: 'training', label: 'Training' },
+  { value: 'support', label: 'Support' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'optimization', label: 'Optimization' },
+  { value: 'integration', label: 'Integration' }
+];
