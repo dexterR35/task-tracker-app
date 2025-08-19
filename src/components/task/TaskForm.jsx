@@ -30,7 +30,7 @@ const TaskForm = ({
 
   const defaultInitialValues = {
     jiraLink: "",
-    market: "",
+    markets: [],
     product: "",
     taskName: "",
     aiUsed: false,
@@ -38,7 +38,7 @@ const TaskForm = ({
     aiModels: [],
     timeInHours: "",
     reworked: false,
-    deliverable: "",
+    deliverables: [],
   };
 
   const initialValues = customInitialValues || defaultInitialValues;
@@ -47,7 +47,7 @@ const TaskForm = ({
     jiraLink: Yup.string()
       .url("Must be a valid URL")
       .required("Jira link is required"),
-    market: Yup.string().required("Market selection is required"),
+    markets: Yup.array().of(Yup.string()).min(1, "Select at least one market"),
     product: Yup.string().required("Product selection is required"),
     taskName: Yup.string().required("Task name is required"),
     aiUsed: Yup.boolean(),
@@ -68,7 +68,7 @@ const TaskForm = ({
       .required("Task completion time is required")
       .min(0.5, "Minimum is 0.5h"),
     reworked: Yup.boolean(),
-    deliverable: Yup.string().required("Deliverable is required"),
+    deliverables: Yup.array().of(Yup.string()).min(1, "Select at least one deliverable"),
   });
 
   const creatingRef = useRef(false);
@@ -93,6 +93,8 @@ const TaskForm = ({
           return isNaN(n) ? 0 : quantize(n);
         })(),
         aiModels: Array.isArray(values.aiModels) ? values.aiModels : (values.aiModels ? [values.aiModels] : []),
+        markets: Array.isArray(values.markets) ? values.markets : (values.markets ? [values.markets] : []),
+        deliverables: Array.isArray(values.deliverables) ? values.deliverables : (values.deliverables ? [values.deliverables] : []),
         createdBy: user?.uid,
         createdByName: user?.name || user?.email,
         userUID: user?.uid,

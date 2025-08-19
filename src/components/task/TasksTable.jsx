@@ -42,12 +42,12 @@ const TasksTable = ({ tasks, onSelect }) => {
   };
   const handlePageChange = (sel) => { const np = sel.selected; setPage(np); syncState(np, pageSize); };
   const handlePageSizeChange = (e) => { const ns = parseInt(e.target.value, 10) || 25; setPageSize(ns); setPage(0); syncState(0, ns); };
-  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', markets: t.markets || [], product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModels: t.aiModels || [], reworked: !!t.reworked, deliverable: t.deliverable || '' }); };
+  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', markets: t.markets || [], product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModels: t.aiModels || [], reworked: !!t.reworked, deliverables: t.deliverables || [] }); };
   const cancelEdit = () => { setEditingId(null); setForm({}); };
   const saveEdit = async (t) => {
     try {
       setRowActionId(t.id);
-      await updateTask({ monthId: t.monthId, id: t.id, updates: { ...form, timeInHours: Number(form.timeInHours) || 0, timeSpentOnAI: form.aiUsed ? (Number(form.timeSpentOnAI) || 0) : 0, aiModels: form.aiUsed ? (form.aiModels || []) : [], deliverable: form.deliverable || '', markets: form.markets || [] } }).unwrap();
+      await updateTask({ monthId: t.monthId, id: t.id, updates: { ...form, timeInHours: Number(form.timeInHours) || 0, timeSpentOnAI: form.aiUsed ? (Number(form.timeSpentOnAI) || 0) : 0, aiModels: form.aiUsed ? (form.aiModels || []) : [], deliverables: form.deliverables || [], markets: form.markets || [] } }).unwrap();
     } catch (e) {
       console.error(e);
     } finally {

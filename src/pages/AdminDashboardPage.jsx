@@ -142,7 +142,14 @@ const AdminDashboardPage = () => {
         </div>
 
         <div className="mb-6 flex flex-col md:flex-row gap-4 items-start">
-          <DynamicButton variant="success" onClick={() => setShowTaskForm(!showTaskForm)}>{showTaskForm ? 'Hide Form' : 'Create Task'}</DynamicButton>
+          <DynamicButton
+            variant="success"
+            onClick={() => setShowTaskForm(!showTaskForm)}
+            disabled={!board?.exists}
+            title={!board?.exists ? 'Create the board first' : ''}
+          >
+            {showTaskForm ? 'Hide Form' : 'Create Task'}
+          </DynamicButton>
           {!board?.exists ? (
             <DynamicButton variant="primary" onClick={async () => { await generateBoard({ monthId }).unwrap(); await refetchBoard(); }} loading={generatingBoard} loadingText="Generating...">Create Board - {monthId}</DynamicButton>
           ) : (

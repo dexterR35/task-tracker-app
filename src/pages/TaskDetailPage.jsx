@@ -70,7 +70,7 @@ const TaskDetailPage = () => {
         <div><span className="font-medium text-gray-700">Created By:</span> {task.createdByName || task.createdBy}</div>
         <div><span className="font-medium text-gray-700">AI Used:</span> {task.aiUsed ? 'Yes' : 'No'}</div>
         <div><span className="font-medium text-gray-700">AI Models:</span> {task.aiUsed ? ((Array.isArray(task.aiModels) ? task.aiModels.join(', ') : (task.aiModel || 'Unknown'))) : 'Unknown'}</div>
-        <div><span className="font-medium text-gray-700">Deliverable:</span> {task.deliverable || '-'}</div>
+        <div><span className="font-medium text-gray-700">Deliverables:</span> {Array.isArray(task.deliverables) ? task.deliverables.join(', ') : (task.deliverable || '-')}</div>
         <div><span className="font-medium text-gray-700">Time Spent On AI (h):</span> {task.timeSpentOnAI}</div>
         <div><span className="font-medium text-gray-700">Time In Hours:</span> {task.timeInHours}</div>
         <div><span className="font-medium text-gray-700">Reworked:</span> {task.reworked ? 'Yes' : 'No'}</div>
