@@ -12,6 +12,7 @@ import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import ProfilePage from './pages/ProfilePage';
 import UserDashboardPage from './pages/UserDashboardPage';
+import PreviewPage from './pages/PreviewPage';
 
 // Soft full-page skeleton to prevent route flicker
 const FullPageSkeleton = () => (
@@ -119,6 +120,14 @@ const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminAnalyticsPage />
+          </AdminRoute>
+        )
+      },
+      {
+        path: 'preview/:monthId',
+        element: (
+          <AdminRoute>
+            <PreviewPage />
           </AdminRoute>
         )
       },

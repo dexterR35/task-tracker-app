@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
-import { useDispatch } from 'react-redux';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
-import { taskNameOptions, marketOptions, productOptions, aiModelOptions } from '../../constants/taskOptions';
+import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../constants/taskOptions';
 import useTime from '../../hooks/useTime';
 import usePagination from '../../hooks/usePagination';
 
@@ -15,7 +14,6 @@ const useFormatDay = () => {
 const numberFmt = (n) => (Number.isFinite(n) ? (Math.round(n * 10) / 10) : 0);
 
 const TasksTable = ({ tasks, onSelect }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const handleSelect = (t) => {
     if (typeof onSelect === 'function') return onSelect(t);
@@ -35,15 +33,6 @@ const TasksTable = ({ tasks, onSelect }) => {
   });
   const startIdx = page * pageSize;
 
-  const syncState = (newPage, newSize) => {
-    const search = new URLSearchParams(window.location.search);
-    search.set('p', String(newPage));
-    search.set('ps', String(newSize));
-    const newUrl = `${window.location.pathname}?${search.toString()}${window.location.hash}`;
-    window.history.replaceState(null, '', newUrl);
-    localStorage.setItem('tt_page', String(newPage));
-    localStorage.setItem('tt_pageSize', String(newSize));
-  };
   
   const startEdit = (t) => {
     setEditingId(t.id);
@@ -153,7 +142,7 @@ const TasksTable = ({ tasks, onSelect }) => {
                       <option value="">Select task</option>
                       {taskNameOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
-                  ) : <button className="text-left w-full" onClick={() => handleSelect(t)}>{t.taskName}</button>}
+                  ) : t.taskName}
                 </td>
                 <td className="px-3 py-2">{isEdit ? (
                   <div>
@@ -209,16 +198,19 @@ const TasksTable = ({ tasks, onSelect }) => {
                 <td className="px-3 py-2">{isEdit ? (
                   <div>
                     <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = e.target.value; if (!v) return; setForm(f => ({ ...f, deliverables: (f.deliverables||[]).includes(v) ? f.deliverables : [...(f.deliverables||[]), v] })); }}>
-                      <option value="">Add</option>
-                      {[1,2,3,4,5,6,7,8,9,10].filter(n => !(form.deliverables||[]).includes(String(n))).map(n => <option key={n} value={String(n)}>{n}</option>)}
+                      <option value="">Add deliverable…</option>
+                      {deliverables.filter(o => !(form.deliverables||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {(form.deliverables||[]).map(d => (
-                        <span key={d} className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs">
-                          {d}
-                          <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, deliverables: (f.deliverables||[]).filter(x => x !== d) }))}>×</button>
-                        </span>
-                      ))}
+                      {(form.deliverables||[]).map(d => {
+                        const deliverable = deliverables.find(o => o.value === d);
+                        return (
+                          <span key={d} className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs">
+                            {deliverable ? deliverable.label : d}
+                            <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, deliverables: (f.deliverables||[]).filter(x => x !== d) }))}>×</button>
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (Array.isArray(t.deliverables) ? (t.deliverables.join(', ') || '-') : (t.deliverable || '-'))}</td>
@@ -230,6 +222,7 @@ const TasksTable = ({ tasks, onSelect }) => {
                     </>
                   ) : (
                     <>
+                      <button onClick={() => handleSelect(t)} className="inline-flex items-center px-2 py-1 rounded text-white bg-blue-600 hover:bg-blue-700" title="View Task">View</button>
                       <button disabled={rowActionId === t.id} onClick={() => startEdit(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === t.id ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} title="Edit"><PencilIcon className="w-4 h-4" /></button>
                       <button disabled={rowActionId === t.id} onClick={() => removeTask(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === t.id ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`} title="Delete"><TrashIcon className="w-4 h-4" /></button>
                     </>

@@ -294,6 +294,19 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, arg) => [{ type: 'MonthAnalytics', id: arg.monthId }],
     }),
+
+    deleteMonthAnalytics: builder.mutation({
+      async queryFn({ monthId }) {
+        try {
+          const ref = doc(db, 'analytics', monthId);
+          await deleteDoc(ref);
+          return { data: { monthId, deleted: true } };
+        } catch (error) {
+          return { error: { message: error?.message || 'Failed to delete analytics' } };
+        }
+      },
+      invalidatesTags: (result, error, arg) => [{ type: 'MonthAnalytics', id: arg.monthId }],
+    }),
   }),
 });
 
@@ -308,6 +321,7 @@ export const {
   useComputeMonthAnalyticsMutation,
   useSaveMonthAnalyticsMutation,
   useListAllAnalyticsQuery,
+  useDeleteMonthAnalyticsMutation,
 } = tasksApi;
 
 
