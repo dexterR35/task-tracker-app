@@ -394,19 +394,36 @@ const TaskForm = ({
                 </div>
               )}
             </Field>
-            <Field name="deliverable">
+            <Field name="deliverables">
               {(field) => {
                 const { baseInputClasses } = renderField(field);
+                const selected = field.form.values.deliverables || [];
+                const addDeliv = (val) => {
+                  if (!val) return;
+                  if (selected.includes(val)) return;
+                  field.form.setFieldValue('deliverables', [...selected, val]);
+                };
+                const removeDeliv = (val) => {
+                  field.form.setFieldValue('deliverables', selected.filter((d) => d !== val));
+                };
                 return (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Deliverable *</label>
-                    <select {...field.field} className={baseInputClasses}>
-                      <option value="">Select</option>
-                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Deliverables *</label>
+                    <select className={baseInputClasses} value="" onChange={(e) => addDeliv(e.target.value)}>
+                      <option value="">Add</option>
+                      {[1,2,3,4,5,6,7,8,9,10].filter(n => !selected.includes(String(n))).map(n => (
                         <option key={n} value={String(n)}>{n}</option>
                       ))}
                     </select>
-                    <ErrorMessage name="deliverable" component="div" className="text-red-500 text-sm mt-1" />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selected.map((d) => (
+                        <span key={d} className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs">
+                          {d}
+                          <button type="button" onClick={() => removeDeliv(d)} className="ml-1 text-purple-600">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <ErrorMessage name="deliverables" component="div" className="text-red-500 text-sm mt-1" />
                   </div>
                 );
               }}

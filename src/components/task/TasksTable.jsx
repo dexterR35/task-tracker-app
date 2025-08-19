@@ -42,12 +42,40 @@ const TasksTable = ({ tasks, onSelect }) => {
   };
   const handlePageChange = (sel) => { const np = sel.selected; setPage(np); syncState(np, pageSize); };
   const handlePageSizeChange = (e) => { const ns = parseInt(e.target.value, 10) || 25; setPageSize(ns); setPage(0); syncState(0, ns); };
-  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', markets: t.markets || [], product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModels: t.aiModels || [], reworked: !!t.reworked, deliverables: t.deliverables || [] }); };
+  const startEdit = (t) => { setEditingId(t.id); setForm({ taskName: t.taskName || '', markets: Array.isArray(t.markets) ? t.markets : (t.market ? [t.market] : []), product: t.product || '', timeInHours: t.timeInHours || 0, timeSpentOnAI: t.timeSpentOnAI || 0, aiUsed: !!t.aiUsed, aiModels: Array.isArray(t.aiModels) ? t.aiModels : (t.aiModel ? [t.aiModel] : []), reworked: !!t.reworked, deliverables: Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [String(t.deliverable)] : []) }); };
   const cancelEdit = () => { setEditingId(null); setForm({}); };
   const saveEdit = async (t) => {
     try {
       setRowActionId(t.id);
-      await updateTask({ monthId: t.monthId, id: t.id, updates: { ...form, timeInHours: Number(form.timeInHours) || 0, timeSpentOnAI: form.aiUsed ? (Number(form.timeSpentOnAI) || 0) : 0, aiModels: form.aiUsed ? (form.aiModels || []) : [], deliverables: form.deliverables || [], markets: form.markets || [] } }).unwrap();
+      // validate & normalize
+      const errs = [];
+      const quant = (n) => Math.round((Number(n) || 0) * 2) / 2;
+      const updates = {
+        taskName: form.taskName || '',
+        product: form.product || '',
+        markets: Array.isArray(form.markets) ? form.markets : [],
+        aiUsed: !!form.aiUsed,
+        aiModels: form.aiUsed ? (Array.isArray(form.aiModels) ? form.aiModels : []) : [],
+        deliverables: Array.isArray(form.deliverables) ? form.deliverables : [],
+        reworked: !!form.reworked,
+        timeInHours: quant(form.timeInHours),
+        timeSpentOnAI: form.aiUsed ? quant(form.timeSpentOnAI) : 0,
+      };
+      if (!updates.taskName) errs.push('Task');
+      if (!updates.product) errs.push('Product');
+      if (!updates.markets.length) errs.push('Markets');
+      if (!updates.deliverables.length) errs.push('Deliverables');
+      if (updates.timeInHours < 0.5) errs.push('Hours ≥ 0.5');
+      if (updates.aiUsed) {
+        if (!updates.aiModels.length) errs.push('AI Models');
+        if (updates.timeSpentOnAI < 0.5) errs.push('AI Hours ≥ 0.5');
+      }
+      if (errs.length) {
+        window.alert('Please complete: ' + errs.join(', '));
+        setRowActionId(null);
+        return;
+      }
+      await updateTask({ monthId: t.monthId, id: t.id, updates }).unwrap();
     } catch (e) {
       console.error(e);
     } finally {
@@ -85,14 +113,15 @@ const TasksTable = ({ tasks, onSelect }) => {
         <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
           <tr>
             <th className="px-3 py-2 text-left">Task</th>
-            <th className="px-3 py-2 text-left">Market</th>
+            <th className="px-3 py-2 text-left">Markets</th>
             <th className="px-3 py-2 text-left">Product</th>
             <th className="px-3 py-2 text-left">Created</th>
             <th className="px-3 py-2 text-right">Hours</th>
             <th className="px-3 py-2 text-right">AI Hours</th>
-            <th className="px-3 py-2">AI Model</th>
+            <th className="px-3 py-2">AI Model(s)</th>
             <th className="px-3 py-2">AI?</th>
             <th className="px-3 py-2">Reworked</th>
+            <th className="px-3 py-2">Deliverables</th>
             <th className="px-3 py-2 text-right">Actions</th>
           </tr>
         </thead>
@@ -110,11 +139,21 @@ const TasksTable = ({ tasks, onSelect }) => {
                   ) : <button className="text-left w-full" onClick={() => handleSelect(t)}>{t.taskName}</button>}
                 </td>
                 <td className="px-3 py-2">{isEdit ? (
-                  <select className="border px-2 py-1 rounded w-full" value={form.market} onChange={e => setForm(f => ({ ...f, market: e.target.value }))}>
-                    <option value="">Select market</option>
-                    {marketOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                ) : (t.market || '-')}</td>
+                  <div>
+                    <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const val = e.target.value; if (!val) return; setForm(f => ({ ...f, markets: (f.markets||[]).includes(val) ? f.markets : [...(f.markets||[]), val] })); }}>
+                      <option value="">Add market…</option>
+                      {marketOptions.filter(o => !(form.markets||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(form.markets||[]).map(m => (
+                        <span key={m} className="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-xs">
+                          {m}
+                          <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, markets: (f.markets||[]).filter(x => x !== m) }))}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (Array.isArray(t.markets) ? (t.markets.join(', ') || '-') : (t.market || '-'))}</td>
                 <td className="px-3 py-2">{isEdit ? (
                   <select className="border px-2 py-1 rounded w-full" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))}>
                     <option value="">Select product</option>
@@ -122,24 +161,50 @@ const TasksTable = ({ tasks, onSelect }) => {
                   </select>
                 ) : (t.product || '-')}</td>
                 <td className="px-3 py-2">{formatDay(t.createdAt)}</td>
-                <td className="px-3 py-2 text-right">{isEdit ? <input type="number" step="0.1" className="border px-2 py-1 rounded w-20 text-right" value={form.timeInHours} onChange={e => setForm(f => ({ ...f, timeInHours: e.target.value }))} /> : numberFmt(parseFloat(t.timeInHours) || 0)}</td>
+                <td className="px-3 py-2 text-right">{isEdit ? <input type="number" step="0.5" min="0.5" className="border px-2 py-1 rounded w-20 text-right" value={form.timeInHours} onChange={e => setForm(f => ({ ...f, timeInHours: e.target.value }))} /> : numberFmt(parseFloat(t.timeInHours) || 0)}</td>
                 <td className="px-3 py-2 text-right">{isEdit ? (
-                  form.aiUsed ? <input type="number" step="0.1" className="border px-2 py-1 rounded w-20 text-right" value={form.timeSpentOnAI} onChange={e => setForm(f => ({ ...f, timeSpentOnAI: e.target.value }))} /> : <span className="text-gray-400">-</span>
+                  form.aiUsed ? <input type="number" step="0.5" min="0.5" className="border px-2 py-1 rounded w-20 text-right" value={form.timeSpentOnAI} onChange={e => setForm(f => ({ ...f, timeSpentOnAI: e.target.value }))} /> : <span className="text-gray-400">-</span>
                 ) : numberFmt(parseFloat(t.timeSpentOnAI) || 0)}</td>
                 <td className="px-3 py-2">{isEdit ? (
                   form.aiUsed ? (
-                    <select className="border px-2 py-1 rounded w-full" value={form.aiModel} onChange={e => setForm(f => ({ ...f, aiModel: e.target.value }))}>
-                      <option value="">Select model</option>
-                      {aiModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <div>
+                      <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = e.target.value; if (!v) return; setForm(f => ({ ...f, aiModels: (f.aiModels||[]).includes(v) ? f.aiModels : [...(f.aiModels||[]), v] })); }}>
+                        <option value="">Add model…</option>
+                        {aiModelOptions.filter(o => !(form.aiModels||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {(form.aiModels||[]).map(m => (
+                          <span key={m} className="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs">
+                            {m}
+                            <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, aiModels: (f.aiModels||[]).filter(x => x !== m) }))}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   ) : <span className="text-gray-400 text-xs">AI off</span>
-                ) : (t.aiModel || (t.aiUsed ? '—' : '-'))}</td>
+                ) : (Array.isArray(t.aiModels) ? (t.aiModels.join(', ') || (t.aiUsed ? '—' : '-')) : (t.aiModel || (t.aiUsed ? '—' : '-')))}</td>
                 <td className="px-3 py-2 text-center">{isEdit ? <input type="checkbox" checked={form.aiUsed} onChange={e => setForm(f => ({
                   ...f,
                   aiUsed: e.target.checked,
-                  ...(e.target.checked ? {} : { timeSpentOnAI: 0, aiModel: '' })
+                  ...(e.target.checked ? {} : { timeSpentOnAI: 0, aiModels: [] })
                 }))} /> : (t.aiUsed ? '✓' : '-')}</td>
                 <td className="px-3 py-2 text-center">{isEdit ? <input type="checkbox" checked={form.reworked} onChange={e => setForm(f => ({ ...f, reworked: e.target.checked }))} /> : (t.reworked ? '✓' : '-')}</td>
+                <td className="px-3 py-2">{isEdit ? (
+                  <div>
+                    <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = e.target.value; if (!v) return; setForm(f => ({ ...f, deliverables: (f.deliverables||[]).includes(v) ? f.deliverables : [...(f.deliverables||[]), v] })); }}>
+                      <option value="">Add</option>
+                      {[1,2,3,4,5,6,7,8,9,10].filter(n => !(form.deliverables||[]).includes(String(n))).map(n => <option key={n} value={String(n)}>{n}</option>)}
+                    </select>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(form.deliverables||[]).map(d => (
+                        <span key={d} className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs">
+                          {d}
+                          <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, deliverables: (f.deliverables||[]).filter(x => x !== d) }))}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (Array.isArray(t.deliverables) ? (t.deliverables.join(', ') || '-') : (t.deliverable || '-'))}</td>
                 <td className="px-3 py-2 text-right space-x-2">
                   {isEdit ? (
                     <>

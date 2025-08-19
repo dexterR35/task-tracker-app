@@ -53,6 +53,8 @@ const AdminDashboardPage = () => {
   const handleGenerateAnalytics = async () => {
     setIsGenerating(true);
     try {
+      // refetch tasks before compute to ensure analytics use fresh data
+      // Note: useGetMonthTasksQuery returns cached data; analytics query fetches directly from Firestore
       const res = await computeAnalytics({ monthId }).unwrap();
       setAnalyticsPreview(res);
     } finally {
@@ -161,8 +163,47 @@ const AdminDashboardPage = () => {
 
         <div className="space-y-8">
           {storedAnalytics && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-2 rounded">
-              Analytics are already saved for {monthId}. You can download the PDF below.
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold">Saved Analytics ({monthId})</h3>
+                <DynamicButton variant="outline" onClick={handleDownloadPdf}>Download PDF</DynamicButton>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Total Tasks</div><div className="text-xl font-semibold">{storedAnalytics.totalTasks || 0}</div></div>
+                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Total Hours</div><div className="text-xl font-semibold">{Math.round((storedAnalytics.totalHours || 0) * 10) / 10}</div></div>
+                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">AI Tasks</div><div className="text-xl font-semibold">{storedAnalytics.ai?.tasks || 0}</div></div>
+                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Reworked</div><div className="text-xl font-semibold">{storedAnalytics.reworked || 0}</div></div>
+              </div>
+              {(() => {
+                const markets = storedAnalytics.markets || {};
+                const products = storedAnalytics.products || {};
+                const aiModels = storedAnalytics.aiModels || {};
+                const deliverables = storedAnalytics.deliverables || {};
+                const mData = { labels: Object.keys(markets), datasets: [{ label: '# Tasks', data: Object.values(markets).map(v => v.count || 0), backgroundColor: 'rgba(99,102,241,0.6)'}] };
+                const pData = { labels: Object.keys(products), datasets: [{ label: '# Tasks', data: Object.values(products).map(v => v.count || 0), backgroundColor: 'rgba(16,185,129,0.6)'}] };
+                const aiData = { labels: Object.keys(aiModels), datasets: [{ label: '# Tasks', data: Object.values(aiModels), backgroundColor: 'rgba(234,88,12,0.6)'}] };
+                const dData = { labels: Object.keys(deliverables), datasets: [{ label: '# Deliverables', data: Object.values(deliverables), backgroundColor: 'rgba(139,92,246,0.6)'}] };
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">Tasks by Market</h4>
+                      <Bar ref={barRef} data={mData} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">Tasks by Product</h4>
+                      <Doughnut ref={doughnutRef} data={pData} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">AI Models (count)</h4>
+                      <Bar data={aiData} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">Deliverables (count)</h4>
+                      <Bar data={dData} />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -185,19 +226,33 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
               {(() => {
-                const tasksByMarket = tasks.reduce((acc, t) => { const k = t.market || 'N/A'; acc[k] = (acc[k] || 0) + 1; return acc; }, {});
-                const tasksByProduct = tasks.reduce((acc, t) => { const k = t.product || 'N/A'; acc[k] = (acc[k] || 0) + 1; return acc; }, {});
-                const marketData = { labels: Object.keys(tasksByMarket), datasets: [{ label: '# Tasks', data: Object.values(tasksByMarket), backgroundColor: 'rgba(99,102,241,0.6)'}] };
-                const productData = { labels: Object.keys(tasksByProduct), datasets: [{ label: '# Tasks', data: Object.values(tasksByProduct), backgroundColor: 'rgba(16,185,129,0.6)'}] };
+                const flatten = (obj) => ({ labels: Object.keys(obj || {}), values: Object.values(obj || {}) });
+                const markets = (analyticsPreview.markets) || {};
+                const products = (analyticsPreview.products) || {};
+                const aiModels = (analyticsPreview.aiModels) || {};
+                const deliverables = (analyticsPreview.deliverables) || {};
+                const m = flatten(markets); const p = flatten(products); const ai = flatten(aiModels); const d = flatten(deliverables);
+                const mData = { labels: m.labels, datasets: [{ label: '# Tasks', data: m.values.map(v => v.count || 0), backgroundColor: 'rgba(99,102,241,0.6)'}] };
+                const pData = { labels: p.labels, datasets: [{ label: '# Tasks', data: p.values.map(v => v.count || 0), backgroundColor: 'rgba(16,185,129,0.6)'}] };
+                const aiData = { labels: ai.labels, datasets: [{ label: '# Tasks', data: ai.values, backgroundColor: 'rgba(234,88,12,0.6)'}] };
+                const dData = { labels: d.labels, datasets: [{ label: '# Deliverables', data: d.values, backgroundColor: 'rgba(139,92,246,0.6)'}] };
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-center">Tasks by Market</h4>
-                      <Bar data={marketData} />
+                      <Bar data={mData} />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-center">Tasks by Product</h4>
-                      <Doughnut data={productData} />
+                      <Doughnut data={pData} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">AI Models (count)</h4>
+                      <Bar data={aiData} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-center">Deliverables (count)</h4>
+                      <Bar data={dData} />
                     </div>
                   </div>
                 );

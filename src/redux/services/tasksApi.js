@@ -167,6 +167,8 @@ export const tasksApi = createApi({
             byUser: {},
             markets: {},
             products: {},
+            aiModels: {},
+            deliverables: {},
           };
 
           for (const t of tasks) {
@@ -182,15 +184,38 @@ export const tasksApi = createApi({
               agg.byUser[t.userUID].count += 1;
               agg.byUser[t.userUID].hours += Number(t.timeInHours) || 0;
             }
-            if (t.market) {
-              if (!agg.markets[t.market]) agg.markets[t.market] = { count: 0, hours: 0 };
-              agg.markets[t.market].count += 1;
-              agg.markets[t.market].hours += Number(t.timeInHours) || 0;
+            const addCountHours = (map, key) => {
+              if (!map[key]) map[key] = { count: 0, hours: 0 };
+              map[key].count += 1;
+              map[key].hours += Number(t.timeInHours) || 0;
+            };
+            if (Array.isArray(t.markets)) {
+              t.markets.forEach((m) => addCountHours(agg.markets, m || 'N/A'));
+            } else if (t.market) {
+              addCountHours(agg.markets, t.market);
             }
             if (t.product) {
               if (!agg.products[t.product]) agg.products[t.product] = { count: 0, hours: 0 };
               agg.products[t.product].count += 1;
               agg.products[t.product].hours += Number(t.timeInHours) || 0;
+            }
+            if (Array.isArray(t.aiModels)) {
+              t.aiModels.forEach((m) => {
+                const key = m || 'N/A';
+                agg.aiModels[key] = (agg.aiModels[key] || 0) + 1;
+              });
+            } else if (t.aiModel) {
+              const key = t.aiModel || 'N/A';
+              agg.aiModels[key] = (agg.aiModels[key] || 0) + 1;
+            }
+            if (Array.isArray(t.deliverables)) {
+              t.deliverables.forEach((d) => {
+                const key = String(d || 'N/A');
+                agg.deliverables[key] = (agg.deliverables[key] || 0) + 1;
+              });
+            } else if (t.deliverable) {
+              const key = String(t.deliverable || 'N/A');
+              agg.deliverables[key] = (agg.deliverables[key] || 0) + 1;
             }
           }
 
