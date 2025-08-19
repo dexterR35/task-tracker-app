@@ -1,8 +1,23 @@
 
 @import "tailwindcss";
 
+/* Tailwind v4 design tokens and utilities */
+@theme {
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-surface: #ffffff;
+  --radius-card: 12px;
+  --shadow-card: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
+
+
+button{@apply cursor-pointer}
+
 /* Tailwind components using @apply for consistent modern UI */
-.btn { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed; }
+/* .btn { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed; }
 .btn-primary { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500; }
 .btn-outline { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-400; }
 .btn-danger { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
@@ -16,7 +31,7 @@
 .input { @apply w-full px-4 py-3 border rounded-lg transition focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300; }
 .input-error { @apply border-red-500 focus:ring-red-500; }
 .container-center { @apply min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-6; }
-.form-col { @apply flex flex-col gap-6; }
+.form-col { @apply flex flex-col gap-6; } */
 
 form select option {@apply uppercase}
 form > div span {@apply uppercase}
@@ -51,7 +66,8 @@ form > div span {@apply uppercase}
 
 .container-center {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #4f46e5, #7c3aed, #ec4899);
+  background: #141C33;
+  /* background: linear-gradient(to bottom right, #4f46e5, #7c3aed, #ec4899); */
   display: flex;
   justify-content: center;
   align-items: center;

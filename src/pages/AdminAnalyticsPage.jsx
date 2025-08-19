@@ -67,7 +67,12 @@ const AdminAnalyticsPage = () => {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td className="px-3 py-3" colSpan={3}>Loading…</td></tr>
+                  <tr>
+                    <td className="px-3 py-3" colSpan={3}>
+                      <div className="h-5 w-40 skeleton rounded mb-2" />
+                      <div className="h-5 w-64 skeleton rounded" />
+                    </td>
+                  </tr>
                 ) : all.length === 0 ? (
                   <tr><td className="px-3 py-3" colSpan={3}>No analytics saved yet.</td></tr>
                 ) : (

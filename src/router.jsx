@@ -12,6 +12,24 @@ import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 import ProfilePage from './pages/ProfilePage';
 import UserDashboardPage from './pages/UserDashboardPage';
 
+// Soft full-page skeleton to prevent route flicker
+const FullPageSkeleton = () => (
+  <div className="min-h-screen p-8">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="h-8 w-64 skeleton rounded" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="h-24 skeleton rounded" />
+        <div className="h-24 skeleton rounded" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="h-32 skeleton rounded" />
+        <div className="h-32 skeleton rounded" />
+        <div className="h-32 skeleton rounded" />
+      </div>
+    </div>
+  </div>
+);
+
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -29,8 +47,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const location = useLocation();
   
   if (!initialAuthResolved) {
-    // This is the key change: show a loader while auth state is being resolved
-    return <SimpleLoader />; 
+    // Show skeleton while auth state is being resolved
+    return <FullPageSkeleton />; 
   }
   
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname + location.search + location.hash }} />;
@@ -55,7 +73,7 @@ const UserRoute = ({ children }) => (
 // Root index wrapper: redirect authenticated users directly to dashboard
 const RootIndex = () => {
   const { isAuthenticated, role, initialAuthResolved } = useAuth();
-  if (!initialAuthResolved) return <SimpleLoader />;
+  if (!initialAuthResolved) return <FullPageSkeleton />;
   if (!isAuthenticated) return <HomePage />;
   if (role === 'admin') return <Navigate to="/admin" replace />;
   return <Navigate to="/me" replace />;

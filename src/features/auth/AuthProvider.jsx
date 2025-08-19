@@ -4,12 +4,21 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { initAuthListener, unsubscribeAuthListener } from './authSlice';
 
-// A simple full-screen loader to prevent flicker
+// A soft skeleton to prevent flicker
 const SimpleLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="h-16 w-16 relative">
-      <div className="absolute inset-0 rounded-full border-8 border-blue-200" />
-      <div className="absolute inset-0 rounded-full border-8 border-blue-600 border-t-transparent animate-spin" />
+  <div className="min-h-screen p-8">
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="h-8 w-56 skeleton rounded" />
+      <div className="h-5 w-72 skeleton rounded" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <div className="h-24 skeleton rounded" />
+        <div className="h-24 skeleton rounded" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="h-32 skeleton rounded" />
+        <div className="h-32 skeleton rounded" />
+        <div className="h-32 skeleton rounded" />
+      </div>
     </div>
   </div>
 );

@@ -21,8 +21,8 @@ const AdminDashboardPage = () => {
   const impersonatedUserId = searchParams.get('user') || '';
   const monthId = useMemo(() => dayjs().format('YYYY-MM'), []);
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery();
-  const { data: tasks = [] } = useGetMonthTasksQuery({ monthId });
-  const { data: board = { exists: true }, refetch: refetchBoard } = useGetMonthBoardExistsQuery({ monthId });
+  const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({ monthId });
+  const { data: board = { exists: true }, refetch: refetchBoard, isLoading: boardLoading } = useGetMonthBoardExistsQuery({ monthId });
   const [generateBoard, { isLoading: generatingBoard }] = useGenerateMonthBoardMutation();
   const [computeAnalytics, { isLoading: computing }] = useComputeMonthAnalyticsMutation();
   const [saveAnalytics, { isLoading: saving }] = useSaveMonthAnalyticsMutation();
@@ -132,7 +132,12 @@ const AdminDashboardPage = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
             <input type="date" name="end" value={dateRange.end.format('YYYY-MM-DD')} onChange={(e) => setDateRange(p => ({ ...p, end: dayjs(e.target.value) }))} className="border rounded px-3 py-2" />
           </div>
-          {usersLoading ? <div className="text-sm text-gray-500">Loading users…</div> : (
+          {usersLoading ? (
+            <div className="space-y-2">
+              <div className="h-5 w-40 skeleton rounded" />
+              <div className="h-9 w-64 skeleton rounded" />
+            </div>
+          ) : (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
               <select value={impersonatedUserId || ''} onChange={handleUserSelect} className="border rounded px-3 py-2 min-w-[200px]">
@@ -147,68 +152,33 @@ const AdminDashboardPage = () => {
           <DynamicButton
             variant="success"
             onClick={() => setShowTaskForm(!showTaskForm)}
-            disabled={!board?.exists}
+            disabled={boardLoading || !board?.exists}
             title={!board?.exists ? 'Create the board first' : ''}
           >
             {showTaskForm ? 'Hide Form' : 'Create Task'}
           </DynamicButton>
-          {!board?.exists ? (
+          {!board?.exists && (
             <DynamicButton variant="primary" onClick={async () => { await generateBoard({ monthId }).unwrap(); await refetchBoard(); }} loading={generatingBoard} loadingText="Generating...">Create Board - {monthId}</DynamicButton>
-          ) : (
-            <DynamicButton variant="outline" onClick={handleGenerateAnalytics} loading={isGenerating || computing} loadingText="Computing...">Generate Analytics ({monthId})</DynamicButton>
           )}
+          <DynamicButton variant="outline" onClick={handleGenerateAnalytics} loading={isGenerating || computing} loadingText="Computing...">Generate Analytics ({monthId})</DynamicButton>
         </div>
 
         {showTaskForm && <div className="mb-6"><TaskForm /></div>}
 
         <div className="space-y-8">
-          {storedAnalytics && (
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold">Saved Analytics ({monthId})</h3>
-                <DynamicButton variant="outline" onClick={handleDownloadPdf}>Download PDF</DynamicButton>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
-                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Total Tasks</div><div className="text-xl font-semibold">{storedAnalytics.totalTasks || 0}</div></div>
-                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Total Hours</div><div className="text-xl font-semibold">{Math.round((storedAnalytics.totalHours || 0) * 10) / 10}</div></div>
-                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">AI Tasks</div><div className="text-xl font-semibold">{storedAnalytics.ai?.tasks || 0}</div></div>
-                <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Reworked</div><div className="text-xl font-semibold">{storedAnalytics.reworked || 0}</div></div>
-              </div>
-              {(() => {
-                const markets = storedAnalytics.markets || {};
-                const products = storedAnalytics.products || {};
-                const aiModels = storedAnalytics.aiModels || {};
-                const deliverables = storedAnalytics.deliverables || {};
-                const mData = { labels: Object.keys(markets), datasets: [{ label: '# Tasks', data: Object.values(markets).map(v => v.count || 0), backgroundColor: 'rgba(99,102,241,0.6)'}] };
-                const pData = { labels: Object.keys(products), datasets: [{ label: '# Tasks', data: Object.values(products).map(v => v.count || 0), backgroundColor: 'rgba(16,185,129,0.6)'}] };
-                const aiData = { labels: Object.keys(aiModels), datasets: [{ label: '# Tasks', data: Object.values(aiModels), backgroundColor: 'rgba(234,88,12,0.6)'}] };
-                const dData = { labels: Object.keys(deliverables), datasets: [{ label: '# Deliverables', data: Object.values(deliverables), backgroundColor: 'rgba(139,92,246,0.6)'}] };
-                return (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-center">Tasks by Market</h4>
-                      <Bar ref={barRef} data={mData} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-center">Tasks by Product</h4>
-                      <Doughnut ref={doughnutRef} data={pData} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-center">AI Models (count)</h4>
-                      <Bar data={aiData} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-center">Deliverables (count)</h4>
-                      <Bar data={dData} />
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+          {/* Saved analytics moved to Admin Analytics page; not shown on dashboard */}
 
           <AnalyticsSummary tasks={filteredTasks} />
-          {filteredTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
+          {tasksLoading ? (
+            <div className="bg-white border rounded-lg p-6">
+              <div className="h-6 w-40 skeleton rounded mb-3" />
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-9 skeleton rounded" />
+                ))}
+              </div>
+            </div>
+          ) : filteredTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-3">Tasks ({filteredTasks.length})</h2>
               <TasksTable tasks={filteredTasks} />

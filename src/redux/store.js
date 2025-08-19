@@ -4,14 +4,13 @@ import authReducer from "../features/auth/authSlice";
 import notificationReducer, { addNotification } from "./slices/notificationSlice";
 import { tasksApi } from "./services/tasksApi";
 import { usersApi } from "./services/usersApi";
-import loadingReducer, { beginLoading, endLoading } from "./slices/loadingSlice";
+ 
 
 // removed global pending counts
 // Dynamic reducer registry for hot module replacement
 const staticReducers = {
   auth: authReducer,
   notifications: notificationReducer,
-  loading: loadingReducer,
 
   [tasksApi.reducerPath]: tasksApi.reducer,
   [usersApi.reducerPath]: usersApi.reducer,
@@ -49,13 +48,7 @@ const store = configureStore({
     }).concat(
       tasksApi.middleware,
       usersApi.middleware,
-      errorNotificationMiddleware,
-      () => (next) => (action) => {
-        const type = action.type || "";
-        if (/\/pending$/.test(type)) store.dispatch(beginLoading());
-        if (/\/(fulfilled|rejected)$/.test(type)) store.dispatch(endLoading());
-        return next(action);
-      }
+      errorNotificationMiddleware
     ),
   devTools: process.env.NODE_ENV !== "production",
 });

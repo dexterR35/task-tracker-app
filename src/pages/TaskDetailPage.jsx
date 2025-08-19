@@ -33,7 +33,19 @@ const TaskDetailPage = () => {
     load();
   }, [taskId, monthId]);
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return (
+    <div className="p-6">
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div className="h-8 w-56 skeleton rounded" />
+        <div className="h-5 w-72 skeleton rounded" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-10 skeleton rounded" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!task) return null;
 

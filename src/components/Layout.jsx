@@ -13,7 +13,7 @@ import {
 const Layout = () => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated, logout, loading, listenerActive } = useAuth();
-  const apiLoading = useSelector((state) => state["tasksApi"]?.queries || state["usersApi"]?.queries);
+  // const apiLoading = useSelector((state) => state["tasksApi"]?.queries || state["usersApi"]?.queries);
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
@@ -25,7 +25,7 @@ const Layout = () => {
     }
   };
 
-  // Global loader overlay for auth listener boot
+  // Soft boot overlay state
   const isBooting = !listenerActive && loading.initListener;
 
   if (!isAuthenticated) {
@@ -94,9 +94,17 @@ const Layout = () => {
         </div>
       </nav>
 
-      {/* Main content with simple global loader overlay */}
+      {/* Main content with soft skeleton overlay */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
-        {isBooting && <div className="flex items-center justify-center py-24 text-gray-500 text-sm">Initializing…</div>}
+        {isBooting && (
+          <div className="space-y-6">
+            <div className="h-8 w-64 skeleton rounded" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="h-24 skeleton rounded" />
+              <div className="h-24 skeleton rounded" />
+            </div>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>
