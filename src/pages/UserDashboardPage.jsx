@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useAuth } from '../hooks/useAuth';
-import { useGetMonthTasksQuery } from '../redux/services/tasksApi';
+import { useGetMonthTasksQuery, useGetMonthBoardExistsQuery } from '../redux/services/tasksApi';
+import { useNotifications } from '../hooks/useNotifications';
 import TaskForm from '../components/task/TaskForm';
 import TasksTable from '../components/task/TasksTable';
 import AnalyticsSummary from '../components/AnalyticsSummary';
@@ -29,9 +30,18 @@ const UserDashboardPage = () => {
           </div>
         )}
         <div className="mb-6">
-          <DynamicButton variant="success" onClick={() => setShowTaskForm(!showTaskForm)}>{showTaskForm ? 'Hide Form' : 'Create Task'}</DynamicButton>
+          <DynamicButton
+            variant="success"
+            onClick={() => {
+              if (!board?.exists) { addError('Cannot create task: Board for current month is not created yet.'); return; }
+              setShowTaskForm(!showTaskForm);
+            }}
+            disabled={!board?.exists}
+          >
+            {showTaskForm ? 'Hide Form' : 'Create Task'}
+          </DynamicButton>
         </div>
-        {showTaskForm && <div className="mb-6"><TaskForm /></div>}
+        {showTaskForm && board?.exists && <div className="mb-6"><TaskForm /></div>}
         <div className="space-y-8">
           <AnalyticsSummary tasks={myTasks} />
           {myTasks.length === 0 ? <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found.</div> : (
