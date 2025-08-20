@@ -40,7 +40,6 @@ const Layout = () => {
           { name: 'Users', href: '/admin/users', icon: ViewColumnsIcon },
         ]
       : [{ name: 'My Dashboard', href: '/me', icon: ViewColumnsIcon }]),
-    { name: 'Profile', href: '/profile', icon: ViewColumnsIcon },
   ];
 
   return (

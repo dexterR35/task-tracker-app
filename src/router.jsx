@@ -10,7 +10,6 @@ import HomePage from './pages/HomePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
-import ProfilePage from './pages/ProfilePage';
 import UserDashboardPage from './pages/UserDashboardPage';
 import PreviewPage from './pages/PreviewPage';
 import { SkeletonCard } from './components/ui/Skeleton';
@@ -147,14 +146,7 @@ const router = createBrowserRouter([
           </UserRoute>
         )
       },
-      {
-        path: 'profile',
-        element: (
-          <UserRoute>
-            <ProfilePage />
-          </UserRoute>
-        )
-      },
+      
       // {
       //   path: 'unauthorized',
       //   element: <UnauthorizedPage />
