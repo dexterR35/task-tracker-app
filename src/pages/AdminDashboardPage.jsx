@@ -78,7 +78,11 @@ const AdminDashboardPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
               <select value={impersonatedUserId || ''} onChange={handleUserSelect} className="border rounded px-3 py-2 min-w-[200px]">
                 <option value="">All Users</option>
-                {usersList.map(u => <option key={u.id} value={u.userUID}>{u.name || u.email}</option>)}
+                {usersList.map(u => (
+                  <option key={u.userUID || u.id} value={u.userUID || u.id}>
+                    {u.name || u.email}
+                  </option>
+                ))}
               </select>
             </div>
           )}

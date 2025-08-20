@@ -1,5 +1,5 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { collection, getDocs, orderBy, query as fsQuery, doc, setDoc, getDocFromServer, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query as fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { normalizeTimestamp } from '../../utils/time';
 import { db, auth } from '../../firebase';
 import { getApp, getApps, initializeApp } from 'firebase/app';
@@ -14,17 +14,23 @@ export const usersApi = createApi({
       async queryFn() {
         try {
           const snap = await getDocs(fsQuery(collection(db, 'users'), orderBy('createdAt', 'desc')));
-          const users = snap.docs.map(d => {
-            const raw = d.data();
-            const createdAt = normalizeTimestamp(raw.createdAt);
-            const updatedAt = normalizeTimestamp(raw.updatedAt);
-            const lastActive = normalizeTimestamp(raw.lastActive);
-            const lastLogin = normalizeTimestamp(raw.lastLogin);
-            return { id: d.id, ...raw, createdAt, updatedAt, lastActive, lastLogin };
-          });
+          const users = deduplicateUsers(snap.docs.map(d => mapUserDoc(d)));
           return { data: users };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to load users' } };
+        }
+      },
+      async onCacheEntryAdded(arg, { updateCachedData, cacheEntryRemoved }) {
+        // Subscribe to realtime changes to keep presence fresh and avoid duplicates
+        const q = fsQuery(collection(db, 'users'), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const next = deduplicateUsers(snapshot.docs.map(d => mapUserDoc(d)));
+          updateCachedData(() => next);
+        });
+        try {
+          await cacheEntryRemoved;
+        } finally {
+          unsubscribe();
         }
       },
       providesTags: ['Users'],
@@ -32,6 +38,15 @@ export const usersApi = createApi({
     createUser: builder.mutation({
       async queryFn({ email, password, name }) {
         try {
+          if (!name || !String(name).trim()) {
+            throw new Error('Name is required');
+          }
+          if (!email || !String(email).trim()) {
+            throw new Error('Email is required');
+          }
+          if (!password || String(password).length < 6) {
+            throw new Error('Password must be at least 6 characters');
+          }
           // Use a secondary app to avoid switching the current admin session
           const primary = getApp();
           const cfg = primary.options;
@@ -58,9 +73,11 @@ export const usersApi = createApi({
           const updatedAt = normalizeTimestamp(raw.updatedAt);
           const lastActive = normalizeTimestamp(raw.lastActive);
           const lastLogin = normalizeTimestamp(raw.lastLogin);
+          const heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
+          const isOnline = typeof heartbeatAt === 'number' ? (Date.now() - heartbeatAt) < 2 * 60 * 1000 : false;
           // Sign out the secondary auth to clean up, preserving the admin session on primary auth
           try { await signOut(secondaryAuth); } catch (_) {}
-          return { data: { id: uid, ...raw, createdAt, updatedAt, lastActive, lastLogin } };
+          return { data: { id: uid, userUID: uid, email, name: name || '', role: 'user', isActive: true, createdAt, updatedAt, lastActive, lastLogin, heartbeatAt, isOnline } };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to create user' } };
         }
@@ -71,5 +88,48 @@ export const usersApi = createApi({
 });
 
 export const { useGetUsersQuery, useCreateUserMutation } = usersApi;
+
+// ---- Helpers ----
+function mapUserDoc(d) {
+  const raw = d.data() || {};
+  const createdAt = normalizeTimestamp(raw.createdAt);
+  const updatedAt = normalizeTimestamp(raw.updatedAt);
+  const lastActive = normalizeTimestamp(raw.lastActive);
+  const lastLogin = normalizeTimestamp(raw.lastLogin);
+  const heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
+  // Consider online if beat within last 12 minutes (slightly above 10-min interval)
+  const isOnline = typeof heartbeatAt === 'number' ? (Date.now() - heartbeatAt) < 12 * 60 * 1000 : false;
+  // Only include serializable, whitelisted fields
+  return {
+    id: d.id,
+    userUID: raw.userUID || d.id,
+    email: raw.email || '',
+    name: raw.name || '',
+    role: raw.role || 'user',
+    isActive: typeof raw.isActive === 'boolean' ? raw.isActive : true,
+    createdAt,
+    updatedAt,
+    lastActive,
+    lastLogin,
+    heartbeatAt,
+    isOnline,
+  };
+}
+
+function deduplicateUsers(users) {
+  const seen = new Map();
+  for (const u of users) {
+    const key = u.userUID || u.id;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, u);
+      continue;
+    }
+    // Prefer document whose id equals the UID, otherwise keep the one with latest updatedAt
+    const preferCurrent = u.id === key || (u.updatedAt || 0) > (existing.updatedAt || 0);
+    if (preferCurrent) seen.set(key, u);
+  }
+  return Array.from(seen.values());
+}
 
 
