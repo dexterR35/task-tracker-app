@@ -24,7 +24,7 @@ const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedUserId = searchParams.get("user") || "";
-  const monthId = useMemo(() => dayjs().format("YYYY-MM"), []);
+  const monthId = useMemo(() => 'dayjs().format("YYYY-MM")', []);
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery();
 
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({

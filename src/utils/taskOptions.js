@@ -17,9 +17,11 @@ export const marketOptions = [
 
 export const productOptions = [
   { value: 'mkt c', label: 'mkt c' },
-  { value: 'mkt s', label: 'mkt p' },
+  { value: 'mkt s', label: 'mkt s' },
+    { value: 'mkt p', label: 'mkt p' },
   { value: 'acq c', label: 'acq c' },
   { value: 'acq s', label: 'acq s' },
+    { value: 'acq p', label: 'acq p' },
   { value: 'prod c', label: 'prod c' },
   { value: 'prod s', label: 'prod s' },
   { value: 'prod p', label: 'prod p' },

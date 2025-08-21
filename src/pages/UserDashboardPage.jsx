@@ -28,10 +28,10 @@ const UserDashboardPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">My Dashboard</h2>
+        <div className="card">
+          <h2 className="capitalize">{user.name} - DashBoard</h2>
         </div>
         {!board?.exists && (
           <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-4 py-2 rounded">
@@ -63,12 +63,12 @@ const UserDashboardPage = () => {
         <div className="space-y-8">
           <AnalyticsSummary tasks={myTasks} loading={tasksLoading} />
           {!tasksLoading && myTasks.length === 0 ? (
-            <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
+            <p className="card">
               No tasks found.
-            </div>
+            </p>
           ) : (
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">
+              <h2>
                 Tasks ({myTasks.length})
               </h2>
               <TasksTable tasks={myTasks} loading={tasksLoading} />
