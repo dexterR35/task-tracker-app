@@ -3,7 +3,8 @@ import { collection, getDocs, orderBy, fsQuery, doc, setDoc, getDocFromServer, s
 import { normalizeTimestamp } from '../../utils/dateUtils';
 import { db, auth } from '../../firebase';
 import { getAuth, createUserWithEmailAndPassword, signOut,getApp, getApps, initializeApp  } from '../../hooks/useImports';
-import { userStorage } from '../../utils/indexedDBStorage';
+// Dynamic import to avoid chunk splitting conflicts
+// import { userStorage } from '../../utils/indexedDBStorage';
 
 export const usersApi = createApi({
   reducerPath: 'usersApi',
@@ -14,10 +15,13 @@ export const usersApi = createApi({
       async queryFn({ useCache = true } = {}) {
         try {
           // Check if we have fresh cached users
-          if (useCache && await userStorage.hasUsers() && await userStorage.isUsersFresh()) {
-            const cachedUsers = await userStorage.getUsers();
-            console.log('Using cached users:', cachedUsers.length);
-            return { data: cachedUsers };
+          if (useCache) {
+            const { userStorage } = await import('../../utils/indexedDBStorage');
+            if (await userStorage.hasUsers() && await userStorage.isUsersFresh()) {
+              const cachedUsers = await userStorage.getUsers();
+              console.log('Using cached users:', cachedUsers.length);
+              return { data: cachedUsers };
+            }
           }
 
           console.log('Fetching users from database...');
@@ -25,7 +29,10 @@ export const usersApi = createApi({
           const users = deduplicateUsers(snap.docs.map(d => mapUserDoc(d)));
           
           // Cache the users in IndexedDB
-          await userStorage.storeUsers(users);
+          if (useCache) {
+            const { userStorage } = await import('../../utils/indexedDBStorage');
+            await userStorage.storeUsers(users);
+          }
           
           return { data: users };
         } catch (error) {
@@ -40,6 +47,7 @@ export const usersApi = createApi({
           updateCachedData(() => next);
           
           // Update cache with real-time changes
+          const { userStorage } = await import('../../utils/indexedDBStorage');
           await userStorage.storeUsers(next);
         });
         try {
@@ -96,6 +104,7 @@ export const usersApi = createApi({
           const newUser = { id: uid, userUID: uid, email, name: name || '', role: 'user', isActive: true, createdAt, updatedAt, lastActive, lastLogin, heartbeatAt, isOnline };
           
           // Add new user to cache
+          const { userStorage } = await import('../../utils/indexedDBStorage');
           await userStorage.addUser(newUser);
           
           return { data: newUser };

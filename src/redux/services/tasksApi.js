@@ -16,7 +16,8 @@ import {
 } from '../../hooks/useImports';
 import { db } from '../../firebase';
 import { format } from 'date-fns';
-import { analyticsStorage, taskStorage } from '../../utils/indexedDBStorage';
+// Dynamic import to avoid chunk splitting conflicts
+// import { analyticsStorage, taskStorage } from '../../utils/indexedDBStorage';
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
 const normalizeTask = (monthId, id, data) => {
@@ -67,10 +68,13 @@ export const tasksApi = createApi({
       async queryFn({ monthId, useCache = true } = {}) {
         try {
           // Strategy 1: Check IndexedDB cache first
-          if (useCache && await taskStorage.hasTasks(monthId) && await taskStorage.isTasksFresh(monthId)) {
-            const cachedTasks = await taskStorage.getTasks(monthId);
-            console.log('Using cached tasks from IndexedDB:', cachedTasks.length, 'tasks for month:', monthId);
-            return { data: cachedTasks };
+          if (useCache) {
+            const { taskStorage } = await import('../../utils/indexedDBStorage');
+            if (await taskStorage.hasTasks(monthId) && await taskStorage.isTasksFresh(monthId)) {
+              const cachedTasks = await taskStorage.getTasks(monthId);
+              console.log('Using cached tasks from IndexedDB:', cachedTasks.length, 'tasks for month:', monthId);
+              return { data: cachedTasks };
+            }
           }
 
           // Strategy 1: Initial fetch from Firebase (once per session)
@@ -80,8 +84,11 @@ export const tasksApi = createApi({
           const tasks = snap.docs.map(d => normalizeTask(monthId, d.id, d.data()));
           
           // Cache tasks in IndexedDB for future use
-          await taskStorage.storeTasks(monthId, tasks);
-          console.log('Tasks cached in IndexedDB for month:', monthId);
+          if (useCache) {
+            const { taskStorage } = await import('../../utils/indexedDBStorage');
+            await taskStorage.storeTasks(monthId, tasks);
+            console.log('Tasks cached in IndexedDB for month:', monthId);
+          }
           
           return { data: tasks };
         } catch (error) {
@@ -101,6 +108,7 @@ export const tasksApi = createApi({
           const tasks = snap.docs.map(d => normalizeTask(monthId, d.id, d.data()));
           
           // Cache initial data
+          const { taskStorage } = await import('../../utils/indexedDBStorage');
           await taskStorage.storeTasks(monthId, tasks);
           
           return { data: tasks };
@@ -128,6 +136,7 @@ export const tasksApi = createApi({
               updateCachedData(() => tasks);
               
               // Update IndexedDB cache with real-time changes
+              const { taskStorage, analyticsStorage } = await import('../../utils/indexedDBStorage');
               await taskStorage.storeTasks(arg.monthId, tasks);
               
               // Pre-compute and cache analytics from updated tasks
@@ -171,6 +180,7 @@ export const tasksApi = createApi({
           console.log('[CreateTask] Task created:', created.id, 'for month:', task.monthId);
           
           // Update IndexedDB cache
+          const { taskStorage } = await import('../../utils/indexedDBStorage');
           await taskStorage.addTask(task.monthId, created);
           
           return { data: created };
@@ -191,6 +201,7 @@ export const tasksApi = createApi({
           await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
           
           // Update IndexedDB cache
+          const { taskStorage } = await import('../../utils/indexedDBStorage');
           await taskStorage.updateTask(monthId, id, updates);
           
           return { data: { id, monthId, updates } };
@@ -208,6 +219,7 @@ export const tasksApi = createApi({
           await deleteDoc(ref);
           
           // Update IndexedDB cache
+          const { taskStorage } = await import('../../utils/indexedDBStorage');
           await taskStorage.removeTask(monthId, id);
           
           return { data: { id, monthId } };
@@ -262,17 +274,21 @@ export const tasksApi = createApi({
           console.log('computeMonthAnalytics called for month:', monthId, 'useCache:', useCache);
           
           // Strategy 3: Check if we have fresh cached analytics
-          if (useCache && await analyticsStorage.hasAnalytics(monthId) && await analyticsStorage.isAnalyticsFresh(monthId)) {
-            const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
-            console.log('Using cached analytics for month:', monthId);
-            return { data: cachedAnalytics };
-          }
+          if (useCache) {
+            const { analyticsStorage, taskStorage } = await import('../../utils/indexedDBStorage');
+            if (await analyticsStorage.hasAnalytics(monthId) && await analyticsStorage.isAnalyticsFresh(monthId)) {
+              const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
+              console.log('Using cached analytics for month:', monthId);
+              return { data: cachedAnalytics };
+            }
 
-          // Strategy 3: Use tasks from Redux state if provided, otherwise fetch from cache
-          let tasksToUse = tasks;
-          if (!tasksToUse) {
-            console.log('No tasks provided, checking IndexedDB cache for month:', monthId);
-            tasksToUse = await taskStorage.getTasks(monthId);
+            // Strategy 3: Use tasks from Redux state if provided, otherwise fetch from cache
+            let tasksToUse = tasks;
+            if (!tasksToUse) {
+              console.log('No tasks provided, checking IndexedDB cache for month:', monthId);
+              tasksToUse = await taskStorage.getTasks(monthId);
+            }
+          
           }
           
           if (!tasksToUse || tasksToUse.length === 0) {
@@ -285,6 +301,7 @@ export const tasksApi = createApi({
           const analyticsData = computeAnalyticsFromTasks(tasksToUse, monthId);
           
           // Store in IndexedDB for future use
+          const { analyticsStorage } = await import('../../utils/indexedDBStorage');
           await analyticsStorage.storeAnalytics(monthId, analyticsData);
           console.log('Analytics computed and stored in IndexedDB for month:', monthId);
 

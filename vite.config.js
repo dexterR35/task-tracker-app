@@ -3,86 +3,62 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: "/", // <-- FIX: use absolute paths for Vercel
+  base: "/",
   plugins: [react(), tailwindcss()],
   build: {
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Vendor chunks - more granular splitting
+          // Safe chunk splitting that won't corrupt React
           if (id.includes('node_modules')) {
+            // Keep React core together (this is critical)
             if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
+              return 'react-core';
             }
+            // Router can be separate
             if (id.includes('react-router-dom')) {
-              return 'router-vendor';
+              return 'router';
             }
+            // Redux can be separate
             if (id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
-              return 'redux-vendor';
+              return 'redux';
             }
+            // Firebase can be separate
             if (id.includes('firebase')) {
-              return 'firebase-vendor';
+              return 'firebase';
             }
+            // UI libraries
+            if (id.includes('recharts') || id.includes('@heroicons')) {
+              return 'ui-libs';
+            }
+            // Form libraries
             if (id.includes('formik') || id.includes('yup')) {
-              return 'form-vendor';
+              return 'form-libs';
             }
-            if (id.includes('react-toastify')) {
-              return 'ui-vendor';
+            // PDF and file handling
+            if (id.includes('jspdf') || id.includes('file-saver')) {
+              return 'pdf-libs';
             }
-            if (id.includes('tailwindcss') || id.includes('postcss')) {
-              return 'css-vendor';
-            }
-            if (id.includes('recharts')) {
-              return 'recharts-vendor';
-            }
-            // Split remaining vendor dependencies into smaller chunks
-            if (id.includes('lodash') || id.includes('date-fns')) {
-              return 'utils-vendor';
-            }
-            if (id.includes('@emotion') || id.includes('styled-components')) {
-              return 'styling-vendor';
-            }
-            if (id.includes('moment') || id.includes('dayjs') || id.includes('luxon')) {
-              return 'date-vendor';
-            }
-            if (id.includes('axios') || id.includes('fetch') || id.includes('http')) {
-              return 'http-vendor';
-            }
-            if (id.includes('uuid') || id.includes('nanoid') || id.includes('crypto')) {
-              return 'crypto-vendor';
-            }
-            if (id.includes('jspdf') || id.includes('pdf') || id.includes('file-saver')) {
-              return 'pdf-vendor';
-            }
-            if (id.includes('buffer') || id.includes('stream') || id.includes('util')) {
-              return 'node-vendor';
-            }
-            if (id.includes('@heroicons') || id.includes('heroicons')) {
-              return 'icons-vendor';
-            }
-            // Default vendor chunk for other dependencies
-            return 'other-vendor';
-          }
-
-          // Feature chunks
-          if (id.includes('/features/auth/')) {
-            return 'auth-features';
-          }
-          if (id.includes('/features/user/') || id.includes('/features/task/')) {
-            return 'data-features';
-          }
-          if (id.includes('/components/ui/')) {
-            return 'ui-components';
-          }
-          if (id.includes('/pages/')) {
-            return 'pages';
+            // Everything else
+            return 'vendor';
           }
         },
       },
     },
-    chunkSizeWarningLimit: 800, // Reduce warning limit to 800KB
-    minify: 'esbuild', // Use esbuild minifier (default)
-    sourcemap: false, // Disable sourcemaps for production
+    chunkSizeWarningLimit: 1500, // Increased limit
+    minify: 'esbuild',
+    sourcemap: false,
+    // Additional optimizations
+    target: 'es2015',
+    cssCodeSplit: true,
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    force: true,
+  },
+  define: {
+    // Ensure React is properly defined
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
   },
 });
 
