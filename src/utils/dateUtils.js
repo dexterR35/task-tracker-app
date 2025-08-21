@@ -1,4 +1,4 @@
-
+import { parseISO, isValid } from 'date-fns';
 
 /**
  * Convert a Firestore Timestamp, Date, number, or string into milliseconds since epoch.
@@ -9,11 +9,11 @@ export const normalizeTimestamp = (value) => {
     // Firestore Timestamp
     if (value?.toDate) {
       const d = value.toDate();
-      return Number.isFinite(d?.getTime?.()) ? d.getTime() : null;
+      return isValid(d) ? d.getTime() : null;
     }
     // JS Date
     if (value instanceof Date) {
-      return Number.isFinite(value.getTime()) ? value.getTime() : null;
+      return isValid(value) ? value.getTime() : null;
     }
     // Number (assumed ms)
     if (typeof value === 'number') {
@@ -21,13 +21,12 @@ export const normalizeTimestamp = (value) => {
     }
     // ISO or date-like string
     if (typeof value === 'string') {
-      const t = Date.parse(value);
-      return Number.isFinite(t) ? t : null;
+      const parsed = parseISO(value);
+      return isValid(parsed) ? parsed.getTime() : null;
     }
   } catch (_) {}
   return null;
 };
-
 
 export const normalizeObjectTimestamps = (input) => {
   if (input == null) return input;
@@ -46,5 +45,3 @@ export const normalizeObjectTimestamps = (input) => {
   }
   return input;
 };
-
-

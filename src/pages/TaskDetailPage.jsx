@@ -1,12 +1,12 @@
 import {
   doc,
   getDoc,
-  dayjs,
   useParams,
   useNavigate,
   useEffect,
   useState,
 } from "../hooks/useImports";
+import { format } from "date-fns";
 import { db } from "../firebase";
 import DynamicButton from "../components/button/DynamicButton";
 import Skeleton from "../components/ui/Skeleton";
@@ -139,17 +139,13 @@ const TaskDetailPage = () => {
         <div>
           <span className="font-medium text-gray-700">Created At:</span>{" "}
           {task.createdAt
-            ? dayjs(task.createdAt?.toDate?.() || task.createdAt).format(
-                "YYYY-MM-DD HH:mm"
-              )
+            ? format(task.createdAt?.toDate?.() || task.createdAt, "yyyy-MM-dd HH:mm")
             : "N/A"}
         </div>
         <div>
           <span className="font-medium text-gray-700">Updated At:</span>{" "}
           {task.updatedAt
-            ? dayjs(task.updatedAt?.toDate?.() || task.updatedAt).format(
-                "YYYY-MM-DD HH:mm"
-              )
+            ? format(task.updatedAt?.toDate?.() || task.updatedAt, "yyyy-MM-dd HH:mm")
             : "N/A"}
         </div>
       </div>

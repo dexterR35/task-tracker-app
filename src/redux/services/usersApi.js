@@ -1,8 +1,9 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { collection, getDocs, orderBy, fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot } from '../../hooks/useImports';
-import { normalizeTimestamp } from '../../utils/time';
+import { normalizeTimestamp } from '../../utils/dateUtils';
 import { db, auth } from '../../firebase';
 import { getAuth, createUserWithEmailAndPassword, signOut,getApp, getApps, initializeApp  } from '../../hooks/useImports';
+import { userStorage } from '../../utils/indexedDBStorage';
 
 export const usersApi = createApi({
   reducerPath: 'usersApi',
@@ -10,10 +11,22 @@ export const usersApi = createApi({
   tagTypes: ['Users'],
   endpoints: (builder) => ({
     getUsers: builder.query({
-      async queryFn() {
+      async queryFn({ useCache = true } = {}) {
         try {
+          // Check if we have fresh cached users
+          if (useCache && await userStorage.hasUsers() && await userStorage.isUsersFresh()) {
+            const cachedUsers = await userStorage.getUsers();
+            console.log('Using cached users:', cachedUsers.length);
+            return { data: cachedUsers };
+          }
+
+          console.log('Fetching users from database...');
           const snap = await getDocs(fsQuery(collection(db, 'users'), orderBy('createdAt', 'desc')));
           const users = deduplicateUsers(snap.docs.map(d => mapUserDoc(d)));
+          
+          // Cache the users in IndexedDB
+          await userStorage.storeUsers(users);
+          
           return { data: users };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to load users' } };
@@ -22,9 +35,12 @@ export const usersApi = createApi({
       async onCacheEntryAdded(arg, { updateCachedData, cacheEntryRemoved }) {
         // Subscribe to realtime changes to keep presence fresh and avoid duplicates
         const q = fsQuery(collection(db, 'users'), orderBy('createdAt', 'desc'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
           const next = deduplicateUsers(snapshot.docs.map(d => mapUserDoc(d)));
           updateCachedData(() => next);
+          
+          // Update cache with real-time changes
+          await userStorage.storeUsers(next);
         });
         try {
           await cacheEntryRemoved;
@@ -76,7 +92,13 @@ export const usersApi = createApi({
           const isOnline = typeof heartbeatAt === 'number' ? (Date.now() - heartbeatAt) < 2 * 60 * 1000 : false;
           // Sign out the secondary auth to clean up, preserving the admin session on primary auth
           try { await signOut(secondaryAuth); } catch (_) {}
-          return { data: { id: uid, userUID: uid, email, name: name || '', role: 'user', isActive: true, createdAt, updatedAt, lastActive, lastLogin, heartbeatAt, isOnline } };
+          
+          const newUser = { id: uid, userUID: uid, email, name: name || '', role: 'user', isActive: true, createdAt, updatedAt, lastActive, lastLogin, heartbeatAt, isOnline };
+          
+          // Add new user to cache
+          await userStorage.addUser(newUser);
+          
+          return { data: newUser };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to create user' } };
         }

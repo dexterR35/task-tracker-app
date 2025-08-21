@@ -2,12 +2,7 @@ import React, { useMemo, useState } from 'react';
 import LoadingWrapper from './ui/LoadingWrapper';
 
 const numberFmt = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : 0);
-const currencyFmt = (n) => new Intl.NumberFormat('en-US', { 
-  style: 'currency', 
-  currency: 'USD',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-}).format(n || 0);
+
 
 const AnalyticsSummary = ({ 
   tasks = [], 
@@ -15,11 +10,8 @@ const AnalyticsSummary = ({
   error = null,
   showMonthly = true,
   showUserStats = true,
-  showAdminStats = false,
-  currentMonth = null
 }) => {
   // const { user } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState('current');
   
   const stats = useMemo(() => {
     if (!tasks || tasks.length === 0) {
@@ -152,24 +144,8 @@ const AnalyticsSummary = ({
 
 
 
-  const getPeriodTasks = (period) => {
-    if (period === 'all') return tasks;
-    if (period === 'current') {
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      return tasks.filter(task => task.monthId === currentMonth);
-    }
-    if (period === 'last3') {
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      const cutoff = threeMonthsAgo.toISOString().slice(0, 7);
-      return tasks.filter(task => task.monthId >= cutoff);
-    }
-    return tasks;
-  };
-
-  const periodTasks = getPeriodTasks(selectedPeriod);
+  // Use all tasks that were fetched (current month data)
   const periodStats = useMemo(() => {
-    const tasks = periodTasks;
     const totalTasks = tasks.length;
     const totalHours = tasks.reduce((sum, t) => sum + (parseFloat(t.timeInHours) || 0), 0);
     const aiTasks = tasks.filter(t => t.aiUsed).length;
@@ -183,7 +159,7 @@ const AnalyticsSummary = ({
       aiHours,
       aiPct: totalTasks ? (aiTasks / totalTasks) * 100 : 0
     };
-  }, [periodTasks]);
+  }, [tasks]);
 
   // Handle case when selected period has no data
   const hasPeriodData = periodStats.totalTasks > 0;
@@ -262,18 +238,9 @@ const AnalyticsSummary = ({
   return (
     <LoadingWrapper loading={loading} error={error} skeleton="grid" skeletonProps={{ items: 6, columns: 3 }}>
       <div className="space-y-6">
-        {/* <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4">
           <h2 className="text-xl font-bold text-gray-300">Analytics Summary</h2>
-          <select 
-            value={selectedPeriod} 
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Time</option>
-            <option value="current">Current Month</option>
-            <option value="last3">Last 3 Months</option>
-          </select>
-        </div> */}
+        </div>
 
  
         {!loading && !hasPeriodData && (
@@ -283,11 +250,11 @@ const AnalyticsSummary = ({
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               <span className="text-yellow-600 font-medium">
-                No data available for {selectedPeriod === 'all' ? 'all time' : selectedPeriod === 'current' ? 'current month' : 'last 3 months'}
+                No tasks found for current month.
               </span>
             </div>
             <p className="text-gray-800 text-sm mt-1">
-              Try selecting a different period or wait for more data to be added.
+              Please create some tasks before generating analytics.
             </p>
           </div>
         )}
@@ -298,7 +265,7 @@ const AnalyticsSummary = ({
             {renderMetricCard(
               "Total Tasks",
               periodStats.totalTasks,
-              `${stats.totalTasks} total`,
+              `${periodStats.totalTasks} total`,
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>,
@@ -308,7 +275,7 @@ const AnalyticsSummary = ({
             {renderMetricCard(
               "Total Hours",
               numberFmt(periodStats.totalHours),
-              `${numberFmt(stats.totalHours)} total`,
+              `${numberFmt(periodStats.totalHours)} total`,
               <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>,
@@ -318,7 +285,7 @@ const AnalyticsSummary = ({
             {renderMetricCard(
               "Avg Hours/Task",
               numberFmt(periodStats.avgHours),
-              `${numberFmt(stats.avgHours)} overall`,
+              `${numberFmt(periodStats.avgHours)} overall`,
               <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>,
@@ -338,12 +305,12 @@ const AnalyticsSummary = ({
       )}
 
       {/* Additional Metrics for Admin - Only show when there's data */}
-      {hasPeriodData && showAdminStats && (
+      {hasPeriodData  && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {renderMetricCard(
-            "Efficiency Gain",
+            "Title",
             `${numberFmt(stats.efficiency)}%`,
-            "Time saved with AI",
+            "Total time with AI",
             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>,
@@ -351,8 +318,8 @@ const AnalyticsSummary = ({
           )}
           
           {renderMetricCard(
-            "Cost Savings",
-            currencyFmt(stats.costSavings),
+            "Title",
+            numberFmt(stats.costSavings),
             "Estimated savings",
             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />

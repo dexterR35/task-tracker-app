@@ -8,7 +8,7 @@ const UserDashboardPage = () => {
     <DashboardWrapper
       title={`${user.name} - Dashboard`}
       isAdmin={false}
-      showCalendar={true}
+      
     />
   );
 };

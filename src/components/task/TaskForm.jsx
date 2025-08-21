@@ -3,7 +3,7 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import DynamicButton from "../button/DynamicButton";
 import { useAuth } from "../../hooks/useAuth";
-import dayjs from "dayjs";
+import { format } from "date-fns";
 import { useDispatch } from "react-redux";
 import { useCreateTaskMutation, useUpdateTaskMutation } from "../../redux/services/tasksApi";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -34,7 +34,7 @@ const TaskForm = ({
   const [outerSubmitting, setOuterSubmitting] = useState(false);
   const { addSuccess, addError } = useNotifications();
   // Always use current month for task creation
-  const monthId = dayjs().format("YYYY-MM");
+  const monthId = format(new Date(), "yyyy-MM");
   const [createTask] = useCreateTaskMutation();
   const [updateTask] = useUpdateTaskMutation();
 

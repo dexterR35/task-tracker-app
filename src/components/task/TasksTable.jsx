@@ -2,24 +2,85 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
+import { useUpdateTaskMutation, useDeleteTaskMutation, useSubscribeToMonthTasksQuery } from '../../redux/services/tasksApi';
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../utils/taskOptions';
-import useTime from '../../hooks/useTime';
+import { useFormat } from '../../hooks/useImports';
 import usePagination from '../../hooks/usePagination';
 import { useNotifications } from '../../hooks/useNotifications';
 import LoadingWrapper from '../ui/LoadingWrapper';
-
+import { getTasksFromCache, hasCachedTasks } from '../../utils/reduxCacheUtils';
+import { useSelector } from 'react-redux';
 
 const useFormatDay = () => {
-  const { format } = useTime();
-  return useMemo(() => ((ts) => ts ? format(ts, 'MMM D') : '-'), [format]);
+  const { format } = useFormat();
+  return useMemo(() => ((ts) => {
+    if (!ts) return '-';
+    try {
+      return format(ts, 'MMM d');
+    } catch (error) {
+      console.warn('Date formatting error:', error);
+      return 'Invalid Date';
+    }
+  }), [format]);
 };
+
 const numberFmt = (n) => (Number.isFinite(n) ? (Math.round(n * 10) / 10) : 0);
 
-const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
+const TasksTable = ({ 
+  monthId, 
+  onSelect, 
+  loading = false, 
+  error = null,
+  userFilter = null, // Optional user filter
+  showUserFilter = false, // Whether to show user filter
+  isAdmin = false // Whether user is admin
+}) => {
   const navigate = useNavigate();
   const { addSuccess, addError } = useNotifications();
   
+  // Access Redux state for tasks
+  const tasksApiState = useSelector((state) => state.tasksApi);
+  
+  // Subscribe to tasks for the month (this populates Redux state)
+  const { 
+    data: subscribedTasks = [], 
+    isLoading: subscriptionLoading, 
+    error: subscriptionError 
+  } = useSubscribeToMonthTasksQuery({
+    monthId,
+  }, {
+    // Skip if no monthId provided
+    skip: !monthId,
+  });
+
+  // Get tasks from Redux cache as fallback
+  const cachedTasks = useMemo(() => {
+    if (!monthId) return [];
+    return getTasksFromCache(tasksApiState, monthId) || [];
+  }, [tasksApiState, monthId]);
+
+  // Use subscribed tasks if available, otherwise fall back to cached tasks
+  const allTasks = subscribedTasks.length > 0 ? subscribedTasks : cachedTasks;
+  
+  // Apply user filtering
+  const filteredTasks = useMemo(() => {
+    if (!allTasks || allTasks.length === 0) return [];
+    
+    let filtered = allTasks;
+    
+    // Filter by user if specified
+    if (userFilter) {
+      filtered = filtered.filter((t) => t.userUID === userFilter);
+    } else if (!isAdmin) {
+      // For regular users, only show their tasks
+      // Note: You'll need to get the current user from your auth context
+      // const { user } = useAuth();
+      // filtered = filtered.filter((t) => t.userUID === user?.uid);
+    }
+    
+    return filtered;
+  }, [allTasks, userFilter, isAdmin]);
+
   const handleSelect = (t) => {
     if (typeof onSelect === 'function') return onSelect(t);
     // Check if we're on admin route and use appropriate path
@@ -27,21 +88,30 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
     const route = isAdminRoute ? `/admin/task/${t.monthId}/${t.id}` : `/task/${t.monthId}/${t.id}`;
     navigate(route);
   };
+
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
   const formatDay = useFormatDay();
-  const { page, pageSize, pageCount, currentPageItems: currentPageTasks, handlePageChange, handlePageSizeChange } = usePagination(tasks, {
+  
+  const { 
+    page, 
+    pageSize, 
+    pageCount, 
+    currentPageItems: currentPageTasks, 
+    handlePageChange, 
+    handlePageSizeChange 
+  } = usePagination(filteredTasks, {
     defaultSize: 25,
     queryParamPage: 'p',
     queryParamSize: 'ps',
     storageKeyPrefix: 'tt_'
   });
+  
   const startIdx = page * pageSize;
 
-  
   const startEdit = (t) => {
     setEditingId(t.id);
     setForm({
@@ -56,10 +126,16 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
       deliverables: Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [String(t.deliverable)] : []),
     });
   };
-  const cancelEdit = () => { setEditingId(null); setForm({}); };
+
+  const cancelEdit = () => { 
+    setEditingId(null); 
+    setForm({}); 
+  };
+
   const saveEdit = async (t) => {
     try {
       setRowActionId(t.id);
+      
       // validate & normalize
       const errs = [];
       const quant = (n) => Math.round((Number(n) || 0) * 2) / 2;
@@ -74,6 +150,7 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
         timeInHours: quant(form.timeInHours),
         timeSpentOnAI: form.aiUsed ? quant(form.timeSpentOnAI) : 0,
       };
+      
       if (!updates.taskName) errs.push('Task');
       if (!updates.product) errs.push('Product');
       if (!updates.markets.length) errs.push('Markets');
@@ -83,11 +160,14 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
         if (!updates.aiModels.length) errs.push('AI Models');
         if (updates.timeSpentOnAI < 0.5) errs.push('AI Hours ≥ 0.5');
       }
+      
       if (errs.length) {
         addError('Please complete: ' + errs.join(', '));
         setRowActionId(null);
         return;
       }
+
+      // Update task using Redux mutation (automatically updates cache)
       await updateTask({ monthId: t.monthId, id: t.id, updates }).unwrap();
       console.log('[TasksTable] updated task', { id: t.id, monthId: t.monthId, updates });
       addSuccess('Task updated successfully!');
@@ -99,10 +179,13 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
       setRowActionId(null);
     }
   };
+
   const removeTask = async (t) => {
     if (!window.confirm('Delete this task?')) return;
     try {
       setRowActionId(t.id);
+      
+      // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: t.monthId, id: t.id }).unwrap();
       addSuccess('Task deleted successfully!');
     } catch (e) {
@@ -112,12 +195,56 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
       setRowActionId(null);
     }
   };
-  if (!tasks.length) return <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">No tasks found for selected filters.</div>;
+
+  // Determine loading state
+  const isLoading = loading || subscriptionLoading;
+  const hasError = error || subscriptionError;
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="bg-primary border rounded-lg p-6 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+        <p className="mt-2 text-sm text-gray-200">Loading tasks...</p>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (hasError) {
+    return (
+      <div className="bg-red-500 border rounded-lg p-6 text-center text-white">
+        <p className="text-sm">Error loading tasks: {hasError.message || 'Unknown error'}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 px-4 py-2 bg-white text-red-500 rounded hover:bg-gray-100"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Show empty state
+  if (!filteredTasks.length) {
+    return (
+      <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">
+        {allTasks.length > 0 
+          ? 'No tasks found for selected filters.' 
+          : 'No tasks found for this month.'
+        }
+      </div>
+    );
+  }
+
   return (
     <div className="bg-primary border rounded-lg overflow-x-auto shadow-sm">
       <div className="flex-center !mx-0 !justify-between p-3 text-xs text-gray-200">
         <div>
-          Showing {Math.min(startIdx + 1, tasks.length)}–{Math.min(startIdx + pageSize, tasks.length)} of {tasks.length}
+          Showing {Math.min(startIdx + 1, filteredTasks.length)}–{Math.min(startIdx + pageSize, filteredTasks.length)} of {filteredTasks.length}
+          {cachedTasks.length > 0 && subscribedTasks.length === 0 && (
+            <span className="ml-2 text-yellow-300">(from cache)</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-1">Page size:
@@ -127,6 +254,7 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
           </label>
         </div>
       </div>
+      
       <table className="min-w-full text-sm " >
         <thead className="bg-primary text-gray-200 uppercase">
           <tr>
@@ -219,15 +347,12 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
                       {deliverables.filter(o => !(form.deliverables||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {(form.deliverables||[]).map(d => {
-                        const deliverable = deliverables.find(o => o.value === d);
-                        return (
-                          <span key={d} className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs">
-                            {deliverable ? deliverable.label : d}
-                            <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, deliverables: (f.deliverables||[]).filter(x => x !== d) }))}>×</button>
-                          </span>
-                        );
-                      })}
+                      {(form.deliverables||[]).map(d => (
+                        <span key={d} className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs">
+                          {d}
+                          <button type="button" className="ml-1" onClick={() => setForm(f => ({ ...f, deliverables: (f.deliverables||[]).filter(x => x !== d) }))}>×</button>
+                        </span>
+                      ))}
                     </div>
                   </div>
                 ) : (Array.isArray(t.deliverables) ? (t.deliverables.join(', ') || '-') : (t.deliverable || '-'))}</td>
@@ -253,25 +378,19 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
           })}
         </tbody>
       </table>
+      
       <div className="p-3">
         <ReactPaginate
-          className="flex items-center gap-1 flex-wrap text-xs"
-          pageClassName=""
-          activeClassName="!bg-blue-600 !text-white"
-          pageLinkClassName="px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
-          activeLinkClassName="px-2 py-1 rounded border border-blue-600 bg-blue-600 text-white"
-          breakLinkClassName="px-2 py-1"
-          previousLinkClassName="px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
-          nextLinkClassName="px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
-          disabledLinkClassName="opacity-40 cursor-not-allowed"
-          previousLabel="Prev"
-          nextLabel="Next"
-          breakLabel="..."
-          onPageChange={handlePageChange}
-          forcePage={page}
           pageCount={pageCount}
-          marginPagesDisplayed={1}
-          pageRangeDisplayed={3}
+          pageRangeDisplayed={5}
+          marginPagesDisplayed={2}
+          onPageChange={handlePageChange}
+          containerClassName="flex justify-center space-x-1"
+          pageClassName="px-3 py-1 border rounded hover:bg-gray-100"
+          activeClassName="bg-blue-500 text-white"
+          previousClassName="px-3 py-1 border rounded hover:bg-gray-100"
+          nextClassName="px-3 py-1 border rounded hover:bg-gray-100"
+          disabledClassName="opacity-50 cursor-not-allowed"
         />
       </div>
     </div>

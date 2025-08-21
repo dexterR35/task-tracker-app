@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotifications } from "../../hooks/useNotifications";
-import dayjs from "dayjs";
 
 const WelcomeMessage = () => {
   const { user } = useAuth();
@@ -10,8 +9,12 @@ const WelcomeMessage = () => {
 
   useEffect(() => {
     if (user && !hasShownWelcome) {
-      const currentTime = dayjs();
-      const hour = currentTime.hour();
+      // Check if we're on the login page - don't show welcome there
+      const isLoginPage = window.location.pathname === '/login';
+      if (isLoginPage) return;
+      
+      const currentTime = new Date();
+      const hour = currentTime.getHours();
       
       let greeting = "Good morning";
       if (hour >= 12 && hour < 17) {

@@ -24,12 +24,12 @@ import {
   Scatter,
   jsPDF,React
 } from "../hooks/useImports";
-import useTime from "../hooks/useTime";
+import { useFormat } from "../hooks/useImports";
 import { useNotifications } from "../hooks/useNotifications";
 import Skeleton from "../components/ui/Skeleton";
 
 const AdminAnalyticsPage = () => {
-  const { format } = useTime();
+  const { format } = useFormat();
   const { addError, addSuccess } = useNotifications();
   const { data: all = [], isLoading } = useListAllAnalyticsQuery();
   const [selected, setSelected] = React.useState(null);
@@ -128,7 +128,7 @@ const AdminAnalyticsPage = () => {
                     <tr key={row.monthId} className="border-t">
                       <td className="px-3 py-2 font-medium">{row.monthId}</td>
                       <td className="px-3 py-2">
-                        {format(row.savedAt, "YYYY-MM-DD HH:mm")}
+                        {format(row.savedAt, "yyyy-MM-dd HH:mm")}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex gap-2">

@@ -3,6 +3,7 @@ import {
   useSaveMonthAnalyticsMutation,
   useGetMonthAnalyticsQuery,
   useGetMonthBoardExistsQuery,
+  useSubscribeToMonthTasksQuery,
 } from "../redux/services/tasksApi";
 import DynamicButton from "../components/button/DynamicButton";
 import { useNotifications } from "../hooks/useNotifications";
@@ -28,8 +29,9 @@ import {
   useNavigate,
   useState,
   useEffect,
-  dayjs,
+  useCallback,
 } from "../hooks/useImports";
+import { format } from "date-fns";
 import Skeleton from "../components/ui/Skeleton";
 
 const PreviewPage = () => {
@@ -39,6 +41,7 @@ const PreviewPage = () => {
 
   const [analyticsPreview, setAnalyticsPreview] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [noTasksDetected, setNoTasksDetected] = useState(false);
 
   const [computeAnalytics, { isLoading: computing }] =
     useComputeMonthAnalyticsMutation();
@@ -46,6 +49,7 @@ const PreviewPage = () => {
     useSaveMonthAnalyticsMutation();
   const { data: existingAnalytics } = useGetMonthAnalyticsQuery({ monthId });
   const { data: board = { exists: false } } = useGetMonthBoardExistsQuery({ monthId });
+  const { data: tasks = [] } = useSubscribeToMonthTasksQuery({ monthId });
 
   const COLORS = [
     "#6366f1",
@@ -58,16 +62,27 @@ const PreviewPage = () => {
     "#22c55e",
   ];
 
+  // Reset noTasksDetected when monthId changes
   useEffect(() => {
-    if (monthId && board?.exists) {
+    setNoTasksDetected(false);
+    setAnalyticsPreview(null);
+    setIsGenerating(false);
+  }, [monthId]);
+
+  useEffect(() => {
+    console.log('PreviewPage useEffect - monthId:', monthId, 'board.exists:', board?.exists, 'analyticsPreview:', !!analyticsPreview, 'isGenerating:', isGenerating, 'noTasksDetected:', noTasksDetected);
+    
+    if (monthId && board?.exists && !analyticsPreview && !isGenerating && !noTasksDetected) {
+      console.log('Triggering analytics generation');
       handleGenerateAnalytics();
     } else if (monthId && !board?.exists) {
+      console.log('Board does not exist, navigating to admin');
       addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
       navigate("/admin");
     }
-  }, [monthId, board]);
+  }, [monthId, board?.exists, analyticsPreview, isGenerating, noTasksDetected]);
 
-  const handleGenerateAnalytics = async () => {
+  const handleGenerateAnalytics = useCallback(async () => {
     if (!board?.exists) {
       addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
       navigate("/admin");
@@ -76,23 +91,64 @@ const PreviewPage = () => {
     
     setIsGenerating(true);
     try {
-      const res = await computeAnalytics({ monthId }).unwrap();
+      console.log('Strategy 3: Generating analytics with priority on cache and Redux state for month:', monthId);
       
-      // Check if there are any tasks
-      if (!res || res.totalTasks === 0) {
-        addError(`Cannot generate analytics: No tasks found for ${monthId}. Please create some tasks first.`);
+      // Strategy 3: Try to get tasks from Redux state first
+      let tasksFromRedux = null;
+      try {
+        // Get tasks from the current subscription data
+        const currentTasks = tasks || [];
+        if (currentTasks && currentTasks.length > 0) {
+          tasksFromRedux = currentTasks;
+          console.log(`Found ${tasksFromRedux.length} tasks in Redux state for month:`, monthId);
+        }
+      } catch (error) {
+        console.log('No tasks found in Redux state, will use cache or Firebase');
+      }
+      
+      // Try cached analytics first
+      const { analyticsStorage } = await import('../utils/indexedDBStorage');
+      const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
+      
+      if (cachedAnalytics) {
+        console.log('Using cached analytics:', cachedAnalytics);
+        setAnalyticsPreview(cachedAnalytics);
+        addSuccess(`Analytics loaded from cache for ${monthId}!`);
+      } else if (tasksFromRedux && tasksFromRedux.length > 0) {
+        // Strategy 3: Generate from Redux state (no Firebase reads)
+        console.log('Generating analytics from Redux state (no Firebase reads)');
+        const res = await computeAnalytics({ 
+          monthId, 
+          useCache: true, 
+          tasks: tasksFromRedux 
+        }).unwrap();
+        console.log('Analytics generated from Redux state:', res);
+        setAnalyticsPreview(res);
+        addSuccess(`Analytics generated from Redux state for ${monthId}!`);
+      } else {
+        // Fallback: Generate from Firebase (should rarely happen with proper caching)
+        console.log('No cache or Redux data, computing from Firebase...');
+        const res = await computeAnalytics({ monthId, useCache: false }).unwrap();
+        console.log('Analytics generation completed from Firebase:', res);
+        setAnalyticsPreview(res);
+        addSuccess(`Analytics generated from Firebase for ${monthId}!`);
+      }
+      
+      setIsGenerating(false);
+    } catch (error) {
+      console.error('Error in handleGenerateAnalytics:', error);
+      const errorCode = error?.data?.code || error?.code;
+      if (errorCode === 'NO_TASKS') {
+        setNoTasksDetected(true);
+        addError(`Cannot generate analytics: ${error.data?.message || 'No tasks found for the selected month. Please create some tasks first.'}`);
+        setIsGenerating(false);
         navigate("/admin");
         return;
       }
-      
-      setAnalyticsPreview(res);
-      addSuccess(`Analytics generated successfully for ${monthId}!`);
-    } catch (error) {
       addError("Failed to generate analytics");
-    } finally {
       setIsGenerating(false);
     }
-  };
+  }, [monthId, board?.exists, computeAnalytics, addError, addSuccess, navigate, tasks]);
 
   const handleSaveAnalytics = async () => {
     if (!analyticsPreview) return;
@@ -153,9 +209,18 @@ const PreviewPage = () => {
             <div className="text-xl font-semibold mb-4">
               Generating Analytics Preview...
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-4">
               <Skeleton variant="title" width="256px" height="32px" />
             </div>
+            <div className="text-sm text-gray-600">
+              If this takes too long, try refreshing the page or check the console for errors.
+            </div>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Refresh Page
+            </button>
           </div>
         </div>
       </div>
@@ -186,7 +251,7 @@ const PreviewPage = () => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">
-                Analytics Preview ({dayjs(monthId + "-01").format("MMMM YYYY")})
+                Analytics Preview ({format(new Date(monthId + "-01"), "MMMM yyyy")})
               </h2>
               <div className="mt-1 text-sm text-gray-600">
                 <strong>Month:</strong> {monthId}
