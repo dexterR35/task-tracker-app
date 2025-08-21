@@ -28,6 +28,7 @@ const TaskForm = ({
   const { user } = useAuth();
   const [outerSubmitting, setOuterSubmitting] = useState(false);
   const { addSuccess, addError } = useNotifications();
+  // Always use current month for task creation
   const monthId = dayjs().format("YYYY-MM");
   const [createTask] = useCreateTaskMutation();
   const [updateTask] = useUpdateTaskMutation();

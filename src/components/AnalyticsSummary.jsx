@@ -292,89 +292,93 @@ const AnalyticsSummary = ({
           </div>
         )}
 
-        {/* Main Metrics Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {renderMetricCard(
-            "Total Tasks",
-            periodStats.totalTasks,
-            `${stats.totalTasks} total`,
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        {/* Main Metrics Grid - Only show when there's data */}
+        {hasPeriodData && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {renderMetricCard(
+              "Total Tasks",
+              periodStats.totalTasks,
+              `${stats.totalTasks} total`,
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>,
+              'blue'
+            )}
+            
+            {renderMetricCard(
+              "Total Hours",
+              numberFmt(periodStats.totalHours),
+              `${numberFmt(stats.totalHours)} total`,
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>,
+              'green'
+            )}
+            
+            {renderMetricCard(
+              "Avg Hours/Task",
+              numberFmt(periodStats.avgHours),
+              `${numberFmt(stats.avgHours)} overall`,
+              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>,
+              'purple'
+            )}
+            
+            {renderMetricCard(
+              "AI Tasks",
+              periodStats.aiTasks,
+              `${numberFmt(periodStats.aiPct)}% of total`,
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>,
-            'blue'
+            'indigo'
           )}
-          
+        </div>
+      )}
+
+      {/* Additional Metrics for Admin - Only show when there's data */}
+      {hasPeriodData && showAdminStats && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {renderMetricCard(
-            "Total Hours",
-            numberFmt(periodStats.totalHours),
-            `${numberFmt(stats.totalHours)} total`,
+            "Efficiency Gain",
+            `${numberFmt(stats.efficiency)}%`,
+            "Time saved with AI",
             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>,
             'green'
           )}
           
           {renderMetricCard(
-            "Avg Hours/Task",
-            numberFmt(periodStats.avgHours),
-            `${numberFmt(stats.avgHours)} overall`,
-            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            "Cost Savings",
+            currencyFmt(stats.costSavings),
+            "Estimated savings",
+            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>,
-            'purple'
+            'green'
           )}
           
           {renderMetricCard(
-            "AI Tasks",
-            periodStats.aiTasks,
-            `${numberFmt(periodStats.aiPct)}% of total`,
-            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            "Reworked Tasks",
+            stats.reworked,
+            `${numberFmt(stats.reworkedPct)}% of total`,
+            <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>,
-            'indigo'
+            'yellow'
           )}
         </div>
+      )}
 
-        {/* Additional Metrics for Admin */}
-        {showAdminStats && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {renderMetricCard(
-              "Efficiency Gain",
-              `${numberFmt(stats.efficiency)}%`,
-              "Time saved with AI",
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>,
-              'green'
-            )}
-            
-            {renderMetricCard(
-              "Cost Savings",
-              currencyFmt(stats.costSavings),
-              "Estimated savings",
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>,
-              'green'
-            )}
-            
-            {renderMetricCard(
-              "Reworked Tasks",
-              stats.reworked,
-              `${numberFmt(stats.reworkedPct)}% of total`,
-              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>,
-              'yellow'
-            )}
+        {/* Charts and Detailed Stats - Only show when there's data */}
+        {hasPeriodData && (
+          <div className="grid gap-6 md:grid-cols-2">
+            {showMonthly && renderMonthlyChart()}
+            {showUserStats && renderUserStats()}
           </div>
         )}
-
-        {/* Charts and Detailed Stats */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {showMonthly && renderMonthlyChart()}
-          {showUserStats && renderUserStats()}
-        </div>
       </div>
     </LoadingWrapper>
   );

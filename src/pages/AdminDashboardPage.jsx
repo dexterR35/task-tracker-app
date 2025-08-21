@@ -26,7 +26,8 @@ const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedUserId = searchParams.get("user") || "";
-  const monthId = useMemo(() => dayjs().format("YYYY-MM"), []);
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+  const monthId = selectedMonth;
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery();
 
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({
@@ -43,24 +44,15 @@ const AdminDashboardPage = () => {
     useGenerateMonthBoardMutation();
 
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const monthStart = dayjs(monthId + "-01");
-  const monthEnd = monthStart.endOf("month");
-  const [dateRange, setDateRange] = useState({
-    start: monthStart,
-    end: monthEnd,
-  });
 
   useEffect(() => {}, [user, monthId]);
 
   const filteredTasks = useMemo(() => {
-    const start = dateRange.start.startOf("day").valueOf();
-    const end = dateRange.end.endOf("day").valueOf();
     return (tasks || []).filter((t) => {
       if (impersonatedUserId && t.userUID !== impersonatedUserId) return false;
-      const created = t.createdAt || 0;
-      return created >= start && created <= end;
+      return true; // Show all tasks for selected month
     });
-  }, [tasks, dateRange, impersonatedUserId]);
+  }, [tasks, impersonatedUserId]);
 
   const handleGenerateAnalytics = () => {
     if (!board?.exists) {
@@ -88,13 +80,18 @@ const AdminDashboardPage = () => {
         <div className="card">
           <h2>Admin Dashboard</h2>
           <div className="mt-2 text-sm text-gray-600">
-            <strong>Current Month:</strong> {dayjs(monthId + "-01").format("MMMM YYYY")} ({monthId})
-            {!board?.exists && (
+            <strong>Selected Month:</strong> {dayjs(monthId + "-01").format("MMMM YYYY")} ({monthId})
+            {monthId !== dayjs().format("YYYY-MM") && (
+              <span className="ml-2 text-orange-600">
+                • Not current month (view only)
+              </span>
+            )}
+            {monthId === dayjs().format("YYYY-MM") && !board?.exists && (
               <span className="ml-2 text-red-600">
                 • Month board not created yet
               </span>
             )}
-            {board?.exists && (
+            {monthId === dayjs().format("YYYY-MM") && board?.exists && (
               <span className="ml-2 text-green-600">
                 • Month board ready
               </span>
@@ -105,28 +102,43 @@ const AdminDashboardPage = () => {
           <h2>View User Task</h2>
           <div className="flex-center space-x-4 m-0">
             <div>
-              <label>Start Date</label>
-              <input
-                type="date"
-                name="start"
-                value={dateRange.start.format("YYYY-MM-DD")}
-                onChange={(e) =>
-                  setDateRange((p) => ({ ...p, start: dayjs(e.target.value) }))
-                }
-                className="border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label>End Date</label>
-              <input
-                type="date"
-                name="end"
-                value={dateRange.end.format("YYYY-MM-DD")}
-                onChange={(e) =>
-                  setDateRange((p) => ({ ...p, end: dayjs(e.target.value) }))
-                }
-                className="border rounded px-3 py-2"
-              />
+              <label>Select Month</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="border rounded px-3 py-2 min-w-[200px]"
+              >
+                {(() => {
+                  const months = [];
+                  const currentDate = dayjs();
+                  const currentYear = currentDate.year();
+                  
+                  // Generate months for current year to 3 years ahead
+                  for (let yearOffset = 0; yearOffset <= 3; yearOffset++) {
+                    const year = currentYear + yearOffset;
+                    const isCurrentYear = year === currentYear;
+                    
+                    for (let month = 1; month <= 12; month++) {
+                      const monthDate = dayjs(`${year}-${month.toString().padStart(2, '0')}-01`);
+                      const monthId = monthDate.format("YYYY-MM");
+                      const monthName = monthDate.format("MMMM YYYY");
+                      const isCurrentMonth = monthId === currentDate.format("YYYY-MM");
+                      const isDisabled = year > currentYear; // Disable future years
+                      
+                      months.push(
+                        <option 
+                          key={monthId} 
+                          value={monthId}
+                          disabled={isDisabled}
+                        >
+                          {monthName} {isCurrentMonth ? '(Current)' : ''} {isDisabled ? '(Disabled)' : ''}
+                        </option>
+                      );
+                    }
+                  }
+                  return months;
+                })()}
+              </select>
             </div>
 
             {usersLoading ? (
@@ -158,6 +170,12 @@ const AdminDashboardPage = () => {
           <DynamicButton
             variant="primary"
             onClick={() => {
+              const currentMonth = dayjs().format("YYYY-MM");
+              if (monthId !== currentMonth) {
+                addError(`Cannot create task: You can only create tasks for the current month (${dayjs(currentMonth + "-01").format("MMMM YYYY")}). Selected month: ${dayjs(monthId + "-01").format("MMMM YYYY")}`);
+                return;
+              }
+              
               if (!board?.exists) {
                 addError(`Cannot create task: Month board for ${dayjs(monthId + "-01").format("MMMM YYYY")} is not created yet. Please create the month board first.`);
                 return;
@@ -171,10 +189,17 @@ const AdminDashboardPage = () => {
             <DynamicButton
               variant="primary"
               onClick={async () => {
+                const currentMonth = dayjs().format("YYYY-MM");
+                if (monthId !== currentMonth) {
+                  addError(`Cannot create board: You can only generate boards for the current month (${dayjs(currentMonth + "-01").format("MMMM YYYY")}). Selected month: ${dayjs(monthId + "-01").format("MMMM YYYY")}`);
+                  return;
+                }
+                
                 try {
-                  await generateBoard({ monthId }).unwrap();
+                  // Always use current month for board creation
+                  await generateBoard({ monthId: currentMonth }).unwrap();
                   await refetchBoard();
-                  addSuccess(`Month board for ${dayjs(monthId + "-01").format("MMMM YYYY")} created successfully!`);
+                  addSuccess(`Month board for ${dayjs(currentMonth + "-01").format("MMMM YYYY")} created successfully!`);
                 } catch (error) {
                   addError(`Failed to create month board: ${error.message}`);
                 }
