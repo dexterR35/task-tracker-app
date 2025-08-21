@@ -8,6 +8,7 @@ import {
 } from "../hooks/useImports";
 import { useAuth } from "../hooks/useAuth";
 import { useNotifications } from "../hooks/useNotifications";
+import { useNotificationCleanup } from "../hooks/useNotificationCleanup";
 import { useGetUsersQuery } from "../redux/services/usersApi";
 import {
   useGetMonthTasksQuery,
@@ -24,10 +25,14 @@ const AdminDashboardPage = () => {
   const { user } = useAuth();
   const { addSuccess, addError } = useNotifications();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const impersonatedUserId = searchParams.get("user") || "";
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+  const urlMonthId = searchParams.get("monthId");
+  const [selectedMonth, setSelectedMonth] = useState(urlMonthId || dayjs().format("YYYY-MM"));
   const monthId = selectedMonth;
+  
+  // Clean up notifications when month or user changes
+  useNotificationCleanup([monthId, impersonatedUserId]);
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery();
 
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({
@@ -45,7 +50,7 @@ const AdminDashboardPage = () => {
 
   const [showTaskForm, setShowTaskForm] = useState(false);
 
-  useEffect(() => {}, [user, monthId]);
+
 
   const filteredTasks = useMemo(() => {
     return (tasks || []).filter((t) => {
@@ -71,7 +76,25 @@ const AdminDashboardPage = () => {
 
   const handleUserSelect = (e) => {
     const uid = e.target.value;
-    navigate(uid ? `/admin?user=${uid}` : "/admin");
+    const currentMonth = dayjs().format("YYYY-MM");
+    const isCurrentMonth = selectedMonth === currentMonth;
+    const hasUserFilter = uid && uid !== "";
+    
+    // Only add parameters if we're not in default state
+    if (isCurrentMonth && !hasUserFilter) {
+      // Default state: current month, all users - clean URL
+      navigate("/admin");
+    } else {
+      // Non-default state: add parameters
+      const newSearchParams = new URLSearchParams();
+      if (!isCurrentMonth) {
+        newSearchParams.set("monthId", selectedMonth);
+      }
+      if (hasUserFilter) {
+        newSearchParams.set("user", uid);
+      }
+      navigate(`/admin?${newSearchParams.toString()}`);
+    }
   };
 
   return (
@@ -105,7 +128,30 @@ const AdminDashboardPage = () => {
               <label>Select Month</label>
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => {
+                  const newMonth = e.target.value;
+                  setSelectedMonth(newMonth);
+                  
+                  const currentMonth = dayjs().format("YYYY-MM");
+                  const isCurrentMonth = newMonth === currentMonth;
+                  const hasUserFilter = impersonatedUserId && impersonatedUserId !== "";
+                  
+                  // Only add parameters if we're not in default state
+                  if (isCurrentMonth && !hasUserFilter) {
+                    // Default state: current month, all users - clean URL
+                    navigate("/admin");
+                  } else {
+                    // Non-default state: add parameters
+                    const newSearchParams = new URLSearchParams();
+                    if (!isCurrentMonth) {
+                      newSearchParams.set("monthId", newMonth);
+                    }
+                    if (hasUserFilter) {
+                      newSearchParams.set("user", impersonatedUserId);
+                    }
+                    navigate(`/admin?${newSearchParams.toString()}`);
+                  }
+                }}
                 className="border rounded px-3 py-2 min-w-[200px]"
               >
                 {(() => {

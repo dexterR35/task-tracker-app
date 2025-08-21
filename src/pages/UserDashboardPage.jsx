@@ -5,6 +5,7 @@ import {
   useGetMonthBoardExistsQuery,
 } from "../redux/services/tasksApi";
 import { useNotifications } from "../hooks/useNotifications";
+import { useNotificationCleanup } from "../hooks/useNotificationCleanup";
 import TaskForm from "../components/task/TaskForm";
 import TasksTable from "../components/task/TasksTable";
 import AnalyticsSummary from "../components/AnalyticsSummary";
@@ -12,7 +13,9 @@ import DynamicButton from "../components/button/DynamicButton";
 
 const UserDashboardPage = () => {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlMonthId = searchParams.get("monthId");
+  const [selectedMonth, setSelectedMonth] = useState(urlMonthId || dayjs().format("YYYY-MM"));
   const monthId = selectedMonth;
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({
     monthId,
@@ -22,6 +25,9 @@ const UserDashboardPage = () => {
   });
   const [showTaskForm, setShowTaskForm] = useState(false);
   const { addError } = useNotifications();
+  
+  // Clean up notifications when month changes
+  useNotificationCleanup([monthId]);
 
   const myTasks = useMemo(
     () => (tasks || []).filter((t) => t.userUID === user?.uid),
@@ -62,7 +68,14 @@ const UserDashboardPage = () => {
               </label>
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => {
+                  const newMonth = e.target.value;
+                  setSelectedMonth(newMonth);
+                  // Update URL parameters
+                  const newSearchParams = new URLSearchParams(searchParams);
+                  newSearchParams.set("monthId", newMonth);
+                  setSearchParams(newSearchParams);
+                }}
                 className="border rounded px-3 py-2"
               >
                 {(() => {

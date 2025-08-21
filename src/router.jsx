@@ -146,6 +146,14 @@ const router = createBrowserRouter([
           </UserRoute>
         ),
       },
+      {
+        path: "admin/task/:monthId/:taskId",
+        element: (
+          <AdminRoute>
+            <TaskDetailPage />
+          </AdminRoute>
+        ),
+      },
 
       // {
       //   path: 'unauthorized',

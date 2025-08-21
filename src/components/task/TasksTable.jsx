@@ -22,7 +22,10 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
   
   const handleSelect = (t) => {
     if (typeof onSelect === 'function') return onSelect(t);
-    navigate(`/task/${t.monthId}/${t.id}`);
+    // Check if we're on admin route and use appropriate path
+    const isAdminRoute = window.location.pathname.includes('/admin');
+    const route = isAdminRoute ? `/admin/task/${t.monthId}/${t.id}` : `/task/${t.monthId}/${t.id}`;
+    navigate(route);
   };
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
