@@ -7,6 +7,7 @@ import {
   useNavigate,
 } from "../hooks/useImports";
 import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../hooks/useNotifications";
 import { useGetUsersQuery } from "../redux/services/usersApi";
 import {
   useGetMonthTasksQuery,
@@ -21,20 +22,23 @@ import Skeleton from "../components/ui/Skeleton";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
+  const { addSuccess, addError } = useNotifications();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedUserId = searchParams.get("user") || "";
-  const monthId = useMemo(() => 'dayjs().format("YYYY-MM")', []);
+  const monthId = useMemo(() => dayjs().format("YYYY-MM"), []);
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery();
 
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({
     monthId,
   });
   const {
-    data: board = { exists: true },
+    data: board = { exists: false },
     refetch: refetchBoard,
     isLoading: boardLoading,
   } = useGetMonthBoardExistsQuery({ monthId });
+
+
   const [generateBoard, { isLoading: generatingBoard }] =
     useGenerateMonthBoardMutation();
 
@@ -59,6 +63,17 @@ const AdminDashboardPage = () => {
   }, [tasks, dateRange, impersonatedUserId]);
 
   const handleGenerateAnalytics = () => {
+    if (!board?.exists) {
+      addError(`Cannot generate analytics: Month board for ${dayjs(monthId + "-01").format("MMMM YYYY")} is not created yet. Please create the month board first.`);
+      return;
+    }
+    
+    if (!tasks || tasks.length === 0) {
+      addError(`Cannot generate analytics: No tasks found for ${dayjs(monthId + "-01").format("MMMM YYYY")}. Please create some tasks first.`);
+      return;
+    }
+    
+    addSuccess(`Generating analytics for ${dayjs(monthId + "-01").format("MMMM YYYY")}...`);
     navigate(`/preview/${monthId}`);
   };
 
@@ -72,6 +87,19 @@ const AdminDashboardPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="card">
           <h2>Admin Dashboard</h2>
+          <div className="mt-2 text-sm text-gray-600">
+            <strong>Current Month:</strong> {dayjs(monthId + "-01").format("MMMM YYYY")} ({monthId})
+            {!board?.exists && (
+              <span className="ml-2 text-red-600">
+                • Month board not created yet
+              </span>
+            )}
+            {board?.exists && (
+              <span className="ml-2 text-green-600">
+                • Month board ready
+              </span>
+            )}
+          </div>
         </div>
         <div className="card flex-center !flex-row !justify-start gap-10">
           <h2>View User Task</h2>
@@ -129,9 +157,13 @@ const AdminDashboardPage = () => {
         <div className="mb-6 flex-center !flex-row md:flex-row gap-4 !mx-0 justify-start">
           <DynamicButton
             variant="primary"
-            onClick={() => setShowTaskForm(!showTaskForm)}
-            disabled={boardLoading || !board?.exists}
-            title={!board?.exists ? "Create the board first" : ""}
+            onClick={() => {
+              if (!board?.exists) {
+                addError(`Cannot create task: Month board for ${dayjs(monthId + "-01").format("MMMM YYYY")} is not created yet. Please create the month board first.`);
+                return;
+              }
+              setShowTaskForm(!showTaskForm);
+            }}
           >
             {showTaskForm ? "Hide Form" : "Create Task Tracker"}
           </DynamicButton>
@@ -139,18 +171,27 @@ const AdminDashboardPage = () => {
             <DynamicButton
               variant="primary"
               onClick={async () => {
-                await generateBoard({ monthId }).unwrap();
-                await refetchBoard();
+                try {
+                  await generateBoard({ monthId }).unwrap();
+                  await refetchBoard();
+                  addSuccess(`Month board for ${dayjs(monthId + "-01").format("MMMM YYYY")} created successfully!`);
+                } catch (error) {
+                  addError(`Failed to create month board: ${error.message}`);
+                }
               }}
               loading={generatingBoard}
               loadingText="Generating..."
             >
-              Create Board - {monthId}
+              Create Board - {dayjs(monthId + "-01").format("MMMM YYYY")}
             </DynamicButton>
           )}
-          <DynamicButton variant="outline" onClick={handleGenerateAnalytics}>
-            Generate Analytics ({monthId})
+          <DynamicButton 
+            variant="outline" 
+            onClick={handleGenerateAnalytics}
+          >
+            Generate Analytics ({dayjs(monthId + "-01").format("MMMM YYYY")})
           </DynamicButton>
+
         </div>
 
         {showTaskForm && (

@@ -16,7 +16,7 @@ const UserDashboardPage = () => {
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({
     monthId,
   });
-  const { data: board = { exists: true } } = useGetMonthBoardExistsQuery({
+  const { data: board = { exists: false } } = useGetMonthBoardExistsQuery({
     monthId,
   });
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -32,10 +32,23 @@ const UserDashboardPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="card">
           <h2 className="capitalize">{user.name} - DashBoard</h2>
+          <div className="mt-2 text-sm text-gray-600">
+            <strong>Current Month:</strong> {dayjs(monthId + "-01").format("MMMM YYYY")} ({monthId})
+            {!board?.exists && (
+              <span className="ml-2 text-red-600">
+                • Month board not created yet
+              </span>
+            )}
+            {board?.exists && (
+              <span className="ml-2 text-green-600">
+                • Month board ready
+              </span>
+            )}
+          </div>
         </div>
         {!board?.exists && (
           <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-4 py-2 rounded">
-            This month's board is not created yet. Please contact an admin.
+            The board for {dayjs(monthId + "-01").format("MMMM YYYY")} is not created yet. Please contact an admin.
           </div>
         )}
         <div className="mb-6">
@@ -44,13 +57,12 @@ const UserDashboardPage = () => {
             onClick={() => {
               if (!board?.exists) {
                 addError(
-                  "Cannot create task: Board for current month is not created yet."
+                  `Cannot create task: Board for ${dayjs(monthId + "-01").format("MMMM YYYY")} is not created yet.`
                 );
                 return;
               }
               setShowTaskForm(!showTaskForm);
             }}
-            disabled={!board?.exists}
           >
             {showTaskForm ? "Hide Form" : "Create Task"}
           </DynamicButton>

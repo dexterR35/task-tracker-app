@@ -2,6 +2,7 @@ import {
   useComputeMonthAnalyticsMutation,
   useSaveMonthAnalyticsMutation,
   useGetMonthAnalyticsQuery,
+  useGetMonthBoardExistsQuery,
 } from "../redux/services/tasksApi";
 import DynamicButton from "../components/button/DynamicButton";
 import { useNotifications } from "../hooks/useNotifications";
@@ -27,6 +28,7 @@ import {
   useNavigate,
   useState,
   useEffect,
+  dayjs,
 } from "../hooks/useImports";
 import Skeleton from "../components/ui/Skeleton";
 
@@ -43,6 +45,7 @@ const PreviewPage = () => {
   const [saveAnalytics, { isLoading: saving }] =
     useSaveMonthAnalyticsMutation();
   const { data: existingAnalytics } = useGetMonthAnalyticsQuery({ monthId });
+  const { data: board = { exists: false } } = useGetMonthBoardExistsQuery({ monthId });
 
   const COLORS = [
     "#6366f1",
@@ -56,16 +59,34 @@ const PreviewPage = () => {
   ];
 
   useEffect(() => {
-    if (monthId) {
+    if (monthId && board?.exists) {
       handleGenerateAnalytics();
+    } else if (monthId && !board?.exists) {
+      addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
+      navigate("/admin");
     }
-  }, [monthId]);
+  }, [monthId, board]);
 
   const handleGenerateAnalytics = async () => {
+    if (!board?.exists) {
+      addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
+      navigate("/admin");
+      return;
+    }
+    
     setIsGenerating(true);
     try {
       const res = await computeAnalytics({ monthId }).unwrap();
+      
+      // Check if there are any tasks
+      if (!res || res.totalTasks === 0) {
+        addError(`Cannot generate analytics: No tasks found for ${monthId}. Please create some tasks first.`);
+        navigate("/admin");
+        return;
+      }
+      
       setAnalyticsPreview(res);
+      addSuccess(`Analytics generated successfully for ${monthId}!`);
     } catch (error) {
       addError("Failed to generate analytics");
     } finally {
@@ -163,9 +184,19 @@ const PreviewPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-3xl font-bold text-gray-900">
-              Analytics Preview ({monthId})
-            </h2>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Analytics Preview ({dayjs(monthId + "-01").format("MMMM YYYY")})
+              </h2>
+              <div className="mt-1 text-sm text-gray-600">
+                <strong>Month:</strong> {monthId}
+                {board?.exists && (
+                  <span className="ml-2 text-green-600">
+                    • Month board ready
+                  </span>
+                )}
+              </div>
+            </div>
             <div className="flex gap-3">
               {existingAnalytics ? (
                 <DynamicButton
