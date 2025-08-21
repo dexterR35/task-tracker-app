@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import DynamicButton from "../DynamicButton";
+import DynamicButton from "../button/DynamicButton";
 import { useAuth } from "../../hooks/useAuth";
 import dayjs from "dayjs";
 import { useDispatch } from "react-redux";
@@ -13,7 +13,7 @@ import {
   taskNameOptions,
   aiModelOptions,
   deliverables,
-} from "../../constants/taskOptions";
+} from "../../utils/taskOptions";
 import LoadingWrapper from "../ui/LoadingWrapper";
 import Skeleton, { SkeletonForm } from "../ui/Skeleton";
 

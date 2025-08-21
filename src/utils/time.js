@@ -2,7 +2,6 @@
 
 /**
  * Convert a Firestore Timestamp, Date, number, or string into milliseconds since epoch.
- * Returns null if conversion fails or input is falsy.
  */
 export const normalizeTimestamp = (value) => {
   if (!value) return null;
@@ -29,10 +28,7 @@ export const normalizeTimestamp = (value) => {
   return null;
 };
 
-/**
- * Recursively walk a plain object/array and convert any Timestamp/Date-like
- * values on keys that look like time fields to millisecond numbers.
- */
+
 export const normalizeObjectTimestamps = (input) => {
   if (input == null) return input;
   if (Array.isArray(input)) return input.map((v) => normalizeObjectTimestamps(v));

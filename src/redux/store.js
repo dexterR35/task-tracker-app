@@ -1,13 +1,10 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { combineReducers } from "@reduxjs/toolkit";
+import { configureStore,combineReducers } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
 import notificationReducer, { addNotification } from "./slices/notificationSlice";
 import { tasksApi } from "./services/tasksApi";
 import { usersApi } from "./services/usersApi";
  
 
-// removed global pending counts
-// Dynamic reducer registry for hot module replacement
 const staticReducers = {
   auth: authReducer,
   notifications: notificationReducer,
@@ -23,7 +20,7 @@ function createReducer(asyncReducers = {}) {
   });
 }
 
-// Error notification middleware (skip if action.meta?.suppressGlobalError)
+// Error notification middleware (no skip if action.meta?.suppressGlobalError)
 const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
   const result = next(action);
   if (/_rejected$/i.test(action.type) && !action.meta?.suppressGlobalError) {
@@ -53,7 +50,7 @@ const store = configureStore({
   devTools: process.env.NODE_ENV !== "production",
 });
 
-// Add dynamic reducer injection capability
+
 store.asyncReducers = {};
 store.injectReducer = (key, asyncReducer) => {
   if (store.asyncReducers[key]) {

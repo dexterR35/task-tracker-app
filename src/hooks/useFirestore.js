@@ -1,5 +1,3 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useDispatch } from "react-redux";
 import {
   collection,
   getDocs,
@@ -13,7 +11,12 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-} from "firebase/firestore";
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useDispatch,
+} from "../hooks/useImports";
 import { db } from "../firebase";
 import { addNotification } from "../redux/slices/notificationSlice";
 
@@ -23,7 +26,6 @@ export const useFirestore = (collectionName) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ✅ stable reference to prevent stale closures with `data`
   const dataRef = useRef([]);
   useEffect(() => {
     dataRef.current = data;
@@ -71,7 +73,7 @@ export const useFirestore = (collectionName) => {
             d.data().updatedAt?.toDate?.() || new Date(d.data().updatedAt),
         }));
 
-        // ✅ use ref to avoid stale data problem
+
         setData(append ? [...dataRef.current, ...results] : results);
 
         return results;
@@ -84,7 +86,7 @@ export const useFirestore = (collectionName) => {
         setLoading(false);
       }
     },
-    [collectionName, dispatch] // ✅ removed `data` from deps (safe now)
+    [collectionName, dispatch] 
   );
 
   const addDocument = useCallback(
@@ -172,7 +174,7 @@ export const useFirestore = (collectionName) => {
 
   // ✅ debug log only when `data` changes
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && data.length > 0) {
+    if (process.env.NODE_ENV === "development" && data.length > 0) {
       console.log(`📦 Data updated in ${collectionName}:`, data);
     }
   }, [data, collectionName]);

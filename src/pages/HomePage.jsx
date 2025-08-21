@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import DynamicButton from "../components/DynamicButton";
+import { useNavigate } from "../hooks/useImports";
+import DynamicButton from "../components/button/DynamicButton";
 import netbetLogo from "../assets/netbet-logo.png";
 
 const HomePage = () => {

@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
-import Skeleton from './ui/Skeleton';
+import  { useState, useCallback } from '../../hooks/useImports';
+import { useNotifications } from '../../hooks/useNotifications';
+import Skeleton from '../ui/Skeleton';
 
 const DynamicButton = ({
   id,

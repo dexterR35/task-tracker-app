@@ -1,26 +1,63 @@
-import React from 'react';
-import { useListAllAnalyticsQuery, useGetMonthAnalyticsQuery, useDeleteMonthAnalyticsMutation } from '../redux/services/tasksApi';
-import DynamicButton from '../components/DynamicButton';
-import { jsPDF } from 'jspdf';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, LineChart, Line, ScatterChart, Scatter } from 'recharts';
-import useTime from '../hooks/useTime';
-import { useNotifications } from '../hooks/useNotifications';
-import Skeleton from '../components/ui/Skeleton';
+
+import {
+  useListAllAnalyticsQuery,
+  useGetMonthAnalyticsQuery,
+  useDeleteMonthAnalyticsMutation,
+} from "../redux/services/tasksApi";
+import DynamicButton from "../components/button/DynamicButton";
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  jsPDF,React
+} from "../hooks/useImports";
+import useTime from "../hooks/useTime";
+import { useNotifications } from "../hooks/useNotifications";
+import Skeleton from "../components/ui/Skeleton";
 
 const AdminAnalyticsPage = () => {
   const { format } = useTime();
   const { addError, addSuccess } = useNotifications();
   const { data: all = [], isLoading } = useListAllAnalyticsQuery();
   const [selected, setSelected] = React.useState(null);
-  const { data: current } = useGetMonthAnalyticsQuery(selected ? { monthId: selected } : { monthId: '' }, { skip: !selected });
-  const [deleteAnalytics, { isLoading: deleting }] = useDeleteMonthAnalyticsMutation();
-  const COLORS = ['#6366f1', '#10b981', '#ef4444', '#f59e0b', '#14b8a6', '#8b5cf6', '#3b82f6', '#22c55e'];
+  const { data: current } = useGetMonthAnalyticsQuery(
+    selected ? { monthId: selected } : { monthId: "" },
+    { skip: !selected }
+  );
+  const [deleteAnalytics, { isLoading: deleting }] =
+    useDeleteMonthAnalyticsMutation();
+  const COLORS = [
+    "#6366f1",
+    "#10b981",
+    "#ef4444",
+    "#f59e0b",
+    "#14b8a6",
+    "#8b5cf6",
+    "#3b82f6",
+    "#22c55e",
+  ];
 
   const handleDownloadPdf = () => {
     if (!current) return;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const margin = 40; let y = margin;
-    doc.setFontSize(18); doc.text(`Monthly Analytics - ${current.monthId}`, margin, y); y += 24;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const margin = 40;
+    let y = margin;
+    doc.setFontSize(18);
+    doc.text(`Monthly Analytics - ${current.monthId}`, margin, y);
+    y += 24;
     doc.setFontSize(12);
     const s = current;
     [
@@ -28,20 +65,27 @@ const AdminAnalyticsPage = () => {
       `Total Hours: ${Math.round((s.totalHours || 0) * 10) / 10}`,
       `AI Tasks: ${s.ai?.tasks || 0}  |  AI Hours: ${Math.round((s.ai?.hours || 0) * 10) / 10}`,
       `Reworked: ${s.reworked || 0}`,
-    ].forEach(line => { doc.text(line, margin, y); y += 18; });
+    ].forEach((line) => {
+      doc.text(line, margin, y);
+      y += 18;
+    });
     doc.save(`Analytics_${current.monthId}.pdf`);
   };
 
   const handleDeleteAnalytics = async (monthId) => {
-    if (window.confirm(`Are you sure you want to delete analytics for ${monthId}?`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete analytics for ${monthId}?`
+      )
+    ) {
       try {
         await deleteAnalytics({ monthId }).unwrap();
-        addSuccess('Analytics deleted successfully');
+        addSuccess("Analytics deleted successfully");
         if (selected === monthId) {
           setSelected(null);
         }
       } catch (error) {
-        addError('Failed to delete analytics');
+        addError("Failed to delete analytics");
       }
     }
   };
@@ -74,17 +118,28 @@ const AdminAnalyticsPage = () => {
                     </td>
                   </tr>
                 ) : all.length === 0 ? (
-                  <tr><td className="px-3 py-3" colSpan={3}>No analytics saved yet.</td></tr>
+                  <tr>
+                    <td className="px-3 py-3" colSpan={3}>
+                      No analytics saved yet.
+                    </td>
+                  </tr>
                 ) : (
-                  all.map(row => (
+                  all.map((row) => (
                     <tr key={row.monthId} className="border-t">
                       <td className="px-3 py-2 font-medium">{row.monthId}</td>
-                      <td className="px-3 py-2">{format(row.savedAt, 'YYYY-MM-DD HH:mm')}</td>
+                      <td className="px-3 py-2">
+                        {format(row.savedAt, "YYYY-MM-DD HH:mm")}
+                      </td>
                       <td className="px-3 py-2">
                         <div className="flex gap-2">
-                          <DynamicButton variant="outline" onClick={() => setSelected(row.monthId)}>Preview</DynamicButton>
-                          <DynamicButton 
-                            variant="danger" 
+                          <DynamicButton
+                            variant="outline"
+                            onClick={() => setSelected(row.monthId)}
+                          >
+                            Preview
+                          </DynamicButton>
+                          <DynamicButton
+                            variant="danger"
                             onClick={() => handleDeleteAnalytics(row.monthId)}
                             loading={deleting}
                           >
@@ -103,17 +158,44 @@ const AdminAnalyticsPage = () => {
         {current && (
           <div className="bg-white rounded-lg shadow p-4 mt-6">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold">Analytics ({current.monthId})</h3>
-              <DynamicButton variant="outline" onClick={handleDownloadPdf}>Download PDF</DynamicButton>
+              <h3 className="text-lg font-semibold">
+                Analytics ({current.monthId})
+              </h3>
+              <DynamicButton variant="outline" onClick={handleDownloadPdf}>
+                Download PDF
+              </DynamicButton>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
-              <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Total Tasks</div><div className="text-xl font-semibold">{current.totalTasks || 0}</div></div>
-              <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Total Hours</div><div className="text-xl font-semibold">{Math.round((current.totalHours || 0) * 10) / 10}</div></div>
-              <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">AI Tasks</div><div className="text-xl font-semibold">{current.ai?.tasks || 0}</div></div>
-              <div className="bg-gray-100 p-3 rounded"><div className="text-xs text-gray-600">Reworked</div><div className="text-xl font-semibold">{current.reworked || 0}</div></div>
+              <div className="bg-gray-100 p-3 rounded">
+                <div className="text-xs text-gray-600">Total Tasks</div>
+                <div className="text-xl font-semibold">
+                  {current.totalTasks || 0}
+                </div>
+              </div>
+              <div className="bg-gray-100 p-3 rounded">
+                <div className="text-xs text-gray-600">Total Hours</div>
+                <div className="text-xl font-semibold">
+                  {Math.round((current.totalHours || 0) * 10) / 10}
+                </div>
+              </div>
+              <div className="bg-gray-100 p-3 rounded">
+                <div className="text-xs text-gray-600">AI Tasks</div>
+                <div className="text-xl font-semibold">
+                  {current.ai?.tasks || 0}
+                </div>
+              </div>
+              <div className="bg-gray-100 p-3 rounded">
+                <div className="text-xs text-gray-600">Reworked</div>
+                <div className="text-xl font-semibold">
+                  {current.reworked || 0}
+                </div>
+              </div>
             </div>
             {(() => {
-              const flatten = (obj) => ({ labels: Object.keys(obj || {}), values: Object.values(obj || {}) });
+              const flatten = (obj) => ({
+                labels: Object.keys(obj || {}),
+                values: Object.values(obj || {}),
+              });
               const markets = current.markets || {};
               const products = current.products || {};
               const aiModels = current.aiModels || {};
@@ -121,24 +203,49 @@ const AdminAnalyticsPage = () => {
               const aiByProduct = current.aiBreakdownByProduct || {};
               const aiByMarket = current.aiBreakdownByMarket || {};
               const daily = current.daily || {};
-              const m = flatten(markets); const p = flatten(products); const ai = flatten(aiModels); const d = flatten(deliverables);
+              const m = flatten(markets);
+              const p = flatten(products);
+              const ai = flatten(aiModels);
+              const d = flatten(deliverables);
               const prodKeys = Object.keys(aiByProduct);
-              const prodAiTasks = prodKeys.map(k => aiByProduct[k]?.aiTasks || 0);
-              const prodNonAiTasks = prodKeys.map(k => aiByProduct[k]?.nonAiTasks || 0);
+              const prodAiTasks = prodKeys.map(
+                (k) => aiByProduct[k]?.aiTasks || 0
+              );
+              const prodNonAiTasks = prodKeys.map(
+                (k) => aiByProduct[k]?.nonAiTasks || 0
+              );
               const marketKeys = Object.keys(aiByMarket);
-              const marketAiTasks = marketKeys.map(k => aiByMarket[k]?.aiTasks || 0);
-              const marketNonAiTasks = marketKeys.map(k => aiByMarket[k]?.nonAiTasks || 0);
+              const marketAiTasks = marketKeys.map(
+                (k) => aiByMarket[k]?.aiTasks || 0
+              );
+              const marketNonAiTasks = marketKeys.map(
+                (k) => aiByMarket[k]?.nonAiTasks || 0
+              );
               const dayKeys = Object.keys(daily).sort();
-              const dayCounts = dayKeys.map(k => daily[k]?.count || 0);
+              const dayCounts = dayKeys.map((k) => daily[k]?.count || 0);
               return (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="text-sm font-medium mb-2 text-center">Tasks by Market</h4>
-                    <div style={{ width: '100%', height: 300 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      Tasks by Market
+                    </h4>
+                    <div style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
-                        <BarChart data={m.labels.map((name, i) => ({ name, count: m.values[i]?.count || 0 }))}>
+                        <BarChart
+                          data={m.labels.map((name, i) => ({
+                            name,
+                            count: m.values[i]?.count || 0,
+                          }))}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                            angle={-15}
+                            textAnchor="end"
+                            height={50}
+                          />
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#6366f1" />
@@ -147,13 +254,27 @@ const AdminAnalyticsPage = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-2 text-center">Tasks by Product</h4>
-                    <div style={{ width: '100%', height: 300 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      Tasks by Product
+                    </h4>
+                    <div style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
                         <PieChart>
-                          <Pie data={p.labels.map((name, i) => ({ name, count: p.values[i]?.count || 0 }))} dataKey="count" nameKey="name" outerRadius={110} label>
+                          <Pie
+                            data={p.labels.map((name, i) => ({
+                              name,
+                              count: p.values[i]?.count || 0,
+                            }))}
+                            dataKey="count"
+                            nameKey="name"
+                            outerRadius={110}
+                            label
+                          >
                             {p.labels.map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
                             ))}
                           </Pie>
                           <Tooltip />
@@ -163,12 +284,26 @@ const AdminAnalyticsPage = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-2 text-center">AI Models (count)</h4>
-                    <div style={{ width: '100%', height: 300 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      AI Models (count)
+                    </h4>
+                    <div style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
-                        <BarChart data={ai.labels.map((name, i) => ({ name, count: ai.values[i] || 0 }))}>
+                        <BarChart
+                          data={ai.labels.map((name, i) => ({
+                            name,
+                            count: ai.values[i] || 0,
+                          }))}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                            angle={-15}
+                            textAnchor="end"
+                            height={50}
+                          />
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#ef4444" />
@@ -177,12 +312,26 @@ const AdminAnalyticsPage = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-2 text-center">Deliverables (count)</h4>
-                    <div style={{ width: '100%', height: 300 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      Deliverables (count)
+                    </h4>
+                    <div style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
-                        <BarChart data={d.labels.map((name, i) => ({ name, count: d.values[i] || 0 }))}>
+                        <BarChart
+                          data={d.labels.map((name, i) => ({
+                            name,
+                            count: d.values[i] || 0,
+                          }))}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                            angle={-15}
+                            textAnchor="end"
+                            height={50}
+                          />
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Bar dataKey="count" fill="#8b5cf6" />
@@ -191,61 +340,137 @@ const AdminAnalyticsPage = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-2 text-center">AI vs Non-AI by Product (tasks)</h4>
-                    <div style={{ width: '100%', height: 320 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      AI vs Non-AI by Product (tasks)
+                    </h4>
+                    <div style={{ width: "100%", height: 320 }}>
                       <ResponsiveContainer>
-                        <BarChart data={prodKeys.map((name, i) => ({ name, ai: prodAiTasks[i] || 0, nonAi: prodNonAiTasks[i] || 0 }))}>
+                        <BarChart
+                          data={prodKeys.map((name, i) => ({
+                            name,
+                            ai: prodAiTasks[i] || 0,
+                            nonAi: prodNonAiTasks[i] || 0,
+                          }))}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                            angle={-15}
+                            textAnchor="end"
+                            height={50}
+                          />
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="ai" stackId="a" fill="#6366f1" name="AI Tasks" />
-                          <Bar dataKey="nonAi" stackId="a" fill="#cbd5e1" name="Non-AI Tasks" />
+                          <Bar
+                            dataKey="ai"
+                            stackId="a"
+                            fill="#6366f1"
+                            name="AI Tasks"
+                          />
+                          <Bar
+                            dataKey="nonAi"
+                            stackId="a"
+                            fill="#cbd5e1"
+                            name="Non-AI Tasks"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-2 text-center">AI vs Non-AI by Market (tasks)</h4>
-                    <div style={{ width: '100%', height: 320 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      AI vs Non-AI by Market (tasks)
+                    </h4>
+                    <div style={{ width: "100%", height: 320 }}>
                       <ResponsiveContainer>
-                        <BarChart data={marketKeys.map((name, i) => ({ name, ai: marketAiTasks[i] || 0, nonAi: marketNonAiTasks[i] || 0 }))}>
+                        <BarChart
+                          data={marketKeys.map((name, i) => ({
+                            name,
+                            ai: marketAiTasks[i] || 0,
+                            nonAi: marketNonAiTasks[i] || 0,
+                          }))}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                            angle={-15}
+                            textAnchor="end"
+                            height={50}
+                          />
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="ai" stackId="a" fill="#10b981" name="AI Tasks" />
-                          <Bar dataKey="nonAi" stackId="a" fill="#cbd5e1" name="Non-AI Tasks" />
+                          <Bar
+                            dataKey="ai"
+                            stackId="a"
+                            fill="#10b981"
+                            name="AI Tasks"
+                          />
+                          <Bar
+                            dataKey="nonAi"
+                            stackId="a"
+                            fill="#cbd5e1"
+                            name="Non-AI Tasks"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   <div className="lg:col-span-2">
-                    <h4 className="text-sm font-medium mb-2 text-center">Daily Tasks Trend</h4>
-                    <div style={{ width: '100%', height: 320 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      Daily Tasks Trend
+                    </h4>
+                    <div style={{ width: "100%", height: 320 }}>
                       <ResponsiveContainer>
-                        <LineChart data={dayKeys.map((name, i) => ({ name, count: dayCounts[i] || 0 }))}>
+                        <LineChart
+                          data={dayKeys.map((name, i) => ({
+                            name,
+                            count: dayCounts[i] || 0,
+                          }))}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                           <YAxis allowDecimals={false} />
                           <Tooltip />
-                          <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={false} />
+                          <Line
+                            type="monotone"
+                            dataKey="count"
+                            stroke="#6366f1"
+                            strokeWidth={2}
+                            dot={false}
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   <div className="lg:col-span-2">
-                    <h4 className="text-sm font-medium mb-2 text-center">Product Hours vs AI Hours (bubble)</h4>
-                    <div style={{ width: '100%', height: 340 }}>
+                    <h4 className="text-sm font-medium mb-2 text-center">
+                      Product Hours vs AI Hours (bubble)
+                    </h4>
+                    <div style={{ width: "100%", height: 340 }}>
                       <ResponsiveContainer>
                         <ScatterChart>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis type="number" dataKey="x" name="Total Hours" />
                           <YAxis type="number" dataKey="y" name="AI Hours" />
-                          <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                          <Scatter name="Products" data={prodKeys.map((k) => ({ x: aiByProduct[k]?.totalHours || 0, y: aiByProduct[k]?.aiHours || 0, z: Math.max(4, Math.min(20, (aiByProduct[k]?.totalTasks || 0))) }))} fill="#ea580c" />
+                          <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                          <Scatter
+                            name="Products"
+                            data={prodKeys.map((k) => ({
+                              x: aiByProduct[k]?.totalHours || 0,
+                              y: aiByProduct[k]?.aiHours || 0,
+                              z: Math.max(
+                                4,
+                                Math.min(20, aiByProduct[k]?.totalTasks || 0)
+                              ),
+                            }))}
+                            fill="#ea580c"
+                          />
                         </ScatterChart>
                       </ResponsiveContainer>
                     </div>
@@ -261,5 +486,3 @@ const AdminAnalyticsPage = () => {
 };
 
 export default AdminAnalyticsPage;
-
-

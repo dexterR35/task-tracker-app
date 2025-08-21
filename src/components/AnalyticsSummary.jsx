@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import Skeleton, { SkeletonCard } from './ui/Skeleton';
 import LoadingWrapper from './ui/LoadingWrapper';
 
 const numberFmt = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : 0);

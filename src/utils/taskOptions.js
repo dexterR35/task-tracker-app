@@ -1,5 +1,4 @@
-// Centralized task-related select options shared by TaskForm and inline table editing.
-// Modify here to propagate changes across the app.
+
 
 export const marketOptions = [
   { value: 'ro', label: 'ro' },

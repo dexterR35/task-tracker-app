@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
-import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../constants/taskOptions';
+import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../utils/taskOptions';
 import useTime from '../../hooks/useTime';
 import usePagination from '../../hooks/usePagination';
 import { useNotifications } from '../../hooks/useNotifications';

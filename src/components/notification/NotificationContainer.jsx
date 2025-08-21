@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from '../../hooks/useImports';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const NotificationContainer = () => {

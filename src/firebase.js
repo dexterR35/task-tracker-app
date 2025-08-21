@@ -1,6 +1,12 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeApp,
+  getApps,
+  getApp,
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+  getFirestore,
+} from "./hooks/useImports";
 
 const firebaseConfig = {
   apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
@@ -8,7 +14,7 @@ const firebaseConfig = {
   projectId: "task-tracker-app-eb03e",
   storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
   messagingSenderId: "976694748809",
-  appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858"
+  appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
 };
 
 // Initialize (or reuse) primary app
@@ -24,9 +30,9 @@ export const auth = getAuth(appInstance);
 export const db = getFirestore(appInstance);
 
 // Enable logging in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔥 Firebase initialized (single app)');
-  console.log('App name:', appInstance.name);
+if (process.env.NODE_ENV === "development") {
+  console.log("🔥 Firebase initialized (single app)");
+  console.log("App name:", appInstance.name);
 }
 
 // --- Persistence: use local persistence (survives browser restarts) ---
@@ -34,8 +40,8 @@ if (process.env.NODE_ENV === 'development') {
   try {
     await setPersistence(auth, browserLocalPersistence);
   } catch (e) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Failed to set local persistence:', e?.message || e);
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Failed to set local persistence:", e?.message || e);
     }
   }
 })();

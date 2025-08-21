@@ -1,14 +1,11 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import dayjs from 'dayjs';
+import  {dayjs, useMemo, useState, useEffect,useSearchParams,useNavigate } from '../hooks/useImports';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGetUsersQuery } from '../redux/services/usersApi';
 import { useGetMonthTasksQuery, useGetMonthBoardExistsQuery, useGenerateMonthBoardMutation } from '../redux/services/tasksApi';
-import DynamicButton from '../components/DynamicButton';
+import DynamicButton from '../components/button/DynamicButton';
 import TaskForm from '../components/task/TaskForm';
 import TasksTable from '../components/task/TasksTable';
 import AnalyticsSummary from '../components/AnalyticsSummary';
-import { useNotifications } from '../hooks/useNotifications';
 import Skeleton from '../components/ui/Skeleton';
 
 
@@ -23,7 +20,7 @@ const AdminDashboardPage = () => {
   const { data: tasks = [], isLoading: tasksLoading } = useGetMonthTasksQuery({ monthId });
   const { data: board = { exists: true }, refetch: refetchBoard, isLoading: boardLoading } = useGetMonthBoardExistsQuery({ monthId });
   const [generateBoard, { isLoading: generatingBoard }] = useGenerateMonthBoardMutation();
-  const { addError, addSuccess } = useNotifications();
+
 
   const [showTaskForm, setShowTaskForm] = useState(false);
   const monthStart = dayjs(monthId + '-01');

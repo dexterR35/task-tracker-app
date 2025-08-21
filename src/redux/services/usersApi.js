@@ -1,9 +1,8 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { collection, getDocs, orderBy, query as fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, orderBy, fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot } from '../../hooks/useImports';
 import { normalizeTimestamp } from '../../utils/time';
 import { db, auth } from '../../firebase';
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signOut,getApp, getApps, initializeApp  } from '../../hooks/useImports';
 
 export const usersApi = createApi({
   reducerPath: 'usersApi',

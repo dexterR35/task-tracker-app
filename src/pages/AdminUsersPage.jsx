@@ -1,8 +1,11 @@
-import React from 'react';
-import { useGetUsersQuery, useCreateUserMutation } from '../redux/services/usersApi';
-import DynamicButton from '../components/DynamicButton';
-import Skeleton from '../components/ui/Skeleton';
-import { useNotifications } from '../hooks/useNotifications';
+
+import {
+  useGetUsersQuery,
+  useCreateUserMutation,
+} from "../redux/services/usersApi";
+import DynamicButton from "../components/button/DynamicButton";
+import Skeleton from "../components/ui/Skeleton";
+import { useNotifications } from "../hooks/useNotifications";
 
 const AdminUsersPage = () => {
   const { data: users = [], isLoading } = useGetUsersQuery();
@@ -13,16 +16,17 @@ const AdminUsersPage = () => {
     e.preventDefault();
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
-    const name = String(form.get('name') || '').trim();
-    const email = String(form.get('email') || '').trim();
-    const password = String(form.get('password') || '').trim();
+    const name = String(form.get("name") || "").trim();
+    const email = String(form.get("email") || "").trim();
+    const password = String(form.get("password") || "").trim();
     if (!name || !email || !password) return;
     try {
       await createUser({ email, password, name }).unwrap();
-      addSuccess('User created successfully');
-      if (formEl && typeof formEl.reset === 'function') formEl.reset();
+      addSuccess("User created successfully");
+      if (formEl && typeof formEl.reset === "function") formEl.reset();
     } catch (err) {
-      const message = err?.data?.message || err?.message || 'Failed to create user';
+      const message =
+        err?.data?.message || err?.message || "Failed to create user";
       addError(message);
     }
   };
@@ -36,21 +40,56 @@ const AdminUsersPage = () => {
 
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <h3 className="text-lg font-semibold mb-3">Create User</h3>
-          <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+          <form
+            onSubmit={onSubmit}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+          >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input name="name" type="text" className="border rounded px-3 py-2 w-full" placeholder="John Doe" required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                name="name"
+                type="text"
+                className="border rounded px-3 py-2 w-full"
+                placeholder="John Doe"
+                required
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email*</label>
-              <input name="email" type="email" className="border rounded px-3 py-2 w-full" placeholder="user@example.com" required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email*
+              </label>
+              <input
+                name="email"
+                type="email"
+                className="border rounded px-3 py-2 w-full"
+                placeholder="user@example.com"
+                required
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password*</label>
-              <input name="password" type="password" className="border rounded px-3 py-2 w-full" placeholder="min 6 chars" required minLength={6} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password*
+              </label>
+              <input
+                name="password"
+                type="password"
+                className="border rounded px-3 py-2 w-full"
+                placeholder="min 6 chars"
+                required
+                minLength={6}
+              />
             </div>
             <div className="sm:col-span-2 lg:col-span-5">
-              <DynamicButton type="submit" variant="primary" loading={creating} loadingText="Creating...">Create User</DynamicButton>
+              <DynamicButton
+                type="submit"
+                variant="primary"
+                loading={creating}
+                loadingText="Creating..."
+              >
+                Create User
+              </DynamicButton>
             </div>
           </form>
         </div>
@@ -69,28 +108,38 @@ const AdminUsersPage = () => {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td className="px-3 py-3" colSpan={5}>
-                    <div className="space-y-2">
-                      <Skeleton variant="text" width="160px" height="20px" />
-                      <Skeleton variant="text" width="256px" height="20px" />
-                    </div>
-                  </td></tr>
-                ) : users.length === 0 ? (
-                  <tr><td className="px-3 py-3" colSpan={5}>No users found.</td></tr>
-                ) : users.map(u => (
-                  <tr key={u.userUID || u.id} className="border-t">
-                    <td className="px-3 py-2 font-medium">{u.name || '-'}</td>
-                    <td className="px-3 py-2">{u.email}</td>
-                    <td className="px-3 py-2">{u.role}</td>
-                    <td className="px-3 py-2">{u.userUID || u.id}</td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-flex items-center gap-2`}>
-                        <span className={`inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? 'bg-green-500' : 'bg-red-400'}`}></span>
-                        {u.isOnline ? 'Online' : 'Offline'}
-                      </span>
+                  <tr>
+                    <td className="px-3 py-3" colSpan={5}>
+                      <div className="space-y-2">
+                        <Skeleton variant="text" width="160px" height="20px" />
+                        <Skeleton variant="text" width="256px" height="20px" />
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-3" colSpan={5}>
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((u) => (
+                    <tr key={u.userUID || u.id} className="border-t">
+                      <td className="px-3 py-2 font-medium">{u.name || "-"}</td>
+                      <td className="px-3 py-2">{u.email}</td>
+                      <td className="px-3 py-2">{u.role}</td>
+                      <td className="px-3 py-2">{u.userUID || u.id}</td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center gap-2`}>
+                          <span
+                            className={`inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? "bg-green-500" : "bg-red-400"}`}
+                          ></span>
+                          {u.isOnline ? "Online" : "Offline"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -101,5 +150,3 @@ const AdminUsersPage = () => {
 };
 
 export default AdminUsersPage;
-
-

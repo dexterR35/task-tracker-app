@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from './useImports';
 
 /**
  * Reusable pagination hook with URL and localStorage sync.

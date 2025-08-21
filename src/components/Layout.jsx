@@ -1,12 +1,10 @@
-import React from 'react';
+
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
-import DynamicButton from './DynamicButton';
+import DynamicButton from './button/DynamicButton';
 import Skeleton from './ui/Skeleton';
 
 import { 
-  HomeIcon, 
   ArrowRightOnRectangleIcon,
   ViewColumnsIcon 
 } from '@heroicons/react/24/outline';
@@ -14,7 +12,7 @@ import {
 const Layout = () => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated, logout, loading, listenerActive } = useAuth();
-  const dispatch = useDispatch();
+
 
   const handleLogout = async () => {
     try {

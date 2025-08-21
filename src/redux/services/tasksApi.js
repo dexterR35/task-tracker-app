@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import {
   collection,
-  query as fsQuery,
+  fsQuery,
   orderBy,
   getDocs,
   addDoc,
@@ -9,10 +9,9 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  getDocFromServer,
   setDoc,
   serverTimestamp,
-} from 'firebase/firestore';
+} from '../../hooks/useImports';
 import { db } from '../../firebase';
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
