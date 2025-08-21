@@ -130,6 +130,7 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
       <table className="min-w-full text-sm " >
         <thead className="bg-primary text-gray-200 uppercase">
           <tr>
+            <th className="px-3 py-2 text-left">Task #</th>
             <th className="px-3 py-2 text-left">Task</th>
             <th className="px-3 py-2 text-left">Markets</th>
             <th className="px-3 py-2 text-left">Product</th>
@@ -140,6 +141,7 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
             <th className="px-3 py-2">AI?</th>
             <th className="px-3 py-2">Reworked?</th>
             <th className="px-3 py-2">Deliverables</th>
+            <th className="px-3 py-2 text-center">Count</th>
             <th className="px-3 py-2 text-right">Actions</th>
           </tr>
         </thead>
@@ -148,6 +150,9 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
             const isEdit = editingId === t.id;
             return (
               <tr key={t.id} className={` cursor-pointer border-t ${isEdit ? 'bg-secondary' : 'hover:bg-primary-80'} ${rowActionId === t.id ? 'opacity-50' : ''}`}>
+                <td className="px-3 py-2 font-medium text-center">
+                  {t.taskNumber || '-'}
+                </td>
                 <td className="px-3 py-2 font-medium  truncate max-w-[160px] ">
                   {isEdit ? (
                     <select className="border px-2 py-1 rounded w-full" value={form.taskName} onChange={e => setForm(f => ({ ...f, taskName: e.target.value }))}>
@@ -226,6 +231,9 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
                     </div>
                   </div>
                 ) : (Array.isArray(t.deliverables) ? (t.deliverables.join(', ') || '-') : (t.deliverable || '-'))}</td>
+                <td className="px-3 py-2 text-center">
+                  {t.deliverablesCount || '-'}
+                </td>
                 <td className="px-3 py-2 text-right space-x-2">
                   {isEdit ? (
                     <>

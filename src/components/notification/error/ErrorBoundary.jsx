@@ -1,4 +1,4 @@
-import {React} from '../../../hooks/useImports';
+import React from 'react';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -30,7 +30,7 @@ class ErrorBoundary extends React.Component {
             <div className="mt-4 text-center">
               <h3 className="text-lg font-medium text-gray-900">Something went wrong</h3>
               <p className="mt-2 text-sm text-gray-500">
-                An error occurred while loading the application.
+                An error occurred while loading the application. Please try refreshing the page.
               </p>
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-4 text-left">
@@ -41,12 +41,20 @@ class ErrorBoundary extends React.Component {
                   </pre>
                 </details>
               )}
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
-              >
-                Reload Page
-              </button>
+              <div className="mt-4 space-y-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                >
+                  Reload Page
+                </button>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                >
+                  Go to Home
+                </button>
+              </div>
             </div>
           </div>
         </div>

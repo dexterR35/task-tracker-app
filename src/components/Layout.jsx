@@ -2,6 +2,8 @@ import { Outlet, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import DynamicButton from "./button/DynamicButton";
 import Skeleton from "./ui/Skeleton";
+import WelcomeMessage from "./ui/WelcomeMessage";
+import { useNotifications } from "../hooks/useNotifications";
 
 import {
   ArrowRightOnRectangleIcon,
@@ -12,10 +14,16 @@ const Layout = () => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated, logout, loading, listenerActive } =
     useAuth();
+  const { addSuccess } = useNotifications();
 
   const handleLogout = async () => {
     try {
       await logout();
+      addSuccess("Logged out successfully", {
+        title: "Goodbye!",
+        autoClose: 3000,
+        position: "top-center"
+      });
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -104,6 +112,7 @@ const Layout = () => {
             </div>
           </div>
         )}
+        <WelcomeMessage />
         <Outlet />
       </main>
     </div>

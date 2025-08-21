@@ -12,6 +12,7 @@ import {
   getDocFromServer,
   setDoc,
   serverTimestamp,
+  onSnapshot,
 } from '../../hooks/useImports';
 import { db } from '../../firebase';
 
@@ -72,6 +73,48 @@ export const tasksApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'MonthTasks', id: arg.monthId }],
     }),
 
+    // Real-time subscription for tasks
+    subscribeToMonthTasks: builder.query({
+      async queryFn({ monthId }) {
+        try {
+          // Load initial data synchronously
+          const colRef = collection(db, 'tasks', monthId, 'monthTasks');
+          const snap = await getDocs(fsQuery(colRef, orderBy('createdAt', 'desc')));
+          const tasks = snap.docs.map(d => normalizeTask(monthId, d.id, d.data()));
+          return { data: tasks };
+        } catch (error) {
+          return { error: { message: error?.message || 'Failed to load tasks' } };
+        }
+      },
+      async onCacheEntryAdded(
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved, dispatch }
+      ) {
+        try {
+          await cacheDataLoaded;
+          
+          const colRef = collection(db, 'tasks', arg.monthId, 'monthTasks');
+          const unsubscribe = onSnapshot(
+            fsQuery(colRef, orderBy('createdAt', 'desc')),
+            (snapshot) => {
+              const tasks = snapshot.docs.map(d => normalizeTask(arg.monthId, d.id, d.data()));
+              console.log('[Real-time] Tasks updated:', tasks.length, 'tasks for month:', arg.monthId);
+              updateCachedData(() => tasks);
+            },
+            (error) => {
+              console.error('Real-time subscription error:', error);
+            }
+          );
+
+          await cacheEntryRemoved;
+          unsubscribe();
+        } catch (error) {
+          console.error('Error setting up real-time subscription:', error);
+        }
+      },
+      providesTags: (result, error, arg) => [{ type: 'MonthTasks', id: arg.monthId }],
+    }),
+
     createTask: builder.mutation({
       async queryFn(task) {
         try {
@@ -90,12 +133,16 @@ export const tasksApi = createApi({
           // Read back the saved doc to resolve server timestamps to real values
           const savedSnap = await getDoc(ref);
           const created = normalizeTask(task.monthId, ref.id, savedSnap.data() || {});
+          console.log('[CreateTask] Task created:', created.id, 'for month:', task.monthId);
           return { data: created };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to create task', code: error?.code } };
         }
       },
-      invalidatesTags: (result, error, arg) => [{ type: 'MonthTasks', id: arg.monthId }],
+      invalidatesTags: (result, error, arg) => [
+        { type: 'MonthTasks', id: arg.monthId },
+        { type: 'MonthTasks', id: 'LIST' }
+      ],
     }),
 
     updateTask: builder.mutation({
@@ -312,6 +359,7 @@ export const tasksApi = createApi({
 
 export const {
   useGetMonthTasksQuery,
+  useSubscribeToMonthTasksQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,

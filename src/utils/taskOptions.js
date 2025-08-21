@@ -58,5 +58,6 @@ export const deliverables = [
   { value: 'support', label: 'Support' },
   { value: 'maintenance', label: 'Maintenance' },
   { value: 'optimization', label: 'Optimization' },
-  { value: 'integration', label: 'Integration' }
+  { value: 'integration', label: 'Integration' },
+  { value: 'others', label: 'Others' }
 ];

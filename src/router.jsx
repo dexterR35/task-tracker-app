@@ -10,6 +10,7 @@ import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import PreviewPage from "./pages/PreviewPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import { SkeletonCard } from "./components/ui/Skeleton";
 
 // Soft full-page skeleton to prevent route flicker
@@ -84,7 +85,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
-    errorElement: <div>Something went wrong!</div>,
+    errorElement: <NotFoundPage />,
     children: [
       {
         index: true,
@@ -154,11 +155,10 @@ const router = createBrowserRouter([
           </AdminRoute>
         ),
       },
-
-      // {
-      //   path: 'unauthorized',
-      //   element: <UnauthorizedPage />
-      // }
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
 ]);

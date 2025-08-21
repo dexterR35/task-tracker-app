@@ -16,6 +16,11 @@ import {
 } from "../../utils/taskOptions";
 import LoadingWrapper from "../ui/LoadingWrapper";
 import Skeleton, { SkeletonForm } from "../ui/Skeleton";
+import { 
+  sanitizeTaskData, 
+  validateJiraLink, 
+  extractTaskNumber 
+} from "../../utils/sanitization";
 
 // Clean TaskForm component (UI slice removed)
 const TaskForm = ({
@@ -44,13 +49,20 @@ const TaskForm = ({
     timeInHours: "",
     reworked: false,
     deliverables: [],
+    deliverablesCount: "",
+    deliverablesOther: "",
+    taskNumber: "",
   };
 
   const initialValues = customInitialValues || defaultInitialValues;
 
   const validationSchema = Yup.object({
     jiraLink: Yup.string()
-      .url("Must be a valid URL")
+      .test('jira-format', 'Invalid Jira link format', function(value) {
+        if (!value) return false;
+        const validation = validateJiraLink(value);
+        return validation.isValid;
+      })
       .required("Jira link is required"),
     markets: Yup.array()
       .of(Yup.string().required())
@@ -80,58 +92,76 @@ const TaskForm = ({
       .of(Yup.string().required())
       .min(1, "Select at least one deliverable")
       .required("Deliverables are required"),
+    deliverablesCount: Yup.number()
+      .min(1, "Must be at least 1")
+      .required("Number of deliverables is required"),
+    deliverablesOther: Yup.string().when("deliverables", {
+      is: (deliverables) => deliverables && deliverables.includes("others"),
+      then: (schema) => schema.required("Please specify other deliverables"),
+      otherwise: (schema) => schema.optional(),
+    }),
   });
 
   const creatingRef = useRef(false);
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-    // Additional validation check
-    if (!values.deliverables || values.deliverables.length === 0) {
-      addError("Please select at least one deliverable");
-      return;
-    }
-    
-    if (!values.markets || values.markets.length === 0) {
-      addError("Please select at least one market");
-      return;
-    }
-    
-    if (!values.product) {
-      addError("Please select a product");
-      return;
-    }
-    
-    if (!values.taskName) {
-      addError("Please select a task name");
-      return;
-    }
-    
-    if (!values.timeInHours) {
-      addError("Please enter task completion time");
-      return;
-    }
-    
     try {
       setOuterSubmitting(true);
+      
+      // Extract task number from Jira link
+      const taskNumber = extractTaskNumber(values.jiraLink);
+      
+      // Sanitize and validate all data
+      const sanitizedValues = sanitizeTaskData({
+        ...values,
+        taskNumber,
+      });
+      
+      // Additional validation
+      if (!sanitizedValues.deliverables || sanitizedValues.deliverables.length === 0) {
+        addError("Please select at least one deliverable");
+        return;
+      }
+      
+      if (!sanitizedValues.markets || sanitizedValues.markets.length === 0) {
+        addError("Please select at least one market");
+        return;
+      }
+      
+      if (!sanitizedValues.product) {
+        addError("Please select a product");
+        return;
+      }
+      
+      if (!sanitizedValues.taskName) {
+        addError("Please select a task name");
+        return;
+      }
+      
+      if (!sanitizedValues.timeInHours) {
+        addError("Please enter task completion time");
+        return;
+      }
+      
       const quantize = (n) => {
         if (typeof n !== 'number' || Number.isNaN(n)) return 0;
         return Math.round(n * 2) / 2;
       };
 
       const taskData = {
-        ...values,
+        ...sanitizedValues,
         timeSpentOnAI: (() => {
-          if (!values.aiUsed) return 0;
-          const n = parseFloat(values.timeSpentOnAI);
+          if (!sanitizedValues.aiUsed) return 0;
+          const n = parseFloat(sanitizedValues.timeSpentOnAI);
           return isNaN(n) ? 0 : quantize(n);
         })(),
         timeInHours: (() => {
-          const n = parseFloat(values.timeInHours);
+          const n = parseFloat(sanitizedValues.timeInHours);
           return isNaN(n) ? 0 : quantize(n);
         })(),
-        aiModels: Array.isArray(values.aiModels) ? values.aiModels : (values.aiModels ? [values.aiModels] : []),
-        markets: Array.isArray(values.markets) ? values.markets : (values.markets ? [values.markets] : []),
-        deliverables: Array.isArray(values.deliverables) ? values.deliverables : (values.deliverables ? [values.deliverables] : []),
+        aiModels: Array.isArray(sanitizedValues.aiModels) ? sanitizedValues.aiModels : (sanitizedValues.aiModels ? [sanitizedValues.aiModels] : []),
+        markets: Array.isArray(sanitizedValues.markets) ? sanitizedValues.markets : (sanitizedValues.markets ? [sanitizedValues.markets] : []),
+        deliverables: Array.isArray(sanitizedValues.deliverables) ? sanitizedValues.deliverables : (sanitizedValues.deliverables ? [sanitizedValues.deliverables] : []),
         createdBy: user?.uid,
         createdByName: user?.name || user?.email,
         userUID: user?.uid,
@@ -159,7 +189,7 @@ const TaskForm = ({
         creatingRef.current = true;
         const created = await createTask(taskData).unwrap();
         console.log('[TaskForm] created', { id: created?.id, monthId: created?.monthId });
-        addSuccess("Task created successfully!");
+        addSuccess("Task created successfully! The task list will update automatically.");
       }
 
       if (!isEdit) resetForm();
@@ -208,15 +238,18 @@ const TaskForm = ({
                   const { baseInputClasses } = renderField(field);
                   return (
                     <div>
-                      <label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Jira Link *
                       </label>
                       <input
                         {...field.field}
                         type="url"
-                        placeholder="https://your-domain.atlassian.net/browse/TASK-123"
+                        placeholder="https://gmrd.atlassian.net/browse/GIMODEAR-12345"
                         className={baseInputClasses}
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Format: https://gmrd.atlassian.net/browse/GIMODEAR-{'{taskNumber}'}
+                      </p>
                       <ErrorMessage
                         name="jiraLink"
                         component="div"
@@ -475,6 +508,57 @@ const TaskForm = ({
                   );
                 }}
               </Field>
+              
+              <Field name="deliverablesCount">
+                {(field) => {
+                  const { baseInputClasses } = renderField(field);
+                  return (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Number of Deliverables *
+                      </label>
+                      <input
+                        {...field.field}
+                        type="number"
+                        min="1"
+                        placeholder="e.g., 3"
+                        className={baseInputClasses}
+                      />
+                      <ErrorMessage
+                        name="deliverablesCount"
+                        component="div"
+                        className="text-red-500 text-sm mt-1"
+                      />
+                    </div>
+                  );
+                }}
+              </Field>
+              
+              {values.deliverables && values.deliverables.includes("others") && (
+                <Field name="deliverablesOther">
+                  {(field) => {
+                    const { baseInputClasses } = renderField(field);
+                    return (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Other Deliverables *
+                        </label>
+                        <textarea
+                          {...field.field}
+                          placeholder="Please specify other deliverables..."
+                          rows="3"
+                          className={baseInputClasses}
+                        />
+                        <ErrorMessage
+                          name="deliverablesOther"
+                          component="div"
+                          className="text-red-500 text-sm mt-1"
+                        />
+                      </div>
+                    );
+                  }}
+                </Field>
+              )}
               <div className="flex justify-end space-x-3 pt-6">
                 <DynamicButton
                   id="task-form-submit"

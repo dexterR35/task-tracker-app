@@ -21,6 +21,22 @@ const NotificationContainer = () => {
     };
   }, [items, remove]);
 
+  // Add keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && items.length > 0) {
+        // Remove the most recent notification on Escape
+        const lastNotification = items[items.length - 1];
+        if (lastNotification) {
+          remove(lastNotification.id);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [items, remove]);
+
 
   const getNotificationStyles = (type) => {
     const baseStyles = "mb-4 p-4 rounded-lg shadow-lg border flex items-start space-x-3 transition-all duration-300";
