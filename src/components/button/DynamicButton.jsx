@@ -27,12 +27,12 @@ const DynamicButton = ({
   const buttonConfig = {
     baseClasses: 'px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2',
     variants: {
-      primary: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm',
+      primary: 'bg-gradient-to-r from-[#ff1c26] to-[#a81c1f] text-white focus:ring-red-500 shadow-sm',
       secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
       success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm',
       danger: 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500 shadow-sm',
       warning: 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 shadow-sm',
-      outline: 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500',
+      outline: 'border-2 border-gray-300 text-gray-200', 
     },
     sizes: {
       xs: 'px-2 py-1 text-xs',

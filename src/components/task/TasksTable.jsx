@@ -109,10 +109,10 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
       setRowActionId(null);
     }
   };
-  if (!tasks.length) return <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">No tasks found for selected filters.</div>;
+  if (!tasks.length) return <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">No tasks found for selected filters.</div>;
   return (
-    <div className="bg-white border rounded-lg overflow-x-auto shadow-sm">
-      <div className="flex items-center justify-between p-3 text-xs text-gray-600">
+    <div className="bg-primary border rounded-lg overflow-x-auto shadow-sm">
+      <div className="flex-center !mx-0 !justify-between p-3 text-xs text-gray-200">
         <div>
           Showing {Math.min(startIdx + 1, tasks.length)}–{Math.min(startIdx + pageSize, tasks.length)} of {tasks.length}
         </div>
@@ -124,18 +124,18 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
           </label>
         </div>
       </div>
-      <table className="min-w-full text-sm">
-        <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
+      <table className="min-w-full text-sm " >
+        <thead className="bg-primary text-gray-200 uppercase">
           <tr>
             <th className="px-3 py-2 text-left">Task</th>
             <th className="px-3 py-2 text-left">Markets</th>
             <th className="px-3 py-2 text-left">Product</th>
             <th className="px-3 py-2 text-left">Created</th>
             <th className="px-3 py-2 text-right">Hours</th>
-            <th className="px-3 py-2 text-right">AI Hours</th>
+            <th className="px-3 py-2 text-right">AI HR</th>
             <th className="px-3 py-2">AI Model(s)</th>
             <th className="px-3 py-2">AI?</th>
-            <th className="px-3 py-2">Reworked</th>
+            <th className="px-3 py-2">Reworked?</th>
             <th className="px-3 py-2">Deliverables</th>
             <th className="px-3 py-2 text-right">Actions</th>
           </tr>
@@ -144,8 +144,8 @@ const TasksTable = ({ tasks, onSelect, loading = false, error = null }) => {
           {currentPageTasks.map(t => {
             const isEdit = editingId === t.id;
             return (
-              <tr key={t.id} className={`border-t ${isEdit ? 'bg-yellow-50' : 'hover:bg-blue-50'}`}>
-                <td className="px-3 py-2 font-medium text-gray-800 truncate max-w-[160px]">
+              <tr key={t.id} className={` cursor-pointer border-t ${isEdit ? 'bg-secondary' : 'hover:bg-primary-80'} ${rowActionId === t.id ? 'opacity-50' : ''}`}>
+                <td className="px-3 py-2 font-medium  truncate max-w-[160px] ">
                   {isEdit ? (
                     <select className="border px-2 py-1 rounded w-full" value={form.taskName} onChange={e => setForm(f => ({ ...f, taskName: e.target.value }))}>
                       <option value="">Select task</option>

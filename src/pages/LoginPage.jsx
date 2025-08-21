@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "../hooks/useImports";
 import DynamicButton from "../components/button/DynamicButton";
-
+import netbetLogo from "../assets/netbet-logo.png";
 const LoginSchema = Yup.object().shape({
   email: Yup.string()
     .email("Invalid email format")
@@ -30,10 +30,13 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="container-center">
+    <div className="flex-center min-h-screen">
       <div className="card w-full max-w-md">
-        <h1 className="title">Sign In</h1>
-
+     <img
+             src={netbetLogo}
+             alt="NetBet Logo"
+             className="h-fit w-45 object-contain mb-10 mx-auto"
+           />
         <Formik
           initialValues={{ email: "", password: "" }}
           validationSchema={LoginSchema}
@@ -86,11 +89,11 @@ const LoginPage = () => {
                 className="w-full"
                 disabled={isSubmitting}
                 loading={isSubmitting}
-                loadingText="Signing in"
+                loadingText="Log In"
                 successMessage="Login successful!"
                 errorMessage="Login failed. Please try again."
               >
-                Sign In
+                Login
               </DynamicButton>
             </Form>
           )}

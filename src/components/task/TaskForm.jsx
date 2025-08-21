@@ -190,8 +190,8 @@ const TaskForm = ({
 
   return (
     <LoadingWrapper loading={loading} error={error} skeleton="form" skeletonProps={{ fields: 8 }}>
-      <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-gray-900">
+      <div className="max-w-2xl mx-auto p-6 bg-primary rounded-lg shadow-lg">
+        <h2 className="mb-2">
           {isEdit ? "Edit Task" : "Create New Task"}
         </h2>
         <Formik
@@ -207,7 +207,7 @@ const TaskForm = ({
                   const { baseInputClasses } = renderField(field);
                   return (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label>
                         Jira Link *
                       </label>
                       <input

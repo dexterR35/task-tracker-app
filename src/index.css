@@ -1,129 +1,185 @@
-
-/* @import "tailwindcss"; */
 @import "tailwindcss";
-/* Tailwind v4 design tokens and utilities */
-/* @theme {
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-surface: #ffffff;
-  --radius-card: 12px;
-  --shadow-card: 0 10px 15px -3px rgba(0,0,0,0.1);
-} */
 
-
-button{@apply cursor-pointer}
-
-/* Tailwind components using @apply for consistent modern UI */
-/* .btn { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed; }
-.btn-primary { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500; }
-.btn-outline { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-400; }
-.btn-danger { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
-.btn-success { @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 text-white hover:bg-green-700 focus:ring-green-500; }
-
-.card {
-  @apply bg-white rounded-xl shadow-lg p-10;
-}
-.title { @apply text-2xl font-bold mb-8 text-center text-gray-800; }
-.label { @apply block text-sm font-medium text-gray-700 mb-2; }
-.input { @apply w-full px-4 py-3 border rounded-lg transition focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300; }
-.input-error { @apply border-red-500 focus:ring-red-500; }
-.container-center { @apply min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-6; }
-.form-col { @apply flex flex-col gap-6; } */
-
-form select option {@apply uppercase}
-form > div span {@apply uppercase}
-
-/* Base styles with regular CSS since @apply might not work in v4 */
-.input {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  transition: all 0.2s;
+/* ---------------- Theme tokens ---------------- */
+@theme {
+  --color-primary: #141c33;
+    --color-primary-80: #0a2470;
+  --color-secondary: #ff5733;
+  --color-gray-300: #a3a3a3;
+  --color-focus: #1f71ad;
+  --color-gradient-start: #010718;
+  --color-gradient-end: #080f29;
+  --color-red-500: #ee2a33;
 }
 
-.input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #3b82f6;
+/* ---------------- Base layer ---------------- */
+@layer base {
+  body {
+    @apply bg-gradient-to-t from-[var(--color-gradient-start)] to-[var(--color-gradient-end)] [font-family:'Roboto',sans-serif];
+  }
+
+  p {
+    @apply text-gray-300 font-light;
+  }
+  button {
+    @apply cursor-pointer transition-colors duration-200;
+  }
+
+  /* Form element defaults */
+  form select option {
+    @apply uppercase;
+  }
+
+  form > div span {
+    @apply uppercase;
+  }
+
+  /* Inputs */
+  input,
+  select {
+    @apply p-4 text-gray-200 rounded-md border border-gray-300;
+  }
+  select {
+    @apply bg-primary;
+  }
+  input:focus {
+    @apply outline-none ring-2 ring-[var(--color-focus)] border-transparent;
+  }
+
+  /* Labels */
+  label {
+    @apply block text-sm font-medium text-gray-200 mb-2;
+  }
+  ::placeholder {
+    @apply text-gray-300;
+  }
+
+  /* Headings */
+  h1 {
+    @apply mt-2 text-6xl font-black tracking-tight flex items-center justify-center gap-4 text-gray-100;
+  }
+  h2 {
+    @apply text-2xl font-bold tracking-tight text-gray-200 mb-2;
+  }
+  h3 {
+    @apply text-lg font-normal tracking-tight text-gray-100 mb-3;
+  }
+
+ tbody tr td {
+    @apply px-3 py-2 !text-gray-200 border-b border-gray-300;
+  }
 }
 
-.label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
+/* ---------------- Components layer ---------------- */
+@layer components {
+  /* Cards */
+  .card {
+    @apply bg-primary p-6 mb-6 rounded-xl shadow-lg;
+  }
+  .card-title {
+    @apply text-base font-normal text-gray-200 mb-4;
+  }
+
+  /* Centered containers */
+  .flex-center {
+    @apply flex justify-center items-center mx-auto;
+  }
+
+  /* Form layouts */
+  .form-col {
+    @apply flex flex-col gap-6;
+  }
+
+  /* Input errors */
+  .input-error {
+    @apply border-red-500;
+  }
+  .input-error:focus {
+    @apply ring-2 ring-red-500;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply relative overflow-hidden bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100;
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+    }
+  }
+
+  .dark .skeleton {
+    @apply bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Notification progress */
+  @keyframes notification-progress {
+    from {
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+    to {
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+  }
+
+  .notification-progress {
+    animation: notification-progress linear forwards;
+  }
+  .group:hover .pause-on-hover {
+    animation-play-state: paused;
+  }
 }
 
-.card {
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  padding: 2.5rem;
+/* ---------------- Utilities layer ---------------- */
+@layer utilities {
+  /* Background colors */
+  /* .bg-primary {
+    background-color: var(--color-primary);
+  } */
+  /* .bg-primary-hover:hover {
+    background-color: #0f1730;
+  } */
+  /* 
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  } */
+  /* .bg-secondary-hover:hover {
+    background-color: #ff4520;
+  } */
+
+  /* Text colors */
+  /* .text-primary {
+    color: var(--color-primary);
+  } */
+  /* .text-secondary {
+    color: var(--color-secondary);
+  } */
+
+  /* Optional hover text colors */
+  /* .text-primary-hover:hover {
+    color: #0f1730;
+  } */
+  /* .text-secondary-hover:hover {
+    color: #ff4520;
+  } */
+
+  @layer utilities {
+    .nav-link {
+      @apply text-[var(--color-gray-200)] px-1 pt-1 text-base font-normal;
+    }
+  }
 }
-
-.container-center {
-  min-height: 100vh;
-  background: #141C33;
-  /* background: linear-gradient(to bottom right, #4f46e5, #7c3aed, #ec4899); */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1.5rem;
-}
-
-.title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 2rem;
-  text-align: center;
-  color: #1f2937;
-}
-
-.input-error {
-  border-color: #ef4444;
-}
-
-.input-error:focus {
-  box-shadow: 0 0 0 2px #ef4444;
-}
-
-
-.form-col {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-/* Soft skeleton shimmer */
-.skeleton {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(90deg, #f9fafb 0%, #f1f5f9 50%, #f9fafb 100%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.6s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton { animation: none; }
-}
-
-@keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Dark mode soft variant */
-.dark .skeleton {
-  background: linear-gradient(90deg, #1f2937 0%, #273549 50%, #1f2937 100%);
-}
-
-@keyframes notificationProgress {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
-}
-
-.notification-progress { animation: notificationProgress linear forwards; }
-.group:hover .pause-on-hover { animation-play-state: paused; }

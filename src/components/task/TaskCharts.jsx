@@ -36,7 +36,7 @@ const TaskCharts = ({ monthId }) => {
     <LoadingWrapper loading={isLoading} skeleton="chart">
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Market chart */}
-        <div className="p-4 bg-white border rounded-lg shadow-sm">
+        <div className="p-4 bg-primary border rounded-lg shadow-sm">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Hours by Market</h3>
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer>

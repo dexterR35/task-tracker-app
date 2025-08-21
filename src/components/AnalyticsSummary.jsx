@@ -189,17 +189,17 @@ const AnalyticsSummary = ({
   const hasPeriodData = periodStats.totalTasks > 0;
 
   const renderMetricCard = (title, value, subtitle, icon, color = 'blue') => (
-    <div className={`p-4 bg-white rounded-lg shadow-sm border border-${color}-100`}>
+    <div className="card">
       <div className="flex items-center justify-between">
         <div>
-          <span className={`text-xs text-${color}-600 font-medium`}>{title}</span>
-          <div className="mt-1 text-2xl font-bold text-gray-900">{value}</div>
+          <span className="card-title">{title}</span>
+          <div className="mt-1 text-2xl font-bold text-gray-200">{value}</div>
           {subtitle && (
-            <span className={`text-sm text-${color}-500`}>{subtitle}</span>
+            <span className="text-gray-200">{subtitle}</span>
           )}
         </div>
         {icon && (
-          <div className={`p-2 bg-${color}-100 rounded-lg`}>
+          <div className="p-2 bg-white rounded-lg">
             {icon}
           </div>
         )}
@@ -208,16 +208,16 @@ const AnalyticsSummary = ({
   );
 
   const renderMonthlyChart = () => (
-    <div className="p-4 bg-white rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Overview</h3>
-      <div className="space-y-3">
+    <div className="card">
+      <h3>Monthly Overview</h3>
+      
         {Array.isArray(stats.monthlyStats) && stats.monthlyStats.length > 0 ? (
           stats.monthlyStats.slice(0, 6).map((month) => (
             <div key={month.month} className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{month.month}</span>
+              <span className="text-sm text-gray-200">{month.month}</span>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-900">{month.tasks} tasks</span>
-                <span className="text-sm text-blue-600">{numberFmt(month.hours)}h</span>
+                <span className="text-sm text-gray-200">{month.tasks} tasks</span>
+                <span className="text-sm text-blue-400">{numberFmt(month.hours)}h</span>
                 {month.aiTasks > 0 && (
                   <span className="text-sm text-green-600">{month.aiTasks} AI</span>
                 )}
@@ -225,46 +225,45 @@ const AnalyticsSummary = ({
             </div>
           ))
         ) : (
-          <div className="text-center text-gray-500 py-4">
+          
             <p>No monthly data available</p>
-          </div>
+          
         )}
-      </div>
+    
     </div>
   );
 
   const renderUserStats = () => (
-    <div className="p-4 bg-white rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">User Performance</h3>
-      <div className="space-y-3">
+    <div className="card">
+      <h3>User Performance</h3>
+      
         {Array.isArray(stats.userStats) && stats.userStats.length > 0 ? (
           stats.userStats.slice(0, 5).map((user) => (
             <div key={user.userId} className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium text-gray-900">{user.name}</span>
-                <span className="text-xs text-gray-500 ml-2">{user.tasks} tasks</span>
+                <span className="text-sm font-medium text-gray-200">{user.name}</span>
+                <span className="text-xs text-gray-200 ml-2">{user.tasks} tasks</span>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-blue-600">{numberFmt(user.hours)}h</span>
-                <span className="text-sm text-gray-500">{numberFmt(user.avgHours)}h/task</span>
+                <span className="text-sm text-blue-300">{numberFmt(user.hours)}h</span>
+                <span className="text-sm text-gray-200">{numberFmt(user.avgHours)}h/task</span>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center text-gray-500 py-4">
+         
             <p>No user data available</p>
-          </div>
+       
         )}
-      </div>
+    
     </div>
   );
 
   return (
     <LoadingWrapper loading={loading} error={error} skeleton="grid" skeletonProps={{ items: 6, columns: 3 }}>
       <div className="space-y-6">
-        {/* Period Selector */}
-        <div className="flex items-center space-x-4">
-          <h2 className="text-xl font-bold text-gray-900">Analytics Summary</h2>
+        {/* <div className="flex items-center space-x-4">
+          <h2 className="text-xl font-bold text-gray-300">Analytics Summary</h2>
           <select 
             value={selectedPeriod} 
             onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -274,20 +273,20 @@ const AnalyticsSummary = ({
             <option value="current">Current Month</option>
             <option value="last3">Last 3 Months</option>
           </select>
-        </div>
+        </div> */}
 
-        {/* No Data Message - Only show when not loading and no data */}
+ 
         {!loading && !hasPeriodData && (
           <div className="col-span-full p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <span className="text-yellow-800 font-medium">
+              <span className="text-red-600 font-medium">
                 No data available for {selectedPeriod === 'all' ? 'all time' : selectedPeriod === 'current' ? 'current month' : 'last 3 months'}
               </span>
             </div>
-            <p className="text-yellow-600 text-sm mt-1">
+            <p className="text-gray-800 text-sm mt-1">
               Try selecting a different period or wait for more data to be added.
             </p>
           </div>

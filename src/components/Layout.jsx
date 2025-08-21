@@ -1,28 +1,26 @@
+import { Outlet, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import DynamicButton from "./button/DynamicButton";
+import Skeleton from "./ui/Skeleton";
 
-import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import DynamicButton from './button/DynamicButton';
-import Skeleton from './ui/Skeleton';
-
-import { 
+import {
   ArrowRightOnRectangleIcon,
-  ViewColumnsIcon 
-} from '@heroicons/react/24/outline';
+  ViewColumnsIcon,
+} from "@heroicons/react/24/outline";
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { user, role, isAuthenticated, logout, loading, listenerActive } = useAuth();
-
+  const { user, role, isAuthenticated, logout, loading, listenerActive } =
+    useAuth();
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
-
 
   const isBooting = !listenerActive && loading.initListener;
 
@@ -31,52 +29,55 @@ const Layout = () => {
   }
 
   const navigation = [
-    ...(role === 'admin'
+    ...(role === "admin"
       ? [
-          { name: 'Admin', href: '/admin', icon: ViewColumnsIcon },
-          { name: 'Analytics', href: '/admin/analytics', icon: ViewColumnsIcon },
-          { name: 'Users', href: '/admin/users', icon: ViewColumnsIcon },
+          { name: "Admin", href: "/admin", icon: ViewColumnsIcon },
+          {
+            name: "Analytics",
+            href: "/admin/analytics",
+            icon: ViewColumnsIcon,
+          },
+          { name: "Users", href: "/admin/users", icon: ViewColumnsIcon },
         ]
-      : [{ name: 'My Dashboard', href: '/me', icon: ViewColumnsIcon }]),
+      : [{ name: "My Dashboard", href: "/me", icon: ViewColumnsIcon }]),
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-
+    <div className="min-h-screen">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-primary shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Link to="/" className="text-xl font-bold text-gray-900">
+              <p className="flex-shrink-0">
+                <Link to="/" className="text-2xl nav-link !p-0 !m-0 font-bold">
                   Task Tracker
                 </Link>
-              </div>
+              </p>
               <div className="hidden md:ml-6 md:flex md:space-x-8">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                    className="flex-center nav-link text-sm"
                   >
-                    <item.icon className="w-4 h-4 mr-2" />
+                    <item.icon className="w-5 h-5 mr-2" />
                     {item.name}
                   </Link>
                 ))}
               </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:block">
-                <span className="text-sm text-gray-700">
+
+            <div className="flex-center !mx-0 items-center space-x-4">
+              <div className="hidden md:block ">
+                <span className="text-sm text-gray-200 capitalize">
                   {user?.name || user?.email}
                 </span>
-                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="ml-2 mx-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-primary capitalize">
                   {role}
                 </span>
               </div>
-              
+
               <DynamicButton
                 id="logout-nav-btn"
                 variant="outline"
@@ -92,7 +93,7 @@ const Layout = () => {
         </div>
       </nav>
 
-      {/* Main content with soft skeleton overlay */}
+
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
         {isBooting && (
           <div className="space-y-6">
