@@ -46,6 +46,7 @@ const Layout = () => {
             icon: ViewColumnsIcon,
           },
           { name: "Users", href: "/admin/users", icon: ViewColumnsIcon },
+          { name: "Settings", href: "/admin/settings", icon: ViewColumnsIcon },
         ]
       : [{ name: "My Dashboard", href: "/me", icon: ViewColumnsIcon }]),
   ];

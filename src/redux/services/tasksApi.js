@@ -221,8 +221,17 @@ export const tasksApi = createApi({
     generateMonthBoard: builder.mutation({
       async queryFn({ monthId, meta = {} }) {
         try {
-          await setDoc(doc(db, 'tasks', monthId), { monthId, createdAt: serverTimestamp(), ...meta }, { merge: true });
-          return { data: { monthId } };
+          // Generate auto-id for the board
+          const boardId = `${monthId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          await setDoc(doc(db, 'tasks', monthId), { 
+            monthId, 
+            boardId, // Add auto-generated board ID
+            createdAt: serverTimestamp(), 
+            ...meta 
+          }, { merge: true });
+          
+          return { data: { monthId, boardId } };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to generate month board' } };
         }

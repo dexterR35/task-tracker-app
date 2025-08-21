@@ -33,7 +33,9 @@ const TasksTable = ({
   error = null,
   userFilter = null, // Optional user filter
   showUserFilter = false, // Whether to show user filter
-  isAdmin = false // Whether user is admin
+  isAdmin = false, // Whether user is admin
+  boardExists = false, // Board existence status from parent
+  boardLoading = false // Board loading status from parent
 }) => {
   const navigate = useNavigate();
   const { addSuccess, addError } = useNotifications();
@@ -42,6 +44,15 @@ const TasksTable = ({
   const tasksApiState = useSelector((state) => state.tasksApi);
   
   // Subscribe to tasks for the month (this populates Redux state)
+  // Use board status from props instead of making separate query
+  const shouldSkipTaskQuery = !monthId || boardLoading || !boardExists;
+  console.log('TasksTable - Using board status from props:', { 
+    monthId, 
+    boardExists, 
+    boardLoading,
+    shouldSkipTaskQuery 
+  });
+
   const { 
     data: subscribedTasks = [], 
     isLoading: subscriptionLoading, 
@@ -49,8 +60,8 @@ const TasksTable = ({
   } = useSubscribeToMonthTasksQuery({
     monthId,
   }, {
-    // Skip if no monthId provided
-    skip: !monthId,
+    // Skip if no monthId provided, board is loading, or board doesn't exist
+    skip: shouldSkipTaskQuery,
   });
 
   // Get tasks from Redux cache as fallback

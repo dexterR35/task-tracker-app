@@ -1,16 +1,21 @@
-import { useSearchParams, useNavigate } from "../hooks/useImports";
+import { useSearchParams, useNavigate, useDispatch, useSelector } from "../hooks/useImports";
 import { useAuth } from "../hooks/useAuth";
 import { useNotifications } from "../hooks/useNotifications";
 import { useGetUsersQuery } from "../redux/services/usersApi";
 import {
   useGenerateMonthBoardMutation,
+  useGetMonthBoardExistsQuery,
 } from "../redux/services/tasksApi";
+import {
+  markBoardAsManuallyCreated,
+} from "../redux/slices/adminSettingsSlice";
 import DashboardWrapper from "../components/dashboard/DashboardWrapper";
 import { format } from "date-fns";
-import { collection, getDocs, useState, useEffect } from "../hooks/useImports";
+import { collection, getDocs, useEffect, useState } from "../hooks/useImports";
 import { db } from "../firebase";
 
 const AdminDashboardPage = () => {
+  const dispatch = useDispatch();
   const { addSuccess, addError } = useNotifications();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -18,95 +23,50 @@ const AdminDashboardPage = () => {
   const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery({ useCache: true });
   const [generateBoard, { isLoading: generatingBoard }] = useGenerateMonthBoardMutation();
   
-  // Track when tasks don't exist to prevent re-checking
-  const [noTasksForMonth, setNoTasksForMonth] = useState({});
-  const [isCheckingTasks, setIsCheckingTasks] = useState(false);
-  
   // Get current month from URL or default to current month
-  const urlMonthId = searchParams.get("monthId");
+  // const urlMonthId = searchParams.get("monthId");
   const currentMonth = format(new Date(), "yyyy-MM");
-  const selectedMonth = urlMonthId || currentMonth;
+  const selectedMonth =  currentMonth;
   
-  // Reset states when month changes
-  useEffect(() => {
-    setNoTasksForMonth({});
-    setIsCheckingTasks(false);
-  }, [selectedMonth]);
+  // // Check if board exists for current month
+  // const { data: currentMonthBoard = { exists: false } } = useGetMonthBoardExistsQuery({ 
+  //   monthId: currentMonth 
+  // });
+  
 
-  // Function to clear the "no tasks" state for a specific month
-  const clearNoTasksState = (monthId) => {
-    console.log('Clearing no tasks state for month:', monthId);
-    setNoTasksForMonth(prev => {
-      const newState = { ...prev };
-      delete newState[monthId];
-      console.log('Updated noTasksForMonth state:', newState);
-      return newState;
-    });
-  };
+  
+
+  
+
 
   const handleGenerateAnalytics = async (monthId) => {
-    // Always work with current month - no restrictions
-    
-    // Prevent multiple simultaneous checks
-    if (isCheckingTasks) return;
-    
-    // If we already know there are no tasks for this month, don't check again
-    if (noTasksForMonth[monthId]) {
-      addError(`Cannot generate analytics: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating analytics.`);
-      return;
-    }
-    
-    setIsCheckingTasks(true);
-    
+    // Check if there are any tasks for this month
     try {
-      // Check if there are any tasks for this month
       const tasksRef = collection(db, 'tasks', monthId, 'monthTasks');
       const tasksSnapshot = await getDocs(tasksRef);
       
       if (tasksSnapshot.empty) {
-        setNoTasksForMonth(prev => ({ ...prev, [monthId]: true }));
         addError(`Cannot generate analytics: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating analytics.`);
         return;
       }
       
       addSuccess(`Generating analytics for ${format(new Date(monthId + "-01"), "MMMM yyyy")}...`);
       navigate(`/preview/${monthId}`);
-    } finally {
-      setIsCheckingTasks(false);
+    } catch (error) {
+      addError(`Failed to check tasks: ${error.message}`);
     }
   };
 
   const handleGenerateBoard = async (monthId) => {
-    // Always work with current month - no restrictions
-    
-    // Prevent multiple simultaneous checks
-    if (isCheckingTasks) return;
-    
-    // If we already know there are no tasks for this month, don't check again
-    if (noTasksForMonth[monthId]) {
-      addError(`Cannot create board: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating the board.`);
-      return;
-    }
-    
-    setIsCheckingTasks(true);
-    
     try {
-      // Check if there are any tasks for this month
-      const tasksRef = collection(db, 'tasks', monthId, 'monthTasks');
-      const tasksSnapshot = await getDocs(tasksRef);
-      
-      if (tasksSnapshot.empty) {
-        setNoTasksForMonth(prev => ({ ...prev, [monthId]: true }));
-        addError(`Cannot create board: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating the board.`);
-        return;
+      const result = await generateBoard({ monthId: monthId }).unwrap();
+      // Track manually created board with boardId
+      if (result.boardId) {
+        dispatch(markBoardAsManuallyCreated({ monthId, boardId: result.boardId }));
       }
-      
-      await generateBoard({ monthId: monthId }).unwrap();
       addSuccess(`Month board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`);
     } catch (error) {
       addError(`Failed to create month board: ${error.message}`);
-    } finally {
-      setIsCheckingTasks(false);
     }
   };
 
@@ -134,26 +94,26 @@ const AdminDashboardPage = () => {
     navigate(url);
   };
 
-  // Check if current month has no tasks
-  const currentMonthHasNoTasks = noTasksForMonth[selectedMonth] || false;
+
 
   return (
-    <DashboardWrapper
-      title="Admin Dashboard"
-      showUserFilter={true}
-      usersList={usersList}
-      usersLoading={usersLoading}
-      onUserSelect={handleUserSelect}
-      impersonatedUserId={impersonatedUserId}
+    <>
+      <DashboardWrapper
+        title="Admin Dashboard"
+        showUserFilter={true}
+        usersList={usersList}
+        usersLoading={usersLoading}
+        onUserSelect={handleUserSelect}
+        impersonatedUserId={impersonatedUserId}
+        
+        isAdmin={true}
+        onGenerateAnalytics={handleGenerateAnalytics}
+        onGenerateBoard={handleGenerateBoard}
+        generatingBoard={generatingBoard}
+      />
       
-      isAdmin={true}
-      onGenerateAnalytics={handleGenerateAnalytics}
-      onGenerateBoard={handleGenerateBoard}
-      generatingBoard={generatingBoard}
-      noTasksForCurrentMonth={currentMonthHasNoTasks}
-      isCheckingTasks={isCheckingTasks}
-      onTasksCreated={() => clearNoTasksState(selectedMonth)}
-    />
+    
+    </>
   );
 };
 

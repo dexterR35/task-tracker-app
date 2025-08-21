@@ -49,7 +49,9 @@ const PreviewPage = () => {
     useSaveMonthAnalyticsMutation();
   const { data: existingAnalytics } = useGetMonthAnalyticsQuery({ monthId });
   const { data: board = { exists: false } } = useGetMonthBoardExistsQuery({ monthId });
-  const { data: tasks = [] } = useSubscribeToMonthTasksQuery({ monthId });
+  const { data: tasks = [] } = useSubscribeToMonthTasksQuery({ monthId }, {
+    skip: !board?.exists // Skip if board doesn't exist
+  });
 
   const COLORS = [
     "#6366f1",
@@ -72,15 +74,20 @@ const PreviewPage = () => {
   useEffect(() => {
     console.log('PreviewPage useEffect - monthId:', monthId, 'board.exists:', board?.exists, 'analyticsPreview:', !!analyticsPreview, 'isGenerating:', isGenerating, 'noTasksDetected:', noTasksDetected);
     
-    if (monthId && board?.exists && !analyticsPreview && !isGenerating && !noTasksDetected) {
+    // Only generate analytics if board exists and tasks exist
+    if (monthId && board?.exists && tasks.length > 0 && !analyticsPreview && !isGenerating && !noTasksDetected) {
       console.log('Triggering analytics generation');
       handleGenerateAnalytics();
     } else if (monthId && !board?.exists) {
       console.log('Board does not exist, navigating to admin');
       addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
       navigate("/admin");
+    } else if (monthId && board?.exists && tasks.length === 0) {
+      console.log('No tasks found, navigating to admin');
+      addError(`Cannot generate analytics: No tasks found for ${monthId}. Please create at least one task first.`);
+      navigate("/admin");
     }
-  }, [monthId, board?.exists, analyticsPreview, isGenerating, noTasksDetected]);
+  }, [monthId, board?.exists, tasks.length, analyticsPreview, isGenerating, noTasksDetected]);
 
   const handleGenerateAnalytics = useCallback(async () => {
     if (!board?.exists) {
@@ -93,7 +100,7 @@ const PreviewPage = () => {
     try {
       console.log('Strategy 3: Generating analytics with priority on cache and Redux state for month:', monthId);
       
-      // Strategy 3: Try to get tasks from Redux state first
+     // Try to get tasks from Redux state first
       let tasksFromRedux = null;
       try {
         // Get tasks from the current subscription data
@@ -115,7 +122,7 @@ const PreviewPage = () => {
         setAnalyticsPreview(cachedAnalytics);
         addSuccess(`Analytics loaded from cache for ${monthId}!`);
       } else if (tasksFromRedux && tasksFromRedux.length > 0) {
-        // Strategy 3: Generate from Redux state (no Firebase reads)
+       // Generate from Redux state (no Firebase reads)
         console.log('Generating analytics from Redux state (no Firebase reads)');
         const res = await computeAnalytics({ 
           monthId, 
@@ -126,7 +133,7 @@ const PreviewPage = () => {
         setAnalyticsPreview(res);
         addSuccess(`Analytics generated from Redux state for ${monthId}!`);
       } else {
-        // Fallback: Generate from Firebase (should rarely happen with proper caching)
+        // Fallback: Generate from Firebase 
         console.log('No cache or Redux data, computing from Firebase...');
         const res = await computeAnalytics({ monthId, useCache: false }).unwrap();
         console.log('Analytics generation completed from Firebase:', res);

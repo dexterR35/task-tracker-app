@@ -1,23 +1,23 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNotifications } from './useNotifications';
 
 export const useNotificationCleanup = (dependencies = []) => {
   const { clearAll } = useNotifications();
   const isInitialMount = useRef(true);
 
+  const cleanup = useCallback(() => {
+    clearAll();
+  }, [clearAll]);
+
   useEffect(() => {
-    // Clear notifications on mount and when dependencies change
     if (!isInitialMount.current) {
-      clearAll();
+      cleanup();
     } else {
       isInitialMount.current = false;
     }
   }, dependencies);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      clearAll();
-    };
-  }, [clearAll]);
+    return cleanup;
+  }, [cleanup]);
 };
