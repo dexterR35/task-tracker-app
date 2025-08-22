@@ -11,7 +11,7 @@ const AnalyticsSummary = ({
   showMonthly = true,
   showUserStats = true,
 }) => {
-  // const { user } = useAuth();
+
   
   const stats = useMemo(() => {
     if (!tasks || tasks.length === 0) {

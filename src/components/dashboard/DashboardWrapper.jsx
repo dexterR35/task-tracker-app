@@ -1,10 +1,4 @@
-import {
-  useMemo,
-  useState,
-  useSearchParams,
-  useEffect,
-  useRef,
-} from "../../hooks/useImports";
+import { useState, useSearchParams } from "../../hooks/useImports";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useNotificationCleanup } from "../../hooks/useNotificationCleanup";
@@ -17,7 +11,6 @@ import TasksTable from "../task/TasksTable";
 import AnalyticsSummary from "../AnalyticsSummary";
 import DynamicButton from "../button/DynamicButton";
 import { format } from "date-fns";
-
 
 const DashboardWrapper = ({
   title = "Dashboard",
@@ -34,10 +27,10 @@ const DashboardWrapper = ({
 }) => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Use provided monthId or default to current month
   const monthId = propMonthId || format(new Date(), "yyyy-MM");
-  
+
   // Read impersonatedUserId from URL
   const urlImpersonatedUserId = searchParams.get("user");
 
@@ -48,8 +41,9 @@ const DashboardWrapper = ({
     });
 
   // Use URL-based impersonatedUserId if available, otherwise fall back to prop
-  const effectiveImpersonatedUserId = urlImpersonatedUserId || impersonatedUserId;
-  
+  const effectiveImpersonatedUserId =
+    urlImpersonatedUserId || impersonatedUserId;
+
   // For non-admin users, always filter to their own tasks
   const finalUserId = !isAdmin ? user?.uid : effectiveImpersonatedUserId;
 
@@ -67,21 +61,17 @@ const DashboardWrapper = ({
       userId: finalUserId || null,
     },
     {
-      skip: shouldSkipTaskQuery, 
+      skip: shouldSkipTaskQuery,
     }
   );
   const [showTaskForm, setShowTaskForm] = useState(false);
   const { addError } = useNotifications();
 
-
-
   // Clean up notifications when month changes
   useNotificationCleanup([monthId]);
-  
+
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = tasks || [];
-
-
 
   const handleCreateTask = () => {
     if (!board?.exists) {
@@ -101,7 +91,7 @@ const DashboardWrapper = ({
 
   const handleUserSelect = (event) => {
     const selectedUserId = event.target.value;
-    
+
     // If no user is selected, use clean URL
     if (!selectedUserId) {
       setSearchParams({}, { replace: true });
@@ -111,7 +101,6 @@ const DashboardWrapper = ({
       newSearchParams.set("user", selectedUserId);
       setSearchParams(newSearchParams);
     }
-    
     // Call the original onUserSelect if provided
     if (onUserSelect) {
       onUserSelect(event);
@@ -122,18 +111,20 @@ const DashboardWrapper = ({
     <div className="min-h-screen p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-        <div className="mt-2 text-sm text-gray-600">
+        <h2>{title}</h2>
+        <div className="mt-2 text-sm text-gray-200">
           <strong>Month:</strong>{" "}
           {format(new Date(monthId + "-01"), "MMMM yyyy")} ({monthId})
-          {board?.exists && (
-            <span className="ml-2 text-green-600">• Board ready</span>
+          {board?.exists ? (
+            <span className="ml-2 text-green-success">• Board ready</span>
+          ) : (
+            <span className="ml-2 text-red-error">• Board not ready</span>
           )}
         </div>
       </div>
 
       {/* User Filter (Admin Only) */}
-      {showUserFilter && isAdmin && (
+      {board?.exists && showUserFilter && isAdmin && (
         <div className="mb-6">
           <label
             htmlFor="userSelect"
@@ -160,13 +151,24 @@ const DashboardWrapper = ({
 
       {/* Board Status Warning */}
       {!board?.exists && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-4 py-2 rounded">
+        <div className="mb-4 card border border-focus text-red-error text-sm px-4 py-4 rounded-lg">
           {isAdmin ? (
-            <>
-              Hey admin, the board for{" "}
-              {format(new Date(monthId + "-01"), "MMMM yyyy")} is not created
-              yet. You can create the board using the button below.
-            </>
+            <div className="flex-center !flex-row !items-center !justify-start gap-4">
+              <div>
+                Hey {user.name}, the board for{" "}
+                {format(new Date(monthId + "-01"), "MMMM yyyy")} is not created
+                yet
+              </div>
+              <DynamicButton
+                variant="danger"
+                onClick={() => onGenerateBoard(monthId)}
+                loading={generatingBoard}
+                loadingText="Creating Board..."
+                size="xs"
+              >
+                Create Board - {format(new Date(monthId + "-01"), "MMMM yyyy")}
+              </DynamicButton>
+            </div>
           ) : (
             <>
               The board for {format(new Date(monthId + "-01"), "MMMM yyyy")} is
@@ -178,27 +180,17 @@ const DashboardWrapper = ({
 
       {/* Action Buttons */}
       <div className="mb-6 flex-center !flex-row md:flex-row gap-4 !mx-0 justify-start">
-        <DynamicButton variant="primary" onClick={handleCreateTask}>
+        <DynamicButton variant="primary" onClick={handleCreateTask} size="md">
           {showTaskForm ? "Hide Form" : "Create Task"}
         </DynamicButton>
-
-        {isAdmin && !board?.exists && (
-          <DynamicButton
-            variant="primary"
-            onClick={() => onGenerateBoard(monthId)}
-            loading={generatingBoard}
-            loadingText="Creating Board..."
-          >
-            Create Board - {format(new Date(monthId + "-01"), "MMMM yyyy")}
-          </DynamicButton>
-        )}
 
         {isAdmin &&
           onGenerateAnalytics &&
           board?.exists &&
           filteredTasks.length > 0 && (
             <DynamicButton
-              variant="outline"
+              variant="success"
+              size="md"
               onClick={() => onGenerateAnalytics(monthId)}
             >
               Generate Analytics (
@@ -213,52 +205,28 @@ const DashboardWrapper = ({
           <TaskForm />
         </div>
       )}
-
       {/* Content */}
       <div className="space-y-8">
-        {tasksError && (
-          <div className="bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-2 rounded">
-            <div className="flex items-center justify-between">
-              <span>
-                Error loading tasks: {tasksError.message || "Unknown error"}
-              </span>
-              <button
-                onClick={() => refetch()}
-                className="text-red-600 hover:text-red-800 underline text-sm"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
+        {board?.exists && filteredTasks.length > 0 && (
+          <AnalyticsSummary
+            tasks={filteredTasks}
+            loading={tasksLoading}
+            error={tasksError}
+          />
         )}
-
-        <AnalyticsSummary
-          tasks={filteredTasks}
-          loading={tasksLoading}
-          error={tasksError}
-        />
-
         {!tasksLoading && filteredTasks.length === 0 ? (
-          <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
+          <div className="card text-gray-200">
             <div className="flex flex-col items-center space-y-2">
               <span>
                 {tasksError
                   ? "Error loading tasks"
                   : "No tasks found for the selected month."}
               </span>
-              <button
-                onClick={() => refetch()}
-                className="text-blue-600 hover:text-blue-800 underline text-sm"
-              >
-                Refresh Data
-              </button>
             </div>
           </div>
         ) : (
           <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">
-              Tasks ({filteredTasks.length})
-            </h2>
+            <h2>Total Tasks ({filteredTasks.length})</h2>
             <TasksTable
               monthId={monthId}
               userFilter={effectiveImpersonatedUserId}

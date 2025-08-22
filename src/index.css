@@ -5,15 +5,29 @@
   --color-primary: #131B30; /* soft blue 131B30*/
   --color-primary-80: #0a2470;
   --color-secondary: #ff5733;
-  --color-gray-200: #DCE6F0; 
+
+  --color-gray-200: #E8EDFF; 
   --color-gray-300: #C2CCD8; /* global color slate /25 light */
-  --color-gray-400: #A8B2C0; /* global color slate /25 light */
-  --color-gray-500: #747E90; /* global color slate /25 light */
-  --color-focus: #94ABFF;
+  --color-gray-400: #A8B2C0; 
+  --color-gray-500: #747E90;
+   /* global color slate /25 light */
+  --color-focus: #AEBFFF;
   --color-gradient-start: #0A1225; /* dark blue 0A1225*/
   --color-gradient-end: #010718; /* dark blue 010718*/
-  --color-red-500: #ee2a33;
-  --color-btn-primary: #042BB2;
+  --color-red-error: #EB2743; /* dark red error */
+  --color-red-500: #C10F29; /* dark red error */
+  --color-green-success: #2FD181; /* soft green error */
+  --color-green-400: #0A9952; /* dark red error */
+
+  --color-btn-primary: #0F3CD9;
+  --color-btn-secondary: #0F3CD9;
+  --color-btn-danger: #C10F29;
+  --color-btn-success: #11A75C;
+  --color-btn-warning: #A99952;
+  --color-btn-info: #538CFF;
+  --color-btn-light: #DCE6F0;
+  --color-btn-dark: #0A1225;
+  
 }
 
 /* ---------------- Base layer ---------------- */
@@ -31,7 +45,7 @@
 
   /* Form element defaults */
   form select option {
-    @apply uppercase;
+    @apply uppercase ;
   }
 
   form > div span {
@@ -41,18 +55,20 @@
   /* Inputs */
   input,
   select {
-    @apply p-4 text-gray-300 rounded-md border border-gray-300;
+    @apply p-4 text-gray-200 rounded-md border !border-focus;
   }
   select {
     @apply bg-primary;
   }
   input:focus {
-    @apply outline-none ring-2 ring-[var(--color-focus)] !border-transparent;
+    @apply outline-none !ring-1 !ring-[var(--color-focus)] !border-transparent;
   }
-
+  input:focus-visible {
+    @apply !bg-primary;
+  }
   /* Labels */
   label {
-    @apply block text-sm font-medium text-gray-200 mb-2;
+    @apply block text-sm font-medium !text-gray-200 !mb-2;
   }
   ::placeholder {
     @apply text-gray-500;
@@ -60,17 +76,17 @@
 
   /* Headings */
   h1 {
-    @apply mt-2 text-6xl font-black tracking-tight flex items-center justify-center gap-4 text-gray-100;
+    @apply mt-2 text-6xl font-black tracking-tight flex items-center justify-center gap-4 !text-gray-200;
   }
   h2 {
-    @apply text-2xl font-bold tracking-tight text-gray-200 mb-2;
+    @apply text-2xl font-bold tracking-tight !text-gray-200 mb-2;
   }
   h3 {
-    @apply text-lg font-normal tracking-tight text-gray-100 mb-3;
+    @apply text-lg font-normal tracking-tight !text-gray-200 mb-3;
   }
 
  tbody tr td {
-    @apply px-3 py-2 !text-gray-200 border-b border-gray-300;
+    @apply px-3 py-2 !text-gray-200 border-b !border-focus;
   }
 }
 
@@ -115,9 +131,9 @@
     }
   }
 
-  .dark .skeleton {
+  /* .dark .skeleton {
     @apply bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800;
-  }
+  } */
 
   @keyframes skeleton-shimmer {
     0% {

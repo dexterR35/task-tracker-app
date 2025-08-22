@@ -47,7 +47,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const location = useLocation();
 
   if (!initialAuthResolved) {
-    // Show skeleton while auth state is being resolved
     return <FullPageSkeleton />;
   }
 
@@ -78,7 +77,7 @@ const RootIndex = () => {
   if (!initialAuthResolved) return <FullPageSkeleton />;
   if (!isAuthenticated) return <HomePage />;
   if (role === "admin") return <Navigate to="/admin" replace />;
-  return <Navigate to="/me" replace />;
+  return <Navigate to="/user" replace />;
 };
 
 const router = createBrowserRouter([
@@ -100,7 +99,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "me",
+        path: "user",
         element: (
           <UserRoute>
             <UserDashboardPage />
