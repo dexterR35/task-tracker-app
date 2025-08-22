@@ -1,4 +1,4 @@
-import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
   collection,
   fsQuery,
@@ -14,13 +14,10 @@ import {
   setDoc,
   serverTimestamp,
   onSnapshot,
-} from '../../hooks/useImports';
-import { db } from '../../firebase';
-import { format } from 'date-fns';
-import { computeAnalyticsFromTasks } from '../../utils/analyticsUtils';
-import { normalizeTimestamp } from '../../utils/dateUtils';
-// Dynamic import to avoid chunk splitting conflicts
-// import { analyticsStorage, taskStorage } from '../../utils/indexedDBStorage';
+} from "../../hooks/useImports";
+import { db } from "../../firebase";
+import { computeAnalyticsFromTasks } from "../../utils/analyticsUtils";
+import { normalizeTimestamp } from "../../utils/dateUtils";
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
 const normalizeTask = (monthId, id, data) => {
@@ -28,119 +25,193 @@ const normalizeTask = (monthId, id, data) => {
   const updatedAt = normalizeTimestamp(data.updatedAt);
   const timeInHours = Number(data.timeInHours) || 0;
   const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
-  return { id, monthId, ...data, createdAt, updatedAt, timeInHours, timeSpentOnAI };
+  return {
+    id,
+    monthId,
+    ...data,
+    createdAt,
+    updatedAt,
+    timeInHours,
+    timeSpentOnAI,
+  };
 };
 
 export const tasksApi = createApi({
-  reducerPath: 'tasksApi',
+  reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ['MonthTasks', 'MonthAnalytics', 'MonthBoard'],
+  tagTypes: ["MonthTasks", "MonthAnalytics", "MonthBoard"],
   endpoints: (builder) => ({
     listAllAnalytics: builder.query({
       async queryFn() {
         try {
-          const snap = await getDocs(collection(db, 'analytics'));
-          const items = snap.docs.map(d => {
-            const raw = d.data();
-            const savedAt = normalizeTimestamp(raw.savedAt);
-            // Spread raw first, then overwrite savedAt with normalized number to avoid Timestamp leaks
-            return { id: d.id, monthId: raw.monthId || d.id, ...raw, savedAt };
-          }).sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
+          const snap = await getDocs(collection(db, "analytics"));
+          const items = snap.docs
+            .map((d) => {
+              const raw = d.data();
+              const savedAt = normalizeTimestamp(raw.savedAt);
+              // Spread raw first, then overwrite savedAt with normalized number to avoid Timestamp leaks
+              return {
+                id: d.id,
+                monthId: raw.monthId || d.id,
+                ...raw,
+                savedAt,
+              };
+            })
+            .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
           return { data: items };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to load analytics list' } };
+          return {
+            error: {
+              message: error?.message || "Failed to load analytics list",
+            },
+          };
         }
       },
-      providesTags: ['MonthAnalytics'],
+      providesTags: ["MonthAnalytics"],
     }),
     getMonthBoardExists: builder.query({
       async queryFn({ monthId }) {
         try {
-          const ref = doc(db, 'tasks', monthId);
+          const ref = doc(db, "tasks", monthId);
           const snap = await getDocFromServer(ref);
           return { data: { exists: snap.exists() } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to check month board' } };
+          return {
+            error: { message: error?.message || "Failed to check month board" },
+          };
         }
       },
-      providesTags: (result, error, arg) => [{ type: 'MonthBoard', id: arg.monthId }],
+      providesTags: (result, error, arg) => [
+        { type: "MonthBoard", id: arg.monthId },
+      ],
     }),
-    
+
     // Enhanced initial fetch with caching
     getMonthTasks: builder.query({
       async queryFn({ monthId, useCache = true } = {}) {
         try {
           // Strategy 1: Check IndexedDB cache first
           if (useCache) {
-            const { taskStorage } = await import('../../utils/indexedDBStorage');
-            if (await taskStorage.hasTasks(monthId) && await taskStorage.isTasksFresh(monthId)) {
+            const { taskStorage } = await import(
+              "../../utils/indexedDBStorage"
+            );
+            if (
+              (await taskStorage.hasTasks(monthId)) &&
+              (await taskStorage.isTasksFresh(monthId))
+            ) {
               const cachedTasks = await taskStorage.getTasks(monthId);
-              console.log('Using cached tasks from IndexedDB:', cachedTasks.length, 'tasks for month:', monthId);
+              console.log(
+                "Using cached tasks from IndexedDB:",
+                cachedTasks.length,
+                "tasks for month:",
+                monthId
+              );
               return { data: cachedTasks };
             }
           }
 
           // Strategy 1: Initial fetch from Firebase (once per session)
-          console.log('Fetching tasks from Firebase for month:', monthId);
-          const colRef = collection(db, 'tasks', monthId, 'monthTasks');
-          const snap = await getDocs(fsQuery(colRef, orderBy('createdAt', 'desc')));
-          const tasks = snap.docs.map(d => normalizeTask(monthId, d.id, d.data()));
-          
+          console.log("Fetching tasks from Firebase for month:", monthId);
+          const colRef = collection(db, "tasks", monthId, "monthTasks");
+          const snap = await getDocs(
+            fsQuery(colRef, orderBy("createdAt", "desc"))
+          );
+          const tasks = snap.docs.map((d) =>
+            normalizeTask(monthId, d.id, d.data())
+          );
+
           // Cache tasks in IndexedDB for future use
           if (useCache) {
-            const { taskStorage } = await import('../../utils/indexedDBStorage');
+            const { taskStorage } = await import(
+              "../../utils/indexedDBStorage"
+            );
             await taskStorage.storeTasks(monthId, tasks);
-            console.log('Tasks cached in IndexedDB for month:', monthId);
+            console.log("Tasks cached in IndexedDB for month:", monthId);
           }
-          
+
           return { data: tasks };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to load tasks' } };
+          return {
+            error: { message: error?.message || "Failed to load tasks" },
+          };
         }
       },
-      providesTags: (result, error, arg) => [{ type: 'MonthTasks', id: arg.monthId }],
+      providesTags: (result, error, arg) => [
+        { type: "MonthTasks", id: arg.monthId },
+      ],
     }),
 
     // Real-time subscription for tasks with dynamic user filtering
     subscribeToMonthTasks: builder.query({
       async queryFn({ monthId, userId = null, useCache = true } = {}) {
         try {
-          console.log('[subscribeToMonthTasks] Called with:', { monthId, userId, useCache });
+          console.log("[subscribeToMonthTasks] Called with:", {
+            monthId,
+            userId,
+            useCache,
+          });
           // Create cache key that includes user filter
           const cacheKey = userId ? `${monthId}_user_${userId}` : monthId;
-          
+
           // Strategy 1: Check IndexedDB cache first
           if (useCache) {
-            const { taskStorage } = await import('../../utils/indexedDBStorage');
-            if (await taskStorage.hasTasks(cacheKey) && await taskStorage.isTasksFresh(cacheKey)) {
+            const { taskStorage } = await import(
+              "../../utils/indexedDBStorage"
+            );
+            if (
+              (await taskStorage.hasTasks(cacheKey)) &&
+              (await taskStorage.isTasksFresh(cacheKey))
+            ) {
               const cachedTasks = await taskStorage.getTasks(cacheKey);
-              console.log('Using cached tasks from IndexedDB:', cachedTasks.length, 'tasks for', userId ? `user ${userId}` : 'all users', 'month:', monthId);
+              console.log(
+                "Using cached tasks from IndexedDB:",
+                cachedTasks.length,
+                "tasks for",
+                userId ? `user ${userId}` : "all users",
+                "month:",
+                monthId
+              );
               return { data: cachedTasks };
             }
           }
 
           // Strategy 1: Dynamic Firestore query with user filtering
-          const colRef = collection(db, 'tasks', monthId, 'monthTasks');
-          let query = fsQuery(colRef, orderBy('createdAt', 'desc'));
-          
+          const colRef = collection(db, "tasks", monthId, "monthTasks");
+          let query = fsQuery(colRef, orderBy("createdAt", "desc"));
+
           // Apply user filter if specified
           if (userId) {
-            query = fsQuery(colRef, where('userUID', '==', userId), orderBy('createdAt', 'desc'));
+            query = fsQuery(
+              colRef,
+              where("userUID", "==", userId),
+              orderBy("createdAt", "desc")
+            );
           }
-          
+
           const snap = await getDocs(query);
-          const tasks = snap.docs.map(d => normalizeTask(monthId, d.id, d.data()));
-          
+          const tasks = snap.docs.map((d) =>
+            normalizeTask(monthId, d.id, d.data())
+          );
+
           // Cache filtered data with user-specific key
           if (useCache) {
-            const { taskStorage } = await import('../../utils/indexedDBStorage');
+            const { taskStorage } = await import(
+              "../../utils/indexedDBStorage"
+            );
             await taskStorage.storeTasks(cacheKey, tasks);
-            console.log('Tasks cached in IndexedDB for', userId ? `user ${userId}` : 'all users', 'month:', monthId);
+            console.log(
+              "Tasks cached in IndexedDB for",
+              userId ? `user ${userId}` : "all users",
+              "month:",
+              monthId
+            );
           }
-          
+
           return { data: tasks };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to load tasks' } };
+          return {
+            error: { message: error?.message || "Failed to load tasks" },
+          };
         }
       },
       async onCacheEntryAdded(
@@ -149,51 +220,77 @@ export const tasksApi = createApi({
       ) {
         try {
           await cacheDataLoaded;
-          
-          const colRef = collection(db, 'tasks', arg.monthId, 'monthTasks');
-          let query = fsQuery(colRef, orderBy('createdAt', 'desc'));
-          
+
+          const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
+          let query = fsQuery(colRef, orderBy("createdAt", "desc"));
+
           // Apply user filter if specified
           if (arg.userId) {
-            query = fsQuery(colRef, where('userUID', '==', arg.userId), orderBy('createdAt', 'desc'));
+            query = fsQuery(
+              colRef,
+              where("userUID", "==", arg.userId),
+              orderBy("createdAt", "desc")
+            );
           }
-          
+
           const unsubscribe = onSnapshot(
             query,
             async (snapshot) => {
-              console.log('[Real-time] Normalizing tasks with monthId:', arg.monthId);
-              const tasks = snapshot.docs.map(d => normalizeTask(arg.monthId, d.id, d.data()));
-              console.log('[Real-time] First task after normalize:', tasks[0]);
-              const cacheKey = arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId;
-              
-              if (process.env.NODE_ENV === 'development') {
-                console.log('[Real-time] Tasks updated:', tasks.length, 'tasks for', arg.userId ? `user ${arg.userId}` : 'all users', 'month:', arg.monthId);
-              }
-              
+              console.log(
+                "[Real-time] Normalizing tasks with monthId:",
+                arg.monthId
+              );
+              const tasks = snapshot.docs.map((d) =>
+                normalizeTask(arg.monthId, d.id, d.data())
+              );
+              console.log("[Real-time] First task after normalize:", tasks[0]);
+              const cacheKey = arg.userId
+                ? `${arg.monthId}_user_${arg.userId}`
+                : arg.monthId;
+
+              // if (process.env.NODE_ENV === "development") {
+              //   console.log(
+              //     "[Real-time] Tasks updated:",
+              //     tasks.length,
+              //     "tasks for",
+              //     arg.userId ? `user ${arg.userId}` : "all users",
+              //     "month:",
+              //     arg.monthId
+              //   );
+              // }
+
               // Update Redux state locally
               updateCachedData(() => tasks);
-              
+
               // Update IndexedDB cache with real-time changes
-              const { taskStorage, analyticsStorage } = await import('../../utils/indexedDBStorage');
+              const { taskStorage, analyticsStorage } = await import(
+                "../../utils/indexedDBStorage"
+              );
               await taskStorage.storeTasks(cacheKey, tasks);
-              
+
               // Pre-compute and cache analytics from updated tasks
-              const analyticsData = computeAnalyticsFromTasks(tasks, arg.monthId);
+              const analyticsData = computeAnalyticsFromTasks(
+                tasks,
+                arg.monthId
+              );
               await analyticsStorage.storeAnalytics(arg.monthId, analyticsData);
             },
             (error) => {
-              console.error('Real-time subscription error:', error);
+              console.error("Real-time subscription error:", error);
             }
           );
 
           await cacheEntryRemoved;
           unsubscribe();
         } catch (error) {
-          console.error('Error setting up real-time subscription:', error);
+          console.error("Error setting up real-time subscription:", error);
         }
       },
       providesTags: (result, error, arg) => [
-        { type: 'MonthTasks', id: arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId }
+        {
+          type: "MonthTasks",
+          id: arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId,
+        },
       ],
     }),
 
@@ -202,153 +299,197 @@ export const tasksApi = createApi({
       async queryFn(task) {
         try {
           // Ensure month board exists
-          const monthDocRef = doc(db, 'tasks', task.monthId);
+          const monthDocRef = doc(db, "tasks", task.monthId);
           const monthDoc = await getDoc(monthDocRef);
           if (!monthDoc.exists()) {
-            const err = new Error('MONTH_NOT_GENERATED');
-            err.code = 'month-not-generated';
+            const err = new Error("MONTH_NOT_GENERATED");
+            err.code = "month-not-generated";
             throw err;
           }
 
-          const colRef = collection(db, 'tasks', task.monthId, 'monthTasks');
-          const payload = { ...task, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+          const colRef = collection(db, "tasks", task.monthId, "monthTasks");
+          const payload = {
+            ...task,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
           const ref = await addDoc(colRef, payload);
-          
+
           // Read back the saved doc to resolve server timestamps to real values
           const savedSnap = await getDoc(ref);
-          const created = normalizeTask(task.monthId, ref.id, savedSnap.data() || {});
-          console.log('[CreateTask] Task created:', created.id, 'for month:', task.monthId);
-          
+          const created = normalizeTask(
+            task.monthId,
+            ref.id,
+            savedSnap.data() || {}
+          );
+          console.log(
+            "[CreateTask] Task created:",
+            created.id,
+            "for month:",
+            task.monthId
+          );
+
           // Update IndexedDB cache
-          const { taskStorage } = await import('../../utils/indexedDBStorage');
+          const { taskStorage } = await import("../../utils/indexedDBStorage");
           await taskStorage.addTask(task.monthId, created);
-          
+
           return { data: created };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to create task', code: error?.code } };
+          return {
+            error: {
+              message: error?.message || "Failed to create task",
+              code: error?.code,
+            },
+          };
         }
       },
-      // Optimistic update - don't invalidate tags, let real-time subscription handle updates
-      async onQueryStarted(task, { dispatch, queryFulfilled }) {
-        // Optimistic update could be added here if needed
-      },
+      async onQueryStarted(task, { dispatch, queryFulfilled }) {},
     }),
 
     updateTask: builder.mutation({
       async queryFn({ monthId, id, updates }) {
         try {
-          const ref = doc(db, 'tasks', monthId, 'monthTasks', id);
+          const ref = doc(db, "tasks", monthId, "monthTasks", id);
           await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
-          
+
           // Update IndexedDB cache
-          const { taskStorage } = await import('../../utils/indexedDBStorage');
+          const { taskStorage } = await import("../../utils/indexedDBStorage");
           await taskStorage.updateTask(monthId, id, updates);
-          
+
           return { data: { id, monthId, updates } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to update task' } };
+          return {
+            error: { message: error?.message || "Failed to update task" },
+          };
         }
       },
-      // Optimistic update - don't invalidate tags, let real-time subscription handle updates
     }),
 
     deleteTask: builder.mutation({
       async queryFn({ monthId, id }) {
         try {
-          const ref = doc(db, 'tasks', monthId, 'monthTasks', id);
+          const ref = doc(db, "tasks", monthId, "monthTasks", id);
           await deleteDoc(ref);
-          
           // Update IndexedDB cache
-          const { taskStorage } = await import('../../utils/indexedDBStorage');
+          const { taskStorage } = await import("../../utils/indexedDBStorage");
           await taskStorage.removeTask(monthId, id);
-          
           return { data: { id, monthId } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to delete task' } };
+          return {
+            error: { message: error?.message || "Failed to delete task" },
+          };
         }
       },
-      // Optimistic update - don't invalidate tags, let real-time subscription handle updates
     }),
 
     generateMonthBoard: builder.mutation({
       async queryFn({ monthId, meta = {} }) {
         try {
-          // Generate auto-id for the board
           const boardId = `${monthId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          await setDoc(doc(db, 'tasks', monthId), { 
-            monthId, 
-            boardId, // Add auto-generated board ID
-            createdAt: serverTimestamp(), 
-            ...meta 
-          }, { merge: true });
-          
+          await setDoc(
+            doc(db, "tasks", monthId),
+            {
+              monthId,
+              boardId, // Add auto-generated board ID
+              createdAt: serverTimestamp(),
+              ...meta,
+            },
+            { merge: true }
+          );
+
           return { data: { monthId, boardId } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to generate month board' } };
+          return {
+            error: {
+              message: error?.message || "Failed to generate month board",
+            },
+          };
         }
       },
-      invalidatesTags: (result, error, arg) => [{ type: 'MonthBoard', id: arg.monthId }],
+      invalidatesTags: (result, error, arg) => [
+        { type: "MonthBoard", id: arg.monthId },
+      ],
     }),
 
     getMonthAnalytics: builder.query({
       async queryFn({ monthId }) {
         try {
-          const ref = doc(db, 'analytics', monthId);
+          const ref = doc(db, "analytics", monthId);
           const snap = await getDocFromServer(ref);
           if (!snap.exists()) return { data: null };
           const raw = snap.data();
           const savedAt = normalizeTimestamp(raw.savedAt);
           return { data: { ...raw, savedAt } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to load analytics' } };
+          return {
+            error: { message: error?.message || "Failed to load analytics" },
+          };
         }
       },
-      providesTags: (result, error, arg) => [{ type: 'MonthAnalytics', id: arg.monthId }],
+      providesTags: (result, error, arg) => [
+        { type: "MonthAnalytics", id: arg.monthId },
+      ],
     }),
 
     // Strategy 3: Analytics generation from Redux state (no Firebase reads)
     computeMonthAnalytics: builder.mutation({
       async queryFn({ monthId, useCache = true, tasks = null }) {
         try {
-          console.log('computeMonthAnalytics called for month:', monthId, 'useCache:', useCache);
-          
+          console.log(
+            "computeMonthAnalytics called for month:",
+            monthId,
+            "useCache:",
+            useCache
+          );
+
           // Strategy 3: Check if we have fresh cached analytics
           if (useCache) {
-            const { analyticsStorage, taskStorage } = await import('../../utils/indexedDBStorage');
-            if (await analyticsStorage.hasAnalytics(monthId) && await analyticsStorage.isAnalyticsFresh(monthId)) {
-              const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
-              console.log('Using cached analytics for month:', monthId);
+            const { analyticsStorage, taskStorage } = await import(
+              "../../utils/indexedDBStorage"
+            );
+            if (
+              (await analyticsStorage.hasAnalytics(monthId)) &&
+              (await analyticsStorage.isAnalyticsFresh(monthId))
+            ) {
+              const cachedAnalytics =
+                await analyticsStorage.getAnalytics(monthId);
+              // console.log('Using cached analytics for month:', monthId);
               return { data: cachedAnalytics };
             }
-
             // Strategy 3: Use tasks from Redux state if provided, otherwise fetch from cache
             let tasksToUse = tasks;
+            console.log("tasksToUse", tasksToUse);
             if (!tasksToUse) {
-              console.log('No tasks provided, checking IndexedDB cache for month:', monthId);
+              // console.log('No tasks provided, checking IndexedDB cache for month:', monthId);
               tasksToUse = await taskStorage.getTasks(monthId);
             }
-          
-          }
-          
-          if (!tasksToUse || tasksToUse.length === 0) {
-            console.log('No tasks found for month:', monthId);
-            return { error: { code: 'NO_TASKS', message: `No tasks found for ${monthId}. Please create some tasks first.` } };
           }
 
-          console.log('Computing analytics from', tasksToUse.length, 'tasks for month:', monthId);
-          
+          if (!tasksToUse || tasksToUse.length === 0) {
+            // console.log('No tasks found for month:', monthId);
+            return {
+              error: {
+                code: "NO_TASKS",
+                message: `No tasks found for ${monthId}. Please create some tasks first.`,
+              },
+            };
+          }
+
+          // console.log('Computing analytics from', tasksToUse.length, 'tasks for month:', monthId);
           const analyticsData = computeAnalyticsFromTasks(tasksToUse, monthId);
-          
           // Store in IndexedDB for future use
-          const { analyticsStorage } = await import('../../utils/indexedDBStorage');
+          const { analyticsStorage } = await import(
+            "../../utils/indexedDBStorage"
+          );
           await analyticsStorage.storeAnalytics(monthId, analyticsData);
-          console.log('Analytics computed and stored in IndexedDB for month:', monthId);
+          // console.log('Analytics computed and stored in IndexedDB for month:', monthId);
 
           return { data: analyticsData };
         } catch (error) {
-          console.error('Error computing analytics:', error);
-          return { error: { message: error?.message || 'Failed to compute analytics' } };
+          console.error("Error computing analytics:", error);
+          return {
+            error: { message: error?.message || "Failed to compute analytics" },
+          };
         }
       },
     }),
@@ -356,45 +497,56 @@ export const tasksApi = createApi({
     saveMonthAnalytics: builder.mutation({
       async queryFn({ monthId, data, overwrite = false }) {
         try {
-          const ref = doc(db, 'analytics', monthId);
+          const ref = doc(db, "analytics", monthId);
           const snap = await getDocFromServer(ref);
           if (!overwrite && snap.exists()) {
-            return { error: { code: 'ANALYTICS_EXISTS', message: 'Analytics for this month already exist' } };
+            return {
+              error: {
+                code: "ANALYTICS_EXISTS",
+                message: "Analytics for this month already exist",
+              },
+            };
           }
-          await setDoc(ref, { ...data, savedAt: serverTimestamp() }, { merge: true });
+          await setDoc(
+            ref,
+            { ...data, savedAt: serverTimestamp() },
+            { merge: true }
+          );
           const fresh = await getDocFromServer(ref);
           const raw = fresh.data() || {};
           const savedAt = normalizeTimestamp(raw.savedAt);
           return { data: { ...raw, savedAt } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to save analytics' } };
+          return {
+            error: { message: error?.message || "Failed to save analytics" },
+          };
         }
       },
       invalidatesTags: (result, error, arg) => [
-        { type: 'MonthAnalytics', id: arg.monthId },
-        'MonthAnalytics' // Also invalidate the list query
+        { type: "MonthAnalytics", id: arg.monthId },
+        "MonthAnalytics",
       ],
     }),
 
     deleteMonthAnalytics: builder.mutation({
       async queryFn({ monthId }) {
         try {
-          const ref = doc(db, 'analytics', monthId);
+          const ref = doc(db, "analytics", monthId);
           await deleteDoc(ref);
           return { data: { monthId, deleted: true } };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to delete analytics' } };
+          return {
+            error: { message: error?.message || "Failed to delete analytics" },
+          };
         }
       },
       invalidatesTags: (result, error, arg) => [
-        { type: 'MonthAnalytics', id: arg.monthId },
-        'MonthAnalytics' // Also invalidate the list query
+        { type: "MonthAnalytics", id: arg.monthId },
+        "MonthAnalytics",
       ],
     }),
   }),
 });
-
-
 
 export const {
   useGetMonthTasksQuery,
@@ -410,5 +562,3 @@ export const {
   useListAllAnalyticsQuery,
   useDeleteMonthAnalyticsMutation,
 } = tasksApi;
-
-

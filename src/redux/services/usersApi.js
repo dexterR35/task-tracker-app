@@ -1,11 +1,8 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { collection, getDocs, orderBy, fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot } from '../../hooks/useImports';
+import { collection, getDocs, orderBy, fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot, getAuth, createUserWithEmailAndPassword, signOut, getApp, getApps, initializeApp  } from '../../hooks/useImports';
 import { normalizeTimestamp } from '../../utils/dateUtils';
 import { db, auth } from '../../firebase';
-import { getAuth, createUserWithEmailAndPassword, signOut, getApp, getApps, initializeApp } from '../../hooks/useImports';
-
-// Dynamic import to avoid chunk splitting conflicts
-// import { userStorage } from '../../utils/indexedDBStorage';
+// import { getAuth, createUserWithEmailAndPassword, signOut, getApp, getApps, initializeApp } from '../../hooks/useImports';
 
 export const usersApi = createApi({
   reducerPath: 'usersApi',

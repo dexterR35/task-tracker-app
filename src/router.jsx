@@ -11,24 +11,8 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import UserDashboardPage from "./pages/user/UserDashboardPage";
 import PreviewPage from "./pages/others/PreviewPage";
 import NotFoundPage from "./pages/others/NotFoundPage";
-import { SkeletonCard } from "./components/ui/Skeleton";
 
-// Soft full-page skeleton to prevent route flicker
-const FullPageSkeleton = () => (
-  <div className="min-h-screen p-8">
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SkeletonCard />
-        <SkeletonCard />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-      </div>
-    </div>
-  </div>
-);
+
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
@@ -47,7 +31,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const location = useLocation();
 
   if (!initialAuthResolved) {
-    return <FullPageSkeleton />;
+    return alert("Initial auth resolved");
   }
 
   if (!isAuthenticated)

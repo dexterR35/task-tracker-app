@@ -1,9 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from './useImports';
 
-/**
- * Custom hook to detect and manage offline status
- * Provides real-time offline/online state detection
- */
+
 export const useOfflineStatus = () => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastOnline, setLastOnline] = useState(Date.now());
@@ -100,8 +97,7 @@ export const useFirebaseConnection = () => {
       }
     };
 
-    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
-
+    const interval = setInterval(checkConnection, 300000); // Check every 5min
     return () => clearInterval(interval);
   }, []);
 

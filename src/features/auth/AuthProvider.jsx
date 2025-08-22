@@ -8,7 +8,7 @@ import { usePresence } from '../../hooks/usePresence';
 
 // Spinner loader component using Tailwind CSS
 const Spinner = () => (
-  <div className="border-4 border-t-4 border-gray-300 border-t-blue-500 rounded-full w-12 h-12 animate-spin"></div>
+  <div className="border-4 border-t-4 border-gray-200 border-t-red-500 rounded-full w-12 h-12 animate-spin"></div>
 );
 
 export const AuthProvider = ({ children }) => {
