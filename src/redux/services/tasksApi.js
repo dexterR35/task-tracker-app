@@ -18,13 +18,14 @@ import {
 import { db } from '../../firebase';
 import { format } from 'date-fns';
 import { computeAnalyticsFromTasks } from '../../utils/analyticsUtils';
+import { normalizeTimestamp } from '../../utils/dateUtils';
 // Dynamic import to avoid chunk splitting conflicts
 // import { analyticsStorage, taskStorage } from '../../utils/indexedDBStorage';
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
 const normalizeTask = (monthId, id, data) => {
-  const createdAt = data.createdAt?.toDate ? data.createdAt.toDate().getTime() : data.createdAt || null;
-  const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().getTime() : data.updatedAt || null;
+  const createdAt = normalizeTimestamp(data.createdAt);
+  const updatedAt = normalizeTimestamp(data.updatedAt);
   const timeInHours = Number(data.timeInHours) || 0;
   const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
   return { id, monthId, ...data, createdAt, updatedAt, timeInHours, timeSpentOnAI };
@@ -41,7 +42,7 @@ export const tasksApi = createApi({
           const snap = await getDocs(collection(db, 'analytics'));
           const items = snap.docs.map(d => {
             const raw = d.data();
-            const savedAt = raw.savedAt?.toDate ? raw.savedAt.toDate().getTime() : (typeof raw.savedAt === 'number' ? raw.savedAt : (raw.savedAt ? new Date(raw.savedAt).getTime() : null));
+            const savedAt = normalizeTimestamp(raw.savedAt);
             // Spread raw first, then overwrite savedAt with normalized number to avoid Timestamp leaks
             return { id: d.id, monthId: raw.monthId || d.id, ...raw, savedAt };
           }).sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
@@ -104,6 +105,7 @@ export const tasksApi = createApi({
     subscribeToMonthTasks: builder.query({
       async queryFn({ monthId, userId = null, useCache = true } = {}) {
         try {
+          console.log('[subscribeToMonthTasks] Called with:', { monthId, userId, useCache });
           // Create cache key that includes user filter
           const cacheKey = userId ? `${monthId}_user_${userId}` : monthId;
           
@@ -159,7 +161,9 @@ export const tasksApi = createApi({
           const unsubscribe = onSnapshot(
             query,
             async (snapshot) => {
+              console.log('[Real-time] Normalizing tasks with monthId:', arg.monthId);
               const tasks = snapshot.docs.map(d => normalizeTask(arg.monthId, d.id, d.data()));
+              console.log('[Real-time] First task after normalize:', tasks[0]);
               const cacheKey = arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId;
               
               if (process.env.NODE_ENV === 'development') {
@@ -294,7 +298,7 @@ export const tasksApi = createApi({
           const snap = await getDocFromServer(ref);
           if (!snap.exists()) return { data: null };
           const raw = snap.data();
-          const savedAt = raw.savedAt?.toDate ? raw.savedAt.toDate().getTime() : (typeof raw.savedAt === 'number' ? raw.savedAt : (raw.savedAt ? new Date(raw.savedAt).getTime() : null));
+          const savedAt = normalizeTimestamp(raw.savedAt);
           return { data: { ...raw, savedAt } };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to load analytics' } };
@@ -360,7 +364,7 @@ export const tasksApi = createApi({
           await setDoc(ref, { ...data, savedAt: serverTimestamp() }, { merge: true });
           const fresh = await getDocFromServer(ref);
           const raw = fresh.data() || {};
-          const savedAt = raw.savedAt?.toDate ? raw.savedAt.toDate().getTime() : (typeof raw.savedAt === 'number' ? raw.savedAt : (raw.savedAt ? new Date(raw.savedAt).getTime() : null));
+          const savedAt = normalizeTimestamp(raw.savedAt);
           return { data: { ...raw, savedAt } };
         } catch (error) {
           return { error: { message: error?.message || 'Failed to save analytics' } };

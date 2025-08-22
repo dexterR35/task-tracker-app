@@ -2,7 +2,8 @@ import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { collection, getDocs, orderBy, fsQuery, doc, setDoc, getDocFromServer, serverTimestamp, onSnapshot } from '../../hooks/useImports';
 import { normalizeTimestamp } from '../../utils/dateUtils';
 import { db, auth } from '../../firebase';
-import { getAuth, createUserWithEmailAndPassword, signOut,getApp, getApps, initializeApp  } from '../../hooks/useImports';
+import { getAuth, createUserWithEmailAndPassword, signOut, getApp, getApps, initializeApp } from '../../hooks/useImports';
+
 // Dynamic import to avoid chunk splitting conflicts
 // import { userStorage } from '../../utils/indexedDBStorage';
 
@@ -59,8 +60,9 @@ export const usersApi = createApi({
       providesTags: ['Users'],
     }),
     createUser: builder.mutation({
-      async queryFn({ email, password, name }) {
+      async queryFn({ email, password, confirmPassword, name }) {
         try {
+          // Validation
           if (!name || !String(name).trim()) {
             throw new Error('Name is required');
           }
@@ -70,6 +72,12 @@ export const usersApi = createApi({
           if (!password || String(password).length < 6) {
             throw new Error('Password must be at least 6 characters');
           }
+          if (password !== confirmPassword) {
+            const error = new Error('Passwords do not match');
+            error.code = 'INVALID_PASSWORD_MATCH';
+            throw error;
+          }
+
           // Use a secondary app to avoid switching the current admin session
           const primary = getApp();
           const cfg = primary.options;
@@ -89,6 +97,7 @@ export const usersApi = createApi({
             { userUID: uid, email, name: name || '', role: 'user', isActive: true, createdBy, createdAt: serverTimestamp() },
             { merge: true }
           );
+          
           // Read back the doc to normalize server timestamps
           const fresh = await getDocFromServer(userDocRef);
           const raw = fresh.data() || {};
@@ -98,6 +107,7 @@ export const usersApi = createApi({
           const lastLogin = normalizeTimestamp(raw.lastLogin);
           const heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
           const isOnline = typeof heartbeatAt === 'number' ? (Date.now() - heartbeatAt) < 2 * 60 * 1000 : false;
+          
           // Sign out the secondary auth to clean up, preserving the admin session on primary auth
           try { await signOut(secondaryAuth); } catch (_) {}
           
@@ -109,10 +119,10 @@ export const usersApi = createApi({
           
           return { data: newUser };
         } catch (error) {
-          return { error: { message: error?.message || 'Failed to create user' } };
+          return { error: { message: error?.message || 'Failed to create user', code: error.code } };
         }
       },
-      invalidatesTags: ['Users'],
+      // Removed invalidatesTags since real-time subscription handles updates
     }),
   })
 });

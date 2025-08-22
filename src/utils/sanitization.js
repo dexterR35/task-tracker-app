@@ -64,6 +64,72 @@ export const sanitizeTaskData = (taskData) => {
   };
 };
 
+// Sanitize task creation form data with validation
+export const sanitizeTaskCreationData = (formData) => {
+  if (!formData || typeof formData !== 'object') return {};
+
+  const sanitized = {
+    jiraLink: sanitizeUrl(formData.jiraLink || ''),
+    markets: Array.isArray(formData.markets) 
+      ? formData.markets.map(m => sanitizeText(m)).filter(Boolean)
+      : [],
+    product: sanitizeText(formData.product || ''),
+    taskName: sanitizeText(formData.taskName || ''),
+    aiUsed: Boolean(formData.aiUsed),
+    timeSpentOnAI: Number(formData.timeSpentOnAI) || 0,
+    aiModels: Array.isArray(formData.aiModels)
+      ? formData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
+      : [],
+    timeInHours: Number(formData.timeInHours) || 0,
+    reworked: Boolean(formData.reworked),
+    deliverables: Array.isArray(formData.deliverables)
+      ? formData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
+      : [],
+    deliverablesCount: Number(formData.deliverablesCount) || 0,
+    deliverablesOther: sanitizeText(formData.deliverablesOther || ''),
+    taskNumber: sanitizeText(formData.taskNumber || ''),
+  };
+
+  // Validation for required fields
+  if (!sanitized.taskName || sanitized.taskName.length < 3) {
+    throw new Error('Task name must be at least 3 characters long');
+  }
+
+  if (!sanitized.product || sanitized.product.length < 2) {
+    throw new Error('Product name must be at least 2 characters long');
+  }
+
+  if (sanitized.timeInHours <= 0) {
+    throw new Error('Time in hours must be greater than 0');
+  }
+
+  if (sanitized.aiUsed && sanitized.timeSpentOnAI < 0) {
+    throw new Error('Time spent on AI cannot be negative');
+  }
+
+  if (sanitized.aiUsed && sanitized.aiModels.length === 0) {
+    throw new Error('Please specify at least one AI model when AI is used');
+  }
+
+  if (sanitized.deliverables.length === 0) {
+    throw new Error('Please specify at least one deliverable');
+  }
+
+  // Validate Jira link if provided
+  if (sanitized.jiraLink) {
+    const jiraValidation = validateJiraLink(sanitized.jiraLink);
+    if (!jiraValidation.isValid) {
+      throw new Error(jiraValidation.error);
+    }
+    // Extract task number from Jira link if not provided
+    if (!sanitized.taskNumber) {
+      sanitized.taskNumber = extractTaskNumber(sanitized.jiraLink);
+    }
+  }
+
+  return sanitized;
+};
+
 // Sanitize user data
 export const sanitizeUserData = (userData) => {
   if (!userData || typeof userData !== 'object') return {};
@@ -77,13 +143,48 @@ export const sanitizeUserData = (userData) => {
   };
 };
 
+// Sanitize user creation form data
+export const sanitizeUserCreationData = (formData) => {
+  if (!formData || typeof formData !== 'object') return {};
+
+  const sanitized = {
+    name: sanitizeText(formData.name || ''),
+    email: sanitizeEmail(formData.email || ''),
+    password: formData.password || '', // Don't sanitize password
+    confirmPassword: formData.confirmPassword || '', // Don't sanitize password
+  };
+
+  // Additional validation for user creation
+  if (sanitized.name.length < 2) {
+    throw new Error('Name must be at least 2 characters long');
+  }
+
+  if (!sanitized.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitized.email)) {
+    throw new Error('Please enter a valid email address');
+  }
+
+  if (!sanitized.password || sanitized.password.length < 6) {
+    throw new Error('Password must be at least 6 characters long');
+  }
+
+  if (sanitized.password !== sanitized.confirmPassword) {
+    throw new Error('Passwords do not match');
+  }
+
+  return sanitized;
+};
+
 // Sanitize form data
 export const sanitizeFormData = (formData, formType = 'task') => {
   switch (formType) {
     case 'task':
       return sanitizeTaskData(formData);
+    case 'taskCreation':
+      return sanitizeTaskCreationData(formData);
     case 'user':
       return sanitizeUserData(formData);
+    case 'userCreation':
+      return sanitizeUserCreationData(formData);
     default:
       return formData;
   }

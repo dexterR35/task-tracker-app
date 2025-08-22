@@ -1,34 +1,23 @@
 
-import {
-  useGetUsersQuery,
-  useCreateUserMutation,
-} from "../redux/services/usersApi";
-import DynamicButton from "../components/button/DynamicButton";
-import Skeleton from "../components/ui/Skeleton";
-import { useNotifications } from "../hooks/useNotifications";
+import { useState } from "react";
+import { useGetUsersQuery } from "../redux/services/usersApi";
+import { 
+  LoadingState, 
+  SkeletonTable, 
+  SkeletonUserList 
+} from "../hooks/useImports";
+import CreateUserForm from "../components/user/CreateUserForm";
 
 const AdminUsersPage = () => {
-  const { data: users = [], isLoading } = useGetUsersQuery();
-  const [createUser, { isLoading: creating }] = useCreateUserMutation();
-  const { addSuccess, addError } = useNotifications();
+  const { data: users = [], isLoading, error } = useGetUsersQuery();
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const formEl = e.currentTarget;
-    const form = new FormData(formEl);
-    const name = String(form.get("name") || "").trim();
-    const email = String(form.get("email") || "").trim();
-    const password = String(form.get("password") || "").trim();
-    if (!name || !email || !password) return;
-    try {
-      await createUser({ email, password, name }).unwrap();
-      addSuccess("User created successfully");
-      if (formEl && typeof formEl.reset === "function") formEl.reset();
-    } catch (err) {
-      const message =
-        err?.data?.message || err?.message || "Failed to create user";
-      addError(message);
-    }
+  const handleCreateSuccess = (newUser) => {
+    setShowCreateForm(false);
+  };
+
+  const handleCreateCancel = () => {
+    setShowCreateForm(false);
   };
 
   return (
@@ -36,114 +25,76 @@ const AdminUsersPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="bg-primary rounded-lg shadow-md p-6 mb-6 flex items-center justify-between">
           <h2 className="text-3xl font-bold text-gray-900">Users</h2>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <h3 className="text-lg font-semibold mb-3">Create User</h3>
-          <form
-            onSubmit={onSubmit}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
-              </label>
-              <input
-                name="name"
-                type="text"
-                className="border rounded px-3 py-2 w-full"
-                placeholder="John Doe"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email*
-              </label>
-              <input
-                name="email"
-                type="email"
-                className="border rounded px-3 py-2 w-full"
-                placeholder="user@example.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password*
-              </label>
-              <input
-                name="password"
-                type="password"
-                className="border rounded px-3 py-2 w-full"
-                placeholder="min 6 chars"
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="sm:col-span-2 lg:col-span-5">
-              <DynamicButton
-                type="submit"
-                variant="primary"
-                loading={creating}
-                loadingText="Creating..."
-              >
-                Create User
-              </DynamicButton>
-            </div>
-          </form>
+            Create User
+          </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
-                <tr>
-                  <th className="px-3 py-2 text-left">Name</th>
-                  <th className="px-3 py-2 text-left">Email</th>
-                  <th className="px-3 py-2 text-left">Role</th>
-                  <th className="px-3 py-2 text-left">UID</th>
-                  <th className="px-3 py-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
+        {/* Create User Form Modal */}
+        {showCreateForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <CreateUserForm
+                onSuccess={handleCreateSuccess}
+                onCancel={handleCreateCancel}
+              />
+            </div>
+          </div>
+        )}
+
+        <LoadingState
+          isLoading={isLoading}
+          error={error}
+          skeleton={SkeletonTable}
+          skeletonProps={{ rows: 5, columns: 5 }}
+          errorMessage="Failed to load users"
+          onRetry={() => window.location.reload()}
+        >
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
                   <tr>
-                    <td className="px-3 py-3" colSpan={5}>
-                      <div className="space-y-2">
-                        <Skeleton variant="text" width="160px" height="20px" />
-                        <Skeleton variant="text" width="256px" height="20px" />
-                      </div>
-                    </td>
+                    <th className="px-3 py-2 text-left">Name</th>
+                    <th className="px-3 py-2 text-left">Email</th>
+                    <th className="px-3 py-2 text-left">Role</th>
+                    <th className="px-3 py-2 text-left">UID</th>
+                    <th className="px-3 py-2 text-left">Status</th>
                   </tr>
-                ) : users.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-3" colSpan={5}>
-                      No users found.
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((u) => (
-                    <tr key={u.userUID || u.id} className="border-t">
-                      <td className="px-3 py-2 font-medium">{u.name || "-"}</td>
-                      <td className="px-3 py-2">{u.email}</td>
-                      <td className="px-3 py-2">{u.role}</td>
-                      <td className="px-3 py-2">{u.userUID || u.id}</td>
-                      <td className="px-3 py-2">
-                        <span className={`inline-flex items-center gap-2`}>
-                          <span
-                            className={`inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? "bg-green-500" : "bg-red-400"}`}
-                          ></span>
-                          {u.isOnline ? "Online" : "Offline"}
-                        </span>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td className="px-3 py-3" colSpan={5}>
+                        No users found.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    users.map((u) => (
+                      <tr key={u.userUID || u.id} className="border-t">
+                        <td className="px-3 py-2 font-medium">{u.name || "-"}</td>
+                        <td className="px-3 py-2">{u.email}</td>
+                        <td className="px-3 py-2">{u.role}</td>
+                        <td className="px-3 py-2">{u.userUID || u.id}</td>
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex items-center gap-2`}>
+                            <span
+                              className={`inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? "bg-green-500" : "bg-red-400"}`}
+                            ></span>
+                            {u.isOnline ? "Online" : "Offline"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </LoadingState>
       </div>
     </div>
   );

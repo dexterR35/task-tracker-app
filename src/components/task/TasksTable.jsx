@@ -4,7 +4,7 @@ import ReactPaginate from 'react-paginate';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../utils/taskOptions';
-import { useFormat } from '../../hooks/useImports';
+import { useFormat, sanitizeTaskData, sanitizeText } from '../../hooks/useImports';
 import usePagination from '../../hooks/usePagination';
 import { useNotifications } from '../../hooks/useNotifications';
 import LoadingWrapper from '../ui/LoadingWrapper';
@@ -24,6 +24,15 @@ const useFormatDay = () => {
 
 const numberFmt = (n) => (Number.isFinite(n) ? (Math.round(n * 10) / 10) : 0);
 
+// Helper function to safely display task data
+const safeDisplay = (value, fallback = '-') => {
+  if (!value) return fallback;
+  if (Array.isArray(value)) {
+    return value.map(v => sanitizeText(v)).join(', ') || fallback;
+  }
+  return sanitizeText(value) || fallback;
+};
+
 const TasksTable = ({ 
   monthId, 
   onSelect, 
@@ -38,18 +47,32 @@ const TasksTable = ({
 }) => {
   const navigate = useNavigate();
   const { addSuccess, addError } = useNotifications();
+  const { format } = useFormat();
   
   // Use tasks passed from parent instead of making duplicate query
   const allTasks = tasks;
+  
+  // Debug: Log the first task to see its structure
+  if (allTasks && allTasks.length > 0) {
+    console.log('First task structure:', allTasks[0]);
+    console.log('First task ID:', allTasks[0].id);
+    console.log('First task keys:', Object.keys(allTasks[0]));
+  }
   
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = allTasks || [];
 
   const handleSelect = (t) => {
     if (typeof onSelect === 'function') return onSelect(t);
+    // Extract the document ID from the task ID (in case it's a full path)
+    let taskId = t.id;
+    if (typeof taskId === 'string' && taskId.includes('/')) {
+      const pathParts = taskId.split('/');
+      taskId = pathParts[pathParts.length - 1];
+    }
     // Check if we're on admin route and use appropriate path
     const isAdminRoute = window.location.pathname.includes('/admin');
-    const route = isAdminRoute ? `/admin/task/${t.monthId}/${t.id}` : `/task/${t.monthId}/${t.id}`;
+    const route = isAdminRoute ? `/admin/task/${t.monthId}/${taskId}` : `/task/${t.monthId}/${taskId}`;
     navigate(route);
   };
 
@@ -77,17 +100,27 @@ const TasksTable = ({
   const startIdx = page * pageSize;
 
   const startEdit = (t) => {
-    setEditingId(t.id);
+    // Extract the document ID from the task ID (in case it's a full path)
+    let taskId = t.id;
+    if (typeof taskId === 'string' && taskId.includes('/')) {
+      const pathParts = taskId.split('/');
+      taskId = pathParts[pathParts.length - 1];
+    }
+    setEditingId(taskId);
+    
+    // Sanitize the task data before setting it in the form
+    const sanitizedTask = sanitizeTaskData(t);
+    
     setForm({
-      taskName: t.taskName || '',
-      markets: Array.isArray(t.markets) ? t.markets : (t.market ? [t.market] : []),
-      product: t.product || '',
-      timeInHours: t.timeInHours || 0,
-      timeSpentOnAI: t.timeSpentOnAI || 0,
-      aiUsed: Boolean(t.aiUsed),
-      aiModels: Array.isArray(t.aiModels) ? t.aiModels : (t.aiModel ? [t.aiModel] : []),
-      reworked: Boolean(t.reworked),
-      deliverables: Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [String(t.deliverable)] : []),
+      taskName: sanitizedTask.taskName || '',
+      markets: Array.isArray(sanitizedTask.markets) ? sanitizedTask.markets : (sanitizedTask.market ? [sanitizedTask.market] : []),
+      product: sanitizedTask.product || '',
+      timeInHours: sanitizedTask.timeInHours || 0,
+      timeSpentOnAI: sanitizedTask.timeSpentOnAI || 0,
+      aiUsed: Boolean(sanitizedTask.aiUsed),
+      aiModels: Array.isArray(sanitizedTask.aiModels) ? sanitizedTask.aiModels : (sanitizedTask.aiModel ? [sanitizedTask.aiModel] : []),
+      reworked: Boolean(sanitizedTask.reworked),
+      deliverables: Array.isArray(sanitizedTask.deliverables) ? sanitizedTask.deliverables : (sanitizedTask.deliverable ? [String(sanitizedTask.deliverable)] : []),
     });
   };
 
@@ -98,12 +131,16 @@ const TasksTable = ({
 
   const saveEdit = async (t) => {
     try {
+      console.log('Task object for update:', t);
+      console.log('Task ID type:', typeof t.id);
+      console.log('Task ID value:', t.id);
+      console.log('Task ID includes slash:', t.id.includes('/'));
+      console.log('Task number:', t.taskNumber);
+      console.log('Task monthId:', t.monthId);
       setRowActionId(t.id);
       
-      // validate & normalize
-      const errs = [];
-      const quant = (n) => Math.round((Number(n) || 0) * 2) / 2;
-      const updates = {
+      // Prepare form data for sanitization
+      const formData = {
         taskName: form.taskName || '',
         product: form.product || '',
         markets: Array.isArray(form.markets) ? form.markets : [],
@@ -111,18 +148,33 @@ const TasksTable = ({
         aiModels: form.aiUsed ? (Array.isArray(form.aiModels) ? form.aiModels : []) : [],
         deliverables: Array.isArray(form.deliverables) ? form.deliverables : [],
         reworked: Boolean(form.reworked),
-        timeInHours: quant(form.timeInHours),
-        timeSpentOnAI: form.aiUsed ? quant(form.timeSpentOnAI) : 0,
+        timeInHours: form.timeInHours || 0,
+        timeSpentOnAI: form.aiUsed ? (form.timeSpentOnAI || 0) : 0,
+        taskNumber: t.taskNumber || '', // Preserve the original task number
+        jiraLink: t.jiraLink || '', // Preserve the original Jira link
+        deliverablesCount: t.deliverablesCount || 0, // Preserve deliverables count
+        deliverablesOther: t.deliverablesOther || '', // Preserve other deliverables
+        createdBy: t.createdBy || '', // Preserve creator info
+        createdByName: t.createdByName || '', // Preserve creator name
+        userUID: t.userUID || '', // Preserve user UID
       };
       
-      if (!updates.taskName) errs.push('Task');
-      if (!updates.product) errs.push('Product');
-      if (!updates.markets.length) errs.push('Markets');
-      if (!updates.deliverables.length) errs.push('Deliverables');
-      if (updates.timeInHours < 0.5) errs.push('Hours ≥ 0.5');
-      if (updates.aiUsed) {
-        if (!updates.aiModels.length) errs.push('AI Models');
-        if (updates.timeSpentOnAI < 0.5) errs.push('AI Hours ≥ 0.5');
+      console.log('Form data before sanitization:', formData);
+      
+      // Sanitize the form data
+      const sanitizedUpdates = sanitizeTaskData(formData);
+      console.log('Sanitized updates:', sanitizedUpdates);
+      
+      // Additional validation for required fields
+      const errs = [];
+      if (!sanitizedUpdates.taskName) errs.push('Task');
+      if (!sanitizedUpdates.product) errs.push('Product');
+      if (!sanitizedUpdates.markets.length) errs.push('Markets');
+      if (!sanitizedUpdates.deliverables.length) errs.push('Deliverables');
+      if (sanitizedUpdates.timeInHours < 0.5) errs.push('Hours ≥ 0.5');
+      if (sanitizedUpdates.aiUsed) {
+        if (!sanitizedUpdates.aiModels.length) errs.push('AI Models');
+        if (sanitizedUpdates.timeSpentOnAI < 0.5) errs.push('AI Hours ≥ 0.5');
       }
       
       if (errs.length) {
@@ -131,13 +183,37 @@ const TasksTable = ({
         return;
       }
 
+      // Quantize time values (round to nearest 0.5)
+      const quant = (n) => Math.round((Number(n) || 0) * 2) / 2;
+      const updates = {
+        ...sanitizedUpdates,
+        timeInHours: quant(sanitizedUpdates.timeInHours),
+        timeSpentOnAI: sanitizedUpdates.aiUsed ? quant(sanitizedUpdates.timeSpentOnAI) : 0,
+      };
+      
+      console.log('Final updates object:', updates);
+
       // Update task using Redux mutation (automatically updates cache)
-      await updateTask({ monthId: t.monthId, id: t.id, updates }).unwrap();
+      // Extract the document ID from the task ID (in case it's a full path)
+      let taskId = t.id;
+      if (typeof taskId === 'string' && taskId.includes('/')) {
+        // If it's a full path like "tasks/monthTasks/gYMI5ZUOGgoY1isWCdPP"
+        const pathParts = taskId.split('/');
+        taskId = pathParts[pathParts.length - 1]; // Get the last part
+      }
+      
+      // Fix empty monthId by using current month if it's empty
+      const monthId = t.monthId || format(new Date(), "yyyy-MM");
+      const updateParams = { monthId, id: taskId, updates };
+      console.log('Update parameters:', updateParams);
+      console.log('Task object:', t);
+      console.log('Extracted task ID:', taskId);
+      await updateTask(updateParams).unwrap();
       console.log('[TasksTable] updated task', { id: t.id, monthId: t.monthId, updates });
       addSuccess('Task updated successfully!');
     } catch (e) {
-      console.error(e);
-      addError('Failed to update task. Please try again.');
+      console.error('Task update error:', e);
+      addError(`Failed to update task: ${e.message || 'Please try again.'}`);
     } finally {
       setEditingId(null);
       setRowActionId(null);
@@ -149,12 +225,22 @@ const TasksTable = ({
     try {
       setRowActionId(t.id);
       
+      // Extract the document ID from the task ID (in case it's a full path)
+      let taskId = t.id;
+      if (typeof taskId === 'string' && taskId.includes('/')) {
+        const pathParts = taskId.split('/');
+        taskId = pathParts[pathParts.length - 1];
+      }
+      
+      // Fix empty monthId by using current month if it's empty
+      const monthId = t.monthId || format(new Date(), "yyyy-MM");
+      
       // Delete task using Redux mutation (automatically updates cache)
-      await deleteTask({ monthId: t.monthId, id: t.id }).unwrap();
+      await deleteTask({ monthId, id: taskId }).unwrap();
       addSuccess('Task deleted successfully!');
     } catch (e) {
-      console.error(e);
-      addError('Failed to delete task. Please try again.');
+      console.error('Task delete error:', e);
+      addError(`Failed to delete task: ${e.message || 'Please try again.'}`);
     } finally {
       setRowActionId(null);
     }
@@ -236,23 +322,28 @@ const TasksTable = ({
         </thead>
         <tbody>
           {currentPageTasks.map(t => {
-            const isEdit = editingId === t.id;
+            let taskId = t.id;
+            if (typeof taskId === 'string' && taskId.includes('/')) {
+              const pathParts = taskId.split('/');
+              taskId = pathParts[pathParts.length - 1];
+            }
+            const isEdit = editingId === taskId;
             return (
-              <tr key={t.id} className={` cursor-pointer border-t ${isEdit ? 'bg-secondary' : 'hover:bg-primary-80'} ${rowActionId === t.id ? 'opacity-50' : ''}`}>
+              <tr key={taskId} className={` cursor-pointer border-t ${isEdit ? 'bg-secondary' : 'hover:bg-primary-80'} ${rowActionId === taskId ? 'opacity-50' : ''}`}>
                 <td className="px-3 py-2 font-medium text-center">
-                  {t.taskNumber || '-'}
+                  {safeDisplay(t.taskNumber)}
                 </td>
                 <td className="px-3 py-2 font-medium  truncate max-w-[160px] ">
                   {isEdit ? (
-                    <select className="border px-2 py-1 rounded w-full" value={form.taskName} onChange={e => setForm(f => ({ ...f, taskName: e.target.value }))}>
+                    <select className="border px-2 py-1 rounded w-full" value={form.taskName} onChange={e => setForm(f => ({ ...f, taskName: sanitizeText(e.target.value) }))}>
                       <option value="">Select task</option>
                       {taskNameOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
-                  ) : t.taskName}
+                  ) : safeDisplay(t.taskName)}
                 </td>
                 <td className="px-3 py-2">{isEdit ? (
                   <div>
-                    <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const val = e.target.value; if (!val) return; setForm(f => ({ ...f, markets: (f.markets||[]).includes(val) ? f.markets : [...(f.markets||[]), val] })); }}>
+                    <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const val = sanitizeText(e.target.value); if (!val) return; setForm(f => ({ ...f, markets: (f.markets||[]).includes(val) ? f.markets : [...(f.markets||[]), val] })); }}>
                       <option value="">Add market…</option>
                       {marketOptions.filter(o => !(form.markets||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
@@ -265,13 +356,13 @@ const TasksTable = ({
                       ))}
                     </div>
                   </div>
-                ) : (Array.isArray(t.markets) ? (t.markets.join(', ') || '-') : (t.market || '-'))}</td>
+                ) : safeDisplay(t.markets || t.market)}</td>
                 <td className="px-3 py-2">{isEdit ? (
-                  <select className="border px-2 py-1 rounded w-full" value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))}>
+                  <select className="border px-2 py-1 rounded w-full" value={form.product} onChange={e => setForm(f => ({ ...f, product: sanitizeText(e.target.value) }))}>
                     <option value="">Select product</option>
                     {productOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                ) : (t.product || '-')}</td>
+                ) : safeDisplay(t.product)}</td>
                 <td className="px-3 py-2">{formatDay(t.createdAt)}</td>
                 <td className="px-3 py-2 text-right">{isEdit ? <input type="number" step="0.5" min="0.5" className="border px-2 py-1 rounded w-20 text-right" value={form.timeInHours} onChange={e => setForm(f => ({ ...f, timeInHours: e.target.value }))} /> : numberFmt(parseFloat(t.timeInHours) || 0)}</td>
                 <td className="px-3 py-2 text-right">{isEdit ? (
@@ -280,7 +371,7 @@ const TasksTable = ({
                 <td className="px-3 py-2">{isEdit ? (
                   form.aiUsed ? (
                     <div>
-                      <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = e.target.value; if (!v) return; setForm(f => ({ ...f, aiModels: (f.aiModels||[]).includes(v) ? f.aiModels : [...(f.aiModels||[]), v] })); }}>
+                      <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = sanitizeText(e.target.value); if (!v) return; setForm(f => ({ ...f, aiModels: (f.aiModels||[]).includes(v) ? f.aiModels : [...(f.aiModels||[]), v] })); }}>
                         <option value="">Add model…</option>
                         {aiModelOptions.filter(o => !(form.aiModels||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
@@ -294,7 +385,7 @@ const TasksTable = ({
                       </div>
                     </div>
                   ) : <span className="text-gray-400 text-xs">AI off</span>
-                ) : (Array.isArray(t.aiModels) ? (t.aiModels.join(', ') || (t.aiUsed ? '—' : '-')) : (t.aiModel || (t.aiUsed ? '—' : '-')))}</td>
+                ) : safeDisplay(t.aiModels || t.aiModel, t.aiUsed ? '—' : '-')}</td>
                 <td className="px-3 py-2 text-center">{isEdit ? <input type="checkbox" checked={form.aiUsed} onChange={e => setForm(f => ({
                   ...f,
                   aiUsed: e.target.checked,
@@ -303,10 +394,10 @@ const TasksTable = ({
                 <td className="px-3 py-2 text-center">{isEdit ? <input type="checkbox" checked={form.reworked} onChange={e => setForm(f => ({ ...f, reworked: e.target.checked }))} /> : (t.reworked ? '✓' : '-')}</td>
                 <td className="px-3 py-2">{isEdit ? (
                   <div>
-                    <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = e.target.value; if (!v) return; setForm(f => ({ ...f, deliverables: (f.deliverables||[]).includes(v) ? f.deliverables : [...(f.deliverables||[]), v] })); }}>
-                      <option value="">Add deliverable…</option>
-                      {deliverables.filter(o => !(form.deliverables||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                                          <select className="border px-2 py-1 rounded w-full" value="" onChange={e => { const v = sanitizeText(e.target.value); if (!v) return; setForm(f => ({ ...f, deliverables: (f.deliverables||[]).includes(v) ? f.deliverables : [...(f.deliverables||[]), v] })); }}>
+                        <option value="">Add deliverable…</option>
+                        {deliverables.filter(o => !(form.deliverables||[]).includes(o.value)).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {(form.deliverables||[]).map(d => (
                         <span key={d} className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs">
@@ -316,21 +407,21 @@ const TasksTable = ({
                       ))}
                     </div>
                   </div>
-                ) : (Array.isArray(t.deliverables) ? (t.deliverables.join(', ') || '-') : (t.deliverable || '-'))}</td>
+                ) : safeDisplay(t.deliverables || t.deliverable)}</td>
                 <td className="px-3 py-2 text-center">
-                  {t.deliverablesCount || '-'}
+                  {safeDisplay(t.deliverablesCount)}
                 </td>
                 <td className="px-3 py-2 text-right space-x-2">
                   {isEdit ? (
                     <>
-                      <button disabled={rowActionId === t.id} onClick={() => saveEdit(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === t.id ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`} title="Save"><CheckIcon className="w-4 h-4" /></button>
+                      <button disabled={rowActionId === taskId} onClick={() => saveEdit(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === taskId ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`} title="Save"><CheckIcon className="w-4 h-4" /></button>
                       <button onClick={cancelEdit} className="inline-flex items-center px-2 py-1 bg-gray-400 text-white rounded" title="Cancel"><XMarkIcon className="w-4 h-4" /></button>
                     </>
                   ) : (
                     <>
                       <button onClick={() => handleSelect(t)} className="inline-flex items-center px-2 py-1 rounded text-white bg-blue-600 hover:bg-blue-700" title="View Task">View</button>
-                      <button disabled={rowActionId === t.id} onClick={() => startEdit(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === t.id ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} title="Edit"><PencilIcon className="w-4 h-4" /></button>
-                      <button disabled={rowActionId === t.id} onClick={() => removeTask(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === t.id ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`} title="Delete"><TrashIcon className="w-4 h-4" /></button>
+                      <button disabled={rowActionId === taskId} onClick={() => startEdit(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === taskId ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} title="Edit"><PencilIcon className="w-4 h-4" /></button>
+                      <button disabled={rowActionId === taskId} onClick={() => removeTask(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === taskId ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`} title="Delete"><TrashIcon className="w-4 h-4" /></button>
                     </>
                   )}
                 </td>

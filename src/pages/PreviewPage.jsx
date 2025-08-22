@@ -42,8 +42,6 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
   const [analyticsPreview, setAnalyticsPreview] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
-  const hasGeneratedRef = useRef(false);
-  const lastTasksRef = useRef(null);
 
   const generateAnalytics = useCallback(async () => {
     if (!monthId || !board?.exists) {
@@ -51,25 +49,22 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
       return;
     }
 
-    // Check if tasks have changed since last generation
-    const currentTasksHash = JSON.stringify(tasks?.map(t => ({ id: t.id, updatedAt: t.updatedAt })));
-    if (hasGeneratedRef.current && lastTasksRef.current === currentTasksHash) {
-      return; // Prevent multiple calls for same task data
+    if (!tasks || tasks.length === 0) {
+      setError('No tasks found');
+      return;
     }
 
-    hasGeneratedRef.current = true;
-    lastTasksRef.current = currentTasksHash;
     setIsGenerating(true);
     setError(null);
 
     try {
       console.log('Starting analytics generation for month:', monthId);
       
-      // Tier 1: Check IndexedDB cache first (but skip if tasks changed)
+      // Tier 1: Check IndexedDB cache first
       const { analyticsStorage } = await import('../utils/indexedDBStorage');
       const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
       
-      if (cachedAnalytics && lastTasksRef.current === currentTasksHash) {
+      if (cachedAnalytics) {
         console.log('Tier 1: Using cached analytics from IndexedDB');
         setAnalyticsPreview(cachedAnalytics);
         addSuccess(`Analytics loaded from cache for ${monthId}!`);
@@ -97,23 +92,11 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
     }
   }, [monthId, board?.exists, tasks, computeAnalytics, addSuccess, addError]);
 
-  // Reset the ref when monthId changes
+  // Clear analytics when monthId changes
   useEffect(() => {
-    hasGeneratedRef.current = false;
-    lastTasksRef.current = null;
+    setAnalyticsPreview(null);
+    setError(null);
   }, [monthId]);
-
-  // Force regeneration when tasks change
-  useEffect(() => {
-    if (tasks && tasks.length > 0) {
-      const currentTasksHash = JSON.stringify(tasks.map(t => ({ id: t.id, updatedAt: t.updatedAt })));
-      if (lastTasksRef.current !== null && lastTasksRef.current !== currentTasksHash) {
-        // Tasks have changed, clear analytics to force regeneration
-        setAnalyticsPreview(null);
-        hasGeneratedRef.current = false;
-      }
-    }
-  }, [tasks]);
 
   return {
     analyticsPreview,
@@ -168,19 +151,7 @@ const PreviewPage = () => {
     }
   }, [monthId, board, boardLoading, tasks, tasksLoading, navigate, addError]);
 
-  // Auto-generate analytics
-  useEffect(() => {
-    // Wait for all loading to complete
-    if (boardLoading || tasksLoading) return;
-    
-    // Only proceed if board exists and we have tasks
-    if (!board?.exists || !tasks || tasks.length === 0) return;
-    
-    // Generate analytics if we don't have them, or if tasks have changed
-    if (!analyticsPreview && !isGenerating && !error) {
-      generateAnalytics();
-    }
-  }, [boardLoading, tasksLoading, board?.exists, tasks, analyticsPreview, isGenerating, error, generateAnalytics]);
+
 
 
 

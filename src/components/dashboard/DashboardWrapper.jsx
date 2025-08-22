@@ -17,7 +17,7 @@ import TasksTable from "../task/TasksTable";
 import AnalyticsSummary from "../AnalyticsSummary";
 import DynamicButton from "../button/DynamicButton";
 import { format } from "date-fns";
-import { computeAnalyticsFromTasks } from "../../utils/analyticsUtils";
+
 
 const DashboardWrapper = ({
   title = "Dashboard",
@@ -73,9 +73,7 @@ const DashboardWrapper = ({
   const [showTaskForm, setShowTaskForm] = useState(false);
   const { addError } = useNotifications();
 
-  // Track last computed analytics to prevent double computation
-  const lastComputedRef = useRef({ monthId: null, taskCount: 0, taskIds: [] });
-  const instanceIdRef = useRef(Math.random().toString(36).substr(2, 9));
+
 
   // Clean up notifications when month changes
   useNotificationCleanup([monthId]);
@@ -83,72 +81,7 @@ const DashboardWrapper = ({
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = tasks || [];
 
-  // Store analytics data from current tasks (Strategy 3: Pre-compute from Redux state)
-  useEffect(() => {
-    // Use stable instance ID for debugging
-    const instanceId = instanceIdRef.current;
-    
-    // Only compute analytics if board exists and we have tasks
-    if (board?.exists && filteredTasks.length > 0) {
-      // Check if we've already computed analytics for this exact task set
-      const currentTaskIds = filteredTasks.map((task) => task.id).sort();
-      const lastComputed = lastComputedRef.current;
 
-      if (
-        lastComputed.monthId === monthId &&
-        lastComputed.taskCount === filteredTasks.length &&
-        JSON.stringify(lastComputed.taskIds) === JSON.stringify(currentTaskIds)
-      ) {
-        console.log(
-          `[${instanceId}] Analytics already computed for this task set, skipping re-computation for month:`,
-          monthId
-        );
-        return;
-      }
-
-      // Import analyticsStorage dynamically to avoid circular dependencies
-      import("../../utils/indexedDBStorage").then(
-        async ({ analyticsStorage }) => {
-          // Check if analytics are already fresh to avoid unnecessary re-computation
-          const isFresh = await analyticsStorage.isAnalyticsFresh(monthId);
-          if (!isFresh) {
-            // Use the same analytics computation function as tasksApi
-            const analyticsData = computeAnalyticsFromTasks(
-              filteredTasks,
-              monthId
-            );
-            await analyticsStorage.storeAnalytics(monthId, analyticsData);
-            console.log(
-              `[${instanceId}] Analytics pre-computed from Redux state and cached in IndexedDB for month:`,
-              monthId
-            );
-
-            // Update last computed reference
-            lastComputedRef.current = {
-              monthId,
-              taskCount: filteredTasks.length,
-              taskIds: currentTaskIds,
-            };
-          } else {
-            console.log(
-              `[${instanceId}] Analytics already fresh, skipping re-computation for month:`,
-              monthId
-            );
-          }
-        }
-      );
-    } else if (board?.exists && filteredTasks.length === 0) {
-      console.log(
-        `[${instanceId}] Board exists but no tasks found, skipping analytics computation for month:`,
-        monthId
-      );
-    } else if (!board?.exists) {
-      console.log(
-        `[${instanceId}] Board does not exist, skipping analytics computation for month:`,
-        monthId
-      );
-    }
-  }, [filteredTasks, monthId, board?.exists]);
 
   const handleCreateTask = () => {
     if (!board?.exists) {

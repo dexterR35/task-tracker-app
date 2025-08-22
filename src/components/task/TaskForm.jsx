@@ -18,6 +18,7 @@ import LoadingWrapper from "../ui/LoadingWrapper";
 import Skeleton, { SkeletonForm } from "../ui/Skeleton";
 import { 
   sanitizeTaskData, 
+  sanitizeTaskCreationData,
   validateJiraLink, 
   extractTaskNumber 
 } from "../../utils/sanitization";
@@ -111,35 +112,15 @@ const TaskForm = ({
       // Extract task number from Jira link
       const taskNumber = extractTaskNumber(values.jiraLink);
       
-      // Sanitize and validate all data
-      const sanitizedValues = sanitizeTaskData({
-        ...values,
-        taskNumber,
-      });
-      
-      // Additional validation
-      if (!sanitizedValues.deliverables || sanitizedValues.deliverables.length === 0) {
-        addError("Please select at least one deliverable");
-        return;
-      }
-      
-      if (!sanitizedValues.markets || sanitizedValues.markets.length === 0) {
-        addError("Please select at least one market");
-        return;
-      }
-      
-      if (!sanitizedValues.product) {
-        addError("Please select a product");
-        return;
-      }
-      
-      if (!sanitizedValues.taskName) {
-        addError("Please select a task name");
-        return;
-      }
-      
-      if (!sanitizedValues.timeInHours) {
-        addError("Please enter task completion time");
+      // Sanitize and validate all data using the enhanced sanitization
+      let sanitizedValues;
+      try {
+        sanitizedValues = sanitizeTaskCreationData({
+          ...values,
+          taskNumber,
+        });
+      } catch (error) {
+        addError(error.message);
         return;
       }
       

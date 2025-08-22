@@ -4,6 +4,7 @@ import DynamicButton from "./button/DynamicButton";
 import Skeleton from "./ui/Skeleton";
 import WelcomeMessage from "./ui/WelcomeMessage";
 import { useNotifications } from "../hooks/useNotifications";
+import OfflineIndicator from "./ui/OfflineIndicator";
 
 import {
   ArrowRightOnRectangleIcon,
@@ -52,6 +53,9 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Offline Indicator */}
+      <OfflineIndicator />
+      
       {/* Navigation */}
       <nav className="bg-primary shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
