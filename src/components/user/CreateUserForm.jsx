@@ -1,80 +1,55 @@
-import React, { useState } from "react";
+import React from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import { useCreateUserMutation } from "../../redux/services/usersApi";
 import { useNotifications } from "../../hooks/useNotifications";
-
-import { sanitizeUserCreationData } from "../../utils/sanitization";
+import DynamicButton from "../button/DynamicButton";
+import { sanitizeUserCreationData, validateUserCreationData } from "../../utils/sanitization";
 
 const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
   const [createUser, { isLoading }] = useCreateUserMutation();
   const { addSuccess, addError } = useNotifications();
 
-  const [formData, setFormData] = useState({
+  const initialValues = {
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
+  };
+
+  const validationSchema = Yup.object({
+    name: Yup.string()
+      .required("Full name is required")
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name must be less than 50 characters")
+      .matches(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+    email: Yup.string()
+      .email("Invalid email format")
+      .required("Email is required")
+      .max(100, "Email must be less than 100 characters"),
+    password: Yup.string()
+      .required("Password is required")
+      .min(6, "Password must be at least 6 characters")
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      ),
+    confirmPassword: Yup.string()
+      .required("Please confirm your password")
+      .oneOf([Yup.ref("password"), null], "Passwords must match"),
   });
 
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const validateForm = () => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
-      // Use sanitization utility for validation
-      sanitizeUserCreationData(formData);
-      setErrors({});
-      return true;
-    } catch (error) {
-      // Parse the error message to determine which field has the issue
-      const errorMessage = error.message;
-      const newErrors = {};
-
-      if (errorMessage.includes("Name")) {
-        newErrors.name = errorMessage;
-      } else if (errorMessage.includes("email")) {
-        newErrors.email = errorMessage;
-      } else if (errorMessage.includes("Password")) {
-        newErrors.password = errorMessage;
-      } else if (errorMessage.includes("match")) {
-        newErrors.confirmPassword = errorMessage;
-      } else {
-        // General error
-        newErrors.general = errorMessage;
+      // First sanitize the data
+      const sanitizedData = sanitizeUserCreationData(values);
+      
+      // Then validate the sanitized data (additional server-side validation)
+      const validationErrors = validateUserCreationData(sanitizedData);
+      if (validationErrors.length > 0) {
+        addError(validationErrors[0]); // Show first error
+        return;
       }
-
-      setErrors(newErrors);
-      return false;
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Sanitize and validate the form data
-      const sanitizedData = sanitizeUserCreationData(formData);
 
       const result = await createUser({
         name: sanitizedData.name,
@@ -86,13 +61,7 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
       addSuccess(`User "${result.name}" created successfully!`);
 
       // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
-      setErrors({});
+      resetForm();
 
       // Call success callback
       if (onSuccess) {
@@ -101,7 +70,7 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
     } catch (error) {
       addError(error.data?.message || "Failed to create user");
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -111,14 +80,14 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
     }
   };
 
-  const isFormValid =
-    formData.name.trim() &&
-    formData.email.trim() &&
-    formData.password &&
-    formData.confirmPassword &&
-    formData.password === formData.confirmPassword &&
-    formData.password.length >= 6 &&
-    !Object.keys(errors).length;
+  const renderField = (field) => {
+    const { meta } = field;
+    const hasError = meta.touched && meta.error;
+    const baseInputClasses = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+      hasError ? "border-red-500" : "border-gray-300"
+    }`;
+    return { baseInputClasses, hasError };
+  };
 
   return (
     <div className="bg-primary rounded-lg shadow-lg p-6 max-w-md mx-auto">
@@ -127,145 +96,166 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
           Create New User
         </h2>
         <p className="text-gray-600">Add a new user to the system</p>
-        {errors.general && (
-          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{errors.general}</p>
-          </div>
-        )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name Field */}
-        <div>
-          <label
-            htmlFor="name"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Full Name *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter full name"
-            disabled={isSubmitting}
-          />
-          {errors.name && (
-            <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-          )}
-        </div>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ isSubmitting, isValid }) => (
+          <Form className="space-y-4">
+            {/* Name Field */}
+            <Field name="name">
+              {(field) => {
+                const { baseInputClasses } = renderField(field);
+                return (
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Full Name *
+                    </label>
+                    <input
+                      {...field.field}
+                      type="text"
+                      id="name"
+                      placeholder="Enter full name"
+                      className={baseInputClasses}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="name"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                  </div>
+                );
+              }}
+            </Field>
 
-        {/* Email Field */}
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Email Address *
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter email address"
-            disabled={isSubmitting}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-          )}
-        </div>
+            {/* Email Field */}
+            <Field name="email">
+              {(field) => {
+                const { baseInputClasses } = renderField(field);
+                return (
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Email Address *
+                    </label>
+                    <input
+                      {...field.field}
+                      type="email"
+                      id="email"
+                      placeholder="Enter email address"
+                      className={baseInputClasses}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="email"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                  </div>
+                );
+              }}
+            </Field>
 
-        {/* Password Field */}
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Password *
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.password ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter password"
-            disabled={isSubmitting}
-          />
-          {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-          )}
-          <div className="mt-1 text-xs text-gray-500">
-            Password must be at least 6 characters with uppercase, lowercase,
-            and number
-          </div>
-        </div>
+            {/* Password Field */}
+            <Field name="password">
+              {(field) => {
+                const { baseInputClasses } = renderField(field);
+                return (
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Password *
+                    </label>
+                    <input
+                      {...field.field}
+                      type="password"
+                      id="password"
+                      placeholder="Enter password"
+                      className={baseInputClasses}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="password"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                    <div className="mt-1 text-xs text-gray-500">
+                      Password must be at least 6 characters with uppercase, lowercase,
+                      and number
+                    </div>
+                  </div>
+                );
+              }}
+            </Field>
 
-        {/* Confirm Password Field */}
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Confirm Password *
-          </label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.confirmPassword ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Confirm password"
-            disabled={isSubmitting}
-          />
-          {errors.confirmPassword && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.confirmPassword}
-            </p>
-          )}
-          {formData.confirmPassword &&
-            formData.password !== formData.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">
-                Passwords do not match
-              </p>
-            )}
-        </div>
+            {/* Confirm Password Field */}
+            <Field name="confirmPassword">
+              {(field) => {
+                const { baseInputClasses } = renderField(field);
+                return (
+                  <div>
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Confirm Password *
+                    </label>
+                    <input
+                      {...field.field}
+                      type="password"
+                      id="confirmPassword"
+                      placeholder="Confirm password"
+                      className={baseInputClasses}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="confirmPassword"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                  </div>
+                );
+              }}
+            </Field>
 
-        {/* Form Actions */}
-        <div className="flex space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!isFormValid || isSubmitting}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {isSubmitting ? <>Creating...</> : "Create User"}
-          </button>
-        </div>
-      </form>
+            {/* Form Actions */}
+            <div className="flex space-x-3 pt-4">
+              <DynamicButton
+                type="button"
+                variant="secondary"
+                size="lg"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                Cancel
+              </DynamicButton>
+              <DynamicButton
+                type="submit"
+                variant="primary"
+                size="lg"
+                loading={isSubmitting}
+                loadingText="Creating..."
+                disabled={!isValid}
+                className="flex-1"
+              >
+                Create User
+              </DynamicButton>
+            </div>
+          </Form>
+        )}
+      </Formik>
     </div>
   );
 };

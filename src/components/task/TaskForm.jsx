@@ -19,6 +19,7 @@ import Skeleton, { SkeletonForm } from "../ui/Skeleton";
 import { 
   sanitizeTaskData, 
   sanitizeTaskCreationData,
+  validateTaskCreationData,
   validateJiraLink, 
   extractTaskNumber 
 } from "../../utils/sanitization";
@@ -112,15 +113,16 @@ const TaskForm = ({
       // Extract task number from Jira link
       const taskNumber = extractTaskNumber(values.jiraLink);
       
-      // Sanitize and validate all data using the enhanced sanitization
-      let sanitizedValues;
-      try {
-        sanitizedValues = sanitizeTaskCreationData({
-          ...values,
-          taskNumber,
-        });
-      } catch (error) {
-        addError(error.message);
+      // First sanitize the data
+      const sanitizedValues = sanitizeTaskCreationData({
+        ...values,
+        taskNumber,
+      });
+      
+      // Then validate the sanitized data (additional server-side validation)
+      const validationErrors = validateTaskCreationData(sanitizedValues);
+      if (validationErrors.length > 0) {
+        addError(validationErrors[0]); // Show first error
         return;
       }
       

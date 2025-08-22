@@ -33,7 +33,7 @@ export const sanitizeUrl = (url) => {
   }
 };
 
-// Sanitize task data
+// Sanitize task data (pure sanitization, no validation)
 export const sanitizeTaskData = (taskData) => {
   if (!taskData || typeof taskData !== 'object') return {};
 
@@ -64,11 +64,11 @@ export const sanitizeTaskData = (taskData) => {
   };
 };
 
-// Sanitize task creation form data with validation
+// Sanitize task creation form data (pure sanitization, no validation)
 export const sanitizeTaskCreationData = (formData) => {
   if (!formData || typeof formData !== 'object') return {};
 
-  const sanitized = {
+  return {
     jiraLink: sanitizeUrl(formData.jiraLink || ''),
     markets: Array.isArray(formData.markets) 
       ? formData.markets.map(m => sanitizeText(m)).filter(Boolean)
@@ -89,48 +89,9 @@ export const sanitizeTaskCreationData = (formData) => {
     deliverablesOther: sanitizeText(formData.deliverablesOther || ''),
     taskNumber: sanitizeText(formData.taskNumber || ''),
   };
-
-  // Validation for required fields
-  if (!sanitized.taskName || sanitized.taskName.length < 3) {
-    throw new Error('Task name must be at least 3 characters long');
-  }
-
-  if (!sanitized.product || sanitized.product.length < 2) {
-    throw new Error('Product name must be at least 2 characters long');
-  }
-
-  if (sanitized.timeInHours <= 0) {
-    throw new Error('Time in hours must be greater than 0');
-  }
-
-  if (sanitized.aiUsed && sanitized.timeSpentOnAI < 0) {
-    throw new Error('Time spent on AI cannot be negative');
-  }
-
-  if (sanitized.aiUsed && sanitized.aiModels.length === 0) {
-    throw new Error('Please specify at least one AI model when AI is used');
-  }
-
-  if (sanitized.deliverables.length === 0) {
-    throw new Error('Please specify at least one deliverable');
-  }
-
-  // Validate Jira link if provided
-  if (sanitized.jiraLink) {
-    const jiraValidation = validateJiraLink(sanitized.jiraLink);
-    if (!jiraValidation.isValid) {
-      throw new Error(jiraValidation.error);
-    }
-    // Extract task number from Jira link if not provided
-    if (!sanitized.taskNumber) {
-      sanitized.taskNumber = extractTaskNumber(sanitized.jiraLink);
-    }
-  }
-
-  return sanitized;
 };
 
-// Sanitize user data
+// Sanitize user data (pure sanitization, no validation)
 export const sanitizeUserData = (userData) => {
   if (!userData || typeof userData !== 'object') return {};
 
@@ -143,35 +104,77 @@ export const sanitizeUserData = (userData) => {
   };
 };
 
-// Sanitize user creation form data
+// Sanitize user creation form data (pure sanitization, no validation)
 export const sanitizeUserCreationData = (formData) => {
   if (!formData || typeof formData !== 'object') return {};
 
-  const sanitized = {
+  return {
     name: sanitizeText(formData.name || ''),
     email: sanitizeEmail(formData.email || ''),
     password: formData.password || '', // Don't sanitize password
     confirmPassword: formData.confirmPassword || '', // Don't sanitize password
   };
+};
 
-  // Additional validation for user creation
-  if (sanitized.name.length < 2) {
-    throw new Error('Name must be at least 2 characters long');
+// Validation functions (separate from sanitization)
+export const validateUserCreationData = (formData) => {
+  const errors = [];
+
+  if (!formData.name || formData.name.length < 2) {
+    errors.push('Name must be at least 2 characters long');
   }
 
-  if (!sanitized.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitized.email)) {
-    throw new Error('Please enter a valid email address');
+  if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    errors.push('Please enter a valid email address');
   }
 
-  if (!sanitized.password || sanitized.password.length < 6) {
-    throw new Error('Password must be at least 6 characters long');
+  if (!formData.password || formData.password.length < 6) {
+    errors.push('Password must be at least 6 characters long');
   }
 
-  if (sanitized.password !== sanitized.confirmPassword) {
-    throw new Error('Passwords do not match');
+  if (formData.password !== formData.confirmPassword) {
+    errors.push('Passwords do not match');
   }
 
-  return sanitized;
+  return errors;
+};
+
+export const validateTaskCreationData = (formData) => {
+  const errors = [];
+
+  if (!formData.taskName || formData.taskName.length < 3) {
+    errors.push('Task name must be at least 3 characters long');
+  }
+
+  if (!formData.product || formData.product.length < 2) {
+    errors.push('Product name must be at least 2 characters long');
+  }
+
+  if (formData.timeInHours <= 0) {
+    errors.push('Time in hours must be greater than 0');
+  }
+
+  if (formData.aiUsed && formData.timeSpentOnAI < 0) {
+    errors.push('Time spent on AI cannot be negative');
+  }
+
+  if (formData.aiUsed && formData.aiModels.length === 0) {
+    errors.push('Please specify at least one AI model when AI is used');
+  }
+
+  if (formData.deliverables.length === 0) {
+    errors.push('Please specify at least one deliverable');
+  }
+
+  // Validate Jira link if provided
+  if (formData.jiraLink) {
+    const jiraValidation = validateJiraLink(formData.jiraLink);
+    if (!jiraValidation.isValid) {
+      errors.push(jiraValidation.error);
+    }
+  }
+
+  return errors;
 };
 
 // Sanitize form data
