@@ -4,6 +4,7 @@ import useFormat from "../../../hooks/useFormat";
 
 const SmallCard = ({
   title,
+  
   monthId,
   userId = null,
   icon: Icon,
@@ -400,23 +401,24 @@ const SmallCard = ({
 
   return (
     <div
-      className={`card p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
-        onClick ? "cursor-pointer hover:bg-gray-700/50" : ""
+      className={`card p-6  ${
+        onClick ? "cursor-pointer hover:bg-gray-600" : ""
       } ${className}`}
       onClick={onClick}
       {...props}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start space-x-3">
             {Icon && (
-              <div className="p-2 bg-gray-600/50 rounded-lg">
-                <Icon className="w-5 h-5 text-gray-300" />
+              <div className="p-2 bg-gray-600 rounded-md">
+                <Icon className="w-5 h-5 text-gray-200" />
               </div>
             )}
-            <h3 className="text-sm font-semibold text-gray-200 uppercase tracking-wide">
-              {title}
+            <h3 className="text-sm font-semibold uppercase tracking-wide leading-4">
+           {title}
+             
             </h3>
           </div>
           

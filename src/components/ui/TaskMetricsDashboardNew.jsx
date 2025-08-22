@@ -1,7 +1,7 @@
-import React from 'react';
-import SmallCard from './cards/SmallCard';
+import React from "react";
+import SmallCard from "./cards/SmallCard";
 
-import { 
+import {
   ClipboardDocumentListIcon,
   ClockIcon,
   SparklesIcon,
@@ -14,14 +14,14 @@ import {
   CogIcon,
   CodeBracketIcon,
   VideoCameraIcon,
-  PaintBrushIcon
-} from '@heroicons/react/24/outline';
+  PaintBrushIcon,
+} from "@heroicons/react/24/outline";
 
 const TaskMetricsDashboardNew = ({
   monthId,
   userId = null,
   showSmallCards = true,
-  className = ""
+  className = "",
 }) => {
   if (!monthId) {
     return (
@@ -36,7 +36,9 @@ const TaskMetricsDashboardNew = ({
       {/* Small Cards Section */}
       {showSmallCards && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-200 mb-4">Key Metrics</h3>
+          <h3 className="text-lg font-semibold text-gray-200 mb-4">
+            Key Metrics
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <SmallCard
               title="Total Tasks"
@@ -48,7 +50,7 @@ const TaskMetricsDashboardNew = ({
               trendDirection="up"
               loading={false}
             />
-            
+
             <SmallCard
               title="Total Hours"
               icon={ClockIcon}
@@ -58,7 +60,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="Total Time"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="Total Time with AI"
               icon={SparklesIcon}
@@ -68,7 +70,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="AI Assisted"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="AI Tasks"
               icon={SparklesIcon}
@@ -78,7 +80,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="AI Usage"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="Development"
               icon={CodeBracketIcon}
@@ -88,7 +90,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="Development"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="Design"
               icon={PaintBrushIcon}
@@ -98,7 +100,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="Design Work"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="Video"
               icon={VideoCameraIcon}
@@ -108,7 +110,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="Video Production"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="User Performance"
               icon={UserGroupIcon}
@@ -118,7 +120,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="Team Stats"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="Markets"
               icon={GlobeAltIcon}
@@ -128,7 +130,7 @@ const TaskMetricsDashboardNew = ({
               trendValue="Active Markets"
               trendDirection="up"
             />
-            
+
             <SmallCard
               title="Products"
               icon={CubeIcon}
