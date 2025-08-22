@@ -111,9 +111,6 @@ export const initAuthListener = createAsyncThunk(
 
     authListenerRegistered = true;
     
-    // ❌ DO NOT return authUnsubscribe here.
-    // This was causing the non-serializable error.
-    // The thunk's job is to start the listener, not return a function.
   }
 );
 

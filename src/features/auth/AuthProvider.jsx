@@ -1,10 +1,10 @@
 // src/features/auth/AuthProvider.jsx
 
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { initAuthListener, unsubscribeAuthListener } from './authSlice';
-import { useAuth } from '../../hooks/useAuth';
-import { usePresence } from '../../hooks/usePresence';
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { initAuthListener, unsubscribeAuthListener } from "./authSlice";
+import { useAuth } from "../../hooks/useAuth";
+import { usePresence } from "../../hooks/usePresence";
 
 // Spinner loader component using Tailwind CSS
 const Spinner = () => (
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Start the persistent auth listener on mount
     dispatch(initAuthListener());
-    
+
     // Clean up the listener on unmount to prevent memory leaks
     return () => {
       unsubscribeAuthListener();
