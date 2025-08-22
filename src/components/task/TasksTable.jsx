@@ -2,14 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useUpdateTaskMutation, useDeleteTaskMutation, useSubscribeToMonthTasksQuery } from '../../redux/services/tasksApi';
+import { useUpdateTaskMutation, useDeleteTaskMutation } from '../../redux/services/tasksApi';
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../utils/taskOptions';
 import { useFormat } from '../../hooks/useImports';
 import usePagination from '../../hooks/usePagination';
 import { useNotifications } from '../../hooks/useNotifications';
 import LoadingWrapper from '../ui/LoadingWrapper';
-import { getTasksFromCache, hasCachedTasks } from '../../utils/reduxCacheUtils';
-import { useSelector } from 'react-redux';
 
 const useFormatDay = () => {
   const { format } = useFormat();
@@ -35,62 +33,17 @@ const TasksTable = ({
   showUserFilter = false, // Whether to show user filter
   isAdmin = false, // Whether user is admin
   boardExists = false, // Board existence status from parent
-  boardLoading = false // Board loading status from parent
+  boardLoading = false, // Board loading status from parent
+  tasks = [] // Tasks passed from parent component
 }) => {
   const navigate = useNavigate();
   const { addSuccess, addError } = useNotifications();
   
-  // Access Redux state for tasks
-  const tasksApiState = useSelector((state) => state.tasksApi);
+  // Use tasks passed from parent instead of making duplicate query
+  const allTasks = tasks;
   
-  // Subscribe to tasks for the month (this populates Redux state)
-  // Use board status from props instead of making separate query
-  const shouldSkipTaskQuery = !monthId || boardLoading || !boardExists;
-  console.log('TasksTable - Using board status from props:', { 
-    monthId, 
-    boardExists, 
-    boardLoading,
-    shouldSkipTaskQuery 
-  });
-
-  const { 
-    data: subscribedTasks = [], 
-    isLoading: subscriptionLoading, 
-    error: subscriptionError 
-  } = useSubscribeToMonthTasksQuery({
-    monthId,
-  }, {
-    // Skip if no monthId provided, board is loading, or board doesn't exist
-    skip: shouldSkipTaskQuery,
-  });
-
-  // Get tasks from Redux cache as fallback
-  const cachedTasks = useMemo(() => {
-    if (!monthId) return [];
-    return getTasksFromCache(tasksApiState, monthId) || [];
-  }, [tasksApiState, monthId]);
-
-  // Use subscribed tasks if available, otherwise fall back to cached tasks
-  const allTasks = subscribedTasks.length > 0 ? subscribedTasks : cachedTasks;
-  
-  // Apply user filtering
-  const filteredTasks = useMemo(() => {
-    if (!allTasks || allTasks.length === 0) return [];
-    
-    let filtered = allTasks;
-    
-    // Filter by user if specified
-    if (userFilter) {
-      filtered = filtered.filter((t) => t.userUID === userFilter);
-    } else if (!isAdmin) {
-      // For regular users, only show their tasks
-      // Note: You'll need to get the current user from your auth context
-      // const { user } = useAuth();
-      // filtered = filtered.filter((t) => t.userUID === user?.uid);
-    }
-    
-    return filtered;
-  }, [allTasks, userFilter, isAdmin]);
+  // Tasks are already filtered by the server query, so use them directly
+  const filteredTasks = allTasks || [];
 
   const handleSelect = (t) => {
     if (typeof onSelect === 'function') return onSelect(t);
@@ -208,8 +161,8 @@ const TasksTable = ({
   };
 
   // Determine loading state
-  const isLoading = loading || subscriptionLoading;
-  const hasError = error || subscriptionError;
+  const isLoading = loading;
+  const hasError = error;
 
   // Show loading state
   if (isLoading) {
@@ -253,9 +206,6 @@ const TasksTable = ({
       <div className="flex-center !mx-0 !justify-between p-3 text-xs text-gray-200">
         <div>
           Showing {Math.min(startIdx + 1, filteredTasks.length)}–{Math.min(startIdx + pageSize, filteredTasks.length)} of {filteredTasks.length}
-          {cachedTasks.length > 0 && subscribedTasks.length === 0 && (
-            <span className="ml-2 text-yellow-300">(from cache)</span>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-1">Page size:

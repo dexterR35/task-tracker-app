@@ -3,16 +3,12 @@ import { useSearchParams, useNavigate, useDispatch, useSelector } from "../hooks
 import { useNotifications } from "../hooks/useNotifications";
 import { useGetUsersQuery } from "../redux/services/usersApi";
 import {
-  useGenerateMonthBoardMutation,
-  useGetMonthBoardExistsQuery,
+  useGenerateMonthBoardMutation
 } from "../redux/services/tasksApi";
-import {
-  markBoardAsManuallyCreated,
-} from "../redux/slices/adminSettingsSlice";
+
 import DashboardWrapper from "../components/dashboard/DashboardWrapper";
 import { format } from "date-fns";
-import { collection, getDocs, useEffect, useState } from "../hooks/useImports";
-import { db } from "../firebase";
+
 
 const AdminDashboardPage = () => {
 
@@ -30,12 +26,23 @@ const AdminDashboardPage = () => {
 
   const handleGenerateAnalytics = async (monthId) => {
     try {
-      const tasksRef = collection(db, 'tasks', monthId, 'monthTasks');
-      const tasksSnapshot = await getDocs(tasksRef);
-      if (tasksSnapshot.empty) {
+      // Get tasks from Redux store instead of making redundant Firestore read
+      const tasksApiState = useSelector((state) => state.tasksApi);
+      const queries = tasksApiState?.queries || {};
+      
+      // Try to find tasks for the current month and user filter
+      const currentUserId = impersonatedUserId || null;
+      const queryKey = currentUserId 
+        ? `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${currentUserId}"})`
+        : `subscribeToMonthTasks({"monthId":"${monthId}"})`;
+      
+      const tasks = queries[queryKey]?.data || [];
+      
+      if (tasks.length === 0) {
         addError(`Cannot generate analytics: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating analytics.`);
         return;
       }
+      
       addSuccess(`Generating analytics for ${format(new Date(monthId + "-01"), "MMMM yyyy")}...`);
       navigate(`/preview/${monthId}`);
     } catch (error) {
@@ -46,9 +53,6 @@ const AdminDashboardPage = () => {
   const handleGenerateBoard = async (monthId) => {
     try {
       const result = await generateBoard({ monthId: monthId }).unwrap();
-      if (result.boardId) {
-        dispatch(markBoardAsManuallyCreated({ monthId, boardId: result.boardId }));
-      }
       addSuccess(`Month board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`);
     } catch (error) {
       addError(`Failed to create month board: ${error.message}`);
@@ -57,18 +61,12 @@ const AdminDashboardPage = () => {
 
   const handleUserSelect = (e) => {
     const uid = e.target.value;
-    const isCurrentMonth = selectedMonth === currentMonth;
     const hasUserFilter = uid && uid !== "";
 
-    // Build URL parameters
+    // Build URL parameters - only include user filter
     const newSearchParams = new URLSearchParams();
 
-    // Always include monthId if it's not the current month
-    if (!isCurrentMonth) {
-      newSearchParams.set("monthId", selectedMonth);
-    }
-
-    // Always include user if there's a filter
+    // Only include user if there's a filter
     if (hasUserFilter) {
       newSearchParams.set("user", uid);
     }
@@ -90,14 +88,12 @@ const AdminDashboardPage = () => {
         usersLoading={usersLoading}
         onUserSelect={handleUserSelect}
         impersonatedUserId={impersonatedUserId}
-
+        monthId={selectedMonth}
         isAdmin={true}
         onGenerateAnalytics={handleGenerateAnalytics}
         onGenerateBoard={handleGenerateBoard}
         generatingBoard={generatingBoard}
       />
-
-
     </>
   );
 };

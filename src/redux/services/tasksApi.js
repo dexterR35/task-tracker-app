@@ -3,6 +3,7 @@ import {
   collection,
   fsQuery,
   orderBy,
+  where,
   getDocs,
   addDoc,
   updateDoc,
@@ -16,6 +17,7 @@ import {
 } from '../../hooks/useImports';
 import { db } from '../../firebase';
 import { format } from 'date-fns';
+import { computeAnalyticsFromTasks } from '../../utils/analyticsUtils';
 // Dynamic import to avoid chunk splitting conflicts
 // import { analyticsStorage, taskStorage } from '../../utils/indexedDBStorage';
 
@@ -98,18 +100,41 @@ export const tasksApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'MonthTasks', id: arg.monthId }],
     }),
 
-    // Real-time subscription for tasks with cache updates
+    // Real-time subscription for tasks with dynamic user filtering
     subscribeToMonthTasks: builder.query({
-      async queryFn({ monthId, useCache = true } = {}) {
+      async queryFn({ monthId, userId = null, useCache = true } = {}) {
         try {
-          // Load initial data with caching strategy
+          // Create cache key that includes user filter
+          const cacheKey = userId ? `${monthId}_user_${userId}` : monthId;
+          
+          // Strategy 1: Check IndexedDB cache first
+          if (useCache) {
+            const { taskStorage } = await import('../../utils/indexedDBStorage');
+            if (await taskStorage.hasTasks(cacheKey) && await taskStorage.isTasksFresh(cacheKey)) {
+              const cachedTasks = await taskStorage.getTasks(cacheKey);
+              console.log('Using cached tasks from IndexedDB:', cachedTasks.length, 'tasks for', userId ? `user ${userId}` : 'all users', 'month:', monthId);
+              return { data: cachedTasks };
+            }
+          }
+
+          // Strategy 1: Dynamic Firestore query with user filtering
           const colRef = collection(db, 'tasks', monthId, 'monthTasks');
-          const snap = await getDocs(fsQuery(colRef, orderBy('createdAt', 'desc')));
+          let query = fsQuery(colRef, orderBy('createdAt', 'desc'));
+          
+          // Apply user filter if specified
+          if (userId) {
+            query = fsQuery(colRef, where('userUID', '==', userId), orderBy('createdAt', 'desc'));
+          }
+          
+          const snap = await getDocs(query);
           const tasks = snap.docs.map(d => normalizeTask(monthId, d.id, d.data()));
           
-          // Cache initial data
-          const { taskStorage } = await import('../../utils/indexedDBStorage');
-          await taskStorage.storeTasks(monthId, tasks);
+          // Cache filtered data with user-specific key
+          if (useCache) {
+            const { taskStorage } = await import('../../utils/indexedDBStorage');
+            await taskStorage.storeTasks(cacheKey, tasks);
+            console.log('Tasks cached in IndexedDB for', userId ? `user ${userId}` : 'all users', 'month:', monthId);
+          }
           
           return { data: tasks };
         } catch (error) {
@@ -124,20 +149,29 @@ export const tasksApi = createApi({
           await cacheDataLoaded;
           
           const colRef = collection(db, 'tasks', arg.monthId, 'monthTasks');
+          let query = fsQuery(colRef, orderBy('createdAt', 'desc'));
+          
+          // Apply user filter if specified
+          if (arg.userId) {
+            query = fsQuery(colRef, where('userUID', '==', arg.userId), orderBy('createdAt', 'desc'));
+          }
+          
           const unsubscribe = onSnapshot(
-            fsQuery(colRef, orderBy('createdAt', 'desc')),
+            query,
             async (snapshot) => {
               const tasks = snapshot.docs.map(d => normalizeTask(arg.monthId, d.id, d.data()));
+              const cacheKey = arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId;
+              
               if (process.env.NODE_ENV === 'development') {
-                console.log('[Real-time] Tasks updated:', tasks.length, 'tasks for month:', arg.monthId);
+                console.log('[Real-time] Tasks updated:', tasks.length, 'tasks for', arg.userId ? `user ${arg.userId}` : 'all users', 'month:', arg.monthId);
               }
               
-              // Strategy 2: Update Redux state locally
+              // Update Redux state locally
               updateCachedData(() => tasks);
               
               // Update IndexedDB cache with real-time changes
               const { taskStorage, analyticsStorage } = await import('../../utils/indexedDBStorage');
-              await taskStorage.storeTasks(arg.monthId, tasks);
+              await taskStorage.storeTasks(cacheKey, tasks);
               
               // Pre-compute and cache analytics from updated tasks
               const analyticsData = computeAnalyticsFromTasks(tasks, arg.monthId);
@@ -154,7 +188,9 @@ export const tasksApi = createApi({
           console.error('Error setting up real-time subscription:', error);
         }
       },
-      providesTags: (result, error, arg) => [{ type: 'MonthTasks', id: arg.monthId }],
+      providesTags: (result, error, arg) => [
+        { type: 'MonthTasks', id: arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId }
+      ],
     }),
 
     // Strategy 2: CRUD operations with local Redux updates
@@ -330,7 +366,10 @@ export const tasksApi = createApi({
           return { error: { message: error?.message || 'Failed to save analytics' } };
         }
       },
-      invalidatesTags: (result, error, arg) => [{ type: 'MonthAnalytics', id: arg.monthId }],
+      invalidatesTags: (result, error, arg) => [
+        { type: 'MonthAnalytics', id: arg.monthId },
+        'MonthAnalytics' // Also invalidate the list query
+      ],
     }),
 
     deleteMonthAnalytics: builder.mutation({
@@ -343,120 +382,15 @@ export const tasksApi = createApi({
           return { error: { message: error?.message || 'Failed to delete analytics' } };
         }
       },
-      invalidatesTags: (result, error, arg) => [{ type: 'MonthAnalytics', id: arg.monthId }],
+      invalidatesTags: (result, error, arg) => [
+        { type: 'MonthAnalytics', id: arg.monthId },
+        'MonthAnalytics' // Also invalidate the list query
+      ],
     }),
   }),
 });
 
-// Helper function to compute analytics from tasks (used by multiple endpoints)
-const computeAnalyticsFromTasks = (tasks, monthId) => {
-  const agg = {
-    totalTasks: 0,
-    totalHours: 0,
-    ai: { tasks: 0, hours: 0 },
-    reworked: 0,
-    byUser: {},
-    markets: {},
-    products: {},
-    aiModels: {},
-    deliverables: {},
-    aiBreakdownByProduct: {}, // { product: { aiTasks, aiHours, nonAiTasks, nonAiHours, totalTasks, totalHours } }
-    aiBreakdownByMarket: {},  // { market: { aiTasks, aiHours, nonAiTasks, nonAiHours, totalTasks, totalHours } }
-    daily: {}, // { YYYY-MM-DD: { count, hours } }
-  };
 
-  for (const t of tasks) {
-    agg.totalTasks += 1;
-    agg.totalHours += Number(t.timeInHours) || 0;
-    if (t.aiUsed) {
-      agg.ai.tasks += 1;
-      agg.ai.hours += Number(t.timeSpentOnAI) || 0;
-    }
-    if (t.reworked) agg.reworked += 1;
-    if (t.userUID) {
-      if (!agg.byUser[t.userUID]) agg.byUser[t.userUID] = { count: 0, hours: 0 };
-      agg.byUser[t.userUID].count += 1;
-      agg.byUser[t.userUID].hours += Number(t.timeInHours) || 0;
-    }
-    // daily
-    const createdDay = (() => {
-      const ms = t.createdAt || 0;
-      if (!ms) return null;
-      const d = new Date(ms);
-      if (isNaN(d.getTime())) return null;
-      return format(d, 'yyyy-MM-dd');
-    })();
-    if (createdDay) {
-      if (!agg.daily[createdDay]) agg.daily[createdDay] = { count: 0, hours: 0 };
-      agg.daily[createdDay].count += 1;
-      agg.daily[createdDay].hours += Number(t.timeInHours) || 0;
-    }
-    const addCountHours = (map, key) => {
-      if (!map[key]) map[key] = { count: 0, hours: 0 };
-      map[key].count += 1;
-      map[key].hours += Number(t.timeInHours) || 0;
-    };
-    if (Array.isArray(t.markets)) {
-      t.markets.forEach((m) => addCountHours(agg.markets, m || 'N/A'));
-    } else if (t.market) {
-      addCountHours(agg.markets, t.market);
-    }
-    if (t.product) {
-      if (!agg.products[t.product]) agg.products[t.product] = { count: 0, hours: 0 };
-      agg.products[t.product].count += 1;
-      agg.products[t.product].hours += Number(t.timeInHours) || 0;
-    }
-    // AI breakdown by product/market
-    const ensureBreakdown = (map, key) => {
-      if (!map[key]) map[key] = { aiTasks: 0, aiHours: 0, nonAiTasks: 0, nonAiHours: 0, totalTasks: 0, totalHours: 0 };
-      return map[key];
-    };
-    const applyBreakdown = (entry, task) => {
-      entry.totalTasks += 1;
-      entry.totalHours += Number(task.timeInHours) || 0;
-      if (task.aiUsed) {
-        entry.aiTasks += 1;
-        entry.aiHours += Number(task.timeSpentOnAI) || 0;
-      } else {
-        entry.nonAiTasks += 1;
-        entry.nonAiHours += Number(task.timeInHours) || 0;
-      }
-    };
-    if (t.product) {
-      const e = ensureBreakdown(agg.aiBreakdownByProduct, t.product);
-      applyBreakdown(e, t);
-    }
-    const marketsList = Array.isArray(t.markets) ? t.markets : (t.market ? [t.market] : []);
-    marketsList.forEach((mk) => {
-      const e = ensureBreakdown(agg.aiBreakdownByMarket, mk || 'N/A');
-      applyBreakdown(e, t);
-    });
-    if (Array.isArray(t.aiModels)) {
-      t.aiModels.forEach((m) => {
-        const key = m || 'N/A';
-        agg.aiModels[key] = (agg.aiModels[key] || 0) + 1;
-      });
-    } else if (t.aiModel) {
-      const key = t.aiModel || 'N/A';
-      agg.aiModels[key] = (agg.aiModels[key] || 0) + 1;
-    }
-    if (Array.isArray(t.deliverables)) {
-      t.deliverables.forEach((d) => {
-        const key = String(d || 'N/A');
-        agg.deliverables[key] = (agg.deliverables[key] || 0) + 1;
-      });
-    } else if (t.deliverable) {
-      const key = String(t.deliverable || 'N/A');
-      agg.deliverables[key] = (agg.deliverables[key] || 0) + 1;
-    }
-  }
-
-  return {
-    monthId,
-    generatedAt: new Date().toISOString(),
-    ...agg,
-  };
-};
 
 export const {
   useGetMonthTasksQuery,

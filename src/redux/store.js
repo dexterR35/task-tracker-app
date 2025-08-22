@@ -1,7 +1,6 @@
 import { configureStore,combineReducers } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
 import notificationReducer, { addNotification } from "./slices/notificationSlice";
-import adminSettingsReducer from "./slices/adminSettingsSlice";
 import { tasksApi } from "./services/tasksApi";
 import { usersApi } from "./services/usersApi";
  
@@ -9,7 +8,6 @@ import { usersApi } from "./services/usersApi";
 const staticReducers = {
   auth: authReducer,
   notifications: notificationReducer,
-  adminSettings: adminSettingsReducer,
 
   [tasksApi.reducerPath]: tasksApi.reducer,
   [usersApi.reducerPath]: usersApi.reducer,
@@ -36,18 +34,7 @@ const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
   return result;
 };
 
-// Admin settings persistence middleware
-const adminSettingsPersistenceMiddleware = (storeAPI) => (next) => (action) => {
-  const result = next(action);
-  
-  // Save admin settings to localStorage when they change
-  if (action.type?.startsWith('adminSettings/')) {
-    const state = storeAPI.getState();
-    localStorage.setItem('adminSettings', JSON.stringify(state.adminSettings));
-  }
-  
-  return result;
-};
+
 
 const store = configureStore({
   reducer: createReducer(),
@@ -60,8 +47,7 @@ const store = configureStore({
     }    ).concat(
       tasksApi.middleware,
       usersApi.middleware,
-      errorNotificationMiddleware,
-      adminSettingsPersistenceMiddleware
+      errorNotificationMiddleware
     ),
   devTools: process.env.NODE_ENV !== "production",
 });

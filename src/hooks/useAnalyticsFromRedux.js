@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useComputeMonthAnalyticsMutation } from '../redux/services/tasksApi';
 import { useNotifications } from './useNotifications';
-import { getTasksFromCache, getTasksForMultipleMonths, hasCachedTasks, getCacheStatus, debugCache } from '../utils/reduxCacheUtils';
+
 
 /**
  * Hook for generating analytics from Redux state (Strategy 3)
@@ -17,22 +17,46 @@ export const useAnalyticsFromRedux = () => {
 
   // Get tasks from Redux state for the current month
   const getTasksFromRedux = useCallback((monthId) => {
-    return getTasksFromCache(tasksApiState, monthId);
+    // Access tasks directly from RTK Query cache
+    const queries = tasksApiState?.queries || {};
+    const queryKey = `subscribeToMonthTasks({"monthId":"${monthId}"})`;
+    return queries[queryKey]?.data || null;
   }, [tasksApiState]);
 
   // Check if tasks are cached for a month
   const hasTasksInRedux = useCallback((monthId) => {
-    return hasCachedTasks(tasksApiState, monthId);
-  }, [tasksApiState]);
+    const tasks = getTasksFromRedux(monthId);
+    return tasks !== null && tasks.length > 0;
+  }, [getTasksFromRedux]);
 
   // Get cache status for debugging
   const getReduxCacheStatus = useCallback((monthId) => {
-    return getCacheStatus(tasksApiState, monthId);
+    const queries = tasksApiState?.queries || {};
+    const queryKey = `subscribeToMonthTasks({"monthId":"${monthId}"})`;
+    const query = queries[queryKey];
+    
+    return {
+      cached: !!(query?.data && Array.isArray(query.data)),
+      loading: query?.isLoading || false,
+      error: query?.error || null,
+      data: query?.data || null,
+      lastUpdated: query?.lastUpdated || null
+    };
   }, [tasksApiState]);
 
   // Debug function to log cache state
   const debugReduxCache = useCallback(() => {
-    debugCache(tasksApiState);
+    console.log('=== RTK Query Cache Debug ===');
+    console.log('Available queries:', Object.keys(tasksApiState?.queries || {}));
+    
+    for (const [key, query] of Object.entries(tasksApiState?.queries || {})) {
+      console.log(`Query: ${key}`);
+      console.log(`  - Data:`, query.data);
+      console.log(`  - Loading:`, query.isLoading);
+      console.log(`  - Error:`, query.error);
+      console.log(`  - Last Updated:`, query.lastUpdated);
+    }
+    console.log('=== End Debug ===');
   }, [tasksApiState]);
 
   /**

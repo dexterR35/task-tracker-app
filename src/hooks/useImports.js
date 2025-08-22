@@ -67,9 +67,7 @@ export { useFormat };
 import useAnalyticsFromRedux from "./useAnalyticsFromRedux";
 export { useAnalyticsFromRedux };
 
-// Redux cache utilities
-import { getTasksFromCache, getTasksForMultipleMonths, hasCachedTasks, getCacheStatus, debugCache } from "../utils/reduxCacheUtils";
-export { getTasksFromCache, getTasksForMultipleMonths, hasCachedTasks, getCacheStatus, debugCache };
+
 
 // react-dom
 

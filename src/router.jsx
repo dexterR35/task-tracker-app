@@ -8,7 +8,6 @@ import HomePage from "./pages/HomePage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
-import AdminSettingsPage from "./pages/AdminSettingsPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import PreviewPage from "./pages/PreviewPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -140,14 +139,7 @@ const router = createBrowserRouter([
           </AdminRoute>
         ),
       },
-      {
-        path: "admin/settings",
-        element: (
-          <AdminRoute>
-            <AdminSettingsPage />
-          </AdminRoute>
-        ),
-      },
+
       {
         path: "task/:monthId/:taskId",
         element: (
