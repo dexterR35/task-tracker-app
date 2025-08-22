@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import DynamicButton from "../components/button/DynamicButton";
+import { useAuth } from "../../hooks/useAuth";
+import DynamicButton from "../../components/button/DynamicButton";
 
 const NotFoundPage = () => {
   const { isAuthenticated, role } = useAuth();

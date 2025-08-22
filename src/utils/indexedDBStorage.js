@@ -1,5 +1,5 @@
 // IndexedDB Storage Utility - Integrates with Firebase's existing IndexedDB
-const DB_NAME = 'firebase-installation-store';
+const DB_NAME = 'nb-tracker-store';
 const DB_VERSION = 1;
 const STORES = {
   ANALYTICS: 'analytics-store',

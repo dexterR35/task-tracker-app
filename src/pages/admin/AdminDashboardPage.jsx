@@ -1,10 +1,10 @@
-import { useSearchParams, useNavigate, useSelector } from "../hooks/useImports";
+import { useSearchParams, useNavigate, useSelector } from "../../hooks/useImports";
 
-import { useNotifications } from "../hooks/useNotifications";
-import { useGetUsersQuery } from "../redux/services/usersApi";
-import { useGenerateMonthBoardMutation } from "../redux/services/tasksApi";
+import { useNotifications } from "../../hooks/useNotifications";
+import { useGetUsersQuery } from "../../redux/services/usersApi";
+import { useGenerateMonthBoardMutation } from "../../redux/services/tasksApi";
 
-import DashboardWrapper from "../components/dashboard/DashboardWrapper";
+import DashboardWrapper from "../../components/dashboard/DashboardWrapper";
 import { format } from "date-fns";
 
 const AdminDashboardPage = () => {

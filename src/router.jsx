@@ -3,14 +3,14 @@ import { createBrowserRouter, Navigate, useLocation } from "./hooks/useImports";
 import { useAuth } from "./hooks/useAuth";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
-import TaskDetailPage from "./pages/TaskDetailPage";
+import TaskDetailPage from "./pages/others/TaskDetailPage";
 import HomePage from "./pages/HomePage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
-import UserDashboardPage from "./pages/UserDashboardPage";
-import PreviewPage from "./pages/PreviewPage";
-import NotFoundPage from "./pages/NotFoundPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import UserDashboardPage from "./pages/user/UserDashboardPage";
+import PreviewPage from "./pages/others/PreviewPage";
+import NotFoundPage from "./pages/others/NotFoundPage";
 import { SkeletonCard } from "./components/ui/Skeleton";
 
 // Soft full-page skeleton to prevent route flicker

@@ -1,5 +1,5 @@
-import { useAuth } from "../hooks/useAuth";
-import DashboardWrapper from "../components/dashboard/DashboardWrapper";
+import { useAuth } from "../../hooks/useAuth";
+import DashboardWrapper from "../../components/dashboard/DashboardWrapper";
 import { format } from "date-fns";
 
 const UserDashboardPage = () => {

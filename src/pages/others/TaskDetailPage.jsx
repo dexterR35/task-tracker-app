@@ -5,11 +5,11 @@ import {
   useNavigate,
   useEffect,
   useState,
-} from "../hooks/useImports";
+} from "../../hooks/useImports";
 import { format } from "date-fns";
-import { db } from "../firebase";
-import DynamicButton from "../components/button/DynamicButton";
-import Skeleton from "../components/ui/Skeleton";
+import { db } from "../../firebase";
+import DynamicButton from "../../components/button/DynamicButton";
+import Skeleton from "../../components/ui/Skeleton";
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();

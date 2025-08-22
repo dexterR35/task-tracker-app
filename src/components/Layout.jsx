@@ -86,7 +86,7 @@ const Layout = () => {
                 size="sm"
                 icon={ArrowRightOnRectangleIcon}
                 onClick={handleLogout}
-                // successMessage="Logged out successfully"
+       
               >
                 Logout
               </DynamicButton>

@@ -4,9 +4,9 @@ import {
   useGetMonthAnalyticsQuery,
   useGetMonthBoardExistsQuery,
   useSubscribeToMonthTasksQuery,
-} from "../redux/services/tasksApi";
-import DynamicButton from "../components/button/DynamicButton";
-import { useNotifications } from "../hooks/useNotifications";
+} from "../../redux/services/tasksApi";
+import DynamicButton from "../../components/button/DynamicButton";
+import { useNotifications } from "../../hooks/useNotifications";
 
 import {
   ResponsiveContainer,
@@ -30,9 +30,9 @@ import {
   useEffect,
   useCallback,
   useRef,
-} from "../hooks/useImports";
+} from "../../hooks/useImports";
 import { format } from "date-fns";
-import Skeleton from "../components/ui/Skeleton";
+import Skeleton from "../../components/ui/Skeleton";
 
 // Custom hook for analytics generation with 3-tier strategy
 const useAnalyticsGeneration = (monthId, board, tasks) => {
@@ -61,7 +61,7 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
       console.log('Starting analytics generation for month:', monthId);
       
       // Tier 1: Check IndexedDB cache first
-      const { analyticsStorage } = await import('../utils/indexedDBStorage');
+      const { analyticsStorage } = await import('../../utils/indexedDBStorage');
       const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
       
       if (cachedAnalytics) {

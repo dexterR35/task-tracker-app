@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useGetUsersQuery } from "../redux/services/usersApi";
-import DynamicButton from "../components/button/DynamicButton";
-import CreateUserForm from "../components/user/CreateUserForm";
+import { useGetUsersQuery } from "../../redux/services/usersApi";
+import DynamicButton from "../../components/button/DynamicButton";
+import CreateUserForm from "../../components/user/CreateUserForm";
 
 const AdminUsersPage = () => {
   const { data: users = [], isLoading, error } = useGetUsersQuery();
@@ -21,7 +21,11 @@ const AdminUsersPage = () => {
         <div className="card  flex items-center justify-between">
           <h2 className="text-3xl font-bold text-gray-900">Users</h2>
 
-          <DynamicButton variant="danger" onClick={() => setShowCreateForm(true)} size="sm">
+          <DynamicButton
+            variant="danger"
+            onClick={() => setShowCreateForm(true)}
+            size="sm"
+          >
             Create User
           </DynamicButton>
         </div>
