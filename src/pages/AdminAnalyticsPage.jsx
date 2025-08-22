@@ -22,7 +22,7 @@ import {
   Line,
   ScatterChart,
   Scatter,
-  jsPDF,React
+  React
 } from "../hooks/useImports";
 import { useFormat } from "../hooks/useImports";
 import { useNotifications } from "../hooks/useNotifications";
@@ -50,27 +50,27 @@ const AdminAnalyticsPage = () => {
     "#22c55e",
   ];
 
-  const handleDownloadPdf = () => {
-    if (!current) return;
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const margin = 40;
-    let y = margin;
-    doc.setFontSize(18);
-    doc.text(`Monthly Analytics - ${current.monthId}`, margin, y);
-    y += 24;
-    doc.setFontSize(12);
-    const s = current;
-    [
-      `Total Tasks: ${s.totalTasks || 0}`,
-      `Total Hours: ${Math.round((s.totalHours || 0) * 10) / 10}`,
-      `AI Tasks: ${s.ai?.tasks || 0}  |  AI Hours: ${Math.round((s.ai?.hours || 0) * 10) / 10}`,
-      `Reworked: ${s.reworked || 0}`,
-    ].forEach((line) => {
-      doc.text(line, margin, y);
-      y += 18;
-    });
-    doc.save(`Analytics_${current.monthId}.pdf`);
-  };
+  // const handleDownloadPdf = () => {
+  //   if (!current) return;
+  //   const doc = new jsPDF({ unit: "pt", format: "a4" });
+  //   const margin = 40;
+  //   let y = margin;
+  //   doc.setFontSize(18);
+  //   doc.text(`Monthly Analytics - ${current.monthId}`, margin, y);
+  //   y += 24;
+  //   doc.setFontSize(12);
+  //   const s = current;
+  //   [
+  //     `Total Tasks: ${s.totalTasks || 0}`,
+  //     `Total Hours: ${Math.round((s.totalHours || 0) * 10) / 10}`,
+  //     `AI Tasks: ${s.ai?.tasks || 0}  |  AI Hours: ${Math.round((s.ai?.hours || 0) * 10) / 10}`,
+  //     `Reworked: ${s.reworked || 0}`,
+  //   ].forEach((line) => {
+  //     doc.text(line, margin, y);
+  //     y += 18;
+  //   });
+  //   doc.save(`Analytics_${current.monthId}.pdf`);
+  // };
 
   const handleDeleteAnalytics = async (monthId) => {
     if (
@@ -91,16 +91,16 @@ const AdminAnalyticsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen  p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-gray-900">Saved Analytics</h2>
+        <div className="card">
+          <h2>Saved Analytics</h2>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="card rounded-lg shadow p-4">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
+              <thead className=" text-gray-200 uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Month</th>
                   <th className="px-3 py-2 text-left">Saved At</th>
@@ -158,34 +158,32 @@ const AdminAnalyticsPage = () => {
         {current && (
           <div className="bg-white rounded-lg shadow p-4 mt-6">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold">
+              <h2 className=" !text-gray-900">
                 Analytics ({current.monthId})
-              </h3>
-              <DynamicButton variant="outline" onClick={handleDownloadPdf}>
-                Download PDF
-              </DynamicButton>
+              </h2>
+     
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="text-xs text-gray-600">Total Tasks</div>
+              <div className="card p-3 rounded text-gray-200">
+                <div className="text-xs">Total Tasks</div>
                 <div className="text-xl font-semibold">
                   {current.totalTasks || 0}
                 </div>
               </div>
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="text-xs text-gray-600">Total Hours</div>
+              <div className="card p-3 rounded text-gray-200">
+                <div className="text-xs ">Total Hours</div>
                 <div className="text-xl font-semibold">
                   {Math.round((current.totalHours || 0) * 10) / 10}
                 </div>
               </div>
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="text-xs text-gray-600">AI Tasks</div>
+              <div className="card p-3 rounded text-gray-200">
+                <div className="text-xs">AI Tasks</div>
                 <div className="text-xl font-semibold">
                   {current.ai?.tasks || 0}
                 </div>
               </div>
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="text-xs text-gray-600">Reworked</div>
+              <div className="card p-3 rounded text-gray-200">
+                <div className="text-xs">Reworked</div>
                 <div className="text-xl font-semibold">
                   {current.reworked || 0}
                 </div>
