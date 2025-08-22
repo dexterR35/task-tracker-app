@@ -24,138 +24,165 @@ import {
   Line,
   ScatterChart,
   Scatter,
-  jsPDF,
   useParams,
   useNavigate,
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "../hooks/useImports";
 import { format } from "date-fns";
 import Skeleton from "../components/ui/Skeleton";
 
+// Custom hook for analytics generation with 3-tier strategy
+const useAnalyticsGeneration = (monthId, board, tasks) => {
+  const { addError, addSuccess } = useNotifications();
+  const [computeAnalytics] = useComputeMonthAnalyticsMutation();
+  
+  const [analyticsPreview, setAnalyticsPreview] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const hasGeneratedRef = useRef(false);
+  const lastTasksRef = useRef(null);
+
+  const generateAnalytics = useCallback(async () => {
+    if (!monthId || !board?.exists) {
+      setError('Board does not exist');
+      return;
+    }
+
+    // Check if tasks have changed since last generation
+    const currentTasksHash = JSON.stringify(tasks?.map(t => ({ id: t.id, updatedAt: t.updatedAt })));
+    if (hasGeneratedRef.current && lastTasksRef.current === currentTasksHash) {
+      return; // Prevent multiple calls for same task data
+    }
+
+    hasGeneratedRef.current = true;
+    lastTasksRef.current = currentTasksHash;
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      console.log('Starting analytics generation for month:', monthId);
+      
+      // Tier 1: Check IndexedDB cache first (but skip if tasks changed)
+      const { analyticsStorage } = await import('../utils/indexedDBStorage');
+      const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
+      
+      if (cachedAnalytics && lastTasksRef.current === currentTasksHash) {
+        console.log('Tier 1: Using cached analytics from IndexedDB');
+        setAnalyticsPreview(cachedAnalytics);
+        addSuccess(`Analytics loaded from cache for ${monthId}!`);
+        return;
+      }
+
+      // Tier 2: Let computeAnalytics handle the fallback strategy
+      console.log('Tier 2: Generating analytics (mutation handles fallback)');
+      const result = await computeAnalytics({ 
+        monthId, 
+        useCache: true, 
+        tasks: tasks 
+      }).unwrap();
+      
+      console.log('Analytics generated:', result);
+      setAnalyticsPreview(result);
+      addSuccess(`Analytics generated for ${monthId}!`);
+
+    } catch (error) {
+      console.error('Error generating analytics:', error);
+      setError(error?.data?.message || 'Failed to generate analytics');
+      addError('Failed to generate analytics');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [monthId, board?.exists, tasks, computeAnalytics, addSuccess, addError]);
+
+  // Reset the ref when monthId changes
+  useEffect(() => {
+    hasGeneratedRef.current = false;
+    lastTasksRef.current = null;
+  }, [monthId]);
+
+  // Force regeneration when tasks change
+  useEffect(() => {
+    if (tasks && tasks.length > 0) {
+      const currentTasksHash = JSON.stringify(tasks.map(t => ({ id: t.id, updatedAt: t.updatedAt })));
+      if (lastTasksRef.current !== null && lastTasksRef.current !== currentTasksHash) {
+        // Tasks have changed, clear analytics to force regeneration
+        setAnalyticsPreview(null);
+        hasGeneratedRef.current = false;
+      }
+    }
+  }, [tasks]);
+
+  return {
+    analyticsPreview,
+    isGenerating,
+    error,
+    generateAnalytics,
+    setAnalyticsPreview
+  };
+};
+
 const PreviewPage = () => {
   const { monthId } = useParams();
   const navigate = useNavigate();
-  const { addError, addSuccess } = useNotifications();
+  const { addError } = useNotifications();
 
-  const [analyticsPreview, setAnalyticsPreview] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [noTasksDetected, setNoTasksDetected] = useState(false);
-
-  const [computeAnalytics, { isLoading: computing }] =
-    useComputeMonthAnalyticsMutation();
-  const [saveAnalytics, { isLoading: saving }] =
-    useSaveMonthAnalyticsMutation();
+  // Queries
   const { data: existingAnalytics } = useGetMonthAnalyticsQuery({ monthId });
-  const { data: board = { exists: false } } = useGetMonthBoardExistsQuery({ monthId });
-  const { data: tasks = [] } = useSubscribeToMonthTasksQuery({ monthId }, {
-    skip: !board?.exists // Skip if board doesn't exist
+  const { data: board = { exists: false }, isLoading: boardLoading } = useGetMonthBoardExistsQuery({ monthId });
+  const { data: tasks = [], isLoading: tasksLoading } = useSubscribeToMonthTasksQuery({ monthId }, {
+    skip: !board?.exists
   });
 
-  const COLORS = [
-    "#6366f1",
-    "#10b981",
-    "#ef4444",
-    "#f59e0b",
-    "#14b8a6",
-    "#8b5cf6",
-    "#3b82f6",
-    "#22c55e",
-  ];
+  // Custom hook for analytics generation
+  const {
+    analyticsPreview,
+    isGenerating,
+    error,
+    generateAnalytics,
+    setAnalyticsPreview
+  } = useAnalyticsGeneration(monthId, board, tasks);
 
-  // Reset noTasksDetected when monthId changes
+  const [saveAnalytics, { isLoading: saving }] = useSaveMonthAnalyticsMutation();
+
+  // Navigation and error handling
   useEffect(() => {
-    setNoTasksDetected(false);
-    setAnalyticsPreview(null);
-    setIsGenerating(false);
-  }, [monthId]);
+    if (!monthId) return;
 
-  useEffect(() => {
-    console.log('PreviewPage useEffect - monthId:', monthId, 'board.exists:', board?.exists, 'analyticsPreview:', !!analyticsPreview, 'isGenerating:', isGenerating, 'noTasksDetected:', noTasksDetected);
-    
-    // Only generate analytics if board exists and tasks exist
-    if (monthId && board?.exists && tasks.length > 0 && !analyticsPreview && !isGenerating && !noTasksDetected) {
-      console.log('Triggering analytics generation');
-      handleGenerateAnalytics();
-    } else if (monthId && !board?.exists) {
-      console.log('Board does not exist, navigating to admin');
-      addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
-      navigate("/admin");
-    } else if (monthId && board?.exists && tasks.length === 0) {
-      console.log('No tasks found, navigating to admin');
-      addError(`Cannot generate analytics: No tasks found for ${monthId}. Please create at least one task first.`);
-      navigate("/admin");
-    }
-  }, [monthId, board?.exists, tasks.length, analyticsPreview, isGenerating, noTasksDetected]);
+    // Wait for board loading to complete before making decisions
+    if (boardLoading) return; // Still loading board
 
-  const handleGenerateAnalytics = useCallback(async () => {
     if (!board?.exists) {
       addError(`Cannot generate analytics: Month board for ${monthId} is not created yet. Please create the month board first.`);
       navigate("/admin");
       return;
     }
-    
-    setIsGenerating(true);
-    try {
-      console.log('Strategy 3: Generating analytics with priority on cache and Redux state for month:', monthId);
-      
-     // Try to get tasks from Redux state first
-      let tasksFromRedux = null;
-      try {
-        // Get tasks from the current subscription data
-        const currentTasks = tasks || [];
-        if (currentTasks && currentTasks.length > 0) {
-          tasksFromRedux = currentTasks;
-          console.log(`Found ${tasksFromRedux.length} tasks in Redux state for month:`, monthId);
-        }
-      } catch (error) {
-        console.log('No tasks found in Redux state, will use cache or Firebase');
-      }
-      
-      // Try cached analytics first
-      const { analyticsStorage } = await import('../utils/indexedDBStorage');
-      const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
-      
-      if (cachedAnalytics) {
-        console.log('Using cached analytics:', cachedAnalytics);
-        setAnalyticsPreview(cachedAnalytics);
-        addSuccess(`Analytics loaded from cache for ${monthId}!`);
-      } else if (tasksFromRedux && tasksFromRedux.length > 0) {
-       // Generate from Redux state (no Firebase reads)
-        console.log('Generating analytics from Redux state (no Firebase reads)');
-        const res = await computeAnalytics({ 
-          monthId, 
-          useCache: true, 
-          tasks: tasksFromRedux 
-        }).unwrap();
-        console.log('Analytics generated from Redux state:', res);
-        setAnalyticsPreview(res);
-        addSuccess(`Analytics generated from Redux state for ${monthId}!`);
-      } else {
-        // Fallback: Generate from Firebase 
-        console.log('No cache or Redux data, computing from Firebase...');
-        const res = await computeAnalytics({ monthId, useCache: false }).unwrap();
-        console.log('Analytics generation completed from Firebase:', res);
-        setAnalyticsPreview(res);
-        addSuccess(`Analytics generated from Firebase for ${monthId}!`);
-      }
-      
-      setIsGenerating(false);
-    } catch (error) {
-      console.error('Error in handleGenerateAnalytics:', error);
-      const errorCode = error?.data?.code || error?.code;
-      if (errorCode === 'NO_TASKS') {
-        setNoTasksDetected(true);
-        addError(`Cannot generate analytics: ${error.data?.message || 'No tasks found for the selected month. Please create some tasks first.'}`);
-        setIsGenerating(false);
-        navigate("/admin");
-        return;
-      }
-      addError("Failed to generate analytics");
-      setIsGenerating(false);
+
+    // Only show "no tasks" error if board exists and tasks are not loading
+    if (board?.exists && !tasksLoading && tasks.length === 0) {
+      addError(`Cannot generate analytics: No tasks found for ${monthId}. Please create at least one task first.`);
+      navigate("/admin");
+      return;
     }
-  }, [monthId, board?.exists, computeAnalytics, addError, addSuccess, navigate, tasks]);
+  }, [monthId, board, boardLoading, tasks, tasksLoading, navigate, addError]);
+
+  // Auto-generate analytics
+  useEffect(() => {
+    // Wait for all loading to complete
+    if (boardLoading || tasksLoading) return;
+    
+    // Only proceed if board exists and we have tasks
+    if (!board?.exists || !tasks || tasks.length === 0) return;
+    
+    // Generate analytics if we don't have them, or if tasks have changed
+    if (!analyticsPreview && !isGenerating && !error) {
+      generateAnalytics();
+    }
+  }, [boardLoading, tasksLoading, board?.exists, tasks, analyticsPreview, isGenerating, error, generateAnalytics]);
+
+
 
   const handleSaveAnalytics = async () => {
     if (!analyticsPreview) return;
@@ -166,7 +193,6 @@ const PreviewPage = () => {
         data: analyticsPreview,
         overwrite: false,
       }).unwrap();
-      addSuccess("Analytics saved successfully!");
       navigate("/admin/analytics");
     } catch (error) {
       const code = error?.data?.code || error?.code;
@@ -182,33 +208,13 @@ const PreviewPage = () => {
     navigate("/admin");
   };
 
-  const handleDownloadPdf = () => {
-    if (!analyticsPreview) return;
-
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const margin = 40;
-    let y = margin;
-
-    doc.setFontSize(18);
-    doc.text(`Monthly Analytics Preview - ${monthId}`, margin, y);
-    y += 24;
-
-    doc.setFontSize(12);
-    const s = analyticsPreview;
-    const lines = [
-      `Total Tasks: ${s.totalTasks || 0}`,
-      `Total Hours: ${Math.round((s.totalHours || 0) * 10) / 10}`,
-      `AI Tasks: ${s.ai?.tasks || 0}  |  AI Hours: ${Math.round((s.ai?.hours || 0) * 10) / 10}`,
-      `Reworked: ${s.reworked || 0}`,
-    ];
-    lines.forEach((line) => {
-      doc.text(line, margin, y);
-      y += 18;
-    });
-    doc.save(`Analytics_Preview_${monthId}.pdf`);
+  const handleRetry = () => {
+    setAnalyticsPreview(null);
+    generateAnalytics();
   };
 
-  if (isGenerating || computing) {
+  // Loading state
+  if (isGenerating) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -220,13 +226,13 @@ const PreviewPage = () => {
               <Skeleton variant="title" width="256px" height="32px" />
             </div>
             <div className="text-sm text-gray-600">
-              If this takes too long, try refreshing the page or check the console for errors.
+              Loading from cache or generating from Redux state...
             </div>
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={handleRetry} 
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Refresh Page
+              Retry
             </button>
           </div>
         </div>
@@ -234,6 +240,33 @@ const PreviewPage = () => {
     );
   }
 
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-xl font-semibold mb-4 text-red-600">
+              Error Generating Analytics
+            </div>
+            <div className="text-sm text-gray-600 mb-4">
+              {error}
+            </div>
+            <div className="flex gap-3 justify-center">
+              <DynamicButton variant="primary" onClick={handleRetry}>
+                Retry
+              </DynamicButton>
+              <DynamicButton variant="outline" onClick={handleCancel}>
+                Back to Admin
+              </DynamicButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No analytics state
   if (!analyticsPreview) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -242,7 +275,7 @@ const PreviewPage = () => {
             <div className="text-xl font-semibold mb-4">
               No Analytics Preview Available
             </div>
-            <DynamicButton variant="primary" onClick={handleGenerateAnalytics}>
+            <DynamicButton variant="primary" onClick={generateAnalytics}>
               Generate Preview
             </DynamicButton>
           </div>
@@ -250,6 +283,17 @@ const PreviewPage = () => {
       </div>
     );
   }
+
+  const COLORS = [
+    "#6366f1",
+    "#10b981",
+    "#ef4444",
+    "#f59e0b",
+    "#14b8a6",
+    "#8b5cf6",
+    "#3b82f6",
+    "#22c55e",
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -287,9 +331,6 @@ const PreviewPage = () => {
                   Save Analytics
                 </DynamicButton>
               )}
-              <DynamicButton variant="outline" onClick={handleDownloadPdf}>
-                Download PDF
-              </DynamicButton>
               <DynamicButton variant="danger" onClick={handleCancel}>
                 Cancel
               </DynamicButton>

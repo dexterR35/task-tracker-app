@@ -39,12 +39,12 @@ const NotFoundPage = () => {
             </Link>
           )}
           
-          <button
+          {/* <button
             onClick={() => window.history.back()}
             className="w-full text-gray-600 hover:text-gray-800 transition-colors"
           >
             ← Go Back
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

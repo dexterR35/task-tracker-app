@@ -1,4 +1,4 @@
-import { useSearchParams, useNavigate, useDispatch, useSelector } from "../hooks/useImports";
+import { useSearchParams, useNavigate, useSelector } from "../hooks/useImports";
 
 import { useNotifications } from "../hooks/useNotifications";
 import { useGetUsersQuery } from "../redux/services/usersApi";
@@ -12,7 +12,6 @@ import { format } from "date-fns";
 
 const AdminDashboardPage = () => {
 
-  const dispatch = useDispatch();
   const { addSuccess, addError } = useNotifications();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -24,19 +23,23 @@ const AdminDashboardPage = () => {
   const selectedMonth = currentMonth;
 
 
+  // Get tasks from Redux store at component level
+  const tasksApiState = useSelector((state) => state.tasksApi);
+
   const handleGenerateAnalytics = async (monthId) => {
     try {
-      // Get tasks from Redux store instead of making redundant Firestore read
-      const tasksApiState = useSelector((state) => state.tasksApi);
       const queries = tasksApiState?.queries || {};
       
-      // Try to find tasks for the current month and user filter
-      const currentUserId = impersonatedUserId || null;
-      const queryKey = currentUserId 
-        ? `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${currentUserId}"})`
-        : `subscribeToMonthTasks({"monthId":"${monthId}"})`;
-      
-      const tasks = queries[queryKey]?.data || [];
+      // Find the correct query key by searching for the monthId in all query keys
+      let tasks = [];
+      for (const [key, query] of Object.entries(queries)) {
+        if (key.includes(`subscribeToMonthTasks`) && key.includes(monthId)) {
+          if (query.data && Array.isArray(query.data)) {
+            tasks = query.data;
+            break;
+          }
+        }
+      }
       
       if (tasks.length === 0) {
         addError(`Cannot generate analytics: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating analytics.`);
