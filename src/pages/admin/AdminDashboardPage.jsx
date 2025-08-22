@@ -1,8 +1,8 @@
-import { useSearchParams, useNavigate, useSelector } from "../../hooks/useImports";
+import { useSearchParams, useNavigate } from "../../hooks/useImports";
 
 import { useNotifications } from "../../hooks/useNotifications";
 import { useGetUsersQuery } from "../../redux/services/usersApi";
-import { useGenerateMonthBoardMutation } from "../../redux/services/tasksApi";
+import { useGenerateMonthBoardMutation, useSubscribeToMonthTasksQuery } from "../../redux/services/tasksApi";
 
 import DashboardWrapper from "../../components/dashboard/DashboardWrapper";
 import { format } from "date-fns";
@@ -20,25 +20,15 @@ const AdminDashboardPage = () => {
 
   const currentMonth = format(new Date(), "yyyy-MM");
 
-
-  // Get tasks from Redux store at component level
-  const tasksApiState = useSelector((state) => state.tasksApi);
+  // Use the proper RTK Query hook for real-time data
+  const { data: tasks = [] } = useSubscribeToMonthTasksQuery(
+    { monthId: currentMonth, userId: impersonatedUserId || null, useCache: true },
+    { skip: !currentMonth }
+  );
 
   const handleGenerateAnalytics = async (monthId) => {
     try {
-      const queries = tasksApiState?.queries || {};
-
-      // Find the correct query key by searching for the monthId in all query keys
-      let tasks = [];
-      for (const [key, query] of Object.entries(queries)) {
-        if (key.includes(`subscribeToMonthTasks`) && key.includes(monthId)) {
-          if (query.data && Array.isArray(query.data)) {
-            tasks = query.data;
-            break;
-          }
-        }
-      }
-
+      // Use the tasks from the RTK Query hook
       if (tasks.length === 0) {
         addError(
           `Cannot generate analytics: No tasks found for ${format(new Date(monthId + "-01"), "MMMM yyyy")}. Please create at least one task before generating analytics.`

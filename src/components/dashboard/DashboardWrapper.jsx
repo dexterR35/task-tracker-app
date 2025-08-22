@@ -8,7 +8,8 @@ import {
 } from "../../redux/services/tasksApi";
 import TaskForm from "../task/TaskForm";
 import TasksTable from "../task/TasksTable";
-import AnalyticsSummary from "../AnalyticsSummary";
+import TaskMetricsDashboardNew from "../ui/TaskMetricsDashboardNew";
+
 import DynamicButton from "../button/DynamicButton";
 import { format } from "date-fns";
 
@@ -53,8 +54,7 @@ const DashboardWrapper = ({
   const {
     data: tasks = [],
     isLoading: tasksLoading,
-    error: tasksError,
-    refetch,
+    error: tasksError
   } = useSubscribeToMonthTasksQuery(
     {
       monthId,
@@ -108,17 +108,17 @@ const DashboardWrapper = ({
   };
 
   return (
-    <div className="min-h-screen p-6">
-      {/* Header */}
+    <div className="p-6">
+      {/* Dashboard Header */}
       <div className="mb-6">
-        <h2>{title}</h2>
-        <div className="mt-2 text-sm text-gray-200">
+        <h1 className="text-3xl font-bold text-gray-100 mb-2">{title}</h1>
+        <div className="text-sm text-gray-300">
           <strong>Month:</strong>{" "}
           {format(new Date(monthId + "-01"), "MMMM yyyy")} ({monthId})
           {board?.exists ? (
-            <span className="ml-2 text-green-success">• Board ready</span>
+            <span className="ml-2 text-green-400">• Board ready</span>
           ) : (
-            <span className="ml-2 text-red-error">• Board not ready</span>
+            <span className="ml-2 text-red-400">• Board not ready</span>
           )}
         </div>
       </div>
@@ -128,7 +128,7 @@ const DashboardWrapper = ({
         <div className="mb-6">
           <label
             htmlFor="userSelect"
-            className="block text-sm font-medium text-gray-700 mb-2"
+            className="block text-sm font-medium text-gray-300 mb-2"
           >
             Filter by User
           </label>
@@ -136,7 +136,7 @@ const DashboardWrapper = ({
             id="userSelect"
             value={effectiveImpersonatedUserId || ""}
             onChange={handleUserSelect}
-            className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full md:w-64 px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-100"
             disabled={usersLoading}
           >
             <option value="">All Users</option>
@@ -151,7 +151,7 @@ const DashboardWrapper = ({
 
       {/* Board Status Warning */}
       {!board?.exists && (
-        <div className="mb-4 card border border-focus text-red-error text-sm px-4 py-4 rounded-lg">
+        <div className="mb-6 card border border-red-500 text-red-400 text-sm px-4 py-4 rounded-lg bg-red-900/20">
           {isAdmin ? (
             <div className="flex-center !flex-row !items-center !justify-start gap-4">
               <div>
@@ -205,17 +205,21 @@ const DashboardWrapper = ({
           <TaskForm />
         </div>
       )}
-      {/* Content */}
-      <div className="space-y-8">
-        {board?.exists && filteredTasks.length > 0 && (
-          <AnalyticsSummary
-            tasks={filteredTasks}
-            loading={tasksLoading}
-            error={tasksError}
+      {board?.exists  && (
+    
+          <TaskMetricsDashboardNew
+            monthId={monthId}
+            userId={effectiveImpersonatedUserId}
+            showSmallCards={true}
+            showLargeCards={isAdmin}
           />
+     
+       
         )}
+      <div className="space-y-8">
+      
         {!tasksLoading && filteredTasks.length === 0 ? (
-          <div className="card text-gray-200">
+          <div className="card text-gray-300">
             <div className="flex flex-col items-center space-y-2">
               <span>
                 {tasksError
@@ -226,7 +230,7 @@ const DashboardWrapper = ({
           </div>
         ) : (
           <div>
-            <h2>Total Tasks ({filteredTasks.length})</h2>
+            <h2 className="text-2xl font-semibold text-gray-100 mb-4">Total Tasks ({filteredTasks.length})</h2>
             <TasksTable
               monthId={monthId}
               userFilter={effectiveImpersonatedUserId}

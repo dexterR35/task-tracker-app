@@ -11,6 +11,7 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import UserDashboardPage from "./pages/user/UserDashboardPage";
 import PreviewPage from "./pages/others/PreviewPage";
 import NotFoundPage from "./pages/others/NotFoundPage";
+import Skeleton from "./components/ui/Skeleton";
 
 
 
@@ -58,7 +59,7 @@ const UserRoute = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
 // Root index wrapper: redirect authenticated users directly to dashboard
 const RootIndex = () => {
   const { isAuthenticated, role, initialAuthResolved } = useAuth();
-  if (!initialAuthResolved) return <FullPageSkeleton />;
+  if (!initialAuthResolved) return <Skeleton variant="card" className="min-h-screen" />;
   if (!isAuthenticated) return <HomePage />;
   if (role === "admin") return <Navigate to="/admin" replace />;
   return <Navigate to="/user" replace />;
