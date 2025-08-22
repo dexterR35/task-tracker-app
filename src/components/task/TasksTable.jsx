@@ -202,13 +202,9 @@ const TasksTable = ({
         taskId = pathParts[pathParts.length - 1]; // Get the last part
       }
       
-      // Fix empty monthId by using current month if it's empty
-      const monthId = t.monthId || format(new Date(), "yyyy-MM");
-      const updateParams = { monthId, id: taskId, updates };
-      console.log('Update parameters:', updateParams);
-      console.log('Task object:', t);
-      console.log('Extracted task ID:', taskId);
-      await updateTask(updateParams).unwrap();
+      // Always use current month since app only works with current month
+      const currentMonth = format(new Date(), "yyyy-MM");
+      await updateTask({ monthId: currentMonth, id: taskId, updates }).unwrap();
       console.log('[TasksTable] updated task', { id: t.id, monthId: t.monthId, updates });
       addSuccess('Task updated successfully!');
     } catch (e) {
@@ -232,11 +228,11 @@ const TasksTable = ({
         taskId = pathParts[pathParts.length - 1];
       }
       
-      // Fix empty monthId by using current month if it's empty
-      const monthId = t.monthId || format(new Date(), "yyyy-MM");
+      // Always use current month since app only works with current month
+      const currentMonth = format(new Date(), "yyyy-MM");
       
       // Delete task using Redux mutation (automatically updates cache)
-      await deleteTask({ monthId, id: taskId }).unwrap();
+      await deleteTask({ monthId: currentMonth, id: taskId }).unwrap();
       addSuccess('Task deleted successfully!');
     } catch (e) {
       console.error('Task delete error:', e);

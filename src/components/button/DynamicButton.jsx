@@ -25,9 +25,9 @@ const DynamicButton = ({
   
   // Simple static configuration
   const buttonConfig = {
-    baseClasses: 'px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2',
+    baseClasses: 'px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none !focus:ring-gray-500 !focus:ring-1 focus:ring-offset-1',
     variants: {
-      primary: 'bg-gradient-to-r from-[#ff1c26] to-[#a81c1f] text-white focus:ring-red-500 shadow-sm',
+      primary: 'bg-btn-primary text-gray-200 shadow-sm',
       secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
       success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm',
       danger: 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500 shadow-sm',

@@ -26,10 +26,9 @@ const HomePage = () => {
           variant="primary"
           size="lg"
           onClick={() => navigate("/login")}
-          successMessage="Welcome back!"
           className="w-40 !text-xl !font-bold"
         >
-          Login
+          Explore
         </DynamicButton>
       </div>
       {/* Footer */}

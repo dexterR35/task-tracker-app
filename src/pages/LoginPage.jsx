@@ -1,4 +1,3 @@
-
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../hooks/useAuth";
@@ -32,11 +31,11 @@ const LoginPage = () => {
   return (
     <div className="flex-center min-h-screen">
       <div className="card w-full max-w-md">
-     <img
-             src={netbetLogo}
-             alt="NetBet Logo"
-             className="h-fit w-45 object-contain mb-10 mx-auto"
-           />
+        <img
+          src={netbetLogo}
+          alt="NetBet Logo"
+          className="h-fit w-45 object-contain mb-10 mx-auto"
+        />
         <Formik
           initialValues={{ email: "", password: "" }}
           validationSchema={LoginSchema}
@@ -89,7 +88,7 @@ const LoginPage = () => {
                 className="w-full"
                 disabled={isSubmitting}
                 loading={isSubmitting}
-                loadingText="Log In"
+                loadingText="Log In..."
                 successMessage="Login successful!"
                 errorMessage="Login failed. Please try again."
               >
