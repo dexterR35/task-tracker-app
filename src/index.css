@@ -1,5 +1,4 @@
 @import "react-day-picker/style.css";
-/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); */
 @import "tailwindcss";
 
 @theme {
@@ -150,41 +149,11 @@
 }
 
 /* ---------------- Utilities layer ---------------- */
-@layer utilities {
-  /* Background colors */
-  /* .bg-primary {
-    background-color: var(--color-primary);
-  } */
-  /* .bg-primary-hover:hover {
-    background-color: #0f1730;
-  } */
-  /* 
-  .bg-secondary {
-    background-color: var(--color-secondary);
-  } */
-  /* .bg-secondary-hover:hover {
-    background-color: #ff4520;
-  } */
 
-  /* Text colors */
-  /* .text-primary {
-    color: var(--color-primary);
-  } */
-  /* .text-secondary {
-    color: var(--color-secondary);
-  } */
-
-  /* Optional hover text colors */
-  /* .text-primary-hover:hover {
-    color: #0f1730;
-  } */
-  /* .text-secondary-hover:hover {
-    color: #ff4520;
-  } */
-
+ 
   @layer utilities {
     .nav-link {
       @apply text-[var(--color-gray-200)] px-1 pt-1 text-base font-normal;
     }
   }
-}
+

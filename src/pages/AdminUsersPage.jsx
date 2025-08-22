@@ -1,11 +1,11 @@
 
 import { useState } from "react";
 import { useGetUsersQuery } from "../redux/services/usersApi";
-import { 
-  LoadingState, 
-  SkeletonTable, 
-  SkeletonUserList 
-} from "../hooks/useImports";
+// import { 
+//   LoadingState, 
+//   SkeletonTable, 
+//   SkeletonUserList 
+// } from "../hooks/useImports";
 import CreateUserForm from "../components/user/CreateUserForm";
 
 const AdminUsersPage = () => {
@@ -45,14 +45,7 @@ const AdminUsersPage = () => {
           </div>
         )}
 
-        <LoadingState
-          isLoading={isLoading}
-          error={error}
-          skeleton={SkeletonTable}
-          skeletonProps={{ rows: 5, columns: 5 }}
-          errorMessage="Failed to load users"
-          onRetry={() => window.location.reload()}
-        >
+   
           <div className="bg-white rounded-lg shadow p-4">
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -94,7 +87,7 @@ const AdminUsersPage = () => {
               </table>
             </div>
           </div>
-        </LoadingState>
+    
       </div>
     </div>
   );

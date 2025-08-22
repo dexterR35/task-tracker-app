@@ -2,8 +2,6 @@ import { Outlet, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import DynamicButton from "./button/DynamicButton";
 import Skeleton from "./ui/Skeleton";
-import WelcomeMessage from "./ui/WelcomeMessage";
-import { useNotifications } from "../hooks/useNotifications";
 import OfflineIndicator from "./ui/OfflineIndicator";
 
 import {
@@ -15,16 +13,10 @@ const Layout = () => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated, logout, loading, listenerActive } =
     useAuth();
-  const { addSuccess } = useNotifications();
 
   const handleLogout = async () => {
     try {
       await logout();
-      addSuccess("Logged out successfully", {
-        title: "Goodbye!",
-        autoClose: 3000,
-        position: "top-center"
-      });
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -53,10 +45,8 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Offline Indicator */}
       <OfflineIndicator />
-      
-      {/* Navigation */}
+    
       <nav className="bg-primary shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -96,7 +86,7 @@ const Layout = () => {
                 size="sm"
                 icon={ArrowRightOnRectangleIcon}
                 onClick={handleLogout}
-                successMessage="Logged out successfully"
+                // successMessage="Logged out successfully"
               >
                 Logout
               </DynamicButton>
@@ -116,7 +106,7 @@ const Layout = () => {
             </div>
           </div>
         )}
-        <WelcomeMessage />
+   
         <Outlet />
       </main>
     </div>
