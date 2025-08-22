@@ -373,16 +373,29 @@ export const taskStorage = {
   addTask: async (monthId, newTask) => {
     try {
       const tasks = await taskStorage.getTasks(monthId);
+      
+      // Ensure deliverablesOther is always an array
+      const normalizedTask = {
+        ...newTask,
+        deliverablesOther: Array.isArray(newTask.deliverablesOther) 
+          ? newTask.deliverablesOther 
+          : false,
+        aiModels: Array.isArray(newTask.aiModels) 
+          ? newTask.aiModels 
+          : false,
+        deliverablesCount: Number(newTask.deliverablesCount) || 0,
+      };
+      
       if (!tasks) {
         // If no tasks exist, create new array
-        await taskStorage.storeTasks(monthId, [newTask]);
+        await taskStorage.storeTasks(monthId, [normalizedTask]);
         return true;
       }
       
       // Check if task already exists
       const exists = tasks.some(task => task.id === newTask.id);
       if (!exists) {
-        const updatedTasks = [newTask, ...tasks]; // Add to beginning (newest first)
+        const updatedTasks = [normalizedTask, ...tasks]; // Add to beginning (newest first)
         await taskStorage.storeTasks(monthId, updatedTasks);
         console.log('New task added to IndexedDB cache:', newTask.id, 'for month:', monthId);
       }
@@ -399,11 +412,32 @@ export const taskStorage = {
       const tasks = await taskStorage.getTasks(monthId);
       if (!tasks) return false;
       
-      const updatedTasks = tasks.map(task => 
-        task.id === taskId 
-          ? { ...task, ...updates, updatedAt: Date.now() }
-          : task
-      );
+      const updatedTasks = tasks.map(task => {
+        if (task.id === taskId) {
+          // Ensure deliverablesOther is false when not selected, array when selected
+          const deliverablesOther = Array.isArray(updates.deliverablesOther) 
+            ? updates.deliverablesOther 
+            : false;
+          
+          // Ensure aiModels is false when not selected, array when selected
+          const aiModels = Array.isArray(updates.aiModels) 
+            ? updates.aiModels 
+            : false;
+          
+          // Ensure deliverablesCount is always a number
+          const deliverablesCount = Number(updates.deliverablesCount) || 0;
+          
+          return { 
+            ...task, 
+            ...updates, 
+            deliverablesOther, // Ensure it's false when not selected, array when selected
+            aiModels, // Ensure it's false when not selected, array when selected
+            deliverablesCount, // Ensure it's always a number
+            updatedAt: Date.now() 
+          };
+        }
+        return task;
+      });
       
       await taskStorage.storeTasks(monthId, updatedTasks);
       console.log('Task updated in IndexedDB cache:', taskId, 'for month:', monthId);

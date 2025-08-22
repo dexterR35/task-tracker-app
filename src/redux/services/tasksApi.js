@@ -25,10 +25,27 @@ const normalizeTask = (monthId, id, data) => {
   const updatedAt = normalizeTimestamp(data.updatedAt);
   const timeInHours = Number(data.timeInHours) || 0;
   const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
+  
+  // Ensure deliverablesOther is false when not selected, array when selected
+  const deliverablesOther = Array.isArray(data.deliverablesOther) 
+    ? data.deliverablesOther 
+    : false;
+  
+  // Ensure aiModels is false when not selected, array when selected
+  const aiModels = Array.isArray(data.aiModels) 
+    ? data.aiModels 
+    : false;
+  
+  // Ensure deliverablesCount is always a number
+  const deliverablesCount = Number(data.deliverablesCount) || 0;
+  
   return {
     id,
     monthId,
     ...data,
+    deliverablesOther, // Ensure it's false when not selected, array when selected
+    aiModels, // Ensure it's false when not selected, array when selected
+    deliverablesCount, // Ensure it's always a number
     createdAt,
     updatedAt,
     timeInHours,
@@ -138,6 +155,7 @@ export const tasksApi = createApi({
       },
       providesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
+        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userId || 'all'}` },
       ],
     }),
 
@@ -310,6 +328,7 @@ export const tasksApi = createApi({
           const colRef = collection(db, "tasks", task.monthId, "monthTasks");
           const payload = {
             ...task,
+            monthId: task.monthId, // Ensure monthId is explicitly set
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           };
@@ -343,26 +362,90 @@ export const tasksApi = createApi({
           };
         }
       },
-      async onQueryStarted(task, { dispatch, queryFulfilled }) {},
+      // Optimistic update for immediate UI feedback
+      async onQueryStarted(task, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          tasksApi.util.updateQueryData('subscribeToMonthTasks', { monthId: task.monthId }, (draft) => {
+            // Add the new task to the beginning of the list
+            const newTaskWithId = {
+              ...task,
+              id: `temp-${Date.now()}`, // Temporary ID
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            draft.unshift(newTaskWithId);
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // If the mutation fails, revert the optimistic update
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: (result, error, arg) => [
+        { type: "MonthTasks", id: arg.monthId },
+        { type: "MonthTasks", id: `${arg.monthId}_user_all` },
+        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || 'all'}` },
+      ],
     }),
 
     updateTask: builder.mutation({
       async queryFn({ monthId, id, updates }) {
         try {
           const ref = doc(db, "tasks", monthId, "monthTasks", id);
-          await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
+          
+          // Ensure monthId is preserved in updates
+          const updatesWithMonthId = {
+            ...updates,
+            monthId: monthId, // Ensure monthId is preserved
+            updatedAt: serverTimestamp(),
+          };
+          
+          await updateDoc(ref, updatesWithMonthId);
 
-          // Update IndexedDB cache
+          // Update IndexedDB cache with the same data
           const { taskStorage } = await import("../../utils/indexedDBStorage");
-          await taskStorage.updateTask(monthId, id, updates);
+          await taskStorage.updateTask(monthId, id, updatesWithMonthId);
 
-          return { data: { id, monthId, updates } };
+          return { data: { id, monthId, updates: updatesWithMonthId } };
         } catch (error) {
           return {
             error: { message: error?.message || "Failed to update task" },
           };
         }
       },
+      // Optimistic update for immediate UI feedback
+      async onQueryStarted({ monthId, id, updates }, { dispatch, queryFulfilled, getState }) {
+        // Get current cache data
+        const patchResult = dispatch(
+          tasksApi.util.updateQueryData('subscribeToMonthTasks', { monthId }, (draft) => {
+            const taskIndex = draft.findIndex(task => task.id === id);
+            if (taskIndex !== -1) {
+              // Update the task in cache immediately
+              draft[taskIndex] = {
+                ...draft[taskIndex],
+                ...updates,
+                monthId: monthId,
+                updatedAt: new Date().toISOString()
+              };
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // If the mutation fails, revert the optimistic update
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: (result, error, arg) => [
+        { type: "MonthTasks", id: arg.monthId },
+        { type: "MonthTasks", id: `${arg.monthId}_user_all` },
+        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || 'all'}` },
+      ],
     }),
 
     deleteTask: builder.mutation({
@@ -380,6 +463,30 @@ export const tasksApi = createApi({
           };
         }
       },
+      // Optimistic update for immediate UI feedback
+      async onQueryStarted({ monthId, id }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          tasksApi.util.updateQueryData('subscribeToMonthTasks', { monthId }, (draft) => {
+            // Remove the task from cache immediately
+            const taskIndex = draft.findIndex(task => task.id === id);
+            if (taskIndex !== -1) {
+              draft.splice(taskIndex, 1);
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // If the mutation fails, revert the optimistic update
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: (result, error, arg) => [
+        { type: "MonthTasks", id: arg.monthId },
+        { type: "MonthTasks", id: `${arg.monthId}_user_all` },
+        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || 'all'}` },
+      ],
     }),
 
     generateMonthBoard: builder.mutation({

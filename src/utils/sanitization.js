@@ -48,14 +48,16 @@ export const sanitizeTaskData = (taskData) => {
     timeSpentOnAI: Number(taskData.timeSpentOnAI) || 0,
     aiModels: Array.isArray(taskData.aiModels)
       ? taskData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
-      : [],
+      : false,
     timeInHours: Number(taskData.timeInHours) || 0,
     reworked: Boolean(taskData.reworked),
     deliverables: Array.isArray(taskData.deliverables)
       ? taskData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     deliverablesCount: Number(taskData.deliverablesCount) || 0,
-    deliverablesOther: sanitizeText(taskData.deliverablesOther || ''),
+    deliverablesOther: Array.isArray(taskData.deliverablesOther)
+      ? taskData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
+      : false,
     taskNumber: sanitizeText(taskData.taskNumber || ''),
     createdBy: sanitizeText(taskData.createdBy || ''),
     createdByName: sanitizeText(taskData.createdByName || ''),
@@ -79,14 +81,16 @@ export const sanitizeTaskCreationData = (formData) => {
     timeSpentOnAI: Number(formData.timeSpentOnAI) || 0,
     aiModels: Array.isArray(formData.aiModels)
       ? formData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
-      : [],
+      : false,
     timeInHours: Number(formData.timeInHours) || 0,
     reworked: Boolean(formData.reworked),
     deliverables: Array.isArray(formData.deliverables)
       ? formData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     deliverablesCount: Number(formData.deliverablesCount) || 0,
-    deliverablesOther: sanitizeText(formData.deliverablesOther || ''),
+    deliverablesOther: Array.isArray(formData.deliverablesOther)
+      ? formData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
+      : false,
     taskNumber: sanitizeText(formData.taskNumber || ''),
   };
 };
@@ -158,12 +162,23 @@ export const validateTaskCreationData = (formData) => {
     errors.push('Time spent on AI cannot be negative');
   }
 
-  if (formData.aiUsed && formData.aiModels.length === 0) {
+  if (formData.aiUsed && (!Array.isArray(formData.aiModels) || formData.aiModels.length === 0)) {
     errors.push('Please specify at least one AI model when AI is used');
+  }
+
+  if (formData.aiUsed && formData.timeSpentOnAI < 0.5) {
+    errors.push('Please specify time spent on AI (minimum 0.5h) when AI is used');
   }
 
   if (formData.deliverables.length === 0) {
     errors.push('Please specify at least one deliverable');
+  }
+
+  // Validate deliverablesOther if deliverables includes "others"
+  if (formData.deliverables && formData.deliverables.includes("others")) {
+    if (!Array.isArray(formData.deliverablesOther) || formData.deliverablesOther.length === 0) {
+      errors.push('Please specify at least one other deliverable when "others" is selected');
+    }
   }
 
   // Validate Jira link if provided

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -8,6 +8,7 @@ import { useFormat, sanitizeTaskData, sanitizeText } from '../../hooks/useImport
 import usePagination from '../../hooks/usePagination';
 import { useNotifications } from '../../hooks/useNotifications';
 import LoadingWrapper from '../ui/LoadingWrapper';
+import MultiValueInput from '../ui/MultiValueInput';
 
 const useFormatDay = () => {
   const { format } = useFormat();
@@ -70,9 +71,13 @@ const TasksTable = ({
       const pathParts = taskId.split('/');
       taskId = pathParts[pathParts.length - 1];
     }
+    
+    // Ensure we have a valid monthId
+    const monthId = t.monthId || format(new Date(), "yyyy-MM");
+    
     // Check if we're on admin route and use appropriate path
     const isAdminRoute = window.location.pathname.includes('/admin');
-    const route = isAdminRoute ? `/admin/task/${t.monthId}/${taskId}` : `/task/${t.monthId}/${taskId}`;
+    const route = isAdminRoute ? `/admin/task/${monthId}/${taskId}` : `/task/${monthId}/${taskId}`;
     navigate(route);
   };
 
@@ -82,6 +87,23 @@ const TasksTable = ({
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
   const formatDay = useFormatDay();
+  
+  // Force re-render when form changes to update conditional columns
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // Check if any task is being edited
+  const isAnyTaskEditing = editingId !== null;
+  
+  useEffect(() => {
+    if (isAnyTaskEditing) {
+      setForceUpdate(prev => prev + 1);
+    }
+  }, [form.deliverables, form.aiUsed, isAnyTaskEditing]);
+  
+  // Force re-render when tasks change to ensure cache updates are reflected
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1);
+  }, [filteredTasks.length]);
   
   const { 
     page, 
@@ -118,9 +140,11 @@ const TasksTable = ({
       timeInHours: sanitizedTask.timeInHours || 0,
       timeSpentOnAI: sanitizedTask.timeSpentOnAI || 0,
       aiUsed: Boolean(sanitizedTask.aiUsed),
-      aiModels: Array.isArray(sanitizedTask.aiModels) ? sanitizedTask.aiModels : (sanitizedTask.aiModel ? [sanitizedTask.aiModel] : []),
+      aiModels: Array.isArray(sanitizedTask.aiModels) ? sanitizedTask.aiModels : (sanitizedTask.aiModels === false ? false : []),
       reworked: Boolean(sanitizedTask.reworked),
       deliverables: Array.isArray(sanitizedTask.deliverables) ? sanitizedTask.deliverables : (sanitizedTask.deliverable ? [String(sanitizedTask.deliverable)] : []),
+      deliverablesOther: Array.isArray(sanitizedTask.deliverablesOther) ? sanitizedTask.deliverablesOther : (sanitizedTask.deliverablesOther === false ? false : []),
+      deliverablesCount: Number(sanitizedTask.deliverablesCount) || 0,
     });
   };
 
@@ -145,15 +169,15 @@ const TasksTable = ({
         product: form.product || '',
         markets: Array.isArray(form.markets) ? form.markets : [],
         aiUsed: Boolean(form.aiUsed),
-        aiModels: form.aiUsed ? (Array.isArray(form.aiModels) ? form.aiModels : []) : [],
+        aiModels: form.aiUsed ? (Array.isArray(form.aiModels) && form.aiModels.length > 0 ? form.aiModels : false) : false,
         deliverables: Array.isArray(form.deliverables) ? form.deliverables : [],
         reworked: Boolean(form.reworked),
-        timeInHours: form.timeInHours || 0,
-        timeSpentOnAI: form.aiUsed ? (form.timeSpentOnAI || 0) : 0,
+        timeInHours: Number(form.timeInHours) || 0,
+        timeSpentOnAI: form.aiUsed ? (Number(form.timeSpentOnAI) || 0) : 0,
         taskNumber: t.taskNumber || '', // Preserve the original task number
         jiraLink: t.jiraLink || '', // Preserve the original Jira link
-        deliverablesCount: t.deliverablesCount || 0, // Preserve deliverables count
-        deliverablesOther: t.deliverablesOther || '', // Preserve other deliverables
+        deliverablesOther: form.deliverables && form.deliverables.includes("others") ? (Array.isArray(form.deliverablesOther) && form.deliverablesOther.length > 0 ? form.deliverablesOther : false) : false,
+        deliverablesCount: Number(form.deliverablesCount) || 0, // Use form value for deliverablesCount
         createdBy: t.createdBy || '', // Preserve creator info
         createdByName: t.createdByName || '', // Preserve creator name
         userUID: t.userUID || '', // Preserve user UID
@@ -172,9 +196,22 @@ const TasksTable = ({
       if (!sanitizedUpdates.markets.length) errs.push('Markets');
       if (!sanitizedUpdates.deliverables.length) errs.push('Deliverables');
       if (sanitizedUpdates.timeInHours < 0.5) errs.push('Hours ≥ 0.5');
+      
+      // Validate AI fields only if AI is used
       if (sanitizedUpdates.aiUsed) {
-        if (!sanitizedUpdates.aiModels.length) errs.push('AI Models');
-        if (sanitizedUpdates.timeSpentOnAI < 0.5) errs.push('AI Hours ≥ 0.5');
+        if (!Array.isArray(sanitizedUpdates.aiModels) || sanitizedUpdates.aiModels.length === 0) {
+          errs.push('AI Models (required when AI is used)');
+        }
+        if (sanitizedUpdates.timeSpentOnAI < 0.5) {
+          errs.push('AI Hours ≥ 0.5 (required when AI is used)');
+        }
+      }
+      
+      // Validate "others" deliverables only if "others" is selected
+      if (sanitizedUpdates.deliverables.includes("others")) {
+        if (!Array.isArray(sanitizedUpdates.deliverablesOther) || sanitizedUpdates.deliverablesOther.length === 0) {
+          errs.push('Other Deliverables (required when "others" is selected)');
+        }
       }
       
       if (errs.length) {
@@ -202,10 +239,17 @@ const TasksTable = ({
         taskId = pathParts[pathParts.length - 1]; // Get the last part
       }
       
-      // Always use current month since app only works with current month
-      const currentMonth = format(new Date(), "yyyy-MM");
-      await updateTask({ monthId: currentMonth, id: taskId, updates }).unwrap();
-      console.log('[TasksTable] updated task', { id: t.id, monthId: t.monthId, updates });
+      // Preserve the original monthId from the task
+      const taskMonthId = t.monthId || format(new Date(), "yyyy-MM");
+      
+      // Ensure the monthId is included in the updates
+      const updatesWithMonthId = {
+        ...updates,
+        monthId: taskMonthId, // Ensure monthId is preserved
+      };
+      
+      await updateTask({ monthId: taskMonthId, id: taskId, updates: updatesWithMonthId }).unwrap();
+      console.log('[TasksTable] updated task', { id: t.id, monthId: taskMonthId, updates: updatesWithMonthId });
       addSuccess('Task updated successfully!');
     } catch (e) {
       console.error('Task update error:', e);
@@ -228,11 +272,11 @@ const TasksTable = ({
         taskId = pathParts[pathParts.length - 1];
       }
       
-      // Always use current month since app only works with current month
-      const currentMonth = format(new Date(), "yyyy-MM");
+      // Preserve the original monthId from the task
+      const taskMonthId = t.monthId || format(new Date(), "yyyy-MM");
       
       // Delete task using Redux mutation (automatically updates cache)
-      await deleteTask({ monthId: currentMonth, id: taskId }).unwrap();
+      await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
       addSuccess('Task deleted successfully!');
     } catch (e) {
       console.error('Task delete error:', e);
@@ -312,6 +356,12 @@ const TasksTable = ({
             <th className="px-3 py-2">AI?</th>
             <th className="px-3 py-2">Reworked?</th>
             <th className="px-3 py-2">Deliverables</th>
+            {(currentPageTasks.some(t => {
+              const deliverables = Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [t.deliverable] : []);
+              return deliverables.includes("others");
+            }) || (isAnyTaskEditing && form.deliverables && form.deliverables.includes("others"))) && (
+              <th key={`others-header-${forceUpdate}`} className="px-3 py-2">Other Deliverables</th>
+            )}
             <th className="px-3 py-2 text-center">Count</th>
             <th className="px-3 py-2 text-right">Actions</th>
           </tr>
@@ -381,11 +431,11 @@ const TasksTable = ({
                       </div>
                     </div>
                   ) : <span className="text-gray-400 text-xs">AI off</span>
-                ) : safeDisplay(t.aiModels || t.aiModel, t.aiUsed ? '—' : '-')}</td>
+                ) : (t.aiUsed ? (t.aiModels && t.aiModels !== false ? safeDisplay(t.aiModels || t.aiModel) : '-') : '-')}</td>
                 <td className="px-3 py-2 text-center">{isEdit ? <input type="checkbox" checked={form.aiUsed} onChange={e => setForm(f => ({
                   ...f,
                   aiUsed: e.target.checked,
-                  ...(e.target.checked ? {} : { timeSpentOnAI: 0, aiModels: [] })
+                  ...(e.target.checked ? {} : { timeSpentOnAI: 0, aiModels: false })
                 }))} /> : (t.aiUsed ? '✓' : '-')}</td>
                 <td className="px-3 py-2 text-center">{isEdit ? <input type="checkbox" checked={form.reworked} onChange={e => setForm(f => ({ ...f, reworked: e.target.checked }))} /> : (t.reworked ? '✓' : '-')}</td>
                 <td className="px-3 py-2">{isEdit ? (
@@ -404,13 +454,81 @@ const TasksTable = ({
                     </div>
                   </div>
                 ) : safeDisplay(t.deliverables || t.deliverable)}</td>
+                {(() => {
+                  const hasOthersInAnyTask = currentPageTasks.some(task => {
+                    const deliverables = Array.isArray(task.deliverables) ? task.deliverables : (t.deliverable ? [t.deliverable] : []);
+                    return deliverables.includes("others");
+                  });
+                  const isEditingWithOthers = isAnyTaskEditing && form.deliverables && form.deliverables.includes("others");
+                  
+                  if (!hasOthersInAnyTask && !isEditingWithOthers) return null;
+                  
+                  const deliverables = Array.isArray(t.deliverables) ? t.deliverables : (t.deliverable ? [t.deliverable] : []);
+                  const isEditingThisTask = isAnyTaskEditing && editingId === taskId;
+                  const shouldShowOthers = deliverables.includes("others") || (isEditingThisTask && form.deliverables && form.deliverables.includes("others"));
+                  
+                  return (
+                    <td key={`others-cell-${forceUpdate}`} className="px-3 py-2">
+                      {!shouldShowOthers ? "-" : (
+                        isEditingThisTask ? (
+                          <MultiValueInput
+                            value={form.deliverablesOther || []}
+                            onChange={(newValues) => setForm(f => ({ ...f, deliverablesOther: newValues }))}
+                            placeholder="Enter other deliverables..."
+                            maxValues={5}
+                          />
+                        ) : (
+                          t.deliverablesOther && t.deliverablesOther !== false ? safeDisplay(t.deliverablesOther) : '-'
+                        )
+                      )}
+                    </td>
+                  );
+                })()}
                 <td className="px-3 py-2 text-center">
-                  {safeDisplay(t.deliverablesCount)}
+                  {isEdit ? (
+                    <input 
+                      type="number" 
+                      min="1" 
+                      className="border px-2 py-1 rounded w-20 text-center" 
+                      value={form.deliverablesCount || 0} 
+                      onChange={e => setForm(f => ({ ...f, deliverablesCount: parseInt(e.target.value) || 0 }))} 
+                    />
+                  ) : (
+                    Number(t.deliverablesCount) || 0
+                  )}
                 </td>
                 <td className="px-3 py-2 text-right space-x-2">
                   {isEdit ? (
                     <>
-                      <button disabled={rowActionId === taskId} onClick={() => saveEdit(t)} className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === taskId ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`} title="Save"><CheckIcon className="w-4 h-4" /></button>
+                      <button 
+                        disabled={rowActionId === taskId || !(() => {
+                          // Custom validation logic for table edit
+                          if (!form.taskName || !form.product || !form.markets?.length || !form.deliverables?.length || !form.timeInHours || form.timeInHours < 0.5) {
+                            return false;
+                          }
+                          
+                          // AI validation only if AI is used
+                          if (form.aiUsed) {
+                            if (!form.aiModels?.length || !form.timeSpentOnAI || form.timeSpentOnAI < 0.5) {
+                              return false;
+                            }
+                          }
+                          
+                          // Other deliverables validation only if "others" is selected
+                          if (form.deliverables?.includes("others")) {
+                            if (!form.deliverablesOther?.length) {
+                              return false;
+                            }
+                          }
+                          
+                          return true;
+                        })()} 
+                        onClick={() => saveEdit(t)} 
+                        className={`inline-flex items-center px-2 py-1 rounded text-white ${rowActionId === taskId ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`} 
+                        title="Save"
+                      >
+                        <CheckIcon className="w-4 h-4" />
+                      </button>
                       <button onClick={cancelEdit} className="inline-flex items-center px-2 py-1 bg-gray-400 text-white rounded" title="Cancel"><XMarkIcon className="w-4 h-4" /></button>
                     </>
                   ) : (

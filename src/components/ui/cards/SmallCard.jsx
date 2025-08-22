@@ -401,7 +401,7 @@ const SmallCard = ({
 
   return (
     <div
-      className={`card p-6  ${
+      className={`card p-6 transition-all duration-300 ${
         onClick ? "cursor-pointer hover:bg-gray-600" : ""
       } ${className}`}
       onClick={onClick}

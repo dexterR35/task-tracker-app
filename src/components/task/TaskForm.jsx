@@ -16,6 +16,7 @@ import {
 } from "../../utils/taskOptions";
 import LoadingWrapper from "../ui/LoadingWrapper";
 import Skeleton, { SkeletonForm } from "../ui/Skeleton";
+import MultiValueInput from "../ui/MultiValueInput";
 import { 
   sanitizeTaskData, 
   sanitizeTaskCreationData,
@@ -47,12 +48,12 @@ const TaskForm = ({
     taskName: "",
     aiUsed: false,
     timeSpentOnAI: "",
-    aiModels: [],
+    aiModels: false,
     timeInHours: "",
     reworked: false,
     deliverables: [],
     deliverablesCount: "",
-    deliverablesOther: "",
+    deliverablesOther: false,
     taskNumber: "",
   };
 
@@ -81,9 +82,11 @@ const TaskForm = ({
           .min(0.5, "Minimum is 0.5h"),
       otherwise: (schema) => schema.notRequired(),
     }),
-    aiModels: Yup.array().of(Yup.string()).when("aiUsed", {
+    aiModels: Yup.mixed().when("aiUsed", {
       is: true,
-      then: (schema) => schema.min(1, "Select at least one AI model"),
+      then: (schema) => schema.test('is-array-with-items', 'Select at least one AI model', value => 
+        Array.isArray(value) && value.length > 0
+      ),
       otherwise: (schema) => schema.optional(),
     }),
     timeInHours: Yup.number()
@@ -96,10 +99,13 @@ const TaskForm = ({
       .required("Deliverables are required"),
     deliverablesCount: Yup.number()
       .min(1, "Must be at least 1")
-      .required("Number of deliverables is required"),
-    deliverablesOther: Yup.string().when("deliverables", {
+      .required("Number of deliverables is required")
+      .transform((value) => (isNaN(value) ? undefined : value)),
+    deliverablesOther: Yup.mixed().when("deliverables", {
       is: (deliverables) => deliverables && deliverables.includes("others"),
-      then: (schema) => schema.required("Please specify other deliverables"),
+      then: (schema) => schema.test('is-array-with-items', 'Please specify at least one other deliverable', value => 
+        Array.isArray(value) && value.length > 0
+      ),
       otherwise: (schema) => schema.optional(),
     }),
   });
@@ -126,6 +132,26 @@ const TaskForm = ({
         return;
       }
       
+      // Additional validation for AI fields when AI is used
+      if (sanitizedValues.aiUsed) {
+        if (!Array.isArray(sanitizedValues.aiModels) || sanitizedValues.aiModels.length === 0) {
+          addError("Please specify at least one AI model when AI is used");
+          return;
+        }
+        if (!sanitizedValues.timeSpentOnAI || sanitizedValues.timeSpentOnAI < 0.5) {
+          addError("Please specify time spent on AI (minimum 0.5h) when AI is used");
+          return;
+        }
+      }
+      
+      // Additional validation for "others" deliverables when "others" is selected
+      if (sanitizedValues.deliverables && sanitizedValues.deliverables.includes("others")) {
+        if (!Array.isArray(sanitizedValues.deliverablesOther) || sanitizedValues.deliverablesOther.length === 0) {
+          addError("Please specify at least one other deliverable when 'others' is selected");
+          return;
+        }
+      }
+      
       const quantize = (n) => {
         if (typeof n !== 'number' || Number.isNaN(n)) return 0;
         return Math.round(n * 2) / 2;
@@ -142,9 +168,11 @@ const TaskForm = ({
           const n = parseFloat(sanitizedValues.timeInHours);
           return isNaN(n) ? 0 : quantize(n);
         })(),
-        aiModels: Array.isArray(sanitizedValues.aiModels) ? sanitizedValues.aiModels : (sanitizedValues.aiModels ? [sanitizedValues.aiModels] : []),
-        markets: Array.isArray(sanitizedValues.markets) ? sanitizedValues.markets : (sanitizedValues.markets ? [sanitizedValues.markets] : []),
-        deliverables: Array.isArray(sanitizedValues.deliverables) ? sanitizedValues.deliverables : (sanitizedValues.deliverables ? [sanitizedValues.deliverables] : []),
+        aiModels: sanitizedValues.aiUsed && Array.isArray(sanitizedValues.aiModels) && sanitizedValues.aiModels.length > 0 ? sanitizedValues.aiModels : false,
+        markets: Array.isArray(sanitizedValues.markets) ? sanitizedValues.markets : [],
+        deliverables: Array.isArray(sanitizedValues.deliverables) ? sanitizedValues.deliverables : [],
+        deliverablesOther: sanitizedValues.deliverables && sanitizedValues.deliverables.includes("others") && Array.isArray(sanitizedValues.deliverablesOther) && sanitizedValues.deliverablesOther.length > 0 ? sanitizedValues.deliverablesOther : false,
+        deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
         createdBy: user?.uid,
         createdByName: user?.name || user?.email,
         userUID: user?.uid,
@@ -214,7 +242,32 @@ const TaskForm = ({
           onSubmit={handleSubmit}
           enableReinitialize
         >
-          {({ isSubmitting, values, isValid, errors, touched }) => (
+          {({ isSubmitting, values, isValid, errors, touched }) => {
+            // Custom validation logic to handle conditional fields
+            const isFormValid = () => {
+              // Basic required fields
+              if (!values.jiraLink || !values.markets?.length || !values.product || !values.taskName || !values.timeInHours || !values.deliverables?.length || !values.deliverablesCount) {
+                return false;
+              }
+              
+              // AI validation only if AI is used
+              if (values.aiUsed) {
+                if (!values.aiModels?.length || !values.timeSpentOnAI || values.timeSpentOnAI < 0.5) {
+                  return false;
+                }
+              }
+              
+              // Other deliverables validation only if "others" is selected
+              if (values.deliverables?.includes("others")) {
+                if (!values.deliverablesOther?.length) {
+                  return false;
+                }
+              }
+              
+              return true;
+            };
+            
+            return (
             <Form className="space-y-6">
               <Field name="jiraLink">
                 {(field) => {
@@ -334,6 +387,14 @@ const TaskForm = ({
                         {...field.field}
                         type="checkbox"
                         checked={field.field.value}
+                        onChange={(e) => {
+                          field.form.setFieldValue('aiUsed', e.target.checked);
+                          if (!e.target.checked) {
+                            // Clear AI fields when AI is unchecked
+                            field.form.setFieldValue('aiModels', false);
+                            field.form.setFieldValue('timeSpentOnAI', '');
+                          }
+                        }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm font-medium text-gray-700">
@@ -351,7 +412,7 @@ const TaskForm = ({
                       return (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Time Spent on AI (hours) *
+                            Time Spent on AI (hours) {values.aiUsed ? '*' : ''}
                           </label>
                           <input
                             {...field.field}
@@ -385,7 +446,7 @@ const TaskForm = ({
                       return (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            AI Model(s) *
+                            AI Model(s) {values.aiUsed ? '*' : ''}
                           </label>
                           <select className={baseInputClasses} value="" onChange={(e) => addModel(e.target.value)}>
                             <option value="">Add a model…</option>
@@ -520,17 +581,18 @@ const TaskForm = ({
               {values.deliverables && values.deliverables.includes("others") && (
                 <Field name="deliverablesOther">
                   {(field) => {
-                    const { baseInputClasses } = renderField(field);
+                    const { hasError } = renderField(field);
                     return (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Other Deliverables *
+                          Other Deliverables {values.deliverables && values.deliverables.includes("others") ? '*' : ''}
                         </label>
-                        <textarea
-                          {...field.field}
-                          placeholder="Please specify other deliverables..."
-                          rows="3"
-                          className={baseInputClasses}
+                        <MultiValueInput
+                          value={field.field.value || []}
+                          onChange={(newValues) => field.form.setFieldValue('deliverablesOther', newValues)}
+                          placeholder="Enter other deliverables (comma or space separated)..."
+                          className={hasError ? "border-red-500" : ""}
+                          maxValues={5}
                         />
                         <ErrorMessage
                           name="deliverablesOther"
@@ -550,13 +612,14 @@ const TaskForm = ({
                   size="lg"
                   loading={isSubmitting || outerSubmitting}
                   loadingText={isEdit ? "Updating..." : "Creating..."}
-                  disabled={!isValid}
+                  disabled={!isFormValid()}
                 >
                   {isEdit ? "Update Task" : "Create Task"}
                 </DynamicButton>
               </div>
             </Form>
-          )}
+            );
+          }}
         </Formik>
       </div>
     </LoadingWrapper>

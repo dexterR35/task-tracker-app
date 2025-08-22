@@ -111,16 +111,22 @@ const TaskDetailPage = () => {
         <div>
           <span className="font-medium text-gray-700">AI Models:</span>{" "}
           {task.aiUsed
-            ? Array.isArray(task.aiModels)
+            ? (task.aiModels && task.aiModels !== false && Array.isArray(task.aiModels))
               ? task.aiModels.join(", ")
-              : task.aiModel || "Unknown"
-            : "Unknown"}
+              : task.aiModel || "-"
+            : "-"}
         </div>
         <div>
           <span className="font-medium text-gray-700">Deliverables:</span>{" "}
           {Array.isArray(task.deliverables)
             ? task.deliverables.join(", ")
             : task.deliverable || "-"}
+        </div>
+        <div>
+          <span className="font-medium text-gray-700">Other Deliverables:</span>{" "}
+          {task.deliverablesOther && task.deliverablesOther !== false && Array.isArray(task.deliverablesOther) && task.deliverablesOther.length > 0
+            ? task.deliverablesOther.join(", ")
+            : "-"}
         </div>
         <div>
           <span className="font-medium text-gray-700">
