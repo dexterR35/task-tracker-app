@@ -217,7 +217,7 @@ export const analyticsStorage = {
 
 // Users Storage
 export const userStorage = {
-  storeUsers: async (users) => {
+  storeUsers: async (users, silent = false) => {
     try {
       const data = {
         users,
@@ -225,7 +225,11 @@ export const userStorage = {
         count: users.length
       };
       await indexedDBStorage.set(STORES.USERS, 'all-users', data);
-      console.log('Users cached in IndexedDB:', users.length, 'users');
+      // Only log once per session to reduce spam (unless silent)
+      if (!silent && process.env.NODE_ENV === 'development' && !window._usersCachedLogged) {
+        console.log('Users cached in IndexedDB:', users.length, 'users');
+        window._usersCachedLogged = true;
+      }
       return true;
     } catch (error) {
       console.error('Failed to store users in IndexedDB:', error);
@@ -248,10 +252,18 @@ export const userStorage = {
     return users !== null;
   },
 
-  clearUsers: async () => {
+    clearUsers: async () => {
     try {
       await indexedDBStorage.clear(STORES.USERS);
-      console.log('Users cache cleared from IndexedDB');
+      // Reset log flags when cache is cleared
+      if (window._usersCachedLogged) delete window._usersCachedLogged;
+      if (window._cachedUsersLogged) delete window._cachedUsersLogged;
+      if (window._fetchingUsersLogged) delete window._fetchingUsersLogged;
+      
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Users cache cleared from IndexedDB');
+      }
       return true;
     } catch (error) {
       console.error('Failed to clear users cache from IndexedDB:', error);
@@ -307,7 +319,10 @@ export const userStorage = {
       if (!exists) {
         const updatedUsers = [newUser, ...users];
         await userStorage.storeUsers(updatedUsers);
-        console.log('New user added to IndexedDB cache:', newUser.name);
+        // Only log in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log('New user added to IndexedDB cache:', newUser.name);
+        }
       }
       
       return true;

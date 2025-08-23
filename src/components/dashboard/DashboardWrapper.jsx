@@ -51,6 +51,9 @@ const DashboardWrapper = ({
   // Only subscribe to tasks if board exists and board query is not loading
   const shouldSkipTaskQuery = boardLoading || !board?.exists;
 
+  // Normalize userId to prevent duplicate queries
+  const normalizedUserId = finalUserId && finalUserId.trim() !== '' ? finalUserId : null;
+
   const {
     data: tasks = [],
     isLoading: tasksLoading,
@@ -58,7 +61,7 @@ const DashboardWrapper = ({
   } = useSubscribeToMonthTasksQuery(
     {
       monthId,
-      userId: finalUserId || null,
+      userId: normalizedUserId,
     },
     {
       skip: shouldSkipTaskQuery,
@@ -179,6 +182,7 @@ const DashboardWrapper = ({
       )}
 
       {/* Action Buttons */}
+      {board?.exists && (
       <div className="mb-6 flex-center !flex-row md:flex-row gap-4 !mx-0 justify-start">
         <DynamicButton variant="primary" onClick={handleCreateTask} size="md">
           {showTaskForm ? "Hide Form" : "Create Task"}
@@ -186,7 +190,7 @@ const DashboardWrapper = ({
 
         {isAdmin &&
           onGenerateAnalytics &&
-          board?.exists &&
+          
           filteredTasks.length > 0 && (
             <DynamicButton
               variant="success"
@@ -198,6 +202,7 @@ const DashboardWrapper = ({
             </DynamicButton>
           )}
       </div>
+      )}
 
       {/* Task Form */}
       {showTaskForm && board?.exists && (

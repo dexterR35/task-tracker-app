@@ -38,12 +38,20 @@ export const usersApi = createApi({
               (await userStorage.isUsersFresh())
             ) {
               const cachedUsers = await userStorage.getUsers();
-              console.log("Using cached users:", cachedUsers.length);
+              // Only log once per session to reduce spam
+              if (process.env.NODE_ENV === 'development' && !window._cachedUsersLogged) {
+                console.log("Using cached users:", cachedUsers.length);
+                window._cachedUsersLogged = true;
+              }
               return { data: cachedUsers };
             }
           }
 
-          console.log("Fetching users from database...");
+          // Only log once per session to reduce spam
+          if (process.env.NODE_ENV === 'development' && !window._fetchingUsersLogged) {
+            console.log("Fetching users from database...");
+            window._fetchingUsersLogged = true;
+          }
           const snap = await getDocs(
             fsQuery(collection(db, "users"), orderBy("createdAt", "desc"))
           );
@@ -76,9 +84,9 @@ export const usersApi = createApi({
           );
           updateCachedData(() => next);
 
-          // Update cache with real-time changes
+          // Update cache with real-time changes (silently)
           const { userStorage } = await import("../../utils/indexedDBStorage");
-          await userStorage.storeUsers(next);
+          await userStorage.storeUsers(next, true); // silent update
         });
         try {
           await cacheEntryRemoved;

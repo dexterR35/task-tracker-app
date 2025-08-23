@@ -21,24 +21,32 @@ import { normalizeTimestamp } from "../../utils/dateUtils";
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
 const normalizeTask = (monthId, id, data) => {
+  // Handle undefined or null data
+  if (!data || typeof data !== "object") {
+    console.warn("[normalizeTask] Invalid data provided:", {
+      monthId,
+      id,
+      data,
+    });
+    return null;
+  }
+
   const createdAt = normalizeTimestamp(data.createdAt);
   const updatedAt = normalizeTimestamp(data.updatedAt);
   const timeInHours = Number(data.timeInHours) || 0;
   const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
-  
+
   // Ensure deliverablesOther is false when not selected, array when selected
-  const deliverablesOther = Array.isArray(data.deliverablesOther) 
-    ? data.deliverablesOther 
+  const deliverablesOther = Array.isArray(data.deliverablesOther)
+    ? data.deliverablesOther
     : false;
-  
+
   // Ensure aiModels is false when not selected, array when selected
-  const aiModels = Array.isArray(data.aiModels) 
-    ? data.aiModels 
-    : false;
-  
+  const aiModels = Array.isArray(data.aiModels) ? data.aiModels : false;
+
   // Ensure deliverablesCount is always a number
   const deliverablesCount = Number(data.deliverablesCount) || 0;
-  
+
   return {
     id,
     monthId,
@@ -127,7 +135,20 @@ export const tasksApi = createApi({
             }
           }
 
-          // Strategy 1: Initial fetch from Firebase (once per session)
+          // Strategy 1: Check if board exists first
+          const monthDocRef = doc(db, "tasks", monthId);
+          const monthDoc = await getDoc(monthDocRef);
+
+          if (!monthDoc.exists()) {
+            console.log(
+              "Board does not exist for month:",
+              monthId,
+              "- skipping fetch"
+            );
+            return { data: [] };
+          }
+
+          // Strategy 2: Fetch tasks only if board exists
           console.log("Fetching tasks from Firebase for month:", monthId);
           const colRef = collection(db, "tasks", monthId, "monthTasks");
           const snap = await getDocs(
@@ -137,13 +158,18 @@ export const tasksApi = createApi({
             normalizeTask(monthId, d.id, d.data())
           );
 
-          // Cache tasks in IndexedDB for future use
-          if (useCache) {
+          // Cache tasks in IndexedDB for future use (only if board exists)
+          if (useCache && tasks.length > 0) {
             const { taskStorage } = await import(
               "../../utils/indexedDBStorage"
             );
             await taskStorage.storeTasks(monthId, tasks);
-            console.log("Tasks cached in IndexedDB for month:", monthId);
+            console.log(
+              "Tasks cachedeee in IndexedDB for month 2:",
+              monthId,
+              "count:",
+              tasks.length
+            );
           }
 
           return { data: tasks };
@@ -155,7 +181,10 @@ export const tasksApi = createApi({
       },
       providesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userId || 'all'}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userId || "all"}`,
+        },
       ],
     }),
 
@@ -163,13 +192,16 @@ export const tasksApi = createApi({
     subscribeToMonthTasks: builder.query({
       async queryFn({ monthId, userId = null, useCache = true } = {}) {
         try {
+          // Normalize userId to prevent duplicate queries
+          const normalizedUserId = userId && userId.trim() !== '' ? userId : null;
+          
           console.log("[subscribeToMonthTasks] Called with:", {
             monthId,
-            userId,
+            userId: normalizedUserId,
             useCache,
           });
           // Create cache key that includes user filter
-          const cacheKey = userId ? `${monthId}_user_${userId}` : monthId;
+          const cacheKey = normalizedUserId ? `${monthId}_user_${normalizedUserId}` : monthId;
 
           // Strategy 1: Check IndexedDB cache first
           if (useCache) {
@@ -185,7 +217,7 @@ export const tasksApi = createApi({
                 "Using cached tasks from IndexedDB:",
                 cachedTasks.length,
                 "tasks for",
-                userId ? `user ${userId}` : "all users",
+                normalizedUserId ? `user ${normalizedUserId}` : "all users",
                 "month:",
                 monthId
               );
@@ -198,10 +230,10 @@ export const tasksApi = createApi({
           let query = fsQuery(colRef, orderBy("createdAt", "desc"));
 
           // Apply user filter if specified
-          if (userId) {
+          if (normalizedUserId) {
             query = fsQuery(
               colRef,
-              where("userUID", "==", userId),
+              where("userUID", "==", normalizedUserId),
               orderBy("createdAt", "desc")
             );
           }
@@ -212,14 +244,14 @@ export const tasksApi = createApi({
           );
 
           // Cache filtered data with user-specific key
-          if (useCache) {
+          if (useCache && tasks.length > 0) {
             const { taskStorage } = await import(
               "../../utils/indexedDBStorage"
             );
             await taskStorage.storeTasks(cacheKey, tasks);
             console.log(
               "Tasks cached in IndexedDB for",
-              userId ? `user ${userId}` : "all users",
+              normalizedUserId ? `user ${normalizedUserId}` : "all users",
               "month:",
               monthId
             );
@@ -239,11 +271,25 @@ export const tasksApi = createApi({
         try {
           await cacheDataLoaded;
 
+          // Check if board exists before setting up real-time listener
+          const monthDocRef = doc(db, "tasks", arg.monthId);
+          const monthDoc = await getDoc(monthDocRef);
+
+          if (!monthDoc.exists()) {
+            console.log(
+              "[Real-time] Board does not exist for monthId:",
+              arg.monthId,
+              "- no real-time updates needed"
+            );
+            updateCachedData(() => []);
+            return;
+          }
+
           const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
           let query = fsQuery(colRef, orderBy("createdAt", "desc"));
 
           // Apply user filter if specified
-          if (arg.userId) {
+          if (arg.userId && arg.userId.trim() !== '') {
             query = fsQuery(
               colRef,
               where("userUID", "==", arg.userId),
@@ -254,44 +300,76 @@ export const tasksApi = createApi({
           const unsubscribe = onSnapshot(
             query,
             async (snapshot) => {
+              // Check if snapshot exists and is valid
+              if (!snapshot || !snapshot.docs) {
+                console.log(
+                  "[Real-time] Invalid snapshot for monthId:",
+                  arg.monthId
+                );
+                updateCachedData(() => []);
+                return;
+              }
+
+              // Handle case where collection doesn't exist (board not created)
+              if (snapshot.empty) {
+                console.log(
+                  "[Real-time] Board exists but no tasks found for monthId:",
+                  arg.monthId
+                );
+                updateCachedData(() => []);
+                return;
+              }
+
               console.log(
                 "[Real-time] Normalizing tasks with monthId:",
                 arg.monthId
               );
-              const tasks = snapshot.docs.map((d) =>
-                normalizeTask(arg.monthId, d.id, d.data())
+
+              // Filter out any undefined or invalid documents
+              const validDocs = snapshot.docs.filter(
+                (doc) => doc && doc.exists() && doc.data() && doc.id
               );
-              console.log("[Real-time] First task after normalize:", tasks[0]);
-              const cacheKey = arg.userId
+
+              const tasks = validDocs
+                .map((d) => normalizeTask(arg.monthId, d.id, d.data()))
+                .filter((task) => task !== null); // Filter out null tasks
+
+              // Only log if there are tasks
+              if (tasks.length > 0) {
+                console.log(
+                  "[Real-time] First task after normalize:",
+                  tasks[0]
+                );
+              } else {
+                console.log(
+                  "[Real-time] No tasks found for monthId:",
+                  arg.monthId
+                );
+              }
+
+              const cacheKey = arg.userId && arg.userId.trim() !== ''
                 ? `${arg.monthId}_user_${arg.userId}`
                 : arg.monthId;
-
-              // if (process.env.NODE_ENV === "development") {
-              //   console.log(
-              //     "[Real-time] Tasks updated:",
-              //     tasks.length,
-              //     "tasks for",
-              //     arg.userId ? `user ${arg.userId}` : "all users",
-              //     "month:",
-              //     arg.monthId
-              //   );
-              // }
 
               // Update Redux state locally
               updateCachedData(() => tasks);
 
-              // Update IndexedDB cache with real-time changes
+              // Update IndexedDB cache with real-time changes (debounced)
               const { taskStorage, analyticsStorage } = await import(
                 "../../utils/indexedDBStorage"
               );
-              await taskStorage.storeTasks(cacheKey, tasks);
+              
+              // Only cache if we have tasks to avoid empty cache entries
+              if (tasks.length > 0) {
+                await taskStorage.storeTasks(cacheKey, tasks);
 
-              // Pre-compute and cache analytics from updated tasks
-              const analyticsData = computeAnalyticsFromTasks(
-                tasks,
-                arg.monthId
-              );
-              await analyticsStorage.storeAnalytics(arg.monthId, analyticsData);
+                // Pre-compute and cache analytics from updated tasks
+                const analyticsData = computeAnalyticsFromTasks(
+                  tasks,
+                  arg.monthId
+                );
+                await analyticsStorage.storeAnalytics(arg.monthId, analyticsData);
+              }
             },
             (error) => {
               console.error("Real-time subscription error:", error);
@@ -365,16 +443,20 @@ export const tasksApi = createApi({
       // Optimistic update for immediate UI feedback
       async onQueryStarted(task, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
-          tasksApi.util.updateQueryData('subscribeToMonthTasks', { monthId: task.monthId }, (draft) => {
-            // Add the new task to the beginning of the list
-            const newTaskWithId = {
-              ...task,
-              id: `temp-${Date.now()}`, // Temporary ID
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            draft.unshift(newTaskWithId);
-          })
+          tasksApi.util.updateQueryData(
+            "subscribeToMonthTasks",
+            { monthId: task.monthId },
+            (draft) => {
+              // Add the new task to the beginning of the list
+              const newTaskWithId = {
+                ...task,
+                id: `temp-${Date.now()}`, // Temporary ID
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+              draft.unshift(newTaskWithId);
+            }
+          )
         );
 
         try {
@@ -387,7 +469,10 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || 'all'}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
+        },
       ],
     }),
 
@@ -395,14 +480,14 @@ export const tasksApi = createApi({
       async queryFn({ monthId, id, updates }) {
         try {
           const ref = doc(db, "tasks", monthId, "monthTasks", id);
-          
+
           // Ensure monthId is preserved in updates
           const updatesWithMonthId = {
             ...updates,
             monthId: monthId, // Ensure monthId is preserved
             updatedAt: serverTimestamp(),
           };
-          
+
           await updateDoc(ref, updatesWithMonthId);
 
           // Update IndexedDB cache with the same data
@@ -417,21 +502,28 @@ export const tasksApi = createApi({
         }
       },
       // Optimistic update for immediate UI feedback
-      async onQueryStarted({ monthId, id, updates }, { dispatch, queryFulfilled, getState }) {
+      async onQueryStarted(
+        { monthId, id, updates },
+        { dispatch, queryFulfilled, getState }
+      ) {
         // Get current cache data
         const patchResult = dispatch(
-          tasksApi.util.updateQueryData('subscribeToMonthTasks', { monthId }, (draft) => {
-            const taskIndex = draft.findIndex(task => task.id === id);
-            if (taskIndex !== -1) {
-              // Update the task in cache immediately
-              draft[taskIndex] = {
-                ...draft[taskIndex],
-                ...updates,
-                monthId: monthId,
-                updatedAt: new Date().toISOString()
-              };
+          tasksApi.util.updateQueryData(
+            "subscribeToMonthTasks",
+            { monthId },
+            (draft) => {
+              const taskIndex = draft.findIndex((task) => task.id === id);
+              if (taskIndex !== -1) {
+                // Update the task in cache immediately
+                draft[taskIndex] = {
+                  ...draft[taskIndex],
+                  ...updates,
+                  monthId: monthId,
+                  updatedAt: new Date().toISOString(),
+                };
+              }
             }
-          })
+          )
         );
 
         try {
@@ -444,7 +536,10 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || 'all'}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
+        },
       ],
     }),
 
@@ -466,13 +561,17 @@ export const tasksApi = createApi({
       // Optimistic update for immediate UI feedback
       async onQueryStarted({ monthId, id }, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
-          tasksApi.util.updateQueryData('subscribeToMonthTasks', { monthId }, (draft) => {
-            // Remove the task from cache immediately
-            const taskIndex = draft.findIndex(task => task.id === id);
-            if (taskIndex !== -1) {
-              draft.splice(taskIndex, 1);
+          tasksApi.util.updateQueryData(
+            "subscribeToMonthTasks",
+            { monthId },
+            (draft) => {
+              // Remove the task from cache immediately
+              const taskIndex = draft.findIndex((task) => task.id === id);
+              if (taskIndex !== -1) {
+                draft.splice(taskIndex, 1);
+              }
             }
-          })
+          )
         );
 
         try {
@@ -485,7 +584,10 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || 'all'}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
+        },
       ],
     }),
 
