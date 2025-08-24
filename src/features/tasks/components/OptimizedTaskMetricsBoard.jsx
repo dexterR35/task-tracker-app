@@ -188,13 +188,23 @@ const OptimizedTaskMetricsBoard = ({
       );
     }
 
-    // If no data and not loading, show empty state
+    // If no data and not loading, show appropriate message
     if (!hasData) {
-      return (
-        <div className="card">
-          No data available for this month
-        </div>
-      );
+      if (userId) {
+        return (
+          <div className="card text-center py-8">
+            <div className="text-gray-400 mb-2">No tasks found for selected user</div>
+            <div className="text-sm text-gray-500">This user has no tasks for {monthId}</div>
+          </div>
+        );
+      } else {
+        return (
+          <div className="card text-center py-8">
+            <div className="text-gray-400 mb-2">No tasks available for this month</div>
+            <div className="text-sm text-gray-500">No tasks have been created for {monthId}</div>
+          </div>
+        );
+      }
     }
 
     // If analytics is null or undefined, show empty state

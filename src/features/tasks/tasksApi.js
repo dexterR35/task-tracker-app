@@ -18,12 +18,13 @@ import {
 import { db } from "../../app/firebase";
 import { calculateAnalyticsFromTasks } from "../../shared/utils/analyticsCalculator";
 import { normalizeTimestamp } from "../../shared/utils/dateUtils";
+import { logger } from "../../shared/utils/logger";
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
 const normalizeTask = (monthId, id, data) => {
   // Handle undefined or null data
   if (!data || typeof data !== "object") {
-    console.warn("[normalizeTask] Invalid data provided:", {
+    logger.warn("[normalizeTask] Invalid data provided:", {
       monthId,
       id,
       data,
@@ -125,12 +126,12 @@ export const tasksApi = createApi({
               (await taskStorage.isTasksFresh(monthId))
             ) {
               const cachedTasks = await taskStorage.getTasks(monthId);
-              console.log(
-                "Using cached tasks from IndexedDB:",
-                cachedTasks.length,
-                "tasks for month:",
-                monthId
-              );
+                        logger.log(
+            "Using cached tasks from IndexedDB:",
+            cachedTasks.length,
+            "tasks for month:",
+            monthId
+          );
               return { data: cachedTasks };
             }
           }
@@ -140,16 +141,16 @@ export const tasksApi = createApi({
           const monthDoc = await getDoc(monthDocRef);
 
           if (!monthDoc.exists()) {
-            console.log(
-              "Board does not exist for month:",
-              monthId,
-              "- skipping fetch"
-            );
+                      logger.log(
+            "Board does not exist for month:",
+            monthId,
+            "- skipping fetch"
+          );
             return { data: [] };
           }
 
           // Strategy 2: Fetch tasks only if board exists
-          console.log("Fetching tasks from Firebase for month:", monthId);
+          logger.log("Fetching tasks from Firebase for month:", monthId);
           const colRef = collection(db, "tasks", monthId, "monthTasks");
           const snap = await getDocs(
             fsQuery(colRef, orderBy("createdAt", "desc"))
@@ -164,8 +165,8 @@ export const tasksApi = createApi({
               "../../shared/utils/indexedDBStorage"
             );
             await taskStorage.storeTasks(monthId, tasks);
-            console.log(
-              "Tasks cachedeee in IndexedDB for month 2:",
+            logger.log(
+              "Tasks cached in IndexedDB for month:",
               monthId,
               "count:",
               tasks.length
@@ -195,7 +196,7 @@ export const tasksApi = createApi({
           // Normalize userId to prevent duplicate queries
           const normalizedUserId = userId && userId.trim() !== '' ? userId : null;
           
-          console.log("[subscribeToMonthTasks] Called with:", {
+          logger.log("[subscribeToMonthTasks] Called with:", {
             monthId,
             userId: normalizedUserId,
             useCache,
@@ -213,7 +214,7 @@ export const tasksApi = createApi({
               (await taskStorage.isTasksFresh(cacheKey))
             ) {
               const cachedTasks = await taskStorage.getTasks(cacheKey);
-              console.log(
+              logger.log(
                 "Using cached tasks from IndexedDB:",
                 cachedTasks.length,
                 "tasks for",
@@ -249,7 +250,7 @@ export const tasksApi = createApi({
               "../../shared/utils/indexedDBStorage"
             );
             await taskStorage.storeTasks(cacheKey, tasks);
-            console.log(
+            logger.log(
               "Tasks cached in IndexedDB for",
               normalizedUserId ? `user ${normalizedUserId}` : "all users",
               "month:",
@@ -276,7 +277,7 @@ export const tasksApi = createApi({
           const monthDoc = await getDoc(monthDocRef);
 
           if (!monthDoc.exists()) {
-            console.log(
+            logger.log(
               "[Real-time] Board does not exist for monthId:",
               arg.monthId,
               "- no real-time updates needed"
@@ -302,25 +303,25 @@ export const tasksApi = createApi({
             async (snapshot) => {
               // Check if snapshot exists and is valid
               if (!snapshot || !snapshot.docs) {
-                console.log(
-                  "[Real-time] Invalid snapshot for monthId:",
-                  arg.monthId
-                );
+                              logger.log(
+                "[Real-time] Invalid snapshot for monthId:",
+                arg.monthId
+              );
                 updateCachedData(() => []);
                 return;
               }
 
               // Handle case where collection doesn't exist (board not created)
               if (snapshot.empty) {
-                console.log(
-                  "[Real-time] Board exists but no tasks found for monthId:",
-                  arg.monthId
-                );
+                              logger.log(
+                "[Real-time] Board exists but no tasks found for monthId:",
+                arg.monthId
+              );
                 updateCachedData(() => []);
                 return;
               }
 
-              console.log(
+              logger.log(
                 "[Real-time] Normalizing tasks with monthId:",
                 arg.monthId
               );
@@ -336,12 +337,12 @@ export const tasksApi = createApi({
 
               // Only log if there are tasks
               if (tasks.length > 0) {
-                console.log(
+                logger.log(
                   "[Real-time] First task after normalize:",
                   tasks[0]
                 );
               } else {
-                console.log(
+                logger.log(
                   "[Real-time] No tasks found for monthId:",
                   arg.monthId
                 );
@@ -363,23 +364,27 @@ export const tasksApi = createApi({
               if (tasks.length > 0) {
                 await taskStorage.storeTasks(cacheKey, tasks);
 
-                // Pre-compute and cache analytics from updated tasks
-                const analyticsData = calculateAnalyticsFromTasks(
-                  tasks,
-                  arg.monthId
-                );
-                await analyticsStorage.storeAnalytics(arg.monthId, analyticsData);
+                // Pre-compute and cache analytics from updated tasks (debounced)
+                // Use setTimeout to debounce analytics calculation
+                clearTimeout(window._analyticsCalculationTimeout);
+                window._analyticsCalculationTimeout = setTimeout(async () => {
+                  const analyticsData = calculateAnalyticsFromTasks(
+                    tasks,
+                    arg.monthId
+                  );
+                  await analyticsStorage.storeAnalytics(arg.monthId, analyticsData);
+                }, 1000); // 1 second debounce
               }
             },
             (error) => {
-              console.error("Real-time subscription error:", error);
+              logger.error("Real-time subscription error:", error);
             }
           );
 
           await cacheEntryRemoved;
           unsubscribe();
         } catch (error) {
-          console.error("Error setting up real-time subscription:", error);
+          logger.error("Error setting up real-time subscription:", error);
         }
       },
       providesTags: (result, error, arg) => [
@@ -419,7 +424,7 @@ export const tasksApi = createApi({
             ref.id,
             savedSnap.data() || {}
           );
-          console.log(
+          logger.log(
             "[CreateTask] Task created:",
             created.id,
             "for month:",
@@ -667,7 +672,7 @@ export const tasksApi = createApi({
             }
             // Strategy 3: Use tasks from Redux state if provided, otherwise fetch from cache
             let tasksToUse = tasks;
-            console.log("tasksToUse", tasksToUse);
+            logger.log("tasksToUse", tasksToUse);
             if (!tasksToUse) {
               // console.log('No tasks provided, checking IndexedDB cache for month:', monthId);
               tasksToUse = await taskStorage.getTasks(monthId);
@@ -695,7 +700,7 @@ export const tasksApi = createApi({
 
           return { data: analyticsData };
         } catch (error) {
-          console.error("Error computing analytics:", error);
+          logger.error("Error computing analytics:", error);
           return {
             error: { message: error?.message || "Failed to compute analytics" },
           };

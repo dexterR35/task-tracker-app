@@ -6,6 +6,7 @@ import {
 } from "../../features/tasks/tasksApi";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import { useNotifications } from "../../shared/hooks/useNotifications";
+import { logger } from "../../shared/utils/logger";
 
 import {
   ResponsiveContainer,
@@ -28,6 +29,25 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 
+// Chart colors
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
+
+// Custom tooltip to prevent React errors
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-2 border border-gray-300 rounded shadow">
+        <p className="font-medium">{`${label}`}</p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }}>
+            {`${entry.name}: ${entry.value}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 // Custom hook for analytics generation using centralized analytics
 const useAnalyticsGeneration = (monthId, board, tasks) => {
@@ -37,7 +57,7 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
 
-  const generateAnalytics = useCallback(async () => {
+    const generateAnalytics = useCallback(async () => {
     if (!monthId || !board?.exists) {
       setError('Board does not exist');
       return;
@@ -48,34 +68,57 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
       return;
     }
 
+    // Check if we already have analytics for this data
+    const tasksKey = `${monthId}_${tasks.length}_${tasks.reduce((sum, task) => sum + (task.updatedAt || 0), 0)}`;
+    if (window._lastAnalyticsKey === tasksKey && analyticsPreview) {
+      logger.log('Analytics already generated for this data, skipping calculation');
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
     try {
-      console.log('Starting analytics generation for month:', monthId);
+      logger.log('Starting analytics generation for month:', monthId);
       
       // Use centralized analytics calculator
       const { calculateAnalyticsFromTasks } = await import('../../shared/utils/analyticsCalculator');
       const result = calculateAnalyticsFromTasks(tasks, monthId);
       
-      console.log('Analytics generated:', result);
+      // Cache the analytics key
+      window._lastAnalyticsKey = tasksKey;
+      
       setAnalyticsPreview(result);
       addSuccess(`Analytics generated for ${monthId}!`);
 
     } catch (error) {
-      console.error('Error generating analytics:', error);
+      logger.error('Error generating analytics:', error);
       setError(error?.message || 'Failed to generate analytics');
       addError('Failed to generate analytics');
     } finally {
       setIsGenerating(false);
     }
-  }, [monthId, board?.exists, tasks, addSuccess, addError]);
+  }, [monthId, board?.exists, tasks, analyticsPreview, addSuccess, addError]);
 
   // Clear analytics when monthId changes
   useEffect(() => {
     setAnalyticsPreview(null);
     setError(null);
+    
+    // Clean up cache keys when monthId changes
+    delete window._lastDataKey;
+    delete window._lastAnalyticsKey;
+    delete window._lastFlattenedKey;
   }, [monthId]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      delete window._lastDataKey;
+      delete window._lastAnalyticsKey;
+      delete window._lastFlattenedKey;
+    };
+  }, []);
 
   return {
     analyticsPreview,
@@ -98,6 +141,16 @@ const PreviewPage = () => {
     skip: !board?.exists
   });
 
+  // Debug: Log the data we're receiving (only once per data change)
+  const dataKey = `${monthId}_${board?.exists}_${tasks?.length || 0}`;
+  if (dataKey !== window._lastDataKey) {
+    window._lastDataKey = dataKey;
+    logger.log('PreviewPage - monthId:', monthId);
+    logger.log('PreviewPage - board:', board);
+    logger.log('PreviewPage - tasks count:', tasks?.length || 0);
+    logger.log('PreviewPage - sample task:', tasks?.[0]);
+  }
+
   // Custom hook for analytics generation
   const {
     analyticsPreview,
@@ -109,7 +162,7 @@ const PreviewPage = () => {
 
   const [saveAnalytics, { isLoading: saving }] = useSaveMonthAnalyticsMutation();
 
-  // Navigation and error handling
+  // Auto-generate analytics when tasks are available
   useEffect(() => {
     if (!monthId) return;
 
@@ -128,7 +181,19 @@ const PreviewPage = () => {
       navigate("/admin");
       return;
     }
-  }, [monthId, board, boardLoading, tasks, tasksLoading, navigate, addError]);
+
+    // Auto-generate analytics when tasks are available and no preview exists
+    if (board?.exists && !tasksLoading && tasks.length > 0 && !analyticsPreview && !isGenerating) {
+      // Add a small delay to prevent multiple rapid calls
+      const timeoutId = setTimeout(() => {
+        if (!analyticsPreview && !isGenerating) {
+          generateAnalytics();
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [monthId, board, boardLoading, tasks, tasksLoading, analyticsPreview, isGenerating, generateAnalytics, navigate, addError]);
 
 
 
@@ -218,18 +283,18 @@ const PreviewPage = () => {
     );
   }
 
-  // No analytics state
-  if (!analyticsPreview) {
+  // No analytics state - show loading instead of manual generation button
+  if (!analyticsPreview && !isGenerating) {
     return (
-      <div className="min-h-screen  p-6 ">
+      <div className="min-h-screen p-6">
         <div className="max-w-7xl mx-auto">
           <div className="card text-gray-200">
             <div className="text-xl font-semibold mb-4">
-              No Analytics Preview Available
+              Loading Analytics...
             </div>
-            <DynamicButton variant="primary" onClick={generateAnalytics}>
-              Generate Preview
-            </DynamicButton>
+            <div className="text-sm text-gray-400">
+              Analytics will be generated automatically when tasks are loaded.
+            </div>
           </div>
         </div>
       </div>
@@ -301,6 +366,17 @@ const PreviewPage = () => {
             const products = analyticsPreview.products || {};
             const aiModels = analyticsPreview.aiModels || {};
             const deliverables = analyticsPreview.deliverables || {};
+            
+            // Debug: Log the original analytics data (only once per analytics change)
+            const analyticsKey = JSON.stringify({ markets, products, aiModels, deliverables });
+            if (analyticsKey !== window._lastAnalyticsKey) {
+              window._lastAnalyticsKey = analyticsKey;
+              console.log('Original analytics data:');
+              console.log('Markets:', markets);
+              console.log('Products:', products);
+              console.log('AI Models:', aiModels);
+              console.log('Deliverables:', deliverables);
+            }
             const aiByProduct = analyticsPreview.aiBreakdownByProduct || {};
             const aiByMarket = analyticsPreview.aiBreakdownByMarket || {};
             const daily = analyticsPreview.daily || {};
@@ -308,6 +384,17 @@ const PreviewPage = () => {
             const p = flatten(products);
             const ai = flatten(aiModels);
             const d = flatten(deliverables);
+            
+            // Debug: Log the flattened data to see what's being passed to charts (only once per data change)
+            const flattenedKey = JSON.stringify({ m, p, ai, d });
+            if (flattenedKey !== window._lastFlattenedKey) {
+              window._lastFlattenedKey = flattenedKey;
+              console.log('Flattened data for charts:');
+              console.log('Markets:', m);
+              console.log('Products:', p);
+              console.log('AI Models:', ai);
+              console.log('Deliverables:', d);
+            }
             const prodKeys = Object.keys(aiByProduct);
             const prodAiTasks = prodKeys.map(
               (k) => aiByProduct[k]?.aiTasks || 0
@@ -333,10 +420,14 @@ const PreviewPage = () => {
                   <div style={{ width: "100%", height: 300 }}>
                     <ResponsiveContainer>
                       <BarChart
-                        data={m.labels.map((name, i) => ({
-                          name,
-                          count: m.values[i]?.count || 0,
-                        }))}
+                        data={m.labels.map((name, i) => {
+                          const value = m.values[i];
+                          const count = typeof value === 'number' ? value : (typeof value === 'object' ? value?.count || 0 : 0);
+                          return {
+                            name,
+                            count,
+                          };
+                        })}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
@@ -348,7 +439,7 @@ const PreviewPage = () => {
                           height={50}
                         />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip content={<CustomTooltip />} />
                         <Bar dataKey="count" fill="#6366f1" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -362,10 +453,14 @@ const PreviewPage = () => {
                     <ResponsiveContainer>
                       <PieChart>
                         <Pie
-                          data={p.labels.map((name, i) => ({
-                            name,
-                            count: p.values[i]?.count || 0,
-                          }))}
+                          data={p.labels.map((name, i) => {
+                            const value = p.values[i];
+                            const count = typeof value === 'number' ? value : (typeof value === 'object' ? value?.count || 0 : 0);
+                            return {
+                              name,
+                              count,
+                            };
+                          })}
                           dataKey="count"
                           nameKey="name"
                           outerRadius={110}
@@ -377,10 +472,10 @@ const PreviewPage = () => {
                               fill={COLORS[index % COLORS.length]}
                             />
                           ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
+                                                  </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend />
+                        </PieChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
@@ -391,10 +486,14 @@ const PreviewPage = () => {
                   <div style={{ width: "100%", height: 300 }}>
                     <ResponsiveContainer>
                       <BarChart
-                        data={ai.labels.map((name, i) => ({
-                          name,
-                          count: ai.values[i] || 0,
-                        }))}
+                        data={ai.labels.map((name, i) => {
+                          const value = ai.values[i];
+                          const count = typeof value === 'number' ? value : (typeof value === 'object' ? value?.count || 0 : 0);
+                          return {
+                            name,
+                            count,
+                          };
+                        })}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
@@ -406,7 +505,7 @@ const PreviewPage = () => {
                           height={50}
                         />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip content={<CustomTooltip />} />
                         <Bar dataKey="count" fill="#ef4444" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -419,10 +518,14 @@ const PreviewPage = () => {
                   <div style={{ width: "100%", height: 300 }}>
                     <ResponsiveContainer>
                       <BarChart
-                        data={d.labels.map((name, i) => ({
-                          name,
-                          count: d.values[i] || 0,
-                        }))}
+                        data={d.labels.map((name, i) => {
+                          const value = d.values[i];
+                          const count = typeof value === 'number' ? value : (typeof value === 'object' ? value?.count || 0 : 0);
+                          return {
+                            name,
+                            count,
+                          };
+                        })}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
@@ -434,7 +537,7 @@ const PreviewPage = () => {
                           height={50}
                         />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip content={<CustomTooltip />} />
                         <Bar dataKey="count" fill="#8b5cf6" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -463,7 +566,7 @@ const PreviewPage = () => {
                           height={50}
                         />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Bar
                           dataKey="ai"
@@ -504,7 +607,7 @@ const PreviewPage = () => {
                           height={50}
                         />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Bar
                           dataKey="ai"
@@ -537,7 +640,7 @@ const PreviewPage = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip content={<CustomTooltip />} />
                         <Line
                           type="monotone"
                           dataKey="count"
@@ -559,7 +662,7 @@ const PreviewPage = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" dataKey="x" name="Total Hours" />
                         <YAxis type="number" dataKey="y" name="AI Hours" />
-                        <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: "3 3" }} />
                         <Scatter
                           name="Products"
                           data={prodKeys.map((k) => ({

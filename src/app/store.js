@@ -3,6 +3,7 @@ import authReducer from "../features/auth/authSlice";
 import notificationReducer, { addNotification } from "../features/notifications/notificationSlice";
 import { tasksApi } from "../features/tasks/tasksApi";
 import { usersApi } from "../features/users/usersApi";
+import { logger } from "../shared/utils/logger";
  
 
 const staticReducers = {
@@ -49,14 +50,14 @@ const store = configureStore({
       usersApi.middleware,
       errorNotificationMiddleware
     ),
-  devTools: process.env.NODE_ENV !== "production",
+  devTools: import.meta.env.MODE !== "production",
 });
 
 
 store.asyncReducers = {};
 store.injectReducer = (key, asyncReducer) => {
   if (store.asyncReducers[key]) {
-    console.warn(
+    logger.warn(
       `[store] Reducer for key "${key}" already exists. Skipping injection.`
     );
     return;

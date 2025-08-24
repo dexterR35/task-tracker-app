@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { useDispatch } from "react-redux";
 import { useCreateTaskMutation } from "../tasksApi";
 import { useNotifications } from "../../../shared/hooks/useNotifications";
+import { logger } from "../../../shared/utils/logger";
 import {
   marketOptions,
   productOptions,
@@ -203,7 +204,7 @@ const TaskForm = ({
       if (creatingRef.current) return;
       creatingRef.current = true;
       const created = await createTask(taskData).unwrap();
-      console.log("[TaskForm] created", {
+      logger.log("[TaskForm] created", {
         id: created?.id,
         monthId: created?.monthId,
       });
@@ -221,7 +222,7 @@ const TaskForm = ({
     ) {
       addError("Please tell the admin to generate the current month first.");
     } else {
-      console.error("Error submitting task:", error);
+      logger.error("Error submitting task:", error);
       addError("Failed to submit task. Please try again.");
     }
   };
@@ -264,7 +265,7 @@ const TaskForm = ({
       // Prepare task data
       const taskData = prepareTaskData(sanitizedValues, taskNumber);
 
-      console.log("[TaskForm] submit", {
+      logger.log("[TaskForm] submit", {
         monthId,
         taskData,
       });

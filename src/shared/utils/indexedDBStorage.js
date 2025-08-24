@@ -7,6 +7,8 @@ const STORES = {
   TASKS: 'tasks-store'
 };
 
+import { logger } from './logger';
+
 class IndexedDBStorage {
   constructor() {
     this.db = null;
@@ -22,13 +24,13 @@ class IndexedDBStorage {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => {
-        console.error('IndexedDB error:', request.error);
+        logger.error('IndexedDB error:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('IndexedDB initialized successfully');
+        logger.log('IndexedDB initialized successfully');
         resolve(this.db);
       };
 
@@ -51,7 +53,7 @@ class IndexedDBStorage {
           tasksStore.createIndex('cachedAt', 'cachedAt', { unique: false });
         }
 
-        console.log('IndexedDB stores created');
+        logger.log('IndexedDB stores created');
       };
     });
 
@@ -133,10 +135,10 @@ export const analyticsStorage = {
         cachedAt: new Date().toISOString()
       };
       await indexedDBStorage.set(STORES.ANALYTICS, monthId, data);
-      console.log('Analytics cached in IndexedDB for month:', monthId);
+      logger.log('Analytics cached in IndexedDB for month:', monthId);
       return true;
     } catch (error) {
-      console.error('Failed to store analytics in IndexedDB:', error);
+              logger.error('Failed to store analytics in IndexedDB:', error);
       return false;
     }
   },
@@ -146,7 +148,7 @@ export const analyticsStorage = {
       const result = await indexedDBStorage.get(STORES.ANALYTICS, monthId);
       return result?.data || null;
     } catch (error) {
-      console.error('Failed to get analytics from IndexedDB:', error);
+              logger.error('Failed to get analytics from IndexedDB:', error);
       return null;
     }
   },
@@ -160,7 +162,7 @@ export const analyticsStorage = {
       });
       return analytics;
     } catch (error) {
-      console.error('Failed to get all analytics from IndexedDB:', error);
+              logger.error('Failed to get all analytics from IndexedDB:', error);
       return {};
     }
   },
@@ -173,10 +175,10 @@ export const analyticsStorage = {
   clearAnalytics: async (monthId) => {
     try {
       await indexedDBStorage.delete(STORES.ANALYTICS, monthId);
-      console.log('Analytics cleared from IndexedDB for month:', monthId);
+      logger.log('Analytics cleared from IndexedDB for month:', monthId);
       return true;
     } catch (error) {
-      console.error('Failed to clear analytics from IndexedDB:', error);
+              logger.error('Failed to clear analytics from IndexedDB:', error);
       return false;
     }
   },
@@ -184,10 +186,10 @@ export const analyticsStorage = {
   clearAllAnalytics: async () => {
     try {
       await indexedDBStorage.clear(STORES.ANALYTICS);
-      console.log('All analytics cleared from IndexedDB');
+      logger.log('All analytics cleared from IndexedDB');
       return true;
     } catch (error) {
-      console.error('Failed to clear all analytics from IndexedDB:', error);
+              logger.error('Failed to clear all analytics from IndexedDB:', error);
       return false;
     }
   },
@@ -225,14 +227,14 @@ export const userStorage = {
         count: users.length
       };
       await indexedDBStorage.set(STORES.USERS, 'all-users', data);
-      // Only log once per session to reduce spam (unless silent)
-      if (!silent && process.env.NODE_ENV === 'development' && !window._usersCachedLogged) {
-        console.log('Users cached in IndexedDB:', users.length, 'users');
-        window._usersCachedLogged = true;
-      }
+              // Only log once per session to reduce spam (unless silent)
+        if (!silent && import.meta.env.MODE === 'development' && !window._usersCachedLogged) {
+          logger.log('Users cached in IndexedDB:', users.length, 'users');
+          window._usersCachedLogged = true;
+        }
       return true;
     } catch (error) {
-      console.error('Failed to store users in IndexedDB:', error);
+              logger.error('Failed to store users in IndexedDB:', error);
       return false;
     }
   },
@@ -242,7 +244,7 @@ export const userStorage = {
       const result = await indexedDBStorage.get(STORES.USERS, 'all-users');
       return result?.users || null;
     } catch (error) {
-      console.error('Failed to get users from IndexedDB:', error);
+              logger.error('Failed to get users from IndexedDB:', error);
       return null;
     }
   },
@@ -260,13 +262,13 @@ export const userStorage = {
       if (window._cachedUsersLogged) delete window._cachedUsersLogged;
       if (window._fetchingUsersLogged) delete window._fetchingUsersLogged;
       
-      // Only log in development mode
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Users cache cleared from IndexedDB');
-      }
+              // Only log in development mode
+        if (import.meta.env.MODE === 'development') {
+          logger.log('Users cache cleared from IndexedDB');
+        }
       return true;
     } catch (error) {
-      console.error('Failed to clear users cache from IndexedDB:', error);
+              logger.error('Failed to clear users cache from IndexedDB:', error);
       return false;
     }
   },
@@ -301,7 +303,7 @@ export const userStorage = {
       await userStorage.storeUsers(updatedUsers);
       return true;
     } catch (error) {
-      console.error('Failed to update user in IndexedDB cache:', error);
+              logger.error('Failed to update user in IndexedDB cache:', error);
       return false;
     }
   },
@@ -319,15 +321,15 @@ export const userStorage = {
       if (!exists) {
         const updatedUsers = [newUser, ...users];
         await userStorage.storeUsers(updatedUsers);
-        // Only log in development mode
-        if (process.env.NODE_ENV === 'development') {
-          console.log('New user added to IndexedDB cache:', newUser.name);
-        }
+                  // Only log in development mode
+          if (import.meta.env.MODE === 'development') {
+            logger.log('New user added to IndexedDB cache:', newUser.name);
+          }
       }
       
       return true;
     } catch (error) {
-      console.error('Failed to add user to IndexedDB cache:', error);
+              logger.error('Failed to add user to IndexedDB cache:', error);
       return false;
     }
   }
@@ -344,10 +346,10 @@ export const taskStorage = {
         count: tasks.length
       };
       await indexedDBStorage.set(STORES.TASKS, monthId, data);
-      console.log('Tasks cached in IndexedDB for month:', monthId, 'count:', tasks.length);
+      logger.log('Tasks cached in IndexedDB for month:', monthId, 'count:', tasks.length);
       return true;
     } catch (error) {
-      console.error('Failed to store tasks in IndexedDB:', error);
+              logger.error('Failed to store tasks in IndexedDB:', error);
       return false;
     }
   },
@@ -357,7 +359,7 @@ export const taskStorage = {
       const result = await indexedDBStorage.get(STORES.TASKS, monthId);
       return result?.tasks || null;
     } catch (error) {
-      console.error('Failed to get tasks from IndexedDB:', error);
+              logger.error('Failed to get tasks from IndexedDB:', error);
       return null;
     }
   },
@@ -412,12 +414,12 @@ export const taskStorage = {
       if (!exists) {
         const updatedTasks = [normalizedTask, ...tasks]; // Add to beginning (newest first)
         await taskStorage.storeTasks(monthId, updatedTasks);
-        console.log('New task added to IndexedDB cache:', newTask.id, 'for month:', monthId);
+        logger.log('New task added to IndexedDB cache:', newTask.id, 'for month:', monthId);
       }
       
       return true;
     } catch (error) {
-      console.error('Failed to add task to IndexedDB cache:', error);
+              logger.error('Failed to add task to IndexedDB cache:', error);
       return false;
     }
   },
@@ -455,10 +457,10 @@ export const taskStorage = {
       });
       
       await taskStorage.storeTasks(monthId, updatedTasks);
-      console.log('Task updated in IndexedDB cache:', taskId, 'for month:', monthId);
+      logger.log('Task updated in IndexedDB cache:', taskId, 'for month:', monthId);
       return true;
     } catch (error) {
-      console.error('Failed to update task in IndexedDB cache:', error);
+              logger.error('Failed to update task in IndexedDB cache:', error);
       return false;
     }
   },
@@ -470,10 +472,10 @@ export const taskStorage = {
       
       const updatedTasks = tasks.filter(task => task.id !== taskId);
       await taskStorage.storeTasks(monthId, updatedTasks);
-      console.log('Task removed from IndexedDB cache:', taskId, 'for month:', monthId);
+      logger.log('Task removed from IndexedDB cache:', taskId, 'for month:', monthId);
       return true;
     } catch (error) {
-      console.error('Failed to remove task from IndexedDB cache:', error);
+  
       return false;
     }
   },
@@ -481,10 +483,10 @@ export const taskStorage = {
   clearTasks: async (monthId) => {
     try {
       await indexedDBStorage.delete(STORES.TASKS, monthId);
-      console.log('Tasks cleared from IndexedDB for month:', monthId);
+     
       return true;
     } catch (error) {
-      console.error('Failed to clear tasks from IndexedDB:', error);
+ 
       return false;
     }
   },
@@ -492,10 +494,10 @@ export const taskStorage = {
   clearAllTasks: async () => {
     try {
       await indexedDBStorage.clear(STORES.TASKS);
-      console.log('All tasks cleared from IndexedDB');
+   
       return true;
     } catch (error) {
-      console.error('Failed to clear all tasks from IndexedDB:', error);
+ 
       return false;
     }
   },
@@ -509,7 +511,7 @@ export const taskStorage = {
       });
       return allTasks;
     } catch (error) {
-      console.error('Failed to get all tasks from IndexedDB:', error);
+    
       return {};
     }
   },
@@ -526,7 +528,7 @@ export const taskStorage = {
       }
       return allTasks;
     } catch (error) {
-      console.error('Failed to get tasks for multiple months from IndexedDB:', error);
+   
       return {};
     }
   }

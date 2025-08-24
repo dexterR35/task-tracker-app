@@ -197,7 +197,7 @@ const DashboardWrapper = ({
             {showTaskForm ? "Hide Form" : "Create Task"}
           </DynamicButton>
 
-          {isAdmin && onGenerateAnalytics && filteredTasks.length > 0 && (
+          {isAdmin && onGenerateAnalytics && (
             <DynamicButton
               variant="success"
               size="md"

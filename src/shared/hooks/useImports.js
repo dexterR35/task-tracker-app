@@ -60,23 +60,17 @@ import {
   signOut
 } from "firebase/auth";
 export { initializeApp, getApps, getApp };
-export { getAuth, signOut,setPersistence, browserLocalPersistence ,createUserWithEmailAndPassword};
+export { getAuth, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword };
+
 // Utilities
 import useFormat from "./useFormat";
 export { useFormat };
 
-// Analytics hook
-
-
-
-
-// react-dom
-
+// React Router
 import { useNavigate, useSearchParams, useParams, createBrowserRouter, Navigate, useLocation, RouterProvider } from "react-router-dom";
 export { useNavigate, useSearchParams, useParams, createBrowserRouter, Navigate, useLocation, RouterProvider };
 
-//recharts
-
+// Recharts
 import {
   ResponsiveContainer,
   BarChart,
@@ -112,12 +106,6 @@ export {
   ScatterChart,
   Scatter,
 };
-
-//pdf
-
-
-
-
 
 // Sanitization utilities
 export { 

@@ -22,6 +22,7 @@ import {
 } from "firebase/app";
 import { normalizeTimestamp } from "../../shared/utils/dateUtils";
 import { db, auth } from "../../app/firebase";
+import { logger } from "../../shared/utils/logger";
 
 export const usersApi = createApi({
   reducerPath: "usersApi",
@@ -42,8 +43,8 @@ export const usersApi = createApi({
             ) {
               const cachedUsers = await userStorage.getUsers();
               // Only log once per session to reduce spam
-              if (process.env.NODE_ENV === 'development' && !window._cachedUsersLogged) {
-                console.log("Using cached users:", cachedUsers.length);
+              if (import.meta.env.MODE === 'development' && !window._cachedUsersLogged) {
+                logger.log("Using cached users:", cachedUsers.length);
                 window._cachedUsersLogged = true;
               }
               return { data: cachedUsers };
@@ -51,8 +52,8 @@ export const usersApi = createApi({
           }
 
           // Only log once per session to reduce spam
-          if (process.env.NODE_ENV === 'development' && !window._fetchingUsersLogged) {
-            console.log("Fetching users from database...");
+          if (import.meta.env.MODE === 'development' && !window._fetchingUsersLogged) {
+            logger.log("Fetching users from database...");
             window._fetchingUsersLogged = true;
           }
           const snap = await getDocs(
@@ -113,14 +114,14 @@ export const usersApi = createApi({
               updateCache();
             },
             (error) => {
-              console.error("Users subscription error:", error);
+              logger.error("Users subscription error:", error);
             }
           );
 
           await cacheEntryRemoved;
           unsubscribe();
         } catch (error) {
-          console.error("Failed to set up users subscription:", error);
+          logger.error("Failed to set up users subscription:", error);
         }
       },
       providesTags: ["Users"],
@@ -141,12 +142,12 @@ export const usersApi = createApi({
           // Create secondary auth instance for user creation
           const secondaryApp = getApps().length === 0 
             ? initializeApp({
-                apiKey: process.env.VITE_FIREBASE_API_KEY,
-                authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-                projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-                storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-                messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-                appId: process.env.VITE_FIREBASE_APP_ID,
+                apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+                authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+                projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+                storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+                messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+                appId: import.meta.env.VITE_FIREBASE_APP_ID,
               })
             : getApp();
           

@@ -1,4 +1,5 @@
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from './analyticsTypes';
+import { logger } from './logger';
 
 /**
  * Centralized Analytics Calculator
@@ -70,11 +71,19 @@ export class AnalyticsCalculator {
    * @returns {Object} Complete analytics object
    */
   calculateAllAnalytics(tasks, monthId, userId = null) {
+    // Create a cache key for memoization
+    const cacheKey = `${monthId}_${userId || 'all'}_${tasks.length}_${tasks.reduce((sum, task) => sum + (task.updatedAt || 0), 0)}`;
+    
+    // Check if we have cached analytics for this exact data
+    if (this._analyticsCache && this._analyticsCache[cacheKey]) {
+      return this._analyticsCache[cacheKey];
+    }
+    
     // Validate input
     if (!Array.isArray(tasks)) {
-      console.error('AnalyticsCalculator: tasks is not an array:', tasks);
-      console.error('Type of tasks:', typeof tasks);
-      console.error('Tasks value:', tasks);
+      logger.error('AnalyticsCalculator: tasks is not an array:', tasks);
+      logger.error('Type of tasks:', typeof tasks);
+      logger.error('Tasks value:', tasks);
       return {
         monthId,
         userId,
@@ -86,18 +95,32 @@ export class AnalyticsCalculator {
         products: { totalProducts: 0, products: [], totalTasks: 0, totalHours: 0 },
         ai: { totalAITasks: 0, totalAIHours: 0, aiPercentage: 0 },
         trends: {},
+        aiBreakdownByProduct: {},
+        aiBreakdownByMarket: {},
+        daily: {},
+        aiModels: {},
+        deliverables: {},
         raw: { totalTasks: 0, tasks: [] }
       };
     }
 
     // For real-time updates, always calculate fresh analytics
     // This ensures CRUD operations are immediately reflected
-    console.log(`Calculating fresh analytics for ${monthId} from ${tasks.length} tasks`);
+    // logger.log(`Calculating fresh analytics for ${monthId} from ${tasks.length} tasks`);
+    // logger.log('Sample task structure:', tasks[0]);
+    // logger.log('Tasks with markets:', tasks.filter(t => Array.isArray(t.markets) && t.markets.length > 0).length);
+    // logger.log('Tasks with products:', tasks.filter(t => t.product).length);
+    // logger.log('Tasks with AI:', tasks.filter(t => t.aiUsed).length);
 
     // Filter tasks by user if specified
     const filteredTasks = userId 
       ? tasks.filter(task => task.userUID === userId)
       : tasks;
+
+    // logger.log(`Filtered tasks: ${filteredTasks.length} tasks for ${userId || 'all users'}`);
+    // logger.log('Sample filtered task:', filteredTasks[0]);
+    // logger.log('Tasks with markets:', filteredTasks.filter(t => Array.isArray(t.markets) && t.markets.length > 0).length);
+    // logger.log('Sample task markets:', filteredTasks.find(t => Array.isArray(t.markets) && t.markets.length > 0)?.markets);
 
     const analytics = {
       monthId,
@@ -110,6 +133,12 @@ export class AnalyticsCalculator {
       products: this.calculateProductAnalytics(filteredTasks),
       ai: this.calculateAIAnalytics(filteredTasks),
       trends: this.calculateTrends(filteredTasks),
+      // Add the properties that PreviewPage expects
+      aiBreakdownByProduct: this.calculateAIBreakdownByProduct(filteredTasks),
+      aiBreakdownByMarket: this.calculateAIBreakdownByMarket(filteredTasks),
+      daily: this.calculateDailyAnalytics(filteredTasks),
+      aiModels: this.calculateAIModelsAnalytics(filteredTasks),
+      deliverables: this.calculateDeliverablesAnalytics(filteredTasks),
       raw: {
         totalTasks: filteredTasks.length,
         tasks: filteredTasks
@@ -118,6 +147,18 @@ export class AnalyticsCalculator {
 
     // Cache the results for future use
     this.cacheAnalytics(monthId, analytics);
+    
+    // Store in memory cache for memoization
+    if (!this._analyticsCache) {
+      this._analyticsCache = {};
+    }
+    this._analyticsCache[cacheKey] = analytics;
+    
+    // Limit cache size to prevent memory leaks
+    const cacheKeys = Object.keys(this._analyticsCache);
+    if (cacheKeys.length > 50) {
+      delete this._analyticsCache[cacheKeys[0]];
+    }
     
     return analytics;
   }
@@ -332,9 +373,19 @@ export class AnalyticsCalculator {
     // Sort markets by hours (most active first)
     markets.sort((a, b) => b.hours - a.hours);
 
+    // Create the structure that PreviewPage expects - simplified for charts
+    const marketsForCharts = {};
+    markets.forEach(market => {
+      marketsForCharts[market.name] = market.count; // Just the count for charts
+    });
+
+    // logger.log('Markets calculated:', markets);
+    // logger.log('Markets for charts:', marketsForCharts);
+
     return {
       totalMarkets: markets.length,
-      markets,
+      markets: marketsForCharts, // Use the chart-compatible structure
+      marketsList: markets, // Keep the original array for other uses
       totalTasks: markets.reduce((sum, market) => sum + market.count, 0),
       totalHours: markets.reduce((sum, market) => sum + market.hours, 0),
       marketByTime,
@@ -430,9 +481,19 @@ export class AnalyticsCalculator {
     // Sort products by hours (most active first)
     products.sort((a, b) => b.hours - a.hours);
 
+    // Create the structure that PreviewPage expects - simplified for charts
+    const productsForCharts = {};
+    products.forEach(product => {
+      productsForCharts[product.name] = product.count; // Just the count for charts
+    });
+
+    // logger.log('Products calculated:', products);
+    // logger.log('Products for charts:', productsForCharts);
+
     return {
       totalProducts: products.length,
-      products,
+      products: productsForCharts, // Use the chart-compatible structure
+      productsList: products, // Keep the original array for other uses
       totalTasks: products.reduce((sum, product) => sum + product.count, 0),
       totalHours: products.reduce((sum, product) => sum + product.hours, 0),
       productByTime,
@@ -685,7 +746,7 @@ export class AnalyticsCalculator {
         return {
           value: markets.totalMarkets,
           additionalData: {
-            markets: markets.markets,
+            markets: markets.marketsList, // Use the detailed list for metrics
             totalTasks: markets.totalTasks,
             totalHours: markets.totalHours
           }
@@ -695,7 +756,7 @@ export class AnalyticsCalculator {
         return {
           value: products.totalProducts,
           additionalData: {
-            products: products.products,
+            products: products.productsList, // Use the detailed list for metrics
             totalTasks: products.totalTasks,
             totalHours: products.totalHours
           }
@@ -722,6 +783,156 @@ export class AnalyticsCalculator {
     });
 
     return metrics;
+  }
+
+  /**
+   * Calculate AI breakdown by product
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateAIBreakdownByProduct(tasks) {
+    const breakdown = {};
+
+    tasks.forEach(task => {
+      if (task.product) {
+        if (!breakdown[task.product]) {
+          breakdown[task.product] = {
+            aiTasks: 0,
+            nonAiTasks: 0,
+            totalTasks: 0,
+            aiHours: 0,
+            totalHours: 0
+          };
+        }
+
+        const hours = parseFloat(task.timeInHours) || 0;
+        const aiHours = task.aiUsed ? (parseFloat(task.timeSpentOnAI) || 0) : 0;
+
+        breakdown[task.product].totalTasks += 1;
+        breakdown[task.product].totalHours += hours;
+
+        if (task.aiUsed) {
+          breakdown[task.product].aiTasks += 1;
+          breakdown[task.product].aiHours += aiHours;
+        } else {
+          breakdown[task.product].nonAiTasks += 1;
+        }
+      }
+    });
+
+    return breakdown;
+  }
+
+  /**
+   * Calculate AI breakdown by market
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateAIBreakdownByMarket(tasks) {
+    const breakdown = {};
+
+    tasks.forEach(task => {
+      if (Array.isArray(task.markets)) {
+        task.markets.forEach(market => {
+          if (!breakdown[market]) {
+            breakdown[market] = {
+              aiTasks: 0,
+              nonAiTasks: 0,
+              totalTasks: 0,
+              aiHours: 0,
+              totalHours: 0
+            };
+          }
+
+          const hours = parseFloat(task.timeInHours) || 0;
+          const aiHours = task.aiUsed ? (parseFloat(task.timeSpentOnAI) || 0) : 0;
+
+          breakdown[market].totalTasks += 1;
+          breakdown[market].totalHours += hours;
+
+          if (task.aiUsed) {
+            breakdown[market].aiTasks += 1;
+            breakdown[market].aiHours += aiHours;
+          } else {
+            breakdown[market].nonAiTasks += 1;
+          }
+        });
+      }
+    });
+
+    return breakdown;
+  }
+
+  /**
+   * Calculate daily analytics
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateDailyAnalytics(tasks) {
+    const daily = {};
+
+    tasks.forEach(task => {
+      const date = task.createdAt?.toDate?.() || new Date(task.createdAt);
+      const dateKey = date.toISOString().split('T')[0];
+
+      if (!daily[dateKey]) {
+        daily[dateKey] = { count: 0, hours: 0, aiTasks: 0, aiHours: 0 };
+      }
+
+      daily[dateKey].count += 1;
+      daily[dateKey].hours += parseFloat(task.timeInHours) || 0;
+
+      if (task.aiUsed) {
+        daily[dateKey].aiTasks += 1;
+        daily[dateKey].aiHours += parseFloat(task.timeSpentOnAI) || 0;
+      }
+    });
+
+    return daily;
+  }
+
+  /**
+   * Calculate AI models analytics
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateAIModelsAnalytics(tasks) {
+    const aiModels = {};
+
+    tasks.forEach(task => {
+      if (task.aiUsed && Array.isArray(task.aiModels)) {
+        task.aiModels.forEach(model => {
+          if (!aiModels[model]) {
+            aiModels[model] = 0;
+          }
+          aiModels[model] += 1;
+        });
+      }
+    });
+
+    return aiModels;
+  }
+
+  /**
+   * Calculate deliverables analytics
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateDeliverablesAnalytics(tasks) {
+    const deliverables = {};
+
+    tasks.forEach(task => {
+      if (Array.isArray(task.deliverables)) {
+        task.deliverables.forEach(deliverable => {
+          if (!deliverables[deliverable]) {
+            deliverables[deliverable] = 0;
+          }
+          deliverables[deliverable] += 1;
+        });
+      }
+    });
+
+    return deliverables;
   }
 }
 

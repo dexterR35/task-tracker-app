@@ -21,6 +21,7 @@ import {
   sanitizeText,
 } from "../../../shared/utils/sanitization";
 import { useNotifications } from "../../../shared/hooks/useNotifications";
+import { logger } from "../../../shared/utils/logger";
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
@@ -73,14 +74,14 @@ const TasksTable = ({
 
   // Debug: Log the first task to see its structure
   if (allTasks && allTasks.length > 0) {
-    console.log("First task structure:", allTasks[0]);
-    console.log("First task ID:", allTasks[0].id);
-    console.log("First task keys:", Object.keys(allTasks[0]));
+    logger.debug("First task structure:", allTasks[0]);
+    logger.debug("First task ID:", allTasks[0].id);
+    logger.debug("First task keys:", Object.keys(allTasks[0]));
   }
 
   // Debug: Log user filter information
-  console.log("TasksTable - userFilter:", userFilter);
-  console.log("TasksTable - tasks count:", allTasks?.length || 0);
+  logger.debug("TasksTable - userFilter:", userFilter);
+  logger.debug("TasksTable - tasks count:", allTasks?.length || 0);
 
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = allTasks || [];
@@ -209,12 +210,12 @@ const TasksTable = ({
 
   const saveEdit = async (t) => {
     try {
-      console.log("Task object for update:", t);
-      console.log("Task ID type:", typeof t.id);
-      console.log("Task ID value:", t.id);
-      console.log("Task ID includes slash:", t.id.includes("/"));
-      console.log("Task number:", t.taskNumber);
-      console.log("Task monthId:", t.monthId);
+      logger.debug("Task object for update:", t);
+      logger.debug("Task ID type:", typeof t.id);
+      logger.debug("Task ID value:", t.id);
+      logger.debug("Task ID includes slash:", t.id.includes("/"));
+      logger.debug("Task number:", t.taskNumber);
+      logger.debug("Task monthId:", t.monthId);
       setRowActionId(t.id);
 
       // Prepare form data for sanitization
@@ -247,11 +248,11 @@ const TasksTable = ({
         userUID: t.userUID || "", // Preserve user UID
       };
 
-      console.log("Form data before sanitization:", formData);
+      logger.debug("Form data before sanitization:", formData);
 
       // Sanitize the form data
       const sanitizedUpdates = sanitizeTaskData(formData);
-      console.log("Sanitized updates:", sanitizedUpdates);
+      logger.debug("Sanitized updates:", sanitizedUpdates);
 
       // Additional validation for required fields
       const errs = [];
@@ -300,7 +301,7 @@ const TasksTable = ({
           : 0,
       };
 
-      console.log("Final updates object:", updates);
+      logger.debug("Final updates object:", updates);
 
       // Update task using Redux mutation (automatically updates cache)
       // Extract the document ID from the task ID (in case it's a full path)
@@ -325,14 +326,14 @@ const TasksTable = ({
         id: taskId,
         updates: updatesWithMonthId,
       }).unwrap();
-      console.log("[TasksTable] updated task", {
+      logger.log("[TasksTable] updated task", {
         id: t.id,
         monthId: taskMonthId,
         updates: updatesWithMonthId,
       });
       addSuccess("Task updated successfully!");
     } catch (e) {
-      console.error("Task update error:", e);
+      logger.error("Task update error:", e);
       addError(`Failed to update task: ${e.message || "Please try again."}`);
     } finally {
       setEditingId(null);
@@ -359,7 +360,7 @@ const TasksTable = ({
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
       addSuccess("Task deleted successfully!");
     } catch (e) {
-      console.error("Task delete error:", e);
+      logger.error("Task delete error:", e);
       addError(`Failed to delete task: ${e.message || "Please try again."}`);
     } finally {
       setRowActionId(null);

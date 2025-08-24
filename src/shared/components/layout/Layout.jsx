@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import DynamicButton from "../ui/DynamicButton";
+import { logger } from "../../utils/logger";
 
 import {
   ArrowRightOnRectangleIcon,
@@ -21,7 +22,7 @@ const Layout = () => {
       await logout();
       navigate("/");
     } catch (error) {
-      console.error("Logout failed:", error);
+      logger.error("Logout failed:", error);
     }
   };
 

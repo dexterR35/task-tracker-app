@@ -9,6 +9,7 @@ import {
   browserLocalPersistence,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { logger } from "../shared/utils/logger";
 
 const firebaseConfig = {
   apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
@@ -32,9 +33,9 @@ export const auth = getAuth(appInstance);
 export const db = getFirestore(appInstance);
 
 // Enable logging in development
-if (process.env.NODE_ENV === "development") {
-  console.log("🔥 Firebase initialized (single app)");
-  console.log("App name:", appInstance.name);
+if (import.meta.env.MODE === "development") {
+  logger.log("🔥 Firebase initialized (single app)");
+  logger.log("App name:", appInstance.name);
 }
 
 // --- Persistence: use local persistence (survives browser restarts) ---
@@ -42,8 +43,8 @@ if (process.env.NODE_ENV === "development") {
   try {
     await setPersistence(auth, browserLocalPersistence);
   } catch (e) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Failed to set local persistence:", e?.message || e);
+    if (import.meta.env.MODE === "development") {
+      logger.warn("Failed to set local persistence:", e?.message || e);
     }
   }
 })();

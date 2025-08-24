@@ -1,6 +1,7 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback,useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { analyticsCalculator, calculateAnalyticsFromTasks, getMetricForCard, getAllMetrics } from '../utils/analyticsCalculator';
+import { logger } from '../utils/logger';
 import { ANALYTICS_TYPES } from '../utils/analyticsTypes';
 
 /**
@@ -15,27 +16,6 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
   const getTasksFromRedux = useCallback((monthId) => {
     const queries = tasksApiState?.queries || {};
     
-    // Debug: log all available queries first
-    console.log('All available queries:', Object.keys(queries));
-    console.log('Looking for monthId:', monthId, 'userId:', userId);
-    
-    // Log the structure of the first few queries to understand the format
-    const queryKeys = Object.keys(queries);
-    if (queryKeys.length > 0) {
-      console.log('First query key:', queryKeys[0]);
-      console.log('First query data:', queries[queryKeys[0]]);
-      
-      // Log all query keys that contain the monthId
-      const monthQueries = queryKeys.filter(key => key.includes(monthId));
-      console.log('Queries containing monthId:', monthQueries);
-      
-      // Log all query keys that contain userId if provided
-      if (userId) {
-        const userQueries = queryKeys.filter(key => key.includes(userId));
-        console.log('Queries containing userId:', userQueries);
-      }
-    }
-    
     // Try different query key formats based on the actual API structure
     let queryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":null,"useCache":true})`;
     let data = queries[queryKey]?.data;
@@ -46,18 +26,31 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       data = queries[queryKey]?.data;
     }
     
-    if (!data) {
-      // Try with userId if provided
-      if (userId) {
-        queryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${userId}","useCache":true})`;
-        data = queries[queryKey]?.data;
+    // If userId is provided, prioritize user-specific queries
+    if (userId) {
+      const userQueryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${userId}","useCache":true})`;
+      const userData = queries[userQueryKey]?.data;
+      
+      if (userData) {
+        data = userData;
+        queryKey = userQueryKey;
+        // Using user-specific query with cache
+      } else {
+        // Try without useCache for userId
+        const userQueryKeyNoCache = `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${userId}"})`;
+        const userDataNoCache = queries[userQueryKeyNoCache]?.data;
+        
+        if (userDataNoCache) {
+          data = userDataNoCache;
+          queryKey = userQueryKeyNoCache;
+          // Using user-specific query without cache
+        } else {
+          // No user-specific query found for userId
+          // If no user-specific query exists, don't use any data
+          // This will force the system to wait for the correct user-specific data
+          return [];
+        }
       }
-    }
-    
-    if (!data && userId) {
-      // Try without useCache for userId
-      queryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${userId}"})`;
-      data = queries[queryKey]?.data;
     }
     
     // Also try the RTK Query cache key format
@@ -65,17 +58,15 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       const cacheKey = `${monthId}_user_${userId}`;
       const cacheQueryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${userId}","useCache":true})`;
       data = queries[cacheQueryKey]?.data;
-      if (data) {
-        console.log('Found data using cache key format:', cacheKey);
-      }
+      // Found data using cache key format
     }
     
     // If still no data, try to find any query that matches the monthId
     if (!data) {
       const matchingQueries = Object.keys(queries).filter(key => 
-        key.includes(`"monthId":"${monthId}"`)
+        key.includes(`"monthId":"${monthId}"`) && key.includes('subscribeToMonthTasks')
       );
-      console.log('Matching queries for monthId:', matchingQueries);
+      // Matching subscribeToMonthTasks queries for monthId
       
       if (matchingQueries.length > 0) {
         // Prioritize user-specific queries if userId is provided
@@ -85,7 +76,7 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
           );
           if (userSpecificQuery) {
             data = queries[userSpecificQuery]?.data;
-            console.log('Using user-specific query:', userSpecificQuery);
+            // Using user-specific query
           } else {
             // If no user-specific query found, don't use any query
             console.log('No user-specific query found, not using any query');
@@ -110,13 +101,13 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       }
     }
     
-    console.log('Found data:', data?.length || 0, 'tasks');
-    console.log('Data type:', typeof data);
-    console.log('Data value:', data);
+    logger.debug('Found data:', data?.length || 0, 'tasks');
+    logger.debug('Data type:', typeof data);
+    logger.debug('Data value:', data);
     
     // Ensure we always return an array
     if (!data) {
-      console.log('No data found, returning empty array');
+      logger.debug('No data found, returning empty array');
       return [];
     }
     
@@ -128,14 +119,21 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     // If userId is provided, validate that the data is actually filtered for that user
     if (userId && data.length > 0) {
       const userTasks = data.filter(task => task.userUID === userId);
-      console.log(`Validation: Found ${userTasks.length} tasks for user ${userId} out of ${data.length} total tasks`);
       
-      if (userTasks.length !== data.length) {
-        console.warn(`Data mismatch: Expected ${data.length} tasks for user ${userId}, but only ${userTasks.length} belong to this user`);
-        console.warn('This suggests the query returned all tasks instead of user-specific tasks');
-        // Return only the user's tasks
-        return userTasks;
+      // Only log validation once per data change
+      const validationKey = `${userId}_${data.length}_${userTasks.length}`;
+      if (validationKey !== window._lastValidationKey) {
+        window._lastValidationKey = validationKey;
+        
+        if (userTasks.length === 0) {
+          console.log(`No tasks found for user ${userId} (${data.length} total tasks exist)`);
+        } else if (import.meta.env.VITE_DEBUG === 'true') {
+          console.log(`Found ${userTasks.length} tasks for user ${userId}`);
+        }
       }
+      
+      // Always return only the user's tasks when userId is provided
+      return userTasks;
     }
     
     return data;
@@ -148,24 +146,29 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     }
 
     const tasks = getTasksFromRedux(monthId);
-    console.log(`Analytics calculation - monthId: ${monthId}, userId: ${userId}, tasks count: ${tasks?.length || 0}`);
-    console.log('Tasks type:', typeof tasks);
-    console.log('Tasks value:', tasks);
     
-    if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
-      console.log(`No valid tasks found in Redux for month: ${monthId}`);
+    if (!tasks || !Array.isArray(tasks)) {
+      logger.debug(`No valid tasks found in Redux for month: ${monthId}`);
       return null;
     }
+    
+    // If tasks array is empty, still calculate analytics (will show 0 values)
 
     try {
       const result = calculateAnalyticsFromTasks(tasks, monthId, userId);
-      console.log('Analytics calculated:', result);
       return result;
     } catch (error) {
-      console.error('Error calculating analytics:', error);
+      logger.error('Error calculating analytics:', error);
       return null;
     }
   }, [monthId, userId, getTasksFromRedux]);
+
+  // Clean up validation cache when userId or monthId changes
+  useEffect(() => {
+    return () => {
+      delete window._lastValidationKey;
+    };
+  }, [userId, monthId]);
 
   // Get specific metric for a card
   const getMetric = useCallback((type, category = null) => {
@@ -202,6 +205,17 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
 
   // Check if data is available
   const hasData = useMemo(() => {
+    // If analytics is null, no data
+    if (analytics === null) {
+      return false;
+    }
+    
+    // If analytics exists but has no tasks, still consider it as "has data" (just empty)
+    if (analytics && analytics.summary && analytics.summary.totalTasks === 0) {
+      return true; // User has no tasks, but we have analytics data
+    }
+    
+    // If analytics exists and has tasks, we have data
     return analytics !== null;
   }, [analytics]);
 
