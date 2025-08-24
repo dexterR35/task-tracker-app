@@ -7,8 +7,8 @@ import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliver
 import { useFormat, sanitizeTaskData, sanitizeText } from '../../hooks/useImports';
 import usePagination from '../../hooks/usePagination';
 import { useNotifications } from '../../hooks/useNotifications';
-import LoadingWrapper from '../ui/LoadingWrapper';
-import MultiValueInput from '../ui/MultiValueInput';
+
+import MultiValueInput from './MultiValueInput';
 
 const useFormatDay = () => {
   const { format } = useFormat();

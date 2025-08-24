@@ -1,4 +1,3 @@
-
 import {
   useListAllAnalyticsQuery,
   useGetMonthAnalyticsQuery,
@@ -22,11 +21,10 @@ import {
   Line,
   ScatterChart,
   Scatter,
-  React
+  React,
 } from "../../hooks/useImports";
 import { useFormat } from "../../hooks/useImports";
 import { useNotifications } from "../../hooks/useNotifications";
-import Skeleton from "../../components/ui/Skeleton";
 
 const AdminAnalyticsPage = () => {
   const { format } = useFormat();
@@ -111,10 +109,11 @@ const AdminAnalyticsPage = () => {
                 {isLoading ? (
                   <tr>
                     <td className="px-3 py-3" colSpan={3}>
-                      <div className="space-y-2">
-                        <Skeleton variant="text" width="160px" height="20px" />
-                        <Skeleton variant="text" width="256px" height="20px" />
-                      </div>
+                      {/* 
+                      The page-level loader is often a better UX. */}
+                      <p className="text-gray-400">
+                        Loading saved analytics...
+                      </p>
                     </td>
                   </tr>
                 ) : all.length === 0 ? (
@@ -158,10 +157,7 @@ const AdminAnalyticsPage = () => {
         {current && (
           <div className="bg-white rounded-lg shadow p-4 mt-6">
             <div className="flex justify-between items-center mb-3">
-              <h2 className=" !text-gray-900">
-                Analytics ({current.monthId})
-              </h2>
-     
+              <h2 className=" !text-gray-900">Analytics ({current.monthId})</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
               <div className="card p-3 rounded text-gray-200">

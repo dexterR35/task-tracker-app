@@ -26,6 +26,7 @@ import {
   getDocFromServer,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
 } from "firebase/firestore";
 
 export {
@@ -47,6 +48,7 @@ export {
   getDocFromServer,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
 };
 
 import { initializeApp, getApps, getApp } from "firebase/app";

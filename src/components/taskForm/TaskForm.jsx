@@ -5,7 +5,7 @@ import DynamicButton from "../button/DynamicButton";
 import { useAuth } from "../../hooks/useAuth";
 import { format } from "date-fns";
 import { useDispatch } from "react-redux";
-import { useCreateTaskMutation, useUpdateTaskMutation } from "../../redux/services/tasksApi";
+import { useCreateTaskMutation } from "../../redux/services/tasksApi";
 import { useNotifications } from "../../hooks/useNotifications";
 import {
   marketOptions,
@@ -14,9 +14,8 @@ import {
   aiModelOptions,
   deliverables,
 } from "../../utils/taskOptions";
-import LoadingWrapper from "../ui/LoadingWrapper";
-import Skeleton, { SkeletonForm } from "../ui/Skeleton";
-import MultiValueInput from "../ui/MultiValueInput";
+
+import MultiValueInput from "./MultiValueInput";
 import { 
   sanitizeTaskData, 
   sanitizeTaskCreationData,
@@ -29,7 +28,6 @@ import {
 const TaskForm = ({
   onSubmit: customOnSubmit,
   initialValues: customInitialValues,
-  isEdit = false,
   loading = false,
   error = null,
 }) => {
@@ -39,7 +37,6 @@ const TaskForm = ({
   // Always use current month for task creation
   const monthId = format(new Date(), "yyyy-MM");
   const [createTask] = useCreateTaskMutation();
-  const [updateTask] = useUpdateTaskMutation();
 
   const defaultInitialValues = {
     jiraLink: "",
@@ -112,6 +109,91 @@ const TaskForm = ({
 
   const creatingRef = useRef(false);
 
+  // Helper function to quantize numbers to nearest 0.5
+  const quantize = (n) => {
+    if (typeof n !== 'number' || Number.isNaN(n)) return 0;
+    return Math.round(n * 2) / 2;
+  };
+
+  // Validate AI-related fields when AI is used
+  const validateAIFields = (sanitizedValues) => {
+    if (!sanitizedValues.aiUsed) return null;
+    
+    if (!Array.isArray(sanitizedValues.aiModels) || sanitizedValues.aiModels.length === 0) {
+      return "Please specify at least one AI model when AI is used";
+    }
+    
+    if (!sanitizedValues.timeSpentOnAI || sanitizedValues.timeSpentOnAI < 0.5) {
+      return "Please specify time spent on AI (minimum 0.5h) when AI is used";
+    }
+    
+    return null;
+  };
+
+  // Validate "others" deliverables when "others" is selected
+  const validateOtherDeliverables = (sanitizedValues) => {
+    if (!sanitizedValues.deliverables?.includes("others")) return null;
+    
+    if (!Array.isArray(sanitizedValues.deliverablesOther) || sanitizedValues.deliverablesOther.length === 0) {
+      return "Please specify at least one other deliverable when 'others' is selected";
+    }
+    
+    return null;
+  };
+
+  // Prepare task data for submission
+  const prepareTaskData = (sanitizedValues, taskNumber) => {
+    return {
+      ...sanitizedValues,
+      taskNumber,
+      timeSpentOnAI: (() => {
+        if (!sanitizedValues.aiUsed) return 0;
+        const n = parseFloat(sanitizedValues.timeSpentOnAI);
+        return isNaN(n) ? 0 : quantize(n);
+      })(),
+      timeInHours: (() => {
+        const n = parseFloat(sanitizedValues.timeInHours);
+        return isNaN(n) ? 0 : quantize(n);
+      })(),
+      aiModels: sanitizedValues.aiUsed && Array.isArray(sanitizedValues.aiModels) && sanitizedValues.aiModels.length > 0 ? sanitizedValues.aiModels : false,
+      markets: Array.isArray(sanitizedValues.markets) ? sanitizedValues.markets : [],
+      deliverables: Array.isArray(sanitizedValues.deliverables) ? sanitizedValues.deliverables : [],
+      deliverablesOther: sanitizedValues.deliverables && sanitizedValues.deliverables.includes("others") && Array.isArray(sanitizedValues.deliverablesOther) && sanitizedValues.deliverablesOther.length > 0 ? sanitizedValues.deliverablesOther : false,
+      deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
+      createdBy: user?.uid,
+      createdByName: user?.name || user?.email,
+      userUID: user?.uid,
+      monthId,
+    };
+  };
+
+  // Handle custom submission or create task via API
+  const submitTask = async (taskData) => {
+    if (customOnSubmit) {
+      await customOnSubmit(taskData);
+      addSuccess("Task created successfully!");
+    } else {
+      if (creatingRef.current) return;
+      creatingRef.current = true;
+      const created = await createTask(taskData).unwrap();
+      console.log('[TaskForm] created', { id: created?.id, monthId: created?.monthId });
+      addSuccess("Task created successfully! The task list will update automatically.");
+    }
+  };
+
+  // Handle submission errors
+  const handleSubmissionError = (error) => {
+    if (
+      error?.code === "month-not-generated" ||
+      error?.message === "MONTH_NOT_GENERATED"
+    ) {
+      addError("Please tell the admin to generate the current month first.");
+    } else {
+      console.error("Error submitting task:", error);
+      addError("Failed to submit task. Please try again.");
+    }
+  };
+
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       setOuterSubmitting(true);
@@ -119,101 +201,47 @@ const TaskForm = ({
       // Extract task number from Jira link
       const taskNumber = extractTaskNumber(values.jiraLink);
       
-      // First sanitize the data
+      // Sanitize the data
       const sanitizedValues = sanitizeTaskCreationData({
         ...values,
         taskNumber,
       });
       
-      // Then validate the sanitized data (additional server-side validation)
+      // Validate sanitized data
       const validationErrors = validateTaskCreationData(sanitizedValues);
       if (validationErrors.length > 0) {
-        addError(validationErrors[0]); // Show first error
+        addError(validationErrors[0]);
         return;
       }
       
-      // Additional validation for AI fields when AI is used
-      if (sanitizedValues.aiUsed) {
-        if (!Array.isArray(sanitizedValues.aiModels) || sanitizedValues.aiModels.length === 0) {
-          addError("Please specify at least one AI model when AI is used");
-          return;
-        }
-        if (!sanitizedValues.timeSpentOnAI || sanitizedValues.timeSpentOnAI < 0.5) {
-          addError("Please specify time spent on AI (minimum 0.5h) when AI is used");
-          return;
-        }
+      // Validate AI fields
+      const aiValidationError = validateAIFields(sanitizedValues);
+      if (aiValidationError) {
+        addError(aiValidationError);
+        return;
       }
       
-      // Additional validation for "others" deliverables when "others" is selected
-      if (sanitizedValues.deliverables && sanitizedValues.deliverables.includes("others")) {
-        if (!Array.isArray(sanitizedValues.deliverablesOther) || sanitizedValues.deliverablesOther.length === 0) {
-          addError("Please specify at least one other deliverable when 'others' is selected");
-          return;
-        }
+      // Validate other deliverables
+      const deliverablesValidationError = validateOtherDeliverables(sanitizedValues);
+      if (deliverablesValidationError) {
+        addError(deliverablesValidationError);
+        return;
       }
       
-      const quantize = (n) => {
-        if (typeof n !== 'number' || Number.isNaN(n)) return 0;
-        return Math.round(n * 2) / 2;
-      };
-
-      const taskData = {
-        ...sanitizedValues,
-        timeSpentOnAI: (() => {
-          if (!sanitizedValues.aiUsed) return 0;
-          const n = parseFloat(sanitizedValues.timeSpentOnAI);
-          return isNaN(n) ? 0 : quantize(n);
-        })(),
-        timeInHours: (() => {
-          const n = parseFloat(sanitizedValues.timeInHours);
-          return isNaN(n) ? 0 : quantize(n);
-        })(),
-        aiModels: sanitizedValues.aiUsed && Array.isArray(sanitizedValues.aiModels) && sanitizedValues.aiModels.length > 0 ? sanitizedValues.aiModels : false,
-        markets: Array.isArray(sanitizedValues.markets) ? sanitizedValues.markets : [],
-        deliverables: Array.isArray(sanitizedValues.deliverables) ? sanitizedValues.deliverables : [],
-        deliverablesOther: sanitizedValues.deliverables && sanitizedValues.deliverables.includes("others") && Array.isArray(sanitizedValues.deliverablesOther) && sanitizedValues.deliverablesOther.length > 0 ? sanitizedValues.deliverablesOther : false,
-        deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
-        createdBy: user?.uid,
-        createdByName: user?.name || user?.email,
-        userUID: user?.uid,
-        monthId,
-      };
+      // Prepare task data
+      const taskData = prepareTaskData(sanitizedValues, taskNumber);
 
       console.log("[TaskForm] submit", {
-        isEdit,
-        ...(isEdit ? { id: initialValues.id } : {}),
         monthId,
         taskData,
       });
       
-      if (customOnSubmit) {
-        await customOnSubmit(taskData);
-        addSuccess(isEdit ? "Task updated successfully!" : "Task created successfully!");
-      } else if (isEdit && initialValues.id) {
-        if (creatingRef.current) return;
-        creatingRef.current = true;
-        const updated = await updateTask({ monthId, id: initialValues.id, updates: taskData }).unwrap();
-        console.log('[TaskForm] updated', updated);
-        addSuccess("Task updated successfully!");
-      } else {
-        if (creatingRef.current) return;
-        creatingRef.current = true;
-        const created = await createTask(taskData).unwrap();
-        console.log('[TaskForm] created', { id: created?.id, monthId: created?.monthId });
-        addSuccess("Task created successfully! The task list will update automatically.");
-      }
-
-      if (!isEdit) resetForm();
+      // Submit task
+      await submitTask(taskData);
+      resetForm();
+      
     } catch (error) {
-      if (
-        error?.code === "month-not-generated" ||
-        error?.message === "MONTH_NOT_GENERATED"
-      ) {
-        addError("Please tell the admin to generate the current month first.");
-      } else {
-        console.error("Error submitting task:", error);
-        addError("Failed to submit task. Please try again.");
-      }
+      handleSubmissionError(error);
     } finally {
       creatingRef.current = false;
       setSubmitting(false);
@@ -231,10 +259,10 @@ const TaskForm = ({
   };
 
   return (
-    <LoadingWrapper loading={loading} error={error} skeleton="form" skeletonProps={{ fields: 8 }}>
+  
       <div className="max-w-2xl mx-auto p-6 bg-primary rounded-lg shadow-lg">
         <h2 className="mb-2">
-          {isEdit ? "Edit Task" : "Create New Task"}
+          Create New Task
         </h2>
         <Formik
           initialValues={initialValues}
@@ -611,10 +639,10 @@ const TaskForm = ({
                   variant="primary"
                   size="lg"
                   loading={isSubmitting || outerSubmitting}
-                  loadingText={isEdit ? "Updating..." : "Creating..."}
+                  loadingText="Creating..."
                   disabled={!isFormValid()}
                 >
-                  {isEdit ? "Update Task" : "Create Task"}
+                  Create Task
                 </DynamicButton>
               </div>
             </Form>
@@ -622,7 +650,7 @@ const TaskForm = ({
           }}
         </Formik>
       </div>
-    </LoadingWrapper>
+ 
   );
 };
 

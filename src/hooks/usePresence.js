@@ -1,4 +1,4 @@
-import { doc, setDoc, serverTimestamp, useEffect } from "./useImports";
+import { doc, setDoc, serverTimestamp, useEffect, arrayUnion } from "./useImports";
 import { db } from "../firebase";
 
 // 10 minutes heartbeat
@@ -18,11 +18,18 @@ export function usePresence(userOrId) {
 
     const beat = async () => {
       try {
+        const heartbeatId = `heartbeat_${Date.now()}`;
+        const heartbeatData = {
+          id: heartbeatId,
+          heartbeat: true,
+          heartbeatAt: serverTimestamp(),
+        };
+
         await setDoc(
           userDocRef,
           {
             userUID: uid,
-            heartbeatAt: serverTimestamp(),
+            heartbeat: arrayUnion(heartbeatData),
             lastActive: serverTimestamp(),
           },
           { merge: true }

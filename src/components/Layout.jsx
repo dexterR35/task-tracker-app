@@ -1,8 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import DynamicButton from "./button/DynamicButton";
-import Skeleton from "./ui/Skeleton";
-import OfflineIndicator from "./ui/OfflineIndicator";
+import OfflineIndicator from "./notification/OfflineIndicator";
 
 import {
   ArrowRightOnRectangleIcon,
@@ -27,7 +26,7 @@ const Layout = () => {
     }
   };
 
-  const isBooting = !listenerActive && loading.initListener;
+
 
   if (!isAuthenticated) {
     return <Outlet />;
@@ -139,15 +138,7 @@ const Layout = () => {
       <main
         className={`${isDashboardPage ? "" : "max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8"} relative`}
       >
-        {isBooting && (
-          <div className="space-y-6">
-            <Skeleton variant="title" width="256px" height="32px" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Skeleton variant="card" height="96px" />
-              <Skeleton variant="card" height="96px" />
-            </div>
-          </div>
-        )}
+   
         <Outlet />
       </main>
     </div>

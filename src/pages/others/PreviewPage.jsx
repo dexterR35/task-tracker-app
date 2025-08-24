@@ -32,7 +32,7 @@ import {
   useRef,
 } from "../../hooks/useImports";
 import { format } from "date-fns";
-import Skeleton from "../../components/ui/Skeleton";
+
 
 // Custom hook for analytics generation with 3-tier strategy
 const useAnalyticsGeneration = (monthId, board, tasks) => {
@@ -194,7 +194,9 @@ const PreviewPage = () => {
               Generating Analytics Preview...
             </div>
             <div className="flex justify-center mb-4">
-              <Skeleton variant="title" width="256px" height="32px" />
+              {/* You can add a specific loading state here if needed, but a table skeleton can be complex.
+                      The page-level loader is often a better UX. */}
+                      <p className="text-gray-400">Generates...</p>
             </div>
             <div className="text-sm text-gray-600">
               Loading from cache or generating from Redux state...

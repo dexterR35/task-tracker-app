@@ -6,9 +6,9 @@ import {
   useSubscribeToMonthTasksQuery,
   useGetMonthBoardExistsQuery,
 } from "../../redux/services/tasksApi";
-import TaskForm from "../task/TaskForm";
-import TasksTable from "../task/TasksTable";
-import TaskMetricsDashboardNew from "../ui/TaskMetricsDashboardNew";
+import TaskForm from "../taskForm/TaskForm";
+import TasksTable from "../taskForm/TasksTable";
+import TaskMetricsDashboard from "../taskForm/TaskMetricsBoard";
 
 import DynamicButton from "../button/DynamicButton";
 import { format } from "date-fns";
@@ -212,7 +212,7 @@ const DashboardWrapper = ({
       )}
       {board?.exists  && (
     
-          <TaskMetricsDashboardNew
+          <TaskMetricsDashboard
             monthId={monthId}
             userId={effectiveImpersonatedUserId}
             showSmallCards={true}

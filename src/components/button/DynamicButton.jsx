@@ -1,6 +1,6 @@
 import { useState, useCallback } from "../../hooks/useImports";
 import { useNotifications } from "../../hooks/useNotifications";
-import Skeleton from "../ui/Skeleton";
+
 
 const DynamicButton = ({
   id,
@@ -100,7 +100,9 @@ const DynamicButton = ({
 
   const renderIcon = () => {
     if (isLoading) {
-      return <Skeleton variant="avatar" width="16px" height="16px" circle />;
+      <div className="flex items-center justify-center">
+      <div className="w-4 h-4 rounded-full border-2 border-transparent border-t-white animate-spin"></div>
+    </div>
     }
     return Icon ? <Icon className="w-4 h-4" /> : null;
   };

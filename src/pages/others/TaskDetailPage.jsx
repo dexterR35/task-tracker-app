@@ -9,7 +9,7 @@ import {
 import { format } from "date-fns";
 import { db } from "../../firebase";
 import DynamicButton from "../../components/button/DynamicButton";
-import Skeleton from "../../components/ui/Skeleton";
+
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();
@@ -43,13 +43,8 @@ const TaskDetailPage = () => {
     return (
       <div className="p-6">
         <div className="max-w-3xl mx-auto space-y-4">
-          <Skeleton variant="title" width="224px" height="32px" />
-          <Skeleton variant="text" width="288px" height="20px" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} variant="input" height="40px" />
-            ))}
-          </div>
+ <p>Loading...</p>
+        
         </div>
       </div>
     );

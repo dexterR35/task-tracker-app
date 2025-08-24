@@ -156,11 +156,34 @@ export const usersApi = createApi({
           const updatedAt = normalizeTimestamp(raw.updatedAt);
           const lastActive = normalizeTimestamp(raw.lastActive);
           const lastLogin = normalizeTimestamp(raw.lastLogin);
-          const heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
-          const isOnline =
-            typeof heartbeatAt === "number"
+          
+          // Handle new heartbeat array structure
+          let heartbeatAt = null;
+          let isOnline = false;
+          
+          if (raw.heartbeat && Array.isArray(raw.heartbeat) && raw.heartbeat.length > 0) {
+            // Get the most recent heartbeat
+            const latestHeartbeat = raw.heartbeat
+              .filter(hb => hb.heartbeatAt)
+              .sort((a, b) => {
+                const aTime = normalizeTimestamp(a.heartbeatAt);
+                const bTime = normalizeTimestamp(b.heartbeatAt);
+                return bTime - aTime;
+              })[0];
+            
+            if (latestHeartbeat) {
+              heartbeatAt = normalizeTimestamp(latestHeartbeat.heartbeatAt);
+              isOnline = typeof heartbeatAt === "number" 
+                ? Date.now() - heartbeatAt < 2 * 60 * 1000 
+                : false;
+            }
+          } else {
+            // Fallback to old structure
+            heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
+            isOnline = typeof heartbeatAt === "number"
               ? Date.now() - heartbeatAt < 2 * 60 * 1000
               : false;
+          }
 
           // Sign out the secondary auth to clean up, preserving the admin session on primary auth
           try {
@@ -180,6 +203,7 @@ export const usersApi = createApi({
             lastLogin,
             heartbeatAt,
             isOnline,
+            heartbeat: raw.heartbeat || [], // Include the full heartbeat array
           };
 
           // Add new user to cache
@@ -210,12 +234,36 @@ function mapUserDoc(d) {
   const updatedAt = normalizeTimestamp(raw.updatedAt);
   const lastActive = normalizeTimestamp(raw.lastActive);
   const lastLogin = normalizeTimestamp(raw.lastLogin);
-  const heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
-  // Consider online if beat within last 12 minutes (slightly above 10-min interval)
-  const isOnline =
-    typeof heartbeatAt === "number"
+  
+  // Handle new heartbeat array structure
+  let heartbeatAt = null;
+  let isOnline = false;
+  
+  if (raw.heartbeat && Array.isArray(raw.heartbeat) && raw.heartbeat.length > 0) {
+    // Get the most recent heartbeat
+    const latestHeartbeat = raw.heartbeat
+      .filter(hb => hb.heartbeatAt)
+      .sort((a, b) => {
+        const aTime = normalizeTimestamp(a.heartbeatAt);
+        const bTime = normalizeTimestamp(b.heartbeatAt);
+        return bTime - aTime;
+      })[0];
+    
+    if (latestHeartbeat) {
+      heartbeatAt = normalizeTimestamp(latestHeartbeat.heartbeatAt);
+      // Consider online if beat within last 12 minutes (slightly above 10-min interval)
+      isOnline = typeof heartbeatAt === "number" 
+        ? Date.now() - heartbeatAt < 12 * 60 * 1000 
+        : false;
+    }
+  } else {
+    // Fallback to old structure
+    heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
+    isOnline = typeof heartbeatAt === "number"
       ? Date.now() - heartbeatAt < 12 * 60 * 1000
       : false;
+  }
+  
   // Only include serializable, whitelisted fields
   return {
     id: d.id,
@@ -230,6 +278,7 @@ function mapUserDoc(d) {
     lastLogin,
     heartbeatAt,
     isOnline,
+    heartbeat: raw.heartbeat || [], // Include the full heartbeat array
   };
 }
 
