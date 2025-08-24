@@ -16,12 +16,12 @@ import {
 } from "../../../shared/utils/taskOptions";
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
-import { 
-  sanitizeTaskData, 
+import {
+  sanitizeTaskData,
   sanitizeTaskCreationData,
   validateTaskCreationData,
-  validateJiraLink, 
-  extractTaskNumber 
+  validateJiraLink,
+  extractTaskNumber,
 } from "../../../shared/utils/sanitization";
 
 // Clean TaskForm component (UI slice removed)
@@ -58,7 +58,7 @@ const TaskForm = ({
 
   const validationSchema = Yup.object({
     jiraLink: Yup.string()
-      .test('jira-format', 'Invalid Jira link format', function(value) {
+      .test("jira-format", "Invalid Jira link format", function (value) {
         if (!value) return false;
         const validation = validateJiraLink(value);
         return validation.isValid;
@@ -81,9 +81,12 @@ const TaskForm = ({
     }),
     aiModels: Yup.mixed().when("aiUsed", {
       is: true,
-      then: (schema) => schema.test('is-array-with-items', 'Select at least one AI model', value => 
-        Array.isArray(value) && value.length > 0
-      ),
+      then: (schema) =>
+        schema.test(
+          "is-array-with-items",
+          "Select at least one AI model",
+          (value) => Array.isArray(value) && value.length > 0
+        ),
       otherwise: (schema) => schema.optional(),
     }),
     timeInHours: Yup.number()
@@ -100,9 +103,12 @@ const TaskForm = ({
       .transform((value) => (isNaN(value) ? undefined : value)),
     deliverablesOther: Yup.mixed().when("deliverables", {
       is: (deliverables) => deliverables && deliverables.includes("others"),
-      then: (schema) => schema.test('is-array-with-items', 'Please specify at least one other deliverable', value => 
-        Array.isArray(value) && value.length > 0
-      ),
+      then: (schema) =>
+        schema.test(
+          "is-array-with-items",
+          "Please specify at least one other deliverable",
+          (value) => Array.isArray(value) && value.length > 0
+        ),
       otherwise: (schema) => schema.optional(),
     }),
   });
@@ -111,33 +117,39 @@ const TaskForm = ({
 
   // Helper function to quantize numbers to nearest 0.5
   const quantize = (n) => {
-    if (typeof n !== 'number' || Number.isNaN(n)) return 0;
+    if (typeof n !== "number" || Number.isNaN(n)) return 0;
     return Math.round(n * 2) / 2;
   };
 
   // Validate AI-related fields when AI is used
   const validateAIFields = (sanitizedValues) => {
     if (!sanitizedValues.aiUsed) return null;
-    
-    if (!Array.isArray(sanitizedValues.aiModels) || sanitizedValues.aiModels.length === 0) {
+
+    if (
+      !Array.isArray(sanitizedValues.aiModels) ||
+      sanitizedValues.aiModels.length === 0
+    ) {
       return "Please specify at least one AI model when AI is used";
     }
-    
+
     if (!sanitizedValues.timeSpentOnAI || sanitizedValues.timeSpentOnAI < 0.5) {
       return "Please specify time spent on AI (minimum 0.5h) when AI is used";
     }
-    
+
     return null;
   };
 
   // Validate "others" deliverables when "others" is selected
   const validateOtherDeliverables = (sanitizedValues) => {
     if (!sanitizedValues.deliverables?.includes("others")) return null;
-    
-    if (!Array.isArray(sanitizedValues.deliverablesOther) || sanitizedValues.deliverablesOther.length === 0) {
+
+    if (
+      !Array.isArray(sanitizedValues.deliverablesOther) ||
+      sanitizedValues.deliverablesOther.length === 0
+    ) {
       return "Please specify at least one other deliverable when 'others' is selected";
     }
-    
+
     return null;
   };
 
@@ -155,10 +167,25 @@ const TaskForm = ({
         const n = parseFloat(sanitizedValues.timeInHours);
         return isNaN(n) ? 0 : quantize(n);
       })(),
-      aiModels: sanitizedValues.aiUsed && Array.isArray(sanitizedValues.aiModels) && sanitizedValues.aiModels.length > 0 ? sanitizedValues.aiModels : false,
-      markets: Array.isArray(sanitizedValues.markets) ? sanitizedValues.markets : [],
-      deliverables: Array.isArray(sanitizedValues.deliverables) ? sanitizedValues.deliverables : [],
-      deliverablesOther: sanitizedValues.deliverables && sanitizedValues.deliverables.includes("others") && Array.isArray(sanitizedValues.deliverablesOther) && sanitizedValues.deliverablesOther.length > 0 ? sanitizedValues.deliverablesOther : false,
+      aiModels:
+        sanitizedValues.aiUsed &&
+        Array.isArray(sanitizedValues.aiModels) &&
+        sanitizedValues.aiModels.length > 0
+          ? sanitizedValues.aiModels
+          : false,
+      markets: Array.isArray(sanitizedValues.markets)
+        ? sanitizedValues.markets
+        : [],
+      deliverables: Array.isArray(sanitizedValues.deliverables)
+        ? sanitizedValues.deliverables
+        : [],
+      deliverablesOther:
+        sanitizedValues.deliverables &&
+        sanitizedValues.deliverables.includes("others") &&
+        Array.isArray(sanitizedValues.deliverablesOther) &&
+        sanitizedValues.deliverablesOther.length > 0
+          ? sanitizedValues.deliverablesOther
+          : false,
       deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
       createdBy: user?.uid,
       createdByName: user?.name || user?.email,
@@ -176,8 +203,13 @@ const TaskForm = ({
       if (creatingRef.current) return;
       creatingRef.current = true;
       const created = await createTask(taskData).unwrap();
-      console.log('[TaskForm] created', { id: created?.id, monthId: created?.monthId });
-      addSuccess("Task created successfully! The task list will update automatically.");
+      console.log("[TaskForm] created", {
+        id: created?.id,
+        monthId: created?.monthId,
+      });
+      addSuccess(
+        "Task created successfully! The task list will update automatically."
+      );
     }
   };
 
@@ -197,37 +229,38 @@ const TaskForm = ({
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       setOuterSubmitting(true);
-      
+
       // Extract task number from Jira link
       const taskNumber = extractTaskNumber(values.jiraLink);
-      
+
       // Sanitize the data
       const sanitizedValues = sanitizeTaskCreationData({
         ...values,
         taskNumber,
       });
-      
+
       // Validate sanitized data
       const validationErrors = validateTaskCreationData(sanitizedValues);
       if (validationErrors.length > 0) {
         addError(validationErrors[0]);
         return;
       }
-      
+
       // Validate AI fields
       const aiValidationError = validateAIFields(sanitizedValues);
       if (aiValidationError) {
         addError(aiValidationError);
         return;
       }
-      
+
       // Validate other deliverables
-      const deliverablesValidationError = validateOtherDeliverables(sanitizedValues);
+      const deliverablesValidationError =
+        validateOtherDeliverables(sanitizedValues);
       if (deliverablesValidationError) {
         addError(deliverablesValidationError);
         return;
       }
-      
+
       // Prepare task data
       const taskData = prepareTaskData(sanitizedValues, taskNumber);
 
@@ -235,11 +268,10 @@ const TaskForm = ({
         monthId,
         taskData,
       });
-      
+
       // Submit task
       await submitTask(taskData);
       resetForm();
-      
     } catch (error) {
       handleSubmissionError(error);
     } finally {
@@ -253,49 +285,58 @@ const TaskForm = ({
     const { meta } = field;
     const hasError = meta.touched && meta.error;
     const baseInputClasses = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-      hasError ? "border-red-500" : "border-gray-300"
+      hasError ? "border-red-error" : "border-gray-300"
     }`;
     return { baseInputClasses, hasError };
   };
 
   return (
-  
-      <div className="max-w-2xl mx-auto p-6 bg-primary rounded-lg shadow-lg">
-        <h2 className="mb-2">
-          Create New Task
-        </h2>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={validationSchema}
-          onSubmit={handleSubmit}
-          enableReinitialize
-        >
-          {({ isSubmitting, values, isValid, errors, touched }) => {
-            // Custom validation logic to handle conditional fields
-            const isFormValid = () => {
-              // Basic required fields
-              if (!values.jiraLink || !values.markets?.length || !values.product || !values.taskName || !values.timeInHours || !values.deliverables?.length || !values.deliverablesCount) {
+    <div className="max-w-2xl mx-auto p-6 bg-primary rounded-lg shadow-lg">
+      <h2 className="mb-2">Create New Task</h2>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ isSubmitting, values, isValid, errors, touched }) => {
+          // Custom validation logic to handle conditional fields
+          const isFormValid = () => {
+            // Basic required fields
+            if (
+              !values.jiraLink ||
+              !values.markets?.length ||
+              !values.product ||
+              !values.taskName ||
+              !values.timeInHours ||
+              !values.deliverables?.length ||
+              !values.deliverablesCount
+            ) {
+              return false;
+            }
+
+            // AI validation only if AI is used
+            if (values.aiUsed) {
+              if (
+                !values.aiModels?.length ||
+                !values.timeSpentOnAI ||
+                values.timeSpentOnAI < 0.5
+              ) {
                 return false;
               }
-              
-              // AI validation only if AI is used
-              if (values.aiUsed) {
-                if (!values.aiModels?.length || !values.timeSpentOnAI || values.timeSpentOnAI < 0.5) {
-                  return false;
-                }
+            }
+
+            // Other deliverables validation only if "others" is selected
+            if (values.deliverables?.includes("others")) {
+              if (!values.deliverablesOther?.length) {
+                return false;
               }
-              
-              // Other deliverables validation only if "others" is selected
-              if (values.deliverables?.includes("others")) {
-                if (!values.deliverablesOther?.length) {
-                  return false;
-                }
-              }
-              
-              return true;
-            };
-            
-            return (
+            }
+
+            return true;
+          };
+
+          return (
             <Form className="space-y-6">
               <Field name="jiraLink">
                 {(field) => {
@@ -312,12 +353,13 @@ const TaskForm = ({
                         className={baseInputClasses}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Format: https://gmrd.atlassian.net/browse/GIMODEAR-{'{taskNumber}'}
+                        Format: https://gmrd.atlassian.net/browse/GIMODEAR-
+                        {"{taskNumber}"}
                       </p>
                       <ErrorMessage
                         name="jiraLink"
                         component="div"
-                        className="text-red-500 text-sm mt-1"
+                        className="text-red-error text-sm mt-1"
                       />
                     </div>
                   );
@@ -330,29 +372,52 @@ const TaskForm = ({
                   const addMarket = (val) => {
                     if (!val) return;
                     if (selected.includes(val)) return;
-                    field.form.setFieldValue('markets', [...selected, val]);
+                    field.form.setFieldValue("markets", [...selected, val]);
                   };
                   const removeMarket = (val) => {
-                    field.form.setFieldValue('markets', selected.filter((m) => m !== val));
+                    field.form.setFieldValue(
+                      "markets",
+                      selected.filter((m) => m !== val)
+                    );
                   };
                   return (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Markets *</label>
-                      <select className={baseInputClasses} value="" onChange={(e) => addMarket(e.target.value)}>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        Markets *
+                      </label>
+                      <select
+                        className={baseInputClasses}
+                        value=""
+                        onChange={(e) => addMarket(e.target.value)}
+                      >
                         <option value="">Add a market…</option>
-                        {marketOptions.filter(o => !selected.includes(o.value)).map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
+                        {marketOptions
+                          .filter((o) => !selected.includes(o.value))
+                          .map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
                       </select>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {selected.map((m) => (
-                          <span key={m} className="inline-flex items-center px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs">
+                          <span key={m} className="rounded-grid-small">
                             {m}
-                            <button type="button" onClick={() => removeMarket(m)} className="ml-1 text-blue-600">×</button>
+                            <button
+                              type="button"
+                              onClick={() => removeMarket(m)}
+                              className="ml-2 text-gray-800"
+                            >
+                              ×
+                            </button>
                           </span>
                         ))}
                       </div>
-                      <ErrorMessage name="markets" component="div" className="text-red-500 text-sm mt-1" />
+                      <ErrorMessage
+                        name="markets"
+                        component="div"
+                        className="text-red-error text-sm mt-1"
+                      />
                     </div>
                   );
                 }}
@@ -376,7 +441,7 @@ const TaskForm = ({
                       <ErrorMessage
                         name="product"
                         component="div"
-                        className="text-red-500 text-sm mt-1"
+                        className="text-red-error text-sm mt-1"
                       />
                     </div>
                   );
@@ -401,7 +466,7 @@ const TaskForm = ({
                       <ErrorMessage
                         name="taskName"
                         component="div"
-                        className="text-red-500 text-sm mt-1"
+                        className="text-red-error text-sm mt-1"
                       />
                     </div>
                   );
@@ -416,11 +481,11 @@ const TaskForm = ({
                         type="checkbox"
                         checked={field.field.value}
                         onChange={(e) => {
-                          field.form.setFieldValue('aiUsed', e.target.checked);
+                          field.form.setFieldValue("aiUsed", e.target.checked);
                           if (!e.target.checked) {
                             // Clear AI fields when AI is unchecked
-                            field.form.setFieldValue('aiModels', false);
-                            field.form.setFieldValue('timeSpentOnAI', '');
+                            field.form.setFieldValue("aiModels", false);
+                            field.form.setFieldValue("timeSpentOnAI", "");
                           }
                         }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -440,7 +505,7 @@ const TaskForm = ({
                       return (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Time Spent on AI (hours) {values.aiUsed ? '*' : ''}
+                            Time Spent on AI (hours) {values.aiUsed ? "*" : ""}
                           </label>
                           <input
                             {...field.field}
@@ -453,7 +518,7 @@ const TaskForm = ({
                           <ErrorMessage
                             name="timeSpentOnAI"
                             component="div"
-                            className="text-red-500 text-sm mt-1"
+                            className="text-red-error text-sm mt-1"
                           />
                         </div>
                       );
@@ -466,34 +531,54 @@ const TaskForm = ({
                       const addModel = (val) => {
                         if (!val) return;
                         if (selected.includes(val)) return;
-                        field.form.setFieldValue('aiModels', [...selected, val]);
+                        field.form.setFieldValue("aiModels", [
+                          ...selected,
+                          val,
+                        ]);
                       };
                       const removeModel = (val) => {
-                        field.form.setFieldValue('aiModels', selected.filter((m) => m !== val));
+                        field.form.setFieldValue(
+                          "aiModels",
+                          selected.filter((m) => m !== val)
+                        );
                       };
                       return (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            AI Model(s) {values.aiUsed ? '*' : ''}
+                            AI Model(s) {values.aiUsed ? "*" : ""}
                           </label>
-                          <select className={baseInputClasses} value="" onChange={(e) => addModel(e.target.value)}>
+                          <select
+                            className={baseInputClasses}
+                            value=""
+                            onChange={(e) => addModel(e.target.value)}
+                          >
                             <option value="">Add a model…</option>
-                            {aiModelOptions.filter(o => !selected.includes(o.value)).map((o) => (
-                              <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
+                            {aiModelOptions
+                              .filter((o) => !selected.includes(o.value))
+                              .map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
                           </select>
                           <div className="mt-2 flex flex-wrap gap-2">
                             {selected.map((m) => (
-                              <span key={m} className="inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-800 text-xs">
+                              <span key={m} className="rounded-grid-small">
                                 {m}
-                                <button type="button" onClick={() => removeModel(m)} className="ml-1 text-green-600">×</button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeModel(m)}
+                                  className="ml-2 text-gray-800"
+                                >
+                                  ×
+                                </button>
                               </span>
                             ))}
                           </div>
                           <ErrorMessage
                             name="aiModels"
                             component="div"
-                            className="text-red-500 text-sm mt-1"
+                            className="text-red-error text-sm mt-1"
                           />
                         </div>
                       );
@@ -520,7 +605,7 @@ const TaskForm = ({
                       <ErrorMessage
                         name="timeInHours"
                         component="div"
-                        className="text-red-500 text-sm mt-1"
+                        className="text-red-error text-sm mt-1"
                       />
                     </div>
                   );
@@ -550,37 +635,65 @@ const TaskForm = ({
                   const addDeliv = (val) => {
                     if (!val) return;
                     if (selected.includes(val)) return;
-                    field.form.setFieldValue('deliverables', [...selected, val]);
+                    field.form.setFieldValue("deliverables", [
+                      ...selected,
+                      val,
+                    ]);
                   };
                   const removeDeliv = (val) => {
-                    field.form.setFieldValue('deliverables', selected.filter((d) => d !== val));
+                    field.form.setFieldValue(
+                      "deliverables",
+                      selected.filter((d) => d !== val)
+                    );
                   };
                   return (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Deliverables *</label>
-                      <select className={baseInputClasses} value="" onChange={(e) => addDeliv(e.target.value)}>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        Deliverables *
+                      </label>
+                      <select
+                        className={baseInputClasses}
+                        value=""
+                        onChange={(e) => addDeliv(e.target.value)}
+                      >
                         <option value="">Add a deliverable…</option>
-                        {deliverables.filter(o => !selected.includes(o.value)).map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
+                        {deliverables
+                          .filter((o) => !selected.includes(o.value))
+                          .map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
                       </select>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {selected.map((d) => {
-                          const deliverable = deliverables.find(o => o.value === d);
+                          const deliverable = deliverables.find(
+                            (o) => o.value === d
+                          );
                           return (
-                            <span key={d} className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs">
+                            <span key={d} className="rounded-grid-small">
                               {deliverable ? deliverable.label : d}
-                              <button type="button" onClick={() => removeDeliv(d)} className="ml-1 text-purple-600">×</button>
+                              <button
+                                type="button"
+                                onClick={() => removeDeliv(d)}
+                                className="ml-2 text-gray-800"
+                              >
+                                ×
+                              </button>
                             </span>
                           );
                         })}
                       </div>
-                      <ErrorMessage name="deliverables" component="div" className="text-red-500 text-sm mt-1" />
+                      <ErrorMessage
+                        name="deliverables"
+                        component="div"
+                        className="text-red-error text-sm mt-1"
+                      />
                     </div>
                   );
                 }}
               </Field>
-              
+
               <Field name="deliverablesCount">
                 {(field) => {
                   const { baseInputClasses } = renderField(field);
@@ -599,39 +712,49 @@ const TaskForm = ({
                       <ErrorMessage
                         name="deliverablesCount"
                         component="div"
-                        className="text-red-500 text-sm mt-1"
+                        className="text-red-error text-sm mt-1"
                       />
                     </div>
                   );
                 }}
               </Field>
-              
-              {values.deliverables && values.deliverables.includes("others") && (
-                <Field name="deliverablesOther">
-                  {(field) => {
-                    const { hasError } = renderField(field);
-                    return (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Other Deliverables {values.deliverables && values.deliverables.includes("others") ? '*' : ''}
-                        </label>
-                        <MultiValueInput
-                          value={field.field.value || []}
-                          onChange={(newValues) => field.form.setFieldValue('deliverablesOther', newValues)}
-                          placeholder="Enter other deliverables (comma or space separated)..."
-                          className={hasError ? "border-red-500" : ""}
-                          maxValues={5}
-                        />
-                        <ErrorMessage
-                          name="deliverablesOther"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      </div>
-                    );
-                  }}
-                </Field>
-              )}
+
+              {values.deliverables &&
+                values.deliverables.includes("others") && (
+                  <Field name="deliverablesOther">
+                    {(field) => {
+                      const { hasError } = renderField(field);
+                      return (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Other Deliverables{" "}
+                            {values.deliverables &&
+                            values.deliverables.includes("others")
+                              ? "*"
+                              : ""}
+                          </label>
+                          <MultiValueInput
+                            value={field.field.value || []}
+                            onChange={(newValues) =>
+                              field.form.setFieldValue(
+                                "deliverablesOther",
+                                newValues
+                              )
+                            }
+                            placeholder="Enter other deliverables (comma or space separated)..."
+                            className={hasError ? "border-red-error" : ""}
+                            maxValues={5}
+                          />
+                          <ErrorMessage
+                            name="deliverablesOther"
+                            component="div"
+                            className="text-red-error text-sm mt-1"
+                          />
+                        </div>
+                      );
+                    }}
+                  </Field>
+                )}
               <div className="flex justify-end space-x-3 pt-6">
                 <DynamicButton
                   id="task-form-submit"
@@ -646,11 +769,10 @@ const TaskForm = ({
                 </DynamicButton>
               </div>
             </Form>
-            );
-          }}
-        </Formik>
-      </div>
- 
+          );
+        }}
+      </Formik>
+    </div>
   );
 };
 

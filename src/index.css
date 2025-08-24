@@ -145,7 +145,7 @@
     @apply bg-gradient-to-t from-[var(--color-gradient-start)] to-[var(--color-gradient-end)];
   }
   .rounded-grid-small {
-    @apply inline-flex items-center  px-2 py-0.5 rounded bg-gray-200 text-gray-800 uppercase;
+    @apply inline-flex text-xs font-medium items-center px-2 py-1 rounded bg-gray-200 text-gray-800 uppercase;
   }
   @media (prefers-reduced-motion: reduce) {
     .skeleton {

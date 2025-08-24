@@ -457,7 +457,7 @@ const TasksTable = ({
               (isAnyTaskEditing &&
                 form.deliverables &&
                 form.deliverables.includes("others"))) && (
-              <th key={`others-header-${forceUpdate}`} className="px-3 py-2">
+              <th key={`others-header-${forceUpdate}`} className="px-2 py-2">
                 Other Deliverables
               </th>
             )}
@@ -502,7 +502,7 @@ const TasksTable = ({
                     safeDisplay(t.taskName)
                   )}
                 </td>
-                <td className="px-3 py-2">
+                <td >
                   {isEdit ? (
                     <div>
                       <select
@@ -556,7 +556,7 @@ const TasksTable = ({
                     safeDisplay(t.markets || t.market)
                   )}
                 </td>
-                <td className="px-3 py-2">
+                <td >
                   {isEdit ? (
                     <select
                       className=" px-2 py-2 rounded w-full"
@@ -619,7 +619,7 @@ const TasksTable = ({
                     numberFmt(parseFloat(t.timeSpentOnAI) || 0)
                   )}
                 </td>
-                <td className="px-3 py-2">
+                <td >
                   {isEdit ? (
                     form.aiUsed ? (
                       <div>
@@ -851,6 +851,11 @@ const TasksTable = ({
                       <DynamicButton
                         variant="success"
                         size="md"
+                        onClick={() => saveEdit(t)}
+                        icon={CheckIcon}
+                        iconPosition="right"
+                        title="Save"
+                      
                         disabled={
                           rowActionId === taskId ||
                           !(() => {
@@ -887,15 +892,7 @@ const TasksTable = ({
                             return true;
                           })()
                         }
-                        onClick={() => saveEdit(t)}
-                        icon={CheckIcon}
-                        iconPosition="left"
-                        title="Save"
-                        className={
-                          rowActionId === taskId
-                            ? "bg-purple-400 cursor-not-allowed"
-                            : ""
-                        }
+                     
                       />
 
                       <DynamicButton
