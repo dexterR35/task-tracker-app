@@ -70,6 +70,26 @@ export class AnalyticsCalculator {
    * @returns {Object} Complete analytics object
    */
   calculateAllAnalytics(tasks, monthId, userId = null) {
+    // Validate input
+    if (!Array.isArray(tasks)) {
+      console.error('AnalyticsCalculator: tasks is not an array:', tasks);
+      console.error('Type of tasks:', typeof tasks);
+      console.error('Tasks value:', tasks);
+      return {
+        monthId,
+        userId,
+        timestamp: Date.now(),
+        summary: { totalTasks: 0, totalHours: 0, completedTasks: 0, pendingTasks: 0, inProgressTasks: 0, completionRate: 0, avgHoursPerTask: 0 },
+        categories: {},
+        performance: { totalUsers: 0, totalHours: 0, avgHoursPerTask: 0, users: [] },
+        markets: { totalMarkets: 0, markets: [], totalTasks: 0, totalHours: 0 },
+        products: { totalProducts: 0, products: [], totalTasks: 0, totalHours: 0 },
+        ai: { totalAITasks: 0, totalAIHours: 0, aiPercentage: 0 },
+        trends: {},
+        raw: { totalTasks: 0, tasks: [] }
+      };
+    }
+
     // For real-time updates, always calculate fresh analytics
     // This ensures CRUD operations are immediately reflected
     console.log(`Calculating fresh analytics for ${monthId} from ${tasks.length} tasks`);

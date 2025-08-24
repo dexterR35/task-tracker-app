@@ -55,6 +55,13 @@ const DashboardWrapper = ({
 
   // Normalize userId to prevent duplicate queries
   const normalizedUserId = finalUserId && finalUserId.trim() !== '' ? finalUserId : null;
+  
+  // Debug: Log user selection information
+  console.log('DashboardWrapper - urlImpersonatedUserId:', urlImpersonatedUserId);
+  console.log('DashboardWrapper - impersonatedUserId:', impersonatedUserId);
+  console.log('DashboardWrapper - effectiveImpersonatedUserId:', effectiveImpersonatedUserId);
+  console.log('DashboardWrapper - finalUserId:', finalUserId);
+  console.log('DashboardWrapper - normalizedUserId:', normalizedUserId);
 
   const {
     data: tasks = [],
@@ -215,17 +222,14 @@ const DashboardWrapper = ({
           <TaskForm />
         </div>
       )}
-      {board?.exists  && (
-    
-          <OptimizedTaskMetricsBoard
-            monthId={monthId}
-            userId={normalizedUserId}
-            showSmallCards={true}
-            className=""
-          />
-     
-       
-        )}
+      {board?.exists && !boardLoading && (
+        <OptimizedTaskMetricsBoard
+          monthId={monthId}
+          userId={normalizedUserId}
+          showSmallCards={true}
+          className=""
+        />
+      )}
       <div className="space-y-8">
       
         {!tasksLoading && filteredTasks.length === 0 ? (
@@ -259,7 +263,7 @@ const DashboardWrapper = ({
             {showTasksTable && (
               <TasksTable
                 monthId={monthId}
-                userFilter={effectiveImpersonatedUserId}
+                userFilter={normalizedUserId}
                 isAdmin={isAdmin}
                 boardExists={board?.exists}
                 boardLoading={boardLoading}

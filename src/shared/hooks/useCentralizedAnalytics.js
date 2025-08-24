@@ -15,6 +15,17 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
   const getTasksFromRedux = useCallback((monthId) => {
     const queries = tasksApiState?.queries || {};
     
+    // Debug: log all available queries first
+    console.log('All available queries:', Object.keys(queries));
+    console.log('Looking for monthId:', monthId, 'userId:', userId);
+    
+    // Log the structure of the first few queries to understand the format
+    const queryKeys = Object.keys(queries);
+    if (queryKeys.length > 0) {
+      console.log('First query key:', queryKeys[0]);
+      console.log('First query data:', queries[queryKeys[0]]);
+    }
+    
     // Try different query key formats based on the actual API structure
     let queryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":null,"useCache":true})`;
     let data = queries[queryKey]?.data;
@@ -39,13 +50,36 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       data = queries[queryKey]?.data;
     }
     
-    // Debug: log available queries
-    if (!data && Object.keys(queries).length > 0) {
-      console.log('Available queries:', Object.keys(queries));
-      console.log('Looking for monthId:', monthId, 'userId:', userId);
+    // If still no data, try to find any query that matches the monthId
+    if (!data) {
+      const matchingQueries = Object.keys(queries).filter(key => 
+        key.includes(`"monthId":"${monthId}"`)
+      );
+      console.log('Matching queries for monthId:', matchingQueries);
+      
+      if (matchingQueries.length > 0) {
+        // Use the first matching query
+        data = queries[matchingQueries[0]]?.data;
+        console.log('Using first matching query:', matchingQueries[0]);
+      }
     }
     
-    return data || [];
+    console.log('Found data:', data?.length || 0, 'tasks');
+    console.log('Data type:', typeof data);
+    console.log('Data value:', data);
+    
+    // Ensure we always return an array
+    if (!data) {
+      console.log('No data found, returning empty array');
+      return [];
+    }
+    
+    if (!Array.isArray(data)) {
+      console.error('Data is not an array:', data);
+      return [];
+    }
+    
+    return data;
   }, [tasksApiState, userId]);
 
   // Calculate all analytics from Redux data
@@ -56,15 +90,22 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
 
     const tasks = getTasksFromRedux(monthId);
     console.log(`Analytics calculation - monthId: ${monthId}, userId: ${userId}, tasks count: ${tasks?.length || 0}`);
+    console.log('Tasks type:', typeof tasks);
+    console.log('Tasks value:', tasks);
     
-    if (!tasks || tasks.length === 0) {
-      console.log(`No tasks found in Redux for month: ${monthId}`);
+    if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+      console.log(`No valid tasks found in Redux for month: ${monthId}`);
       return null;
     }
 
-    const result = calculateAnalyticsFromTasks(tasks, monthId, userId);
-    console.log('Analytics calculated:', result);
-    return result;
+    try {
+      const result = calculateAnalyticsFromTasks(tasks, monthId, userId);
+      console.log('Analytics calculated:', result);
+      return result;
+    } catch (error) {
+      console.error('Error calculating analytics:', error);
+      return null;
+    }
   }, [monthId, userId, getTasksFromRedux]);
 
   // Get specific metric for a card

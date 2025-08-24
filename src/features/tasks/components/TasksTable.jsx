@@ -60,6 +60,10 @@ const TasksTable = ({
     console.log('First task keys:', Object.keys(allTasks[0]));
   }
   
+  // Debug: Log user filter information
+  console.log('TasksTable - userFilter:', userFilter);
+  console.log('TasksTable - tasks count:', allTasks?.length || 0);
+  
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = allTasks || [];
 

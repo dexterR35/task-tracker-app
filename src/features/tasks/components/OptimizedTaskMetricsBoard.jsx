@@ -140,6 +140,16 @@ const OptimizedTaskMetricsBoard = ({
     getCacheStatus
   } = useCentralizedAnalytics(monthId, userId);
 
+  // Add error boundary for analytics
+  if (error) {
+    console.error('OptimizedTaskMetricsBoard error:', error);
+    return (
+      <div className="text-center text-red-400 py-8">
+        Error loading analytics: {error.message || 'Unknown error'}
+      </div>
+    );
+  }
+
   // Memoize the cards to prevent unnecessary re-renders
   const metricCards = useMemo(() => {
     if (!showSmallCards || !showKeyMetrics || !monthId) {
@@ -183,27 +193,66 @@ const OptimizedTaskMetricsBoard = ({
       );
     }
 
+    // If analytics is null or undefined, show empty state
+    if (!analytics) {
+      return (
+        <div className="col-span-full text-center text-gray-400 py-8">
+          No analytics data available
+        </div>
+      );
+    }
+
     // Render cards with analytics data
     return METRIC_CARDS_CONFIG.map((cardConfig) => {
-      const metricData = getMetric(cardConfig.type, cardConfig.category);
-      console.log(`Card ${cardConfig.id}:`, metricData);
-      
-      return (
-        <MemoizedOptimizedSmallCard
-          key={cardConfig.id}
-          title={cardConfig.title}
-          type={cardConfig.type}
-          category={cardConfig.category}
-          icon={cardConfig.icon}
-          monthId={monthId}
-          userId={userId}
-          trend={cardConfig.trend}
-          trendValue={cardConfig.trendValue}
-          trendDirection={cardConfig.trendDirection}
-          loading={false}
-          analyticsData={metricData}
-        />
-      );
+      try {
+        // Ensure analytics object exists and has required properties
+        if (!analytics || typeof analytics !== 'object') {
+          console.warn(`Analytics not available for card ${cardConfig.id}`);
+          return (
+            <MemoizedOptimizedSmallCard
+              key={cardConfig.id}
+              title={cardConfig.title}
+              type={cardConfig.type}
+              category={cardConfig.category}
+              icon={cardConfig.icon}
+              monthId={monthId}
+              userId={userId}
+              trend={cardConfig.trend}
+              trendValue={cardConfig.trendValue}
+              trendDirection={cardConfig.trendDirection}
+              loading={true}
+              analyticsData={{ value: 0, additionalData: {} }}
+            />
+          );
+        }
+
+        const metricData = getMetric(cardConfig.type, cardConfig.category);
+        console.log(`Card ${cardConfig.id}:`, metricData);
+        
+        return (
+          <MemoizedOptimizedSmallCard
+            key={cardConfig.id}
+            title={cardConfig.title}
+            type={cardConfig.type}
+            category={cardConfig.category}
+            icon={cardConfig.icon}
+            monthId={monthId}
+            userId={userId}
+            trend={cardConfig.trend}
+            trendValue={cardConfig.trendValue}
+            trendDirection={cardConfig.trendDirection}
+            loading={false}
+            analyticsData={metricData}
+          />
+        );
+      } catch (error) {
+        console.error(`Error rendering card ${cardConfig.id}:`, error);
+        return (
+          <div key={cardConfig.id} className="text-center text-red-400 py-4">
+            Error loading {cardConfig.title}
+          </div>
+        );
+      }
     });
   }, [
     showSmallCards, 
@@ -235,6 +284,24 @@ const OptimizedTaskMetricsBoard = ({
     return (
       <div className="text-center text-gray-300 py-8">
         No month selected for metrics
+      </div>
+    );
+  }
+
+  // If loading, show loading state
+  if (isLoading) {
+    return (
+      <div className="text-center text-gray-300 py-8">
+        Loading metrics...
+      </div>
+    );
+  }
+
+  // If no data and not loading, show empty state
+  if (!hasData && !isLoading) {
+    return (
+      <div className="text-center text-gray-300 py-8">
+        No data available for this month
       </div>
     );
   }
