@@ -16,7 +16,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../app/firebase";
-import { computeAnalyticsFromTasks } from "../../shared/utils/analyticsUtils";
+import { calculateAnalyticsFromTasks } from "../../shared/utils/analyticsCalculator";
 import { normalizeTimestamp } from "../../shared/utils/dateUtils";
 
 // Coerce Firestore timestamps and ensure numeric fields are numbers
@@ -364,7 +364,7 @@ export const tasksApi = createApi({
                 await taskStorage.storeTasks(cacheKey, tasks);
 
                 // Pre-compute and cache analytics from updated tasks
-                const analyticsData = computeAnalyticsFromTasks(
+                const analyticsData = calculateAnalyticsFromTasks(
                   tasks,
                   arg.monthId
                 );
@@ -685,7 +685,7 @@ export const tasksApi = createApi({
           }
 
           // console.log('Computing analytics from', tasksToUse.length, 'tasks for month:', monthId);
-          const analyticsData = computeAnalyticsFromTasks(tasksToUse, monthId);
+          const analyticsData = calculateAnalyticsFromTasks(tasksToUse, monthId);
           // Store in IndexedDB for future use
           const { analyticsStorage } = await import(
             "../../shared/utils/indexedDBStorage"

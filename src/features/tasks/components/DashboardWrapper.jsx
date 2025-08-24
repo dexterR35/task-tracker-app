@@ -9,7 +9,7 @@ import {
 } from "../tasksApi";
 import TaskForm from "./TaskForm";
 import TasksTable from "./TasksTable";
-import TaskMetricsDashboard from "./TaskMetricsBoard";
+import OptimizedTaskMetricsBoard from "./OptimizedTaskMetricsBoard";
 
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import { format } from "date-fns";
@@ -217,11 +217,10 @@ const DashboardWrapper = ({
       )}
       {board?.exists  && (
     
-          <TaskMetricsDashboard
+          <OptimizedTaskMetricsBoard
             monthId={monthId}
-            userId={effectiveImpersonatedUserId}
+            userId={normalizedUserId}
             showSmallCards={true}
-            showLargeCards={isAdmin}
             className=""
           />
      

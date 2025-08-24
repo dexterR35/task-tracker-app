@@ -66,8 +66,7 @@ import useFormat from "./useFormat";
 export { useFormat };
 
 // Analytics hook
-import useAnalyticsFromRedux from "./useAnalyticsFromRedux";
-export { useAnalyticsFromRedux };
+
 
 
 

@@ -1,4 +1,4 @@
-import { ANALYTICS_TYPES } from "../hooks/useTaskAnalytics";
+import { ANALYTICS_TYPES } from "../constants/analyticsTypes";
 
 /**
  * Format value based on analytics type
@@ -115,24 +115,30 @@ export const formatTaskTypeAdditionalInfo = (additionalData) => {
   
   const { totalHours, aiTasks, aiHours, avgHoursPerTask, aiPercentage } = additionalData;
   
+  // Ensure all values are numbers
+  const safeTotalHours = typeof totalHours === 'number' ? totalHours : parseFloat(totalHours) || 0;
+  const safeAvgHoursPerTask = typeof avgHoursPerTask === 'number' ? avgHoursPerTask : parseFloat(avgHoursPerTask) || 0;
+  const safeAiPercentage = typeof aiPercentage === 'number' ? aiPercentage : parseFloat(aiPercentage) || 0;
+  const safeAiHours = typeof aiHours === 'number' ? aiHours : parseFloat(aiHours) || 0;
+  
   return (
     <div className="mt-3 space-y-2">
       <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
         <span className="text-xs text-gray-300">Total Hours</span>
-        <span className="text-xs font-medium text-gray-200">{totalHours.toFixed(1)}h</span>
+        <span className="text-xs font-medium text-gray-200">{safeTotalHours.toFixed(1)}h</span>
       </div>
       <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
         <span className="text-xs text-gray-300">Avg Hours/Task</span>
-        <span className="text-xs font-medium text-gray-200">{avgHoursPerTask.toFixed(1)}h</span>
+        <span className="text-xs font-medium text-gray-200">{safeAvgHoursPerTask.toFixed(1)}h</span>
       </div>
       <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
         <span className="text-xs text-gray-300">AI Tasks</span>
-        <span className="text-xs font-medium text-gray-200">{aiTasks} ({aiPercentage.toFixed(0)}%)</span>
+        <span className="text-xs font-medium text-gray-200">{aiTasks} ({safeAiPercentage.toFixed(0)}%)</span>
       </div>
       {aiTasks > 0 && (
         <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
           <span className="text-xs text-gray-300">AI Hours</span>
-          <span className="text-xs font-medium text-gray-200">{aiHours.toFixed(1)}h</span>
+          <span className="text-xs font-medium text-gray-200">{safeAiHours.toFixed(1)}h</span>
         </div>
       )}
     </div>

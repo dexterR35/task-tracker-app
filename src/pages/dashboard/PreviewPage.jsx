@@ -1,5 +1,4 @@
 import {
-  useComputeMonthAnalyticsMutation,
   useSaveMonthAnalyticsMutation,
   useGetMonthAnalyticsQuery,
   useGetMonthBoardExistsQuery,
@@ -30,10 +29,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 
 
-// Custom hook for analytics generation with 3-tier strategy
+// Custom hook for analytics generation using centralized analytics
 const useAnalyticsGeneration = (monthId, board, tasks) => {
   const { addError, addSuccess } = useNotifications();
-  const [computeAnalytics] = useComputeMonthAnalyticsMutation();
   
   const [analyticsPreview, setAnalyticsPreview] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,24 +54,9 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
     try {
       console.log('Starting analytics generation for month:', monthId);
       
-      // Tier 1: Check IndexedDB cache first
-      const { analyticsStorage } = await import('../../shared/utils/indexedDBStorage');
-      const cachedAnalytics = await analyticsStorage.getAnalytics(monthId);
-      
-      if (cachedAnalytics) {
-        console.log('Tier 1: Using cached analytics from IndexedDB');
-        setAnalyticsPreview(cachedAnalytics);
-        addSuccess(`Analytics loaded from cache for ${monthId}!`);
-        return;
-      }
-
-      // Tier 2: Let computeAnalytics handle the fallback strategy
-      console.log('Tier 2: Generating analytics (mutation handles fallback)');
-      const result = await computeAnalytics({ 
-        monthId, 
-        useCache: true, 
-        tasks: tasks 
-      }).unwrap();
+      // Use centralized analytics calculator
+      const { calculateAnalyticsFromTasks } = await import('../../shared/utils/analyticsCalculator');
+      const result = calculateAnalyticsFromTasks(tasks, monthId);
       
       console.log('Analytics generated:', result);
       setAnalyticsPreview(result);
@@ -81,12 +64,12 @@ const useAnalyticsGeneration = (monthId, board, tasks) => {
 
     } catch (error) {
       console.error('Error generating analytics:', error);
-      setError(error?.data?.message || 'Failed to generate analytics');
+      setError(error?.message || 'Failed to generate analytics');
       addError('Failed to generate analytics');
     } finally {
       setIsGenerating(false);
     }
-  }, [monthId, board?.exists, tasks, computeAnalytics, addSuccess, addError]);
+  }, [monthId, board?.exists, tasks, addSuccess, addError]);
 
   // Clear analytics when monthId changes
   useEffect(() => {

@@ -1,5 +1,4 @@
 import React from "react";
-import { useTaskAnalytics } from "../../hooks/useTaskAnalytics.js";
 import {
   formatAnalyticsValue,
   getDynamicTrend,
@@ -8,7 +7,11 @@ import {
   formatAdditionalInfo,
 } from "../../utils/formatUtils.jsx";
 
-const SmallCard = ({
+/**
+ * Optimized SmallCard Component
+ * Uses centralized analytics data instead of individual API calls
+ */
+const OptimizedSmallCard = ({
   title,
   type,
   category = null,
@@ -17,22 +20,26 @@ const SmallCard = ({
   icon: Icon,
   trend,
   trendValue,
-  trendDirection = "neutral", // "up", "down", "neutral"
+  trendDirection = "neutral",
   className = "",
   onClick,
   loading = false,
+  // Analytics data from centralized calculator
+  analyticsData = null,
   ...props
 }) => {
-  // Use the custom hook for analytics calculations
-  const { value, additionalData, isLoading, error, tasks } = useTaskAnalytics(
-    monthId,
-    userId,
-    type,
-    category
-  );
+  // Use provided analytics data or fallback to zero values
+  const metricData = analyticsData || {
+    value: 0,
+    additionalData: {},
+    isLoading: false,
+    error: null
+  };
+
+  const { value, additionalData, isLoading, error } = metricData;
 
   // Get dynamic trend information
-  const dynamicTrend = getDynamicTrend(type, value, tasks);
+  const dynamicTrend = getDynamicTrend(type, value, []);
 
   // Get trend styling
   const trendColor = getTrendColor(trendDirection, dynamicTrend);
@@ -43,6 +50,31 @@ const SmallCard = ({
 
   // Format additional information
   const additionalInfo = formatAdditionalInfo(type, additionalData);
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className={`card p-6 transition-all duration-300 ${className}`}>
+        <div className="flex flex-col h-full">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start space-x-3">
+              {Icon && (
+                <div className="p-2 bg-gray-600 rounded-md">
+                  <Icon className="w-5 h-5 text-gray-200" />
+                </div>
+              )}
+              <h3 className="text-sm font-semibold uppercase tracking-wide leading-4">
+                {title}
+              </h3>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-red-400 text-sm">Error loading data</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -111,4 +143,4 @@ const SmallCard = ({
   );
 };
 
-export default SmallCard;
+export default OptimizedSmallCard;
