@@ -23,7 +23,6 @@ import {
 import { normalizeTimestamp } from "../../shared/utils/dateUtils";
 import { db, auth } from "../../app/firebase";
 
-
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fakeBaseQuery(),
@@ -72,86 +71,106 @@ export const usersApi = createApi({
           return { data: users };
         } catch (error) {
           return {
-            error: { message: error?.message || "Failed to load users" },
+            error: {
+              message: error?.message || "Failed to fetch users",
+              code: error.code,
+            },
           };
-        }
-      },
-      async onCacheEntryAdded(arg, { updateCachedData, cacheEntryRemoved }) {
-        // Subscribe to realtime changes to keep presence fresh and avoid duplicates
-        const q = fsQuery(
-          collection(db, "users"),
-          orderBy("createdAt", "desc")
-        );
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-          const next = deduplicateUsers(
-            snapshot.docs.map((d) => mapUserDoc(d))
-          );
-          updateCachedData(() => next);
-
-          // Update cache with real-time changes (silently)
-          const { userStorage } = await import("../../shared/utils/indexedDBStorage");
-          await userStorage.storeUsers(next, true); // silent update
-        });
-        try {
-          await cacheEntryRemoved;
-        } finally {
-          unsubscribe();
         }
       },
       providesTags: ["Users"],
     }),
+    
+    // Real-time subscription for users
+    subscribeToUsers: builder.query({
+      async queryFn() {
+        return { data: [] }; // Initial empty data
+      },
+      async onCacheEntryAdded(
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved, dispatch }
+      ) {
+        try {
+          await cacheDataLoaded;
+
+          const unsubscribe = onSnapshot(
+            fsQuery(collection(db, "users"), orderBy("createdAt", "desc")),
+            (snapshot) => {
+              const users = deduplicateUsers(snapshot.docs.map((d) => mapUserDoc(d)));
+              
+              // Update cache with real-time data
+              updateCachedData((draft) => {
+                Object.assign(draft, users);
+              });
+              
+              // Update IndexedDB cache
+              const updateCache = async () => {
+                const { userStorage } = await import(
+                  "../../shared/utils/indexedDBStorage"
+                );
+                await userStorage.storeUsers(users);
+              };
+              updateCache();
+            },
+            (error) => {
+              console.error("Users subscription error:", error);
+            }
+          );
+
+          await cacheEntryRemoved;
+          unsubscribe();
+        } catch (error) {
+          console.error("Failed to set up users subscription:", error);
+        }
+      },
+      providesTags: ["Users"],
+    }),
+
     createUser: builder.mutation({
       async queryFn({ email, password, confirmPassword, name }) {
         try {
-          // Validation
-          if (!name || !String(name).trim()) {
-            throw new Error("Name is required");
-          }
-          if (!email || !String(email).trim()) {
-            throw new Error("Email is required");
-          }
-          if (!password || String(password).length < 6) {
-            throw new Error("Password must be at least 6 characters");
-          }
           if (password !== confirmPassword) {
-            const error = new Error("Passwords do not match");
-            error.code = "INVALID_PASSWORD_MATCH";
-            throw error;
+            return {
+              error: {
+                message: "Passwords do not match",
+                code: "PASSWORD_MISMATCH",
+              },
+            };
           }
 
-          // Use a secondary app to avoid switching the current admin session
-          const primary = getApp();
-          const cfg = primary.options;
-          let secondaryApp;
-          try {
-            secondaryApp =
-              getApps().find((a) => a.name === "secondary") ||
-              initializeApp(cfg, "secondary");
-          } catch (_) {
-            secondaryApp = initializeApp(cfg, "secondary");
-          }
+          // Create secondary auth instance for user creation
+          const secondaryApp = getApps().length === 0 
+            ? initializeApp({
+                apiKey: process.env.VITE_FIREBASE_API_KEY,
+                authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+                projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+                storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+                messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+                appId: process.env.VITE_FIREBASE_APP_ID,
+              })
+            : getApp();
+          
           const secondaryAuth = getAuth(secondaryApp);
-          const cred = await createUserWithEmailAndPassword(
+
+          const userCredential = await createUserWithEmailAndPassword(
             secondaryAuth,
             email,
             password
           );
-          const uid = cred.user.uid;
-          const userDocRef = doc(collection(db, "users"), uid);
-          const createdBy = auth.currentUser?.uid || null;
-          await setDoc(
-            userDocRef,
-            {
-              userUID: uid,
-              email,
-              name: name || "",
-              role: "user",
-              isActive: true,
-              createdBy,
-              createdAt: serverTimestamp(),
-            },
-            { merge: true }
-          );
+          const { uid } = userCredential.user;
+
+          const userDocRef = doc(db, "users", uid);
+          await setDoc(userDocRef, {
+            userUID: uid,
+            email,
+            name,
+            role: "user",
+            isActive: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            lastActive: serverTimestamp(),
+            lastLogin: serverTimestamp(),
+          });
 
           // Read back the doc to normalize server timestamps
           const fresh = await getDocFromServer(userDocRef);
@@ -160,34 +179,6 @@ export const usersApi = createApi({
           const updatedAt = normalizeTimestamp(raw.updatedAt);
           const lastActive = normalizeTimestamp(raw.lastActive);
           const lastLogin = normalizeTimestamp(raw.lastLogin);
-          
-          // Handle new heartbeat array structure
-          let heartbeatAt = null;
-          let isOnline = false;
-          
-          if (raw.heartbeat && Array.isArray(raw.heartbeat) && raw.heartbeat.length > 0) {
-            // Get the most recent heartbeat
-            const latestHeartbeat = raw.heartbeat
-              .filter(hb => hb.heartbeatAt)
-              .sort((a, b) => {
-                const aTime = normalizeTimestamp(a.heartbeatAt);
-                const bTime = normalizeTimestamp(b.heartbeatAt);
-                return bTime - aTime;
-              })[0];
-            
-            if (latestHeartbeat) {
-              heartbeatAt = normalizeTimestamp(latestHeartbeat.heartbeatAt);
-              isOnline = typeof heartbeatAt === "number" 
-                ? Date.now() - heartbeatAt < 2 * 60 * 1000 
-                : false;
-            }
-          } else {
-            // Fallback to old structure
-            heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
-            isOnline = typeof heartbeatAt === "number"
-              ? Date.now() - heartbeatAt < 2 * 60 * 1000
-              : false;
-          }
 
           // Sign out the secondary auth to clean up, preserving the admin session on primary auth
           try {
@@ -198,16 +189,13 @@ export const usersApi = createApi({
             id: uid,
             userUID: uid,
             email,
-            name: name || "",
+            name,
             role: "user",
             isActive: true,
             createdAt,
             updatedAt,
             lastActive,
             lastLogin,
-            heartbeatAt,
-            isOnline,
-            heartbeat: raw.heartbeat || [], // Include the full heartbeat array
           };
 
           // Add new user to cache
@@ -229,7 +217,7 @@ export const usersApi = createApi({
   }),
 });
 
-export const { useGetUsersQuery, useCreateUserMutation } = usersApi;
+export const { useGetUsersQuery, useSubscribeToUsersQuery, useCreateUserMutation } = usersApi;
 
 // ---- Helpers ----
 function mapUserDoc(d) {
@@ -238,35 +226,6 @@ function mapUserDoc(d) {
   const updatedAt = normalizeTimestamp(raw.updatedAt);
   const lastActive = normalizeTimestamp(raw.lastActive);
   const lastLogin = normalizeTimestamp(raw.lastLogin);
-  
-  // Handle new heartbeat array structure
-  let heartbeatAt = null;
-  let isOnline = false;
-  
-  if (raw.heartbeat && Array.isArray(raw.heartbeat) && raw.heartbeat.length > 0) {
-    // Get the most recent heartbeat
-    const latestHeartbeat = raw.heartbeat
-      .filter(hb => hb.heartbeatAt)
-      .sort((a, b) => {
-        const aTime = normalizeTimestamp(a.heartbeatAt);
-        const bTime = normalizeTimestamp(b.heartbeatAt);
-        return bTime - aTime;
-      })[0];
-    
-    if (latestHeartbeat) {
-      heartbeatAt = normalizeTimestamp(latestHeartbeat.heartbeatAt);
-      // Consider online if beat within last 12 minutes (slightly above 10-min interval)
-      isOnline = typeof heartbeatAt === "number" 
-        ? Date.now() - heartbeatAt < 12 * 60 * 1000 
-        : false;
-    }
-  } else {
-    // Fallback to old structure
-    heartbeatAt = normalizeTimestamp(raw.heartbeatAt);
-    isOnline = typeof heartbeatAt === "number"
-      ? Date.now() - heartbeatAt < 12 * 60 * 1000
-      : false;
-  }
   
   // Only include serializable, whitelisted fields
   return {
@@ -280,9 +239,6 @@ function mapUserDoc(d) {
     updatedAt,
     lastActive,
     lastLogin,
-    heartbeatAt,
-    isOnline,
-    heartbeat: raw.heartbeat || [], // Include the full heartbeat array
   };
 }
 

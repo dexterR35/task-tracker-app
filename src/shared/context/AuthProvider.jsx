@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { initAuthListener, unsubscribeAuthListener } from "../../features/auth/authSlice";
 import { useAuth } from "../hooks/useAuth";
-import { usePresence } from "../hooks/usePresence";
 
 // Spinner loader component using Tailwind CSS
 const Spinner = () => (
@@ -26,9 +25,6 @@ export const AuthProvider = ({ children }) => {
       unsubscribeAuthListener();
     };
   }, [dispatch]);
-
-  // Presence heartbeat for the current user
-  usePresence(user);
 
   // If auth state hasn't been resolved, show the spinner
   if (!initialAuthResolved) {

@@ -1,7 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 import { useNotifications } from "../../shared/hooks/useNotifications";
-import { useGetUsersQuery } from "../../features/users/usersApi";
+import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import { useGenerateMonthBoardMutation, useSubscribeToMonthTasksQuery } from "../../features/tasks/tasksApi";
 
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
@@ -12,9 +12,7 @@ const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedUserId = searchParams.get("user") || "";
-  const { data: usersList = [], isLoading: usersLoading } = useGetUsersQuery({
-    useCache: true,
-  });
+  const { data: usersList = [], isLoading: usersLoading } = useSubscribeToUsersQuery();
   const [generateBoard, { isLoading: generatingBoard }] =
     useGenerateMonthBoardMutation();
 
@@ -47,49 +45,60 @@ const AdminDashboardPage = () => {
 
   const handleGenerateBoard = async (monthId) => {
     try {
-      const result = await generateBoard({ monthId: monthId }).unwrap();
-      addSuccess(
-        `Month board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`
-      );
+      await generateBoard({ monthId });
+      addSuccess(`Board generated for ${format(new Date(monthId + "-01"), "MMMM yyyy")}`);
     } catch (error) {
-      addError(`Failed to create month board: ${error.message}`);
+      addError(`Failed to generate board: ${error.message}`);
     }
-  };
-
-  const handleUserSelect = (e) => {
-    const uid = e.target.value;
-    const hasUserFilter = uid && uid !== "";
-
-    // Build URL parameters - only include user filter
-    const newSearchParams = new URLSearchParams();
-
-    // Only include user if there's a filter
-    if (hasUserFilter) {
-      newSearchParams.set("user", uid);
-    }
-
-    // Navigate to the appropriate URL
-    const queryString = newSearchParams.toString();
-    const url = queryString ? `/admin?${queryString}` : "/admin";
-    navigate(url);
   };
 
   return (
-    <>
-      <DashboardWrapper
-        title="Admin Dashboard"
-        showUserFilter={true}
-        usersList={usersList}
-        usersLoading={usersLoading}
-        onUserSelect={handleUserSelect}
-        impersonatedUserId={impersonatedUserId}
-        monthId={currentMonth}
-        isAdmin={true}
-        onGenerateAnalytics={handleGenerateAnalytics}
-        onGenerateBoard={handleGenerateBoard}
-        generatingBoard={generatingBoard}
-      />
-    </>
+    <div className="min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+          <p className="text-gray-600">
+            Manage tasks and view analytics for all users
+          </p>
+        </div>
+
+        {/* User Selection */}
+        {usersList.length > 0 && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              View as User (Optional)
+            </label>
+            <select
+              value={impersonatedUserId}
+              onChange={(e) => {
+                const newUrl = e.target.value
+                  ? `/admin?user=${e.target.value}`
+                  : "/admin";
+                navigate(newUrl);
+              }}
+              className="block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Users</option>
+              {usersList.map((user) => (
+                <option key={user.userUID || user.id} value={user.userUID || user.id}>
+                  {user.name || user.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <DashboardWrapper
+          tasks={tasks}
+          isLoading={usersLoading}
+          onGenerateAnalytics={handleGenerateAnalytics}
+          onGenerateBoard={handleGenerateBoard}
+          generatingBoard={generatingBoard}
+          currentMonth={currentMonth}
+          impersonatedUserId={impersonatedUserId}
+        />
+      </div>
+    </div>
   );
 };
 

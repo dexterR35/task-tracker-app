@@ -1,7 +1,6 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import DynamicButton from "../ui/DynamicButton";
-import OfflineIndicator from "../../../features/notifications/components/OfflineIndicator";
 
 import {
   ArrowRightOnRectangleIcon,
@@ -25,8 +24,6 @@ const Layout = () => {
       console.error("Logout failed:", error);
     }
   };
-
-
 
   if (!isAuthenticated) {
     return <Outlet />;
@@ -54,8 +51,6 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen">
-      <OfflineIndicator />
-
       <nav className="bg-primary shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -138,7 +133,6 @@ const Layout = () => {
       <main
         className={`${isDashboardPage ? "" : "max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8"} relative`}
       >
-   
         <Outlet />
       </main>
     </div>

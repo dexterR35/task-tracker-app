@@ -6,7 +6,6 @@ import { useUpdateTaskMutation, useDeleteTaskMutation } from '../tasksApi';
 import { taskNameOptions, marketOptions, productOptions, aiModelOptions, deliverables } from '../../../shared/utils/taskOptions';
 import { useFormat } from '../../../shared/hooks/useFormat';
 import { sanitizeTaskData, sanitizeText } from '../../../shared/utils/sanitization';
-import usePagination from '../../../shared/hooks/usePagination';
 import { useNotifications } from '../../../shared/hooks/useNotifications';
 
 import MultiValueInput from '../../../shared/components/ui/MultiValueInput';
@@ -92,8 +91,38 @@ const TasksTable = ({
   // Force re-render when form changes to update conditional columns
   const [forceUpdate, setForceUpdate] = useState(0);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  
   // Check if any task is being edited
   const isAnyTaskEditing = editingId !== null;
+  
+  // Pagination calculations
+  const pageCount = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
+  const startIdx = currentPage * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, filteredTasks.length);
+  const currentPageTasks = useMemo(() => 
+    filteredTasks.slice(startIdx, endIdx), 
+    [filteredTasks, startIdx, endIdx]
+  );
+  
+  // Handle page change from ReactPaginate
+  const handlePageChange = (selectedItem) => {
+    setCurrentPage(selectedItem.selected);
+  };
+  
+  // Handle page size change
+  const handlePageSizeChange = (e) => {
+    const newSize = parseInt(e.target.value, 10);
+    setPageSize(newSize);
+    setCurrentPage(0); // Reset to first page when changing page size
+  };
+  
+  // Reset to first page when tasks change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [filteredTasks.length]);
   
   useEffect(() => {
     if (isAnyTaskEditing) {
@@ -106,22 +135,6 @@ const TasksTable = ({
     setForceUpdate(prev => prev + 1);
   }, [filteredTasks.length]);
   
-  const { 
-    page, 
-    pageSize, 
-    pageCount, 
-    currentPageItems: currentPageTasks, 
-    handlePageChange, 
-    handlePageSizeChange 
-  } = usePagination(filteredTasks, {
-    defaultSize: 25,
-    queryParamPage: 'p',
-    queryParamSize: 'ps',
-    storageKeyPrefix: 'tt_'
-  });
-  
-  const startIdx = page * pageSize;
-
   const startEdit = (t) => {
     // Extract the document ID from the task ID (in case it's a full path)
     let taskId = t.id;
@@ -332,7 +345,7 @@ const TasksTable = ({
     <div className="bg-primary border rounded-lg overflow-x-auto shadow-sm">
       <div className="flex-center !mx-0 !justify-between p-3 text-xs text-gray-200">
         <div>
-          Showing {Math.min(startIdx + 1, filteredTasks.length)}–{Math.min(startIdx + pageSize, filteredTasks.length)} of {filteredTasks.length}
+          Showing {startIdx + 1}–{endIdx} of {filteredTasks.length} tasks
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-1">Page size:
@@ -546,20 +559,26 @@ const TasksTable = ({
         </tbody>
       </table>
       
-      <div className="p-3">
-        <ReactPaginate
-          pageCount={pageCount}
-          pageRangeDisplayed={5}
-          marginPagesDisplayed={2}
-          onPageChange={handlePageChange}
-          containerClassName="flex justify-center space-x-1"
-          pageClassName="px-3 py-1 border rounded hover:bg-gray-100"
-          activeClassName="bg-blue-500 text-white"
-          previousClassName="px-3 py-1 border rounded hover:bg-gray-100"
-          nextClassName="px-3 py-1 border rounded hover:bg-gray-100"
-          disabledClassName="opacity-50 cursor-not-allowed"
-        />
-      </div>
+      {pageCount > 1 && (
+        <div className="p-3">
+          <ReactPaginate
+            pageCount={pageCount}
+            pageRangeDisplayed={5}
+            marginPagesDisplayed={2}
+            onPageChange={handlePageChange}
+            forcePage={currentPage}
+            containerClassName="flex justify-center space-x-1"
+            pageClassName="px-3 py-1 border rounded hover:bg-gray-100 text-gray-700"
+            activeClassName="bg-blue-500 text-white border-blue-500"
+            previousClassName="px-3 py-1 border rounded hover:bg-gray-100 text-gray-700"
+            nextClassName="px-3 py-1 border rounded hover:bg-gray-100 text-gray-700"
+            disabledClassName="opacity-50 cursor-not-allowed text-gray-400"
+            previousLabel="Previous"
+            nextLabel="Next"
+            breakLabel="..."
+          />
+        </div>
+      )}
     </div>
   );
 };

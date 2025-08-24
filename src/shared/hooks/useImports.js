@@ -134,6 +134,3 @@ export {
   extractTaskNumber, 
   sanitizeTaskNumber 
 } from '../utils/sanitization';
-
-// Connection status hooks
-export { useOfflineStatus, useNetworkStatus, useFirebaseConnection, useConnectionStatus } from './useOfflineStatus';
