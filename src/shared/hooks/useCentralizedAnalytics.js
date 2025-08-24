@@ -24,6 +24,16 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     if (queryKeys.length > 0) {
       console.log('First query key:', queryKeys[0]);
       console.log('First query data:', queries[queryKeys[0]]);
+      
+      // Log all query keys that contain the monthId
+      const monthQueries = queryKeys.filter(key => key.includes(monthId));
+      console.log('Queries containing monthId:', monthQueries);
+      
+      // Log all query keys that contain userId if provided
+      if (userId) {
+        const userQueries = queryKeys.filter(key => key.includes(userId));
+        console.log('Queries containing userId:', userQueries);
+      }
     }
     
     // Try different query key formats based on the actual API structure
@@ -50,6 +60,16 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       data = queries[queryKey]?.data;
     }
     
+    // Also try the RTK Query cache key format
+    if (!data && userId) {
+      const cacheKey = `${monthId}_user_${userId}`;
+      const cacheQueryKey = `subscribeToMonthTasks({"monthId":"${monthId}","userId":"${userId}","useCache":true})`;
+      data = queries[cacheQueryKey]?.data;
+      if (data) {
+        console.log('Found data using cache key format:', cacheKey);
+      }
+    }
+    
     // If still no data, try to find any query that matches the monthId
     if (!data) {
       const matchingQueries = Object.keys(queries).filter(key => 
@@ -58,9 +78,35 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       console.log('Matching queries for monthId:', matchingQueries);
       
       if (matchingQueries.length > 0) {
-        // Use the first matching query
-        data = queries[matchingQueries[0]]?.data;
-        console.log('Using first matching query:', matchingQueries[0]);
+        // Prioritize user-specific queries if userId is provided
+        if (userId) {
+          const userSpecificQuery = matchingQueries.find(key => 
+            key.includes(`"userId":"${userId}"`)
+          );
+          if (userSpecificQuery) {
+            data = queries[userSpecificQuery]?.data;
+            console.log('Using user-specific query:', userSpecificQuery);
+          } else {
+            // If no user-specific query found, don't use any query
+            console.log('No user-specific query found, not using any query');
+            return [];
+          }
+        } else {
+          // For admin view (no userId), use the first matching query
+          data = queries[matchingQueries[0]]?.data;
+          console.log('Using first matching query:', matchingQueries[0]);
+        }
+      }
+    }
+    
+    // Additional fallback: try to find any query that contains both monthId and userId
+    if (!data && userId) {
+      const exactMatchQuery = Object.keys(queries).find(key => 
+        key.includes(monthId) && key.includes(userId)
+      );
+      if (exactMatchQuery) {
+        data = queries[exactMatchQuery]?.data;
+        console.log('Found exact match query:', exactMatchQuery);
       }
     }
     
@@ -77,6 +123,19 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     if (!Array.isArray(data)) {
       console.error('Data is not an array:', data);
       return [];
+    }
+    
+    // If userId is provided, validate that the data is actually filtered for that user
+    if (userId && data.length > 0) {
+      const userTasks = data.filter(task => task.userUID === userId);
+      console.log(`Validation: Found ${userTasks.length} tasks for user ${userId} out of ${data.length} total tasks`);
+      
+      if (userTasks.length !== data.length) {
+        console.warn(`Data mismatch: Expected ${data.length} tasks for user ${userId}, but only ${userTasks.length} belong to this user`);
+        console.warn('This suggests the query returned all tasks instead of user-specific tasks');
+        // Return only the user's tasks
+        return userTasks;
+      }
     }
     
     return data;
