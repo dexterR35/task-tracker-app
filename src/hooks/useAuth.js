@@ -6,7 +6,7 @@ import {
   clearError as clearAuthError,
   resetAuth,
   initAuthListener,
-} from '../features/auth/authSlice';
+} from '../redux/slices/authSlice';
 import { addNotification } from '../redux/slices/notificationSlice';
 import { auth } from '../firebase'; 
 import {

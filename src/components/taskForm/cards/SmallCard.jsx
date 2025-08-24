@@ -6,7 +6,7 @@ import {
   getTrendColor,
   getTrendIcon,
   formatAdditionalInfo,
-} from "../../../utils/formatUtils";
+} from "../../../utils/formatUtils.jsx";
 
 const SmallCard = ({
   title,

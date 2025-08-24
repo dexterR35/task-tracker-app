@@ -2,9 +2,9 @@
 
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { initAuthListener, unsubscribeAuthListener } from "./authSlice";
-import { useAuth } from "../../hooks/useAuth";
-import { usePresence } from "../../hooks/usePresence";
+import { initAuthListener, unsubscribeAuthListener } from "../redux/slices/authSlice";
+import { useAuth } from "../hooks/useAuth";
+import { usePresence } from "../hooks/usePresence";
 
 // Spinner loader component using Tailwind CSS
 const Spinner = () => (
