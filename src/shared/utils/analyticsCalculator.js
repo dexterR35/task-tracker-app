@@ -1,4 +1,4 @@
-import { ANALYTICS_TYPES, TASK_CATEGORIES } from '../constants/analyticsTypes';
+import { ANALYTICS_TYPES, TASK_CATEGORIES } from './analyticsTypes';
 
 /**
  * Centralized Analytics Calculator

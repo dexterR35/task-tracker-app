@@ -168,7 +168,7 @@ const PreviewPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <div className="bg-primary rounded-lg shadow-md p-6 text-center">
             <div className="text-xl font-semibold mb-4">
               Generating Analytics Preview...
             </div>
@@ -195,7 +195,7 @@ const PreviewPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-primary p-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <div className="text-xl font-semibold mb-4 text-red-600">
@@ -221,9 +221,9 @@ const PreviewPage = () => {
   // No analytics state
   if (!analyticsPreview) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen  p-6 ">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <div className="card text-gray-200">
             <div className="text-xl font-semibold mb-4">
               No Analytics Preview Available
             </div>
@@ -248,15 +248,15 @@ const PreviewPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen  p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-primary rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">
+              <h2>
                 Analytics Preview ({format(new Date(monthId + "-01"), "MMMM yyyy")})
               </h2>
-              <div className="mt-1 text-sm text-gray-600">
+              <div className="mt-2 text-sm text-gray-600">
                 <strong>Month:</strong> {monthId}
                 {board?.exists && (
                   <span className="ml-2 text-green-600">

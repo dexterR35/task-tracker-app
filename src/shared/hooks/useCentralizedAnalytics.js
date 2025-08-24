@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { analyticsCalculator, calculateAnalyticsFromTasks, getMetricForCard, getAllMetrics } from '../utils/analyticsCalculator';
-import { ANALYTICS_TYPES } from '../constants/analyticsTypes';
+import { ANALYTICS_TYPES } from '../utils/analyticsTypes';
 
 /**
  * Centralized Analytics Hook

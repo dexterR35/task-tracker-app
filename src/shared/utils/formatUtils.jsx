@@ -1,4 +1,4 @@
-import { ANALYTICS_TYPES } from "../constants/analyticsTypes";
+import { ANALYTICS_TYPES } from "./analyticsTypes";
 
 /**
  * Format value based on analytics type

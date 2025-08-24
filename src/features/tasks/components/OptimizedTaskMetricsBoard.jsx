@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
 import { useCentralizedAnalytics } from "../../../shared/hooks/useCentralizedAnalytics";
-import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/constants/analyticsTypes";
+import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
 
 import {
   ClipboardDocumentListIcon,
