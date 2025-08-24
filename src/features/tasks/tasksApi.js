@@ -494,7 +494,7 @@ export const tasksApi = createApi({
           const { taskStorage } = await import("../../shared/utils/indexedDBStorage");
           await taskStorage.updateTask(monthId, id, updatesWithMonthId);
 
-          return { data: { id, monthId, updates: updatesWithMonthId } };
+          return { data: { id, monthId, success: true } };
         } catch (error) {
           return {
             error: { message: error?.message || "Failed to update task" },
