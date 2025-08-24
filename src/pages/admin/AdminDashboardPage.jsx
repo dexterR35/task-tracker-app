@@ -1,10 +1,10 @@
-import { useSearchParams, useNavigate } from "../../hooks/useImports";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
-import { useNotifications } from "../../hooks/useNotifications";
-import { useGetUsersQuery } from "../../redux/services/usersApi";
-import { useGenerateMonthBoardMutation, useSubscribeToMonthTasksQuery } from "../../redux/services/tasksApi";
+import { useNotifications } from "../../shared/hooks/useNotifications";
+import { useGetUsersQuery } from "../../features/users/usersApi";
+import { useGenerateMonthBoardMutation, useSubscribeToMonthTasksQuery } from "../../features/tasks/tasksApi";
 
-import DashboardWrapper from "../../components/dashboard/DashboardWrapper";
+import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
 import { format } from "date-fns";
 
 const AdminDashboardPage = () => {

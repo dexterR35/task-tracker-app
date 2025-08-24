@@ -1,10 +1,11 @@
 
-import { Provider,RouterProvider } from './hooks/useImports';
-import store from './redux/store';
-import router from './router';
-import { AuthProvider } from './context/AuthProvider';
-import NotificationContainer from './components/notification/NotificationContainer';
-import ErrorBoundary from './components/notification/error/ErrorBoundary';
+import { Provider } from 'react-redux';
+import { RouterProvider } from 'react-router-dom';
+import store from './app/store';
+import router from './app/router';
+import { AuthProvider } from './shared/context/AuthProvider';
+import NotificationContainer from './features/notifications/components/NotificationContainer';
+import ErrorBoundary from './features/notifications/components/error/ErrorBoundary';
 
 const App = () => (
   <ErrorBoundary>

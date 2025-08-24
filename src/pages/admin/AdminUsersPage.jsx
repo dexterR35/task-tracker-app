@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useGetUsersQuery } from "../../redux/services/usersApi";
-import DynamicButton from "../../components/button/DynamicButton";
-import CreateUserForm from "../../components/user/CreateUserForm";
+import { useGetUsersQuery } from "../../features/users/usersApi";
+import DynamicButton from "../../shared/components/ui/DynamicButton";
+import CreateUserForm from "../../features/users/components/CreateUserForm";
 
 const AdminUsersPage = () => {
   const { data: users = [], isLoading, error } = useGetUsersQuery();

@@ -2,8 +2,8 @@ import {
   useListAllAnalyticsQuery,
   useGetMonthAnalyticsQuery,
   useDeleteMonthAnalyticsMutation,
-} from "../../redux/services/tasksApi";
-import DynamicButton from "../../components/button/DynamicButton";
+} from "../../features/tasks/tasksApi";
+import DynamicButton from "../../shared/components/ui/DynamicButton";
 
 import {
   ResponsiveContainer,
@@ -21,10 +21,10 @@ import {
   Line,
   ScatterChart,
   Scatter,
-  React,
-} from "../../hooks/useImports";
-import { useFormat } from "../../hooks/useImports";
-import { useNotifications } from "../../hooks/useNotifications";
+} from "recharts";
+import React from "react";
+import { useFormat } from "../../shared/hooks/useFormat";
+import { useNotifications } from "../../shared/hooks/useNotifications";
 
 const AdminAnalyticsPage = () => {
   const { format } = useFormat();
