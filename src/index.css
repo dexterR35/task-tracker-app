@@ -2,33 +2,36 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #131B30; /* soft blue 131B30*/
+  --color-primary: #131b30; /* soft blue 131B30*/
   --color-primary-80: #0a2470;
-  --color-secondary: #ff5733;
+  --color-secondary: #727e90;
+  --color-hover: #c10f29;
+  --color-title: #0f3cd9;
 
-  --color-gray-200: #E8EDFF; 
-  --color-gray-300: #C2CCD8; /* global color slate /25 light */
-  --color-gray-400: #A8B2C0; 
-  --color-gray-500: #747E90;
-  --color-gray-600: #727E90;
-   /* global color slate /25 light */
-  --color-focus: #AEBFFF;
-  --color-gradient-start: #0A1225; /* dark blue 0A1225*/
+  --color-gray-200: #e8edff;
+  --color-gray-300: #c2ccd8; /* global color slate /25 light */
+  --color-gray-400: #a8b2c0;
+  --color-gray-500: #747e90;
+  --color-gray-600: #727e90;
+  /* global color slate /25 light */
+  --color-focus: #aebfff;
+  --color-gradient-start: #0a1225; /* dark blue 0A1225*/
   --color-gradient-end: #010718; /* dark blue 010718*/
-  --color-red-error: #EB2743; /* dark red error */
-  --color-red-500: #C10F29; /* dark red error */
-  --color-green-success: #2FD181; /* soft green error */
-  --color-green-400: #0A9952; /* dark red error */
+  --color-red-error: #eb2743; /* dark red error */
+  --color-red-500: #c10f29; /* dark red error */
+  --color-green-success: #2fd181; /* soft green error */
+  --color-green-400: #0a9952; /* dark red error */
 
-  --color-btn-primary: #0F3CD9;
-  --color-btn-secondary: #0F3CD9;
-  --color-btn-danger: #C10F29;
-  --color-btn-success: #11A75C;
-  --color-btn-warning: #A99952;
-  --color-btn-info: #538CFF;
-  --color-btn-light: #DCE6F0;
-  --color-btn-dark: #0A1225;
-  
+  --color-warning: #eb2743;
+
+  --color-btn-primary: #0f3cd9;
+  --color-btn-secondary: #c10f29;
+  --color-btn-danger: #c10f29;
+  --color-btn-success: #11a75c;
+  --color-btn-warning: #a99952;
+  --color-btn-info: #538cff;
+  --color-btn-light: #dce6f0;
+  --color-btn-dark: #0a1225;
 }
 
 /* ---------------- Base layer ---------------- */
@@ -46,7 +49,7 @@
 
   /* Form element defaults */
   form select option {
-    @apply uppercase ;
+    @apply uppercase;
   }
 
   form > div span {
@@ -75,6 +78,12 @@
     @apply text-gray-500;
   }
 
+  input[type="checkbox"]{
+    @apply w-4 h-4;
+  }
+
+
+
   /* Headings */
   h1 {
     @apply mt-2 text-6xl font-black tracking-tight flex items-center justify-center gap-4 !text-gray-200;
@@ -86,8 +95,11 @@
     @apply text-lg font-normal tracking-tight !text-gray-200 mb-3;
   }
 
- tbody tr td {
-    @apply px-3 py-2 !text-gray-200 border-b !border-focus;
+  tbody tr td {
+    @apply px-3 py-4 !text-gray-200 font-medium;
+  }
+  thead tr th {
+    @apply px-3 py-4 !text-gray-200  text-left;
   }
   .max-w-7xl {
     @apply !max-w-[95%] mx-auto;
@@ -130,13 +142,17 @@
   }
 
   .gradient-main {
-    @apply bg-gradient-to-t from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]
+    @apply bg-gradient-to-t from-[var(--color-gradient-start)] to-[var(--color-gradient-end)];
   }
-
+  .rounded-grid-small {
+    @apply inline-flex items-center  px-2 py-0.5 rounded bg-gray-200 text-gray-800 uppercase;
+  }
   @media (prefers-reduced-motion: reduce) {
     .skeleton {
       animation: none;
     }
+
+  
   }
 
   /* .dark .skeleton {
@@ -174,12 +190,8 @@
 
 /* ---------------- Utilities layer ---------------- */
 
- 
-  @layer utilities {
-    .nav-link {
-      @apply text-[var(--color-gray-200)] px-1 pt-1 text-base font-normal;
-    }
-
-    
+@layer utilities {
+  .nav-link {
+    @apply text-[var(--color-gray-200)] px-1 pt-1 text-base font-normal;
   }
-
+}

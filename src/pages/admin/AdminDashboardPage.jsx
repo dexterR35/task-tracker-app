@@ -12,7 +12,8 @@ const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedUserId = searchParams.get("user") || "";
-  const { data: usersList = [], isLoading: usersLoading } = useSubscribeToUsersQuery();
+  const { data: usersList = [], isLoading: usersLoading } =
+    useSubscribeToUsersQuery();
   const [generateBoard, { isLoading: generatingBoard }] =
     useGenerateMonthBoardMutation();
 
@@ -32,7 +33,9 @@ const AdminDashboardPage = () => {
   const handleGenerateBoard = async (monthId) => {
     try {
       await generateBoard({ monthId });
-      addSuccess(`Board generated for ${format(new Date(monthId + "-01"), "MMMM yyyy")}`);
+      addSuccess(
+        `Board generated for ${format(new Date(monthId + "-01"), "MMMM yyyy")}`
+      );
     } catch (error) {
       addError(`Failed to generate board: ${error.message}`);
     }
@@ -41,15 +44,6 @@ const AdminDashboardPage = () => {
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">
-            Manage tasks and view analytics for all users
-          </p>
-        </div>
-
-
-
         <DashboardWrapper
           isLoading={usersLoading}
           onGenerateAnalytics={handleGenerateAnalytics}

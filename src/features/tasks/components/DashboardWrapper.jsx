@@ -54,19 +54,20 @@ const DashboardWrapper = ({
   const shouldSkipTaskQuery = boardLoading || !board?.exists;
 
   // Normalize userId to prevent duplicate queries
-  const normalizedUserId = finalUserId && finalUserId.trim() !== '' ? finalUserId : null;
-  
+  const normalizedUserId =
+    finalUserId && finalUserId.trim() !== "" ? finalUserId : null;
+
   // Debug: Log user selection information
-  console.log('DashboardWrapper - urlImpersonatedUserId:', urlImpersonatedUserId);
-  console.log('DashboardWrapper - impersonatedUserId:', impersonatedUserId);
-  console.log('DashboardWrapper - effectiveImpersonatedUserId:', effectiveImpersonatedUserId);
-  console.log('DashboardWrapper - finalUserId:', finalUserId);
-  console.log('DashboardWrapper - normalizedUserId:', normalizedUserId);
+  // console.log('DashboardWrapper - urlImpersonatedUserId:', urlImpersonatedUserId);
+  // console.log('DashboardWrapper - impersonatedUserId:', impersonatedUserId);
+  // console.log('DashboardWrapper - effectiveImpersonatedUserId:', effectiveImpersonatedUserId);
+  // console.log('DashboardWrapper - finalUserId:', finalUserId);
+  // console.log('DashboardWrapper - normalizedUserId:', normalizedUserId);
 
   const {
     data: tasks = [],
     isLoading: tasksLoading,
-    error: tasksError
+    error: tasksError,
   } = useSubscribeToMonthTasksQuery(
     {
       monthId,
@@ -78,6 +79,7 @@ const DashboardWrapper = ({
   );
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showTasksTable, setShowTasksTable] = useState(true); // New state for table visibility
+
   const { addError } = useNotifications();
 
   // Clean up notifications when month changes
@@ -141,17 +143,12 @@ const DashboardWrapper = ({
       {/* User Filter (Admin Only) */}
       {board?.exists && showUserFilter && isAdmin && (
         <div className="mb-6">
-          <label
-            htmlFor="userSelect"
-            className="block text-sm font-medium text-gray-300 mb-2"
-          >
-            Filter by User
-          </label>
+          <label htmlFor="userSelect">Filter by User</label>
           <select
             id="userSelect"
             value={effectiveImpersonatedUserId || ""}
             onChange={handleUserSelect}
-            className="w-full md:w-64 px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-100"
+            className="w-full md:w-52"
             disabled={usersLoading}
           >
             <option value="">All Users</option>
@@ -164,9 +161,9 @@ const DashboardWrapper = ({
         </div>
       )}
 
-      {/* Board Status Warning */}
+      {/* Board Status Warning if not created */}
       {!board?.exists && (
-        <div className="mb-6 card border border-red-500 text-red-400 text-sm px-4 py-4 rounded-lg bg-red-900/20">
+        <div className="mb-6 card border border-red-error text-red-error text-sm px-4 py-4 rounded-lg bg-red-900/20">
           {isAdmin ? (
             <div className="flex-center !flex-row !items-center !justify-start gap-4">
               <div>
@@ -195,15 +192,12 @@ const DashboardWrapper = ({
 
       {/* Action Buttons */}
       {board?.exists && (
-      <div className="mb-6 flex-center !flex-row md:flex-row gap-4 !mx-0 justify-start">
-        <DynamicButton variant="primary" onClick={handleCreateTask} size="md">
-          {showTaskForm ? "Hide Form" : "Create Task"}
-        </DynamicButton>
+        <div className="mb-6 flex-center !flex-row md:flex-row gap-4 !mx-0 justify-start">
+          <DynamicButton variant="primary" onClick={handleCreateTask} size="md">
+            {showTaskForm ? "Hide Form" : "Create Task"}
+          </DynamicButton>
 
-        {isAdmin &&
-          onGenerateAnalytics &&
-          
-          filteredTasks.length > 0 && (
+          {isAdmin && onGenerateAnalytics && filteredTasks.length > 0 && (
             <DynamicButton
               variant="success"
               size="md"
@@ -213,7 +207,7 @@ const DashboardWrapper = ({
               {format(new Date(monthId + "-01"), "MMMM yyyy")})
             </DynamicButton>
           )}
-      </div>
+        </div>
       )}
 
       {/* Task Form */}
@@ -231,10 +225,9 @@ const DashboardWrapper = ({
         />
       )}
       <div className="space-y-8">
-      
         {!tasksLoading && filteredTasks.length === 0 ? (
           <div className="card text-gray-300">
-            <div className="flex flex-col items-center space-y-2">
+            <div className="flex-center !flex-col !space-y-2">
               <span>
                 {tasksError
                   ? "Error loading tasks"
@@ -245,20 +238,21 @@ const DashboardWrapper = ({
         ) : (
           <div>
             {/* Table Header with Toggle Button */}
-            <div className="flex items-center justify-between border-b border-gray-700 pb-4 mb-6">
-              <h2 className="text-2xl font-semibold text-gray-100">
+            <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2 mb-6">
+              <h3 className=" mb-0">
                 Total Tasks
-              </h2>
+              </h3>
               <DynamicButton
-        onClick={toggleTableVisibility}
-        variant="primary" // You can customize the style
-        icon={showTasksTable ? ChevronUpIcon : ChevronDownIcon}
-        className="border border-gray-600"
-      >
-        {showTasksTable ? 'Hide Table' : 'Show Table'}
-      </DynamicButton>
+                onClick={toggleTableVisibility}
+                variant="outline" // You can customize the style
+                icon={showTasksTable ? ChevronUpIcon : ChevronDownIcon}
+                size="sm"
+                className="w-38"
+              >
+                {showTasksTable ? "Hide Table" : "Show Table"}
+              </DynamicButton>
             </div>
-            
+
             {/* Tasks Table */}
             {showTasksTable && (
               <TasksTable

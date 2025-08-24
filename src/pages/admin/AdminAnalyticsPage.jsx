@@ -48,27 +48,7 @@ const AdminAnalyticsPage = () => {
     "#22c55e",
   ];
 
-  // const handleDownloadPdf = () => {
-  //   if (!current) return;
-  //   const doc = new jsPDF({ unit: "pt", format: "a4" });
-  //   const margin = 40;
-  //   let y = margin;
-  //   doc.setFontSize(18);
-  //   doc.text(`Monthly Analytics - ${current.monthId}`, margin, y);
-  //   y += 24;
-  //   doc.setFontSize(12);
-  //   const s = current;
-  //   [
-  //     `Total Tasks: ${s.totalTasks || 0}`,
-  //     `Total Hours: ${Math.round((s.totalHours || 0) * 10) / 10}`,
-  //     `AI Tasks: ${s.ai?.tasks || 0}  |  AI Hours: ${Math.round((s.ai?.hours || 0) * 10) / 10}`,
-  //     `Reworked: ${s.reworked || 0}`,
-  //   ].forEach((line) => {
-  //     doc.text(line, margin, y);
-  //     y += 18;
-  //   });
-  //   doc.save(`Analytics_${current.monthId}.pdf`);
-  // };
+
 
   const handleDeleteAnalytics = async (monthId) => {
     if (

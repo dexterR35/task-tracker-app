@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
 import { useCentralizedAnalytics } from "../../../shared/hooks/useCentralizedAnalytics";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/constants/analyticsTypes";
@@ -121,6 +122,7 @@ const METRIC_CARDS_CONFIG = [
   },
 ];
 
+
 const OptimizedTaskMetricsBoard = ({
   monthId,
   userId = null,
@@ -128,7 +130,9 @@ const OptimizedTaskMetricsBoard = ({
   className = "",
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
-
+  const toggleTableButton = () => {
+    setShowKeyMetrics(!showKeyMetrics);
+  };
   // Use centralized analytics hook
   const {
     analytics,
@@ -187,7 +191,7 @@ const OptimizedTaskMetricsBoard = ({
     // If no data and not loading, show empty state
     if (!hasData) {
       return (
-        <div className="col-span-full text-center text-gray-400 py-8">
+        <div className="card">
           No data available for this month
         </div>
       );
@@ -196,12 +200,12 @@ const OptimizedTaskMetricsBoard = ({
     // If analytics is null or undefined, show empty state
     if (!analytics) {
       return (
-        <div className="col-span-full text-center text-gray-400 py-8">
+        <div className="card">
           No analytics data available
         </div>
       );
     }
-
+ 
     // Render cards with analytics data
     return METRIC_CARDS_CONFIG.map((cardConfig) => {
       try {
@@ -227,7 +231,7 @@ const OptimizedTaskMetricsBoard = ({
         }
 
         const metricData = getMetric(cardConfig.type, cardConfig.category);
-        console.log(`Card ${cardConfig.id}:`, metricData);
+        // console.log(`Card ${cardConfig.id}:`, metricData);
         
         return (
           <MemoizedOptimizedSmallCard
@@ -265,24 +269,11 @@ const OptimizedTaskMetricsBoard = ({
     getMetric
   ]);
 
-  // Debug information (can be removed in production)
-  const debugInfo = useMemo(() => {
-    if (!monthId) return null;
-    
-    const cacheStatus = getCacheStatus();
-    return {
-      monthId,
-      userId,
-      hasData,
-      isLoading,
-      error: error?.message,
-      cacheStatus
-    };
-  }, [monthId, userId, hasData, isLoading, error, getCacheStatus]);
+
 
   if (!monthId) {
     return (
-      <div className="text-center text-gray-300 py-8">
+      <div className="card">
         No month selected for metrics
       </div>
     );
@@ -291,7 +282,7 @@ const OptimizedTaskMetricsBoard = ({
   // If loading, show loading state
   if (isLoading) {
     return (
-      <div className="text-center text-gray-300 py-8">
+      <div className="card">
         Loading metrics...
       </div>
     );
@@ -300,7 +291,7 @@ const OptimizedTaskMetricsBoard = ({
   // If no data and not loading, show empty state
   if (!hasData && !isLoading) {
     return (
-      <div className="text-center text-gray-300 py-8">
+      <div className="card">
         No data available for this month
       </div>
     );
@@ -308,30 +299,21 @@ const OptimizedTaskMetricsBoard = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Key Metrics Toggle Button */}
-      <div className="flex items-center justify-between border-b border-gray-700 pb-4 mb-6">
-        <h2>Task Metrics Per Month</h2>
-        <button
-          onClick={() => setShowKeyMetrics(!showKeyMetrics)}
-          className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200"
-        >
-          <span>{showKeyMetrics ? 'Hide' : 'Show'}</span>
-          {showKeyMetrics ? (
-            <ChevronUpIcon className="w-4 h-4" />
-          ) : (
-            <ChevronDownIcon className="w-4 h-4" />
-          )}
-        </button>
+
+      <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2 mb-6">
+        <h3 className="mb-0">Task Metrics Per Month</h3>
+        <DynamicButton
+                onClick={toggleTableButton}
+                variant="outline" // You can customize the style
+                icon={showKeyMetrics ? ChevronUpIcon : ChevronDownIcon}
+               size="sm"
+               className="w-38"
+              >
+                {showKeyMetrics ? "Hide Cards" : "Show Cards"}
+              </DynamicButton>
       </div>
-
-      {/* Debug Information (remove in production) */}
-      {debugInfo && (
-        <div className="bg-gray-800 p-4 rounded-lg text-xs text-gray-400">
-          <div className="font-semibold mb-2">Debug Info:</div>
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
-      )}
-
+      
+ 
       {/* Small Cards Section */}
       {showSmallCards && showKeyMetrics && (
         <div className="space-y-4">
@@ -341,30 +323,7 @@ const OptimizedTaskMetricsBoard = ({
         </div>
       )}
 
-      {/* Analytics Summary (optional) */}
-      {showSmallCards && showKeyMetrics && analytics && (
-        <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">Analytics Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div>
-              <span className="text-gray-400">Total Tasks:</span>
-              <span className="ml-2 text-gray-200">{analytics.summary?.totalTasks || 0}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">Total Hours:</span>
-              <span className="ml-2 text-gray-200">{analytics.summary?.totalHours || 0}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">AI Tasks:</span>
-              <span className="ml-2 text-gray-200">{analytics.ai?.totalAITasks || 0}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">Completion Rate:</span>
-              <span className="ml-2 text-gray-200">{analytics.summary?.completionRate || 0}%</span>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
