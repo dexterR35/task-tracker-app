@@ -126,7 +126,7 @@ const TaskMetricDashBoard = ({
   showSmallCards = true,
   className = "",
 }) => {
-  const [showKeyMetrics, setShowKeyMetrics] = useState(false);
+  const [showKeyMetrics, setShowKeyMetrics] = useState(true);
 
   // Memoize the cards to prevent unnecessary re-renders
   const metricCards = useMemo(() => {
@@ -162,23 +162,22 @@ const TaskMetricDashBoard = ({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Key Metrics Toggle Button */}
-      <div className="flex items-center justify-between">
-        <h2>
-          Task Metrics
-        </h2>
-        <button
-          onClick={() => setShowKeyMetrics(!showKeyMetrics)}
-          className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200"
-        >
-          <span>{showKeyMetrics ? 'Hide' : 'Show'}</span>
-          {showKeyMetrics ? (
-            <ChevronUpIcon className="w-4 h-4" />
-          ) : (
-            <ChevronDownIcon className="w-4 h-4" />
-          )}
-        </button>
-      </div>
-
+      <div class="flex items-center justify-between border-b border-gray-700 pb-4 mb-6">
+    <h2>
+        Task Metrics Per Month
+    </h2>
+    <button
+        onClick={() => setShowKeyMetrics(!showKeyMetrics)}
+        class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200"
+    >
+        <span>{showKeyMetrics ? 'Hide' : 'Show'}</span>
+        {showKeyMetrics ? (
+            <ChevronUpIcon class="w-4 h-4" />
+        ) : (
+            <ChevronDownIcon class="w-4 h-4" />
+        )}
+    </button>
+</div>
       {/* Small Cards Section */}
       {showSmallCards && showKeyMetrics && (
         <div className="space-y-4">

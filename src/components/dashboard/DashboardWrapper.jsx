@@ -1,4 +1,4 @@
-import { useState, useSearchParams } from "../../hooks/useImports";
+import { useState, useSearchParams, useEffect, useMemo } from "../../hooks/useImports";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useNotificationCleanup } from "../../hooks/useNotificationCleanup";
@@ -12,6 +12,7 @@ import TaskMetricsDashboard from "../taskForm/TaskMetricsBoard";
 
 import DynamicButton from "../button/DynamicButton";
 import { format } from "date-fns";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const DashboardWrapper = ({
   title = "Dashboard",
@@ -68,6 +69,7 @@ const DashboardWrapper = ({
     }
   );
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showTasksTable, setShowTasksTable] = useState(true); // New state for table visibility
   const { addError } = useNotifications();
 
   // Clean up notifications when month changes
@@ -109,7 +111,9 @@ const DashboardWrapper = ({
       onUserSelect(event);
     }
   };
-
+  const toggleTableVisibility = () => {
+    setShowTasksTable(!showTasksTable);
+  };
   return (
     <div className="p-6">
       {/* Dashboard Header */}
@@ -217,6 +221,7 @@ const DashboardWrapper = ({
             userId={effectiveImpersonatedUserId}
             showSmallCards={true}
             showLargeCards={isAdmin}
+            className=""
           />
      
        
@@ -235,15 +240,32 @@ const DashboardWrapper = ({
           </div>
         ) : (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-100 mb-4">Total Tasks ({filteredTasks.length})</h2>
-            <TasksTable
-              monthId={monthId}
-              userFilter={effectiveImpersonatedUserId}
-              isAdmin={isAdmin}
-              boardExists={board?.exists}
-              boardLoading={boardLoading}
-              tasks={filteredTasks}
-            />
+            {/* Table Header with Toggle Button */}
+            <div className="flex items-center justify-between border-b border-gray-700 pb-4 mb-6">
+              <h2 className="text-2xl font-semibold text-gray-100">
+                Total Tasks
+              </h2>
+              <DynamicButton
+        onClick={toggleTableVisibility}
+        variant="primary" // You can customize the style
+        icon={showTasksTable ? ChevronUpIcon : ChevronDownIcon}
+        className="border border-gray-600"
+      >
+        {showTasksTable ? 'Hide Table' : 'Show Table'}
+      </DynamicButton>
+            </div>
+            
+            {/* Tasks Table */}
+            {showTasksTable && (
+              <TasksTable
+                monthId={monthId}
+                userFilter={effectiveImpersonatedUserId}
+                isAdmin={isAdmin}
+                boardExists={board?.exists}
+                boardLoading={boardLoading}
+                tasks={filteredTasks}
+              />
+            )}
           </div>
         )}
       </div>
