@@ -28,6 +28,42 @@ export const normalizeTimestamp = (value) => {
   return null;
 };
 
+/**
+ * Serialize timestamps for Redux state (convert to ISO strings)
+ * This ensures all timestamp fields are serializable in Redux
+ */
+export const serializeTimestampsForRedux = (data) => {
+  if (data == null) return data;
+  
+  if (Array.isArray(data)) {
+    return data.map(item => serializeTimestampsForRedux(item));
+  }
+  
+  if (typeof data === 'object') {
+    const serialized = Array.isArray(data) ? [] : {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      // Check if this field is likely a timestamp field
+      if (/at$|At$|date$|Date$|time$|Time$|lastActive|lastLogin|savedAt/.test(key)) {
+        if (value) {
+          // Convert to ISO string if it's a valid timestamp
+          const timestamp = normalizeTimestamp(value);
+          serialized[key] = timestamp ? new Date(timestamp).toISOString() : null;
+        } else {
+          serialized[key] = null;
+        }
+      } else {
+        // Recursively serialize nested objects
+        serialized[key] = serializeTimestampsForRedux(value);
+      }
+    }
+    
+    return serialized;
+  }
+  
+  return data;
+};
+
 export const normalizeObjectTimestamps = (input) => {
   if (input == null) return input;
   if (Array.isArray(input)) return input.map((v) => normalizeObjectTimestamps(v));

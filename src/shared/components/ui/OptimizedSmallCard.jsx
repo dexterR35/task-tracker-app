@@ -1,4 +1,5 @@
 import React from "react";
+import Loader from './Loader';
 import {
   formatAnalyticsValue,
   getDynamicTrend,
@@ -111,10 +112,7 @@ const OptimizedSmallCard = ({
         {/* Main Content */}
         {isLoading || loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="space-y-3 w-full">
-              <div className="h-8 bg-gray-600 rounded-lg animate-pulse"></div>
-              <div className="h-4 bg-gray-600 rounded animate-pulse w-3/4"></div>
-            </div>
+            <Loader />
           </div>
         ) : (
           <div className="flex-1">

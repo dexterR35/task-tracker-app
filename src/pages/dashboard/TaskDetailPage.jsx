@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { db } from "../../app/firebase";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
+import PageLoader from "../../shared/components/ui/PageLoader";
 
 
 const TaskDetailPage = () => {
@@ -39,12 +40,11 @@ const TaskDetailPage = () => {
 
   if (loading)
     return (
-      <div className="p-6">
-        <div className="max-w-3xl mx-auto space-y-4">
- <p>Loading...</p>
-        
-        </div>
-      </div>
+      <PageLoader 
+        text="Loading task details..." 
+        size="lg"
+        variant="spinner"
+      />
     );
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!task) return null;

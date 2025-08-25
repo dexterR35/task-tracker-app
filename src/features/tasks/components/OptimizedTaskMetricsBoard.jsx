@@ -4,6 +4,7 @@ import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard
 import { useCentralizedAnalytics } from "../../../shared/hooks/useCentralizedAnalytics";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
+import Loader from "../../../shared/components/ui/Loader";
 
 import {
   ClipboardDocumentListIcon,
@@ -132,7 +133,6 @@ const METRIC_CARDS_CONFIG = [
   },
 ];
 
-
 const OptimizedTaskMetricsBoard = ({
   monthId,
   userId = null,
@@ -140,7 +140,12 @@ const OptimizedTaskMetricsBoard = ({
   className = "",
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
   
   // For admins, always show all cards regardless of which user they're viewing
   // For regular users, filter based on their occupation
@@ -150,21 +155,17 @@ const OptimizedTaskMetricsBoard = ({
   // Get allowed cards for this occupation
   const allowedCardIds = OCCUPATION_CARD_MAPPING[userOccupation] || OCCUPATION_CARD_MAPPING['user'];
   
-  // Filter cards based on occupation
-  const filteredCardsConfig = METRIC_CARDS_CONFIG.filter(card => 
-    allowedCardIds.includes(card.id)
+  // Filter cards based on occupation - memoized to prevent recalculation
+  const filteredCardsConfig = useMemo(() => 
+    METRIC_CARDS_CONFIG.filter(card => allowedCardIds.includes(card.id)),
+    [allowedCardIds]
   );
-  
-  // Log occupation-based filtering for debugging
-  console.log(`[OptimizedTaskMetricsBoard] User: ${user?.name}, Role: ${user?.role}, Occupation: ${userOccupation}`);
-  console.log(`[OptimizedTaskMetricsBoard] Showing ${filteredCardsConfig.length} cards out of ${METRIC_CARDS_CONFIG.length} total cards`);
-  console.log(`[OptimizedTaskMetricsBoard] Allowed cards:`, allowedCardIds);
   
   const toggleTableButton = () => {
     setShowKeyMetrics(!showKeyMetrics);
   };
 
-  // Use centralized analytics hook (now uses IndexedDB as data store)
+  // Use centralized analytics hook - reads directly from Redux state
   const {
     analytics,
     getMetric,
@@ -172,22 +173,12 @@ const OptimizedTaskMetricsBoard = ({
     hasData,
     isLoading,
     error,
-    getCacheStatus,
     reload,
     refreshAnalytics
   } = useCentralizedAnalytics(monthId, userId);
 
-  // Load analytics when component mounts or dependencies change
-  useEffect(() => {
-    if (monthId && refreshAnalytics) {
-      // Initial load only
-      refreshAnalytics();
-    }
-  }, [monthId, userId, refreshAnalytics]);
-
   // Add error boundary for analytics
   if (error) {
-    console.error('OptimizedTaskMetricsBoard error:', error);
     return (
       <div className="text-center text-red-400 py-8">
         Error loading analytics: {error.message || 'Unknown error'}
@@ -229,40 +220,12 @@ const OptimizedTaskMetricsBoard = ({
       );
     }
 
-    // If no data and not loading, show appropriate message
-    if (!hasData) {
-      if (userId) {
-        return (
-          <div className="card text-center py-8">
-            <div className="text-gray-400 mb-2">No tasks found for selected user</div>
-            <div className="text-sm text-gray-500">This user has no tasks for {monthId}</div>
-          </div>
-        );
-      } else {
-        return (
-          <div className="card text-center py-8">
-            <div className="text-gray-400 mb-2">No tasks available for this month</div>
-            <div className="text-sm text-gray-500">No tasks have been created for {monthId}</div>
-          </div>
-        );
-      }
-    }
-
-    // If analytics is null or undefined, show empty state
-    if (!analytics) {
-      return (
-        <div className="card">
-          No analytics data available
-        </div>
-      );
-    }
- 
-    // Render cards with analytics data (filtered by occupation)
+    // ALWAYS render cards - show zero values if no data
+    // This ensures cards are always visible regardless of data availability
     return filteredCardsConfig.map((cardConfig) => {
       try {
-        // Ensure analytics object exists and has required properties
+        // If no analytics data, show cards with zero values
         if (!analytics || typeof analytics !== 'object') {
-          console.warn(`Analytics not available for card ${cardConfig.id}`);
           return (
             <MemoizedOptimizedSmallCard
               key={cardConfig.id}
@@ -275,14 +238,13 @@ const OptimizedTaskMetricsBoard = ({
               trend={cardConfig.trend}
               trendValue={cardConfig.trendValue}
               trendDirection={cardConfig.trendDirection}
-              loading={true}
+              loading={false}
               analyticsData={{ value: 0, additionalData: {} }}
             />
           );
         }
 
         const metricData = getMetric(cardConfig.type, cardConfig.category);
-        // console.log(`Card ${cardConfig.id}:`, metricData);
         
         return (
           <MemoizedOptimizedSmallCard
@@ -301,7 +263,6 @@ const OptimizedTaskMetricsBoard = ({
           />
         );
       } catch (error) {
-        console.error(`Error rendering card ${cardConfig.id}:`, error);
         return (
           <div key={cardConfig.id} className="text-center text-red-400 py-4">
             Error loading {cardConfig.title}
@@ -318,10 +279,9 @@ const OptimizedTaskMetricsBoard = ({
     isLoading, 
     error, 
     getMetric,
-    filteredCardsConfig
+    filteredCardsConfig,
+    analytics
   ]);
-
-
 
   if (!monthId) {
     return (
@@ -332,40 +292,35 @@ const OptimizedTaskMetricsBoard = ({
   }
 
   // If loading, show loading state
-  if (isLoading) {
+  if (isLoading && !hasData) {
     return (
       <div className="card">
-        Loading metrics...
+        <Loader 
+          text="Loading metrics..." 
+          size="md"
+          variant="dots"
+        />
       </div>
     );
   }
 
-  // If no data and not loading, show empty state
-  if (!hasData && !isLoading) {
-    return (
-      <div className="card">
-        No data available for this month
-      </div>
-    );
-  }
-
+  // ALWAYS show the metrics board - don't hide it when no data
+  // The cards will show zero values if no data is available
   return (
     <div className={`space-y-6 ${className}`}>
-
       <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2 mb-6">
         <h3 className="mb-0">Task Metrics Per Month</h3>
         <DynamicButton
-                onClick={toggleTableButton}
-                variant="outline" // You can customize the style
-                icon={showKeyMetrics ? ChevronUpIcon : ChevronDownIcon}
-               size="sm"
-               className="w-38"
-              >
-                {showKeyMetrics ? "Hide Cards" : "Show Cards"}
-              </DynamicButton>
+          onClick={toggleTableButton}
+          variant="outline"
+          icon={showKeyMetrics ? ChevronUpIcon : ChevronDownIcon}
+          size="sm"
+          className="w-38"
+        >
+          {showKeyMetrics ? "Hide Cards" : "Show Cards"}
+        </DynamicButton>
       </div>
       
- 
       {/* Small Cards Section */}
       {showSmallCards && showKeyMetrics && (
         <div className="space-y-4">
@@ -374,8 +329,6 @@ const OptimizedTaskMetricsBoard = ({
           </div>
         </div>
       )}
-
-
     </div>
   );
 };

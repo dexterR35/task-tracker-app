@@ -9,6 +9,8 @@ import {
   getDocFromServer,
   serverTimestamp,
   onSnapshot,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -16,220 +18,462 @@ import {
   signOut,
 } from "firebase/auth";
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { normalizeTimestamp } from "../../shared/utils/dateUtils";
+import { normalizeTimestamp, serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
 import { db, auth } from "../../app/firebase";
 import { logger } from "../../shared/utils/logger";
+
+// ===== UTILITY FUNCTIONS =====
+
+// Token validation utility
+const validateToken = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('No authenticated user');
+    }
+    
+    // Force token refresh if needed
+    await user.getIdToken(true);
+    return true;
+  } catch (error) {
+    logger.error('Token validation failed:', error);
+    throw new Error('Authentication required');
+  }
+};
+
+// Wrapper for all Firestore operations with token validation
+const withTokenValidation = async (operation) => {
+  try {
+    await validateToken();
+    return await operation();
+  } catch (error) {
+    if (error.message === 'Authentication required') {
+      throw new Error('AUTH_REQUIRED');
+    }
+    throw error;
+  }
+};
+
+// Check if user is authenticated (for early returns)
+const isUserAuthenticated = () => {
+  return auth.currentUser !== null;
+};
+
+// Request deduplication
+const pendingRequests = new Map();
+
+const deduplicateRequest = async (key, requestFn) => {
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
+  }
+  
+  const promise = requestFn();
+  pendingRequests.set(key, promise);
+  
+  try {
+    const result = await promise;
+    return result;
+  } finally {
+    pendingRequests.delete(key);
+  }
+};
+
+// Retry mechanism for network errors
+const withRetry = async (operation, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      
+      // Only retry on network errors
+      if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
+// Error handling wrapper
+const handleFirestoreError = (error, operation) => {
+  logger.error(`Firestore ${operation} failed:`, error);
+  
+  if (error.code === 'permission-denied') {
+    return { error: { message: 'Access denied', code: 'PERMISSION_DENIED' } };
+  }
+  
+  if (error.code === 'unavailable') {
+    return { error: { message: 'Service temporarily unavailable', code: 'SERVICE_UNAVAILABLE' } };
+  }
+  
+  if (error.code === 'not-found') {
+    return { error: { message: 'Resource not found', code: 'NOT_FOUND' } };
+  }
+  
+  return { error: { message: error?.message || `Failed to ${operation}` } };
+};
+
+// API call logging
+const logApiCall = (endpoint, args, result, error = null) => {
+  if (error) {
+    logger.error(`[${endpoint}] Failed:`, { args, error: error.message });
+  } else {
+    logger.log(`[${endpoint}] Success:`, { 
+      args, 
+      resultCount: Array.isArray(result) ? result.length : 1 
+    });
+  }
+};
+
+// User data normalization
+const mapUserDoc = (doc) => {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    ...data,
+    createdAt: normalizeTimestamp(data.createdAt),
+    updatedAt: normalizeTimestamp(data.updatedAt),
+    lastActive: normalizeTimestamp(data.lastActive),
+    lastLogin: normalizeTimestamp(data.lastLogin),
+  };
+};
+
+// Deduplicate users by UID
+const deduplicateUsers = (users) => {
+  const seen = new Set();
+  return users.filter((user) => {
+    if (seen.has(user.userUID)) {
+      return false;
+    }
+    seen.add(user.userUID);
+    return true;
+  });
+};
+
+// Shared function for fetching users from Firestore
+const fetchUsersFromFirestore = async () => {
+  const snap = await getDocs(
+    fsQuery(collection(db, "users"), orderBy("createdAt", "desc"))
+  );
+  const users = deduplicateUsers(snap.docs.map((d) => mapUserDoc(d)));
+  return users;
+};
 
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fakeBaseQuery(),
   tagTypes: ["Users"],
   endpoints: (builder) => ({
+    
     getUsers: builder.query({
-      async queryFn({ useCache = true } = {}) {
-        try {
-          // Check if we have fresh cached users
-          if (useCache) {
-            const { userStorage } = await import(
-              "../../shared/utils/indexedDBStorage"
-            );
-            if (
-              (await userStorage.hasUsers()) &&
-              (await userStorage.isUsersFresh())
-            ) {
-              const cachedUsers = await userStorage.getUsers();
-              // Only log once per session to reduce spam
-              if (
-                import.meta.env.MODE === "development" &&
-                !window._cachedUsersLogged
-              ) {
-                logger.log("Using cached users:", cachedUsers.length);
-                window._cachedUsersLogged = true;
-              }
-              return { data: cachedUsers };
+      async queryFn() {
+        const cacheKey = `getUsers`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            // Check if user is authenticated before proceeding
+            if (!isUserAuthenticated()) {
+              logger.log('User not authenticated yet, skipping users fetch');
+              return { data: [] };
             }
-          }
 
-          // Only log once per session to reduce spam
-          if (
-            import.meta.env.MODE === "development" &&
-            !window._fetchingUsersLogged
-          ) {
-            logger.log("Fetching users from database...");
-            window._fetchingUsersLogged = true;
-          }
-          const snap = await getDocs(
-            fsQuery(collection(db, "users"), orderBy("createdAt", "desc"))
-          );
-          const users = deduplicateUsers(snap.docs.map((d) => mapUserDoc(d)));
+            const result = await withTokenValidation(async () => {
+              logger.log("Fetching users from database...");
+              const users = await fetchUsersFromFirestore();
 
-          // Cache the users in IndexedDB
-          if (useCache) {
-            const { userStorage } = await import(
-              "../../shared/utils/indexedDBStorage"
-            );
-            await userStorage.storeUsers(users);
+              return { data: users };
+            });
+            
+            logApiCall('getUsers', {}, result.data);
+            return result;
+          } catch (error) {
+            // If it's an auth error, return empty array instead of error
+            if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
+              logger.log('Auth required for users fetch, returning empty array');
+              return { data: [] };
+            }
+            
+            const errorResult = handleFirestoreError(error, 'fetch users');
+            logApiCall('getUsers', {}, null, error);
+            return errorResult;
           }
-
-          return { data: users };
-        } catch (error) {
-          return {
-            error: {
-              message: error?.message || "Failed to fetch users",
-              code: error.code,
-            },
-          };
-        }
+        });
+      },
+      // Transform response to ensure only serializable data is stored in Redux
+      transformResponse: (response) => {
+        return serializeTimestampsForRedux(response);
       },
       providesTags: ["Users"],
     }),
 
-    // Real-time subscription for users
+    // Real-time subscription for users with enhanced error handling
     subscribeToUsers: builder.query({
       async queryFn() {
         return { data: [] }; // Initial empty data
+      },
+      // Transform response to ensure only serializable data is stored in Redux
+      transformResponse: (response) => {
+        return serializeTimestampsForRedux(response);
       },
       async onCacheEntryAdded(
         arg,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved, dispatch }
       ) {
+        let unsubscribe = null;
+        
         try {
           await cacheDataLoaded;
 
-          const unsubscribe = onSnapshot(
+          unsubscribe = onSnapshot(
             fsQuery(collection(db, "users"), orderBy("createdAt", "desc")),
-            (snapshot) => {
-              const users = deduplicateUsers(
-                snapshot.docs.map((d) => mapUserDoc(d))
-              );
+            async (snapshot) => {
+              if (!snapshot || !snapshot.docs) {
+                logger.log("[Real-time] Invalid users snapshot");
+                updateCachedData(() => []);
+                return;
+              }
 
-              // Update cache with real-time data
-              updateCachedData((draft) => {
-                Object.assign(draft, users);
-              });
+              if (snapshot.empty) {
+                logger.log("[Real-time] No users found");
+                updateCachedData(() => []);
+                return;
+              }
 
-              // Update IndexedDB cache
-              const updateCache = async () => {
-                const { userStorage } = await import(
-                  "../../shared/utils/indexedDBStorage"
-                );
-                await userStorage.storeUsers(users);
-              };
-              updateCache();
+              const users = deduplicateUsers(snapshot.docs.map((d) => mapUserDoc(d)));
+
+              updateCachedData(() => users);
+
+              logger.log("[Real-time] Users updated:", users.length);
             },
             (error) => {
-              logger.error("Users subscription error:", error);
+              logger.error("Real-time users subscription error:", error);
             }
           );
 
           await cacheEntryRemoved;
-          unsubscribe();
         } catch (error) {
-          logger.error("Failed to set up users subscription:", error);
+          logger.error("Error setting up real-time users subscription:", error);
+        } finally {
+          // Ensure cleanup
+          if (unsubscribe) {
+            unsubscribe();
+          }
         }
       },
       providesTags: ["Users"],
     }),
 
+    // Enhanced user creation with retry logic
     createUser: builder.mutation({
-      async queryFn({
-        email,
-        password,
-        confirmPassword,
-        name,
-        occupation = "user",
-      }) {
-        try {
-          if (password !== confirmPassword) {
-            return {
-              error: {
-                message: "Passwords do not match",
-                code: "PASSWORD_MISMATCH",
-              },
-            };
-          }
-
-          // Create secondary auth instance for user creation
-          const secondaryApp =
-            getApps().length === 0
-              ? initializeApp({
-                  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-                  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-                  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-                  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-                  messagingSenderId: import.meta.env
-                    .VITE_FIREBASE_MESSAGING_SENDER_ID,
-                  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-                })
-              : getApp();
-
-          const secondaryAuth = getAuth(secondaryApp);
-
-          const userCredential = await createUserWithEmailAndPassword(
-            secondaryAuth,
-            email,
-            password
-          );
-          const { uid } = userCredential.user;
-
-          const userDocRef = doc(db, "users", uid);
-          await setDoc(userDocRef, {
-            userUID: uid,
-            email,
-            name,
-            role: "user",
-            occupation: occupation, // Add occupation field
-            isActive: true,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            lastActive: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-          });
-
-          // Read back the doc to normalize server timestamps
-          const fresh = await getDocFromServer(userDocRef);
-          const raw = fresh.data() || {};
-          const createdAt = normalizeTimestamp(raw.createdAt);
-          const updatedAt = normalizeTimestamp(raw.updatedAt);
-          const lastActive = normalizeTimestamp(raw.lastActive);
-          const lastLogin = normalizeTimestamp(raw.lastLogin);
-
-          // Sign out the secondary auth to clean up, preserving the admin session on primary auth
+      async queryFn(userData) {
+        return await withRetry(async () => {
           try {
-            await signOut(secondaryAuth);
-          } catch (_) {}
+            const result = await withTokenValidation(async () => {
+              const { email, password, ...userInfo } = userData;
+              
+              // Create Firebase Auth user
+              const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
+              );
 
-          const newUser = {
-            id: uid,
-            userUID: uid,
-            email,
-            name,
-            role: "user",
-            isActive: true,
-            createdAt,
-            updatedAt,
-            lastActive,
-            lastLogin,
-          };
+              const user = userCredential.user;
 
-          // Add new user to cache
-          const { userStorage } = await import(
-            "../../shared/utils/indexedDBStorage"
+              // Create Firestore user document
+              const userDoc = {
+                userUID: user.uid,
+                email: user.email,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                ...userInfo,
+              };
+
+              await setDoc(doc(db, "users", user.uid), userDoc);
+
+              // Read back the saved doc to resolve server timestamps
+              const savedSnap = await getDocFromServer(doc(db, "users", user.uid));
+              const createdUser = mapUserDoc(savedSnap);
+
+              logger.log("[CreateUser] User created:", createdUser.userUID);
+
+              return { data: createdUser };
+            });
+            
+            logApiCall('createUser', { email: userData.email }, result.data);
+            return result;
+          } catch (error) {
+            const errorResult = handleFirestoreError(error, 'create user');
+            logApiCall('createUser', { email: userData.email }, null, error);
+            return errorResult;
+          }
+        });
+      },
+      // Enhanced optimistic update
+      async onQueryStarted(userData, { dispatch, queryFulfilled }) {
+        const optimisticUser = {
+          id: `optimistic_${Date.now()}`,
+          userUID: `temp_${Date.now()}`,
+          email: userData.email,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...userData,
+          _isOptimistic: true
+        };
+
+        const patchResult = dispatch(
+          usersApi.util.updateQueryData("getUsers", {}, (draft) => {
+            draft.unshift(optimisticUser);
+          })
+        );
+
+        try {
+          const { data: createdUser } = await queryFulfilled;
+          
+          // Replace optimistic user with real one
+          patchResult.undo();
+          
+          dispatch(
+            usersApi.util.updateQueryData("getUsers", {}, (draft) => {
+              draft.unshift(createdUser);
+            })
           );
-          await userStorage.addUser(newUser);
-
-          return { data: newUser };
-        } catch (error) {
-          return {
-            error: {
-              message: error?.message || "Failed to create user",
-              code: error.code,
-            },
-          };
+        } catch {
+          patchResult.undo();
         }
       },
-      // Removed invalidatesTags since real-time subscription handles updates
+      invalidatesTags: ["Users"],
     }),
+
+    // Enhanced user update with retry logic
+    updateUser: builder.mutation({
+      async queryFn({ userId, updates }) {
+        return await withRetry(async () => {
+          try {
+            const result = await withTokenValidation(async () => {
+              const userRef = doc(db, "users", userId);
+              
+              const updatesWithTimestamp = {
+                ...updates,
+                updatedAt: serverTimestamp(),
+              };
+
+              await updateDoc(userRef, updatesWithTimestamp);
+
+              logger.log("[UpdateUser] User updated:", userId);
+
+              return { data: { id: userId, success: true } };
+            });
+            
+            logApiCall('updateUser', { userId }, result.data);
+            return result;
+          } catch (error) {
+            const errorResult = handleFirestoreError(error, 'update user');
+            logApiCall('updateUser', { userId }, null, error);
+            return errorResult;
+          }
+        });
+      },
+      // Enhanced optimistic update
+      async onQueryStarted({ userId, updates }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          usersApi.util.updateQueryData("getUsers", {}, (draft) => {
+            const userIndex = draft.findIndex((user) => user.id === userId);
+            if (userIndex !== -1) {
+              draft[userIndex] = {
+                ...draft[userIndex],
+                ...updates,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["Users"],
+    }),
+
+    // Enhanced user deletion with retry logic
+    deleteUser: builder.mutation({
+      async queryFn({ userId }) {
+        return await withRetry(async () => {
+          try {
+            const result = await withTokenValidation(async () => {
+              const userRef = doc(db, "users", userId);
+              await deleteDoc(userRef);
+
+              logger.log("[DeleteUser] User deleted:", userId);
+
+              return { data: { id: userId, success: true } };
+            });
+            
+            logApiCall('deleteUser', { userId }, result.data);
+            return result;
+          } catch (error) {
+            const errorResult = handleFirestoreError(error, 'delete user');
+            logApiCall('deleteUser', { userId }, null, error);
+            return errorResult;
+          }
+        });
+      },
+      // Enhanced optimistic update
+      async onQueryStarted({ userId }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          usersApi.util.updateQueryData("getUsers", {}, (draft) => {
+            const userIndex = draft.findIndex((user) => user.id === userId);
+            if (userIndex !== -1) {
+              draft.splice(userIndex, 1);
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["Users"],
+    }),
+
+    // Get single user by ID
+    getUserById: builder.query({
+      async queryFn({ userId }) {
+        const cacheKey = `getUserById_${userId}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            const result = await withTokenValidation(async () => {
+              const userRef = doc(db, "users", userId);
+              const userSnap = await getDocFromServer(userRef);
+              
+              if (!userSnap.exists()) {
+                return { data: null };
+              }
+
+              const user = mapUserDoc(userSnap);
+              return { data: user };
+            });
+            
+            logApiCall('getUserById', { userId }, result.data);
+            return result;
+          } catch (error) {
+            const errorResult = handleFirestoreError(error, 'get user by ID');
+            logApiCall('getUserById', { userId }, null, error);
+            return errorResult;
+          }
+        });
+      },
+      providesTags: (result, error, arg) => [{ type: "Users", id: arg.userId }],
+    }),
+
   }),
 });
 
@@ -237,45 +481,7 @@ export const {
   useGetUsersQuery,
   useSubscribeToUsersQuery,
   useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useGetUserByIdQuery,
 } = usersApi;
-
-// ---- Helpers ----
-function mapUserDoc(d) {
-  const raw = d.data() || {};
-  const createdAt = normalizeTimestamp(raw.createdAt);
-  const updatedAt = normalizeTimestamp(raw.updatedAt);
-  const lastActive = normalizeTimestamp(raw.lastActive);
-  const lastLogin = normalizeTimestamp(raw.lastLogin);
-
-  // Only include serializable, whitelisted fields
-  return {
-    id: d.id,
-    userUID: raw.userUID || d.id,
-    email: raw.email || "",
-    name: raw.name || "",
-    role: raw.role || "user",
-    occupation: raw.occupation || "user", // Add occupation field
-    isActive: typeof raw.isActive === "boolean" ? raw.isActive : true,
-    createdAt,
-    updatedAt,
-    lastActive,
-    lastLogin,
-  };
-}
-
-function deduplicateUsers(users) {
-  const seen = new Map();
-  for (const u of users) {
-    const key = u.userUID || u.id;
-    const existing = seen.get(key);
-    if (!existing) {
-      seen.set(key, u);
-      continue;
-    }
-    // Prefer document whose id equals the UID, otherwise keep the one with latest updatedAt
-    const preferCurrent =
-      u.id === key || (u.updatedAt || 0) > (existing.updatedAt || 0);
-    if (preferCurrent) seen.set(key, u);
-  }
-  return Array.from(seen.values());
-}

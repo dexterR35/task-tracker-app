@@ -7,18 +7,16 @@ import TaskDetailPage from "../pages/dashboard/TaskDetailPage";
 import HomePage from "../pages/dashboard/HomePage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
+import ChartsPreviewPage from "../pages/admin/ChartsPreviewPage";
 import UserDashboardPage from "../pages/user/UserDashboardPage";
 import NotFoundPage from "../pages/NotFoundPage";
-
-
-
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   if (isAuthenticated) {
-    const from = location.state?.from || "/dashboard";
+    const from = location.state?.from || "/";
     return <Navigate to={from} replace />;
   }
   return children;
@@ -26,12 +24,8 @@ const LoginRoute = ({ children }) => {
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, role, initialAuthResolved } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const location = useLocation();
-
-  if (!initialAuthResolved) {
-    return alert("Initial auth resolved");
-  }
 
   if (!isAuthenticated)
     return (
@@ -56,8 +50,7 @@ const UserRoute = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
 
 // Root index wrapper: redirect authenticated users directly to dashboard
 const RootIndex = () => {
-  const { isAuthenticated, role, initialAuthResolved } = useAuth();
-  if (!initialAuthResolved) return <p>Loading...</p>; //Or some other non-visual placeholder
+  const { isAuthenticated, role } = useAuth();
   if (!isAuthenticated) return <HomePage />;
   if (role === "admin") return <Navigate to="/admin" replace />;
   return <Navigate to="/user" replace />;
@@ -101,7 +94,7 @@ const router = createBrowserRouter([
         path: "admin/analytics",
         element: (
           <AdminRoute>
-               <NotFoundPage />
+            <NotFoundPage />
           </AdminRoute>
         ),
       },
@@ -109,8 +102,7 @@ const router = createBrowserRouter([
         path: "preview/:monthId",
         element: (
           <AdminRoute>
-          <NotFoundPage />
-            {/* <PreviewPage /> */}
+            <ChartsPreviewPage />
           </AdminRoute>
         ),
       },
@@ -122,7 +114,6 @@ const router = createBrowserRouter([
           </AdminRoute>
         ),
       },
-
       {
         path: "task/:monthId/:taskId",
         element: (

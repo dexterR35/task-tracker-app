@@ -4,6 +4,7 @@ import { useNotifications } from "../../shared/hooks/useNotifications";
 import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import CreateUserForm from "../../features/users/components/CreateUserForm";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
+import PageLoader from "../../shared/components/ui/PageLoader";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 const AdminUsersPage = () => {
@@ -67,16 +68,11 @@ const AdminUsersPage = () => {
       )}
 
       {isLoading ? (
-        <div className="bg-primary rounded-lg shadow p-4">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-4 bg-primary rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <PageLoader 
+          text="Loading users..." 
+          size="md"
+          variant="dots"
+        />
       ) : (
         <div className="bg-primary rounded-lg shadow p-4">
           <div className="overflow-x-auto">

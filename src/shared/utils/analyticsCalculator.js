@@ -952,4 +952,41 @@ export const getAllMetrics = (analytics) => {
   return analyticsCalculator.getAllMetrics(analytics);
 };
 
+// Test function to verify analytics calculations
+export const testAnalyticsCalculation = (tasks, monthId, userId = null) => {
+  try {
+    console.log(`[testAnalyticsCalculation] Testing with ${tasks.length} tasks for monthId: ${monthId}, userId: ${userId || 'all'}`);
+    
+    // Log first few tasks for debugging
+    if (tasks.length > 0) {
+      console.log('[testAnalyticsCalculation] Sample task:', tasks[0]);
+    }
+    
+    const analytics = calculateAnalyticsFromTasks(tasks, monthId, userId);
+    
+    console.log('[testAnalyticsCalculation] Calculated analytics:', {
+      totalTasks: analytics.totalTasks,
+      totalHours: analytics.totalHours,
+      totalTimeWithAI: analytics.totalTimeWithAI,
+      aiTasks: analytics.aiTasks,
+      development: analytics.development,
+      design: analytics.design,
+      video: analytics.video
+    });
+    
+    return {
+      success: true,
+      analytics,
+      taskCount: tasks.length
+    };
+  } catch (error) {
+    console.error('[testAnalyticsCalculation] Error:', error);
+    return {
+      success: false,
+      error: error.message,
+      taskCount: tasks.length
+    };
+  }
+};
+
 export default analyticsCalculator;

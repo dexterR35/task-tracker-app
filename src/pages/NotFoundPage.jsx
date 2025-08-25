@@ -8,7 +8,7 @@ const NotFoundPage = () => {
   const getHomePath = () => {
     if (!isAuthenticated) return "/";
     if (role === "admin") return "/admin";
-    return "/me";
+    return "/user";
   };
 
   return (

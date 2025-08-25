@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { initAuthListener, unsubscribeAuthListener } from "../../features/auth/authSlice";
+import { cleanupAuthListener } from "../../features/auth/authSlice";
 import { useAuth } from "../hooks/useAuth";
 
 // Spinner loader component using Tailwind CSS
@@ -13,21 +13,21 @@ const Spinner = () => (
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   // Get the single source of truth for the app's ready state
-  const { initialAuthResolved } = useSelector((state) => state.auth);
-  const { user } = useAuth();
+  const { isLoading } = useSelector((state) => state.auth);
+  const { user, initAuth } = useAuth();
 
   useEffect(() => {
-    // Start the persistent auth listener on mount
-    dispatch(initAuthListener());
+    // Initialize auth state on mount
+    initAuth();
 
-    // Clean up the listener on unmount to prevent memory leaks
+    // Cleanup on unmount
     return () => {
-      unsubscribeAuthListener();
+      cleanupAuthListener();
     };
-  }, [dispatch]);
+  }, [initAuth]);
 
-  // If auth state hasn't been resolved, show the spinner
-  if (!initialAuthResolved) {
+  // If auth state is still loading, show the spinner
+  if (isLoading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-[#141C33]">
         <Spinner />

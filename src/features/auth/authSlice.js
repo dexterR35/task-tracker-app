@@ -16,13 +16,13 @@ import {
 import { auth, db } from "../../app/firebase";
 
 // --- Configuration & Constants ---
-const SESSION_EXPIRY_TOLERANCE_MS = 30 * 1000;
-const SOFT_MAX_SESSION_MS = 3 * 60 * 60 * 1000;
+const SESSION_EXPIRY_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes tolerance
 const VALID_ROLES = ["admin", "user"];
 
 // --- Internal Utilities ---
 let authListenerRegistered = false;
 let authUnsubscribe = null;
+let tokenRefreshInterval = null;
 
 const fetchUserFromFirestore = async (uid) => {
   const directRef = doc(db, "users", uid);
@@ -49,8 +49,8 @@ const normalizeUser = (firebaseUser, firestoreData) => {
     ? typeof firestoreData.createdAt.toDate === "function"
       ? firestoreData.createdAt.toDate().getTime()
       : typeof firestoreData.createdAt === "number"
-      ? firestoreData.createdAt
-      : new Date(firestoreData.createdAt).getTime()
+        ? firestoreData.createdAt
+        : new Date(firestoreData.createdAt).getTime()
     : null;
   return {
     uid: firebaseUser.uid,
@@ -62,75 +62,94 @@ const normalizeUser = (firebaseUser, firestoreData) => {
   };
 };
 
-const isTokenExpired = (tokenResult, sessionStartedAt) => {
+const isTokenExpired = async (tokenResult) => {
   const now = Date.now();
+
+  // Check if token is expired
   if (tokenResult?.expirationTime) {
     const exp = new Date(tokenResult.expirationTime).getTime();
-    if (exp - now < -SESSION_EXPIRY_TOLERANCE_MS) return true;
+    const timeUntilExpiry = exp - now;
+
+    // Token is expired if it's past expiration time minus tolerance
+    if (timeUntilExpiry < -SESSION_EXPIRY_TOLERANCE_MS) {
+      console.log(
+        `Token expired: ${new Date(exp).toISOString()}, current: ${new Date(now).toISOString()}`
+      );
+      return true;
+    }
   }
-  return sessionStartedAt && now - sessionStartedAt > SOFT_MAX_SESSION_MS;
+
+  return false;
+};
+
+const handleTokenRefresh = async (user) => {
+  try {
+    const tokenResult = await getIdTokenResult(user, true);
+    const expired = await isTokenExpired(tokenResult);
+    
+    if (expired) {
+      console.log("Token expired, signing out user");
+      await signOut(auth);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return false;
+  }
+};
+
+const setupTokenRefresh = (user) => {
+  if (tokenRefreshInterval) {
+    clearInterval(tokenRefreshInterval);
+  }
+  
+  // Refresh token every 10 minutes
+  tokenRefreshInterval = setInterval(async () => {
+    const isValid = await handleTokenRefresh(user);
+    if (!isValid) {
+      clearInterval(tokenRefreshInterval);
+    }
+  }, 10 * 60 * 1000);
+};
+
+const clearTokenRefresh = () => {
+  if (tokenRefreshInterval) {
+    clearInterval(tokenRefreshInterval);
+    tokenRefreshInterval = null;
+  }
+};
+
+// Cleanup function for auth listener
+export const cleanupAuthListener = () => {
+  if (authUnsubscribe) {
+    authUnsubscribe();
+    authUnsubscribe = null;
+  }
+  authListenerRegistered = false;
+  clearTokenRefresh();
 };
 
 // --- Async Thunks ---
-export const initAuthListener = createAsyncThunk(
-  "auth/initListener",
-  (_, { dispatch, getState }) => {
-    if (authListenerRegistered) {
-      return;
-    }
-
-    authUnsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        dispatch(authSlice.actions.authLogout());
-        // Always resolve auth state even on logout
-        if (!getState().auth.initialAuthResolved) {
-          dispatch(authSlice.actions.setInitialResolved());
-        }
-        return;
-      }
-      try {
-        const tokenResult = await getIdTokenResult(user);
-        const started = getState().auth.sessionStartedAt;
-        if (isTokenExpired(tokenResult, started)) {
-          await signOut(auth);
-          dispatch(authSlice.actions.authLogout());
-          return;
-        }
-        const firestoreData = await fetchUserFromFirestore(user.uid);
-        const normalized = normalizeUser(user, firestoreData);
-        dispatch(authSlice.actions.authLogin(normalized));
-      } catch (err) {
-        dispatch(authSlice.actions.authErrorOccurred(err.message));
-        dispatch(authSlice.actions.authLogout());
-      } finally {
-        // Ensure the initial state is marked as resolved after the first check
-        if (!getState().auth.initialAuthResolved) {
-          dispatch(authSlice.actions.setInitialResolved());
-        }
-      }
-    });
-
-    authListenerRegistered = true;
-    
-  }
-);
-
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const firestoreData = await fetchUserFromFirestore(
-        userCredential.user.uid
-      );
-      const normalizedUser = normalizeUser(userCredential.user, firestoreData);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Fetch user data from Firestore
+      const firestoreData = await fetchUserFromFirestore(user.uid);
+      const normalizedUser = normalizeUser(user, firestoreData);
+      
+      // Setup token refresh
+      setupTokenRefresh(user);
+      
       return normalizedUser;
     } catch (error) {
-      return rejectWithValue(error?.message || "Login failed");
+      console.error("Login error:", error);
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -139,132 +158,204 @@ export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
+      clearTokenRefresh();
       await signOut(auth);
-      return true;
+      return null;
     } catch (error) {
-      return rejectWithValue(error?.message || "Logout failed");
+      console.error("Logout error:", error);
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// --- Slice Definition ---
+export const requireReauth = createAsyncThunk(
+  "auth/requireReauth",
+  async ({ message = "Please sign in again" }, { rejectWithValue }) => {
+    try {
+      clearTokenRefresh();
+      return { message };
+    } catch (error) {
+      console.error("Reauth error:", error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const checkAuthState = createAsyncThunk(
+  "auth/checkAuthState",
+  async (_, { rejectWithValue }) => {
+    try {
+      return new Promise((resolve, reject) => {
+        if (authListenerRegistered) {
+          // If already registered, just resolve with current state
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            // User is already authenticated, fetch their data
+            fetchUserFromFirestore(currentUser.uid)
+              .then(firestoreData => {
+                const normalizedUser = normalizeUser(currentUser, firestoreData);
+                setupTokenRefresh(currentUser);
+                resolve(normalizedUser);
+              })
+              .catch(error => {
+                console.error("Error fetching user data:", error);
+                reject(error);
+              });
+          } else {
+            resolve(null);
+          }
+          return;
+        }
+
+        authUnsubscribe = onAuthStateChanged(
+          auth,
+          async (user) => {
+            if (user) {
+              try {
+                // Fetch user data from Firestore
+                const firestoreData = await fetchUserFromFirestore(user.uid);
+                const normalizedUser = normalizeUser(user, firestoreData);
+                
+                // Setup token refresh
+                setupTokenRefresh(user);
+                
+                resolve(normalizedUser);
+              } catch (error) {
+                console.error("Error fetching user data:", error);
+                reject(error);
+              }
+            } else {
+              clearTokenRefresh();
+              resolve(null);
+            }
+          },
+          (error) => {
+            console.error("Auth state change error:", error);
+            reject(error);
+          }
+        );
+
+        authListenerRegistered = true;
+      });
+    } catch (error) {
+      console.error("Check auth state error:", error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// --- Slice ---
 const initialState = {
   user: null,
-  role: null,
   isAuthenticated: false,
-  listenerActive: false,
-  initialAuthResolved: false,
+  isLoading: true,
+  error: null,
   reauthRequired: false,
-  loading: {
-    loginUser: false,
-    logoutUser: false,
-    initListener: false,
-  },
-  sessionStartedAt: null,
-  error: {
-    loginUser: null,
-    logoutUser: null,
-    initListener: null,
-  },
+  reauthMessage: null,
 };
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    authLogin(state, action) {
-      const user = action.payload;
-      state.user = user;
-      state.role = user.role;
-      state.isAuthenticated = true;
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearReauth: (state) => {
       state.reauthRequired = false;
-      if (!state.sessionStartedAt) state.sessionStartedAt = Date.now();
-      state.error.initListener = null;
+      state.reauthMessage = null;
     },
-    authLogout(state) {
-      state.user = null;
-      state.role = null;
-      state.isAuthenticated = false;
-      state.sessionStartedAt = null;
-    },
-    authErrorOccurred(state, action) {
-      state.error.initListener = action.payload;
-    },
-    clearError(state, action) {
-      const key = action.payload;
-      if (key && state.error[key]) {
-        state.error[key] = null;
-      }
-    },
-    resetAuth(state) {
-      Object.assign(state, initialState);
-    },
-    requireReauth(state, action) {
-      state.user = null;
-      state.role = null;
-      state.isAuthenticated = false;
-      state.error.initListener =
-        action.payload?.message || "Please sign back in to continue";
-      state.reauthRequired = true;
-    },
-    setInitialResolved(state) {
-      state.initialAuthResolved = true;
+    setLoading: (state, action) => {
+      state.isLoading = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Handle login/logout
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading.loginUser = false;
-        authSlice.caseReducers.authLogin(state, action);
-      })
-      .addCase(logoutUser.fulfilled, (state, action) => {
-        state.loading.logoutUser = false;
-        authSlice.caseReducers.authLogout(state, action);
-      })
-      // Standard Thunk lifecycle management
+      // Login
       .addCase(loginUser.pending, (state) => {
-        state.loading.loginUser = true;
-        state.error.loginUser = null;
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.error = null;
+        state.reauthRequired = false;
+        state.reauthMessage = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
-        state.loading.loginUser = false;
-        state.error.loginUser = action.payload || action.error.message;
-        authSlice.caseReducers.authLogout(state);
+        state.isLoading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
       })
+      
+      // Logout
       .addCase(logoutUser.pending, (state) => {
-        state.loading.logoutUser = true;
-        state.error.logoutUser = null;
+        state.isLoading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = null;
+        state.reauthRequired = false;
+        state.reauthMessage = null;
       })
       .addCase(logoutUser.rejected, (state, action) => {
-        state.loading.logoutUser = false;
-        state.error.logoutUser = action.payload || action.error.message;
+        state.isLoading = false;
+        state.error = action.payload;
       })
-      // Init listener state
-      .addCase(initAuthListener.pending, (state) => {
-        state.loading.initListener = true;
-        state.error.initListener = null;
+      
+      // Reauth
+      .addCase(requireReauth.fulfilled, (state, action) => {
+        state.reauthRequired = true;
+        state.reauthMessage = action.payload.message;
+        state.isAuthenticated = false;
+        state.user = null;
       })
-      .addCase(initAuthListener.fulfilled, (state) => {
-        state.loading.initListener = false;
-        state.listenerActive = true;
+      
+      // Check Auth State
+      .addCase(checkAuthState.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
       })
-      .addCase(initAuthListener.rejected, (state, action) => {
-        state.loading.initListener = false;
-        state.error.initListener = action.payload || action.error.message;
-        state.initialAuthResolved = true;
+      .addCase(checkAuthState.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload) {
+          state.user = action.payload;
+          state.isAuthenticated = true;
+          state.error = null;
+          state.reauthRequired = false;
+          state.reauthMessage = null;
+        } else {
+          state.user = null;
+          state.isAuthenticated = false;
+          state.error = null;
+          state.reauthRequired = false;
+          state.reauthMessage = null;
+        }
+      })
+      .addCase(checkAuthState.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.user = null;
+        state.isAuthenticated = false;
       });
   },
 });
 
-export const { clearError, resetAuth, requireReauth, setInitialResolved } = authSlice.actions;
+export const { clearError, clearReauth, setLoading } = authSlice.actions;
 
-export const unsubscribeAuthListener = () => {
-  if (authUnsubscribe) {
-    authUnsubscribe();
-    authUnsubscribe = null;
-    authListenerRegistered = false;
-  }
-};
+// --- Selectors ---
+export const selectUser = (state) => state.auth.user;
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
+export const selectIsLoading = (state) => state.auth.isLoading;
+export const selectAuthError = (state) => state.auth.error;
+export const selectReauthRequired = (state) => state.auth.reauthRequired;
+export const selectReauthMessage = (state) => state.auth.reauthMessage;
+export const selectUserRole = (state) => state.auth.user?.role;
+export const selectIsAdmin = (state) => state.auth.user?.role === "admin";
 
 export default authSlice.reducer;

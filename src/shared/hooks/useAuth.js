@@ -5,11 +5,12 @@ import {
   loginUser,
   logoutUser,
   clearError as clearAuthError,
-  resetAuth,
-  initAuthListener,
+  clearReauth,
+  checkAuthState,
+  requireReauth,
 } from '../../features/auth/authSlice';
 import { addNotification } from '../../features/notifications/notificationSlice';
-import { auth } from '../../app/firebase'; 
+import { auth } from '../../app/firebase';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -64,23 +65,61 @@ export const useAuth = () => {
     }
   }, [dispatch]);
 
+  /** Handle reauthentication */
+  const handleReauth = useCallback(async (password) => {
+    try {
+      const user = auth.currentUser;
+      if (!user?.email) {
+        throw new Error('No authenticated user found');
+      }
 
-
-
-
-  /** Clear specific error key */
-  const clearError = useCallback(
-    (errorKey) => {
-      dispatch(clearAuthError(errorKey));
-    },
-    [dispatch]
-  );
-
-  /** Reset auth slice */
-  const reset = useCallback(() => {
-    dispatch(resetAuth());
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      
+      // Clear reauth requirement
+      dispatch(clearReauth());
+      
+      dispatch(
+        addNotification({
+          type: 'success',
+          message: 'Reauthentication successful',
+        })
+      );
+      return true;
+    } catch (error) {
+      dispatch(
+        addNotification({
+          type: 'error',
+          message: error?.message || 'Reauthentication failed',
+        })
+      );
+      throw error;
+    }
   }, [dispatch]);
 
+  /** Force reauthentication */
+  const forceReauth = useCallback((message = 'Please sign back in to continue') => {
+    dispatch(requireReauth({ message }));
+  }, [dispatch]);
+
+  /** Initialize auth state */
+  const initAuth = useCallback(async () => {
+    try {
+      await dispatch(checkAuthState()).unwrap();
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+    }
+  }, [dispatch]);
+
+  /** Clear specific error */
+  const clearError = useCallback(() => {
+    dispatch(clearAuthError());
+  }, [dispatch]);
+
+  /** Clear reauth requirement */
+  const clearReauthRequirement = useCallback(() => {
+    dispatch(clearReauth());
+  }, [dispatch]);
 
   const reauthenticate = useCallback(async (password) => {
     const user = auth.currentUser;
@@ -111,26 +150,27 @@ export const useAuth = () => {
   }, [dispatch]);
 
   /** Derived helpers */
-  const isReady = authState.initialAuthResolved && !authState.loading;
+  const isReady = !authState.isLoading;
 
   /** Final return (memoized to avoid unnecessary rerenders) */
   return useMemo(
     () => ({
       user: authState.user,
-      role: authState.role,
+      role: authState.user?.role,
       isAuthenticated: authState.isAuthenticated,
-      listenerActive: authState.listenerActive,
-      initialAuthResolved: authState.initialAuthResolved,
+      isLoading: authState.isLoading,
       reauthRequired: authState.reauthRequired,
-      loading: authState.loading,
+      reauthMessage: authState.reauthMessage,
       error: authState.error,
       isReady,
 
       login,
       logout,
-     
+      handleReauth,
+      forceReauth,
+      initAuth,
       clearError,
-      reset,
+      clearReauthRequirement,
       reauthenticate,
     }),
     [
@@ -138,9 +178,11 @@ export const useAuth = () => {
       isReady,
       login,
       logout,
-    
+      handleReauth,
+      forceReauth,
+      initAuth,
       clearError,
-      reset,
+      clearReauthRequirement,
       reauthenticate,
     ]
   );

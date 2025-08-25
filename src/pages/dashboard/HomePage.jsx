@@ -1,42 +1,36 @@
-import { useNavigate } from "react-router-dom";
-import DynamicButton from "../../shared/components/ui/DynamicButton";
-import netbetLogo from "../../assets/netbet-logo.png";
+import React from "react";
+import { useAuth } from "../../shared/hooks/useAuth";
+import { Navigate } from "react-router-dom";
+import Loader from "../../shared/components/ui/Loader";
 
 const HomePage = () => {
-  const navigate = useNavigate();
+  const { isAuthenticated, role, isLoading } = useAuth();
 
-  return (
-    <div className="min-h-screen flex-center flex-col relative">
-      <div>
-        <div className="flex-center flex-row gap-4">
-          <h1>Welcome to</h1>
-          <img
-            src={netbetLogo}
-            alt="NetBet Logo"
-            className="h-fit w-75 object-contain"
-          />
-        </div>
-        <p className="mt-2 max-w-1/1 text-center mx-auto ">
-          Track tasks, generate insights, and stay productive with monthly
-          analytics.
-        </p>
-      </div>
-      <div className="mt-10 flex-center">
-        <DynamicButton
-          variant="primary"
+  // Show loading only if auth state is still loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-t from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]">
+        <Loader 
+          text="Checking authentication..." 
           size="lg"
-          onClick={() => navigate("/login")}
-          className="w-40 !text-xl !font-bold"
-        >
-          Explore
-        </DynamicButton>
+          variant="dots"
+        />
       </div>
-      {/* Footer */}
-      <p className="absolute text-xs text-center  bottom-10 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        © {new Date().getFullYear()} NetBet — Task & Analytics Dashboard
-      </p>
-    </div>
-  );
+    );
+  }
+
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If authenticated, redirect based on role
+  if (role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Default to user dashboard
+  return <Navigate to="/user" replace />;
 };
 
 export default HomePage;

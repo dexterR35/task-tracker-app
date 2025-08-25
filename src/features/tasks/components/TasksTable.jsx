@@ -25,6 +25,7 @@ import { logger } from "../../../shared/utils/logger";
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
+import Loader from "../../../shared/components/ui/Loader";
 
 const useFormatDay = () => {
   const { format } = useFormat();
@@ -374,9 +375,12 @@ const TasksTable = ({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="bg-primary border rounded-lg p-6 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-        <p className="mt-2 text-sm text-gray-200">Loading tasks...</p>
+      <div className="bg-primary border rounded-lg p-6">
+        <Loader 
+          text="Loading tasks..." 
+          size="md"
+          variant="spinner"
+        />
       </div>
     );
   }

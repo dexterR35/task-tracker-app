@@ -23,7 +23,7 @@ const firebaseConfig = {
 
 let appInstance;
 if (!getApps().length) {
-  appInstance = initializeApp(firebaseConfig,"Task Tracker pwd by NetBet");
+  appInstance = initializeApp(firebaseConfig);
 } else {
   appInstance = getApp();
 }
@@ -46,6 +46,8 @@ if (import.meta.env.MODE === "development") {
   } catch (e) {
     if (import.meta.env.MODE === "development") {
       logger.warn("Failed to set local persistence:", e?.message || e);
+    } else {
+      console.error("🔥 Persistence error:", e);
     }
   }
 })();
