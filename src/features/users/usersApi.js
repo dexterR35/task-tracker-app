@@ -14,8 +14,6 @@ import {
 } from "firebase/firestore";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
-  signOut,
 } from "firebase/auth";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { normalizeTimestamp, serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
@@ -265,88 +263,6 @@ export const usersApi = createApi({
       providesTags: ["Users"],
     }),
 
-    // Enhanced user creation with retry logic
-    createUser: builder.mutation({
-      async queryFn(userData) {
-        return await withRetry(async () => {
-          try {
-            const result = await withTokenValidation(async () => {
-              const { email, password, ...userInfo } = userData;
-              
-              // Create Firebase Auth user
-              const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                email,
-                password
-              );
-
-              const user = userCredential.user;
-
-              // Create Firestore user document
-              const userDoc = {
-                userUID: user.uid,
-                email: user.email,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                ...userInfo,
-              };
-
-              await setDoc(doc(db, "users", user.uid), userDoc);
-
-              // Read back the saved doc to resolve server timestamps
-              const savedSnap = await getDocFromServer(doc(db, "users", user.uid));
-              const createdUser = mapUserDoc(savedSnap);
-
-              logger.log("[CreateUser] User created:", createdUser.userUID);
-
-              return { data: createdUser };
-            });
-            
-            logApiCall('createUser', { email: userData.email }, result.data);
-            return result;
-          } catch (error) {
-            const errorResult = handleFirestoreError(error, 'create user');
-            logApiCall('createUser', { email: userData.email }, null, error);
-            return errorResult;
-          }
-        });
-      },
-      // Enhanced optimistic update
-      async onQueryStarted(userData, { dispatch, queryFulfilled }) {
-        const optimisticUser = {
-          id: `optimistic_${Date.now()}`,
-          userUID: `temp_${Date.now()}`,
-          email: userData.email,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          ...userData,
-          _isOptimistic: true
-        };
-
-        const patchResult = dispatch(
-          usersApi.util.updateQueryData("getUsers", {}, (draft) => {
-            draft.unshift(optimisticUser);
-          })
-        );
-
-        try {
-          const { data: createdUser } = await queryFulfilled;
-          
-          // Replace optimistic user with real one
-          patchResult.undo();
-          
-          dispatch(
-            usersApi.util.updateQueryData("getUsers", {}, (draft) => {
-              draft.unshift(createdUser);
-            })
-          );
-        } catch {
-          patchResult.undo();
-        }
-      },
-      invalidatesTags: ["Users"],
-    }),
-
     // Enhanced user update with retry logic
     updateUser: builder.mutation({
       async queryFn({ userId, updates }) {
@@ -480,7 +396,6 @@ export const usersApi = createApi({
 export const {
   useGetUsersQuery,
   useSubscribeToUsersQuery,
-  useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
   useGetUserByIdQuery,

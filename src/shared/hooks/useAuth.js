@@ -6,7 +6,6 @@ import {
   logoutUser,
   clearError as clearAuthError,
   clearReauth,
-  checkAuthState,
   requireReauth,
 } from '../../features/auth/authSlice';
 import { addNotification } from '../../features/notifications/notificationSlice';
@@ -16,9 +15,9 @@ import {
   reauthenticateWithCredential,
 } from 'firebase/auth';
 
-export const useAuth = () => {
+// Hook for auth actions only (login, logout, etc.)
+export const useAuthActions = () => {
   const dispatch = useDispatch();
-  const authState = useSelector((state) => state.auth);
 
   /** Login */
   const login = useCallback(
@@ -102,15 +101,6 @@ export const useAuth = () => {
     dispatch(requireReauth({ message }));
   }, [dispatch]);
 
-  /** Initialize auth state */
-  const initAuth = useCallback(async () => {
-    try {
-      await dispatch(checkAuthState()).unwrap();
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-    }
-  }, [dispatch]);
-
   /** Clear specific error */
   const clearError = useCallback(() => {
     dispatch(clearAuthError());
@@ -123,67 +113,61 @@ export const useAuth = () => {
 
   const reauthenticate = useCallback(async (password) => {
     const user = auth.currentUser;
-    if (!user?.email) {
+    if (!user) {
       throw new Error('No authenticated user found');
     }
 
     const credential = EmailAuthProvider.credential(user.email, password);
-
-    try {
-      await reauthenticateWithCredential(user, credential);
-      dispatch(
-        addNotification({
-          type: 'success',
-          message: 'Reauthentication successful',
-        })
-      );
-      return true;
-    } catch (error) {
-      dispatch(
-        addNotification({
-          type: 'error',
-          message: error?.message || 'Reauthentication failed',
-        })
-      );
-      throw error;
-    }
+    await reauthenticateWithCredential(user, credential);
+    
+    dispatch(clearReauth());
+    return true;
   }, [dispatch]);
 
-  /** Derived helpers */
-  const isReady = !authState.isLoading;
+  return {
+    login,
+    logout,
+    handleReauth,
+    forceReauth,
+    clearError,
+    clearReauthRequirement,
+    reauthenticate,
+  };
+};
 
-  /** Final return (memoized to avoid unnecessary rerenders) */
-  return useMemo(
-    () => ({
-      user: authState.user,
-      role: authState.user?.role,
-      isAuthenticated: authState.isAuthenticated,
-      isLoading: authState.isLoading,
-      reauthRequired: authState.reauthRequired,
-      reauthMessage: authState.reauthMessage,
-      error: authState.error,
-      isReady,
+// Hook for auth state only (user, isAuthenticated, etc.)
+export const useAuthState = () => {
+  const authState = useSelector((state) => state.auth);
 
-      login,
-      logout,
-      handleReauth,
-      forceReauth,
-      initAuth,
-      clearError,
-      clearReauthRequirement,
-      reauthenticate,
-    }),
-    [
-      authState,
-      isReady,
-      login,
-      logout,
-      handleReauth,
-      forceReauth,
-      initAuth,
-      clearError,
-      clearReauthRequirement,
-      reauthenticate,
-    ]
-  );
+  // Memoized values
+  const user = useMemo(() => authState.user, [authState.user]);
+  const isAuthenticated = useMemo(() => authState.isAuthenticated, [authState.isAuthenticated]);
+  const isLoading = useMemo(() => authState.isLoading, [authState.isLoading]);
+  const isAuthChecking = useMemo(() => authState.isAuthChecking, [authState.isAuthChecking]);
+  const role = useMemo(() => authState.user?.role, [authState.user?.role]);
+  const reauthRequired = useMemo(() => authState.reauthRequired, [authState.reauthRequired]);
+  const reauthMessage = useMemo(() => authState.reauthMessage, [authState.reauthMessage]);
+  const error = useMemo(() => authState.error, [authState.error]);
+
+  return {
+    user,
+    isAuthenticated,
+    isLoading,
+    isAuthChecking,
+    role,
+    reauthRequired,
+    reauthMessage,
+    error,
+  };
+};
+
+// Full useAuth hook (for backward compatibility)
+export const useAuth = () => {
+  const authActions = useAuthActions();
+  const authState = useAuthState();
+
+  return {
+    ...authState,
+    ...authActions,
+  };
 };

@@ -46,18 +46,20 @@ export const sanitizeTaskData = (taskData) => {
     taskName: sanitizeText(taskData.taskName || ''),
     aiUsed: Boolean(taskData.aiUsed),
     timeSpentOnAI: Number(taskData.timeSpentOnAI) || 0,
+    // Always use arrays - empty array if not selected
     aiModels: Array.isArray(taskData.aiModels)
       ? taskData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
-      : false,
+      : [],
     timeInHours: Number(taskData.timeInHours) || 0,
     reworked: Boolean(taskData.reworked),
     deliverables: Array.isArray(taskData.deliverables)
       ? taskData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     deliverablesCount: Number(taskData.deliverablesCount) || 0,
+    // Always use arrays - empty array if not selected
     deliverablesOther: Array.isArray(taskData.deliverablesOther)
       ? taskData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
-      : false,
+      : [],
     taskNumber: sanitizeText(taskData.taskNumber || ''),
     createdBy: sanitizeText(taskData.createdBy || ''),
     createdByName: sanitizeText(taskData.createdByName || ''),
@@ -79,18 +81,20 @@ export const sanitizeTaskCreationData = (formData) => {
     taskName: sanitizeText(formData.taskName || ''),
     aiUsed: Boolean(formData.aiUsed),
     timeSpentOnAI: Number(formData.timeSpentOnAI) || 0,
+    // Always use arrays - empty array if not selected
     aiModels: Array.isArray(formData.aiModels)
       ? formData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
-      : false,
+      : [],
     timeInHours: Number(formData.timeInHours) || 0,
     reworked: Boolean(formData.reworked),
     deliverables: Array.isArray(formData.deliverables)
       ? formData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     deliverablesCount: Number(formData.deliverablesCount) || 0,
+    // Always use arrays - empty array if not selected
     deliverablesOther: Array.isArray(formData.deliverablesOther)
       ? formData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
-      : false,
+      : [],
     taskNumber: sanitizeText(formData.taskNumber || ''),
   };
 };

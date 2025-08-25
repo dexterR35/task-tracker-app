@@ -192,25 +192,6 @@ const OptimizedTaskMetricsBoard = ({
       return null;
     }
 
-    // If no data available, show loading state
-    if (!hasData && isLoading) {
-      return filteredCardsConfig.map((cardConfig) => (
-        <MemoizedOptimizedSmallCard
-          key={cardConfig.id}
-          title={cardConfig.title}
-          type={cardConfig.type}
-          category={cardConfig.category}
-          icon={cardConfig.icon}
-          monthId={monthId}
-          userId={userId}
-          trend={cardConfig.trend}
-          trendValue={cardConfig.trendValue}
-          trendDirection={cardConfig.trendDirection}
-          loading={true}
-        />
-      ));
-    }
-
     // If error, show error state
     if (error) {
       return (
@@ -276,7 +257,6 @@ const OptimizedTaskMetricsBoard = ({
     monthId, 
     userId, 
     hasData, 
-    isLoading, 
     error, 
     getMetric,
     filteredCardsConfig,
@@ -287,19 +267,6 @@ const OptimizedTaskMetricsBoard = ({
     return (
       <div className="card">
         No month selected for metrics
-      </div>
-    );
-  }
-
-  // If loading, show loading state
-  if (isLoading && !hasData) {
-    return (
-      <div className="card">
-        <Loader 
-          text="Loading metrics..." 
-          size="md"
-          variant="dots"
-        />
       </div>
     );
   }

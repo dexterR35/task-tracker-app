@@ -1,9 +1,10 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useAuth } from "../../shared/hooks/useAuth";
+import { useAuthActions } from "../../shared/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
+
 const LoginSchema = Yup.object().shape({
   email: Yup.string()
     .email("Invalid email format")
@@ -14,7 +15,7 @@ const LoginSchema = Yup.object().shape({
 });
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login } = useAuthActions();
   const navigate = useNavigate();
 
   const handleSubmit = async (values, { setSubmitting }) => {

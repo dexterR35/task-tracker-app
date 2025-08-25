@@ -13,8 +13,14 @@ import NotFoundPage from "../pages/NotFoundPage";
 
 // Component to protect login page from authenticated users
 const LoginRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, isAuthChecking } = useAuth();
   const location = useLocation();
+  
+  // If auth is still loading or checking, don't redirect yet - show auth loader
+  if (isLoading || isAuthChecking) {
+    return null; // GlobalLoader will handle this
+  }
+  
   if (isAuthenticated) {
     const from = location.state?.from || "/";
     return <Navigate to={from} replace />;
@@ -24,8 +30,13 @@ const LoginRoute = ({ children }) => {
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, isLoading, isAuthChecking } = useAuth();
   const location = useLocation();
+
+  // If auth is still loading or checking, don't redirect yet - show auth loader
+  if (isLoading || isAuthChecking) {
+    return null; // GlobalLoader will handle this
+  }
 
   if (!isAuthenticated)
     return (
@@ -48,12 +59,25 @@ const AdminRoute = ({ children }) => (
 // Component for authenticated user routes
 const UserRoute = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
 
-// Root index wrapper: redirect authenticated users directly to dashboard
+// Root index wrapper: show HomePage for unauthenticated users, redirect authenticated users
 const RootIndex = () => {
-  const { isAuthenticated, role } = useAuth();
-  if (!isAuthenticated) return <HomePage />;
-  if (role === "admin") return <Navigate to="/admin" replace />;
-  return <Navigate to="/user" replace />;
+  const { isAuthenticated, role, isLoading, isAuthChecking } = useAuth();
+  
+  // If auth is still loading or checking, don't show anything - show auth loader
+  if (isLoading || isAuthChecking) {
+    return null; // GlobalLoader will handle this
+  }
+  
+  // If authenticated, redirect to appropriate dashboard
+  if (isAuthenticated) {
+    if (role === "admin") {
+      return <Navigate to="/admin" replace />;
+    }
+    return <Navigate to="/user" replace />;
+  }
+  
+  // Show HomePage for unauthenticated users
+  return <HomePage />;
 };
 
 const router = createBrowserRouter([

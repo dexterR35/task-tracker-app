@@ -54,13 +54,12 @@ export {
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   setPersistence,
   browserLocalPersistence,
   signOut
 } from "firebase/auth";
 export { initializeApp, getApps, getApp };
-export { getAuth, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword };
+export { getAuth, signOut, setPersistence, browserLocalPersistence };
 
 // Utilities
 import useFormat from "./useFormat";
@@ -116,7 +115,6 @@ export {
   sanitizeTaskData, 
   sanitizeTaskCreationData,
   sanitizeUserData, 
-  sanitizeUserCreationData,
   sanitizeFormData, 
   validateJiraLink, 
   extractTaskNumber, 

@@ -93,6 +93,7 @@ const Layout = () => {
     isAuthenticated, 
     logout, 
     isLoading,
+    isAuthChecking,
     reauthRequired,
     reauthMessage,
     handleReauth,
@@ -134,8 +135,18 @@ const Layout = () => {
     logout();
   };
 
-  if (!isAuthenticated) {
-    return <Outlet />;
+  // If not authenticated and not loading/checking auth, show outlet without nav
+  if (!isAuthenticated && !isLoading && !isAuthChecking) {
+    return (
+      <GlobalLoader>
+        <Outlet />
+      </GlobalLoader>
+    );
+  }
+
+  // If auth is loading or checking, show GlobalLoader
+  if (isLoading || isAuthChecking) {
+    return <GlobalLoader><Outlet /></GlobalLoader>;
   }
 
   // Determine if we're on a dashboard page

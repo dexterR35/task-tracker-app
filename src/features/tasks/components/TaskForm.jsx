@@ -168,25 +168,20 @@ const TaskForm = ({
         const n = parseFloat(sanitizedValues.timeInHours);
         return isNaN(n) ? 0 : quantize(n);
       })(),
-      aiModels:
-        sanitizedValues.aiUsed &&
-        Array.isArray(sanitizedValues.aiModels) &&
-        sanitizedValues.aiModels.length > 0
-          ? sanitizedValues.aiModels
-          : false,
+      // Always use arrays - empty array if not selected
+      aiModels: Array.isArray(sanitizedValues.aiModels) && sanitizedValues.aiModels.length > 0
+        ? sanitizedValues.aiModels
+        : [],
       markets: Array.isArray(sanitizedValues.markets)
         ? sanitizedValues.markets
         : [],
       deliverables: Array.isArray(sanitizedValues.deliverables)
         ? sanitizedValues.deliverables
         : [],
-      deliverablesOther:
-        sanitizedValues.deliverables &&
-        sanitizedValues.deliverables.includes("others") &&
-        Array.isArray(sanitizedValues.deliverablesOther) &&
-        sanitizedValues.deliverablesOther.length > 0
-          ? sanitizedValues.deliverablesOther
-          : false,
+      // Always use arrays - empty array if not selected
+      deliverablesOther: Array.isArray(sanitizedValues.deliverablesOther) && sanitizedValues.deliverablesOther.length > 0
+        ? sanitizedValues.deliverablesOther
+        : [],
       deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
       createdBy: user?.uid,
       createdByName: user?.name || user?.email,

@@ -225,24 +225,16 @@ const TasksTable = ({
         product: form.product || "",
         markets: Array.isArray(form.markets) ? form.markets : [],
         aiUsed: Boolean(form.aiUsed),
-        aiModels: form.aiUsed
-          ? Array.isArray(form.aiModels) && form.aiModels.length > 0
-            ? form.aiModels
-            : false
-          : false,
+        // Always use arrays - empty array if not selected
+        aiModels: Array.isArray(form.aiModels) ? form.aiModels : [],
         deliverables: Array.isArray(form.deliverables) ? form.deliverables : [],
         reworked: Boolean(form.reworked),
         timeInHours: Number(form.timeInHours) || 0,
         timeSpentOnAI: form.aiUsed ? Number(form.timeSpentOnAI) || 0 : 0,
         taskNumber: t.taskNumber || "", // Preserve the original task number
         jiraLink: t.jiraLink || "", // Preserve the original Jira link
-        deliverablesOther:
-          form.deliverables && form.deliverables.includes("others")
-            ? Array.isArray(form.deliverablesOther) &&
-              form.deliverablesOther.length > 0
-              ? form.deliverablesOther
-              : false
-            : false,
+        // Always use arrays - empty array if not selected
+        deliverablesOther: Array.isArray(form.deliverablesOther) ? form.deliverablesOther : [],
         deliverablesCount: Number(form.deliverablesCount) || 0, // Use form value for deliverablesCount
         createdBy: t.createdBy || "", // Preserve creator info
         createdByName: t.createdByName || "", // Preserve creator name
@@ -369,21 +361,7 @@ const TasksTable = ({
   };
 
   // Determine loading state
-  const isLoading = loading;
   const hasError = error;
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="bg-primary border rounded-lg p-6">
-        <Loader 
-          text="Loading tasks..." 
-          size="md"
-          variant="spinner"
-        />
-      </div>
-    );
-  }
 
   // Show error state
   if (hasError) {

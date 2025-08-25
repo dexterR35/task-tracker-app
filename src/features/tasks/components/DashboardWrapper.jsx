@@ -3,7 +3,6 @@ import { useSubscribeToMonthTasksQuery } from '../tasksApi';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import OptimizedTaskMetricsBoard from './OptimizedTaskMetricsBoard';
 import TasksTable from './TasksTable';
-import Loader from '../../../shared/components/ui/Loader';
 
 const DashboardWrapper = ({
   monthId,
@@ -24,7 +23,6 @@ const DashboardWrapper = ({
   // Use the real-time subscription to get tasks
   const {
     data: tasks = [],
-    isLoading: tasksLoading,
     error: tasksError
   } = useSubscribeToMonthTasksQuery(
     queryParams,
@@ -38,19 +36,6 @@ const DashboardWrapper = ({
   // Don't render anything if not authenticated
   if (!isAuthenticated) {
     return null;
-  }
-
-  // Show loading state
-  if (tasksLoading) {
-    return (
-      <div className={`space-y-6 ${className}`}>
-        <Loader 
-          text="Loading dashboard data..." 
-          size="md"
-          variant="dots"
-        />
-      </div>
-    );
   }
 
   // Show error state
@@ -89,13 +74,13 @@ const DashboardWrapper = ({
         </div>
       )}
 
-      {/* Tasks Table - Show only if we have data or are loading */}
-      {(tasks.length > 0 || tasksLoading) && (
+      {/* Tasks Table - Show only if we have data */}
+      {tasks.length > 0 && (
         <TasksTable
           monthId={monthId}
           tasks={tasks}
-          loading={tasksLoading}
-          error={tasksError}
+          loading={false}
+          error={null}
           userFilter={userId}
           showUserFilter={isAdmin}
           isAdmin={isAdmin}
@@ -105,7 +90,7 @@ const DashboardWrapper = ({
       )}
 
       {/* Show message if no tasks */}
-      {!tasksLoading && tasks.length === 0 && (
+      {tasks.length === 0 && (
         <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">
           {userId 
             ? `No tasks found for user ${userId} in ${monthId}.`
