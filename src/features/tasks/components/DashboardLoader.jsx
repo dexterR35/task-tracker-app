@@ -69,7 +69,7 @@ const DashboardLoader = ({
     );
   }
 
-  // Everything is loaded, show the actual dashboard
+
   return children;
 };
 
