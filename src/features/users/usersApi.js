@@ -15,11 +15,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import {
-  getApp,
-  getApps,
-  initializeApp,
-} from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import { normalizeTimestamp } from "../../shared/utils/dateUtils";
 import { db, auth } from "../../app/firebase";
 import { logger } from "../../shared/utils/logger";
@@ -43,7 +39,10 @@ export const usersApi = createApi({
             ) {
               const cachedUsers = await userStorage.getUsers();
               // Only log once per session to reduce spam
-              if (import.meta.env.MODE === 'development' && !window._cachedUsersLogged) {
+              if (
+                import.meta.env.MODE === "development" &&
+                !window._cachedUsersLogged
+              ) {
                 logger.log("Using cached users:", cachedUsers.length);
                 window._cachedUsersLogged = true;
               }
@@ -52,7 +51,10 @@ export const usersApi = createApi({
           }
 
           // Only log once per session to reduce spam
-          if (import.meta.env.MODE === 'development' && !window._fetchingUsersLogged) {
+          if (
+            import.meta.env.MODE === "development" &&
+            !window._fetchingUsersLogged
+          ) {
             logger.log("Fetching users from database...");
             window._fetchingUsersLogged = true;
           }
@@ -81,7 +83,7 @@ export const usersApi = createApi({
       },
       providesTags: ["Users"],
     }),
-    
+
     // Real-time subscription for users
     subscribeToUsers: builder.query({
       async queryFn() {
@@ -97,13 +99,15 @@ export const usersApi = createApi({
           const unsubscribe = onSnapshot(
             fsQuery(collection(db, "users"), orderBy("createdAt", "desc")),
             (snapshot) => {
-              const users = deduplicateUsers(snapshot.docs.map((d) => mapUserDoc(d)));
-              
+              const users = deduplicateUsers(
+                snapshot.docs.map((d) => mapUserDoc(d))
+              );
+
               // Update cache with real-time data
               updateCachedData((draft) => {
                 Object.assign(draft, users);
               });
-              
+
               // Update IndexedDB cache
               const updateCache = async () => {
                 const { userStorage } = await import(
@@ -128,7 +132,13 @@ export const usersApi = createApi({
     }),
 
     createUser: builder.mutation({
-      async queryFn({ email, password, confirmPassword, name, occupation = "user" }) {
+      async queryFn({
+        email,
+        password,
+        confirmPassword,
+        name,
+        occupation = "user",
+      }) {
         try {
           if (password !== confirmPassword) {
             return {
@@ -140,17 +150,19 @@ export const usersApi = createApi({
           }
 
           // Create secondary auth instance for user creation
-          const secondaryApp = getApps().length === 0 
-            ? initializeApp({
-                apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-                authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-                projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-                storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-                messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-                appId: import.meta.env.VITE_FIREBASE_APP_ID,
-              })
-            : getApp();
-          
+          const secondaryApp =
+            getApps().length === 0
+              ? initializeApp({
+                  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+                  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+                  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+                  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+                  messagingSenderId: import.meta.env
+                    .VITE_FIREBASE_MESSAGING_SENDER_ID,
+                  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+                })
+              : getApp();
+
           const secondaryAuth = getAuth(secondaryApp);
 
           const userCredential = await createUserWithEmailAndPassword(
@@ -201,7 +213,9 @@ export const usersApi = createApi({
           };
 
           // Add new user to cache
-          const { userStorage } = await import("../../shared/utils/indexedDBStorage");
+          const { userStorage } = await import(
+            "../../shared/utils/indexedDBStorage"
+          );
           await userStorage.addUser(newUser);
 
           return { data: newUser };
@@ -219,7 +233,11 @@ export const usersApi = createApi({
   }),
 });
 
-export const { useGetUsersQuery, useSubscribeToUsersQuery, useCreateUserMutation } = usersApi;
+export const {
+  useGetUsersQuery,
+  useSubscribeToUsersQuery,
+  useCreateUserMutation,
+} = usersApi;
 
 // ---- Helpers ----
 function mapUserDoc(d) {
@@ -228,7 +246,7 @@ function mapUserDoc(d) {
   const updatedAt = normalizeTimestamp(raw.updatedAt);
   const lastActive = normalizeTimestamp(raw.lastActive);
   const lastLogin = normalizeTimestamp(raw.lastLogin);
-  
+
   // Only include serializable, whitelisted fields
   return {
     id: d.id,

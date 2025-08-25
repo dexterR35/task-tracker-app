@@ -20,25 +20,26 @@ const firebaseConfig = {
   appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
 };
 
-// Initialize (or reuse) primary app
+
 let appInstance;
 if (!getApps().length) {
-  appInstance = initializeApp(firebaseConfig);
+  appInstance = initializeApp(firebaseConfig,"Task Tracker pwd by NetBet");
 } else {
   appInstance = getApp();
 }
 
-// Initialize Firebase services (single app only)
+
 export const auth = getAuth(appInstance);
 export const db = getFirestore(appInstance);
 
 // Enable logging in development
 if (import.meta.env.MODE === "development") {
-  logger.log("🔥 Firebase initialized (single app)");
+  logger.log("🔥 Firebase initialized ");
   logger.log("App name:", appInstance.name);
+  logger.log("App instance:", appInstance);
 }
 
-// --- Persistence: use local persistence (survives browser restarts) ---
+
 (async () => {
   try {
     await setPersistence(auth, browserLocalPersistence);

@@ -155,6 +155,11 @@ const OptimizedTaskMetricsBoard = ({
     allowedCardIds.includes(card.id)
   );
   
+  // Log occupation-based filtering for debugging
+  console.log(`[OptimizedTaskMetricsBoard] User: ${user?.name}, Role: ${user?.role}, Occupation: ${userOccupation}`);
+  console.log(`[OptimizedTaskMetricsBoard] Showing ${filteredCardsConfig.length} cards out of ${METRIC_CARDS_CONFIG.length} total cards`);
+  console.log(`[OptimizedTaskMetricsBoard] Allowed cards:`, allowedCardIds);
+  
   const toggleTableButton = () => {
     setShowKeyMetrics(!showKeyMetrics);
   };
