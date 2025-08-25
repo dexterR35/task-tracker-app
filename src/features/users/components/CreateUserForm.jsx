@@ -15,6 +15,7 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
     email: "",
     password: "",
     confirmPassword: "",
+    occupation: "user", // Default occupation
   };
 
   const validationSchema = Yup.object({
@@ -37,6 +38,9 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
     confirmPassword: Yup.string()
       .required("Please confirm your password")
       .oneOf([Yup.ref("password"), null], "Passwords must match"),
+    occupation: Yup.string()
+      .required("Occupation is required")
+      .oneOf(["designer", "developer", "video-editor", "admin", "user"], "Please select a valid occupation"),
   });
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
@@ -56,6 +60,7 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
         email: sanitizedData.email,
         password: sanitizedData.password,
         confirmPassword: sanitizedData.confirmPassword,
+        occupation: sanitizedData.occupation,
       }).unwrap();
 
       addSuccess(`User "${result.name}" created successfully!`);
@@ -221,6 +226,40 @@ const CreateUserForm = ({ onSuccess, onCancel, className = "" }) => {
                     />
                     <ErrorMessage
                       name="confirmPassword"
+                      component="div"
+                      className="text-red-500 text-sm mt-1"
+                    />
+                  </div>
+                );
+              }}
+            </Field>
+
+            {/* Occupation Field */}
+            <Field name="occupation">
+              {(field) => {
+                const { baseInputClasses } = renderField(field);
+                return (
+                  <div>
+                    <label
+                      htmlFor="occupation"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Occupation *
+                    </label>
+                    <select
+                      {...field.field}
+                      id="occupation"
+                      className={baseInputClasses}
+                      disabled={isSubmitting}
+                    >
+                      <option value="user">General User</option>
+                      <option value="designer">Designer</option>
+                      <option value="developer">Developer</option>
+                      <option value="video-editor">Video Editor</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <ErrorMessage
+                      name="occupation"
                       component="div"
                       className="text-red-500 text-sm mt-1"
                     />

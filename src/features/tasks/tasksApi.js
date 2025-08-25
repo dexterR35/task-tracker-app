@@ -16,7 +16,6 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../app/firebase";
-import { calculateAnalyticsFromTasks } from "../../shared/utils/analyticsCalculator";
 import { normalizeTimestamp } from "../../shared/utils/dateUtils";
 import { logger } from "../../shared/utils/logger";
 
@@ -65,36 +64,9 @@ const normalizeTask = (monthId, id, data) => {
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "MonthAnalytics", "MonthBoard"],
+  tagTypes: ["MonthTasks", "MonthBoard"],
   endpoints: (builder) => ({
-    listAllAnalytics: builder.query({
-      async queryFn() {
-        try {
-          const snap = await getDocs(collection(db, "analytics"));
-          const items = snap.docs
-            .map((d) => {
-              const raw = d.data();
-              const savedAt = normalizeTimestamp(raw.savedAt);
-              // Spread raw first, then overwrite savedAt with normalized number to avoid Timestamp leaks
-              return {
-                id: d.id,
-                monthId: raw.monthId || d.id,
-                ...raw,
-                savedAt,
-              };
-            })
-            .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-          return { data: items };
-        } catch (error) {
-          return {
-            error: {
-              message: error?.message || "Failed to load analytics list",
-            },
-          };
-        }
-      },
-      providesTags: ["MonthAnalytics"],
-    }),
+
     getMonthBoardExists: builder.query({
       async queryFn({ monthId }) {
         try {
@@ -201,8 +173,6 @@ export const tasksApi = createApi({
             userId: normalizedUserId,
             useCache,
           });
-          // Create cache key that includes user filter
-          const cacheKey = normalizedUserId ? `${monthId}_user_${normalizedUserId}` : monthId;
 
           // Strategy 1: Check IndexedDB cache first
           if (useCache) {
@@ -210,23 +180,27 @@ export const tasksApi = createApi({
               "../../shared/utils/indexedDBStorage"
             );
             if (
-              (await taskStorage.hasTasks(cacheKey)) &&
-              (await taskStorage.isTasksFresh(cacheKey))
+              (await taskStorage.hasTasks(monthId)) &&
+              (await taskStorage.isTasksFresh(monthId))
             ) {
-              const cachedTasks = await taskStorage.getTasks(cacheKey);
+              const cachedTasks = await taskStorage.getTasks(monthId);
+              const filteredTasks = normalizedUserId 
+                ? cachedTasks.filter(task => task.userUID === normalizedUserId)
+                : cachedTasks;
+              
               logger.log(
                 "Using cached tasks from IndexedDB:",
-                cachedTasks.length,
+                filteredTasks.length,
                 "tasks for",
                 normalizedUserId ? `user ${normalizedUserId}` : "all users",
                 "month:",
                 monthId
               );
-              return { data: cachedTasks };
+              return { data: filteredTasks };
             }
           }
 
-          // Strategy 1: Dynamic Firestore query with user filtering
+          // Strategy 2: Dynamic Firestore query with user filtering
           const colRef = collection(db, "tasks", monthId, "monthTasks");
           let query = fsQuery(colRef, orderBy("createdAt", "desc"));
 
@@ -244,17 +218,17 @@ export const tasksApi = createApi({
             normalizeTask(monthId, d.id, d.data())
           );
 
-          // Cache filtered data with user-specific key
+          // Cache all tasks in IndexedDB (not filtered by user)
           if (useCache && tasks.length > 0) {
             const { taskStorage } = await import(
               "../../shared/utils/indexedDBStorage"
             );
-            await taskStorage.storeTasks(cacheKey, tasks);
+            await taskStorage.storeTasks(monthId, tasks);
             logger.log(
-              "Tasks cached in IndexedDB for",
-              normalizedUserId ? `user ${normalizedUserId}` : "all users",
-              "month:",
-              monthId
+              "Tasks cached in IndexedDB for month:",
+              monthId,
+              "count:",
+              tasks.length
             );
           }
 
@@ -264,6 +238,19 @@ export const tasksApi = createApi({
             error: { message: error?.message || "Failed to load tasks" },
           };
         }
+      },
+      // Transform response to minimize Redux storage
+      transformResponse: (response) => {
+        // Only store essential data in Redux, full data is in IndexedDB
+        return response.map(task => ({
+          id: task.id,
+          monthId: task.monthId,
+          userUID: task.userUID,
+          taskName: task.taskName,
+          timeInHours: task.timeInHours,
+          aiUsed: task.aiUsed,
+          // Minimal data for Redux, full data in IndexedDB
+        }));
       },
       async onCacheEntryAdded(
         arg,
@@ -352,29 +339,28 @@ export const tasksApi = createApi({
                 ? `${arg.monthId}_user_${arg.userId}`
                 : arg.monthId;
 
-              // Update Redux state locally
-              updateCachedData(() => tasks);
-
-              // Update IndexedDB cache with real-time changes (debounced)
-              const { taskStorage, analyticsStorage } = await import(
+              // Update IndexedDB cache with real-time changes from Firebase
+              const { taskStorage } = await import(
                 "../../shared/utils/indexedDBStorage"
               );
               
-              // Only cache if we have tasks to avoid empty cache entries
-              if (tasks.length > 0) {
-                await taskStorage.storeTasks(cacheKey, tasks);
+              // Always cache tasks (even if empty) to maintain consistency
+              await taskStorage.storeTasks(arg.monthId, tasks);
 
-                // Pre-compute and cache analytics from updated tasks (debounced)
-                // Use setTimeout to debounce analytics calculation
-                clearTimeout(window._analyticsCalculationTimeout);
-                window._analyticsCalculationTimeout = setTimeout(async () => {
-                  const analyticsData = calculateAnalyticsFromTasks(
-                    tasks,
-                    arg.monthId
-                  );
-                  await analyticsStorage.storeAnalytics(arg.monthId, analyticsData);
-                }, 1000); // 1 second debounce
-              }
+              // Update Redux state with filtered data only
+              const filteredTasks = arg.userId && arg.userId.trim() !== ''
+                ? tasks.filter(task => task.userUID === arg.userId)
+                : tasks;
+              
+              updateCachedData(() => filteredTasks);
+
+              // Trigger analytics recalculation for cards
+              window.dispatchEvent(new CustomEvent('task-changed', { 
+                detail: { 
+                  monthId: arg.monthId,
+                  source: 'firebase-realtime'
+                } 
+              }));
             },
             (error) => {
               logger.error("Real-time subscription error:", error);
@@ -431,9 +417,18 @@ export const tasksApi = createApi({
             task.monthId
           );
 
-          // Update IndexedDB cache
+          // Update IndexedDB cache with the new task
           const { taskStorage } = await import("../../shared/utils/indexedDBStorage");
           await taskStorage.addTask(task.monthId, created);
+          
+          // Trigger real-time update for cards
+          window.dispatchEvent(new CustomEvent('task-changed', { 
+            detail: { 
+              monthId: task.monthId,
+              operation: 'create',
+              taskId: created.id 
+            } 
+          }));
 
           return { data: created };
         } catch (error) {
@@ -495,9 +490,18 @@ export const tasksApi = createApi({
 
           await updateDoc(ref, updatesWithMonthId);
 
-          // Update IndexedDB cache with the same data
+          // Update IndexedDB cache with the updated task
           const { taskStorage } = await import("../../shared/utils/indexedDBStorage");
           await taskStorage.updateTask(monthId, id, updatesWithMonthId);
+          
+          // Trigger real-time update for cards
+          window.dispatchEvent(new CustomEvent('task-changed', { 
+            detail: { 
+              monthId,
+              operation: 'update',
+              taskId: id 
+            } 
+          }));
 
           return { data: { id, monthId, success: true } };
         } catch (error) {
@@ -553,9 +557,18 @@ export const tasksApi = createApi({
         try {
           const ref = doc(db, "tasks", monthId, "monthTasks", id);
           await deleteDoc(ref);
-          // Update IndexedDB cache
+          // Update IndexedDB cache by removing the task
           const { taskStorage } = await import("../../shared/utils/indexedDBStorage");
           await taskStorage.removeTask(monthId, id);
+          
+          // Trigger real-time update for cards
+          window.dispatchEvent(new CustomEvent('task-changed', { 
+            detail: { 
+              monthId,
+              operation: 'delete',
+              taskId: id 
+            } 
+          }));
           return { data: { id, monthId } };
         } catch (error) {
           return {
@@ -625,140 +638,13 @@ export const tasksApi = createApi({
       ],
     }),
 
-    getMonthAnalytics: builder.query({
-      async queryFn({ monthId }) {
-        try {
-          const ref = doc(db, "analytics", monthId);
-          const snap = await getDocFromServer(ref);
-          if (!snap.exists()) return { data: null };
-          const raw = snap.data();
-          const savedAt = normalizeTimestamp(raw.savedAt);
-          return { data: { ...raw, savedAt } };
-        } catch (error) {
-          return {
-            error: { message: error?.message || "Failed to load analytics" },
-          };
-        }
-      },
-      providesTags: (result, error, arg) => [
-        { type: "MonthAnalytics", id: arg.monthId },
-      ],
-    }),
 
-    // Strategy 3: Analytics generation from Redux state (no Firebase reads)
-    computeMonthAnalytics: builder.mutation({
-      async queryFn({ monthId, useCache = true, tasks = null }) {
-        try {
-          console.log(
-            "computeMonthAnalytics called for month:",
-            monthId,
-            "useCache:",
-            useCache
-          );
 
-          // Strategy 3: Check if we have fresh cached analytics
-          if (useCache) {
-            const { analyticsStorage, taskStorage } = await import(
-              "../../shared/utils/indexedDBStorage"
-            );
-            if (
-              (await analyticsStorage.hasAnalytics(monthId)) &&
-              (await analyticsStorage.isAnalyticsFresh(monthId))
-            ) {
-              const cachedAnalytics =
-                await analyticsStorage.getAnalytics(monthId);
-              // console.log('Using cached analytics for month:', monthId);
-              return { data: cachedAnalytics };
-            }
-            // Strategy 3: Use tasks from Redux state if provided, otherwise fetch from cache
-            let tasksToUse = tasks;
-            logger.log("tasksToUse", tasksToUse);
-            if (!tasksToUse) {
-              // console.log('No tasks provided, checking IndexedDB cache for month:', monthId);
-              tasksToUse = await taskStorage.getTasks(monthId);
-            }
-          }
 
-          if (!tasksToUse || tasksToUse.length === 0) {
-            // console.log('No tasks found for month:', monthId);
-            return {
-              error: {
-                code: "NO_TASKS",
-                message: `No tasks found for ${monthId}. Please create some tasks first.`,
-              },
-            };
-          }
 
-          // console.log('Computing analytics from', tasksToUse.length, 'tasks for month:', monthId);
-          const analyticsData = calculateAnalyticsFromTasks(tasksToUse, monthId);
-          // Store in IndexedDB for future use
-          const { analyticsStorage } = await import(
-            "../../shared/utils/indexedDBStorage"
-          );
-          await analyticsStorage.storeAnalytics(monthId, analyticsData);
-          // console.log('Analytics computed and stored in IndexedDB for month:', monthId);
 
-          return { data: analyticsData };
-        } catch (error) {
-          logger.error("Error computing analytics:", error);
-          return {
-            error: { message: error?.message || "Failed to compute analytics" },
-          };
-        }
-      },
-    }),
 
-    saveMonthAnalytics: builder.mutation({
-      async queryFn({ monthId, data, overwrite = false }) {
-        try {
-          const ref = doc(db, "analytics", monthId);
-          const snap = await getDocFromServer(ref);
-          if (!overwrite && snap.exists()) {
-            return {
-              error: {
-                code: "ANALYTICS_EXISTS",
-                message: "Analytics for this month already exist",
-              },
-            };
-          }
-          await setDoc(
-            ref,
-            { ...data, savedAt: serverTimestamp() },
-            { merge: true }
-          );
-          const fresh = await getDocFromServer(ref);
-          const raw = fresh.data() || {};
-          const savedAt = normalizeTimestamp(raw.savedAt);
-          return { data: { ...raw, savedAt } };
-        } catch (error) {
-          return {
-            error: { message: error?.message || "Failed to save analytics" },
-          };
-        }
-      },
-      invalidatesTags: (result, error, arg) => [
-        { type: "MonthAnalytics", id: arg.monthId },
-        "MonthAnalytics",
-      ],
-    }),
 
-    deleteMonthAnalytics: builder.mutation({
-      async queryFn({ monthId }) {
-        try {
-          const ref = doc(db, "analytics", monthId);
-          await deleteDoc(ref);
-          return { data: { monthId, deleted: true } };
-        } catch (error) {
-          return {
-            error: { message: error?.message || "Failed to delete analytics" },
-          };
-        }
-      },
-      invalidatesTags: (result, error, arg) => [
-        { type: "MonthAnalytics", id: arg.monthId },
-        "MonthAnalytics",
-      ],
-    }),
   }),
 });
 
@@ -770,9 +656,4 @@ export const {
   useDeleteTaskMutation,
   useGetMonthBoardExistsQuery,
   useGenerateMonthBoardMutation,
-  useGetMonthAnalyticsQuery,
-  useComputeMonthAnalyticsMutation,
-  useSaveMonthAnalyticsMutation,
-  useListAllAnalyticsQuery,
-  useDeleteMonthAnalyticsMutation,
 } = tasksApi;

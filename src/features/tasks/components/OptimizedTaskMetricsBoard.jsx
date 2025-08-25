@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
 import { useCentralizedAnalytics } from "../../../shared/hooks/useCentralizedAnalytics";
+import { useAuth } from "../../../shared/hooks/useAuth";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
 
 import {
@@ -24,6 +25,15 @@ import {
 
 // Memoized OptimizedSmallCard component to prevent unnecessary re-renders
 const MemoizedOptimizedSmallCard = React.memo(OptimizedSmallCard);
+
+// Occupation-based card filtering configuration
+const OCCUPATION_CARD_MAPPING = {
+  'designer': ['design', 'total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks','markets', 'products', 'ai-models','user-performance'],
+  'developer': ['development', 'total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks','markets', 'products', 'ai-models','user-performance'],
+  'video-editor': ['video', 'total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks','markets', 'products', 'ai-models','user-performance'],
+  'admin': ['total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks', 'development', 'design', 'video', 'user-performance', 'markets', 'products', 'ai-models', 'deliverables'],
+  'user': ['total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks', 'development', 'design', 'video'] // Default for users without specific occupation
+};
 
 // Configuration array for all metric cards using type-based approach
 const METRIC_CARDS_CONFIG = [
@@ -130,10 +140,26 @@ const OptimizedTaskMetricsBoard = ({
   className = "",
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
+  const { user } = useAuth();
+  
+  // For admins, always show all cards regardless of which user they're viewing
+  // For regular users, filter based on their occupation
+  const isAdmin = user?.role === 'admin';
+  const userOccupation = isAdmin ? 'admin' : (user?.occupation || user?.role || 'user');
+  
+  // Get allowed cards for this occupation
+  const allowedCardIds = OCCUPATION_CARD_MAPPING[userOccupation] || OCCUPATION_CARD_MAPPING['user'];
+  
+  // Filter cards based on occupation
+  const filteredCardsConfig = METRIC_CARDS_CONFIG.filter(card => 
+    allowedCardIds.includes(card.id)
+  );
+  
   const toggleTableButton = () => {
     setShowKeyMetrics(!showKeyMetrics);
   };
-  // Use centralized analytics hook
+
+  // Use centralized analytics hook (now uses IndexedDB as data store)
   const {
     analytics,
     getMetric,
@@ -141,8 +167,18 @@ const OptimizedTaskMetricsBoard = ({
     hasData,
     isLoading,
     error,
-    getCacheStatus
+    getCacheStatus,
+    reload,
+    refreshAnalytics
   } = useCentralizedAnalytics(monthId, userId);
+
+  // Load analytics when component mounts or dependencies change
+  useEffect(() => {
+    if (monthId && refreshAnalytics) {
+      // Initial load only
+      refreshAnalytics();
+    }
+  }, [monthId, userId, refreshAnalytics]);
 
   // Add error boundary for analytics
   if (error) {
@@ -162,7 +198,7 @@ const OptimizedTaskMetricsBoard = ({
 
     // If no data available, show loading state
     if (!hasData && isLoading) {
-      return METRIC_CARDS_CONFIG.map((cardConfig) => (
+      return filteredCardsConfig.map((cardConfig) => (
         <MemoizedOptimizedSmallCard
           key={cardConfig.id}
           title={cardConfig.title}
@@ -216,8 +252,8 @@ const OptimizedTaskMetricsBoard = ({
       );
     }
  
-    // Render cards with analytics data
-    return METRIC_CARDS_CONFIG.map((cardConfig) => {
+    // Render cards with analytics data (filtered by occupation)
+    return filteredCardsConfig.map((cardConfig) => {
       try {
         // Ensure analytics object exists and has required properties
         if (!analytics || typeof analytics !== 'object') {
@@ -276,7 +312,8 @@ const OptimizedTaskMetricsBoard = ({
     hasData, 
     isLoading, 
     error, 
-    getMetric
+    getMetric,
+    filteredCardsConfig
   ]);
 
 

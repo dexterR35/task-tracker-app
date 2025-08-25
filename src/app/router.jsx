@@ -6,10 +6,8 @@ import LoginPage from "../pages/auth/LoginPage";
 import TaskDetailPage from "../pages/dashboard/TaskDetailPage";
 import HomePage from "../pages/dashboard/HomePage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
-import AdminAnalyticsPage from "../pages/admin/AdminAnalyticsPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
 import UserDashboardPage from "../pages/user/UserDashboardPage";
-import PreviewPage from "../pages/dashboard/PreviewPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
 
@@ -103,7 +101,7 @@ const router = createBrowserRouter([
         path: "admin/analytics",
         element: (
           <AdminRoute>
-            <AdminAnalyticsPage />
+               <NotFoundPage />
           </AdminRoute>
         ),
       },
@@ -111,7 +109,8 @@ const router = createBrowserRouter([
         path: "preview/:monthId",
         element: (
           <AdminRoute>
-            <PreviewPage />
+          <NotFoundPage />
+            {/* <PreviewPage /> */}
           </AdminRoute>
         ),
       },

@@ -128,7 +128,7 @@ export const usersApi = createApi({
     }),
 
     createUser: builder.mutation({
-      async queryFn({ email, password, confirmPassword, name }) {
+      async queryFn({ email, password, confirmPassword, name, occupation = "user" }) {
         try {
           if (password !== confirmPassword) {
             return {
@@ -166,6 +166,7 @@ export const usersApi = createApi({
             email,
             name,
             role: "user",
+            occupation: occupation, // Add occupation field
             isActive: true,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
@@ -235,6 +236,7 @@ function mapUserDoc(d) {
     email: raw.email || "",
     name: raw.name || "",
     role: raw.role || "user",
+    occupation: raw.occupation || "user", // Add occupation field
     isActive: typeof raw.isActive === "boolean" ? raw.isActive : true,
     createdAt,
     updatedAt,

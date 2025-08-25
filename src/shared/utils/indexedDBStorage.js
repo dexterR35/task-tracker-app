@@ -125,6 +125,11 @@ class IndexedDBStorage {
 // Create singleton instance
 const indexedDBStorage = new IndexedDBStorage();
 
+// Initialize IndexedDB on module load
+indexedDBStorage.init().catch(error => {
+  console.error('Failed to initialize IndexedDB:', error);
+});
+
 // Analytics Storage
 export const analyticsStorage = {
   storeAnalytics: async (monthId, analyticsData) => {

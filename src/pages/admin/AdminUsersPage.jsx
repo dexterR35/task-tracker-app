@@ -86,12 +86,13 @@ const AdminUsersPage = () => {
                   <th className="px-3 py-4 text-left">Name</th>
                   <th className="px-3 py-4 text-left">Email</th>
                   <th className="px-3 py-4 text-left">Role</th>
+                  <th className="px-3 py-4 text-left">Occupation</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-3" colSpan={3}>
+                    <td className="px-3 py-3" colSpan={4}>
                       No users found.
                     </td>
                   </tr>
@@ -105,6 +106,7 @@ const AdminUsersPage = () => {
                       <td className="px-3 py-4 font-medium capitalize">{u.name || "-"}</td>
                       <td className="px-3 py-4">{u.email}</td>
                       <td className="px-3 py-4 capitalize">{u.role}</td>
+                      <td className="px-3 py-4 capitalize">{u.occupation || "-"}</td>
                     </tr>
                   ))
                 )}

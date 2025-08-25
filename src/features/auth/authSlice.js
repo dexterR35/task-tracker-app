@@ -57,6 +57,7 @@ const normalizeUser = (firebaseUser, firestoreData) => {
     email: firebaseUser.email,
     name: firestoreData.name || "",
     role: firestoreData.role,
+    occupation: firestoreData.occupation || "user", // Add occupation field
     createdAt: createdAtMs,
   };
 };
