@@ -96,13 +96,15 @@ const UserDashboardPage = () => {
           )}
 
           {/* Main Dashboard Content */}
-          {board?.exists ? (
+          {board?.exists && (
             <div className="space-y-8">
-              {/* Personal Analytics Cards */}
+              {/* Single DashboardWrapper with table visibility control */}
               <DashboardWrapper
                 monthId={monthId}
                 userId={user?.uid}
                 isAdmin={false}
+                showCreateBoard={false}
+                showTable={showTasksTable} // Control table visibility
               />
 
               {/* Table Header with Toggle Button */}
@@ -119,17 +121,17 @@ const UserDashboardPage = () => {
                 </DynamicButton>
               </div>
 
-              {/* Tasks Table */}
-              {showTasksTable && (
-                <DashboardWrapper
-                  monthId={monthId}
-                  userId={user?.uid}
-                  isAdmin={false}
-                  showCreateBoard={false}
-                />
+              {/* Show/hide table message */}
+              {!showTasksTable && (
+                <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">
+                  Table is hidden. Click "Show Table" to view tasks.
+                </div>
               )}
             </div>
-          ) : (
+          )}
+
+          {/* Board not ready message */}
+          {!board?.exists && (
             <div className="text-center py-12">
               <p className="text-gray-400">
                 Board not ready for {format(new Date(monthId + "-01"), "MMMM yyyy")}. 

@@ -9,6 +9,7 @@ const DashboardWrapper = ({
   userId = null,
   isAdmin = false,
   showCreateBoard = false,
+  showTable = true, // New prop to control table visibility
   onGenerateBoard = null,
   className = ""
 }) => {
@@ -74,8 +75,8 @@ const DashboardWrapper = ({
         </div>
       )}
 
-      {/* Tasks Table - Show only if we have data */}
-      {tasks.length > 0 && (
+      {/* Tasks Table - Show only if we have data AND showTable is true */}
+      {showTable && tasks.length > 0 && (
         <TasksTable
           monthId={monthId}
           tasks={tasks}

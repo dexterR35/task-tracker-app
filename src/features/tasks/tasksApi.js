@@ -235,6 +235,60 @@ export const tasksApi = createApi({
       ],
     }),
 
+    // Real-time subscription for board status
+    subscribeToMonthBoard: builder.query({
+      async queryFn({ monthId } = {}) {
+        try {
+          if (!auth.currentUser) {
+            return { error: { message: 'Authentication required' } };
+          }
+
+          const ref = doc(db, "tasks", monthId);
+          const snap = await getDoc(ref);
+          return { data: { exists: snap.exists(), monthId } };
+        } catch (error) {
+          return { error: { message: error.message } };
+        }
+      },
+      async onCacheEntryAdded(
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
+      ) {
+        let unsubscribe = null;
+        
+        try {
+          await cacheDataLoaded;
+
+          const ref = doc(db, "tasks", arg.monthId);
+          
+          unsubscribe = onSnapshot(
+            ref,
+            (snapshot) => {
+              updateCachedData(() => ({
+                exists: snapshot.exists(),
+                monthId: arg.monthId,
+                lastUpdated: Date.now()
+              }));
+            },
+            (error) => {
+              console.error("Real-time board subscription error:", error);
+            }
+          );
+
+          await cacheEntryRemoved;
+        } catch (error) {
+          console.error("Error setting up real-time board subscription:", error);
+        } finally {
+          if (unsubscribe) {
+            unsubscribe();
+          }
+        }
+      },
+      providesTags: (result, error, arg) => [
+        { type: "MonthBoard", id: arg.monthId },
+      ],
+    }),
+
     // Create task with transaction for atomic operations
     createTask: builder.mutation({
       async queryFn(task) {
@@ -485,6 +539,7 @@ export const tasksApi = createApi({
 export const {
   useGetMonthTasksQuery,
   useSubscribeToMonthTasksQuery,
+  useSubscribeToMonthBoardQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
