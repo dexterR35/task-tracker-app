@@ -125,20 +125,20 @@ export const formatTaskTypeAdditionalInfo = (additionalData) => {
     <div className="mt-3 space-y-2">
       <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
         <span className="text-xs text-gray-300">Total Hours</span>
-        <span className="text-xs font-medium text-gray-200">{safeTotalHours.toFixed(1)}h</span>
+        <span className="text-xs font-medium text-gray-300">{safeTotalHours.toFixed(1)}h</span>
       </div>
       <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
         <span className="text-xs text-gray-300">Avg Hours/Task</span>
-        <span className="text-xs font-medium text-gray-200">{safeAvgHoursPerTask.toFixed(1)}h</span>
+        <span className="text-xs font-medium text-gray-300">{safeAvgHoursPerTask.toFixed(1)}h</span>
       </div>
       <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
         <span className="text-xs text-gray-300">AI Tasks</span>
-        <span className="text-xs font-medium text-gray-200">{aiTasks} ({safeAiPercentage.toFixed(0)}%)</span>
+        <span className="text-xs font-medium text-gray-300">{aiTasks} ({safeAiPercentage.toFixed(0)}%)</span>
       </div>
       {aiTasks > 0 && (
         <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
           <span className="text-xs text-gray-300">AI Hours</span>
-          <span className="text-xs font-medium text-gray-200">{safeAiHours.toFixed(1)}h</span>
+          <span className="text-xs font-medium text-gray-300">{safeAiHours.toFixed(1)}h</span>
         </div>
       )}
     </div>
@@ -168,11 +168,11 @@ export const formatUserPerformanceAdditionalInfo = (additionalData) => {
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${
               index === 0 ? 'bg-yellow-400' : 
-              index === 1 ? 'bg-gray-400' : 'bg-orange-500'
+              index === 1 ? 'bg-gray-300' : 'bg-orange-500'
             }`}></div>
             <span className="text-xs text-gray-300 truncate max-w-20">{user.name}</span>
           </div>
-          <div className="text-xs font-medium text-gray-200">
+          <div className="text-xs font-medium text-gray-300">
             {user.tasks}t / {user.hours.toFixed(1)}h
           </div>
         </div>

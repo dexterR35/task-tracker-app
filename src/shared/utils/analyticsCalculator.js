@@ -117,10 +117,7 @@ export class AnalyticsCalculator {
       ? tasks.filter(task => task.userUID === userId)
       : tasks;
 
-    // logger.log(`Filtered tasks: ${filteredTasks.length} tasks for ${userId || 'all users'}`);
-    // logger.log('Sample filtered task:', filteredTasks[0]);
-    // logger.log('Tasks with markets:', filteredTasks.filter(t => Array.isArray(t.markets) && t.markets.length > 0).length);
-    // logger.log('Sample task markets:', filteredTasks.find(t => Array.isArray(t.markets) && t.markets.length > 0)?.markets);
+
 
     const analytics = {
       monthId,
