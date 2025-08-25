@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
 import { useCentralizedAnalytics } from "../../../shared/hooks/useCentralizedAnalytics";
@@ -152,8 +152,11 @@ const OptimizedTaskMetricsBoard = ({
   const isAdmin = user?.role === 'admin';
   const userOccupation = isAdmin ? 'admin' : (user?.occupation || user?.role || 'user');
   
-  // Get allowed cards for this occupation
-  const allowedCardIds = OCCUPATION_CARD_MAPPING[userOccupation] || OCCUPATION_CARD_MAPPING['user'];
+  // Get allowed cards for this occupation - memoized to prevent recalculation
+  const allowedCardIds = useMemo(() => 
+    OCCUPATION_CARD_MAPPING[userOccupation] || OCCUPATION_CARD_MAPPING['user'],
+    [userOccupation]
+  );
   
   // Filter cards based on occupation - memoized to prevent recalculation
   const filteredCardsConfig = useMemo(() => 
@@ -161,9 +164,9 @@ const OptimizedTaskMetricsBoard = ({
     [allowedCardIds]
   );
   
-  const toggleTableButton = () => {
+  const toggleTableButton = useCallback(() => {
     setShowKeyMetrics(!showKeyMetrics);
-  };
+  }, [showKeyMetrics]);
 
   // Use centralized analytics hook - reads directly from Redux state
   const {
@@ -300,4 +303,4 @@ const OptimizedTaskMetricsBoard = ({
   );
 };
 
-export default OptimizedTaskMetricsBoard;
+export default React.memo(OptimizedTaskMetricsBoard);

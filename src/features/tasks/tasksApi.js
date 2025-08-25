@@ -131,7 +131,7 @@ export const tasksApi = createApi({
       ],
     }),
 
-    // Real-time subscription for tasks
+    // Real-time subscription for tasks - optimized to reduce excessive updates
     subscribeToMonthTasks: builder.query({
       async queryFn({ monthId, userId = null } = {}) {
         try {
@@ -154,6 +154,8 @@ export const tasksApi = createApi({
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
       ) {
         let unsubscribe = null;
+        let lastUpdateTime = 0;
+        const updateDebounce = 100; // Debounce updates by 100ms
         
         try {
           await cacheDataLoaded;
@@ -181,6 +183,13 @@ export const tasksApi = createApi({
           unsubscribe = onSnapshot(
             query,
             (snapshot) => {
+              // Debounce rapid updates
+              const now = Date.now();
+              if (now - lastUpdateTime < updateDebounce) {
+                return;
+              }
+              lastUpdateTime = now;
+
               if (!snapshot || !snapshot.docs) {
                 updateCachedData(() => []);
                 return;
@@ -201,17 +210,19 @@ export const tasksApi = createApi({
 
               updateCachedData(() => tasks);
 
-              // Trigger analytics recalculation
-              window.dispatchEvent(new CustomEvent('task-changed', { 
-                detail: { 
-                  monthId: arg.monthId,
-                  userId: arg.userId,
-                  source: 'firebase-realtime',
-                  operation: 'update',
-                  tasksCount: tasks.length,
-                  timestamp: Date.now()
-                } 
-              }));
+              // Trigger analytics recalculation with debouncing
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('task-changed', { 
+                  detail: { 
+                    monthId: arg.monthId,
+                    userId: arg.userId,
+                    source: 'firebase-realtime',
+                    operation: 'update',
+                    tasksCount: tasks.length,
+                    timestamp: Date.now()
+                  } 
+                }));
+              }, 50); // Small delay to batch multiple updates
             },
             (error) => {
               console.error("Real-time subscription error:", error);
@@ -325,17 +336,19 @@ export const tasksApi = createApi({
             return created;
           });
 
-          // Trigger real-time update
-          window.dispatchEvent(new CustomEvent('task-changed', { 
-            detail: { 
-              monthId: task.monthId,
-              operation: 'create',
-              taskId: result.id,
-              taskUserId: task.userUID,
-              source: 'crud-operation',
-              timestamp: Date.now()
-            } 
-          }));
+          // Trigger real-time update with delay to allow cache to update
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('task-changed', { 
+              detail: { 
+                monthId: task.monthId,
+                operation: 'create',
+                taskId: result.id,
+                taskUserId: task.userUID,
+                source: 'crud-operation',
+                timestamp: Date.now()
+              } 
+            }));
+          }, 100);
 
           return { data: result };
         } catch (error) {
@@ -346,6 +359,7 @@ export const tasksApi = createApi({
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
         { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || "all"}` },
+        { type: "Analytics", id: arg.monthId },
       ],
     }),
 
@@ -377,17 +391,19 @@ export const tasksApi = createApi({
             transaction.update(taskRef, updatesWithMonthId);
           });
 
-          // Trigger real-time update
-          window.dispatchEvent(new CustomEvent('task-changed', { 
-            detail: { 
-              monthId,
-              operation: 'update',
-              taskId: id,
-              taskUserId: updates.userUID || null,
-              source: 'crud-operation',
-              timestamp: Date.now()
-            } 
-          }));
+          // Trigger real-time update with delay to allow cache to update
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('task-changed', { 
+              detail: { 
+                monthId,
+                operation: 'update',
+                taskId: id,
+                taskUserId: updates.userUID || null,
+                source: 'crud-operation',
+                timestamp: Date.now()
+              } 
+            }));
+          }, 100);
 
           return { data: { id, monthId, success: true } };
         } catch (error) {
@@ -398,6 +414,7 @@ export const tasksApi = createApi({
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
         { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || "all"}` },
+        { type: "Analytics", id: arg.monthId },
       ],
     }),
 
@@ -423,17 +440,19 @@ export const tasksApi = createApi({
             transaction.delete(taskRef);
           });
 
-          // Trigger real-time update
-          window.dispatchEvent(new CustomEvent('task-changed', { 
-            detail: { 
-              monthId,
-              operation: 'delete',
-              taskId: id,
-              taskUserId: null,
-              source: 'crud-operation',
-              timestamp: Date.now()
-            } 
-          }));
+          // Trigger real-time update with delay to allow cache to update
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('task-changed', { 
+              detail: { 
+                monthId,
+                operation: 'delete',
+                taskId: id,
+                taskUserId: null,
+                source: 'crud-operation',
+                timestamp: Date.now()
+              } 
+            }));
+          }, 100);
 
           return { data: { id, monthId } };
         } catch (error) {
@@ -444,6 +463,7 @@ export const tasksApi = createApi({
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
         { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || "all"}` },
+        { type: "Analytics", id: arg.monthId },
       ],
     }),
 

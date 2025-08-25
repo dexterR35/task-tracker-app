@@ -9,6 +9,9 @@ export class AnalyticsCalculator {
   constructor() {
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes cache
+    this._analyticsCache = new Map(); // In-memory cache for memoization
+    this._lastCalculation = new Map(); // Track last calculation time per key
+    this._calculationDebounce = 100; // Debounce calculations by 100ms
   }
 
   /**
@@ -17,6 +20,14 @@ export class AnalyticsCalculator {
    */
   clearCache(monthId) {
     this.cache.delete(monthId);
+    // Clear related memoization cache entries
+    const keysToDelete = [];
+    for (const [key] of this._analyticsCache) {
+      if (key.includes(monthId)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(key => this._analyticsCache.delete(key));
   }
 
   /**
@@ -24,6 +35,8 @@ export class AnalyticsCalculator {
    */
   clearAllCache() {
     this.cache.clear();
+    this._analyticsCache.clear();
+    this._lastCalculation.clear();
   }
 
   /**
@@ -64,6 +77,39 @@ export class AnalyticsCalculator {
   }
 
   /**
+   * Generate a stable cache key for analytics calculation
+   * @param {Array} tasks 
+   * @param {string} monthId 
+   * @param {string|null} userId 
+   * @returns {string}
+   */
+  _generateCacheKey(tasks, monthId, userId = null) {
+    if (!Array.isArray(tasks) || tasks.length === 0) {
+      return `${monthId}_${userId || 'all'}_empty`;
+    }
+
+    // Create a more stable cache key based on task IDs and update timestamps
+    const taskIds = tasks.map(t => t.id).sort().join(',');
+    const lastUpdate = Math.max(...tasks.map(t => t.updatedAt || 0));
+    const taskCount = tasks.length;
+    
+    return `${monthId}_${userId || 'all'}_${taskCount}_${lastUpdate}_${taskIds.slice(0, 100)}`; // Limit task IDs length
+  }
+
+  /**
+   * Check if we should skip calculation due to debouncing
+   * @param {string} cacheKey 
+   * @returns {boolean}
+   */
+  _shouldSkipCalculation(cacheKey) {
+    const lastCalc = this._lastCalculation.get(cacheKey);
+    if (!lastCalc) return false;
+    
+    const now = Date.now();
+    return (now - lastCalc) < this._calculationDebounce;
+  }
+
+  /**
    * Calculate all analytics for a month from tasks data
    * @param {Array} tasks - Array of task objects
    * @param {string} monthId - Month identifier
@@ -71,12 +117,22 @@ export class AnalyticsCalculator {
    * @returns {Object} Complete analytics object
    */
   calculateAllAnalytics(tasks, monthId, userId = null) {
-    // Create a cache key for memoization
-    const cacheKey = `${monthId}_${userId || 'all'}_${tasks.length}_${tasks.reduce((sum, task) => sum + (task.updatedAt || 0), 0)}`;
+    // Generate stable cache key
+    const cacheKey = this._generateCacheKey(tasks, monthId, userId);
+    
+    // Check debouncing
+    if (this._shouldSkipCalculation(cacheKey)) {
+      const cached = this._analyticsCache.get(cacheKey);
+      if (cached) {
+        logger.debug(`[AnalyticsCalculator] Skipping calculation due to debouncing for ${cacheKey}`);
+        return cached;
+      }
+    }
     
     // Check if we have cached analytics for this exact data
-    if (this._analyticsCache && this._analyticsCache[cacheKey]) {
-      return this._analyticsCache[cacheKey];
+    if (this._analyticsCache.has(cacheKey)) {
+      logger.debug(`[AnalyticsCalculator] Using cached analytics for ${cacheKey}`);
+      return this._analyticsCache.get(cacheKey);
     }
     
     // Validate input
@@ -84,40 +140,18 @@ export class AnalyticsCalculator {
       logger.error('AnalyticsCalculator: tasks is not an array:', tasks);
       logger.error('Type of tasks:', typeof tasks);
       logger.error('Tasks value:', tasks);
-      return {
-        monthId,
-        userId,
-        timestamp: Date.now(),
-        summary: { totalTasks: 0, totalHours: 0, completedTasks: 0, pendingTasks: 0, inProgressTasks: 0, completionRate: 0, avgHoursPerTask: 0 },
-        categories: {},
-        performance: { totalUsers: 0, totalHours: 0, avgHoursPerTask: 0, users: [] },
-        markets: { totalMarkets: 0, markets: [], totalTasks: 0, totalHours: 0 },
-        products: { totalProducts: 0, products: [], totalTasks: 0, totalHours: 0 },
-        ai: { totalAITasks: 0, totalAIHours: 0, aiPercentage: 0 },
-        trends: {},
-        aiBreakdownByProduct: {},
-        aiBreakdownByMarket: {},
-        daily: {},
-        aiModels: {},
-        deliverables: {},
-        raw: { totalTasks: 0, tasks: [] }
-      };
+      return this._getEmptyAnalytics(monthId, userId);
     }
 
-    // For real-time updates, always calculate fresh analytics
-    // This ensures CRUD operations are immediately reflected
-    // logger.log(`Calculating fresh analytics for ${monthId} from ${tasks.length} tasks`);
-    // logger.log('Sample task structure:', tasks[0]);
-    // logger.log('Tasks with markets:', tasks.filter(t => Array.isArray(t.markets) && t.markets.length > 0).length);
-    // logger.log('Tasks with products:', tasks.filter(t => t.product).length);
-    // logger.log('Tasks with AI:', tasks.filter(t => t.aiUsed).length);
+    // Update last calculation time
+    this._lastCalculation.set(cacheKey, Date.now());
 
     // Filter tasks by user if specified
     const filteredTasks = userId 
       ? tasks.filter(task => task.userUID === userId)
       : tasks;
 
-
+    logger.debug(`[AnalyticsCalculator] Calculating fresh analytics for ${monthId} from ${filteredTasks.length} tasks (cacheKey: ${cacheKey})`);
 
     const analytics = {
       monthId,
@@ -130,7 +164,6 @@ export class AnalyticsCalculator {
       products: this.calculateProductAnalytics(filteredTasks),
       ai: this.calculateAIAnalytics(filteredTasks),
       trends: this.calculateTrends(filteredTasks),
-      // Add the properties that PreviewPage expects
       aiBreakdownByProduct: this.calculateAIBreakdownByProduct(filteredTasks),
       aiBreakdownByMarket: this.calculateAIBreakdownByMarket(filteredTasks),
       daily: this.calculateDailyAnalytics(filteredTasks),
@@ -142,22 +175,44 @@ export class AnalyticsCalculator {
       }
     };
 
-    // Cache the results for future use
+    // Cache the results
     this.cacheAnalytics(monthId, analytics);
-    
-    // Store in memory cache for memoization
-    if (!this._analyticsCache) {
-      this._analyticsCache = {};
-    }
-    this._analyticsCache[cacheKey] = analytics;
+    this._analyticsCache.set(cacheKey, analytics);
     
     // Limit cache size to prevent memory leaks
-    const cacheKeys = Object.keys(this._analyticsCache);
-    if (cacheKeys.length > 50) {
-      delete this._analyticsCache[cacheKeys[0]];
+    if (this._analyticsCache.size > 50) {
+      const firstKey = this._analyticsCache.keys().next().value;
+      this._analyticsCache.delete(firstKey);
     }
     
     return analytics;
+  }
+
+  /**
+   * Get empty analytics object for error cases
+   * @param {string} monthId 
+   * @param {string|null} userId 
+   * @returns {Object}
+   */
+  _getEmptyAnalytics(monthId, userId = null) {
+    return {
+      monthId,
+      userId,
+      timestamp: Date.now(),
+      summary: { totalTasks: 0, totalHours: 0, completedTasks: 0, pendingTasks: 0, inProgressTasks: 0, completionRate: 0, avgHoursPerTask: 0 },
+      categories: {},
+      performance: { totalUsers: 0, totalHours: 0, avgHoursPerTask: 0, users: [] },
+      markets: { totalMarkets: 0, markets: [], totalTasks: 0, totalHours: 0 },
+      products: { totalProducts: 0, products: [], totalTasks: 0, totalHours: 0 },
+      ai: { totalAITasks: 0, totalAIHours: 0, aiPercentage: 0 },
+      trends: {},
+      aiBreakdownByProduct: {},
+      aiBreakdownByMarket: {},
+      daily: {},
+      aiModels: {},
+      deliverables: {},
+      raw: { totalTasks: 0, tasks: [] }
+    };
   }
 
   /**
@@ -962,13 +1017,13 @@ export const testAnalyticsCalculation = (tasks, monthId, userId = null) => {
     const analytics = calculateAnalyticsFromTasks(tasks, monthId, userId);
     
     console.log('[testAnalyticsCalculation] Calculated analytics:', {
-      totalTasks: analytics.totalTasks,
-      totalHours: analytics.totalHours,
-      totalTimeWithAI: analytics.totalTimeWithAI,
-      aiTasks: analytics.aiTasks,
-      development: analytics.development,
-      design: analytics.design,
-      video: analytics.video
+      totalTasks: analytics.summary?.totalTasks || 0,
+      totalHours: analytics.summary?.totalHours || 0,
+      totalAITasks: analytics.ai?.totalAITasks || 0,
+      totalAIHours: analytics.ai?.totalAIHours || 0,
+      totalUsers: analytics.performance?.totalUsers || 0,
+      totalMarkets: analytics.markets?.totalMarkets || 0,
+      totalProducts: analytics.products?.totalProducts || 0
     });
     
     return {
@@ -982,6 +1037,40 @@ export const testAnalyticsCalculation = (tasks, monthId, userId = null) => {
       success: false,
       error: error.message,
       taskCount: tasks.length
+    };
+  }
+};
+
+// Test function to verify cache optimization
+export const testCacheOptimization = (tasks, monthId, userId = null) => {
+  try {
+    console.log(`[testCacheOptimization] Testing cache optimization for ${monthId}`);
+    
+    // First calculation
+    const start1 = performance.now();
+    const analytics1 = calculateAnalyticsFromTasks(tasks, monthId, userId);
+    const time1 = performance.now() - start1;
+    
+    // Second calculation (should use cache)
+    const start2 = performance.now();
+    const analytics2 = calculateAnalyticsFromTasks(tasks, monthId, userId);
+    const time2 = performance.now() - start2;
+    
+    console.log(`[testCacheOptimization] First calculation: ${time1.toFixed(2)}ms`);
+    console.log(`[testCacheOptimization] Second calculation: ${time2.toFixed(2)}ms`);
+    console.log(`[testCacheOptimization] Cache hit: ${time2 < time1 * 0.1 ? 'YES' : 'NO'}`);
+    
+    return {
+      success: true,
+      firstCalculationTime: time1,
+      secondCalculationTime: time2,
+      cacheHit: time2 < time1 * 0.1
+    };
+  } catch (error) {
+    console.error('[testCacheOptimization] Error:', error);
+    return {
+      success: false,
+      error: error.message
     };
   }
 };

@@ -1,9 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback, useRef } from 'react';
 import { useSubscribeToMonthTasksQuery } from '../../features/tasks/tasksApi';
 import { analyticsCalculator } from '../utils/analyticsCalculator';
 import { logger } from '../utils/logger';
+import { useAnalyticsCache } from './useAnalyticsCache';
 
 export const useCentralizedAnalytics = (monthId, userId = null) => {
+  // Use ref to track previous tasks to prevent unnecessary recalculations
+  const prevTasksRef = useRef(null);
+  const prevAnalyticsRef = useRef(null);
+  const lastCalculationRef = useRef(0);
+  
+  // Use the analytics cache management hook
+  const { invalidateCache } = useAnalyticsCache(monthId, userId);
+  
   // Use RTK Query hook directly to get tasks
   const {
     data: tasks = [],
@@ -16,24 +25,63 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     }
   );
 
-  // Calculate analytics using useMemo for performance
+  // Memoize the filtered tasks to prevent unnecessary recalculations
+  const filteredTasks = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
+    
+    // Filter by user if needed (in case we got all users data)
+    const filtered = userId 
+      ? tasks.filter(task => task.userUID === userId)
+      : tasks;
+    
+    return filtered;
+  }, [tasks, userId]);
+
+  // Calculate analytics using useMemo with better dependency tracking
   const analyticsData = useMemo(() => {
     try {
-      // Filter by user if needed (in case we got all users data)
-      const filteredTasks = userId 
-        ? tasks.filter(task => task.userUID === userId)
-        : tasks;
+      // Check if we have the same tasks as before
+      const prevTasks = prevTasksRef.current;
+      const prevAnalytics = prevAnalyticsRef.current;
+      
+      // If tasks haven't changed and we have cached analytics, return them
+      if (prevTasks && prevAnalytics && 
+          prevTasks.length === filteredTasks.length &&
+          JSON.stringify(prevTasks.map(t => ({ id: t.id, updatedAt: t.updatedAt }))) === 
+          JSON.stringify(filteredTasks.map(t => ({ id: t.id, updatedAt: t.updatedAt })))) {
+        logger.debug(`[Analytics] Using cached analytics for ${filteredTasks.length} tasks (${userId ? `user ${userId}` : 'all users'})`);
+        return prevAnalytics;
+      }
 
-      logger.log(`[Analytics] Calculating analytics for ${filteredTasks.length} tasks (${userId ? `user ${userId}` : 'all users'})`);
+      // Debounce rapid calculations
+      const now = Date.now();
+      if (now - lastCalculationRef.current < 100) { // 100ms debounce
+        logger.debug(`[Analytics] Debouncing calculation for ${monthId}`);
+        return prevAnalytics || {
+          tasks: filteredTasks,
+          analytics: null,
+          hasData: false
+        };
+      }
+      
+      lastCalculationRef.current = now;
+
+      logger.debug(`[Analytics] Calculating analytics for ${filteredTasks.length} tasks (${userId ? `user ${userId}` : 'all users'})`);
 
       // Calculate analytics from current data
       const analytics = analyticsCalculator.calculateAllAnalytics(filteredTasks, monthId, userId);
 
-      return {
+      const result = {
         tasks: filteredTasks,
         analytics,
         hasData: filteredTasks.length > 0
       };
+
+      // Cache the result
+      prevTasksRef.current = filteredTasks;
+      prevAnalyticsRef.current = result;
+
+      return result;
     } catch (error) {
       logger.error('Failed to calculate analytics:', error);
       return {
@@ -42,10 +90,10 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
         hasData: false
       };
     }
-  }, [tasks, monthId, userId]);
+  }, [filteredTasks, monthId, userId]);
 
-  // Get specific metric for a card
-  const getMetric = useMemo(() => (type, category = null) => {
+  // Memoize the getMetric function to prevent unnecessary re-renders
+  const getMetric = useCallback((type, category = null) => {
     if (!analyticsData?.analytics) {
       return {
         value: 0,
@@ -63,14 +111,32 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     };
   }, [analyticsData?.analytics, tasksLoading, tasksError]);
 
-  // Get all metrics at once
-  const getAllMetrics = useMemo(() => () => {
+  // Memoize the getAllMetrics function
+  const getAllMetrics = useCallback(() => {
     if (!analyticsData?.analytics) {
       return {};
     }
 
     return analyticsCalculator.getAllMetrics(analyticsData.analytics);
   }, [analyticsData?.analytics]);
+
+  // Memoize the reload function
+  const reload = useCallback(() => {
+    // Clear the cache to force recalculation
+    prevTasksRef.current = null;
+    prevAnalyticsRef.current = null;
+    lastCalculationRef.current = 0;
+    invalidateCache();
+  }, [invalidateCache]);
+
+  // Memoize the refreshAnalytics function
+  const refreshAnalytics = useCallback(() => {
+    // Clear the cache to force recalculation
+    prevTasksRef.current = null;
+    prevAnalyticsRef.current = null;
+    lastCalculationRef.current = 0;
+    invalidateCache();
+  }, [invalidateCache]);
 
   return {
     analytics: analyticsData.analytics,
@@ -80,8 +146,8 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     error: tasksError,
     getMetric,
     getAllMetrics,
-    reload: () => {}, // No-op since RTK Query handles updates
-    refreshAnalytics: () => {}, // No-op since RTK Query handles updates
+    reload,
+    refreshAnalytics,
     lastUpdate: Date.now()
   };
 };
