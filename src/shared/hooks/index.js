@@ -1,9 +1,9 @@
 // Shared hooks exports
-export { default as useAuth } from './useAuth';
-export { default as useNotifications } from './useNotifications';
 
-export { default as useCentralizedAnalytics } from './useCentralizedAnalytics';
+export { useAuth } from './useAuth';
+export { useNotifications } from './useNotifications';
+export { useNotificationCleanup } from './useNotificationCleanup';
+export { useFormat } from './useFormat';
+export { useImports } from './useImports';
 export { useAnalyticsCache } from './useAnalyticsCache';
-export { default as useFormat } from './useFormat';
-export { default as useImports } from './useImports';
-export { default as useNotificationCleanup } from './useNotificationCleanup';
+export { useCentralizedAnalytics } from './useCentralizedAnalytics';

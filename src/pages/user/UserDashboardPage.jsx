@@ -47,6 +47,20 @@ const UserDashboardPage = () => {
     setShowTasksTable(!showTasksTable);
   };
 
+  // Ensure user is authenticated and has user role
+  if (!user || user.role !== "user") {
+    return (
+      <div className="min-h-screen flex-center bg-primary">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">
+            You don't have permission to access the user dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DashboardLoader>
       <div className="min-h-screen p-6">
@@ -54,7 +68,7 @@ const UserDashboardPage = () => {
           {/* Dashboard Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-100 mb-2">
-              {user?.name}'s Dashboard
+              {user?.name || user?.email}'s Dashboard
             </h1>
             <div className="text-sm text-gray-300">
               <strong>Month:</strong>{" "}
@@ -98,13 +112,13 @@ const UserDashboardPage = () => {
           {/* Main Dashboard Content */}
           {board?.exists && (
             <div className="space-y-8">
-              {/* Single DashboardWrapper with table visibility control */}
+              {/* DashboardWrapper with user's own data only */}
               <DashboardWrapper
                 monthId={monthId}
-                userId={user?.uid}
+                userId={user?.uid} // Only show current user's data
                 isAdmin={false}
                 showCreateBoard={false}
-                showTable={showTasksTable} // Control table visibility
+                showTable={showTasksTable}
               />
 
               {/* Table Header with Toggle Button */}

@@ -1,9 +1,12 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useAuthActions } from "../../shared/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useAuthActions, useAuthState } from "../../shared/hooks/useAuth";
+import { useNavigate, useLocation } from "react-router-dom";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { selectIsAdmin } from "../../features/auth/authSlice";
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string()
@@ -15,15 +18,42 @@ const LoginSchema = Yup.object().shape({
 });
 
 const LoginPage = () => {
-  const { login } = useAuthActions();
+  const { login, clearError } = useAuthActions();
+  const { isAuthenticated, user } = useAuthState();
+  const isAdmin = useSelector(selectIsAdmin);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSubmit = async (values, { setSubmitting }) => {
+  // Clear errors when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const from = location.state?.from || "/";
+      const defaultRoute = isAdmin ? "/admin" : "/user";
+      const redirectTo = from === "/" ? defaultRoute : from;
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, location.state?.from, isAdmin]);
+
+  const handleSubmit = async (values, { setSubmitting, setFieldError }) => {
     try {
       await login(values);
-      navigate("/");
+      // Navigation will be handled by the useEffect above
+      // based on authentication state and user role
     } catch (error) {
       console.error("Login failed:", error);
+      
+      // Handle specific field errors
+      if (error.message?.includes("email")) {
+        setFieldError("email", error.message);
+      } else if (error.message?.includes("password")) {
+        setFieldError("password", error.message);
+      }
+      // Global errors will be handled by the notification system
     } finally {
       setSubmitting(false);
     }
@@ -31,18 +61,21 @@ const LoginPage = () => {
 
   return (
     <div className="flex-center min-h-screen">
-      <div className="card w-full max-w-md">
-        <img
-          src={netbetLogo}
-          alt="NetBet Logo"
-          className="h-fit w-45 object-contain mb-10 mx-auto"
-        />
+      <div className="card w-full max-w-md bg-primary shadow-2xl">
+        <div className="text-center mb-8">
+          <img
+            src={netbetLogo}
+            alt="NetBet Logo"
+            className="h-fit w-45 object-contain mx-auto mb-4"
+          />
+        </div>
+
         <Formik
           initialValues={{ email: "", password: "" }}
           validationSchema={LoginSchema}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting }) => (
+          {({ isSubmitting, errors, touched }) => (
             <Form className="space-y-6">
               <div>
                 <label className="label" htmlFor="email">
@@ -52,7 +85,9 @@ const LoginPage = () => {
                   id="email"
                   name="email"
                   type="email"
-                  className="input w-full"
+                  className={`input w-full ${
+                    errors.email && touched.email ? 'border-red-error' : ''
+                  }`}
                   placeholder="Enter your email"
                   autoComplete="email"
                 />
@@ -71,7 +106,9 @@ const LoginPage = () => {
                   id="password"
                   name="password"
                   type="password"
-                  className="input w-full"
+                  className={`input w-full ${
+                    errors.password && touched.password ? 'border-red-error' : ''
+                  }`}
                   placeholder="Enter your password"
                   autoComplete="current-password"
                 />
@@ -89,15 +126,21 @@ const LoginPage = () => {
                 className="w-full"
                 disabled={isSubmitting}
                 loading={isSubmitting}
-                loadingText="Log In..."
-                successMessage="Login successful!"
-                errorMessage="Login failed. Please try again."
+                loadingText="Signing In..."
+                iconName="login"
+                iconPosition="left"
               >
                 Login
               </DynamicButton>
             </Form>
           )}
         </Formik>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm !text-gray-500">
+            Need help? Contact your administrator
+          </p>
+        </div>
       </div>
     </div>
   );

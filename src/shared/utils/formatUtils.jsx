@@ -162,7 +162,7 @@ export const formatUserPerformanceAdditionalInfo = (additionalData) => {
     <div className="mt-3 space-y-2">
       {topUsers.map((user, index) => (
         <div
-          key={user.name}
+          key={`${user.name}-${user.userUID || user.id || index}`}
           className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
         >
           <div className="flex items-center space-x-2">
@@ -200,7 +200,7 @@ export const formatMarketsAdditionalInfo = (additionalData) => {
     <div className="mt-3 space-y-2">
       {markets.slice(0, 5).map((m, index) => (
         <div
-          key={m.name}
+          key={`market-${m.name}-${index}`}
           className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
         >
           <div className="flex items-center space-x-2">
@@ -239,7 +239,7 @@ export const formatProductsAdditionalInfo = (additionalData) => {
     <div className="mt-3 space-y-2">
       {products.slice(0, 5).map((p, index) => (
         <div
-          key={p.name}
+          key={`product-${p.name}-${index}`}
           className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
         >
           <div className="flex items-center space-x-2">

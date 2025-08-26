@@ -7,6 +7,20 @@ import {
   clearError as clearAuthError,
   clearReauth,
   requireReauth,
+  selectUser,
+  selectIsAuthenticated,
+  selectIsLoading,
+  selectAuthError,
+  selectReauthRequired,
+  selectReauthMessage,
+  selectUserRole,
+  selectIsAdmin,
+  selectIsUser,
+  selectUserPermissions,
+  selectIsUserActive,
+  selectLastLoginAttempt,
+  selectCanAccessAdmin,
+  selectCanAccessUser,
 } from '../../features/auth/authSlice';
 import { addNotification } from '../../features/notifications/notificationSlice';
 import { auth } from '../../app/firebase';
@@ -137,24 +151,48 @@ export const useAuthActions = () => {
 
 // Hook for auth state only (user, isAuthenticated, etc.)
 export const useAuthState = () => {
-  const authState = useSelector((state) => state.auth);
+  // Use selectors for better performance
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectAuthError);
+  const reauthRequired = useSelector(selectReauthRequired);
+  const reauthMessage = useSelector(selectReauthMessage);
+  const role = useSelector(selectUserRole);
+  const isAdmin = useSelector(selectIsAdmin);
+  const isUser = useSelector(selectIsUser);
+  const permissions = useSelector(selectUserPermissions);
+  const isUserActive = useSelector(selectIsUserActive);
+  const lastLoginAttempt = useSelector(selectLastLoginAttempt);
+  const canAccessAdmin = useSelector(selectCanAccessAdmin);
+  const canAccessUser = useSelector(selectCanAccessUser);
 
-  // Memoized values
-  const user = useMemo(() => authState.user, [authState.user]);
-  const isAuthenticated = useMemo(() => authState.isAuthenticated, [authState.isAuthenticated]);
-  const isLoading = useMemo(() => authState.isLoading, [authState.isLoading]);
-  const isAuthChecking = useMemo(() => authState.isAuthChecking, [authState.isAuthChecking]);
-  const role = useMemo(() => authState.user?.role, [authState.user?.role]);
-  const reauthRequired = useMemo(() => authState.reauthRequired, [authState.reauthRequired]);
-  const reauthMessage = useMemo(() => authState.reauthMessage, [authState.reauthMessage]);
-  const error = useMemo(() => authState.error, [authState.error]);
+  // Memoized computed values
+  const hasPermission = useCallback((permission) => {
+    return permissions.includes(permission) || isAdmin;
+  }, [permissions, isAdmin]);
+
+  const canAccess = useCallback((requiredRole) => {
+    if (!isAuthenticated || !isUserActive) return false;
+    if (requiredRole === 'admin') return isAdmin;
+    if (requiredRole === 'user') return isUser || isAdmin;
+    return true;
+  }, [isAuthenticated, isUserActive, isAdmin, isUser]);
 
   return {
     user,
     isAuthenticated,
     isLoading,
-    isAuthChecking,
     role,
+    isAdmin,
+    isUser,
+    permissions,
+    isUserActive,
+    lastLoginAttempt,
+    canAccessAdmin,
+    canAccessUser,
+    hasPermission,
+    canAccess,
     reauthRequired,
     reauthMessage,
     error,

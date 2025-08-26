@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -43,6 +43,8 @@ const normalizeUser = (firebaseUser, firestoreData) => {
     role: firestoreData.role,
     occupation: firestoreData.occupation || "user",
     createdAt: createdAtMs,
+    permissions: firestoreData.permissions || [],
+    isActive: firestoreData.isActive !== false, // Default to true if not specified
   };
 };
 
@@ -61,22 +63,27 @@ export const setupAuthListener = (dispatch) => {
     return;
   }
 
-  // Start auth init immediately to show auth loader during initial app load
-  // This prevents showing login page before auth state is determined
-  dispatch(authSlice.actions.startAuthInit());
-
   authUnsubscribe = onAuthStateChanged(
     auth,
     async (user) => {
       if (user) {
+        // Only show loading when there's actually a user to authenticate
+        dispatch(authSlice.actions.startAuthInit());
+        
         try {
           // Fetch user data from Firestore
           const firestoreData = await fetchUserFromFirestore(user.uid);
+          
+          // Check if user is active
+          if (firestoreData.isActive === false) {
+            throw new Error("Account is deactivated. Please contact administrator.");
+          }
+          
           const normalizedUser = normalizeUser(user, firestoreData);
           
           // Add a delay to cover the initial data fetching period
           // This ensures users see "Authenticating..." throughout the entire login flow
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Dispatch auth success action
           dispatch(authSlice.actions.authStateChanged({ user: normalizedUser }));
@@ -101,15 +108,46 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ email, password }, { rejectWithValue }) => {
     try {
+      // Step 1: Authenticate with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Return serializable data instead of Firebase user object
-      return {
-        uid: userCredential.user.uid,
-        email: userCredential.user.email,
-      };
+      
+      // Step 2: Fetch user data from Firestore
+      const firestoreData = await fetchUserFromFirestore(userCredential.user.uid);
+      
+      // Step 3: Validate user status and role
+      if (firestoreData.isActive === false) {
+        // Sign out the user if account is deactivated
+        await signOut(auth);
+        throw new Error("Account is deactivated. Please contact administrator.");
+      }
+      
+      if (!firestoreData.role || !VALID_ROLES.includes(firestoreData.role)) {
+        // Sign out the user if role is invalid
+        await signOut(auth);
+        throw new Error("Invalid user role. Please contact administrator.");
+      }
+      
+      // Step 4: Return normalized user data
+      const normalizedUser = normalizeUser(userCredential.user, firestoreData);
+      
+      return normalizedUser;
     } catch (error) {
       console.error("Login error:", error);
-      return rejectWithValue(error.message);
+      
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/user-not-found') {
+        return rejectWithValue("No account found with this email address.");
+      } else if (error.code === 'auth/wrong-password') {
+        return rejectWithValue("Incorrect password. Please try again.");
+      } else if (error.code === 'auth/too-many-requests') {
+        return rejectWithValue("Too many failed attempts. Please try again later.");
+      } else if (error.code === 'auth/user-disabled') {
+        return rejectWithValue("This account has been disabled.");
+      } else if (error.code === 'auth/invalid-email') {
+        return rejectWithValue("Invalid email address format.");
+      }
+      
+      return rejectWithValue(error.message || "Login failed. Please try again.");
     }
   }
 );
@@ -144,11 +182,12 @@ export const requireReauth = createAsyncThunk(
 const initialState = {
   user: null,
   isAuthenticated: false,
-  isLoading: false, // Start with false instead of true
-  isAuthChecking: false, // Track if we're checking auth state
+  isLoading: false, // Only true during login/logout attempts
+  isAuthChecking: false, // Only true when checking existing auth state
   error: null,
   reauthRequired: false,
   reauthMessage: null,
+  lastLoginAttempt: null,
 };
 
 const authSlice = createSlice({
@@ -181,6 +220,10 @@ const authSlice = createSlice({
       state.isAuthChecking = true; // Mark that we're checking auth
       state.error = null;
     },
+    // Track login attempts for rate limiting
+    setLoginAttempt: (state) => {
+      state.lastLoginAttempt = Date.now();
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -190,12 +233,14 @@ const authSlice = createSlice({
         state.isAuthChecking = true; // Mark that we're checking auth during login
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state) => {
-        // Auth listener will handle the actual state update
-        // Keep loading true until auth listener completes
-        state.isLoading = true;
-        state.isAuthChecking = true; // Keep checking until auth listener completes
+      .addCase(loginUser.fulfilled, (state, action) => {
+        // Set user data immediately from the thunk result
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.isAuthChecking = false;
         state.error = null;
+        state.lastLoginAttempt = Date.now();
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -203,6 +248,7 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
         state.user = null;
+        state.lastLoginAttempt = Date.now();
       })
       
       // Logout
@@ -231,7 +277,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, clearReauth, setLoading, authStateChanged, startAuthInit } = authSlice.actions;
+export const { clearError, clearReauth, setLoading, authStateChanged, startAuthInit, setLoginAttempt } = authSlice.actions;
 
 // --- Selectors ---
 export const selectUser = (state) => state.auth.user;
@@ -242,5 +288,25 @@ export const selectReauthRequired = (state) => state.auth.reauthRequired;
 export const selectReauthMessage = (state) => state.auth.reauthMessage;
 export const selectUserRole = (state) => state.auth.user?.role;
 export const selectIsAdmin = (state) => state.auth.user?.role === "admin";
+export const selectIsUser = (state) => state.auth.user?.role === "user";
+// Memoized selector for user permissions to prevent unnecessary re-renders
+export const selectUserPermissions = createSelector(
+  [selectUser],
+  (user) => user?.permissions || []
+);
+
+export const selectIsUserActive = (state) => state.auth.user?.isActive !== false;
+export const selectLastLoginAttempt = (state) => state.auth.lastLoginAttempt;
+
+// Role-based selectors
+export const selectCanAccessAdmin = createSelector(
+  [selectUser],
+  (user) => user?.role === "admin" && user?.isActive !== false
+);
+
+export const selectCanAccessUser = createSelector(
+  [selectUser],
+  (user) => (user?.role === "user" || user?.role === "admin") && user?.isActive !== false
+);
 
 export default authSlice.reducer;

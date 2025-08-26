@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { useAuth } from "../shared/hooks/useAuth";
 import DynamicButton from "../shared/components/ui/DynamicButton";
 
@@ -25,18 +24,13 @@ const NotFoundPage = () => {
         </div>
         
         <div className="space-y-4 flex flex-col gap-2">
-          <Link to={getHomePath()}>
-            <DynamicButton variant="primary" size="lg" className="w-2/4">
-              Go to Dashboard
-            </DynamicButton>
-          </Link>
-          
+          <DynamicButton to={getHomePath()} variant="primary" size="lg" className="w-2/4">
+            Go to Dashboard
+          </DynamicButton>
           {!isAuthenticated && (
-            <Link to="/">
-              <DynamicButton variant="outline" size="lg" className="w-2/4">
-                Go to Home
-              </DynamicButton>
-            </Link>
+            <DynamicButton to="/" variant="outline" size="lg" className="w-2/4">
+              Go to Home
+            </DynamicButton>
           )}
         </div>
       </div>

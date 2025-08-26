@@ -51,6 +51,20 @@ const AdminDashboardPage = () => {
   // Clean up notifications when month changes
   useNotificationCleanup([monthId]);
 
+  // Ensure user is authenticated and has admin role
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="min-h-screen flex-center bg-primary">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">
+            You need admin privileges to access this dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Handle user selection
   const handleUserSelect = (event) => {
     const userId = event.target.value;
@@ -106,9 +120,9 @@ const AdminDashboardPage = () => {
         <div className="max-w-7xl mx-auto">
           {/* Dashboard Header */}
           <div className="mb-6">
-            <h2 className=" mb-2">Admin Dashboard</h2>
+            <h2 className="text-3xl font-bold text-gray-100 mb-2">Admin Dashboard</h2>
             <div className="text-sm text-gray-300">
-              <span className=" font-medium">Month:</span>{" "}
+              <span className="font-medium">Month:</span>{" "}
               {format(new Date(monthId + "-01"), "MMMM yyyy")} ({monthId})
               {board?.exists ? (
                 <>
@@ -126,7 +140,7 @@ const AdminDashboardPage = () => {
 
           {/* Board Status Warning if not created - Real-time updates */}
           {!board?.exists && (
-            <div className="card ">
+            <div className="card border border-red-error text-red-error text-sm px-4 py-4 rounded-lg bg-red-900/20">
               <div className="flex-center !flex-row !items-center !justify-between gap-4">
                 <p className="text-gray-200 text-sm">
                   ❌ The board for{" "}
@@ -210,17 +224,18 @@ const AdminDashboardPage = () => {
           {/* Main Dashboard Content */}
           {board?.exists && (
             <div className="space-y-8">
-              {/* Admin Analytics Cards and Table */}
+              {/* Admin Analytics Cards and Table - Show all users' data */}
               <DashboardWrapper
                 monthId={monthId}
-                userId={selectedUserId || null}
+                userId={selectedUserId || null} // null means all users
                 isAdmin={true}
                 showCreateBoard={false}
+                showTable={showTasksTable}
               />
 
               {/* Table Header with Toggle Button */}
               <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2 mb-6">
-                <h3 className="mb-0">
+                <h3 className="mb-0 text-gray-100">
                   {selectedUserId ? "User Tasks" : "All Tasks"}
                 </h3>
                 <DynamicButton

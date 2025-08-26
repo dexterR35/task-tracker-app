@@ -1,8 +1,4 @@
-import {
-  initializeApp,
-  getApps,
-  getApp,
-} from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   setPersistence,
@@ -20,14 +16,12 @@ const firebaseConfig = {
   appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
 };
 
-
 let appInstance;
 if (!getApps().length) {
   appInstance = initializeApp(firebaseConfig);
 } else {
   appInstance = getApp();
 }
-
 
 export const auth = getAuth(appInstance);
 export const db = getFirestore(appInstance);
@@ -38,7 +32,6 @@ if (import.meta.env.MODE === "development") {
   logger.log("App name:", appInstance.name);
   logger.log("App instance:", appInstance);
 }
-
 
 (async () => {
   try {

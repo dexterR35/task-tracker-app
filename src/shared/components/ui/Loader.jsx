@@ -10,25 +10,27 @@ const Loader = ({
     sm: 'w-4 h-4',
     md: 'w-8 h-8',
     lg: 'w-12 h-12',
-    xl: 'w-16 h-16'
+    xl: 'w-13 h-13',
+  
   };
 
   const textSizes = {
     sm: 'text-sm',
     md: 'text-base',
     lg: 'text-lg',
-    xl: 'text-xl'
+    xl: 'text-xl',
+    
   };
 
   const Spinner = () => (
-    <div className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-500 ${sizeClasses[size]} ${className}`} />
+    <div className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-default ${sizeClasses[size]} ${className}`} />
   );
 
   const Dots = () => (
     <div className={`flex space-x-1 ${className}`}>
-      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+      <div className="w-3.5 h-3.5 bg-blue-default rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+      <div className="w-3.5 h-3.5 bg-blue-default rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+      <div className="w-3.5 h-3.5 bg-blue-default rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
     </div>
   );
 

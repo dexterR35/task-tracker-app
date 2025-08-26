@@ -22,8 +22,11 @@
   --color-green-success: #2fd181; /* soft green error */
   --color-green-400: #0a9952; /* dark red error */
 
-  --color-warning: #eb2743;
+--color-blue-default:#2a9df4;
 
+
+
+  --color-warning: #eb2743;
   --color-btn-primary: #0f3cd9;
   --color-btn-secondary: #c10f29;
   --color-btn-danger: #c10f29;

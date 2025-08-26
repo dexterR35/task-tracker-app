@@ -1,8 +1,9 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth, useAuthActions } from "../../hooks/useAuth";
+import { useSelector } from "react-redux";
+import { selectIsAdmin } from "../../../features/auth/authSlice";
 import DynamicButton from "../ui/DynamicButton";
-import GlobalLoader from "../ui/GlobalLoader";
 import { logger } from "../../utils/logger";
 
 import {
@@ -11,6 +12,7 @@ import {
   ChartBarIcon,
   UsersIcon,
   UserIcon,
+  HomeIcon,
 } from "@heroicons/react/24/outline";
 
 const ReauthModal = ({ isOpen, onClose, onReauth, error }) => {
@@ -87,19 +89,17 @@ const ReauthModal = ({ isOpen, onClose, onReauth, error }) => {
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isAdmin = useSelector(selectIsAdmin);
   const { 
     user, 
-    role, 
     isAuthenticated, 
-    logout, 
     isLoading,
     isAuthChecking,
     reauthRequired,
     reauthMessage,
-    handleReauth,
-    error,
-    clearReauthRequirement
+    error
   } = useAuth();
+  const { logout, handleReauth, clearReauthRequirement } = useAuthActions();
   
   const [showReauthModal, setShowReauthModal] = useState(false);
 
@@ -137,16 +137,12 @@ const Layout = () => {
 
   // If not authenticated and not loading/checking auth, show outlet without nav
   if (!isAuthenticated && !isLoading && !isAuthChecking) {
-    return (
-      <GlobalLoader>
-        <Outlet />
-      </GlobalLoader>
-    );
+    return <Outlet />;
   }
 
-  // If auth is loading or checking, show GlobalLoader
+  // If auth is loading or checking, show loading state
   if (isLoading || isAuthChecking) {
-    return <GlobalLoader><Outlet /></GlobalLoader>;
+    return <Outlet />;
   }
 
   // Determine if we're on a dashboard page
@@ -156,23 +152,8 @@ const Layout = () => {
     location.pathname.startsWith("/admin/") ||
     location.pathname.startsWith("/preview/");
 
-  // Navigation items - only for admin
-  const getNavigationItems = () => {
-    if (role === "admin") {
-      return [
-        { name: "Admin Dashboard", href: "/admin", icon: ViewColumnsIcon },
-        { name: "Analytics", href: "/admin/analytics", icon: ChartBarIcon },
-        { name: "Users", href: "/admin/users", icon: UsersIcon },
-      ];
-    }
-    return [];
-  };
-
-  const navigation = getNavigationItems();
-
   return (
-    <GlobalLoader>
-      <div className="min-h-screen">
+    <div className="min-h-screen">
         <nav className="bg-primary shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
@@ -182,39 +163,39 @@ const Layout = () => {
                     Task Tracker
                   </Link>
                 </p>
-                {/* Navigation links - only show for admin */}
-                {role === "admin" && (
+                
+                {/* Simple Navigation based on user role */}
+                {isAuthenticated && user && (
                   <div className="hidden md:ml-6 md:flex md:space-x-8">
-                    {navigation.map((item) => (
+                    {isAdmin ? (
+                      <>
+                        <Link
+                          to="/admin"
+                          className={`nav-link text-sm ${
+                            location.pathname === "/admin" ? "text-white" : "text-gray-300 hover:text-white"
+                          }`}
+                        >
+                          Admin Dashboard
+                        </Link>
+                        <Link
+                          to="/admin/users"
+                          className={`nav-link text-sm ${
+                            location.pathname === "/admin/users" ? "text-white" : "text-gray-300 hover:text-white"
+                          }`}
+                        >
+                          Manage Users
+                        </Link>
+                      </>
+                    ) : (
                       <Link
-                        key={item.name}
-                        to={item.href}
-                        className={`flex-center nav-link text-sm ${
-                          location.pathname === item.href
-                            ? "text-blue-300 border-b-2 border-blue-300"
-                            : ""
+                        to="/user"
+                        className={`nav-link text-sm ${
+                          location.pathname === "/user" ? "text-white" : "text-gray-300 hover:text-white"
                         }`}
                       >
-                        <item.icon className="w-5 h-5 mr-2" />
-                        {item.name}
+                        My Dashboard
                       </Link>
-                    ))}
-                  </div>
-                )}
-                {/* User dashboard link - only show for regular users */}
-                {role !== "admin" && (
-                  <div className="hidden md:ml-6 md:flex md:space-x-8">
-                    <Link
-                      to="/user"
-                      className={`flex-center nav-link text-sm ${
-                        location.pathname === "/user"
-                          ? "text-blue-300 border-b-2 border-blue-300"
-                          : ""
-                      }`}
-                    >
-                      <ViewColumnsIcon className="w-5 h-5 mr-2" />
-                      My Dashboard
-                    </Link>
+                    )}
                   </div>
                 )}
               </div>
@@ -229,24 +210,39 @@ const Layout = () => {
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${
-                      role === "admin"
+                      isAdmin
                         ? "bg-red-100 text-red-800"
                         : "bg-green-100 text-green-800"
                     }`}
                   >
-                    {role}
+                    {user?.role}
                   </span>
+                  
+                  {/* Show account status indicator */}
+                  {isAuthenticated && user && (
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        user?.isActive !== false
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {user?.isActive !== false ? "Active" : "Inactive"}
+                    </span>
+                  )}
                 </div>
 
-                <DynamicButton
-                  id="logout-nav-btn"
-                  variant="outline"
-                  size="sm"
-                  icon={ArrowRightOnRectangleIcon}
-                  onClick={handleLogout}
-                >
-                  Logout
-                </DynamicButton>
+                {isAuthenticated && user && (
+                  <DynamicButton
+                    id="logout-nav-btn"
+                    variant="outline"
+                    size="sm"
+                    icon={ArrowRightOnRectangleIcon}
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </DynamicButton>
+                )}
               </div>
             </div>
           </div>
@@ -264,7 +260,6 @@ const Layout = () => {
           error={error}
         />
       </div>
-    </GlobalLoader>
   );
 };
 
