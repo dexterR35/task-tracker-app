@@ -3,7 +3,7 @@ import { useNotifications } from '../../../shared/hooks/useNotifications';
 
 const NotificationContainer = () => {
   const { items, config, remove } = useNotifications();
-  console.log('notifications', items.map(n => n.id));
+
   useEffect(() => {
     const timers = [];
 

@@ -5,22 +5,18 @@ import {
   orderBy,
   query as fsQuery,
   doc,
-  setDoc,
   getDocFromServer,
   serverTimestamp,
   onSnapshot,
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import {
-  getAuth,
-} from "firebase/auth";
-import { getApp, getApps, initializeApp } from "firebase/app";
+
 import { normalizeTimestamp, serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
 import { db, auth } from "../../app/firebase";
 import { logger } from "../../shared/utils/logger";
 
-// ===== UTILITY FUNCTIONS =====
+
 
 // Token validation utility
 const validateToken = async () => {
