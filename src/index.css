@@ -113,7 +113,7 @@
 @layer components {
   /* Cards */
   .card {
-    @apply bg-primary p-6 mb-6 rounded-xl shadow-lg;
+    @apply bg-gray-700/30 p-6 mb-6 rounded-xl shadow-lg;
   }
 
   /* Centered containers */

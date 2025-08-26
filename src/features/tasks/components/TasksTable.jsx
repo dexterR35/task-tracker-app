@@ -25,7 +25,6 @@ import { logger } from "../../../shared/utils/logger";
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
-import Loader from "../../../shared/components/ui/Loader";
 
 const useFormatDay = () => {
   const { format } = useFormat();
@@ -57,34 +56,14 @@ const safeDisplay = (value, fallback = "-") => {
 const TasksTable = ({
   monthId,
   onSelect,
-  loading = false,
   error = null,
-  userFilter = null, // Optional user filter
-  showUserFilter = false, // Whether to show user filter
-  isAdmin = false, // Whether user is admin
-  boardExists = false, // Board existence status from parent
-  boardLoading = false, // Board loading status from parent
   tasks = [], // Tasks passed from parent component
 }) => {
   const navigate = useNavigate();
   const { format } = useFormat();
 
-  // Use tasks passed from parent instead of making duplicate query
-  const allTasks = tasks;
-
-  // Debug: Log the first task to see its structure
-  if (allTasks && allTasks.length > 0) {
-    logger.debug("First task structure:", allTasks[0]);
-    logger.debug("First task ID:", allTasks[0].id);
-    logger.debug("First task keys:", Object.keys(allTasks[0]));
-  }
-
-  // Debug: Log user filter information
-  logger.debug("TasksTable - userFilter:", userFilter);
-  logger.debug("TasksTable - tasks count:", allTasks?.length || 0);
-
   // Tasks are already filtered by the server query, so use them directly
-  const filteredTasks = allTasks || [];
+  const filteredTasks = tasks || [];
 
   const handleSelect = (t) => {
     if (typeof onSelect === "function") return onSelect(t);
@@ -383,9 +362,7 @@ const TasksTable = ({
   if (!filteredTasks.length) {
     return (
       <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">
-        {allTasks.length > 0
-          ? "No tasks found for selected filters."
-          : "No tasks found for this month."}
+        No tasks found for this month.
       </div>
     );
   }

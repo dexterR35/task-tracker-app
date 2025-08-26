@@ -102,8 +102,8 @@ const DashboardPage = () => {
   const getDashboardConfig = () => {
     if (isAdmin) {
       return {
-        title: "Admin Dashboard",
-        subtitle: "Manage tasks and users across the organization",
+        title: `${user?.name || user?.email}'s Dashboard`,
+    
         userId: selectedUserId || null, // null means all users
         showCreateBoard: true,
         onGenerateBoard: handleGenerateBoard,
@@ -116,8 +116,7 @@ const DashboardPage = () => {
     } else {
       return {
         title: `${user?.name || user?.email}'s Dashboard`,
-        subtitle: "Manage your tasks and track your progress",
-        userId: user?.uid, // Only show current user's data
+        userId: user?.uid, 
         showCreateBoard: false,
         onGenerateBoard: null,
         isGeneratingBoard: false,
@@ -152,7 +151,7 @@ const DashboardPage = () => {
             showTaskForm={showTaskForm}
             onToggleTaskForm={handleToggleTaskForm}
             title={config.title}
-            subtitle={config.subtitle}
+         
           />
         </div>
       </div>

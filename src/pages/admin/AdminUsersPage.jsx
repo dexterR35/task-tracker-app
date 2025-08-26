@@ -1,84 +1,18 @@
-import React, { useState } from "react";
-import { useAuth } from "../../shared/hooks/useAuth";
-import { showSuccess, showError } from "../../shared/utils/toast";
-import { useSubscribeToUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from "../../features/users/usersApi";
-import DynamicButton from "../../shared/components/ui/DynamicButton";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import DashboardLoader from "../../shared/components/ui/DashboardLoader";
-import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { sanitizeText } from "../../shared/utils/sanitization";
-import { logger } from "../../shared/utils/logger";
+import { format } from "date-fns";
 
 const AdminUsersPage = () => {
-  const { user: currentUser } = useAuth();
-
-  // Local state
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({});
-  const [rowActionId, setRowActionId] = useState(null);
+  const navigate = useNavigate();
 
   // API hooks
   const { data: users = [], error: usersError } = useSubscribeToUsersQuery();
-  const [updateUser] = useUpdateUserMutation();
-  const [deleteUser] = useDeleteUserMutation();
 
-  // Handle edit user
-  const startEdit = (user) => {
-    setEditingId(user.id);
-    setForm({
-      name: sanitizeText(user.name || ""),
-      email: sanitizeText(user.email || ""),
-      role: user.role || "user",
-      occupation: sanitizeText(user.occupation || ""),
-    });
-  };
-
-  const saveEdit = async () => {
-    if (!editingId) return;
-
-    try {
-      setRowActionId(editingId);
-
-      const updates = {
-        name: form.name,
-        email: form.email,
-        role: form.role,
-        occupation: form.occupation,
-      };
-
-      await updateUser({ id: editingId, updates }).unwrap();
-      logger.log("[AdminUsersPage] updated user", { id: editingId, updates });
-      showSuccess("User updated successfully!");
-    } catch (e) {
-      logger.error("User update error:", e);
-      showError(`Failed to update user: ${e.message || "Please try again."}`);
-    } finally {
-      setEditingId(null);
-      setRowActionId(null);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setForm({});
-  };
-
-  const removeUser = async (user) => {
-    if (!window.confirm("Delete this user?")) return;
-    if (user.id === currentUser?.uid) {
-      showError("You cannot delete yourself!");
-      return;
-    }
-
-    try {
-      setRowActionId(user.id);
-      await deleteUser({ id: user.id }).unwrap();
-      showSuccess("User deleted successfully!");
-    } catch (e) {
-      logger.error("User delete error:", e);
-      showError(`Failed to delete user: ${e.message || "Please try again."}`);
-    } finally {
-      setRowActionId(null);
-    }
+  // Handle user click to view their tasks
+  const handleUserClick = (user) => {
+    navigate(`/admin?user=${user.userUID || user.id}`);
   };
 
   // Show error state
@@ -104,9 +38,9 @@ const AdminUsersPage = () => {
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">User Management</h1>
+            <h1 className="text-3xl font-bold text-gray-100 mb-2">Users</h1>
             <p className="text-sm text-gray-300">
-              Manage user accounts, roles, and permissions
+              Click on a user to view their tasks
             </p>
           </div>
 
@@ -125,111 +59,34 @@ const AdminUsersPage = () => {
                   <th className="px-6 py-3">Email</th>
                   <th className="px-6 py-3">Role</th>
                   <th className="px-6 py-3">Occupation</th>
-                  <th className="px-6 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-700 hover:bg-gray-800">
+                  <tr 
+                    key={user.id} 
+                    className="border-b border-gray-700 hover:bg-gray-800 cursor-pointer transition-colors"
+                    onClick={() => handleUserClick(user)}
+                  >
                     <td className="px-6 py-4">
-                      {editingId === user.id ? (
-                        <input
-                          type="text"
-                          value={form.name}
-                          onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          className="w-full px-2 py-1 border rounded bg-gray-700 text-white"
-                        />
-                      ) : (
-                        <span>{user.name || "N/A"}</span>
-                      )}
+                      <span className="font-medium text-blue-400 hover:text-blue-300">
+                        {user.name || "N/A"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
-                      {editingId === user.id ? (
-                        <input
-                          type="email"
-                          value={form.email}
-                          onChange={(e) => setForm({ ...form, email: e.target.value })}
-                          className="w-full px-2 py-1 border rounded bg-gray-700 text-white"
-                        />
-                      ) : (
-                        <span>{user.email || "N/A"}</span>
-                      )}
+                      <span>{user.email || "N/A"}</span>
                     </td>
                     <td className="px-6 py-4">
-                      {editingId === user.id ? (
-                        <select
-                          value={form.role}
-                          onChange={(e) => setForm({ ...form, role: e.target.value })}
-                          className="w-full px-2 py-1 border rounded bg-gray-700 text-white"
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      ) : (
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          user.role === "admin" 
-                            ? "bg-red-100 text-red-800" 
-                            : "bg-green-100 text-green-800"
-                        }`}>
-                          {user.role || "user"}
-                        </span>
-                      )}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        user.role === "admin" 
+                          ? "bg-red-100 text-red-800" 
+                          : "bg-green-100 text-green-800"
+                      }`}>
+                        {user.role || "user"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
-                      {editingId === user.id ? (
-                        <input
-                          type="text"
-                          value={form.occupation}
-                          onChange={(e) => setForm({ ...form, occupation: e.target.value })}
-                          className="w-full px-2 py-1 border rounded bg-gray-700 text-white"
-                        />
-                      ) : (
-                        <span>{user.occupation || "N/A"}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {editingId === user.id ? (
-                        <div className="flex space-x-2">
-                          <DynamicButton
-                            onClick={saveEdit}
-                            variant="success"
-                            size="xs"
-                            icon={CheckIcon}
-                            loading={rowActionId === user.id}
-                          >
-                            Save
-                          </DynamicButton>
-                          <DynamicButton
-                            onClick={cancelEdit}
-                            variant="outline"
-                            size="xs"
-                            icon={XMarkIcon}
-                          >
-                            Cancel
-                          </DynamicButton>
-                        </div>
-                      ) : (
-                        <div className="flex space-x-2">
-                          <DynamicButton
-                            onClick={() => startEdit(user)}
-                            variant="outline"
-                            size="xs"
-                            icon={PencilIcon}
-                          >
-                            Edit
-                          </DynamicButton>
-                          <DynamicButton
-                            onClick={() => removeUser(user)}
-                            variant="danger"
-                            size="xs"
-                            icon={TrashIcon}
-                            loading={rowActionId === user.id}
-                            disabled={user.id === currentUser?.uid}
-                          >
-                            Delete
-                          </DynamicButton>
-                        </div>
-                      )}
+                      <span>{user.occupation || "N/A"}</span>
                     </td>
                   </tr>
                 ))}
