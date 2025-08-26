@@ -13,6 +13,8 @@ import {
   UsersIcon,
   UserIcon,
   HomeIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
 const ReauthModal = ({ isOpen, onClose, onReauth, error }) => {
@@ -145,62 +147,79 @@ const Layout = () => {
     return <Outlet />;
   }
 
-  // Determine if we're on a dashboard page
-  const isDashboardPage =
-    location.pathname === "/user" ||
-    location.pathname === "/admin" ||
-    location.pathname.startsWith("/admin/") ||
-    location.pathname.startsWith("/preview/");
+  // Navigation items based on user role
+  const getNavigationItems = () => {
+    if (!isAuthenticated || !user) return [];
+
+    if (isAdmin) {
+      return [
+        {
+          name: "Dashboard",
+          href: "/admin",
+          icon: ViewColumnsIcon,
+          current: location.pathname === "/admin"
+        },
+        {
+          name: "Users",
+          href: "/admin/users",
+          icon: UsersIcon,
+          current: location.pathname === "/admin/users"
+        },
+        {
+          name: "Analytics",
+          href: "/admin/analytics",
+          icon: ChartBarIcon,
+          current: location.pathname === "/admin/analytics"
+        }
+      ];
+    } else {
+      return [
+        {
+          name: "My Dashboard",
+          href: "/user",
+          icon: HomeIcon,
+          current: location.pathname === "/user"
+        }
+      ];
+    }
+  };
+
+  const navigationItems = getNavigationItems();
 
   return (
-    <div className="min-h-screen">
-        <nav className="bg-primary shadow-sm border-b">
+    <div className="min-h-screen bg-primary">
+      {/* Navigation */}
+      {isAuthenticated && user && (
+        <nav className="bg-primary shadow-sm border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
+              {/* Logo and Navigation Links */}
               <div className="flex items-center">
-                <p className="flex-shrink-0">
-                  <Link to="/" className="text-2xl nav-link !p-0 !m-0 font-bold">
-                    Task Tracker
-                  </Link>
-                </p>
+                <Link to="/" className="text-2xl font-bold text-white hover:text-gray-200 transition-colors">
+                  Task Tracker
+                </Link>
                 
-                {/* Simple Navigation based on user role */}
-                {isAuthenticated && user && (
-                  <div className="hidden md:ml-6 md:flex md:space-x-8">
-                    {isAdmin ? (
-                      <>
-                        <Link
-                          to="/admin"
-                          className={`nav-link text-sm ${
-                            location.pathname === "/admin" ? "text-white" : "text-gray-300 hover:text-white"
-                          }`}
-                        >
-                          Admin Dashboard
-                        </Link>
-                        <Link
-                          to="/admin/users"
-                          className={`nav-link text-sm ${
-                            location.pathname === "/admin/users" ? "text-white" : "text-gray-300 hover:text-white"
-                          }`}
-                        >
-                          Manage Users
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        to="/user"
-                        className={`nav-link text-sm ${
-                          location.pathname === "/user" ? "text-white" : "text-gray-300 hover:text-white"
-                        }`}
-                      >
-                        My Dashboard
-                      </Link>
-                    )}
-                  </div>
-                )}
+                {/* Navigation Links */}
+                <div className="hidden md:ml-8 md:flex md:space-x-4">
+                  {navigationItems.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        item.current
+                          ? "bg-gray-800 text-white"
+                          : "text-gray-300 hover:text-white hover:bg-gray-700"
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4 mr-2" />
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex-center !mx-0 items-center space-x-4">
+              {/* User Menu */}
+              <div className="flex items-center space-x-4">
                 <div className="hidden md:flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
                     <UserIcon className="w-5 h-5 text-gray-300" />
@@ -218,48 +237,45 @@ const Layout = () => {
                     {user?.role}
                   </span>
                   
-                  {/* Show account status indicator */}
-                  {isAuthenticated && user && (
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user?.isActive !== false
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {user?.isActive !== false ? "Active" : "Inactive"}
-                    </span>
-                  )}
+                  {/* Account status indicator */}
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user?.isActive !== false
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {user?.isActive !== false ? "Active" : "Inactive"}
+                  </span>
                 </div>
 
-                {isAuthenticated && user && (
-                  <DynamicButton
-                    id="logout-nav-btn"
-                    variant="outline"
-                    size="sm"
-                    icon={ArrowRightOnRectangleIcon}
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </DynamicButton>
-                )}
+                <DynamicButton
+                  id="logout-nav-btn"
+                  variant="outline"
+                  size="sm"
+                  icon={ArrowRightOnRectangleIcon}
+                  onClick={handleLogout}
+                >
+                  Logout
+                </DynamicButton>
               </div>
             </div>
           </div>
         </nav>
+      )}
 
-        <main
-          className={`${isDashboardPage ? "" : "max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8"} relative`}
-        >
-          <Outlet />
-        </main>
-        <ReauthModal
-          isOpen={showReauthModal}
-          onClose={handleReauthClose}
-          onReauth={handleReauthSubmit}
-          error={error}
-        />
-      </div>
+      {/* Main Content */}
+      <main className="relative">
+        <Outlet />
+      </main>
+
+      <ReauthModal
+        isOpen={showReauthModal}
+        onClose={handleReauthClose}
+        onReauth={handleReauthSubmit}
+        error={error}
+      />
+    </div>
   );
 };
 

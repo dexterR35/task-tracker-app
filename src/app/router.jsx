@@ -8,10 +8,8 @@ import Loader from "../shared/components/ui/Loader";
 import LoginPage from "../pages/auth/LoginPage";
 import TaskDetailPage from "../pages/dashboard/TaskDetailPage";
 import HomePage from "../pages/dashboard/HomePage";
-import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import DashboardPage from "../pages/dashboard/DashboardPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
-// import ChartsPreviewPage from "../pages/admin/ChartsPreviewPage";
-import UserDashboardPage from "../pages/user/UserDashboardPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
 // Protect login page from authenticated users
@@ -203,8 +201,16 @@ const router = createBrowserRouter([
         path: "user",
         element: (
           <UserRoute>
-            <UserDashboardPage />
+            <DashboardPage />
           </UserRoute>
+        ),
+      },
+      {
+        path: "admin",
+        element: (
+          <AdminRoute>
+            <DashboardPage />
+          </AdminRoute>
         ),
       },
       {
@@ -213,14 +219,6 @@ const router = createBrowserRouter([
           <UserRoute>
             <TaskDetailPage />
           </UserRoute>
-        ),
-      },
-      {
-        path: "admin",
-        element: (
-          <AdminRoute>
-            <AdminDashboardPage />
-          </AdminRoute>
         ),
       },
       {
@@ -235,7 +233,7 @@ const router = createBrowserRouter([
         path: "preview/:monthId",
         element: (
           <AdminRoute>
-            {/* <ChartsPreviewPage /> */}
+            <NotFoundPage />
           </AdminRoute>
         ),
       },

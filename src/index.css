@@ -115,26 +115,10 @@
   .card {
     @apply bg-primary p-6 mb-6 rounded-xl shadow-lg;
   }
-  .card-title {
-    @apply text-base font-normal text-gray-200 mb-4;
-  }
 
   /* Centered containers */
   .flex-center {
     @apply flex justify-center items-center mx-auto;
-  }
-
-  /* Form layouts */
-  .form-col {
-    @apply flex flex-col gap-6;
-  }
-
-  /* Input errors */
-  .input-error {
-    @apply border-red-500;
-  }
-  .input-error:focus {
-    @apply ring-2 ring-red-500;
   }
 
   /* Skeleton loader */
@@ -194,7 +178,5 @@
 /* ---------------- Utilities layer ---------------- */
 
 @layer utilities {
-  .nav-link {
-    @apply text-[var(--color-gray-200)] px-1 pt-1 text-base font-normal;
-  }
+  /* Add any custom utilities here */
 }
