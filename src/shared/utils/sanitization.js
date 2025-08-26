@@ -61,6 +61,9 @@ export const sanitizeTaskData = (taskData) => {
       ? taskData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     taskNumber: sanitizeText(taskData.taskNumber || ''),
+    reporters: Array.isArray(taskData.reporters) 
+      ? taskData.reporters.map(r => sanitizeText(r)).filter(Boolean)
+      : [],
     createdBy: sanitizeText(taskData.createdBy || ''),
     createdByName: sanitizeText(taskData.createdByName || ''),
     userUID: sanitizeText(taskData.userUID || ''),
@@ -96,6 +99,9 @@ export const sanitizeTaskCreationData = (formData) => {
       ? formData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     taskNumber: sanitizeText(formData.taskNumber || ''),
+    reporters: Array.isArray(formData.reporters) 
+      ? formData.reporters.map(r => sanitizeText(r)).filter(Boolean)
+      : [],
   };
 };
 

@@ -15,6 +15,7 @@ import {
   HomeIcon,
   Cog6ToothIcon,
   DocumentTextIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 
 const ReauthModal = ({ isOpen, onClose, onReauth, error }) => {
@@ -164,6 +165,12 @@ const Layout = () => {
           href: "/admin/users",
           icon: UsersIcon,
           current: location.pathname === "/admin/users"
+        },
+        {
+          name: "Reporters",
+          href: "/admin/reporters",
+          icon: UserGroupIcon,
+          current: location.pathname === "/admin/reporters"
         },
         {
           name: "Analytics",

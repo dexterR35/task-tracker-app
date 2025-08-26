@@ -10,6 +10,7 @@ import TaskDetailPage from "../pages/dashboard/TaskDetailPage";
 import HomePage from "../pages/dashboard/HomePage";
 import DashboardPage from "../pages/dashboard/DashboardPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
+import AdminReportersPage from "../pages/admin/AdminReportersPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
 // Protect login page from authenticated users
@@ -226,6 +227,14 @@ const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminUsersPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/reporters",
+        element: (
+          <AdminRoute>
+            <AdminReportersPage />
           </AdminRoute>
         ),
       },

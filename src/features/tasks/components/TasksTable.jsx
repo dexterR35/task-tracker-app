@@ -8,6 +8,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../tasksApi";
+import { useSubscribeToReportersQuery } from "../../reporters/reportersApi";
 import {
   taskNameOptions,
   marketOptions,
@@ -91,6 +92,9 @@ const TasksTable = ({
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
   const formatDay = useFormatDay();
+  
+  // Get reporters for selection
+  const { data: reporters = [] } = useSubscribeToReportersQuery();
 
   // Force re-render when form changes to update conditional columns
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -179,6 +183,7 @@ const TasksTable = ({
           ? false
           : [],
       deliverablesCount: Number(sanitizedTask.deliverablesCount) || 0,
+      reporters: Array.isArray(sanitizedTask.reporters) ? sanitizedTask.reporters : [],
     });
   };
 
@@ -214,6 +219,7 @@ const TasksTable = ({
         // Always use arrays - empty array if not selected
         deliverablesOther: Array.isArray(form.deliverablesOther) ? form.deliverablesOther : [],
         deliverablesCount: Number(form.deliverablesCount) || 0, // Use form value for deliverablesCount
+        reporters: Array.isArray(form.reporters) ? form.reporters : [], // Use form value for reporters
         createdBy: t.createdBy || "", // Preserve creator info
         createdByName: t.createdByName || "", // Preserve creator name
         userUID: t.userUID || "", // Preserve user UID
@@ -231,6 +237,7 @@ const TasksTable = ({
       if (!sanitizedUpdates.product) errs.push("Product");
       if (!sanitizedUpdates.markets.length) errs.push("Markets");
       if (!sanitizedUpdates.deliverables.length) errs.push("Deliverables");
+      if (!sanitizedUpdates.reporters.length) errs.push("Reporters");
       if (sanitizedUpdates.timeInHours < 0.5) errs.push("Hours ≥ 0.5");
 
       // Validate AI fields only if AI is used
@@ -420,6 +427,7 @@ const TasksTable = ({
                 Other Deliverables
               </th>
             )}
+            <th>Reporters</th>
             <th>Count</th>
             <th>Actions</th>
           </tr>
@@ -786,6 +794,59 @@ const TasksTable = ({
                     </td>
                   );
                 })()}
+                <td>
+                  {isEdit ? (
+                    <div>
+                      <select
+                        className="border px-2 py-2 rounded w-full"
+                        value=""
+                        onChange={(e) => {
+                          const selectedReporter = e.target.value;
+                          if (!selectedReporter) return;
+                          setForm((f) => ({
+                            ...f,
+                            reporters: (f.reporters || []).includes(selectedReporter)
+                              ? f.reporters
+                              : [...(f.reporters || []), selectedReporter],
+                          }));
+                        }}
+                      >
+                        <option value="">Add reporter…</option>
+                        {reporters.map((reporter) => (
+                          <option key={reporter.id} value={reporter.id}>
+                            {reporter.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {(form.reporters || []).map((reporterId) => {
+                          const reporter = reporters.find(r => r.id === reporterId);
+                          return (
+                            <span key={reporterId} className="rounded-grid-small">
+                              {reporter ? reporter.name : reporterId}
+                              <button
+                                type="button"
+                                className="ml-2"
+                                onClick={() =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    reporters: (f.reporters || []).filter(
+                                      (x) => x !== reporterId
+                                    ),
+                                  }))
+                                }
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    safeDisplay(t.reporters)
+                  )}
+                </td>
                 <td>
                   {isEdit ? (
                     <input

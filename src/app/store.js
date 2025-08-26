@@ -2,6 +2,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import authReducer, { requireReauth } from "../features/auth/authSlice";
 import { tasksApi } from "../features/tasks/tasksApi";
 import { usersApi } from "../features/users/usersApi";
+import { reportersApi } from "../features/reporters/reportersApi";
 import { logger } from "../shared/utils/logger";
 import { auth } from "./firebase";
 
@@ -9,6 +10,7 @@ const staticReducers = {
   auth: authReducer,
   [tasksApi.reducerPath]: tasksApi.reducer,
   [usersApi.reducerPath]: usersApi.reducer,
+  [reportersApi.reducerPath]: reportersApi.reducer,
 };
 
 function createReducer(asyncReducers = {}) {
@@ -145,10 +147,14 @@ const store = configureStore({
         ],
         ignoredPaths: [
           'auth.user', 
-          'usersApi.queries.subscribeToUsers.data',
-          'usersApi.queries.getUsers.data',
-          'tasksApi.queries.subscribeToMonthTasks.data',
-          'tasksApi.queries.getMonthTasks.data',
+                  'usersApi.queries.subscribeToUsers.data',
+        'usersApi.queries.getUsers.data',
+        'tasksApi.queries.subscribeToMonthTasks.data',
+        'tasksApi.queries.getMonthTasks.data',
+        'reportersApi.queries.subscribeToReporters.data',
+        'reportersApi.queries.getReporters.data',
+        'reportersApi.queries.subscribeToReporters.originalArgs',
+        'reportersApi.queries.getReporters.originalArgs',
         ],
       },
       immutableCheck: {
@@ -160,6 +166,7 @@ const store = configureStore({
       performanceMiddleware,
       tasksApi.middleware,
       usersApi.middleware,
+      reportersApi.middleware,
     ]),
   devTools: process.env.NODE_ENV !== 'production',
   preloadedState: {},
