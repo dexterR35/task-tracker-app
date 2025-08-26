@@ -1,5 +1,5 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import authReducer, { requireReauth, loginUser, logoutUser } from "../features/auth/authSlice";
+import authReducer, { requireReauth } from "../features/auth/authSlice";
 import { tasksApi } from "../features/tasks/tasksApi";
 import { usersApi } from "../features/users/usersApi";
 import { logger } from "../shared/utils/logger";

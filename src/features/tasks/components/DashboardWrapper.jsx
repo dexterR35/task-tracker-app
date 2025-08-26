@@ -8,9 +8,7 @@ const DashboardWrapper = ({
   monthId,
   userId = null,
   isAdmin = false,
-  showCreateBoard = false,
   showTable = true, // New prop to control table visibility
-  onGenerateBoard = null,
   className = ""
 }) => {
   const { isAuthenticated } = useAuth();

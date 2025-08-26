@@ -10,7 +10,7 @@ import TaskDetailPage from "../pages/dashboard/TaskDetailPage";
 import HomePage from "../pages/dashboard/HomePage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
-import ChartsPreviewPage from "../pages/admin/ChartsPreviewPage";
+// import ChartsPreviewPage from "../pages/admin/ChartsPreviewPage";
 import UserDashboardPage from "../pages/user/UserDashboardPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
@@ -235,7 +235,7 @@ const router = createBrowserRouter([
         path: "preview/:monthId",
         element: (
           <AdminRoute>
-            <ChartsPreviewPage />
+            {/* <ChartsPreviewPage /> */}
           </AdminRoute>
         ),
       },

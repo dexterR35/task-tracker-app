@@ -4,7 +4,7 @@ import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard
 import { useCentralizedAnalytics } from "../../../shared/hooks/analytics/useCentralizedAnalytics";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
-import Loader from "../../../shared/components/ui/Loader";
+
 
 import {
   ClipboardDocumentListIcon,
