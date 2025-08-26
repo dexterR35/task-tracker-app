@@ -22,12 +22,18 @@ import {
   selectCanAccessAdmin,
   selectCanAccessUser,
 } from '../../features/auth/authSlice';
-import { addNotification } from '../../features/notifications/notificationSlice';
 import { auth } from '../../app/firebase';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from 'firebase/auth';
+import {
+  showWelcomeMessage,
+  showLogoutSuccess,
+  showAuthError,
+  showReauthSuccess,
+  showReauthError,
+} from '../utils/toast';
 
 // Hook for auth actions only (login, logout, etc.)
 export const useAuthActions = () => {
@@ -38,20 +44,10 @@ export const useAuthActions = () => {
     async (credentials) => {
       try {
         const result = await dispatch(loginUser(credentials)).unwrap();
-        dispatch(
-          addNotification({
-            type: 'success',
-            message: `Welcome, ${result.name || result.email}!`,
-          })
-        );
+        showWelcomeMessage(result.name || result.email);
         return result;
       } catch (error) {
-        dispatch(
-          addNotification({
-            type: 'error',
-            message: error?.message || error || 'Login failed',
-          })
-        );
+        showAuthError(error?.message || error || 'Login failed');
         throw error;
       }
     },
@@ -62,19 +58,9 @@ export const useAuthActions = () => {
   const logout = useCallback(async () => {
     try {
       await dispatch(logoutUser()).unwrap();
-      dispatch(
-        addNotification({
-          type: 'success',
-          message: 'Successfully logged out',
-        })
-      );
+      showLogoutSuccess();
     } catch (error) {
-      dispatch(
-        addNotification({
-          type: 'error',
-          message: error?.message || error || 'Logout failed',
-        })
-      );
+      showAuthError(error?.message || error || 'Logout failed');
     }
   }, [dispatch]);
 
@@ -92,20 +78,10 @@ export const useAuthActions = () => {
       // Clear reauth requirement
       dispatch(clearReauth());
       
-      dispatch(
-        addNotification({
-          type: 'success',
-          message: 'Reauthentication successful',
-        })
-      );
+      showReauthSuccess();
       return true;
     } catch (error) {
-      dispatch(
-        addNotification({
-          type: 'error',
-          message: error?.message || 'Reauthentication failed',
-        })
-      );
+      showReauthError(error?.message);
       throw error;
     }
   }, [dispatch]);

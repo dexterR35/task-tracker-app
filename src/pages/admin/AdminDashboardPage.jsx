@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useNotifications } from "../../shared/hooks/useNotifications";
-import { useNotificationCleanup } from "../../shared/hooks/useNotificationCleanup";
+import { showError, showSuccess } from "../../shared/utils/toast";
 import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import {
   useSubscribeToMonthBoardQuery,
@@ -22,7 +21,6 @@ import {
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
-  const { addError, addSuccess } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Use current month as default
@@ -48,8 +46,7 @@ const AdminDashboardPage = () => {
     error: boardError,
   } = useSubscribeToMonthBoardQuery({ monthId });
 
-  // Clean up notifications when month changes
-  useNotificationCleanup([monthId]);
+
 
   // Ensure user is authenticated and has admin role
   if (!user || user.role !== "admin") {
@@ -90,18 +87,18 @@ const AdminDashboardPage = () => {
         },
       }).unwrap();
 
-      addSuccess(
+      showSuccess(
         `Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`
       );
     } catch (error) {
-      addError(`Failed to create board: ${error.message}`);
+      showError(`Failed to create board: ${error.message}`);
     }
   };
 
   // Handle create task
   const handleCreateTask = () => {
     if (!board?.exists) {
-      addError(
+      showError(
         `Cannot create task: Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} is not created yet. Please create the board first.`
       );
       return;

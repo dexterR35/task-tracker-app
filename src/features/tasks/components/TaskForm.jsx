@@ -6,7 +6,7 @@ import { useAuth } from "../../../shared/hooks/useAuth";
 import { format } from "date-fns";
 import { useDispatch } from "react-redux";
 import { useCreateTaskMutation } from "../tasksApi";
-import { useNotifications } from "../../../shared/hooks/useNotifications";
+import { showSuccess, showError } from "../../../shared/utils/toast";
 import { logger } from "../../../shared/utils/logger";
 import {
   marketOptions,
@@ -34,7 +34,6 @@ const TaskForm = ({
 }) => {
   const { user } = useAuth();
   const [outerSubmitting, setOuterSubmitting] = useState(false);
-  const { addSuccess, addError } = useNotifications();
   // Always use current month for task creation
   const monthId = format(new Date(), "yyyy-MM");
   const [createTask] = useCreateTaskMutation();
@@ -194,7 +193,7 @@ const TaskForm = ({
   const submitTask = async (taskData) => {
     if (customOnSubmit) {
       await customOnSubmit(taskData);
-      addSuccess("Task created successfully!");
+      showSuccess("Task created successfully!");
     } else {
       if (creatingRef.current) return;
       creatingRef.current = true;
@@ -203,7 +202,7 @@ const TaskForm = ({
         id: created?.id,
         monthId: created?.monthId,
       });
-      addSuccess(
+      showSuccess(
         "Task created successfully! The task list will update automatically."
       );
     }
@@ -215,10 +214,10 @@ const TaskForm = ({
       error?.code === "month-not-generated" ||
       error?.message === "MONTH_NOT_GENERATED"
     ) {
-      addError("Please tell the admin to generate the current month first.");
+      showError("Please tell the admin to generate the current month first.");
     } else {
       logger.error("Error submitting task:", error);
-      addError("Failed to submit task. Please try again.");
+              showError("Failed to submit task. Please try again.");
     }
   };
 
@@ -238,14 +237,14 @@ const TaskForm = ({
       // Validate sanitized data
       const validationErrors = validateTaskCreationData(sanitizedValues);
       if (validationErrors.length > 0) {
-        addError(validationErrors[0]);
+        showError(validationErrors[0]);
         return;
       }
 
       // Validate AI fields
       const aiValidationError = validateAIFields(sanitizedValues);
       if (aiValidationError) {
-        addError(aiValidationError);
+        showError(aiValidationError);
         return;
       }
 
@@ -253,7 +252,7 @@ const TaskForm = ({
       const deliverablesValidationError =
         validateOtherDeliverables(sanitizedValues);
       if (deliverablesValidationError) {
-        addError(deliverablesValidationError);
+        showError(deliverablesValidationError);
         return;
       }
 

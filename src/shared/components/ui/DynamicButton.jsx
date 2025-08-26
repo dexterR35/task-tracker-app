@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Icons from "../../icons";
-import { useNotifications } from "../../hooks/useNotifications";
+import { showSuccess, showError } from "../../utils/toast";
 
 const DynamicButton = ({
   id,
@@ -24,7 +24,6 @@ const DynamicButton = ({
   ...props
 }) => {
   const [localLoading, setLocalLoading] = useState(false);
-  const { addSuccess, addError } = useNotifications();
 
   const buttonConfig = {
     baseClasses:
@@ -65,15 +64,15 @@ const DynamicButton = ({
       try {
         setLocalLoading(true);
         await onClick(e);
-        if (successMessage) addSuccess(successMessage);
+        if (successMessage) showSuccess(successMessage);
       } catch (error) {
         const message = errorMessage || error.message || "An error occurred";
-        addError(message);
+        showError(message);
       } finally {
         setLocalLoading(false);
       }
     },
-    [isLoading, isDisabled, onClick, successMessage, errorMessage, addSuccess, addError, type]
+    [isLoading, isDisabled, onClick, successMessage, errorMessage, type]
   );
 
   const renderIcon = () => {

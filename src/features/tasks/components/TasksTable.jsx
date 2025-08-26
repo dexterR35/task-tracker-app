@@ -20,7 +20,7 @@ import {
   sanitizeTaskData,
   sanitizeText,
 } from "../../../shared/utils/sanitization";
-import { useNotifications } from "../../../shared/hooks/useNotifications";
+import { showSuccess, showError } from "../../../shared/utils/toast";
 import { logger } from "../../../shared/utils/logger";
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
@@ -67,7 +67,6 @@ const TasksTable = ({
   tasks = [], // Tasks passed from parent component
 }) => {
   const navigate = useNavigate();
-  const { addSuccess, addError } = useNotifications();
   const { format } = useFormat();
 
   // Use tasks passed from parent instead of making duplicate query
@@ -279,7 +278,7 @@ const TasksTable = ({
       }
 
       if (errs.length) {
-        addError("Please complete: " + errs.join(", "));
+        showError("Please complete: " + errs.join(", "));
         setRowActionId(null);
         return;
       }
@@ -324,10 +323,10 @@ const TasksTable = ({
         monthId: taskMonthId,
         updates: updatesWithMonthId,
       });
-      addSuccess("Task updated successfully!");
+      showSuccess("Task updated successfully!");
     } catch (e) {
       logger.error("Task update error:", e);
-      addError(`Failed to update task: ${e.message || "Please try again."}`);
+      showError(`Failed to update task: ${e.message || "Please try again."}`);
     } finally {
       setEditingId(null);
       setRowActionId(null);
@@ -351,10 +350,10 @@ const TasksTable = ({
 
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
-      addSuccess("Task deleted successfully!");
+      showSuccess("Task deleted successfully!");
     } catch (e) {
       logger.error("Task delete error:", e);
-      addError(`Failed to delete task: ${e.message || "Please try again."}`);
+      showError(`Failed to delete task: ${e.message || "Please try again."}`);
     } finally {
       setRowActionId(null);
     }

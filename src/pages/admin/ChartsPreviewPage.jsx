@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useNotifications } from "../../shared/hooks/useNotifications";
+import { showSuccess, showError } from "../../shared/utils/toast";
 import { useCentralizedAnalytics } from "../../shared/hooks/analytics/useCentralizedAnalytics";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import Loader from "../../shared/components/ui/Loader";
@@ -17,7 +17,6 @@ const ChartsPreviewPage = () => {
   const { monthId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addSuccess, addError } = useNotifications();
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [chartsData, setChartsData] = useState(null);
@@ -44,14 +43,14 @@ const ChartsPreviewPage = () => {
           setChartsData(chartsData);
         }
       } catch (error) {
-        addError(`Failed to load charts data: ${error.message}`);
+        showError(`Failed to load charts data: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadChartsData();
-  }, [monthId, hasData, analytics, addError]);
+  }, [monthId, hasData, analytics]);
 
   const generateChartsFromAnalytics = (analytics, monthId) => {
     // Generate comprehensive charts data from analytics
@@ -180,9 +179,9 @@ const ChartsPreviewPage = () => {
       const [saveChartsData] = useSaveChartsDataMutation();
       await saveChartsData({ monthId, chartsData }).unwrap();
       
-      addSuccess("Charts data saved successfully!");
+      showSuccess("Charts data saved successfully!");
     } catch (error) {
-      addError(`Failed to save charts: ${error.message}`);
+      showError(`Failed to save charts: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
@@ -192,9 +191,9 @@ const ChartsPreviewPage = () => {
     try {
       setIsLoading(true);
       await refreshAnalytics();
-      addSuccess("Charts data refreshed successfully!");
+      showSuccess("Charts data refreshed successfully!");
     } catch (error) {
-      addError(`Failed to refresh data: ${error.message}`);
+      showError(`Failed to refresh data: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

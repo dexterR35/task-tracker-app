@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useNotifications } from "../../shared/hooks/useNotifications";
-import { useNotificationCleanup } from "../../shared/hooks/useNotificationCleanup";
+import { showError } from "../../shared/utils/toast";
 import { useGetMonthBoardExistsQuery } from "../../features/tasks/tasksApi";
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
 import TaskForm from "../../features/tasks/components/TaskForm";
@@ -12,7 +11,6 @@ import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const UserDashboardPage = () => {
   const { user } = useAuth();
-  const { addError } = useNotifications();
   
   // Use current month as default
   const monthId = format(new Date(), "yyyy-MM");
@@ -28,13 +26,12 @@ const UserDashboardPage = () => {
     error: boardError 
   } = useGetMonthBoardExistsQuery({ monthId });
 
-  // Clean up notifications when month changes
-  useNotificationCleanup([monthId]);
+
 
   // Handle create task
   const handleCreateTask = () => {
     if (!board?.exists) {
-      addError(
+      showError(
         `Cannot create task: Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} is not created yet. Please contact an admin.`
       );
       return;

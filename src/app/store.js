@@ -1,6 +1,5 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import authReducer, { requireReauth, loginUser, logoutUser } from "../features/auth/authSlice";
-import notificationReducer, { addNotification } from "../features/notifications/notificationSlice";
 import { tasksApi } from "../features/tasks/tasksApi";
 import { usersApi } from "../features/users/usersApi";
 import { logger } from "../shared/utils/logger";
@@ -8,7 +7,6 @@ import { auth } from "./firebase";
 
 const staticReducers = {
   auth: authReducer,
-  notifications: notificationReducer,
   [tasksApi.reducerPath]: tasksApi.reducer,
   [usersApi.reducerPath]: usersApi.reducer,
 };
@@ -89,29 +87,27 @@ const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
     );
     
     if (!isAuthError) {
-      // Categorize errors for better user experience
-      let notificationType = "error";
-      let enhancedMessage = errorMessage;
-      
-      if (errorCode === 'PERMISSION_DENIED') {
-        enhancedMessage = "You don't have permission to perform this action.";
-        notificationType = "warning";
-      } else if (errorCode === 'SERVICE_UNAVAILABLE') {
-        enhancedMessage = "Service temporarily unavailable. Please try again later.";
-        notificationType = "warning";
-      } else if (errorCode === 'NOT_FOUND') {
-        enhancedMessage = "The requested resource was not found.";
-        notificationType = "info";
-      } else if (errorCode === 'month-not-generated') {
-        enhancedMessage = "Please generate a month board first.";
-        notificationType = "info";
-      }
-      
-      storeAPI.dispatch(addNotification({ 
-        type: notificationType, 
-        message: enhancedMessage,
-        code: errorCode
-      }));
+      // Import toast functions dynamically to avoid circular dependencies
+      import('../shared/utils/toast').then(({ showError, showWarning, showInfo }) => {
+        // Categorize errors for better user experience
+        let enhancedMessage = errorMessage;
+        
+        if (errorCode === 'PERMISSION_DENIED') {
+          enhancedMessage = "You don't have permission to perform this action.";
+          showWarning(enhancedMessage);
+        } else if (errorCode === 'SERVICE_UNAVAILABLE') {
+          enhancedMessage = "Service temporarily unavailable. Please try again later.";
+          showWarning(enhancedMessage);
+        } else if (errorCode === 'NOT_FOUND') {
+          enhancedMessage = "The requested resource was not found.";
+          showInfo(enhancedMessage);
+        } else if (errorCode === 'month-not-generated') {
+          enhancedMessage = "Please generate a month board first.";
+          showInfo(enhancedMessage);
+        } else {
+          showError(enhancedMessage);
+        }
+      });
     }
   }
   
@@ -149,7 +145,6 @@ const store = configureStore({
         ],
         ignoredPaths: [
           'auth.user', 
-          'notifications',
           'usersApi.queries.subscribeToUsers.data',
           'usersApi.queries.getUsers.data',
           'tasksApi.queries.subscribeToMonthTasks.data',
@@ -157,7 +152,7 @@ const store = configureStore({
         ],
       },
       immutableCheck: {
-        ignoredPaths: ['auth.user', 'notifications'],
+        ignoredPaths: ['auth.user'],
       },
     }).concat([
       authMiddleware,

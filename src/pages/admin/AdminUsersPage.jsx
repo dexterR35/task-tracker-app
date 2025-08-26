@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useNotifications } from "../../shared/hooks/useNotifications";
+import { showSuccess, showError } from "../../shared/utils/toast";
 import { useSubscribeToUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from "../../features/users/usersApi";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import DashboardLoader from "../../shared/components/ui/DashboardLoader";
@@ -10,7 +10,6 @@ import { logger } from "../../shared/utils/logger";
 
 const AdminUsersPage = () => {
   const { user: currentUser } = useAuth();
-  const { addSuccess, addError } = useNotifications();
 
   // Local state
   const [editingId, setEditingId] = useState(null);
@@ -48,10 +47,10 @@ const AdminUsersPage = () => {
 
       await updateUser({ id: editingId, updates }).unwrap();
       logger.log("[AdminUsersPage] updated user", { id: editingId, updates });
-      addSuccess("User updated successfully!");
+      showSuccess("User updated successfully!");
     } catch (e) {
       logger.error("User update error:", e);
-      addError(`Failed to update user: ${e.message || "Please try again."}`);
+      showError(`Failed to update user: ${e.message || "Please try again."}`);
     } finally {
       setEditingId(null);
       setRowActionId(null);
@@ -66,17 +65,17 @@ const AdminUsersPage = () => {
   const removeUser = async (user) => {
     if (!window.confirm("Delete this user?")) return;
     if (user.id === currentUser?.uid) {
-      addError("You cannot delete yourself!");
+      showError("You cannot delete yourself!");
       return;
     }
 
     try {
       setRowActionId(user.id);
       await deleteUser({ id: user.id }).unwrap();
-      addSuccess("User deleted successfully!");
+      showSuccess("User deleted successfully!");
     } catch (e) {
       logger.error("User delete error:", e);
-      addError(`Failed to delete user: ${e.message || "Please try again."}`);
+      showError(`Failed to delete user: ${e.message || "Please try again."}`);
     } finally {
       setRowActionId(null);
     }
