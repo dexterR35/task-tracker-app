@@ -1,8 +1,8 @@
 import { useMemo, useCallback, useRef } from 'react';
-import { useSubscribeToMonthTasksQuery } from '../../features/tasks/tasksApi';
-import { analyticsCalculator } from '../utils/analyticsCalculator';
-import { logger } from '../utils/logger';
-import { useAnalyticsCache } from './useAnalyticsCache';
+import { useSubscribeToMonthTasksQuery } from '../../../features/tasks/tasksApi';
+import { analyticsCalculator } from '../../utils/analyticsCalculator';
+import { logger } from '../../utils/logger';
+import { useAnalyticsCache } from '../analytics/useAnalyticsCache';
 
 export const useCentralizedAnalytics = (monthId, userId = null) => {
   // Use ref to track previous tasks to prevent unnecessary recalculations

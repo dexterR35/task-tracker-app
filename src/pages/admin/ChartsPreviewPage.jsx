@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../shared/hooks/useAuth";
 import { useNotifications } from "../../shared/hooks/useNotifications";
-import { useCentralizedAnalytics } from "../../shared/hooks/useCentralizedAnalytics";
+import { useCentralizedAnalytics } from "../../shared/hooks/analytics/useCentralizedAnalytics";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import Loader from "../../shared/components/ui/Loader";
 import { format } from "date-fns";

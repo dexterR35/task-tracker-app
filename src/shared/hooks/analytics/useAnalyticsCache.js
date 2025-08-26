@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { analyticsCalculator } from '../utils/analyticsCalculator';
-import { logger } from '../utils/logger';
+import { analyticsCalculator } from '../../utils/analyticsCalculator';
+import { logger } from '../../utils/logger';
 
 /**
  * Hook to manage analytics cache invalidation
