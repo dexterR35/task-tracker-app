@@ -184,7 +184,7 @@ const OptimizedTaskMetricsBoard = ({
   if (error) {
     return (
       <div className="text-center text-red-400 py-8">
-        Error loading analytics: {error.message || 'Unknown error'}
+        Error loading analytics: {error?.message || 'Unknown error'}
       </div>
     );
   }
@@ -199,7 +199,7 @@ const OptimizedTaskMetricsBoard = ({
     if (error) {
       return (
         <div className="col-span-full text-center text-red-400 py-8">
-          Error loading analytics: {error.message || 'Unknown error'}
+          Error loading analytics: {error?.message || 'Unknown error'}
         </div>
       );
     }

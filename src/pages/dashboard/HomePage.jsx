@@ -3,27 +3,21 @@ import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
 const HomePage = () => {
   return (
-    <div className="min-h-screen flex-center bg-primary ">
-      <div className="text-center md:max-w-2xl mx-auto block px-4">
+    <div className="min-h-screen flex-center ">
+      <div className="text-center md:max-w-4xl mx-auto block px-4">
         {/* Logo */}
-        <div className="flex-center flex- md:flex-row space-x-4">
-          <h1>Welcome to</h1>
-
-          <img
-            src={netbetLogo}
-            alt="NetBet Logo"
-            className="h-full w-auto m-0 object-contain"
-          />
+        <div className=" md:flex-row space-x-4">
+          <h1>
+            <span className="text-red-error">Welcome</span> to Task Tracker
+          </h1>
         </div>
-        <h1>Task Tracker</h1>
-
-        {/* Description */}
-        <p className="text-lg text-gray-300 mb-12 mt-6">
-        “Manage tasks, track time, calculate monthly reports, and analyze performance, designed for teams that prioritize efficiency and clarity.”
+        <p className="text-sm my-2 md:max-w-xl mx-auto">
+          “Manage tasks, track time, calculate monthly reports, and analyze
+          performance, designed for teams that prioritize efficiency and
+          clarity.”
         </p>
 
-        {/* CTA Button */}
-        <div className="space-y-4">
+        <div className="my-6">
           <DynamicButton
             to="/login"
             variant="primary"
@@ -31,10 +25,19 @@ const HomePage = () => {
             className="text-lg"
             type="button"
             iconName="default"
-    
           >
             Get Started
           </DynamicButton>
+        </div>
+        <div className="flex-center space-x-2 !items-center my-2 absolute bottom-5 left-1/2 -translate-x-1/2 ">
+          <p className="font-base italic text-sm min-h-[30px] flex-center !items-end">
+            pwd by
+          </p>
+          <img
+            src={netbetLogo}
+            alt="NetBet Logo"
+            className="h-auto w-32 m-0 object-contain"
+          />
         </div>
       </div>
     </div>

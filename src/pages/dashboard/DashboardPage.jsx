@@ -40,19 +40,19 @@ const DashboardPage = () => {
 
   // Use appropriate board query based on role
   const boardData = isAdmin ? adminBoardQuery : userBoardQuery;
-  const { 
-    data: board = { exists: false }, 
+  const {
+    data: board = { exists: false },
     isLoading: boardLoading,
-    error: boardError 
+    error: boardError,
   } = boardData;
 
   // Ensure user is authenticated
   if (!user) {
     return (
-      <div className="min-h-screen flex-center bg-primary">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">
+      <div className="min-h-screen flex-center">
+        <div className="card p-8 text-center max-w-md mx-4">
+          <h2 className="text-red-error mb-4">Access Denied</h2>
+          <p className="mb-6">
             You need to be authenticated to access the dashboard.
           </p>
         </div>
@@ -63,12 +63,9 @@ const DashboardPage = () => {
   // Handle user selection (admin only)
   const handleUserSelect = (event) => {
     const userId = event.target.value;
-
     if (!userId) {
-      // Clear user filter
       setSearchParams({}, { replace: true });
     } else {
-      // Set user filter
       setSearchParams({ user: userId }, { replace: true });
     }
   };
@@ -102,8 +99,7 @@ const DashboardPage = () => {
   const getDashboardConfig = () => {
     if (isAdmin) {
       return {
-        title: `${user?.name || user?.email}'s Dashboard`,
-    
+        title: `${user?.name || user?.email}'s - Board`,
         userId: selectedUserId || null, // null means all users
         showCreateBoard: true,
         onGenerateBoard: handleGenerateBoard,
@@ -115,8 +111,8 @@ const DashboardPage = () => {
       };
     } else {
       return {
-        title: `${user?.name || user?.email}'s Dashboard`,
-        userId: user?.uid, 
+        title: `${user?.name || user?.email}'s - Board`,
+        userId: user?.uid,
         showCreateBoard: false,
         onGenerateBoard: null,
         isGeneratingBoard: false,
@@ -132,7 +128,7 @@ const DashboardPage = () => {
 
   return (
     <DashboardLoader>
-      <div className="min-h-screen p-6">
+      <div className="min-h-screen p-2">
         <div className="max-w-7xl mx-auto">
           <DashboardWrapper
             monthId={monthId}
@@ -151,7 +147,6 @@ const DashboardPage = () => {
             showTaskForm={showTaskForm}
             onToggleTaskForm={handleToggleTaskForm}
             title={config.title}
-         
           />
         </div>
       </div>

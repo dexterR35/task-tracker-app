@@ -11,7 +11,7 @@ const GlobalLoader = ({ children }) => {
 
   if (shouldShowAuthLoader) {
     return (
-      <div className="min-h-screen flex-center bg-primary" role="status" aria-busy="true">
+      <div className="min-h-screen flex-center" role="status" aria-busy="true">
         <div className="text-center">
           <Loader size="xl" text="Authenticating..." variant="spinner" />
           {process.env.NODE_ENV === 'development' && (

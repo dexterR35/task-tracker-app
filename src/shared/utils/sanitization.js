@@ -61,9 +61,7 @@ export const sanitizeTaskData = (taskData) => {
       ? taskData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     taskNumber: sanitizeText(taskData.taskNumber || ''),
-    reporters: Array.isArray(taskData.reporters) 
-      ? taskData.reporters.map(r => sanitizeText(r)).filter(Boolean)
-      : [],
+    reporters: sanitizeText(taskData.reporters || ''),
     createdBy: sanitizeText(taskData.createdBy || ''),
     createdByName: sanitizeText(taskData.createdByName || ''),
     userUID: sanitizeText(taskData.userUID || ''),
@@ -99,9 +97,7 @@ export const sanitizeTaskCreationData = (formData) => {
       ? formData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
       : [],
     taskNumber: sanitizeText(formData.taskNumber || ''),
-    reporters: Array.isArray(formData.reporters) 
-      ? formData.reporters.map(r => sanitizeText(r)).filter(Boolean)
-      : [],
+    reporters: sanitizeText(formData.reporters || ''),
   };
 };
 
@@ -189,6 +185,11 @@ export const validateTaskCreationData = (formData) => {
     if (!Array.isArray(formData.deliverablesOther) || formData.deliverablesOther.length === 0) {
       errors.push('Please specify at least one other deliverable when "others" is selected');
     }
+  }
+
+  // Validate reporter selection
+  if (!formData.reporters || formData.reporters.trim() === '') {
+    errors.push('Please select a reporter');
   }
 
   // Validate Jira link if provided

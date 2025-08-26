@@ -20,7 +20,10 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db, auth } from "../../app/firebase";
-import { normalizeTimestamp, serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
+import {
+  normalizeTimestamp,
+  serializeTimestampsForRedux,
+} from "../../shared/utils/dateUtils";
 
 // Simple task normalization
 const normalizeTask = (monthId, id, data) => {
@@ -33,7 +36,9 @@ const normalizeTask = (monthId, id, data) => {
   const timeInHours = Number(data.timeInHours) || 0;
   const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
   // Always use arrays - empty array if not selected
-  const deliverablesOther = Array.isArray(data.deliverablesOther) ? data.deliverablesOther : [];
+  const deliverablesOther = Array.isArray(data.deliverablesOther)
+    ? data.deliverablesOther
+    : [];
   const aiModels = Array.isArray(data.aiModels) ? data.aiModels : [];
   const deliverablesCount = Number(data.deliverablesCount) || 0;
 
@@ -52,14 +57,23 @@ const normalizeTask = (monthId, id, data) => {
 };
 
 // Fetch tasks from Firestore with pagination support
-const fetchTasksFromFirestore = async (monthId, userId = null, options = {}) => {
+const fetchTasksFromFirestore = async (
+  monthId,
+  userId = null,
+  options = {}
+) => {
   const { limitCount = 50, startAfterDoc = null } = options;
-  
+
   const colRef = collection(db, "tasks", monthId, "monthTasks");
   let query = fsQuery(colRef, orderBy("createdAt", "desc"), limit(limitCount));
 
-  if (userId && userId.trim() !== '') {
-    query = fsQuery(colRef, where("userUID", "==", userId), orderBy("createdAt", "desc"), limit(limitCount));
+  if (userId && userId.trim() !== "") {
+    query = fsQuery(
+      colRef,
+      where("userUID", "==", userId),
+      orderBy("createdAt", "desc"),
+      limit(limitCount)
+    );
   }
 
   if (startAfterDoc) {
@@ -75,7 +89,6 @@ export const tasksApi = createApi({
   baseQuery: fakeBaseQuery(),
   tagTypes: ["MonthTasks", "MonthBoard", "Charts", "Analytics"],
   endpoints: (builder) => ({
-
     // Check if month board exists
     getMonthBoardExists: builder.query({
       async queryFn({ monthId }) {
@@ -101,7 +114,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId, limitCount = 50, startAfterDoc = null } = {}) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
           // Check if board exists first
@@ -113,7 +126,10 @@ export const tasksApi = createApi({
           }
 
           // Fetch tasks from Firestore
-          const tasks = await fetchTasksFromFirestore(monthId, null, { limitCount, startAfterDoc });
+          const tasks = await fetchTasksFromFirestore(monthId, null, {
+            limitCount,
+            startAfterDoc,
+          });
           return { data: tasks };
         } catch (error) {
           return { error: { message: error.message } };
@@ -136,11 +152,15 @@ export const tasksApi = createApi({
       async queryFn({ monthId, userId = null } = {}) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
-          const normalizedUserId = userId && userId.trim() !== '' ? userId : null;
-          const tasks = await fetchTasksFromFirestore(monthId, normalizedUserId);
+          const normalizedUserId =
+            userId && userId.trim() !== "" ? userId : null;
+          const tasks = await fetchTasksFromFirestore(
+            monthId,
+            normalizedUserId
+          );
           return { data: tasks };
         } catch (error) {
           return { error: { message: error.message } };
@@ -156,7 +176,7 @@ export const tasksApi = createApi({
         let unsubscribe = null;
         let lastUpdateTime = 0;
         const updateDebounce = 100; // Debounce updates by 100ms
-        
+
         try {
           await cacheDataLoaded;
 
@@ -172,7 +192,7 @@ export const tasksApi = createApi({
           const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
           let query = fsQuery(colRef, orderBy("createdAt", "desc"));
 
-          if (arg.userId && arg.userId.trim() !== '') {
+          if (arg.userId && arg.userId.trim() !== "") {
             query = fsQuery(
               colRef,
               where("userUID", "==", arg.userId),
@@ -212,16 +232,18 @@ export const tasksApi = createApi({
 
               // Trigger analytics recalculation with debouncing
               setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('task-changed', { 
-                  detail: { 
-                    monthId: arg.monthId,
-                    userId: arg.userId,
-                    source: 'firebase-realtime',
-                    operation: 'update',
-                    tasksCount: tasks.length,
-                    timestamp: Date.now()
-                  } 
-                }));
+                window.dispatchEvent(
+                  new CustomEvent("task-changed", {
+                    detail: {
+                      monthId: arg.monthId,
+                      userId: arg.userId,
+                      source: "firebase-realtime",
+                      operation: "update",
+                      tasksCount: tasks.length,
+                      timestamp: Date.now(),
+                    },
+                  })
+                );
               }, 50); // Small delay to batch multiple updates
             },
             (error) => {
@@ -251,7 +273,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId } = {}) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
           const ref = doc(db, "tasks", monthId);
@@ -266,19 +288,19 @@ export const tasksApi = createApi({
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
       ) {
         let unsubscribe = null;
-        
+
         try {
           await cacheDataLoaded;
 
           const ref = doc(db, "tasks", arg.monthId);
-          
+
           unsubscribe = onSnapshot(
             ref,
             (snapshot) => {
               updateCachedData(() => ({
                 exists: snapshot.exists(),
                 monthId: arg.monthId,
-                lastUpdated: Date.now()
+                lastUpdated: Date.now(),
               }));
             },
             (error) => {
@@ -288,7 +310,10 @@ export const tasksApi = createApi({
 
           await cacheEntryRemoved;
         } catch (error) {
-          console.error("Error setting up real-time board subscription:", error);
+          console.error(
+            "Error setting up real-time board subscription:",
+            error
+          );
         } finally {
           if (unsubscribe) {
             unsubscribe();
@@ -305,19 +330,17 @@ export const tasksApi = createApi({
       async queryFn(task) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
-
           // Use transaction to ensure atomic operations
           const result = await runTransaction(db, async (transaction) => {
             // Read operation first: Check if board exists
             const monthDocRef = doc(db, "tasks", task.monthId);
             const monthDoc = await transaction.get(monthDocRef);
-            
-            if (!monthDoc.exists()) {
-              throw new Error('Month board not generated');
-            }
 
+            if (!monthDoc.exists()) {
+              throw new Error("Month board not generated");
+            }
             // Write operation: Create the task
             const colRef = collection(db, "tasks", task.monthId, "monthTasks");
             const payload = {
@@ -326,28 +349,31 @@ export const tasksApi = createApi({
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             };
-            
             const ref = await addDoc(colRef, payload);
-            
             // Read back the saved doc to resolve server timestamps
             const savedSnap = await getDoc(ref);
-            const created = normalizeTask(task.monthId, ref.id, savedSnap.data() || {});
-
+            const created = normalizeTask(
+              task.monthId,
+              ref.id,
+              savedSnap.data() || {}
+            );
             return created;
           });
 
           // Trigger real-time update with delay to allow cache to update
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('task-changed', { 
-              detail: { 
-                monthId: task.monthId,
-                operation: 'create',
-                taskId: result.id,
-                taskUserId: task.userUID,
-                source: 'crud-operation',
-                timestamp: Date.now()
-              } 
-            }));
+            window.dispatchEvent(
+              new CustomEvent("task-changed", {
+                detail: {
+                  monthId: task.monthId,
+                  operation: "create",
+                  taskId: result.id,
+                  taskUserId: task.userUID,
+                  source: "crud-operation",
+                  timestamp: Date.now(),
+                },
+              })
+            );
           }, 100);
 
           return { data: result };
@@ -358,7 +384,10 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || "all"}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
+        },
         { type: "Analytics", id: arg.monthId },
       ],
     }),
@@ -368,7 +397,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId, id, updates }) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
           // Use transaction for atomic update
@@ -376,9 +405,9 @@ export const tasksApi = createApi({
             // Read operation first: Get current task
             const taskRef = doc(db, "tasks", monthId, "monthTasks", id);
             const taskDoc = await transaction.get(taskRef);
-            
+
             if (!taskDoc.exists()) {
-              throw new Error('Task not found');
+              throw new Error("Task not found");
             }
 
             // Write operation: Update the task
@@ -393,16 +422,18 @@ export const tasksApi = createApi({
 
           // Trigger real-time update with delay to allow cache to update
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('task-changed', { 
-              detail: { 
-                monthId,
-                operation: 'update',
-                taskId: id,
-                taskUserId: updates.userUID || null,
-                source: 'crud-operation',
-                timestamp: Date.now()
-              } 
-            }));
+            window.dispatchEvent(
+              new CustomEvent("task-changed", {
+                detail: {
+                  monthId,
+                  operation: "update",
+                  taskId: id,
+                  taskUserId: updates.userUID || null,
+                  source: "crud-operation",
+                  timestamp: Date.now(),
+                },
+              })
+            );
           }, 100);
 
           return { data: { id, monthId, success: true } };
@@ -413,7 +444,10 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || "all"}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
+        },
         { type: "Analytics", id: arg.monthId },
       ],
     }),
@@ -423,7 +457,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId, id }) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
           // Use transaction for atomic delete
@@ -431,9 +465,9 @@ export const tasksApi = createApi({
             // Read operation first: Check if task exists
             const taskRef = doc(db, "tasks", monthId, "monthTasks", id);
             const taskDoc = await transaction.get(taskRef);
-            
+
             if (!taskDoc.exists()) {
-              throw new Error('Task not found');
+              throw new Error("Task not found");
             }
 
             // Write operation: Delete the task
@@ -442,16 +476,18 @@ export const tasksApi = createApi({
 
           // Trigger real-time update with delay to allow cache to update
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('task-changed', { 
-              detail: { 
-                monthId,
-                operation: 'delete',
-                taskId: id,
-                taskUserId: null,
-                source: 'crud-operation',
-                timestamp: Date.now()
-              } 
-            }));
+            window.dispatchEvent(
+              new CustomEvent("task-changed", {
+                detail: {
+                  monthId,
+                  operation: "delete",
+                  taskId: id,
+                  taskUserId: null,
+                  source: "crud-operation",
+                  timestamp: Date.now(),
+                },
+              })
+            );
           }, 100);
 
           return { data: { id, monthId } };
@@ -462,7 +498,10 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        { type: "MonthTasks", id: `${arg.monthId}_user_${arg.userUID || "all"}` },
+        {
+          type: "MonthTasks",
+          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
+        },
         { type: "Analytics", id: arg.monthId },
       ],
     }),
@@ -472,7 +511,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId, meta = {} }) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
           // Use transaction to ensure atomic board creation
@@ -480,9 +519,9 @@ export const tasksApi = createApi({
             // Read operation first: Check if board already exists
             const boardRef = doc(db, "tasks", monthId);
             const boardDoc = await transaction.get(boardRef);
-            
+
             if (boardDoc.exists()) {
-              throw new Error('Month board already exists');
+              throw new Error("Month board already exists");
             }
 
             // Write operation: Create the board
@@ -492,7 +531,8 @@ export const tasksApi = createApi({
               boardId,
               createdAt: serverTimestamp(),
               createdBy: auth.currentUser.uid,
-              createdByName: auth.currentUser.displayName || auth.currentUser.email,
+              createdByName:
+                auth.currentUser.displayName || auth.currentUser.email,
               ...meta,
             };
 
@@ -515,12 +555,12 @@ export const tasksApi = createApi({
       async queryFn({ monthId, chartsData }) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: 'Authentication required' } };
+            return { error: { message: "Authentication required" } };
           }
 
           // Use batch operations for atomic writes
           const batch = writeBatch(db);
-          
+
           // Save charts data to Firebase
           const chartsRef = doc(db, "charts", monthId);
           batch.set(chartsRef, {
@@ -552,7 +592,6 @@ export const tasksApi = createApi({
         { type: "Analytics", id: arg.monthId },
       ],
     }),
-
   }),
 });
 

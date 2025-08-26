@@ -56,7 +56,7 @@ const TaskForm = ({
     deliverablesCount: "",
     deliverablesOther: false,
     taskNumber: "",
-    reporters: [],
+    reporters: "",
   };
 
   const initialValues = customInitialValues || defaultInitialValues;
@@ -116,10 +116,8 @@ const TaskForm = ({
         ),
       otherwise: (schema) => schema.optional(),
     }),
-    reporters: Yup.array()
-      .of(Yup.string().required())
-      .min(1, "Select at least one reporter")
-      .required("Reporters are required"),
+    reporters: Yup.string()
+      .required("Reporter selection is required"),
   });
 
   const creatingRef = useRef(false);
@@ -191,7 +189,7 @@ const TaskForm = ({
         ? sanitizedValues.deliverablesOther
         : [],
       deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
-      reporters: Array.isArray(sanitizedValues.reporters) ? sanitizedValues.reporters : [],
+      reporters: sanitizedValues.reporters || "",
       createdBy: user?.uid,
       createdByName: user?.name || user?.email,
       userUID: user?.uid,
@@ -315,7 +313,8 @@ const TaskForm = ({
               !values.taskName ||
               !values.timeInHours ||
               !values.deliverables?.length ||
-              !values.deliverablesCount
+              !values.deliverablesCount ||
+              !values.reporters
             ) {
               return false;
             }
@@ -763,60 +762,20 @@ const TaskForm = ({
 
               <Field name="reporters">
                 {(field) => {
-                  const { hasError } = renderField(field);
+                  const { baseInputClasses } = renderField(field);
                   return (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reporters *
+                        Reporter *
                       </label>
-                      <div>
-                        <select
-                          className={`${hasError ? "border-red-error" : "border-gray-300"} w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-                          value=""
-                          onChange={(e) => {
-                            const selectedReporter = e.target.value;
-                            if (!selectedReporter) return;
-                            
-                            const currentReporters = field.field.value || [];
-                            if (!currentReporters.includes(selectedReporter)) {
-                              field.form.setFieldValue("reporters", [...currentReporters, selectedReporter]);
-                            }
-                          }}
-                        >
-                          <option value="">Select reporter...</option>
-                          {reporters.map((reporter) => (
-                            <option key={reporter.id} value={reporter.id}>
-                              {reporter.name} ({reporter.email})
-                            </option>
-                          ))}
-                        </select>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {(field.field.value || []).map((reporterId) => {
-                            const reporter = reporters.find(r => r.id === reporterId);
-                            return (
-                              <span
-                                key={reporterId}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                              >
-                                {reporter ? `${reporter.name} (${reporter.email})` : reporterId}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const currentReporters = field.field.value || [];
-                                    field.form.setFieldValue(
-                                      "reporters",
-                                      currentReporters.filter(id => id !== reporterId)
-                                    );
-                                  }}
-                                  className="ml-2 text-blue-600 hover:text-blue-800"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      <select {...field.field} className={baseInputClasses}>
+                        <option value="">Select a reporter</option>
+                        {reporters.map((reporter) => (
+                          <option key={reporter.id} value={reporter.id}>
+                            {reporter.name} ({reporter.email})
+                          </option>
+                        ))}
+                      </select>
                       <ErrorMessage
                         name="reporters"
                         component="div"

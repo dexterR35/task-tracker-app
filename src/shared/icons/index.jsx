@@ -15,16 +15,18 @@ import {
   FiBarChart2,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
-import {IoLogInSharp} from "react-icons/io5";
+import {IoLogInSharp,IoAdd,IoAlert,IoCheckmarkSharp,IoClose,IoPencilSharp} from "react-icons/io5";
 const withSize = (IconComponent) => (props) => (
-  <IconComponent className={props?.className || "w-6 h-6"} />
+  <IconComponent className={props?.className || "w-5 h-5"} />
 );
 
 export const Icons = {
   buttons: {
     back: withSize(FiArrowLeft),
     logout: withSize(FiLogOut),
-    save: withSize(FiDownload),
+    login:withSize(IoLogInSharp),
+    save: withSize(IoCheckmarkSharp),
+    cancel: withSize(IoClose),
     submit: withSize(FiCheck),
     edit: withSize(FiEdit),
     delete: withSize(FiTrash),
@@ -33,7 +35,9 @@ export const Icons = {
     chevronUp: withSize(FiChevronUp),
     chevronDown: withSize(FiChevronDown),
     default: withSize(FcFlashOn),
-    login:withSize(IoLogInSharp)
+    generate:withSize(IoAdd),
+    alert:withSize(IoAlert)
+
   },
 
   cards: {

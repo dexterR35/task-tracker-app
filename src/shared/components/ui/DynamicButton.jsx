@@ -27,14 +27,15 @@ const DynamicButton = ({
 
   const buttonConfig = {
     baseClasses:
-      "px-4 py-2 inline-flex rounded-lg font-medium !focus:outline-none focus:ring-gray-200 focus:ring-1 focus:ring-offset-0",
+      "px-4 py-2 inline-flex  rounded-lg font-medium shadow-sm !focus:outline-none focus:ring-gray-200 focus:ring-1 focus:ring-offset-0",
     variants: {
-      primary: "bg-btn-primary text-gray-200 shadow-sm",
-      secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
-      success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm",
-      danger: "bg-red-error text-white hover:bg-red-500 !focus:ring-red-error shadow-sm",
-      warning: "bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 shadow-sm",
-      outline: "border-2 border-gray-300 text-gray-200",
+      primary: "bg-btn-primary text-gray-200 ",
+      secondary: "bg-gray-200 text-gray-900",
+      success: "bg-green-600 text-gray-200 ",
+      danger: "bg-red-error text-gray-200 ",
+      warning: "bg-yellow-600 text-gray-200  ",
+      outline: "border-2 border-gray-300 text-white-dark",
+      edit: "bg-blue-600 text-gray-200 shadow-sm",
     },
     sizes: {
       xs: "px-2 py-1 text-xs",
@@ -112,7 +113,7 @@ const DynamicButton = ({
         );
       case "center":
         return (
-          <div className="flex flex-col items-center justify-center gap-2 w-full">
+          <div className="flex flex-col items-center justify-center  w-full">
             {renderIcon()}
             <span>{isLoading ? loadingText : children}</span>
           </div>

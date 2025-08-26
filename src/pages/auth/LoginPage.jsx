@@ -61,12 +61,12 @@ const LoginPage = () => {
 
   return (
     <div className="flex-center min-h-screen">
-      <div className="card w-full max-w-md bg-primary shadow-2xl">
-        <div className="text-center mb-8">
+      <div className="card w-full max-w-md">
+        <div className="text-center mb-8 mt-4">
           <img
             src={netbetLogo}
             alt="NetBet Logo"
-            className="h-fit w-45 object-contain mx-auto mb-4"
+            className="h-fit w-38 object-contain mx-auto"
           />
         </div>
 
@@ -94,7 +94,7 @@ const LoginPage = () => {
                 <ErrorMessage
                   name="email"
                   component="div"
-                  className="text-red-error text-sm mt-2"
+                  className="text-red-error text-sm mt-1"
                 />
               </div>
 
@@ -115,7 +115,7 @@ const LoginPage = () => {
                 <ErrorMessage
                   name="password"
                   component="div"
-                  className="text-red-error text-sm mt-2"
+                  className="text-red-error text-sm mt-1"
                 />
               </div>
 
@@ -136,9 +136,9 @@ const LoginPage = () => {
           )}
         </Formik>
 
-        <div className="mt-8 text-center">
-          <p className="text-sm !text-gray-500">
-            Need help? Contact your administrator
+        <div className="mt-6 text-center">
+          <p className="text-xs">
+            Need help? Contact your <span className="text-blue-default underline">administrator</span>
           </p>
         </div>
       </div>

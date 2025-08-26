@@ -92,7 +92,7 @@ const TasksTable = ({
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
   const formatDay = useFormatDay();
-  
+
   // Get reporters for selection
   const { data: reporters = [] } = useSubscribeToReportersQuery();
 
@@ -183,7 +183,7 @@ const TasksTable = ({
           ? false
           : [],
       deliverablesCount: Number(sanitizedTask.deliverablesCount) || 0,
-      reporters: Array.isArray(sanitizedTask.reporters) ? sanitizedTask.reporters : [],
+      reporters: sanitizedTask.reporters || "",
     });
   };
 
@@ -217,9 +217,11 @@ const TasksTable = ({
         taskNumber: t.taskNumber || "", // Preserve the original task number
         jiraLink: t.jiraLink || "", // Preserve the original Jira link
         // Always use arrays - empty array if not selected
-        deliverablesOther: Array.isArray(form.deliverablesOther) ? form.deliverablesOther : [],
+        deliverablesOther: Array.isArray(form.deliverablesOther)
+          ? form.deliverablesOther
+          : [],
         deliverablesCount: Number(form.deliverablesCount) || 0, // Use form value for deliverablesCount
-        reporters: Array.isArray(form.reporters) ? form.reporters : [], // Use form value for reporters
+        reporters: form.reporters || "", // Use form value for reporters
         createdBy: t.createdBy || "", // Preserve creator info
         createdByName: t.createdByName || "", // Preserve creator name
         userUID: t.userUID || "", // Preserve user UID
@@ -237,7 +239,7 @@ const TasksTable = ({
       if (!sanitizedUpdates.product) errs.push("Product");
       if (!sanitizedUpdates.markets.length) errs.push("Markets");
       if (!sanitizedUpdates.deliverables.length) errs.push("Deliverables");
-      if (!sanitizedUpdates.reporters.length) errs.push("Reporters");
+      if (!sanitizedUpdates.reporters) errs.push("Reporters");
       if (sanitizedUpdates.timeInHours < 0.5) errs.push("Hours ≥ 0.5");
 
       // Validate AI fields only if AI is used
@@ -312,7 +314,7 @@ const TasksTable = ({
       showSuccess("Task updated successfully!");
     } catch (e) {
       logger.error("Task update error:", e);
-      showError(`Failed to update task: ${e.message || "Please try again."}`);
+      showError(`Failed to update task: ${e?.message || "Please try again."}`);
     } finally {
       setEditingId(null);
       setRowActionId(null);
@@ -339,7 +341,7 @@ const TasksTable = ({
       showSuccess("Task deleted successfully!");
     } catch (e) {
       logger.error("Task delete error:", e);
-      showError(`Failed to delete task: ${e.message || "Please try again."}`);
+      showError(`Failed to delete task: ${e?.message || "Please try again."}`);
     } finally {
       setRowActionId(null);
     }
@@ -351,16 +353,20 @@ const TasksTable = ({
   // Show error state
   if (hasError) {
     return (
-      <div className="bg-red-error border rounded-lg p-6 text-center text-white">
-        <p className="text-sm">
-          Error loading tasks: {hasError.message || "Unknown error"}
+      <div className=" card border text-center text-white-dark">
+        <p className="text-sm mb-4">
+          Error loading tasks: {hasError?.message || "Unknown error"}
         </p>
-        <button
+        <DynamicButton
           onClick={() => window.location.reload()}
-          className="mt-2 px-4 py-2 bg-white text-red-error rounded hover:bg-gray-100"
+          variant="danger"
+          iconName="alert"
+          iconPosition="left"
+          size="sm
+          "
         >
-          Retry
-        </button>
+          Refresh Page
+        </DynamicButton>
       </div>
     );
   }
@@ -368,14 +374,14 @@ const TasksTable = ({
   // Show empty state
   if (!filteredTasks.length) {
     return (
-      <div className="bg-primary border rounded-lg p-6 text-center text-sm text-gray-200">
+      <div className="card text-center text-sm text-white-dark">
         No tasks found for this month.
       </div>
     );
   }
 
   return (
-    <div className="bg-primary p-6 border rounded-lg overflow-x-auto shadow-sm">
+    <div className="card p-4 overflow-x-auto ">
       <div className="flex-center !mx-0 !justify-between p-3 text-xs text-gray-300">
         <div>
           Showing {startIdx + 1}–{endIdx} of {filteredTasks.length} tasks
@@ -398,17 +404,17 @@ const TasksTable = ({
         </div>
       </div>
 
-      <table className="min-w-full text-xs ">
-        <thead className="bg-secondary text-gray-200 capitalize">
+      <table className="min-w-full text-xs">
+        <thead className=" capitalize">
           <tr>
-            <th>Task #</th>
-            <th>Task</th>
+            <th># ID</th>
+            <th>for</th>
             <th>Markets</th>
             <th>Product</th>
-            <th>Created</th>
+            {/* <th>Created</th> */}
             <th>Hours</th>
-            <th>AI HR</th>
-            <th>AI Model(s)</th>
+            <th>AI Hr</th>
+            <th>AI Models</th>
             <th>AI?</th>
             <th>Reworked?</th>
             <th>Deliverables</th>
@@ -423,16 +429,14 @@ const TasksTable = ({
               (isAnyTaskEditing &&
                 form.deliverables &&
                 form.deliverables.includes("others"))) && (
-              <th key={`others-header-${forceUpdate}`} className="px-2 py-2">
-                Other Deliverables
-              </th>
+              <th key={`others-header-${forceUpdate}`}>Other Deliverables</th>
             )}
             <th>Reporters</th>
-            <th>Count</th>
+            <th>Nr deliverables</th>
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody className="text-red-300 ">
+        <tbody>
           {currentPageTasks.map((t) => {
             let taskId = t.id;
             if (typeof taskId === "string" && taskId.includes("/")) {
@@ -443,13 +447,15 @@ const TasksTable = ({
             return (
               <tr
                 key={taskId}
-                className={` cursor-pointer border-t ${isEdit ? "bg-gray-700" : "hover:bg-primary"} ${rowActionId === taskId ? "opacity-50" : ""}`}
+                className={` cursor-pointer border-t ${isEdit ? "bg-inherit" : "hover:bg-gray-700/90"} `}
               >
-                <td>{safeDisplay(t.taskNumber)}</td>
-                <td className="truncate max-w-[160px] ">
+                <td className="truncate max-w-[60px]  ">
+                  {safeDisplay(t.taskNumber)}
+                </td>
+                <td className="truncate max-w-[100px] ">
                   {isEdit ? (
                     <select
-                      className="border px-2 py-1 rounded w-full"
+                      className=" px-2 py-2.5.5 w-full "
                       value={form.taskName}
                       onChange={(e) =>
                         setForm((f) => ({
@@ -458,7 +464,7 @@ const TasksTable = ({
                         }))
                       }
                     >
-                      <option value="">Select task</option>
+                      <option value="">Select For</option>
                       {taskNameOptions.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
@@ -469,11 +475,11 @@ const TasksTable = ({
                     safeDisplay(t.taskName)
                   )}
                 </td>
-                <td >
+                <td className="truncate max-w-[120px] ">
                   {isEdit ? (
                     <div>
                       <select
-                        className="border px-2 py-2 rounded w-full"
+                        className="px-2 py-2.5.5 w-full "
                         value=""
                         onChange={(e) => {
                           const val = sanitizeText(e.target.value);
@@ -486,7 +492,7 @@ const TasksTable = ({
                           }));
                         }}
                       >
-                        <option value="">Add market…</option>
+                        <option value="">Add market</option>
                         {marketOptions
                           .filter(
                             (o) => !(form.markets || []).includes(o.value)
@@ -501,9 +507,9 @@ const TasksTable = ({
                         {(form.markets || []).map((m) => (
                           <span key={m} className="rounded-grid-small">
                             {m}
-                            <button
+                            <DynamicButton
                               type="button"
-                              className="ml-2"
+                              className="!ml-2 !p-1 text-xs !m-0 !h-auto !bg-transparent !text-gray-700 !shadow-none"
                               onClick={() =>
                                 setForm((f) => ({
                                   ...f,
@@ -514,7 +520,7 @@ const TasksTable = ({
                               }
                             >
                               ×
-                            </button>
+                            </DynamicButton>
                           </span>
                         ))}
                       </div>
@@ -523,10 +529,10 @@ const TasksTable = ({
                     safeDisplay(t.markets || t.market)
                   )}
                 </td>
-                <td >
+                <td className="truncate max-w-[120px] ">
                   {isEdit ? (
                     <select
-                      className=" px-2 py-2 rounded w-full"
+                      className=" px-2 py-2.5 rounded w-full"
                       value={form.product}
                       onChange={(e) =>
                         setForm((f) => ({
@@ -546,14 +552,14 @@ const TasksTable = ({
                     safeDisplay(t.product)
                   )}
                 </td>
-                <td>{formatDay(t.createdAt)}</td>
-                <td>
+                {/* <td>{formatDay(t.createdAt)}</td> */}
+                <td className="truncate max-w-[70px">
                   {isEdit ? (
                     <input
                       type="number"
                       step="0.5"
                       min="0.5"
-                      className="border px-2 py-2 rounded w-15 text-left"
+                      className="border px-2 py-2.5 rounded text-left w-full "
                       value={form.timeInHours}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, timeInHours: e.target.value }))
@@ -563,14 +569,14 @@ const TasksTable = ({
                     numberFmt(parseFloat(t.timeInHours) || 0)
                   )}
                 </td>
-                <td>
+                <td className="truncate max-w-[80px]">
                   {isEdit ? (
                     form.aiUsed ? (
                       <input
                         type="number"
                         step="0.5"
                         min="0.5"
-                        className="border px-2 py-2 rounded w-15 "
+                        className="border px-2 py-2.5 rounded w-full"
                         value={form.timeSpentOnAI}
                         onChange={(e) =>
                           setForm((f) => ({
@@ -580,18 +586,18 @@ const TasksTable = ({
                         }
                       />
                     ) : (
-                      <span className="text-gray-300">-</span>
+                      <span className="text-white-dark">--</span>
                     )
                   ) : (
                     numberFmt(parseFloat(t.timeSpentOnAI) || 0)
                   )}
                 </td>
-                <td >
+                <td>
                   {isEdit ? (
                     form.aiUsed ? (
                       <div>
                         <select
-                          className="border px-2 py-2 rounded w-full"
+                          className="border px-2 py-2.5 rounded w-full"
                           value=""
                           onChange={(e) => {
                             const v = sanitizeText(e.target.value);
@@ -604,7 +610,7 @@ const TasksTable = ({
                             }));
                           }}
                         >
-                          <option value="">Add model…</option>
+                          <option value="">Add model</option>
                           {aiModelOptions
                             .filter(
                               (o) => !(form.aiModels || []).includes(o.value)
@@ -619,9 +625,9 @@ const TasksTable = ({
                           {(form.aiModels || []).map((m) => (
                             <span key={m} className="rounded-grid-small">
                               {m}
-                              <button
+                              <DynamicButton
                                 type="button"
-                                className="ml-2"
+                                className="!ml-2 !p-1 text-xs !m-0 !h-auto !bg-transparent !text-gray-700 !shadow-none"
                                 onClick={() =>
                                   setForm((f) => ({
                                     ...f,
@@ -632,13 +638,13 @@ const TasksTable = ({
                                 }
                               >
                                 ×
-                              </button>
+                              </DynamicButton>
                             </span>
                           ))}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-gray-300">AI off</span>
+                      <span className="text-white-dark">AI off</span>
                     )
                   ) : t.aiUsed ? (
                     t.aiModels && t.aiModels !== false ? (
@@ -690,7 +696,7 @@ const TasksTable = ({
                   {isEdit ? (
                     <div>
                       <select
-                        className="px-2 py-2"
+                        className="px-2 py-2.5"
                         value=""
                         onChange={(e) => {
                           const v = sanitizeText(e.target.value);
@@ -703,7 +709,7 @@ const TasksTable = ({
                           }));
                         }}
                       >
-                        <option value="">Add deliverable…</option>
+                        <option value="">Add deliverable</option>
                         {deliverables
                           .filter(
                             (o) => !(form.deliverables || []).includes(o.value)
@@ -718,9 +724,9 @@ const TasksTable = ({
                         {(form.deliverables || []).map((d) => (
                           <span key={d} className="rounded-grid-small">
                             {d}
-                            <button
+                            <DynamicButton
                               type="button"
-                              className="ml-2"
+                              className="!ml-2 !p-1 text-xs !m-0 !h-auto !bg-transparent !text-gray-700 !shadow-none"
                               onClick={() =>
                                 setForm((f) => ({
                                   ...f,
@@ -731,7 +737,7 @@ const TasksTable = ({
                               }
                             >
                               ×
-                            </button>
+                            </DynamicButton>
                           </span>
                         ))}
                       </div>
@@ -782,7 +788,7 @@ const TasksTable = ({
                               deliverablesOther: newValues,
                             }))
                           }
-                          placeholder="Enter other deliverables..."
+                          placeholder="Enter other deliverables"
                           maxValues={5}
                         />
                       ) : t.deliverablesOther &&
@@ -794,57 +800,36 @@ const TasksTable = ({
                     </td>
                   );
                 })()}
-                <td>
+                <td className="truncate max-w-[120px]">
                   {isEdit ? (
                     <div>
                       <select
-                        className="border px-2 py-2 rounded w-full"
-                        value=""
+                        className="border px-2 py-2.5  w-full"
+                        value={form.reporters || ""}
                         onChange={(e) => {
-                          const selectedReporter = e.target.value;
-                          if (!selectedReporter) return;
                           setForm((f) => ({
                             ...f,
-                            reporters: (f.reporters || []).includes(selectedReporter)
-                              ? f.reporters
-                              : [...(f.reporters || []), selectedReporter],
+                            reporters: e.target.value,
                           }));
                         }}
                       >
-                        <option value="">Add reporter…</option>
+                        <option value="">Select reporter…</option>
                         {reporters.map((reporter) => (
                           <option key={reporter.id} value={reporter.id}>
-                            {reporter.name}
+                            {reporter.name} ({reporter.email})
                           </option>
                         ))}
                       </select>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {(form.reporters || []).map((reporterId) => {
-                          const reporter = reporters.find(r => r.id === reporterId);
-                          return (
-                            <span key={reporterId} className="rounded-grid-small">
-                              {reporter ? reporter.name : reporterId}
-                              <button
-                                type="button"
-                                className="ml-2"
-                                onClick={() =>
-                                  setForm((f) => ({
-                                    ...f,
-                                    reporters: (f.reporters || []).filter(
-                                      (x) => x !== reporterId
-                                    ),
-                                  }))
-                                }
-                              >
-                                ×
-                              </button>
-                            </span>
-                          );
-                        })}
-                      </div>
                     </div>
                   ) : (
-                    safeDisplay(t.reporters)
+                    (() => {
+                      const reporter = reporters.find(
+                        (r) => r.id === t.reporters
+                      );
+                      return reporter
+                        ? `${reporter.name} (${reporter.email})`
+                        : t.reporters || "No reporter";
+                    })()
                   )}
                 </td>
                 <td>
@@ -852,7 +837,7 @@ const TasksTable = ({
                     <input
                       type="number"
                       min="1"
-                      className="px-2 py-2 rounded w-20 text-start"
+                      className="px-2 py-2.5 rounded w-20 text-start"
                       value={form.deliverablesCount || 0}
                       onChange={(e) =>
                         setForm((f) => ({
@@ -865,17 +850,15 @@ const TasksTable = ({
                     Number(t.deliverablesCount) || 0
                   )}
                 </td>
-                <td className=" text-start space-x-2 flex flex-row">
+                <td className="text-start space-x-2 flex flex-row">
                   {isEdit ? (
                     <>
                       <DynamicButton
                         variant="success"
-                        size="md"
+                        size="xs"
                         onClick={() => saveEdit(t)}
-                        icon={CheckIcon}
-                        iconPosition="right"
-                        title="Save"
-                      
+                        iconName="save"
+                        iconPosition="center"
                         disabled={
                           rowActionId === taskId ||
                           !(() => {
@@ -886,7 +869,8 @@ const TasksTable = ({
                               !form.markets?.length ||
                               !form.deliverables?.length ||
                               !form.timeInHours ||
-                              form.timeInHours < 0.5
+                              form.timeInHours < 0.5 ||
+                              !form.reporters
                             ) {
                               return false;
                             }
@@ -912,16 +896,14 @@ const TasksTable = ({
                             return true;
                           })()
                         }
-                     
                       />
 
                       <DynamicButton
                         variant="danger"
                         size="xs"
                         onClick={cancelEdit}
-                        icon={XMarkIcon}
-                        iconPosition="left"
-                        title="Cancel"
+                        iconName="cancel"
+                        iconPosition="center"
                       />
                     </>
                   ) : (
@@ -930,33 +912,25 @@ const TasksTable = ({
                         variant="primary"
                         size="xs"
                         onClick={() => handleSelect(t)}
-                        className="bg-blue-600 hover:bg-blue-700"
                         title="View Task"
                       >
                         View
                       </DynamicButton>
                       <DynamicButton
-                        variant="primary"
-                        size="md"
+                        variant="edit"
+                        size="xs"
                         disabled={rowActionId === taskId}
                         onClick={() => startEdit(t)}
-                        icon={PencilIcon}
-                        iconPosition="left"
-                        title="Edit"
-                        className={
-                          rowActionId === taskId
-                            ? "bg-blue-400 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700"
-                        }
+                        iconName="edit"
+                        iconPosition="center"
                       />
                       <DynamicButton
                         variant="danger"
-                        size="md"
+                        size="xs"
                         disabled={rowActionId === taskId}
                         onClick={() => removeTask(t)}
-                        icon={TrashIcon}
-                        iconPosition="left"
-                        title="Delete"
+                        iconName="delete"
+                        iconPosition="center"
                         className={
                           rowActionId === taskId
                             ? "bg-red-400 cursor-not-allowed"
@@ -981,10 +955,10 @@ const TasksTable = ({
             onPageChange={handlePageChange}
             forcePage={currentPage}
             containerClassName="flex justify-center space-x-1"
-            pageClassName="px-3 py-1 border rounded hover:bg-gray-100 text-gray-700"
+            pageClassName="px-3 py-1 border rounded text-gray-700"
             activeClassName="bg-blue-500 text-white border-blue-500"
-            previousClassName="px-3 py-1 border rounded hover:bg-gray-100 text-gray-700"
-            nextClassName="px-3 py-1 border rounded hover:bg-gray-100 text-gray-700"
+            previousClassName="px-3 py-1 border rounded 0 text-gray-700"
+            nextClassName="px-3 py-1 border rounded  text-gray-700"
             disabledClassName="opacity-50 cursor-not-allowed text-gray-400"
             previousLabel="Previous"
             nextLabel="Next"
