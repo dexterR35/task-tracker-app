@@ -6,7 +6,8 @@ const Loader = ({
   className = '',
   variant = 'spinner', // 'spinner' or 'dots'
   fullScreen = false, // Add fullScreen prop for consistent full-screen loading
-  minHeight = 'auto' // Allow custom min-height for different contexts
+  minHeight = 'auto', // Allow custom min-height for different contexts
+  showText = true // Allow hiding text for inline loaders
 }) => {
   const sizeClasses = {
     sm: 'w-4 h-4',
@@ -37,7 +38,7 @@ const Loader = ({
   const content = (
     <div className="flex-center flex-col space-y-4 p-8">
       {variant === 'spinner' ? <Spinner /> : <Dots />}
-      {text && (
+      {showText && text && (
         <p className={`text-gray-300 ${textSizes[size]} text-center`}>
           {text}
         </p>

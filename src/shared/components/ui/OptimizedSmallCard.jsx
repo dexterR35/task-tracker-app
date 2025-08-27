@@ -24,7 +24,6 @@ const OptimizedSmallCard = ({
   trendDirection = "neutral",
   className = "",
   onClick,
-  loading = false,
   // Analytics data from centralized calculator
   analyticsData = null,
   ...props
@@ -110,7 +109,7 @@ const OptimizedSmallCard = ({
         </div>
 
         {/* Main Content */}
-        {isLoading || loading ? (
+        {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader />
           </div>

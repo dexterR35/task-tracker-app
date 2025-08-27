@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { selectIsAdmin } from "../../features/auth/authSlice";
 import {
   useSubscribeToMonthBoardQuery,
+  useSubscribeToMonthTasksQuery,
   useGenerateMonthBoardMutation,
 } from "../../features/tasks/tasksApi";
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
@@ -19,26 +20,41 @@ const DashboardPage = () => {
 
   // Local state
   const [showTaskForm, setShowTaskForm] = useState(false);
-  
-
-  
 
   const [generateMonthBoard, { isLoading: isGeneratingBoard }] =
     useGenerateMonthBoardMutation();
 
   // Board queries - both admin and user use real-time subscription
-  const boardData = useSubscribeToMonthBoardQuery({ monthId });
   const {
     data: board = { exists: false },
     isLoading: boardLoading,
     error: boardError,
-  } = boardData;
+  } = useSubscribeToMonthBoardQuery({ monthId });
 
-  // Debug logging (commented out)
-  // console.log(`[DashboardPage] monthId: ${monthId}, board.exists: ${board?.exists}, isAdmin: ${isAdmin}`);
+  // Get tasks loading state to ensure all data is loaded
+  const { 
+    data: tasks = [], 
+    isLoading: tasksLoading,
+    error: tasksError 
+  } = useSubscribeToMonthTasksQuery(
+    { monthId, userId: user?.uid },
+    { skip: !monthId || !user }
+  );
 
-  // Check if any API operations are loading
-  const isLoading = boardLoading || isGeneratingBoard;
+  // Simplified loading logic - only show loading when data is being fetched
+  const isLoading = boardLoading || tasksLoading || isGeneratingBoard;
+
+  // Show loading state only when data is being fetched
+  if (isLoading) {
+    return (
+      <Loader 
+        size="xl" 
+        variant="spinner" 
+        text="Loading dashboard..." 
+        fullScreen={true}
+      />
+    );
+  }
 
   // Ensure user is authenticated
   if (!user) {
@@ -54,13 +70,9 @@ const DashboardPage = () => {
     );
   }
 
-
-
   // Handle generate month board (admin only)
   const handleGenerateBoard = async () => {
     try {
-      // logger.debug(`[DashboardPage] Starting month board generation for monthId: ${monthId}`);
-      
       // Use the month ID from the API response
       const result = await generateMonthBoard({
         monthId,
@@ -82,50 +94,31 @@ const DashboardPage = () => {
         console.log(`[DashboardPage] API didn't return monthId, using fallback: ${monthId}`);
         setMonthId(monthId);
       }
-      
-      // Debug: Check if monthId was updated
-      // console.log(`[DashboardPage] After setMonthId, current monthId: ${monthId}`);
 
       const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess(
         `Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`
       );
     } catch (error) {
-      console.error(`[DashboardPage] Failed to generate month board:`, error);
+      console.error("[DashboardPage] Error generating month board:", error);
       const { showError } = await import("../../shared/utils/toast");
-      showError(`Failed to create board: ${error.message}`);
+      showError(
+        `Failed to create board: ${error?.data?.message || error?.message || "Unknown error"}`
+      );
     }
   };
 
-  // Handle toggle task form
-  const handleToggleTaskForm = () => {
-    setShowTaskForm(!showTaskForm);
-  };
-
-  if (isLoading) {
-    return (
-      <Loader 
-        size="xl" 
-        variant="spinner" 
-        text="Please wait..." 
-        fullScreen={true}
-      />
-    );
-  }
-
   return (
-    <div className="min-h-screen p-2">
-      <div className="max-w-7xl mx-auto">
-        <DashboardWrapper
-            onGenerateBoard={isAdmin ? handleGenerateBoard : null}
-            isGeneratingBoard={isGeneratingBoard}
-            board={board}
-            showTaskForm={showTaskForm}
-            onToggleTaskForm={handleToggleTaskForm}
-          />
-        </div>
-      </div>
-    );
-  };
+    <div className="container mx-auto px-4 py-6">
+      <DashboardWrapper
+        board={board}
+        onGenerateBoard={handleGenerateBoard}
+        isGeneratingBoard={isGeneratingBoard}
+        showTaskForm={showTaskForm}
+        onToggleTaskForm={() => setShowTaskForm(!showTaskForm)}
+      />
+    </div>
+  );
+};
 
 export default DashboardPage;

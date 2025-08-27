@@ -12,14 +12,9 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../../app/firebase";
 import { logger } from "../../shared/utils/logger";
-import { 
-  isRateLimited, 
-  isAccountLocked, 
-  getLockoutTimeRemaining,
-  trackLoginAttempt, 
-  validateLoginAttempt,
-  SECURITY_CONFIG 
-} from "../../shared/utils/security";
+
+
+
 
 // --- Configuration & Constants ---
 const VALID_ROLES = ["admin", "user"];
@@ -113,34 +108,9 @@ export const setupAuthListener = (dispatch) => {
 // --- Async Thunks ---
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
-  async ({ email, password }, { rejectWithValue, getState }) => {
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      // Step 1: Validate login attempt
-      const validation = validateLoginAttempt(email, password);
-      if (!validation.isValid) {
-        throw new Error(validation.errors[0]);
-      }
-      
-      // Step 2: Check account lockout and rate limiting
-      const state = getState();
-      const { failedAttempts, lastFailedAttempt, lastLoginAttempt } = state.auth;
-      
-      // Check if account is locked due to too many failed attempts
-      if (isAccountLocked(failedAttempts, lastFailedAttempt)) {
-        const remainingTime = getLockoutTimeRemaining(lastFailedAttempt);
-        const minutes = Math.ceil(remainingTime / (1000 * 60));
-        throw new Error(`Account temporarily locked. Please wait ${minutes} minutes before trying again.`);
-      }
-      
-      // Check rate limiting for rapid attempts (only if there was a recent attempt)
-      if (lastLoginAttempt && isRateLimited(lastLoginAttempt)) {
-        throw new Error("Too many rapid login attempts. Please wait 5 seconds before trying again.");
-      }
-      
-      // Step 3: Track login attempt
-      trackLoginAttempt(false, email);
-      
-      // Step 4: Authenticate with Firebase
+      // Authenticate with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       // Step 3: Fetch user data from Firestore
@@ -172,13 +142,10 @@ export const loginUser = createAsyncThunk(
         // Don't fail login if timestamp update fails
       }
       
-      // Step 6: Track successful login and reset failed attempts
-      trackLoginAttempt(true, email);
-      
-      // Step 7: Return normalized user data with reset flag
+      // Return normalized user data
       const normalizedUser = normalizeUser(userCredential.user, firestoreData);
       
-      return { user: normalizedUser, resetAttempts: true };
+      return { user: normalizedUser };
     } catch (error) {
       logger.error("Login error:", error);
       
@@ -205,6 +172,8 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await signOut(auth);
+      // Clear session data
+
       // The auth listener will handle the state update automatically
       return null;
     } catch (error) {
@@ -214,17 +183,7 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-export const requireReauth = createAsyncThunk(
-  "auth/requireReauth",
-  async ({ message = "Please sign in again" }, { rejectWithValue }) => {
-    try {
-      return { message };
-    } catch (error) {
-      logger.error("Reauth error:", error);
-      return rejectWithValue(error.message);
-    }
-  }
-);
+
 
 // --- Slice ---
 const initialState = {
@@ -233,11 +192,6 @@ const initialState = {
   isLoading: false, // Only true during login/logout attempts
   isAuthChecking: true, // Start as true to prevent flash of login page on refresh
   error: null,
-  reauthRequired: false,
-  reauthMessage: null,
-  lastLoginAttempt: null,
-  failedAttempts: 0,
-  lastFailedAttempt: null,
 };
 
 const authSlice = createSlice({
@@ -247,10 +201,7 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    clearReauth: (state) => {
-      state.reauthRequired = false;
-      state.reauthMessage = null;
-    },
+
     setLoading: (state, action) => {
       state.isLoading = action.payload;
     },
@@ -261,8 +212,8 @@ const authSlice = createSlice({
       state.user = user;
       state.isAuthenticated = !!user;
       state.error = error || null;
-      state.reauthRequired = false;
-      state.reauthMessage = null;
+      
+
     },
     // Add a new action to start auth initialization
     startAuthInit: (state) => {
@@ -270,20 +221,7 @@ const authSlice = createSlice({
       state.isAuthChecking = true; // Mark that we're checking auth
       state.error = null;
     },
-    // Track login attempts for rate limiting
-    setLoginAttempt: (state) => {
-      state.lastLoginAttempt = Date.now();
-    },
-    // Reset failed attempts (for successful login)
-    resetFailedAttempts: (state) => {
-      state.failedAttempts = 0;
-      state.lastFailedAttempt = null;
-    },
-    // Increment failed attempts
-    incrementFailedAttempts: (state) => {
-      state.failedAttempts += 1;
-      state.lastFailedAttempt = Date.now();
-    },
+
   },
   extraReducers: (builder) => {
     builder
@@ -295,19 +233,12 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         // Set user data immediately from the thunk result
-        const { user, resetAttempts } = action.payload;
+        const { user } = action.payload;
         state.user = user;
         state.isAuthenticated = true;
         state.isLoading = false;
         state.isAuthChecking = false;
         state.error = null;
-        state.lastLoginAttempt = Date.now();
-        
-        // Reset failed attempts on successful login
-        if (resetAttempts) {
-          state.failedAttempts = 0;
-          state.lastFailedAttempt = null;
-        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -315,17 +246,6 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
         state.user = null;
-        state.lastLoginAttempt = Date.now();
-        
-        // Increment failed attempts for authentication errors
-        if (action.payload && (
-          action.payload.includes("password") || 
-          action.payload.includes("account") ||
-          action.payload.includes("email")
-        )) {
-          state.failedAttempts += 1;
-          state.lastFailedAttempt = Date.now();
-        }
       })
       
       // Logout
@@ -344,17 +264,11 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Reauth
-      .addCase(requireReauth.fulfilled, (state, action) => {
-        state.reauthRequired = true;
-        state.reauthMessage = action.payload.message;
-        state.isAuthenticated = false;
-        state.user = null;
-      });
+
   },
 });
 
-export const { clearError, clearReauth, setLoading, authStateChanged, startAuthInit, setLoginAttempt } = authSlice.actions;
+export const { clearError, setLoading, authStateChanged, startAuthInit } = authSlice.actions;
 
 // --- Selectors ---
 export const selectUser = (state) => state.auth.user;
@@ -362,8 +276,7 @@ export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectIsLoading = (state) => state.auth.isLoading;
 export const selectIsAuthChecking = (state) => state.auth.isAuthChecking;
 export const selectAuthError = (state) => state.auth.error;
-export const selectReauthRequired = (state) => state.auth.reauthRequired;
-export const selectReauthMessage = (state) => state.auth.reauthMessage;
+
 export const selectUserRole = (state) => state.auth.user?.role;
 export const selectIsAdmin = (state) => state.auth.user?.role === "admin";
 export const selectIsUser = (state) => state.auth.user?.role === "user";
@@ -374,9 +287,6 @@ export const selectUserPermissions = createSelector(
 );
 
 export const selectIsUserActive = (state) => state.auth.user?.isActive !== false;
-export const selectLastLoginAttempt = (state) => state.auth.lastLoginAttempt;
-export const selectFailedAttempts = (state) => state.auth.failedAttempts;
-export const selectLastFailedAttempt = (state) => state.auth.lastFailedAttempt;
 
 // Role-based selectors
 export const selectCanAccessAdmin = createSelector(

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, lazy, Suspense } from "react";
+import React, { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSubscribeToMonthTasksQuery } from "../tasksApi";
 import { useSubscribeToUsersQuery } from "../../users/usersApi";
@@ -12,12 +12,10 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 
-// Lazy load components that are not immediately needed
-const OptimizedTaskMetricsBoard = lazy(
-  () => import("./OptimizedTaskMetricsBoard")
-);
-const TasksTable = lazy(() => import("./TasksTable"));
-const TaskForm = lazy(() => import("./TaskForm"));
+// Import components directly since data is already loaded
+import OptimizedTaskMetricsBoard from "./OptimizedTaskMetricsBoard";
+import TasksTable from "./TasksTable";
+import TaskForm from "./TaskForm";
 
 const DashboardWrapper = ({
   showTable = true,
@@ -74,7 +72,7 @@ const DashboardWrapper = ({
   );
 
   // Use the real-time subscription to get tasks
-  const { data: tasks = [], error: tasksError } = useSubscribeToMonthTasksQuery(
+  const { data: tasks = [], error: tasksError, isLoading: tasksLoading } = useSubscribeToMonthTasksQuery(
     queryParams,
     {
       // Skip if no monthId or not authenticated
@@ -209,26 +207,14 @@ const DashboardWrapper = ({
       {/* Task Form */}
       {showTaskForm && board?.exists && (
         <div className="bg-purple-500">
-          <Suspense
-            fallback={
-              <div className="p-4 text-center">Loading task form...</div>
-            }
-          >
-            <TaskForm />
-          </Suspense>
+          <TaskForm />
         </div>
       )}
 
       {/* Main Dashboard Content */}
       {board?.exists && (
         <div>
-          <Suspense
-            fallback={
-              <div className="p-4 text-center">Loading metrics board...</div>
-            }
-          >
-            <OptimizedTaskMetricsBoard userId={userId} showSmallCards={true} />
-          </Suspense>
+          <OptimizedTaskMetricsBoard userId={userId} showSmallCards={true} />
 
           {/* Table Header with Toggle Button */}
           {showTableToggle && (
@@ -254,13 +240,7 @@ const DashboardWrapper = ({
 
           {/* Tasks Table - Show only if we have data AND showTable is true */}
           {showTasksTable && tasks.length > 0 && (
-            <Suspense
-              fallback={
-                <div className="p-4 text-center">Loading tasks table...</div>
-              }
-            >
-              <TasksTable tasks={tasks} error={null} />
-            </Suspense>
+            <TasksTable tasks={tasks} error={null} />
           )}
 
           {/* Show message if no tasks */}

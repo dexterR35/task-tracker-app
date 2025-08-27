@@ -11,7 +11,6 @@ import {
   ClipboardDocumentListIcon,
   ClockIcon,
   SparklesIcon,
-  ExclamationTriangleIcon,
   UserGroupIcon,
   GlobeAltIcon,
   CubeIcon,
@@ -172,7 +171,10 @@ const OptimizedTaskMetricsBoard = ({
     getMetric,
     hasData,
     error,
+    isLoading,
   } = useCentralizedAnalytics(monthId, userId);
+
+
 
   // Add error boundary for analytics
   if (error) {
@@ -216,7 +218,6 @@ const OptimizedTaskMetricsBoard = ({
               trend={cardConfig.trend}
               trendValue={cardConfig.trendValue}
               trendDirection={cardConfig.trendDirection}
-              loading={false}
               analyticsData={{ value: 0, additionalData: {} }}
             />
           );
@@ -236,7 +237,6 @@ const OptimizedTaskMetricsBoard = ({
             trend={cardConfig.trend}
             trendValue={cardConfig.trendValue}
             trendDirection={cardConfig.trendDirection}
-            loading={false}
             analyticsData={metricData}
           />
         );

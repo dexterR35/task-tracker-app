@@ -6,21 +6,23 @@ import { useAuth } from "../shared/hooks/useAuth";
 import Layout from "../shared/components/layout/Layout";
 import Loader from "../shared/components/ui/Loader";
 
-// Lazy load all page components
-const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+// Import static pages directly (no lazy loading needed)
+import LoginPage from "../pages/auth/LoginPage";
+import HomePage from "../pages/dashboard/HomePage";
+
+// Lazy load dynamic pages that need data
 const TaskDetailPage = lazy(() => import("../pages/dashboard/TaskDetailPage"));
-const HomePage = lazy(() => import("../pages/dashboard/HomePage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
 const AdminReportersPage = lazy(() => import("../pages/admin/AdminReportersPage"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
 
 // Loading component for lazy-loaded pages
-const PageLoader = () => (
+const PageLoader = ({ text = "Loading..." }) => (
   <div className="min-h-screen flex-center bg-primary">
     <Loader 
       size="xl" 
-      text="Loading page..." 
+      text={text} 
       variant="spinner" 
       fullScreen={true}
     />
@@ -28,8 +30,8 @@ const PageLoader = () => (
 );
 
 // Wrapper component for lazy-loaded pages with Suspense
-const LazyPage = ({ children }) => (
-  <Suspense fallback={<PageLoader />}>
+const LazyPage = ({ children, loadingText = "Loading..." }) => (
+  <Suspense fallback={<PageLoader text={loadingText} />}>
     {children}
   </Suspense>
 );
@@ -72,6 +74,12 @@ const ProtectedRoute = ({ children, requiredRole = null, redirectToLogin = true 
       );
     }
     return children; // Allow unauthenticated access for login page
+  }
+
+  // If user is authenticated and on login page, redirect to appropriate dashboard
+  if (location.pathname === "/login") {
+    const redirectTo = user.role === "admin" ? "/admin" : "/user";
+    return <Navigate to={redirectTo} replace />;
   }
 
   // Check if user account is active
@@ -168,7 +176,7 @@ const RootIndex = () => {
     return <Navigate to={redirectTo} replace />;
   }
 
-  return <LazyPage><HomePage /></LazyPage>;
+  return <HomePage />;
 };
 
 const router = createBrowserRouter([
@@ -177,14 +185,15 @@ const router = createBrowserRouter([
     element: <Layout />,
     errorElement: <NotFoundPage />,
     children: [
-      { index: true, element: <RootIndex /> },
+      { 
+        index: true, 
+        element: <RootIndex /> 
+      },
       {
         path: "login",
         element: (
           <ProtectedRoute redirectToLogin={false}>
-            <LazyPage>
-              <LoginPage />
-            </LazyPage>
+            <LoginPage />
           </ProtectedRoute>
         ),
       },
@@ -196,7 +205,7 @@ const router = createBrowserRouter([
         path: "user",
         element: (
           <ProtectedRoute requiredRole="user">
-            <LazyPage>
+            <LazyPage loadingText="Loading dashboard...">
               <DashboardPage />
             </LazyPage>
           </ProtectedRoute>
@@ -206,7 +215,7 @@ const router = createBrowserRouter([
         path: "admin",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <LazyPage>
+            <LazyPage loadingText="Loading dashboard...">
               <DashboardPage />
             </LazyPage>
           </ProtectedRoute>

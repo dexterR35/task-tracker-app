@@ -1,15 +1,10 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { useAuth, useAuthActions } from "../../hooks/useAuth";
-import { useDispatch } from "react-redux";
+import {  useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 import DynamicButton from "../ui/DynamicButton";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { logger } from "../../utils/logger";
-import { auth } from "../../../app/firebase";
-
-// Lazy load components that are not immediately needed
-const ReauthModal = lazy(() => import("../auth/ReauthModal"));
 
 import {
   ArrowRightOnRectangleIcon,
@@ -24,33 +19,16 @@ import { Icons } from "../../icons";
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
   const {
     user,
     isAuthenticated,
     isLoading,
     isAuthChecking,
-    reauthRequired,
-    error,
-    isAdmin, // Use from useAuth instead of useSelector
-    hasPermission,
+    isAdmin,
+    logout,
+    clearError,
   } = useAuth();
 
-  const { logout, handleReauth, clearReauthRequirement, forceReauth, clearError } = useAuthActions();
-
-  const [showReauthModal, setShowReauthModal] = useState(false);
-  const [isReauthProcessing, setIsReauthProcessing] = useState(false);
-  const reauthTimeoutRef = useRef(null);
-  
-
-
-  // Show reauth modal when reauth is required
-  useEffect(() => {
-    if (reauthRequired && !showReauthModal) {
-      logger.log("Reauth required, showing modal");
-      setShowReauthModal(true);
-    }
-  }, [reauthRequired, showReauthModal]);
 
   // Debug auth state changes
   useEffect(() => {
@@ -58,21 +36,11 @@ const Layout = () => {
       logger.log("Auth state changed:", {
         isAuthenticated,
         user: user?.email,
-        reauthRequired,
         isLoading,
         isAuthChecking,
       });
     }
-  }, [isAuthenticated, user, reauthRequired, isLoading, isAuthChecking]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (reauthTimeoutRef.current) {
-        clearTimeout(reauthTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [isAuthenticated, user, isLoading, isAuthChecking]);
 
   const handleLogout = async () => {
     try {
@@ -80,72 +48,11 @@ const Layout = () => {
       navigate("/");
     } catch (error) {
       logger.error("Logout failed:", error);
-      // Clear any auth errors after logout
       clearError();
     }
   };
 
-  const handleReauthSubmit = async (password) => {
-    try {
-      logger.log("Attempting reauthentication...");
-      setIsReauthProcessing(true);
 
-      await handleReauth(password);
-      logger.log("Reauthentication successful");
-
-      // Clear any existing timeout
-      if (reauthTimeoutRef.current) {
-        clearTimeout(reauthTimeoutRef.current);
-      }
-
-      // Close modal after successful reauthentication with a delay
-      reauthTimeoutRef.current = setTimeout(() => {
-        logger.log("Closing reauth modal after successful reauthentication");
-        setShowReauthModal(false);
-        setIsReauthProcessing(false);
-        clearReauthRequirement();
-        reauthTimeoutRef.current = null;
-      }, 1000);
-    } catch (error) {
-      logger.error("Reauthentication failed:", error);
-      setIsReauthProcessing(false);
-      // Don't close modal on error, let user try again
-      // Error is handled by the hook and shown to user
-    }
-  };
-
-  const handleReauthClose = () => {
-    logger.log("User cancelled reauthentication");
-    setShowReauthModal(false);
-    // Clear any auth errors
-    clearError();
-    // Force logout if user cancels reauth
-    logout();
-  };
-
-  // Test function to simulate session expiration (for development only) - Updated
-  const testSessionExpiration = () => {
-    if (import.meta.env.MODE === "development") {
-      logger.log("Testing session expiration...");
-
-      // Method 1: Force token refresh to trigger potential expiration
-      if (auth.currentUser) {
-        auth.currentUser.getIdToken(true).catch((err) => {
-          logger.error("Token refresh failed:", err);
-        });
-      }
-
-      // Method 2: Directly trigger reauth modal for testing
-      setTimeout(() => {
-        logger.log(
-          "Simulating session expiration - triggering reauth modal..."
-        );
-        // Use forceReauth for testing
-        forceReauth("Test: Session expired. Please re-enter your password.");
-        logger.log("Reauth modal should appear now");
-      }, 1000);
-    }
-  };
 
 
 
@@ -295,17 +202,7 @@ const Layout = () => {
                     Logout
                   </DynamicButton>
 
-                  {/* Test button for session expiration (development only) */}
-                  {import.meta.env.MODE === "development" && isAdmin && (
-                    <DynamicButton
-                      variant="outline"
-                      size="sm"
-                      onClick={testSessionExpiration}
-                      className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
-                    >
-                      Test Session
-                    </DynamicButton>
-                  )}
+
                 </>
               )}
 
@@ -332,15 +229,7 @@ const Layout = () => {
         <Outlet />
       </main>
 
-      <Suspense fallback={<div>Loading Reauth Modal...</div>}>
-        <ReauthModal
-          isOpen={showReauthModal}
-          onClose={handleReauthClose}
-          onReauth={handleReauthSubmit}
-          error={error}
-          isProcessing={isReauthProcessing}
-        />
-      </Suspense>
+
     </div>
   );
 };
