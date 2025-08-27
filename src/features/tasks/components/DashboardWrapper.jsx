@@ -3,7 +3,6 @@ import { useSubscribeToMonthTasksQuery } from "../tasksApi";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
-import { showError } from "../../../shared/utils/toast";
 import { format } from "date-fns";
 import {
   ChevronDownIcon,
@@ -69,8 +68,9 @@ const DashboardWrapper = ({
   };
 
   // Handle create task
-  const handleCreateTask = () => {
+  const handleCreateTask = async () => {
     if (!board?.exists) {
+      const { showError } = await import("../../../shared/utils/toast");
       showError(
         `Cannot create task: Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} is not created yet. Please create the board first.`
       );

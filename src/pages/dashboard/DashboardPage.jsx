@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../shared/hooks/useAuth";
 import { useSelector } from "react-redux";
 import { selectIsAdmin } from "../../features/auth/authSlice";
-import { showError, showSuccess } from "../../shared/utils/toast";
 import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import {
   useSubscribeToMonthBoardQuery,
@@ -104,11 +103,13 @@ const DashboardPage = () => {
         setMonthId(monthId);
       }
 
+      const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess(
         `Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`
       );
     } catch (error) {
       console.error(`[DashboardPage] Failed to generate month board:`, error);
+      const { showError } = await import("../../shared/utils/toast");
       showError(`Failed to create board: ${error.message}`);
     }
   };

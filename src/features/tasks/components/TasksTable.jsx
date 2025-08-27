@@ -22,7 +22,6 @@ import {
   sanitizeTaskData,
   sanitizeText,
 } from "../../../shared/utils/sanitization";
-import { showSuccess, showError } from "../../../shared/utils/toast";
 import { logger } from "../../../shared/utils/logger";
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
@@ -261,6 +260,7 @@ const TasksTable = ({
       }
 
       if (errs.length) {
+        const { showError } = await import("../../../shared/utils/toast");
         showError("Please complete: " + errs.join(", "));
         setRowActionId(null);
         return;
@@ -307,9 +307,11 @@ const TasksTable = ({
         monthId: taskMonthId,
         updates: updatesWithMonthId,
       });
+      const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task updated successfully!");
     } catch (e) {
       logger.error("Task update error:", e);
+      const { showError } = await import("../../../shared/utils/toast");
       showError(`Failed to update task: ${e?.message || "Please try again."}`);
     } finally {
       setEditingId(null);
@@ -334,9 +336,11 @@ const TasksTable = ({
 
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
+      const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task deleted successfully!");
     } catch (e) {
       logger.error("Task delete error:", e);
+      const { showError } = await import("../../../shared/utils/toast");
       showError(`Failed to delete task: ${e?.message || "Please try again."}`);
     } finally {
       setRowActionId(null);

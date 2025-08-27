@@ -8,7 +8,6 @@ import { format } from "date-fns";
 import { useDispatch } from "react-redux";
 import { useCreateTaskMutation } from "../tasksApi";
 import { useSubscribeToReportersQuery } from "../../reporters/reportersApi";
-import { showSuccess, showError } from "../../../shared/utils/toast";
 import { logger } from "../../../shared/utils/logger";
 import {
   marketOptions,
@@ -199,6 +198,7 @@ const TaskForm = ({
 
   // Handle custom submission or create task via API
   const submitTask = async (taskData) => {
+    const { showSuccess } = await import("../../../shared/utils/toast");
     if (customOnSubmit) {
       await customOnSubmit(taskData);
       showSuccess("Task created successfully!");
@@ -217,7 +217,8 @@ const TaskForm = ({
   };
 
   // Handle submission errors
-  const handleSubmissionError = (error) => {
+  const handleSubmissionError = async (error) => {
+    const { showError } = await import("../../../shared/utils/toast");
     if (
       error?.code === "month-not-generated" ||
       error?.message === "MONTH_NOT_GENERATED"
@@ -245,6 +246,7 @@ const TaskForm = ({
       // Validate sanitized data
       const validationErrors = validateTaskCreationData(sanitizedValues);
       if (validationErrors.length > 0) {
+        const { showError } = await import("../../../shared/utils/toast");
         showError(validationErrors[0]);
         return;
       }
@@ -252,6 +254,7 @@ const TaskForm = ({
       // Validate AI fields
       const aiValidationError = validateAIFields(sanitizedValues);
       if (aiValidationError) {
+        const { showError } = await import("../../../shared/utils/toast");
         showError(aiValidationError);
         return;
       }
@@ -260,6 +263,7 @@ const TaskForm = ({
       const deliverablesValidationError =
         validateOtherDeliverables(sanitizedValues);
       if (deliverablesValidationError) {
+        const { showError } = await import("../../../shared/utils/toast");
         showError(deliverablesValidationError);
         return;
       }

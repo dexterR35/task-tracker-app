@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { showSuccess, showError } from "../../shared/utils/toast";
+
 import { 
   useSubscribeToReportersQuery, 
   useCreateReporterMutation, 
@@ -80,6 +80,7 @@ const AdminReportersPage = () => {
       const missingFields = requiredFields.filter(field => !values[field] || values[field].trim() === '');
       
       if (missingFields.length > 0) {
+        const { showError } = await import("../../shared/utils/toast");
         showError(`Please fill in all required fields: ${missingFields.join(', ')}`);
         setRowActionId(null);
         setSubmitting(false);
@@ -98,11 +99,13 @@ const AdminReportersPage = () => {
 
       await createReporter(reporterData).unwrap();
       logger.log("[AdminReportersPage] created reporter", reporterData);
+      const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess("Reporter created successfully!");
       setShowCreateForm(false);
       resetForm();
     } catch (e) {
       logger.error("Reporter creation error:", e);
+      const { showError } = await import("../../shared/utils/toast");
       showError(`Failed to create reporter: ${e.message || "Please try again."}`);
     } finally {
       setRowActionId(null);
@@ -133,6 +136,7 @@ const AdminReportersPage = () => {
       const missingFields = requiredFields.filter(field => !values[field] || values[field].trim() === '');
       
       if (missingFields.length > 0) {
+        const { showError } = await import("../../shared/utils/toast");
         showError(`Please fill in all required fields: ${missingFields.join(', ')}`);
         setRowActionId(null);
         return;
@@ -148,9 +152,11 @@ const AdminReportersPage = () => {
 
       await updateReporter({ id: editingId, updates }).unwrap();
       logger.log("[AdminReportersPage] updated reporter", { id: editingId, updates });
+      const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess("Reporter updated successfully!");
     } catch (e) {
       logger.error("Reporter update error:", e);
+      const { showError } = await import("../../shared/utils/toast");
       showError(`Failed to update reporter: ${e.message || "Please try again."}`);
     } finally {
       setEditingId(null);
@@ -169,9 +175,11 @@ const AdminReportersPage = () => {
     try {
       setRowActionId(reporter.id);
       await deleteReporter(reporter.id).unwrap();
+      const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess("Reporter deleted successfully!");
     } catch (e) {
       logger.error("Reporter delete error:", e);
+      const { showError } = await import("../../shared/utils/toast");
       showError(`Failed to delete reporter: ${e.message || "Please try again."}`);
     } finally {
       setRowActionId(null);
