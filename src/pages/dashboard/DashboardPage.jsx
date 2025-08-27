@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../shared/hooks/useAuth";
 import { useSelector } from "react-redux";
 import { selectIsAdmin } from "../../features/auth/authSlice";
-import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import {
   useSubscribeToMonthBoardQuery,
   useGenerateMonthBoardMutation,
@@ -16,19 +14,11 @@ import { format } from "date-fns";
 const DashboardPage = () => {
   const { user } = useAuth();
   const isAdmin = useSelector(selectIsAdmin);
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { monthId, setMonthId, needsBoardGeneration } = useGlobalMonthId();
-
-  // URL state for user selection (admin only)
-  const selectedUserId = searchParams.get("user") || "";
+  const { monthId, setMonthId } = useGlobalMonthId();
 
   // Local state
   const [showTaskForm, setShowTaskForm] = useState(false);
-
-  // API hooks - Admin specific
-  const { data: usersList = [], isLoading: usersLoading } =
-    useSubscribeToUsersQuery();
   
 
   
@@ -44,8 +34,11 @@ const DashboardPage = () => {
     error: boardError,
   } = boardData;
 
+  // Debug logging (commented out)
+  // console.log(`[DashboardPage] monthId: ${monthId}, board.exists: ${board?.exists}, isAdmin: ${isAdmin}`);
+
   // Check if any API operations are loading
-  const isLoading = boardLoading || usersLoading || isGeneratingBoard;
+  const isLoading = boardLoading || isGeneratingBoard;
 
   // Ensure user is authenticated
   if (!user) {
@@ -61,15 +54,7 @@ const DashboardPage = () => {
     );
   }
 
-  // Handle user selection (admin only)
-  const handleUserSelect = (event) => {
-    const userId = event.target.value;
-    if (!userId) {
-      setSearchParams({}, { replace: true });
-    } else {
-      setSearchParams({ user: userId }, { replace: true });
-    }
-  };
+
 
   // Handle generate month board (admin only)
   const handleGenerateBoard = async () => {
@@ -97,6 +82,9 @@ const DashboardPage = () => {
         console.log(`[DashboardPage] API didn't return monthId, using fallback: ${monthId}`);
         setMonthId(monthId);
       }
+      
+      // Debug: Check if monthId was updated
+      // console.log(`[DashboardPage] After setMonthId, current monthId: ${monthId}`);
 
       const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess(
@@ -129,21 +117,11 @@ const DashboardPage = () => {
     <div className="min-h-screen p-2">
       <div className="max-w-7xl mx-auto">
         <DashboardWrapper
-            userId={isAdmin ? selectedUserId || null : user?.uid}
-            isAdmin={isAdmin}
-            showCreateBoard={isAdmin && needsBoardGeneration}
             onGenerateBoard={isAdmin ? handleGenerateBoard : null}
             isGeneratingBoard={isGeneratingBoard}
             board={board}
-            boardLoading={boardLoading}
-            boardError={boardError}
-            usersList={isAdmin ? usersList : []}
-            usersLoading={isAdmin ? usersLoading : false}
-            selectedUserId={isAdmin ? selectedUserId : ""}
-            onUserSelect={isAdmin ? handleUserSelect : null}
             showTaskForm={showTaskForm}
             onToggleTaskForm={handleToggleTaskForm}
-            title={`${user?.name || user?.email}'s - Board`}
           />
         </div>
       </div>

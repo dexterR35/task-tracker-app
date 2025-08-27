@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useFormat } from './useFormat';
 import { useSubscribeToMonthBoardQuery } from '../../features/tasks/tasksApi';
-import { logger } from '../utils/logger';
 
 export const useGlobalMonthId = () => {
   const { user } = useAuth();
@@ -13,45 +12,43 @@ export const useGlobalMonthId = () => {
   
   // Initialize with current month
   const [monthId, setMonthId] = useState(() => currentMonthId);
-  
+
   // Check if current month board exists - using real-time subscription
   const { data: currentBoard } = useSubscribeToMonthBoardQuery(
     { monthId: monthId },
     { skip: !user }
   );
 
-  // Check if we're in a new month (different from stored monthId)
-  const isNewMonth = monthId !== currentMonthId;
-
   // Update month ID when a new board is generated
   const updateMonthId = useCallback((newMonthId) => {
-    if (newMonthId && typeof newMonthId === 'string') {
-      logger.debug(`[useGlobalMonthId] Updating global monthId from ${monthId} to ${newMonthId}`);
+    if (newMonthId && typeof newMonthId === 'string' && newMonthId !== monthId) {
+      console.log(`[useGlobalMonthId] updateMonthId called with: ${newMonthId}, current: ${monthId}`);
       setMonthId(newMonthId);
     }
   }, [monthId]);
 
   // Auto-detect new month and switch to it (but don't generate board automatically)
   useEffect(() => {
-    if (isNewMonth) {
-      logger.debug(`[useGlobalMonthId] New month detected! Switching from ${monthId} to ${currentMonthId}`);
+    if (monthId !== currentMonthId) {
       setMonthId(currentMonthId);
     }
-  }, [isNewMonth, monthId, currentMonthId]);
+  }, [currentMonthId]); // Remove monthId from dependencies to prevent circular updates
 
-  // Update month ID when board is generated via API
+  // Handle board status changes - if board exists for current month, stay on it
   useEffect(() => {
-    if (currentBoard?.exists) {
-      logger.debug(`[useGlobalMonthId] Board exists for ${monthId}, no need to switch`);
+    if (currentBoard?.exists && currentBoard.monthId === monthId) {
+      // Board exists for current month, keep it
+      // console.log(`[useGlobalMonthId] Board exists for ${monthId}, keeping current month`);
     }
-  }, [currentBoard, monthId]);
+  }, [currentBoard?.exists, currentBoard?.monthId, monthId]);
+
+
 
   return {
     monthId,
     setMonthId: updateMonthId,
     currentMonthId,
-    isNewMonth,
-    needsBoardGeneration: !currentBoard?.exists
+    isNewMonth: monthId !== currentMonthId
   };
 };
 

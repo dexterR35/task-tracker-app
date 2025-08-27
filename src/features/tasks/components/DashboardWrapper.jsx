@@ -1,5 +1,7 @@
 import React, { useMemo, useState, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useSubscribeToMonthTasksQuery } from "../tasksApi";
+import { useSubscribeToUsersQuery } from "../../users/usersApi";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
@@ -11,30 +13,54 @@ import {
 } from "@heroicons/react/24/outline";
 
 // Lazy load components that are not immediately needed
-const OptimizedTaskMetricsBoard = lazy(() => import("./OptimizedTaskMetricsBoard"));
+const OptimizedTaskMetricsBoard = lazy(
+  () => import("./OptimizedTaskMetricsBoard")
+);
 const TasksTable = lazy(() => import("./TasksTable"));
 const TaskForm = lazy(() => import("./TaskForm"));
 
 const DashboardWrapper = ({
-  userId = null,
-  isAdmin = false,
   showTable = true,
   className = "",
-  showCreateBoard = false,
   onGenerateBoard = null,
   isGeneratingBoard = false,
   board = { exists: false },
-  usersList = [],
-  selectedUserId = "",
-  onUserSelect = null,
   showTaskForm = false,
   onToggleTaskForm = null,
   showTableToggle = true,
-  title = "Dashboard",
 }) => {
   const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const { monthId } = useGlobalMonthId();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showTasksTable, setShowTasksTable] = useState(showTable);
+
+  // Get selected user from URL params (admin only)
+  const selectedUserId = searchParams.get("user") || "";
+  
+  // Get users list for admin
+  const { data: usersList = [] } = useSubscribeToUsersQuery();
+
+  // Derive userId based on admin status and selection
+  const userId = isAdmin ? selectedUserId : user?.uid;
+
+  // Derive title based on context
+  const title = isAdmin && selectedUserId 
+    ? `Viewing ${usersList.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}'s Board`
+    : `${user?.name || user?.email}'s - Board`;
+
+  // Derive showCreateBoard
+  const showCreateBoard = isAdmin && !board?.exists;
+
+  // Handle user selection (admin only)
+  const handleUserSelect = (event) => {
+    const userId = event.target.value;
+    if (!userId) {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ user: userId }, { replace: true });
+    }
+  };
 
   // Memoize the query parameters to prevent unnecessary re-renders
   const queryParams = useMemo(
@@ -45,17 +71,18 @@ const DashboardWrapper = ({
     [monthId, userId]
   );
 
-
-
   // Use the real-time subscription to get tasks
-  const {
-    data: tasks = [],
-    error: tasksError,
-  } = useSubscribeToMonthTasksQuery(queryParams, {
-    // Skip if no monthId or not authenticated
-    skip: !monthId || !isAuthenticated,
-    // No polling needed - onSnapshot handles real-time updates
-  });
+  const { data: tasks = [], error: tasksError } = useSubscribeToMonthTasksQuery(
+    queryParams,
+    {
+      // Skip if no monthId or not authenticated
+      skip: !monthId || !isAuthenticated,
+      // No polling needed - onSnapshot handles real-time updates
+    }
+  );
+
+  // Memoize tasks to prevent unnecessary re-renders
+  const memoizedTasks = useMemo(() => tasks, [tasks]);
 
   // Don't render anything if not authenticated
   if (!isAuthenticated) {
@@ -86,9 +113,7 @@ const DashboardWrapper = ({
     return (
       <div className="card mt-10">
         <div className="text-center py-8">
-          <h2>
-            Error Loading Dashboard
-          </h2>
+          <h2>Error Loading Dashboard</h2>
           <p className="text-sm">
             {tasksError?.message ||
               "Failed to load dashboard data. Please try refreshing the page."}
@@ -102,12 +127,10 @@ const DashboardWrapper = ({
     <div className={`${className}`}>
       {/* Dashboard Header */}
       <div className="mt-2 py-2 flex-center flex-col !items-start">
-        <h2 className="capitalize mb-0">
-          {title}
-        </h2>
+        <h2 className="capitalize mb-0">{title}</h2>
         <p className="text-xs font-base soft-white">
-          <span>Month:</span>{" "}
-         {format(new Date(monthId + "-01"), "MMMM")} ({monthId})
+          <span>Month:</span> {format(new Date(monthId + "-01"), "MMMM")} (
+          {monthId})
           {board?.exists ? (
             <span className="ml-2 text-green-success"> • Board ready </span>
           ) : (
@@ -141,14 +164,14 @@ const DashboardWrapper = ({
       )}
 
       {/* User Selector (Admin Only) */}
-      {board?.exists && isAdmin && onUserSelect && (
+      {board?.exists && isAdmin && (
         <div className="my-4">
           <label htmlFor="userSelect">Filter by User</label>
           <div className="relative">
             <select
               id="userSelect"
               value={selectedUserId}
-              onChange={onUserSelect}
+              onChange={handleUserSelect}
               className="w-full md:w-64 px-3 py-2 capitalize"
               disabled=""
             >
@@ -156,25 +179,29 @@ const DashboardWrapper = ({
                 All Users
               </option>
               {usersList.map((user) => (
-                <option 
+                <option
                   key={user.userUID || user.id}
                   value={user.userUID || user.id}
                 >
-                  {user.name} 
+                  {user.name}
                 </option>
               ))}
             </select>
-          
           </div>
-      
         </div>
       )}
 
       {/* Action Buttons */}
       {board?.exists && (
         <div className="mb-6 flex-center !flex-row md:flex-row gap-4 !mx-0 justify-start">
-          <DynamicButton variant="primary" onClick={handleCreateTask} size="md"    iconName="generate"
-                iconPosition="left" className=" min-w-30 ">
+          <DynamicButton
+            variant="primary"
+            onClick={handleCreateTask}
+            size="md"
+            iconName="generate"
+            iconPosition="left"
+            className=" min-w-30 "
+          >
             {showTaskForm ? "Hide Form Task" : "Create Task "}
           </DynamicButton>
         </div>
@@ -183,7 +210,11 @@ const DashboardWrapper = ({
       {/* Task Form */}
       {showTaskForm && board?.exists && (
         <div className="bg-purple-500">
-          <Suspense fallback={<div className="p-4 text-center">Loading task form...</div>}>
+          <Suspense
+            fallback={
+              <div className="p-4 text-center">Loading task form...</div>
+            }
+          >
             <TaskForm />
           </Suspense>
         </div>
@@ -191,13 +222,13 @@ const DashboardWrapper = ({
 
       {/* Main Dashboard Content */}
       {board?.exists && (
-        <div >
-
-          <Suspense fallback={<div className="p-4 text-center">Loading metrics board...</div>}>
-            <OptimizedTaskMetricsBoard
-              userId={userId}
-              showSmallCards={true}
-            />
+        <div>
+          <Suspense
+            fallback={
+              <div className="p-4 text-center">Loading metrics board...</div>
+            }
+          >
+            <OptimizedTaskMetricsBoard userId={userId} showSmallCards={true} />
           </Suspense>
 
           {/* Table Header with Toggle Button */}
@@ -223,17 +254,18 @@ const DashboardWrapper = ({
           )}
 
           {/* Tasks Table - Show only if we have data AND showTable is true */}
-          {showTasksTable && tasks.length > 0 && (
-            <Suspense fallback={<div className="p-4 text-center">Loading tasks table...</div>}>
-              <TasksTable
-                tasks={tasks}
-                error={null}
-              />
+          {showTasksTable && memoizedTasks.length > 0 && (
+            <Suspense
+              fallback={
+                <div className="p-4 text-center">Loading tasks table...</div>
+              }
+            >
+              <TasksTable tasks={memoizedTasks} error={null} />
             </Suspense>
           )}
 
           {/* Show message if no tasks */}
-          {showTasksTable && tasks.length === 0 && (
+          {showTasksTable && memoizedTasks.length === 0 && (
             <div className=" border rounded-lg p-6 text-center text-sm text-gray-200">
               {userId
                 ? `No tasks found for user ${userId} in ${monthId}.`
@@ -250,8 +282,8 @@ const DashboardWrapper = ({
         </div>
       )}
 
-      {/* Board not ready message */}
-      {!board?.exists && !showCreateBoard && (
+      {/* Board not ready message - shows for non-admin users when board doesn't exist */}
+      {!board?.exists && !isAdmin && (
         <div className="text-center py-12">
           <p className="text-gray-400">
             Board not ready for {format(new Date(monthId + "-01"), "MMMM yyyy")}
