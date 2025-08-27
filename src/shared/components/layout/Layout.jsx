@@ -1,11 +1,10 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useAuth, useAuthActions } from "../../hooks/useAuth";
-import { useSelector, useDispatch } from "react-redux";
-import { selectIsAdmin, requireReauth } from "../../../features/auth/authSlice";
+import { useDispatch } from "react-redux";
+
 import DynamicButton from "../ui/DynamicButton";
 import DarkModeToggle from "../ui/DarkModeToggle";
-import Loader from "../ui/Loader";
 import ReauthModal from "../auth/ReauthModal";
 import { logger } from "../../utils/logger";
 import { auth } from "../../../app/firebase";
@@ -15,36 +14,33 @@ import {
   ViewColumnsIcon,
   ChartBarIcon,
   UsersIcon,
-  UserIcon,
   HomeIcon,
-  Cog6ToothIcon,
-  DocumentTextIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { Icons } from "../../icons";
-
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const isAdmin = useSelector(selectIsAdmin);
-  const { 
-    user, 
-    isAuthenticated, 
+  const {
+    user,
+    isAuthenticated,
     isLoading,
     isAuthChecking,
     reauthRequired,
-    reauthMessage,
-    error
+    error,
+    isAdmin, // Use from useAuth instead of useSelector
+    hasPermission,
   } = useAuth();
-  
-  const { logout, handleReauth, clearReauthRequirement } = useAuthActions();
-  
+
+  const { logout, handleReauth, clearReauthRequirement, forceReauth, clearError } = useAuthActions();
+
   const [showReauthModal, setShowReauthModal] = useState(false);
   const [isReauthProcessing, setIsReauthProcessing] = useState(false);
-  const [sessionInfo, setSessionInfo] = useState(null);
   const reauthTimeoutRef = useRef(null);
+  
+
 
   // Show reauth modal when reauth is required
   useEffect(() => {
@@ -62,7 +58,7 @@ const Layout = () => {
         user: user?.email,
         reauthRequired,
         isLoading,
-        isAuthChecking
+        isAuthChecking,
       });
     }
   }, [isAuthenticated, user, reauthRequired, isLoading, isAuthChecking]);
@@ -82,6 +78,8 @@ const Layout = () => {
       navigate("/");
     } catch (error) {
       logger.error("Logout failed:", error);
+      // Clear any auth errors after logout
+      clearError();
     }
   };
 
@@ -89,15 +87,15 @@ const Layout = () => {
     try {
       logger.log("Attempting reauthentication...");
       setIsReauthProcessing(true);
-      
+
       await handleReauth(password);
       logger.log("Reauthentication successful");
-      
+
       // Clear any existing timeout
       if (reauthTimeoutRef.current) {
         clearTimeout(reauthTimeoutRef.current);
       }
-      
+
       // Close modal after successful reauthentication with a delay
       reauthTimeoutRef.current = setTimeout(() => {
         logger.log("Closing reauth modal after successful reauthentication");
@@ -117,6 +115,8 @@ const Layout = () => {
   const handleReauthClose = () => {
     logger.log("User cancelled reauthentication");
     setShowReauthModal(false);
+    // Clear any auth errors
+    clearError();
     // Force logout if user cancels reauth
     logout();
   };
@@ -125,58 +125,27 @@ const Layout = () => {
   const testSessionExpiration = () => {
     if (import.meta.env.MODE === "development") {
       logger.log("Testing session expiration...");
-      
+
       // Method 1: Force token refresh to trigger potential expiration
       if (auth.currentUser) {
-        auth.currentUser.getIdToken(true).catch(err => {
+        auth.currentUser.getIdToken(true).catch((err) => {
           logger.error("Token refresh failed:", err);
         });
       }
-      
+
       // Method 2: Directly trigger reauth modal for testing
       setTimeout(() => {
-        logger.log("Simulating session expiration - triggering reauth modal...");
-        // Directly dispatch reauth requirement for testing
-        dispatch(requireReauth({ 
-          message: "Test: Session expired. Please re-enter your password." 
-        }));
+        logger.log(
+          "Simulating session expiration - triggering reauth modal..."
+        );
+        // Use forceReauth for testing
+        forceReauth("Test: Session expired. Please re-enter your password.");
         logger.log("Reauth modal should appear now");
       }, 1000);
     }
   };
 
-  // Get session expiration info for display
-  const getSessionInfo = () => {
-    if (!auth.currentUser) return null;
-    
-    return auth.currentUser.getIdTokenResult().then(tokenResult => {
-      const expiresAt = tokenResult.expirationTime ? new Date(tokenResult.expirationTime).getTime() : 0;
-      const now = Date.now();
-      const timeUntilExpiry = expiresAt - now;
-      const minutesUntilExpiry = Math.floor(timeUntilExpiry / (1000 * 60));
-      
-      return {
-        expiresAt: new Date(expiresAt).toLocaleString(),
-        minutesUntilExpiry,
-        isExpired: timeUntilExpiry <= 0
-      };
-    }).catch(() => null);
-  };
 
-  // Update session info periodically
-  useEffect(() => {
-    if (import.meta.env.MODE === "development" && isAuthenticated && user) {
-      const updateSessionInfo = async () => {
-        const info = await getSessionInfo();
-        setSessionInfo(info);
-      };
-      
-      updateSessionInfo();
-      const interval = setInterval(updateSessionInfo, 30000); // Update every 30 seconds
-      
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, user]);
 
   // If auth is loading or checking, show loading state
   if (isLoading || isAuthChecking) {
@@ -193,26 +162,26 @@ const Layout = () => {
           name: "Dashboard",
           href: "/admin",
           icon: ViewColumnsIcon,
-          current: location.pathname === "/admin"
+          current: location.pathname === "/admin",
         },
         {
           name: "Users",
           href: "/admin/users",
           icon: UsersIcon,
-          current: location.pathname === "/admin/users"
+          current: location.pathname === "/admin/users",
         },
         {
           name: "Reporters",
           href: "/admin/reporters",
           icon: UserGroupIcon,
-          current: location.pathname === "/admin/reporters"
+          current: location.pathname === "/admin/reporters",
         },
         {
           name: "Analytics",
           href: "/admin/analytics",
           icon: ChartBarIcon,
-          current: location.pathname === "/admin/analytics"
-        }
+          current: location.pathname === "/admin/analytics",
+        },
       ];
     } else {
       return [
@@ -220,8 +189,8 @@ const Layout = () => {
           name: "My Dashboard",
           href: "/user",
           icon: HomeIcon,
-          current: location.pathname === "/user"
-        }
+          current: location.pathname === "/user",
+        },
       ];
     }
   };
@@ -236,10 +205,13 @@ const Layout = () => {
           <div className="flex justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/" className="text-2xl font-bold text-gray-800 dark:text-white hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+              <Link
+                to="/"
+                className="text-2xl font-bold text-gray-800 dark:text-white hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
                 Task Tracker
               </Link>
-              
+
               {/* Navigation Links - Only show when authenticated */}
               {isAuthenticated && user && (
                 <div className="hidden md:ml-8 md:flex md:space-x-4">
@@ -265,7 +237,7 @@ const Layout = () => {
             <div className="flex items-center space-x-4">
               {/* Dark Mode Toggle - Always visible */}
               <DarkModeToggle />
-              
+
               {/* User Menu - Only show when authenticated */}
               {isAuthenticated && user && (
                 <>
@@ -286,7 +258,7 @@ const Layout = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Role Badge */}
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold capitalize shadow-sm ${
@@ -297,7 +269,7 @@ const Layout = () => {
                     >
                       {user?.role}
                     </span>
-                    
+
                     {/* Account status indicator */}
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium shadow-sm ${
@@ -320,42 +292,29 @@ const Layout = () => {
                   >
                     Logout
                   </DynamicButton>
-                  
+
                   {/* Test button for session expiration (development only) */}
-                  {import.meta.env.MODE === "development" && (
-                    <div className="flex items-center space-x-2">
-                      <DynamicButton
-                        variant="outline"
-                        size="sm"
-                        onClick={testSessionExpiration}
-                        className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
-                      >
-                        Test Session
-                      </DynamicButton>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {sessionInfo ? (
-                          <>
-                            <div>Expires: {sessionInfo.minutesUntilExpiry}m</div>
-                            <div>Auto-refresh: 5 min before</div>
-                          </>
-                        ) : (
-                          <>
-                            <div>Session expires in ~1 hour</div>
-                            <div>Auto-refresh: 5 min before</div>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                  {import.meta.env.MODE === "development" && isAdmin && (
+                    <DynamicButton
+                      variant="outline"
+                      size="sm"
+                      onClick={testSessionExpiration}
+                      className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+                    >
+                      Test Session
+                    </DynamicButton>
                   )}
                 </>
               )}
-              
+
               {/* Login Button - Only show when not authenticated */}
               {!isAuthenticated && !isLoading && !isAuthChecking && (
                 <DynamicButton
                   to="/login"
                   variant="primary"
-                  size="sm"
+                  size="md"
+                  iconName="login"
+                  iconPosition="left"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Login

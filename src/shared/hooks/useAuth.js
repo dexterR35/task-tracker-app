@@ -11,6 +11,7 @@ import {
   selectUser,
   selectIsAuthenticated,
   selectIsLoading,
+  selectIsAuthChecking,
   selectAuthError,
   selectReauthRequired,
   selectReauthMessage,
@@ -19,9 +20,10 @@ import {
   selectIsUser,
   selectUserPermissions,
   selectIsUserActive,
-  selectLastLoginAttempt,
   selectCanAccessAdmin,
   selectCanAccessUser,
+  selectFailedAttempts,
+  selectLastFailedAttempt,
 } from '../../features/auth/authSlice';
 import { auth, db } from '../../app/firebase';
 import {
@@ -50,7 +52,9 @@ export const useAuthActions = () => {
     async (credentials) => {
       try {
         const result = await dispatch(loginUser(credentials)).unwrap();
-        showWelcomeMessage(result.name || result.email);
+        // Show welcome message with last login info
+        const user = result.user || result; // Handle both new and old result structure
+        showWelcomeMessage(user.name || user.email, user.lastLogin);
         return result;
       } catch (error) {
         showAuthError(error?.message || error || 'Login failed');
@@ -186,6 +190,7 @@ export const useAuthState = () => {
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isLoading = useSelector(selectIsLoading);
+  const isAuthChecking = useSelector(selectIsAuthChecking);
   const error = useSelector(selectAuthError);
   const reauthRequired = useSelector(selectReauthRequired);
   const reauthMessage = useSelector(selectReauthMessage);
@@ -194,9 +199,10 @@ export const useAuthState = () => {
   const isUser = useSelector(selectIsUser);
   const permissions = useSelector(selectUserPermissions);
   const isUserActive = useSelector(selectIsUserActive);
-  const lastLoginAttempt = useSelector(selectLastLoginAttempt);
   const canAccessAdmin = useSelector(selectCanAccessAdmin);
   const canAccessUser = useSelector(selectCanAccessUser);
+  const failedAttempts = useSelector(selectFailedAttempts);
+  const lastFailedAttempt = useSelector(selectLastFailedAttempt);
 
   // Memoized computed values
   const hasPermission = useCallback((permission) => {
@@ -214,12 +220,12 @@ export const useAuthState = () => {
     user,
     isAuthenticated,
     isLoading,
+    isAuthChecking,
     role,
     isAdmin,
     isUser,
     permissions,
     isUserActive,
-    lastLoginAttempt,
     canAccessAdmin,
     canAccessUser,
     hasPermission,
@@ -227,6 +233,8 @@ export const useAuthState = () => {
     reauthRequired,
     reauthMessage,
     error,
+    failedAttempts,
+    lastFailedAttempt,
   };
 };
 

@@ -3,10 +3,10 @@ import { toast } from 'react-toastify';
 // Toast configuration
 export const toastConfig = {
   position: "top-right",
-  autoClose: 5000,
+  autoClose: 3000,
   hideProgressBar: false,
   closeOnClick: true,
-  pauseOnHover: true,
+  pauseOnHover: false, // Don't pause on hover
   draggable: true,
   progress: undefined,
   theme: "light",
@@ -50,10 +50,25 @@ export const showAuthError = (message) => {
   return showError(message, { autoClose: 5000 });
 };
 
-export const showWelcomeMessage = (userName) => {
-  return showSuccess(`Welcome, ${userName}!`, { 
-    autoClose: 3000,
-    position: "top-center"
+export const showWelcomeMessage = (userName, lastLogin = null) => {
+  let message = `Welcome, ${userName}!`;
+  
+  if (lastLogin) {
+    const daysSinceLastLogin = (Date.now() - new Date(lastLogin).getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysSinceLastLogin > 30) {
+      message = `Welcome back, ${userName}! It's been ${Math.floor(daysSinceLastLogin)} days since your last login. 👋`;
+    } else if (daysSinceLastLogin > 7) {
+      message = `Welcome back, ${userName}! It's been ${Math.floor(daysSinceLastLogin)} days since your last login. 😊`;
+    } else if (daysSinceLastLogin > 1) {
+      message = `Welcome back, ${userName}! It's been ${Math.floor(daysSinceLastLogin)} days since your last login. ✨`;
+    }
+  }
+  
+  return showSuccess(message, { 
+    autoClose: 3000, // Longer duration for welcome message
+    position: "top-center",
+    pauseOnHover: false // Ensure it doesn't pause
   });
 };
 

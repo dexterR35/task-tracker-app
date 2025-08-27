@@ -29,7 +29,7 @@ const DynamicButton = ({
     baseClasses:
       "px-4 py-2 inline-flex  rounded-lg font-medium shadow-sm !focus:outline-none focus:ring-gray-200 focus:ring-1 focus:ring-offset-0",
     variants: {
-      primary: "bg-btn-primary text-gray-200 ",
+      primary: "bg-btn-primary text-gray-200  hover:bg-blue-700 text-white ",
       secondary: "bg-gray-200 text-gray-900",
       success: "bg-green-600 text-gray-200 ",
       danger: "bg-red-error text-gray-200 ",
