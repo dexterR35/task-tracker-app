@@ -1,16 +1,38 @@
 // src/router.jsx
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { useAuth } from "../shared/hooks/useAuth";
 
 import Layout from "../shared/components/layout/Layout";
 import Loader from "../shared/components/ui/Loader";
-import LoginPage from "../pages/auth/LoginPage";
-import TaskDetailPage from "../pages/dashboard/TaskDetailPage";
-import HomePage from "../pages/dashboard/HomePage";
-import DashboardPage from "../pages/dashboard/DashboardPage";
-import AdminUsersPage from "../pages/admin/AdminUsersPage";
-import AdminReportersPage from "../pages/admin/AdminReportersPage";
-import NotFoundPage from "../pages/NotFoundPage";
+
+// Lazy load all page components
+const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const TaskDetailPage = lazy(() => import("../pages/dashboard/TaskDetailPage"));
+const HomePage = lazy(() => import("../pages/dashboard/HomePage"));
+const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
+const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
+const AdminReportersPage = lazy(() => import("../pages/admin/AdminReportersPage"));
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
+
+// Loading component for lazy-loaded pages
+const PageLoader = () => (
+  <div className="min-h-screen flex-center bg-primary">
+    <Loader 
+      size="xl" 
+      text="Loading page..." 
+      variant="spinner" 
+      fullScreen={true}
+    />
+  </div>
+);
+
+// Wrapper component for lazy-loaded pages with Suspense
+const LazyPage = ({ children }) => (
+  <Suspense fallback={<PageLoader />}>
+    {children}
+  </Suspense>
+);
 
 // Unified route protection component
 const ProtectedRoute = ({ children, requiredRole = null, redirectToLogin = true }) => {
@@ -138,7 +160,7 @@ const RootIndex = () => {
     return <Navigate to={redirectTo} replace />;
   }
 
-  return <HomePage />;
+  return <LazyPage><HomePage /></LazyPage>;
 };
 
 const router = createBrowserRouter([
@@ -152,7 +174,9 @@ const router = createBrowserRouter([
         path: "login",
         element: (
           <ProtectedRoute redirectToLogin={false}>
-            <LoginPage />
+            <LazyPage>
+              <LoginPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -164,7 +188,9 @@ const router = createBrowserRouter([
         path: "user",
         element: (
           <ProtectedRoute requiredRole="user">
-            <DashboardPage />
+            <LazyPage>
+              <DashboardPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -172,7 +198,9 @@ const router = createBrowserRouter([
         path: "admin",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <DashboardPage />
+            <LazyPage>
+              <DashboardPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -180,7 +208,9 @@ const router = createBrowserRouter([
         path: "task/:monthId/:taskId",
         element: (
           <ProtectedRoute requiredRole="user">
-            <TaskDetailPage />
+            <LazyPage>
+              <TaskDetailPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -188,7 +218,9 @@ const router = createBrowserRouter([
         path: "admin/users",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <AdminUsersPage />
+            <LazyPage>
+              <AdminUsersPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -196,7 +228,9 @@ const router = createBrowserRouter([
         path: "admin/reporters",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <AdminReportersPage />
+            <LazyPage>
+              <AdminReportersPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -204,7 +238,9 @@ const router = createBrowserRouter([
         path: "preview/:monthId",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <NotFoundPage />
+            <LazyPage>
+              <NotFoundPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -212,7 +248,9 @@ const router = createBrowserRouter([
         path: "admin/task/:monthId/:taskId",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <TaskDetailPage />
+            <LazyPage>
+              <TaskDetailPage />
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
@@ -220,11 +258,13 @@ const router = createBrowserRouter([
         path: "admin/analytics",
         element: (
           <ProtectedRoute requiredRole="admin">
-            <NotFoundPage /> {/* Placeholder for future analytics page */}
+            <LazyPage>
+              <NotFoundPage /> {/* Placeholder for future analytics page */}
+            </LazyPage>
           </ProtectedRoute>
         ),
       },
-      { path: "*", element: <NotFoundPage /> },
+      { path: "*", element: <LazyPage><NotFoundPage /></LazyPage> },
     ],
   },
 ]);

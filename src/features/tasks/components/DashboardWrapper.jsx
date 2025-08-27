@@ -1,10 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, lazy, Suspense } from "react";
 import { useSubscribeToMonthTasksQuery } from "../tasksApi";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
-import OptimizedTaskMetricsBoard from "./OptimizedTaskMetricsBoard";
-import TasksTable from "./TasksTable";
-import TaskForm from "./TaskForm";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import { showError } from "../../../shared/utils/toast";
 import { format } from "date-fns";
@@ -13,6 +10,11 @@ import {
   ChevronUpIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
+
+// Lazy load components that are not immediately needed
+const OptimizedTaskMetricsBoard = lazy(() => import("./OptimizedTaskMetricsBoard"));
+const TasksTable = lazy(() => import("./TasksTable"));
+const TaskForm = lazy(() => import("./TaskForm"));
 
 const DashboardWrapper = ({
   userId = null,
@@ -181,7 +183,9 @@ const DashboardWrapper = ({
       {/* Task Form */}
       {showTaskForm && board?.exists && (
         <div className="bg-purple-500">
-          <TaskForm />
+          <Suspense fallback={<div className="p-4 text-center">Loading task form...</div>}>
+            <TaskForm />
+          </Suspense>
         </div>
       )}
 
@@ -189,10 +193,12 @@ const DashboardWrapper = ({
       {board?.exists && (
         <div >
 
-          <OptimizedTaskMetricsBoard
-            userId={userId}
-            showSmallCards={true}
-          />
+          <Suspense fallback={<div className="p-4 text-center">Loading metrics board...</div>}>
+            <OptimizedTaskMetricsBoard
+              userId={userId}
+              showSmallCards={true}
+            />
+          </Suspense>
 
           {/* Table Header with Toggle Button */}
           {showTableToggle && (
@@ -218,10 +224,12 @@ const DashboardWrapper = ({
 
           {/* Tasks Table - Show only if we have data AND showTable is true */}
           {showTasksTable && tasks.length > 0 && (
-            <TasksTable
-              tasks={tasks}
-              error={null}
-            />
+            <Suspense fallback={<div className="p-4 text-center">Loading tasks table...</div>}>
+              <TasksTable
+                tasks={tasks}
+                error={null}
+              />
+            </Suspense>
           )}
 
           {/* Show message if no tasks */}

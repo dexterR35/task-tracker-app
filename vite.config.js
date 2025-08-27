@@ -11,11 +11,35 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
-        // Force single chunk (not recommended for performance)
-        // manualChunks: () => 'index.js'
+        manualChunks: {
+          // Vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom'],
+          'router-vendor': ['react-router-dom'],
+          'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
+          'ui-vendor': ['@heroicons/react', 'react-icons'],
+          'form-vendor': ['formik', 'yup'],
+          'utils-vendor': ['date-fns', 'dompurify'],
+          'table-vendor': ['react-paginate'],
+          'chart-vendor': ['recharts'],
+        },
       },
     },
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      '@heroicons/react',
+      'formik',
+      'yup',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'date-fns',
+    ],
   },
 });
 

@@ -1,13 +1,15 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useAuth, useAuthActions } from "../../hooks/useAuth";
 import { useDispatch } from "react-redux";
 
 import DynamicButton from "../ui/DynamicButton";
 import DarkModeToggle from "../ui/DarkModeToggle";
-import ReauthModal from "../auth/ReauthModal";
 import { logger } from "../../utils/logger";
 import { auth } from "../../../app/firebase";
+
+// Lazy load components that are not immediately needed
+const ReauthModal = lazy(() => import("../auth/ReauthModal"));
 
 import {
   ArrowRightOnRectangleIcon,
@@ -330,13 +332,15 @@ const Layout = () => {
         <Outlet />
       </main>
 
-      <ReauthModal
-        isOpen={showReauthModal}
-        onClose={handleReauthClose}
-        onReauth={handleReauthSubmit}
-        error={error}
-        isProcessing={isReauthProcessing}
-      />
+      <Suspense fallback={<div>Loading Reauth Modal...</div>}>
+        <ReauthModal
+          isOpen={showReauthModal}
+          onClose={handleReauthClose}
+          onReauth={handleReauthSubmit}
+          error={error}
+          isProcessing={isReauthProcessing}
+        />
+      </Suspense>
     </div>
   );
 };
