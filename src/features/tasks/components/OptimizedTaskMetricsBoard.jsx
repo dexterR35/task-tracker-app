@@ -3,6 +3,7 @@ import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
 import { useCentralizedAnalytics } from "../../../shared/hooks/analytics/useCentralizedAnalytics";
 import { useAuth } from "../../../shared/hooks/useAuth";
+import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
 
 
@@ -134,13 +135,13 @@ const METRIC_CARDS_CONFIG = [
 ];
 
 const OptimizedTaskMetricsBoard = ({
-  monthId,
   userId = null,
   showSmallCards = true,
   className = "",
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
   const { user, isAuthenticated } = useAuth();
+  const { monthId } = useGlobalMonthId();
   
   // Don't render if not authenticated
   if (!isAuthenticated) {

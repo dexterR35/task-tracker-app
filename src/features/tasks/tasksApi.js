@@ -1,4 +1,5 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import { format } from "date-fns";
 import {
   collection,
   query as fsQuery,
@@ -84,11 +85,67 @@ const fetchTasksFromFirestore = async (
   return snap.docs.map((d) => normalizeTask(monthId, d.id, d.data()));
 };
 
+// Token validation utility
+const validateToken = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('No authenticated user');
+    }
+    
+    // Get token result to check expiration
+    const tokenResult = await user.getIdTokenResult();
+    const expiresAt = tokenResult.expirationTime ? new Date(tokenResult.expirationTime).getTime() : 0;
+    const now = Date.now();
+    const timeUntilExpiry = expiresAt - now;
+    
+    // If token expires in less than 10 minutes, refresh it proactively
+    if (timeUntilExpiry < 10 * 60 * 1000) {
+      logger.log("Token expires soon, refreshing proactively");
+      await user.getIdToken(true);
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('Token validation failed:', error);
+    throw new Error('Authentication required');
+  }
+};
+
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "MonthBoard", "Charts", "Analytics"],
+  tagTypes: ["MonthTasks", "MonthBoard", "Charts", "Analytics", "Task"],
   endpoints: (builder) => ({
+    // Get single task by ID
+    getTaskById: builder.query({
+      async queryFn({ monthId, taskId }) {
+        try {
+          if (!auth.currentUser) {
+            return { error: { message: "Authentication required" } };
+          }
+
+          const ref = doc(db, "tasks", monthId, "monthTasks", taskId);
+          const snap = await getDoc(ref);
+          
+          if (!snap.exists()) {
+            return { error: { message: "Task not found" } };
+          }
+
+          const task = normalizeTask(monthId, snap.id, snap.data());
+          return { data: task };
+        } catch (error) {
+          return { error: { message: error.message } };
+        }
+      },
+      transformResponse: (response) => {
+        return serializeTimestampsForRedux(response);
+      },
+      providesTags: (result, error, arg) => [
+        { type: "Task", id: `${arg.monthId}_${arg.taskId}` },
+      ],
+    }),
+
     // Check if month board exists
     getMonthBoardExists: builder.query({
       async queryFn({ monthId }) {
@@ -327,25 +384,29 @@ export const tasksApi = createApi({
 
     // Create task with transaction for atomic operations
     createTask: builder.mutation({
-      async queryFn(task) {
+      async queryFn(task, { getState }) {
         try {
           if (!auth.currentUser) {
             return { error: { message: "Authentication required" } };
           }
+          
+          // Use task's monthId or fallback to current month
+          const monthId = task.monthId || format(new Date(), 'yyyy-MM');
+          
           // Use transaction to ensure atomic operations
           const result = await runTransaction(db, async (transaction) => {
             // Read operation first: Check if board exists
-            const monthDocRef = doc(db, "tasks", task.monthId);
+            const monthDocRef = doc(db, "tasks", monthId);
             const monthDoc = await transaction.get(monthDocRef);
 
             if (!monthDoc.exists()) {
               throw new Error("Month board not generated");
             }
             // Write operation: Create the task
-            const colRef = collection(db, "tasks", task.monthId, "monthTasks");
+            const colRef = collection(db, "tasks", monthId, "monthTasks");
             const payload = {
               ...task,
-              monthId: task.monthId,
+              monthId: monthId, // Use the determined monthId
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             };
@@ -353,7 +414,7 @@ export const tasksApi = createApi({
             // Read back the saved doc to resolve server timestamps
             const savedSnap = await getDoc(ref);
             const created = normalizeTask(
-              task.monthId,
+              monthId,
               ref.id,
               savedSnap.data() || {}
             );
@@ -510,6 +571,8 @@ export const tasksApi = createApi({
     generateMonthBoard: builder.mutation({
       async queryFn({ monthId, meta = {} }) {
         try {
+          console.log(`[tasksApi] Starting month board generation for monthId: ${monthId}`);
+          
           if (!auth.currentUser) {
             return { error: { message: "Authentication required" } };
           }
@@ -536,9 +599,12 @@ export const tasksApi = createApi({
               ...meta,
             };
 
+            console.log(`[tasksApi] Creating month board with data:`, { monthId, boardId, createdBy: auth.currentUser.uid });
             transaction.set(boardRef, boardData);
             return { monthId, boardId };
           });
+
+          console.log(`[tasksApi] Month board generated successfully. Result:`, result);
 
           return { data: result };
         } catch (error) {
@@ -605,4 +671,5 @@ export const {
   useGetMonthBoardExistsQuery,
   useGenerateMonthBoardMutation,
   useSaveChartsDataMutation,
+  useGetTaskByIdQuery,
 } = tasksApi;

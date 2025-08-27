@@ -6,18 +6,18 @@ import 'react-toastify/dist/ReactToastify.css';
 import store from './app/store';
 import router from './app/router';
 import { AuthProvider } from './shared/context/AuthProvider';
-import GlobalLoader from './shared/components/ui/GlobalLoader';
+import { DarkModeProvider } from './shared/context/DarkModeProvider';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
 const App = () => (
   <ErrorBoundary>
     <Provider store={store}>
-      <AuthProvider>
-        <GlobalLoader>
+      <DarkModeProvider>
+        <AuthProvider>
           <RouterProvider router={router} />
           <ToastContainer />
-        </GlobalLoader>
-      </AuthProvider>
+        </AuthProvider>
+      </DarkModeProvider>
     </Provider>
   </ErrorBoundary>
 );

@@ -39,7 +39,7 @@
 /* ---------------- Base layer ---------------- */
 @layer base {
   body {
-    @apply [font-family:'Roboto',sans-serif] bg-white dark:bg-primary;
+    @apply [font-family:'Roboto',sans-serif] bg-white dark:bg-primary transition-colors duration-300;
   }
 
   button {
@@ -47,7 +47,7 @@
   }
 
   main {
-    @apply bg-white dark:bg-primary;
+    @apply bg-white dark:bg-primary transition-colors duration-300;
   }
 
   /* Form element defaults */
@@ -113,6 +113,12 @@
 
 /* ---------------- Components layer ---------------- */
 @layer components {
+  /* Dark mode transitions */
+  * {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
   /* Cards */
   .card {
     @apply bg-[#9db4cb26] dark:bg-gray-700/30 p-6 mb-6 rounded-xl shadow-xl;
@@ -156,14 +162,6 @@
     @apply bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800;
   } */
 
-  @keyframes skeleton-shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
 
   /* Notification progress */
   @keyframes notification-progress {

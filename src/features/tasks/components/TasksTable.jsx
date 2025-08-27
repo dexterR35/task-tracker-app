@@ -17,6 +17,7 @@ import {
   deliverables,
 } from "../../../shared/utils/taskOptions";
 import { useFormat } from "../../../shared/hooks/useFormat";
+import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import {
   sanitizeTaskData,
   sanitizeText,
@@ -55,13 +56,13 @@ const safeDisplay = (value, fallback = "-") => {
 };
 
 const TasksTable = ({
-  monthId,
   onSelect,
   error = null,
   tasks = [], // Tasks passed from parent component
 }) => {
   const navigate = useNavigate();
   const { format } = useFormat();
+  const { monthId } = useGlobalMonthId();
 
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = tasks || [];
@@ -75,14 +76,14 @@ const TasksTable = ({
       taskId = pathParts[pathParts.length - 1];
     }
 
-    // Ensure we have a valid monthId
-    const monthId = t.monthId || format(new Date(), "yyyy-MM");
+    // Ensure we have a valid monthId - use task's monthId or fallback to global monthId
+    const taskMonthId = t.monthId || monthId;
 
     // Check if we're on admin route and use appropriate path
     const isAdminRoute = window.location.pathname.includes("/admin");
     const route = isAdminRoute
-      ? `/admin/task/${monthId}/${taskId}`
-      : `/task/${monthId}/${taskId}`;
+      ? `/admin/task/${taskMonthId}/${taskId}`
+      : `/task/${taskMonthId}/${taskId}`;
     navigate(route);
   };
 
@@ -194,12 +195,6 @@ const TasksTable = ({
 
   const saveEdit = async (t) => {
     try {
-      logger.debug("Task object for update:", t);
-      logger.debug("Task ID type:", typeof t.id);
-      logger.debug("Task ID value:", t.id);
-      logger.debug("Task ID includes slash:", t.id.includes("/"));
-      logger.debug("Task number:", t.taskNumber);
-      logger.debug("Task monthId:", t.monthId);
       setRowActionId(t.id);
 
       // Prepare form data for sanitization
@@ -286,6 +281,7 @@ const TasksTable = ({
       // Update task using Redux mutation (automatically updates cache)
       // Extract the document ID from the task ID (in case it's a full path)
       let taskId = t.id;
+      logger.debug("Processing task ID:", taskId);
       if (typeof taskId === "string" && taskId.includes("/")) {
         // If it's a full path like "tasks/monthTasks/gYMI5ZUOGgoY1isWCdPP"
         const pathParts = taskId.split("/");
@@ -293,7 +289,7 @@ const TasksTable = ({
       }
 
       // Preserve the original monthId from the task
-      const taskMonthId = t.monthId || format(new Date(), "yyyy-MM");
+      const taskMonthId = t.monthId || monthId;
 
       // Ensure the monthId is included in the updates
       const updatesWithMonthId = {
@@ -334,7 +330,7 @@ const TasksTable = ({
       }
 
       // Preserve the original monthId from the task
-      const taskMonthId = t.monthId || format(new Date(), "yyyy-MM");
+      const taskMonthId = t.monthId || monthId;
 
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();

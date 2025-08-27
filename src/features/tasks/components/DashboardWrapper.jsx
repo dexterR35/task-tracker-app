@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useSubscribeToMonthTasksQuery } from "../tasksApi";
 import { useAuth } from "../../../shared/hooks/useAuth";
+import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import OptimizedTaskMetricsBoard from "./OptimizedTaskMetricsBoard";
 import TasksTable from "./TasksTable";
 import TaskForm from "./TaskForm";
@@ -14,7 +15,6 @@ import {
 } from "@heroicons/react/24/outline";
 
 const DashboardWrapper = ({
-  monthId,
   userId = null,
   isAdmin = false,
   showTable = true,
@@ -32,6 +32,7 @@ const DashboardWrapper = ({
   title = "Dashboard",
 }) => {
   const { isAuthenticated, user } = useAuth();
+  const { monthId } = useGlobalMonthId();
   const [showTasksTable, setShowTasksTable] = useState(showTable);
 
   // Memoize the query parameters to prevent unnecessary re-renders
@@ -42,6 +43,8 @@ const DashboardWrapper = ({
     }),
     [monthId, userId]
   );
+
+
 
   // Use the real-time subscription to get tasks
   const {
@@ -187,7 +190,6 @@ const DashboardWrapper = ({
         <div >
 
           <OptimizedTaskMetricsBoard
-            monthId={monthId}
             userId={userId}
             showSmallCards={true}
           />
@@ -217,7 +219,6 @@ const DashboardWrapper = ({
           {/* Tasks Table - Show only if we have data AND showTable is true */}
           {showTasksTable && tasks.length > 0 && (
             <TasksTable
-              monthId={monthId}
               tasks={tasks}
               error={null}
             />

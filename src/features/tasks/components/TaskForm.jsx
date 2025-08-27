@@ -3,6 +3,7 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import { useAuth } from "../../../shared/hooks/useAuth";
+import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import { format } from "date-fns";
 import { useDispatch } from "react-redux";
 import { useCreateTaskMutation } from "../tasksApi";
@@ -35,8 +36,7 @@ const TaskForm = ({
 }) => {
   const { user } = useAuth();
   const [outerSubmitting, setOuterSubmitting] = useState(false);
-  // Always use current month for task creation
-  const monthId = format(new Date(), "yyyy-MM");
+  const { monthId } = useGlobalMonthId();
   const [createTask] = useCreateTaskMutation();
   
   // Get reporters for selection
@@ -193,7 +193,7 @@ const TaskForm = ({
       createdBy: user?.uid,
       createdByName: user?.name || user?.email,
       userUID: user?.uid,
-      monthId,
+      // monthId is automatically added by the API from global state
     };
   };
 

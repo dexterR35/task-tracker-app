@@ -65,6 +65,7 @@ export const useFormat = () => {
   }, []);
 
   const getCurrentMonthId = useCallback(() => {
+    // This is now a fallback - the actual month ID should come from the API
     return format(new Date(), 'yyyy-MM');
   }, []);
 

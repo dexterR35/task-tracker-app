@@ -9,6 +9,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../app/firebase";
+import { logger } from "../../shared/utils/logger";
 
 // --- Configuration & Constants ---
 const VALID_ROLES = ["admin", "user"];
@@ -81,23 +82,19 @@ export const setupAuthListener = (dispatch) => {
           
           const normalizedUser = normalizeUser(user, firestoreData);
           
-          // Add a delay to cover the initial data fetching period
-          // This ensures users see "Authenticating..." throughout the entire login flow
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
           // Dispatch auth success action
           dispatch(authSlice.actions.authStateChanged({ user: normalizedUser }));
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          logger.error("Error fetching user data:", error);
           dispatch(authSlice.actions.authStateChanged({ user: null, error: error.message }));
         }
       } else {
-        // User signed out - no need to show loading for this
+        // User signed out - set auth checking to false and clear user
         dispatch(authSlice.actions.authStateChanged({ user: null }));
       }
     },
     (error) => {
-      console.error("Auth state change error:", error);
+      logger.error("Auth state change error:", error);
       dispatch(authSlice.actions.authStateChanged({ user: null, error: error.message }));
     }
   );
@@ -132,7 +129,7 @@ export const loginUser = createAsyncThunk(
       
       return normalizedUser;
     } catch (error) {
-      console.error("Login error:", error);
+      logger.error("Login error:", error);
       
       // Handle specific Firebase auth errors
       if (error.code === 'auth/user-not-found') {
@@ -160,7 +157,7 @@ export const logoutUser = createAsyncThunk(
       // The auth listener will handle the state update automatically
       return null;
     } catch (error) {
-      console.error("Logout error:", error);
+      logger.error("Logout error:", error);
       return rejectWithValue(error.message);
     }
   }
@@ -172,7 +169,7 @@ export const requireReauth = createAsyncThunk(
     try {
       return { message };
     } catch (error) {
-      console.error("Reauth error:", error);
+      logger.error("Reauth error:", error);
       return rejectWithValue(error.message);
     }
   }
@@ -183,7 +180,7 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: false, // Only true during login/logout attempts
-  isAuthChecking: false, // Only true when checking existing auth state
+  isAuthChecking: true, // Start as true to prevent flash of login page on refresh
   error: null,
   reauthRequired: false,
   reauthMessage: null,
@@ -207,7 +204,7 @@ const authSlice = createSlice({
     authStateChanged: (state, action) => {
       const { user, error } = action.payload;
       state.isLoading = false; // Always set loading to false when auth state changes
-      state.isAuthChecking = false; // Stop auth checking
+      state.isAuthChecking = false; // Stop auth checking - this is crucial for preventing login page flash
       state.user = user;
       state.isAuthenticated = !!user;
       state.error = error || null;
@@ -283,6 +280,7 @@ export const { clearError, clearReauth, setLoading, authStateChanged, startAuthI
 export const selectUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectIsLoading = (state) => state.auth.isLoading;
+export const selectIsAuthChecking = (state) => state.auth.isAuthChecking;
 export const selectAuthError = (state) => state.auth.error;
 export const selectReauthRequired = (state) => state.auth.reauthRequired;
 export const selectReauthMessage = (state) => state.auth.reauthMessage;

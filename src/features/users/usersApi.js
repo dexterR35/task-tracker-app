@@ -18,34 +18,12 @@ import { logger } from "../../shared/utils/logger";
 
 
 
-// Token validation utility
-const validateToken = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('No authenticated user');
-    }
-    
-    // Force token refresh if needed
-    await user.getIdToken(true);
-    return true;
-  } catch (error) {
-    logger.error('Token validation failed:', error);
-    throw new Error('Authentication required');
+// Simple authentication check
+const checkAuth = () => {
+  if (!auth.currentUser) {
+    throw new Error('AUTH_REQUIRED');
   }
-};
-
-// Wrapper for all Firestore operations with token validation
-const withTokenValidation = async (operation) => {
-  try {
-    await validateToken();
-    return await operation();
-  } catch (error) {
-    if (error.message === 'Authentication required') {
-      throw new Error('AUTH_REQUIRED');
-    }
-    throw error;
-  }
+  return true;
 };
 
 // Check if user is authenticated (for early returns)
@@ -173,12 +151,11 @@ export const usersApi = createApi({
               return { data: [] };
             }
 
-            const result = await withTokenValidation(async () => {
-              logger.log("Fetching users from database...");
-              const users = await fetchUsersFromFirestore();
+            checkAuth();
+            logger.log("Fetching users from database...");
+            const users = await fetchUsersFromFirestore();
 
-              return { data: users };
-            });
+            const result = { data: users };
             
             logApiCall('getUsers', {}, result.data);
             return result;
@@ -264,20 +241,19 @@ export const usersApi = createApi({
       async queryFn({ userId, updates }) {
         return await withRetry(async () => {
           try {
-            const result = await withTokenValidation(async () => {
-              const userRef = doc(db, "users", userId);
-              
-              const updatesWithTimestamp = {
-                ...updates,
-                updatedAt: serverTimestamp(),
-              };
+            checkAuth();
+            const userRef = doc(db, "users", userId);
+            
+            const updatesWithTimestamp = {
+              ...updates,
+              updatedAt: serverTimestamp(),
+            };
 
-              await updateDoc(userRef, updatesWithTimestamp);
+            await updateDoc(userRef, updatesWithTimestamp);
 
-              logger.log("[UpdateUser] User updated:", userId);
+            logger.log("[UpdateUser] User updated:", userId);
 
-              return { data: { id: userId, success: true } };
-            });
+            const result = { data: { id: userId, success: true } };
             
             logApiCall('updateUser', { userId }, result.data);
             return result;
@@ -317,14 +293,13 @@ export const usersApi = createApi({
       async queryFn({ userId }) {
         return await withRetry(async () => {
           try {
-            const result = await withTokenValidation(async () => {
-              const userRef = doc(db, "users", userId);
-              await deleteDoc(userRef);
+            checkAuth();
+            const userRef = doc(db, "users", userId);
+            await deleteDoc(userRef);
 
-              logger.log("[DeleteUser] User deleted:", userId);
+            logger.log("[DeleteUser] User deleted:", userId);
 
-              return { data: { id: userId, success: true } };
-            });
+            const result = { data: { id: userId, success: true } };
             
             logApiCall('deleteUser', { userId }, result.data);
             return result;
@@ -362,17 +337,16 @@ export const usersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-            const result = await withTokenValidation(async () => {
-              const userRef = doc(db, "users", userId);
-              const userSnap = await getDocFromServer(userRef);
-              
-              if (!userSnap.exists()) {
-                return { data: null };
-              }
+            checkAuth();
+            const userRef = doc(db, "users", userId);
+            const userSnap = await getDocFromServer(userRef);
+            
+            if (!userSnap.exists()) {
+              return { data: null };
+            }
 
-              const user = mapUserDoc(userSnap);
-              return { data: user };
-            });
+            const user = mapUserDoc(userSnap);
+            const result = { data: user };
             
             logApiCall('getUserById', { userId }, result.data);
             return result;

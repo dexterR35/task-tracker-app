@@ -11,7 +11,8 @@ import {
   useGetMonthBoardExistsQuery,
 } from "../../features/tasks/tasksApi";
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
-import DashboardLoader from "../../shared/components/ui/DashboardLoader";
+import Loader from "../../shared/components/ui/Loader";
+import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
 import { format } from "date-fns";
 
 const DashboardPage = () => {
@@ -19,8 +20,7 @@ const DashboardPage = () => {
   const isAdmin = useSelector(selectIsAdmin);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Use current month as default
-  const monthId = format(new Date(), "yyyy-MM");
+  const { monthId, setMonthId, needsBoardGeneration } = useGlobalMonthId();
 
   // URL state for user selection (admin only)
   const selectedUserId = searchParams.get("user") || "";
@@ -31,6 +31,10 @@ const DashboardPage = () => {
   // API hooks - Admin specific
   const { data: usersList = [], isLoading: usersLoading } =
     useSubscribeToUsersQuery();
+  
+
+  
+
   const [generateMonthBoard, { isLoading: isGeneratingBoard }] =
     useGenerateMonthBoardMutation();
 
@@ -45,6 +49,9 @@ const DashboardPage = () => {
     isLoading: boardLoading,
     error: boardError,
   } = boardData;
+
+  // Check if any API operations are loading
+  const isLoading = boardLoading || usersLoading || isGeneratingBoard;
 
   // Ensure user is authenticated
   if (!user) {
@@ -73,7 +80,10 @@ const DashboardPage = () => {
   // Handle generate month board (admin only)
   const handleGenerateBoard = async () => {
     try {
-      await generateMonthBoard({
+      // logger.debug(`[DashboardPage] Starting month board generation for monthId: ${monthId}`);
+      
+      // Use the month ID from the API response
+      const result = await generateMonthBoard({
         monthId,
         meta: {
           createdBy: user?.uid,
@@ -82,10 +92,23 @@ const DashboardPage = () => {
         },
       }).unwrap();
 
+      console.log(`[DashboardPage] Month board generated successfully. API result:`, result);
+
+      // Update the global month ID to the newly created board from API
+      if (result?.monthId) {
+        console.log(`[DashboardPage] Setting global monthId to API-generated value: ${result.monthId}`);
+        setMonthId(result.monthId);
+      } else {
+        // Fallback to the original monthId if API doesn't return one
+        console.log(`[DashboardPage] API didn't return monthId, using fallback: ${monthId}`);
+        setMonthId(monthId);
+      }
+
       showSuccess(
         `Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`
       );
     } catch (error) {
+      console.error(`[DashboardPage] Failed to generate month board:`, error);
       showError(`Failed to create board: ${error.message}`);
     }
   };
@@ -95,63 +118,40 @@ const DashboardPage = () => {
     setShowTaskForm(!showTaskForm);
   };
 
-  // Determine dashboard configuration based on role
-  const getDashboardConfig = () => {
-    if (isAdmin) {
-      return {
-        title: `${user?.name || user?.email}'s - Board`,
-        userId: selectedUserId || null, // null means all users
-        showCreateBoard: true,
-        onGenerateBoard: handleGenerateBoard,
-        isGeneratingBoard,
-        usersList,
-        usersLoading,
-        selectedUserId,
-        onUserSelect: handleUserSelect,
-      };
-    } else {
-      return {
-        title: `${user?.name || user?.email}'s - Board`,
-        userId: user?.uid,
-        showCreateBoard: false,
-        onGenerateBoard: null,
-        isGeneratingBoard: false,
-        usersList: [],
-        usersLoading: false,
-        selectedUserId: "",
-        onUserSelect: null,
-      };
-    }
-  };
-
-  const config = getDashboardConfig();
+  if (isLoading) {
+    return (
+      <Loader 
+        size="xl" 
+        variant="spinner" 
+        text="Please wait..." 
+        fullScreen={true}
+      />
+    );
+  }
 
   return (
-    <DashboardLoader>
-      <div className="min-h-screen p-2">
-        <div className="max-w-7xl mx-auto">
-          <DashboardWrapper
-            monthId={monthId}
-            userId={config.userId}
+    <div className="min-h-screen p-2">
+      <div className="max-w-7xl mx-auto">
+        <DashboardWrapper
+            userId={isAdmin ? selectedUserId || null : user?.uid}
             isAdmin={isAdmin}
-            showCreateBoard={config.showCreateBoard}
-            onGenerateBoard={config.onGenerateBoard}
-            isGeneratingBoard={config.isGeneratingBoard}
+            showCreateBoard={isAdmin && needsBoardGeneration}
+            onGenerateBoard={isAdmin ? handleGenerateBoard : null}
+            isGeneratingBoard={isGeneratingBoard}
             board={board}
             boardLoading={boardLoading}
             boardError={boardError}
-            usersList={config.usersList}
-            usersLoading={config.usersLoading}
-            selectedUserId={config.selectedUserId}
-            onUserSelect={config.onUserSelect}
+            usersList={isAdmin ? usersList : []}
+            usersLoading={isAdmin ? usersLoading : false}
+            selectedUserId={isAdmin ? selectedUserId : ""}
+            onUserSelect={isAdmin ? handleUserSelect : null}
             showTaskForm={showTaskForm}
             onToggleTaskForm={handleToggleTaskForm}
-            title={config.title}
+            title={`${user?.name || user?.email}'s - Board`}
           />
         </div>
       </div>
-    </DashboardLoader>
-  );
-};
+    );
+  };
 
 export default DashboardPage;

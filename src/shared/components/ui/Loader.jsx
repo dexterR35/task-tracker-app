@@ -4,14 +4,15 @@ const Loader = ({
   size = 'md', 
   text = 'Loading...', 
   className = '',
-  variant = 'spinner' // 'spinner' or 'dots'
+  variant = 'spinner', // 'spinner' or 'dots'
+  fullScreen = false, // Add fullScreen prop for consistent full-screen loading
+  minHeight = 'auto' // Allow custom min-height for different contexts
 }) => {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-8 h-8',
     lg: 'w-12 h-12',
-    xl: 'w-13 h-13',
-  
+    xl: 'w-16 h-16', // Fixed xl size
   };
 
   const textSizes = {
@@ -19,7 +20,6 @@ const Loader = ({
     md: 'text-base',
     lg: 'text-lg',
     xl: 'text-xl',
-    
   };
 
   const Spinner = () => (
@@ -34,7 +34,7 @@ const Loader = ({
     </div>
   );
 
-  return (
+  const content = (
     <div className="flex-center flex-col space-y-4 p-8">
       {variant === 'spinner' ? <Spinner /> : <Dots />}
       {text && (
@@ -44,6 +44,24 @@ const Loader = ({
       )}
     </div>
   );
+
+  if (fullScreen) {
+    return (
+      <div className={`min-h-screen flex-center`} role="status" aria-busy="true">
+        {content}
+      </div>
+    );
+  }
+
+  if (minHeight !== 'auto') {
+    return (
+      <div className={`${minHeight} flex-center`} role="status" aria-busy="true">
+        {content}
+      </div>
+    );
+  }
+
+  return content;
 };
 
 export default Loader;

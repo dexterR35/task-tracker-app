@@ -34,10 +34,10 @@ export const sanitizeUrl = (url) => {
 };
 
 // Sanitize task data (pure sanitization, no validation)
-export const sanitizeTaskData = (taskData) => {
+export const sanitizeTaskData = (taskData, includeSystemFields = true) => {
   if (!taskData || typeof taskData !== 'object') return {};
 
-  return {
+  const baseFields = {
     jiraLink: sanitizeUrl(taskData.jiraLink || ''),
     markets: Array.isArray(taskData.markets) 
       ? taskData.markets.map(m => sanitizeText(m)).filter(Boolean)
@@ -62,43 +62,25 @@ export const sanitizeTaskData = (taskData) => {
       : [],
     taskNumber: sanitizeText(taskData.taskNumber || ''),
     reporters: sanitizeText(taskData.reporters || ''),
-    createdBy: sanitizeText(taskData.createdBy || ''),
-    createdByName: sanitizeText(taskData.createdByName || ''),
-    userUID: sanitizeText(taskData.userUID || ''),
-    monthId: sanitizeText(taskData.monthId || ''),
   };
+
+  // Include system fields only when needed (for updates, not creation)
+  if (includeSystemFields) {
+    return {
+      ...baseFields,
+      createdBy: sanitizeText(taskData.createdBy || ''),
+      createdByName: sanitizeText(taskData.createdByName || ''),
+      userUID: sanitizeText(taskData.userUID || ''),
+      monthId: sanitizeText(taskData.monthId || ''),
+    };
+  }
+
+  return baseFields;
 };
 
-// Sanitize task creation form data (pure sanitization, no validation)
+// Alias for task creation data (maintains backward compatibility)
 export const sanitizeTaskCreationData = (formData) => {
-  if (!formData || typeof formData !== 'object') return {};
-
-  return {
-    jiraLink: sanitizeUrl(formData.jiraLink || ''),
-    markets: Array.isArray(formData.markets) 
-      ? formData.markets.map(m => sanitizeText(m)).filter(Boolean)
-      : [],
-    product: sanitizeText(formData.product || ''),
-    taskName: sanitizeText(formData.taskName || ''),
-    aiUsed: Boolean(formData.aiUsed),
-    timeSpentOnAI: Number(formData.timeSpentOnAI) || 0,
-    // Always use arrays - empty array if not selected
-    aiModels: Array.isArray(formData.aiModels)
-      ? formData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
-      : [],
-    timeInHours: Number(formData.timeInHours) || 0,
-    reworked: Boolean(formData.reworked),
-    deliverables: Array.isArray(formData.deliverables)
-      ? formData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
-      : [],
-    deliverablesCount: Number(formData.deliverablesCount) || 0,
-    // Always use arrays - empty array if not selected
-    deliverablesOther: Array.isArray(formData.deliverablesOther)
-      ? formData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
-      : [],
-    taskNumber: sanitizeText(formData.taskNumber || ''),
-    reporters: sanitizeText(formData.reporters || ''),
-  };
+  return sanitizeTaskData(formData, false);
 };
 
 // Sanitize user data (pure sanitization, no validation)

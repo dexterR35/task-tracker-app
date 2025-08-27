@@ -10,7 +10,7 @@ import {
   useDeleteReporterMutation 
 } from "../../features/reporters/reportersApi";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
-import DashboardLoader from "../../shared/components/ui/DashboardLoader";
+import Loader from "../../shared/components/ui/Loader";
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { sanitizeText } from "../../shared/utils/sanitization";
 import { logger } from "../../shared/utils/logger";
@@ -57,7 +57,7 @@ const AdminReportersPage = () => {
   };
 
   // API hooks
-  const { data: reporters = [], error: reportersError } = useSubscribeToReportersQuery();
+  const { data: reporters = [], error: reportersError, isLoading } = useSubscribeToReportersQuery();
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
   const [deleteReporter] = useDeleteReporterMutation();
@@ -195,9 +195,19 @@ const AdminReportersPage = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <Loader 
+        size="xl" 
+        variant="spinner" 
+        text="Please wait..." 
+        fullScreen={true}
+      />
+    );
+  }
+
   return (
-    <DashboardLoader>
-      <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="mb-6">
@@ -498,8 +508,7 @@ const AdminReportersPage = () => {
           </div>
         </div>
       </div>
-    </DashboardLoader>
-  );
-};
+    );
+  };
 
 export default AdminReportersPage;

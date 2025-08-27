@@ -7,6 +7,7 @@ import {
   clearError as clearAuthError,
   clearReauth,
   requireReauth,
+  authStateChanged,
   selectUser,
   selectIsAuthenticated,
   selectIsLoading,
@@ -22,11 +23,15 @@ import {
   selectCanAccessAdmin,
   selectCanAccessUser,
 } from '../../features/auth/authSlice';
-import { auth } from '../../app/firebase';
+import { auth, db } from '../../app/firebase';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from 'firebase/auth';
+import {
+  doc,
+  getDoc,
+} from 'firebase/firestore';
 import {
   showWelcomeMessage,
   showLogoutSuccess,
@@ -34,6 +39,7 @@ import {
   showReauthSuccess,
   showReauthError,
 } from '../utils/toast';
+import { logger } from '../utils/logger';
 
 // Hook for auth actions only (login, logout, etc.)
 export const useAuthActions = () => {
@@ -72,15 +78,64 @@ export const useAuthActions = () => {
         throw new Error('No authenticated user found');
       }
 
+      logger.log("Starting reauthentication process...");
       const credential = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(user, credential);
       
+      logger.log("Reauthentication successful, clearing reauth requirement...");
       // Clear reauth requirement
       dispatch(clearReauth());
       
+      // Force a token refresh to ensure the session is properly restored
+      await user.getIdToken(true);
+      
+      // Manually restore the auth state by fetching user data and dispatching authStateChanged
+      logger.log("Manually restoring auth state...");
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const firestoreData = userSnap.data();
+          
+          // Check if user is active
+          if (firestoreData.isActive === false) {
+            throw new Error("Account is deactivated. Please contact administrator.");
+          }
+          
+          // Create normalized user object
+          const normalizedUser = {
+            uid: user.uid,
+            email: user.email,
+            name: firestoreData.name || "",
+            role: firestoreData.role,
+            occupation: firestoreData.occupation || "user",
+            createdAt: firestoreData.createdAt ? 
+              (typeof firestoreData.createdAt.toDate === "function" 
+                ? firestoreData.createdAt.toDate().getTime() 
+                : typeof firestoreData.createdAt === "number" 
+                  ? firestoreData.createdAt 
+                  : new Date(firestoreData.createdAt).getTime()) 
+              : null,
+            permissions: firestoreData.permissions || [],
+            isActive: firestoreData.isActive !== false,
+          };
+          
+          // Dispatch auth state changed to restore the user
+          dispatch(authStateChanged({ user: normalizedUser }));
+          logger.log("Auth state restored successfully");
+        } else {
+          throw new Error("User data not found");
+        }
+      } catch (error) {
+        logger.error("Error restoring auth state:", error);
+        throw error;
+      }
+      
+      logger.log("Token refreshed, reauthentication complete");
       showReauthSuccess();
       return true;
     } catch (error) {
+      logger.error("Reauthentication failed:", error);
       showReauthError(error?.message);
       throw error;
     }

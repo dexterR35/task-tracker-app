@@ -1,53 +1,72 @@
-import {
-  doc,
-  getDoc,
-} from "firebase/firestore";
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { db } from "../../app/firebase";
+import { useGetTaskByIdQuery } from "../../features/tasks/tasksApi";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
-import PageLoader from "../../shared/components/ui/PageLoader";
-
+import Loader from "../../shared/components/ui/Loader";
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();
   const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const ref = doc(db, "tasks", monthId, "monthTasks", taskId);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
-          setError("Task not found");
-          return;
-        }
-        const data = snap.data();
-        setTask({ id: snap.id, ...data });
-      } catch (e) {
-        setError(e.message || "Failed to load task");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [taskId, monthId]);
+  // Use RTK Query to fetch task data
+  const {
+    data: task,
+    isLoading,
+    error,
+  } = useGetTaskByIdQuery(
+    { monthId, taskId },
+    {
+      skip: !monthId || !taskId,
+    }
+  );
 
-  if (loading)
+  if (isLoading) {
     return (
-      <PageLoader 
+      <Loader 
         text="Loading task details..." 
         size="lg"
         variant="spinner"
+        minHeight="min-h-[50vh]"
       />
     );
-  if (error) return <div className="p-6 text-red-600">{error}</div>;
-  if (!task) return null;
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h2 className="text-red-800 font-semibold mb-2">Error Loading Task</h2>
+          <p className="text-red-600">{error?.data?.message || error?.message || "Failed to load task"}</p>
+          <DynamicButton 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            className="mt-4"
+          >
+            Go Back
+          </DynamicButton>
+        </div>
+      </div>
+    );
+  }
+
+  if (!task) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h2 className="text-yellow-800 font-semibold mb-2">Task Not Found</h2>
+          <p className="text-yellow-600">The requested task could not be found.</p>
+          <DynamicButton 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            className="mt-4"
+          >
+            Go Back
+          </DynamicButton>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-start mb-4">
@@ -62,14 +81,18 @@ const TaskDetailPage = () => {
         </div>
         <div>
           <span className="font-medium text-gray-700">Jira Link:</span>{" "}
-          <a
-            href={task.jiraLink}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 underline"
-          >
-            {task.jiraLink}
-          </a>
+          {task.jiraLink ? (
+            <a
+              href={task.jiraLink}
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 underline"
+            >
+              {task.jiraLink}
+            </a>
+          ) : (
+            "-"
+          )}
         </div>
         <div>
           <span className="font-medium text-gray-700">Markets:</span>{" "}

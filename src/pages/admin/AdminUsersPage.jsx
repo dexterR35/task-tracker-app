@@ -1,18 +1,23 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
-import DashboardLoader from "../../shared/components/ui/DashboardLoader";
+import Loader from "../../shared/components/ui/Loader";
 import { format } from "date-fns";
 
 const AdminUsersPage = () => {
   const navigate = useNavigate();
 
   // API hooks
-  const { data: users = [], error: usersError } = useSubscribeToUsersQuery();
+  const { data: users = [], error: usersError, isLoading } = useSubscribeToUsersQuery();
+  
+
+  
+
 
   // Handle user click to view their tasks
   const handleUserClick = (user) => {
-    navigate(`/admin?user=${user.userUID || user.id}`);
+    const userId = user.userUID || user.id;
+    navigate(`/admin?user=${userId}`);
   };
 
   // Show error state
@@ -32,10 +37,20 @@ const AdminUsersPage = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <Loader 
+        size="xl" 
+        variant="spinner" 
+        text="Please wait..." 
+        fullScreen={true}
+      />
+    );
+  }
+
   return (
-    <DashboardLoader>
-      <div className="min-h-screen p-6">
-        <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-100 mb-2">Users</h1>
@@ -102,8 +117,7 @@ const AdminUsersPage = () => {
           </div>
         </div>
       </div>
-    </DashboardLoader>
-  );
-};
+    );
+  };
 
 export default AdminUsersPage;

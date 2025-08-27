@@ -1,8 +1,7 @@
 // src/router.jsx
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../shared/hooks/useAuth";
-import { useSelector } from "react-redux";
-import { selectIsAdmin, selectCanAccessAdmin, selectCanAccessUser } from "../features/auth/authSlice";
+
 import Layout from "../shared/components/layout/Layout";
 import Loader from "../shared/components/ui/Loader";
 import LoginPage from "../pages/auth/LoginPage";
@@ -13,61 +12,41 @@ import AdminUsersPage from "../pages/admin/AdminUsersPage";
 import AdminReportersPage from "../pages/admin/AdminReportersPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
-// Protect login page from authenticated users
-const LoginRoute = ({ children }) => {
-  const { isAuthenticated, isLoading, isAuthChecking, user } = useAuth();
-  const isAdmin = useSelector(selectIsAdmin);
+// Unified route protection component
+const ProtectedRoute = ({ children, requiredRole = null, redirectToLogin = true }) => {
+  const { isAuthenticated, user, isLoading, error } = useAuth();
   const location = useLocation();
 
-  if (isLoading || isAuthChecking) {
+  // Show loading state during login/logout operations only
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex-center bg-primary" role="status" aria-busy="true">
-        <Loader size="xl" text="Checking session..." variant="spinner" />
-      </div>
+      <Loader 
+        size="xl" 
+        text="Processing..." 
+        variant="spinner" 
+        fullScreen={true}
+      />
     );
   }
 
-  if (isAuthenticated && user) {
-    // Redirect based on user role using selector
-    const from = location.state?.from || "/";
-    const defaultRoute = isAdmin ? "/admin" : "/user";
-    const redirectTo = from === "/" ? defaultRoute : from;
-    return <Navigate to={redirectTo} replace />;
-  }
-
-  return children;
-};
-
-// Simple route protection with role-based access
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user, isLoading, isAuthChecking, error } = useAuth();
-  const canAccessAdmin = useSelector(selectCanAccessAdmin);
-  const canAccessUser = useSelector(selectCanAccessUser);
-  const location = useLocation();
-
-  if (isLoading || isAuthChecking) {
-    return (
-      <div className="min-h-screen flex-center bg-primary" role="status" aria-busy="true">
-        <Loader size="xl" text="Checking session..." variant="spinner" />
-      </div>
-    );
-  }
-
-  // Handle authentication errors
-  if (error) {
-    console.error("Authentication error:", error);
+  // Handle authentication errors - only redirect if not already on login page
+  // Don't redirect if we're already on login page to prevent loops
+  if (error && location.pathname !== "/login") {
     return <Navigate to="/login" replace state={{ error: error }} />;
   }
 
   // Check if user is authenticated
   if (!isAuthenticated || !user) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location.pathname + location.search + location.hash }}
-      />
-    );
+    if (redirectToLogin) {
+      return (
+        <Navigate
+          to="/login"
+          replace
+          state={{ from: location.pathname + location.search + location.hash }}
+        />
+      );
+    }
+    return children; // Allow unauthenticated access for login page
   }
 
   // Check if user account is active
@@ -81,73 +60,27 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
 
-  // Check role-based access using selectors
-  if (requiredRole === "admin" && !canAccessAdmin) {
+  // Check role-based access if required
+  if (requiredRole === "admin" && user.role !== "admin") {
     return <Navigate to="/unauthorized" replace />;
   }
   
-  if (requiredRole === "user" && !canAccessUser) {
+  if (requiredRole === "user" && user.role !== "user" && user.role !== "admin") {
     return <Navigate to="/unauthorized" replace />;
   }
 
   return children;
 };
 
-// Admin-only routes
-const AdminRoute = ({ children }) => (
-  <ProtectedRoute requiredRole="admin">
-    {children}
-  </ProtectedRoute>
-);
-
-// User routes (accessible by both users and admins)
-const UserRoute = ({ children }) => (
-  <ProtectedRoute requiredRole="user">
-    {children}
-  </ProtectedRoute>
-);
-
-// Root index wrapper: redirect authenticated users based on role
-const RootIndex = () => {
-  const { isAuthenticated, user, isLoading, isAuthChecking } = useAuth();
-  const isAdmin = useSelector(selectIsAdmin);
-
-  if (isLoading || isAuthChecking) {
-    return (
-      <div className="min-h-screen flex-center bg-primary" role="status" aria-busy="true">
-        <Loader size="xl" text="Checking session..." variant="spinner" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated && user) {
-    // Check if user account is active
-    if (user.isActive === false) {
-      return <Navigate to="/login" replace state={{ error: "Account is deactivated. Please contact administrator." }} />;
-    }
-
-    // Redirect based on user role using selector
-    const redirectTo = isAdmin ? "/admin" : "/user";
-    return <Navigate to={redirectTo} replace />;
-  }
-
-  return <HomePage />;
-};
-
 // Unauthorized page component
 const UnauthorizedPage = () => {
   const { user } = useAuth();
-  const isAdmin = useSelector(selectIsAdmin);
-  const location = useLocation();
-  const error = location.state?.error;
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="min-h-screen flex-center bg-primary">
       <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
         <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-        {error && (
-          <p className="text-gray-700 mb-4">{error}</p>
-        )}
         <p className="text-gray-600 mb-6">
           You don't have permission to access this page.
         </p>
@@ -179,6 +112,35 @@ const UnauthorizedPage = () => {
   );
 };
 
+// Root index wrapper: redirect authenticated users based on role
+const RootIndex = () => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Loader 
+        size="xl" 
+        text="Processing..." 
+        variant="spinner" 
+        fullScreen={true}
+      />
+    );
+  }
+
+  if (isAuthenticated && user) {
+    // Check if user account is active
+    if (user.isActive === false) {
+      return <Navigate to="/login" replace state={{ error: "Account is deactivated. Please contact administrator." }} />;
+    }
+
+    // Redirect based on user role
+    const redirectTo = user.role === "admin" ? "/admin" : "/user";
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  return <HomePage />;
+};
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -189,9 +151,9 @@ const router = createBrowserRouter([
       {
         path: "login",
         element: (
-          <LoginRoute>
+          <ProtectedRoute redirectToLogin={false}>
             <LoginPage />
-          </LoginRoute>
+          </ProtectedRoute>
         ),
       },
       {
@@ -201,65 +163,65 @@ const router = createBrowserRouter([
       {
         path: "user",
         element: (
-          <UserRoute>
+          <ProtectedRoute requiredRole="user">
             <DashboardPage />
-          </UserRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "admin",
         element: (
-          <AdminRoute>
+          <ProtectedRoute requiredRole="admin">
             <DashboardPage />
-          </AdminRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "task/:monthId/:taskId",
         element: (
-          <UserRoute>
+          <ProtectedRoute requiredRole="user">
             <TaskDetailPage />
-          </UserRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "admin/users",
         element: (
-          <AdminRoute>
+          <ProtectedRoute requiredRole="admin">
             <AdminUsersPage />
-          </AdminRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "admin/reporters",
         element: (
-          <AdminRoute>
+          <ProtectedRoute requiredRole="admin">
             <AdminReportersPage />
-          </AdminRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "preview/:monthId",
         element: (
-          <AdminRoute>
+          <ProtectedRoute requiredRole="admin">
             <NotFoundPage />
-          </AdminRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "admin/task/:monthId/:taskId",
         element: (
-          <AdminRoute>
+          <ProtectedRoute requiredRole="admin">
             <TaskDetailPage />
-          </AdminRoute>
+          </ProtectedRoute>
         ),
       },
       {
         path: "admin/analytics",
         element: (
-          <AdminRoute>
+          <ProtectedRoute requiredRole="admin">
             <NotFoundPage /> {/* Placeholder for future analytics page */}
-          </AdminRoute>
+          </ProtectedRoute>
         ),
       },
       { path: "*", element: <NotFoundPage /> },

@@ -5,8 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
 import { useEffect } from "react";
-import { useSelector } from "react-redux";
-import { selectIsAdmin } from "../../features/auth/authSlice";
+
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string()
@@ -20,7 +19,6 @@ const LoginSchema = Yup.object().shape({
 const LoginPage = () => {
   const { login, clearError } = useAuthActions();
   const { isAuthenticated, user } = useAuthState();
-  const isAdmin = useSelector(selectIsAdmin);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,15 +27,22 @@ const LoginPage = () => {
     clearError();
   }, [clearError]);
 
+  // Clear errors when location changes to login page
+  useEffect(() => {
+    if (location.pathname === "/login") {
+      clearError();
+    }
+  }, [location.pathname, clearError]);
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       const from = location.state?.from || "/";
-      const defaultRoute = isAdmin ? "/admin" : "/user";
+      const defaultRoute = user.role === "admin" ? "/admin" : "/user";
       const redirectTo = from === "/" ? defaultRoute : from;
       navigate(redirectTo, { replace: true });
     }
-  }, [isAuthenticated, user, navigate, location.state?.from, isAdmin]);
+  }, [isAuthenticated, user, navigate, location.state?.from]);
 
   const handleSubmit = async (values, { setSubmitting, setFieldError }) => {
     try {
@@ -45,7 +50,7 @@ const LoginPage = () => {
       // Navigation will be handled by the useEffect above
       // based on authentication state and user role
     } catch (error) {
-      console.error("Login failed:", error);
+      logger.error("Login failed:", error);
       
       // Handle specific field errors
       if (error.message?.includes("email")) {

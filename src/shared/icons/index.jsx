@@ -5,7 +5,6 @@ import {
   FiCheck,
   FiChevronDown,
   FiChevronUp,
-  FiDownload,
   FiEye,
   FiEdit,
   FiPlus,
@@ -15,7 +14,7 @@ import {
   FiBarChart2,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
-import {IoLogInSharp,IoAdd,IoAlert,IoCheckmarkSharp,IoClose,IoPencilSharp} from "react-icons/io5";
+import {IoLogInSharp,IoAdd,IoAlert,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
 const withSize = (IconComponent) => (props) => (
   <IconComponent className={props?.className || "w-5 h-5"} />
 );
@@ -55,7 +54,13 @@ export const Icons = {
   generic: {
     user: withSize(FiUser),
     dashboard: withSize(FiColumns),
+    moon: withSize(IoMoonOutline),
+    sun: withSize(IoSunnyOutline),
   },
+  profile:{
+    user: withSize(IoPerson),
+  },
+
 };
 
 export default Icons;
