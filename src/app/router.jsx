@@ -39,6 +39,9 @@ const ProtectedRoute = ({ children, requiredRole = null, redirectToLogin = true 
   const { isAuthenticated, user, isLoading, error } = useAuth();
   const location = useLocation();
 
+  // Debug logging
+  console.log(`[ProtectedRoute] path: ${location.pathname}, isAuthenticated: ${isAuthenticated}, user: ${user?.email}, role: ${user?.role}, requiredRole: ${requiredRole}, isLoading: ${isLoading}, error: ${error}`);
+
   // Show loading state during login/logout operations only
   if (isLoading) {
     return (
@@ -138,6 +141,9 @@ const UnauthorizedPage = () => {
 const RootIndex = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
+  // Debug logging
+  console.log(`[RootIndex] isAuthenticated: ${isAuthenticated}, user: ${user?.email}, role: ${user?.role}, isLoading: ${isLoading}`);
+
   if (isLoading) {
     return (
       <Loader 
@@ -152,11 +158,13 @@ const RootIndex = () => {
   if (isAuthenticated && user) {
     // Check if user account is active
     if (user.isActive === false) {
+      console.log(`[RootIndex] User account is deactivated, redirecting to login`);
       return <Navigate to="/login" replace state={{ error: "Account is deactivated. Please contact administrator." }} />;
     }
 
     // Redirect based on user role
     const redirectTo = user.role === "admin" ? "/admin" : "/user";
+    console.log(`[RootIndex] Redirecting to: ${redirectTo}`);
     return <Navigate to={redirectTo} replace />;
   }
 

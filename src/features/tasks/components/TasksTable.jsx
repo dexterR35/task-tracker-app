@@ -1,12 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactPaginate from "react-paginate";
-import {
-  PencilIcon,
-  TrashIcon,
-  CheckIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../tasksApi";
 import { useSubscribeToReportersQuery } from "../../reporters/reportersApi";
 import {

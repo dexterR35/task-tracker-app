@@ -38,8 +38,10 @@ const DashboardWrapper = ({
   // Get selected user from URL params (admin only)
   const selectedUserId = searchParams.get("user") || "";
   
-  // Get users list for admin
-  const { data: usersList = [] } = useSubscribeToUsersQuery();
+  // Get users list for admin only
+  const { data: usersList = [] } = useSubscribeToUsersQuery(undefined, {
+    skip: !isAdmin // Only subscribe if user is admin
+  });
 
   // Derive userId based on admin status and selection
   const userId = isAdmin ? selectedUserId : user?.uid;
@@ -80,9 +82,6 @@ const DashboardWrapper = ({
       // No polling needed - onSnapshot handles real-time updates
     }
   );
-
-  // Memoize tasks to prevent unnecessary re-renders
-  const memoizedTasks = useMemo(() => tasks, [tasks]);
 
   // Don't render anything if not authenticated
   if (!isAuthenticated) {
@@ -254,18 +253,18 @@ const DashboardWrapper = ({
           )}
 
           {/* Tasks Table - Show only if we have data AND showTable is true */}
-          {showTasksTable && memoizedTasks.length > 0 && (
+          {showTasksTable && tasks.length > 0 && (
             <Suspense
               fallback={
                 <div className="p-4 text-center">Loading tasks table...</div>
               }
             >
-              <TasksTable tasks={memoizedTasks} error={null} />
+              <TasksTable tasks={tasks} error={null} />
             </Suspense>
           )}
 
           {/* Show message if no tasks */}
-          {showTasksTable && memoizedTasks.length === 0 && (
+          {showTasksTable && tasks.length === 0 && (
             <div className=" border rounded-lg p-6 text-center text-sm text-gray-200">
               {userId
                 ? `No tasks found for user ${userId} in ${monthId}.`
@@ -288,6 +287,10 @@ const DashboardWrapper = ({
           <p className="text-gray-400">
             Board not ready for {format(new Date(monthId + "-01"), "MMMM yyyy")}
             . Please contact an admin to create the board.
+          </p>
+          {/* Debug info */}
+          <p className="text-xs text-gray-500 mt-2">
+            Debug: board.exists = {String(board?.exists)}, isAdmin = {String(isAdmin)}
           </p>
         </div>
       )}

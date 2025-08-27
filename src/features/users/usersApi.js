@@ -216,7 +216,10 @@ export const usersApi = createApi({
 
               updateCachedData(() => users);
 
-              logger.log("[Real-time] Users updated:", users.length);
+              // Only log significant updates (more than 1 user) to reduce noise
+              if (users.length > 1) {
+                logger.log("[Real-time] Users updated:", users.length);
+              }
             },
             (error) => {
               logger.error("Real-time users subscription error:", error);
