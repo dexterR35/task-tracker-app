@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useFormat } from './useFormat';
-import { useGetMonthBoardExistsQuery } from '../../features/tasks/tasksApi';
+import { useSubscribeToMonthBoardQuery } from '../../features/tasks/tasksApi';
+import { logger } from '../utils/logger';
 
 export const useGlobalMonthId = () => {
   const { user } = useAuth();
@@ -13,9 +14,9 @@ export const useGlobalMonthId = () => {
   // Initialize with current month
   const [monthId, setMonthId] = useState(() => currentMonthId);
   
-  // Check if current month board exists
-  const { data: currentBoard } = useGetMonthBoardExistsQuery(
-    { monthId: currentMonthId },
+  // Check if current month board exists - using real-time subscription
+  const { data: currentBoard } = useSubscribeToMonthBoardQuery(
+    { monthId: monthId },
     { skip: !user }
   );
 
@@ -40,8 +41,8 @@ export const useGlobalMonthId = () => {
 
   // Update month ID when board is generated via API
   useEffect(() => {
-    if (currentBoard?.exists && currentBoard.monthId && currentBoard.monthId !== monthId) {
-      setMonthId(currentBoard.monthId);
+    if (currentBoard?.exists) {
+      logger.debug(`[useGlobalMonthId] Board exists for ${monthId}, no need to switch`);
     }
   }, [currentBoard, monthId]);
 

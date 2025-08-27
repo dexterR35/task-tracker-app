@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
 import { useCentralizedAnalytics } from "../../../shared/hooks/analytics/useCentralizedAnalytics";
@@ -12,12 +12,9 @@ import {
   ClockIcon,
   SparklesIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon,
   UserGroupIcon,
   GlobeAltIcon,
   CubeIcon,
-  ChartBarIcon,
-  CogIcon,
   CodeBracketIcon,
   VideoCameraIcon,
   PaintBrushIcon,
@@ -173,12 +170,8 @@ const OptimizedTaskMetricsBoard = ({
   const {
     analytics,
     getMetric,
-    getAllMetrics,
     hasData,
-    isLoading,
     error,
-    reload,
-    refreshAnalytics
   } = useCentralizedAnalytics(monthId, userId);
 
   // Add error boundary for analytics

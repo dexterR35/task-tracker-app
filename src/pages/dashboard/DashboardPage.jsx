@@ -7,7 +7,6 @@ import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
 import {
   useSubscribeToMonthBoardQuery,
   useGenerateMonthBoardMutation,
-  useGetMonthBoardExistsQuery,
 } from "../../features/tasks/tasksApi";
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
 import Loader from "../../shared/components/ui/Loader";
@@ -37,12 +36,8 @@ const DashboardPage = () => {
   const [generateMonthBoard, { isLoading: isGeneratingBoard }] =
     useGenerateMonthBoardMutation();
 
-  // Board queries - different for admin vs user
-  const adminBoardQuery = useSubscribeToMonthBoardQuery({ monthId });
-  const userBoardQuery = useGetMonthBoardExistsQuery({ monthId });
-
-  // Use appropriate board query based on role
-  const boardData = isAdmin ? adminBoardQuery : userBoardQuery;
+  // Board queries - both admin and user use real-time subscription
+  const boardData = useSubscribeToMonthBoardQuery({ monthId });
   const {
     data: board = { exists: false },
     isLoading: boardLoading,

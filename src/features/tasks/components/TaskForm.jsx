@@ -4,8 +4,6 @@ import * as Yup from "yup";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
-import { format } from "date-fns";
-import { useDispatch } from "react-redux";
 import { useCreateTaskMutation } from "../tasksApi";
 import { useSubscribeToReportersQuery } from "../../reporters/reportersApi";
 import { logger } from "../../../shared/utils/logger";
@@ -19,7 +17,6 @@ import {
 
 import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
 import {
-  sanitizeTaskData,
   sanitizeTaskCreationData,
   validateTaskCreationData,
   validateJiraLink,
