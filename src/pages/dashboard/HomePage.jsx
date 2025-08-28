@@ -2,6 +2,8 @@ import React from "react";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
 import { useAuth } from "../../shared/hooks/useAuth";
+import { useNavigate, useLocation } from "react-router-dom";
+import DarkModeToggle from "../../shared/components/ui/DarkModeToggle";
 
 import {
   FiClock,
@@ -318,13 +320,61 @@ const HomepageCard = ({ card }) => {
 };
 
 const HomePage = () => {
-  const { user, canAccess } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, canAccess, isAuthChecking, isLoading, logout, clearError } = useAuth();
   const isAuthenticated = !!user;
   const isAdmin = canAccess('admin');
 
+  // For authenticated users on homepage, show a simplified view without navigation buttons
+  // This prevents showing navigation when coming from other authenticated pages
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      clearError();
+    }
+  };
+
+
+
+
+
+  // Show loading state if we're actually checking auth and have a user
+  // This prevents the spinner from showing on the homepage when it's a public route
+  const showLoading = isAuthChecking && user !== null;
+
   return (
     <div className="min-h-[90vh] w-full bg-white-dark flex items-center justify-center flex-col">
-      <div className="max-w-[86%] w-full mx-auto px-4  relative">
+      {showLoading ? (
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      ) : (
+        <>
+          {/* Navigation Header for Authenticated Users - Only Dark Mode Toggle */}
+          {isAuthenticated && (
+            <nav className="w-full bg-white dark:bg-primary shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300 mb-8">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16">
+                  {/* Logo */}
+                  <div className="flex items-center">
+                    <span className="text-2xl font-bold text-gray-800 dark:text-white">
+                      Task Tracker
+                    </span>
+                  </div>
+
+                  {/* Right Side - Only Dark Mode Toggle */}
+                  <div className="flex items-center space-x-4">
+                    <DarkModeToggle />
+                  </div>
+                </div>
+              </div>
+            </nav>
+          )}
+          
+          <div className="max-w-[86%] w-full mx-auto px-4  relative">
         {/* Hero Section */}
 
         <div className=" mb-2">
@@ -411,7 +461,8 @@ const HomePage = () => {
               className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity duration-300"
             />
           </div>
-        
+        </>
+      )}
     </div>
   );
 };

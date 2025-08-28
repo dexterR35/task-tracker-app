@@ -9,48 +9,33 @@ import Loader from "../components/ui/Loader";
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
-  const location = useLocation();
   const { isAuthLoading } = useLoadingState();
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Check if we're on a public route that doesn't need auth
-  const isPublicRoute = () => {
-    const path = location.pathname;
-    return path === '/' || path === '/login' || path === '/unauthorized';
-  };
-
   useEffect(() => {
-    // Only setup auth listener if not on a public route
-    if (!isPublicRoute()) {
-      // Setup persistent auth listener on mount
-      setupAuthListener(dispatch);
-    }
+    // Always setup auth listener for all routes to ensure consistent auth state
+    // This prevents issues where auth state is not available on public routes
+    setupAuthListener(dispatch);
     setIsInitialized(true);
 
     // Cleanup on unmount
     return () => {
-      if (!isPublicRoute()) {
-        cleanupAuthListener();
-      }
+      cleanupAuthListener();
     };
-  }, [dispatch, location.pathname]);
+  }, [dispatch]);
 
-  // For public routes, don't show loading state and don't initialize auth
-  if (isPublicRoute()) {
-    return children;
-  }
-
-  // Show loading while auth is being initialized or checked
-  if (!isInitialized || isAuthLoading) {
-    return (
-      <Loader 
-        size="xl" 
-        text="Initializing..." 
-        variant="spinner" 
-        fullScreen={true}
-      />
-    );
-  }
-
-  return children;
+  // Always render children, but show loading overlay when needed
+  return (
+    <>
+      {(!isInitialized || isAuthLoading) && (
+        <Loader 
+          size="xl" 
+          text="Initializing..." 
+          variant="spinner" 
+          fullScreen={true}
+        />
+      )}
+      {children}
+    </>
+  );
 };

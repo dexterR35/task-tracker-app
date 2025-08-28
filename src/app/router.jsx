@@ -4,7 +4,6 @@ import { lazy, Suspense, memo, useMemo, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "../shared/hooks/useAuth";
 import { logger } from "../shared/utils/logger";
-import { AuthProvider } from "../shared/context/AuthProvider";
 import {
   selectUser,
   selectIsLoading,
@@ -66,11 +65,16 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
   const { canAccess } = useAuth(); // Get canAccess directly from useAuth
   const location = useLocation();
   
+  // Check if this is a public route that doesn't need protection
+  const isPublicRoute = location.pathname === '/login' || location.pathname === '/unauthorized';
+  
+  // For public routes, don't show loading or check authentication
+  if (isPublicRoute) {
+    return children;
+  }
 
-  // Debug logging removed - not needed in production
-
-  // Show loading state during auth checking or login/logout operations
-  if (isLoading || isAuthChecking) {
+  // Show loading state only during login/logout operations, not during initial auth check
+  if (isLoading) {
     return (
       <Loader 
         size="xl" 
@@ -87,7 +91,8 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
   }
 
   // Check if user is authenticated
-  if (!user) {
+  // Only redirect to login if we're not currently checking auth (prevents redirect during refresh)
+  if (!user && !isAuthChecking) {
     if (redirectToLogin) {
       return (
         <Navigate
@@ -100,14 +105,28 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
     return children; // Allow unauthenticated access for login page
   }
 
-  // If user is authenticated and on login page, redirect to homepage
-  if (location.pathname === "/login") {
-    return <Navigate to="/" replace />;
+  // If we're still checking auth, show a minimal loading state
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
   }
+
+
 
   // Auto-redirect admins from /user to /admin
   if (location.pathname === "/user" && canAccess('admin')) {
     return <Navigate to="/admin" replace />;
+  }
+
+  // For homepage, allow authenticated users to stay (don't redirect them away)
+  // But mark that they came from an authenticated route
+  if (location.pathname === "/") {
+    return children;
   }
 
   // Check role-based access using the simplified canAccess function
@@ -186,15 +205,13 @@ const createAdminRoute = (Component, loadingText = "Loading admin...") =>
 const createUserRoute = (Component, loadingText = "Loading...") => 
   createProtectedRoute(Component, "user", loadingText);
 
-// Single AuthProvider wrapper for all authenticated routes
+// Single wrapper for all authenticated routes
 const AuthenticatedRoutes = ({ children }) => (
-  <AuthProvider>
-    {children}
-  </AuthProvider>
+  <>{children}</>
 );
 
 const router = createBrowserRouter([
-  // Public routes (no authentication, no Redux/store loading)
+  // Public routes (no authentication required)
   {
     path: "/",
     element: <PublicLayout />,
@@ -205,7 +222,7 @@ const router = createBrowserRouter([
       },
       {
         path: "login",
-        element: <LoginPage />, // Remove ProtectedRoute wrapper for truly static login
+        element: <LoginPage />,
       },
       {
         path: "unauthorized",

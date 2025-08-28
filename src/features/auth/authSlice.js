@@ -70,13 +70,13 @@ export const setupAuthListener = (dispatch) => {
     return;
   }
 
+  // Set initial auth checking state
+  dispatch(authSlice.actions.startAuthInit());
+
   authUnsubscribe = onAuthStateChanged(
     auth,
     async (user) => {
       if (user) {
-        // Only show loading when there's actually a user to authenticate
-        dispatch(authSlice.actions.startAuthInit());
-
         try {
           // Fetch user data from Firestore
           const firestoreData = await fetchUserFromFirestore(user.uid);
@@ -212,7 +212,7 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: false, // Only true during login/logout attempts
-  isAuthChecking: true, // Start as true to prevent flash of login page on refresh
+  isAuthChecking: true, // Start as true to indicate we're checking auth on app load
   error: null,
 };
 

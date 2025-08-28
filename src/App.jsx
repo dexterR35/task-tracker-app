@@ -13,8 +13,10 @@ const App = () => (
   <ErrorBoundary>
     <Provider store={store}>
       <DarkModeProvider>
-        <RouterProvider router={router} />
-        <ToastContainer />
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <ToastContainer />
+        </AuthProvider>
       </DarkModeProvider>
     </Provider>
   </ErrorBoundary>

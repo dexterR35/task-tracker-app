@@ -1,5 +1,6 @@
 import { useAuth } from "../shared/hooks/useAuth";
-import DynamicButton from "../shared/components/ui/DynamicButton";
+import { Link } from "react-router-dom";
+import { Icons } from "../shared/icons";
 
 const NotFoundPage = () => {
   const { user, canAccess } = useAuth();
@@ -11,27 +12,35 @@ const NotFoundPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary">
-      <div className="max-w-lg w-full text-center">
-        <div className="mb-4">
-          <div className="text-7xl font-bold text-gray-300 mb-2">404</div>
-          <h2 className="">
-            Page Not Found , Chill
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Sorry, the page you're looking for doesn't exist or has been moved .
-          </p>
+    <div className="min-h-screen flex-center bg-primary">
+      <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
+        {/* 404 Icon */}
+        <div className="mb-6">
+          <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <Icons.buttons.alert className="w-12 h-12 text-gray-400" />
+          </div>
+          <h1 className="text-6xl font-bold text-gray-300 mb-2">404</h1>
         </div>
         
-        <div className="space-y-4 flex flex-col gap-2">
-          <DynamicButton to={getHomePath()} variant="primary" size="lg" className="w-2/4">
-            Go to Dashboard
-          </DynamicButton>
-          {!user && (
-            <DynamicButton to="/" variant="outline" size="lg" className="w-2/4">
-              Go to Home
-            </DynamicButton>
-          )}
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Page Not Found</h2>
+        <p className="text-gray-600 mb-6">
+          Sorry, the page you're looking for doesn't exist or has been moved.
+        </p>
+        
+        <div className="space-y-2">
+          <Link
+            to={getHomePath()}
+            className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+          >
+            {user ? 'Go to Dashboard' : 'Go to Home'}
+          </Link>
+          
+          <Link
+            to="/"
+            className="block w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
+          >
+            Go to Homepage
+          </Link>
         </div>
       </div>
     </div>

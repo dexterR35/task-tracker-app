@@ -6,6 +6,8 @@ import { useAuth } from "../../shared/hooks/useAuth";
 import { format } from "date-fns";
 import Loader from "../../shared/components/ui/Loader";
 import { Icons } from "../../shared/icons";
+import OptimizedTaskMetricsBoard from "../../features/tasks/components/OptimizedTaskMetricsBoard";
+import TasksTable from "../../features/tasks/components/TasksTable";
 
 const UserProfilePage = () => {
   const { userId } = useParams();
@@ -13,9 +15,14 @@ const UserProfilePage = () => {
   const { monthId } = useGlobalMonthId();
   const [showTaskForm, setShowTaskForm] = useState(false);
 
-  // Use centralized data system to get users list
-  // For user profile page, we only need users data, not month-specific data
-  const { users: usersList, isLoading, isFetching } = useCentralizedDataAnalytics(monthId);
+  // Use centralized data system to get data filtered for the specific user
+  const { 
+    users: usersList, 
+    tasks: userTasks, 
+    analytics: userAnalytics,
+    isLoading, 
+    isFetching 
+  } = useCentralizedDataAnalytics(monthId, userId);
 
   // Find the specific user
   const targetUser = usersList.find(u => (u.userUID || u.id) === userId);
@@ -96,8 +103,8 @@ const UserProfilePage = () => {
         </div>
       </div>
 
-      {/* Temporary simplified content */}
-      <div className="bg-gray-800 rounded-lg p-6">
+      {/* User Information Card */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold text-white mb-4">User Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -117,6 +124,33 @@ const UserProfilePage = () => {
             <p className="text-white">{targetUser.occupation || 'N/A'}</p>
           </div>
         </div>
+      </div>
+
+      {/* User Metrics */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-white mb-4">
+          {targetUser.name || targetUser.email}'s Metrics
+        </h2>
+        <OptimizedTaskMetricsBoard 
+          userId={userId}
+          userOccupation={targetUser.occupation}
+        />
+      </div>
+
+      {/* User Tasks Table */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-white mb-4">
+          {targetUser.name || targetUser.email}'s Tasks
+        </h2>
+        <TasksTable 
+          tasks={userTasks}
+          onSelect={(task) => {
+            // Handle task selection - navigate to task detail
+            const taskId = task.id;
+            const taskMonthId = task.monthId || monthId;
+            window.location.href = `/admin/task/${taskMonthId}/${taskId}`;
+          }}
+        />
       </div>
     </div>
   );
