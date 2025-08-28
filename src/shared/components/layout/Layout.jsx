@@ -179,16 +179,7 @@ const Layout = () => {
                       {user?.role}
                     </span>
 
-                    {/* Account status indicator */}
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium shadow-sm ${
-                        user?.isActive !== false
-                          ? "bg-gradient-to-r from-green-400 to-green-500 text-white"
-                          : "bg-gradient-to-r from-red-400 to-red-500 text-white"
-                      }`}
-                    >
-                      {user?.isActive !== false ? "Active" : "Inactive"}
-                    </span>
+
                   </div>
 
                   <DynamicButton
@@ -207,7 +198,7 @@ const Layout = () => {
               )}
 
               {/* Login Button - Only show when not authenticated */}
-              {!isAuthenticated && !isLoading && !isAuthChecking && (
+              {/* {!isAuthenticated && !isLoading && !isAuthChecking && (
                 <DynamicButton
                   to="/login"
                   variant="primary"
@@ -218,7 +209,7 @@ const Layout = () => {
                 >
                   Login
                 </DynamicButton>
-              )}
+              )} */}
             </div>
           </div>
         </div>

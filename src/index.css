@@ -24,6 +24,7 @@
   --color-green-400: #0a9952; /* dark red error */
 
   --color-blue-default: #2a9df4;
+  --color-blue-dark:#1d2a4b; /* cards */
 
   --color-warning: #eb2743;
   --color-btn-primary: #3d48c9;
@@ -47,7 +48,7 @@
   }
 
   main {
-    @apply bg-white dark:bg-primary transition-colors duration-300;
+    @apply  transition-colors duration-300;
   }
 
   /* Form element defaults */
@@ -91,7 +92,7 @@
 
   /* Headings */
   h1 {
-    @apply mt-2 text-6xl font-black tracking-tight flex items-center justify-center gap-4 text-gray-800 dark:text-gray-200;
+    @apply mt-2 text-7xl font-black tracking-tight flex items-center justify-center gap-4 text-gray-800 dark:text-gray-200;
   }
   h2 {
     @apply text-2xl font-bold tracking-tight text-gray-800 dark:text-gray-200 mb-2;
@@ -133,11 +134,14 @@
     @apply text-gray-600 dark:text-gray-400 ;
   }
   .bg-white-dark {
-    @apply bg-primary dark:bg-white;
+    @apply bg-white dark:bg-primary;
+  }
+  .bg-soft-white-dark {
+    @apply bg-blue-dark dark:bg-gray-800/50;
   }
 
   .text-white-dark {
-    @apply text-gray-800 dark:text-gray-300;
+    @apply text-gray-800 dark:text-gray-200;
   }
   /* Skeleton loader */
   .skeleton {

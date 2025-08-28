@@ -9,12 +9,22 @@ import {
   FiEdit,
   FiPlus,
   FiTrash,
-  FiUser,
   FiColumns,
   FiBarChart2,
+  FiClock,
+  FiUsers,
+  FiCheckCircle,
+  FiTrendingUp,
+  FiUser,
+  FiZap,
+  FiPackage,
+  FiTarget,
+  FiArrowUp,
+  FiArrowDown,
+  FiMinus,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
-import {IoLogInSharp,IoAdd,IoAlert,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
+import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
 const withSize = (IconComponent) => (props) => (
   <IconComponent className={props?.className || "w-5 h-5"} />
 );
@@ -35,7 +45,9 @@ export const Icons = {
     chevronDown: withSize(FiChevronDown),
     default: withSize(FcFlashOn),
     generate:withSize(IoAdd),
-    alert:withSize(IoAlert)
+    funny:withSize(IoFingerPrint),
+    alert:withSize(IoAlert),
+    // home:withSize(FiHome)
 
   },
 
