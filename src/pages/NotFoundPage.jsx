@@ -2,11 +2,11 @@ import { useAuth } from "../shared/hooks/useAuth";
 import DynamicButton from "../shared/components/ui/DynamicButton";
 
 const NotFoundPage = () => {
-  const { isAuthenticated, role } = useAuth();
+  const { user, canAccess } = useAuth();
 
   const getHomePath = () => {
-    if (!isAuthenticated) return "/";
-    if (role === "admin") return "/admin";
+    if (!user) return "/";
+    if (canAccess('admin')) return "/admin";
     return "/user";
   };
 
@@ -27,7 +27,7 @@ const NotFoundPage = () => {
           <DynamicButton to={getHomePath()} variant="primary" size="lg" className="w-2/4">
             Go to Dashboard
           </DynamicButton>
-          {!isAuthenticated && (
+          {!user && (
             <DynamicButton to="/" variant="outline" size="lg" className="w-2/4">
               Go to Home
             </DynamicButton>

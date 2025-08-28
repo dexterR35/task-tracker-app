@@ -1,11 +1,10 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import {  useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "../../hooks/useAuth";
 
 import DynamicButton from "../ui/DynamicButton";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { logger } from "../../utils/logger";
-
 import {
   ArrowRightOnRectangleIcon,
   ViewColumnsIcon,
@@ -16,31 +15,21 @@ import {
 } from "@heroicons/react/24/outline";
 import { Icons } from "../../icons";
 
-const Layout = () => {
+const AuthenticatedLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const {
     user,
-    isAuthenticated,
     isLoading,
     isAuthChecking,
-    isAdmin,
+    canAccess,
     logout,
     clearError,
   } = useAuth();
+  
 
 
-  // Debug auth state changes
-  useEffect(() => {
-    if (import.meta.env.MODE === "development") {
-      logger.log("Auth state changed:", {
-        isAuthenticated,
-        user: user?.email,
-        isLoading,
-        isAuthChecking,
-      });
-    }
-  }, [isAuthenticated, user, isLoading, isAuthChecking]);
+  // Debug auth state changes removed - not needed
 
   const handleLogout = async () => {
     try {
@@ -52,20 +41,22 @@ const Layout = () => {
     }
   };
 
-
-
-
-
   // If auth is loading or checking, show loading state
   if (isLoading || isAuthChecking) {
-    return <Outlet />;
+    return (
+      <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
   }
 
-  // Navigation items based on user role
-  const getNavigationItems = () => {
-    if (!isAuthenticated || !user) return [];
+  // Navigation items based on user role using simplified API - memoized
+  const navigationItems = useMemo(() => {
+    if (!user) return [];
 
-    if (isAdmin) {
+    if (canAccess('admin')) {
       return [
         {
           name: "Dashboard",
@@ -92,7 +83,7 @@ const Layout = () => {
           current: location.pathname === "/admin/analytics",
         },
       ];
-    } else {
+    } else if (canAccess('user')) {
       return [
         {
           name: "My Dashboard",
@@ -102,9 +93,9 @@ const Layout = () => {
         },
       ];
     }
-  };
-
-  const navigationItems = getNavigationItems();
+    
+    return [];
+  }, [user, canAccess, location.pathname]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
@@ -122,7 +113,7 @@ const Layout = () => {
               </Link>
 
               {/* Navigation Links - Only show when authenticated */}
-              {isAuthenticated && user && (
+              {user && (
                 <div className="hidden md:ml-8 md:flex md:space-x-4">
                   {navigationItems.map((item) => (
                     <Link
@@ -148,7 +139,7 @@ const Layout = () => {
               <DarkModeToggle />
 
               {/* User Menu - Only show when authenticated */}
-              {isAuthenticated && user && (
+              {user && (
                 <>
                   <div className="hidden md:flex items-center space-x-3">
                     {/* User Info */}
@@ -171,15 +162,13 @@ const Layout = () => {
                     {/* Role Badge */}
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold capitalize shadow-sm ${
-                        isAdmin
+                        canAccess('admin')
                           ? "bg-gradient-to-r from-red-500 to-pink-500 text-white"
                           : "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
                       }`}
                     >
                       {user?.role}
                     </span>
-
-
                   </div>
 
                   <DynamicButton
@@ -192,24 +181,8 @@ const Layout = () => {
                   >
                     Logout
                   </DynamicButton>
-
-
                 </>
               )}
-
-              {/* Login Button - Only show when not authenticated */}
-              {/* {!isAuthenticated && !isLoading && !isAuthChecking && (
-                <DynamicButton
-                  to="/login"
-                  variant="primary"
-                  size="md"
-                  iconName="login"
-                  iconPosition="left"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Login
-                </DynamicButton>
-              )} */}
             </div>
           </div>
         </div>
@@ -219,10 +192,8 @@ const Layout = () => {
       <main className="relative">
         <Outlet />
       </main>
-
-
     </div>
   );
 };
 
-export default Layout;
+export default AuthenticatedLayout;

@@ -4,12 +4,6 @@ import {
   getDocs,
   orderBy,
   query as fsQuery,
-  doc,
-  getDocFromServer,
-  serverTimestamp,
-  onSnapshot,
-  updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
 
 import { normalizeTimestamp, serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
@@ -50,24 +44,6 @@ const deduplicateRequest = async (key, requestFn) => {
   }
 };
 
-// Retry mechanism for network errors
-const withRetry = async (operation, maxRetries = 3) => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (attempt === maxRetries) throw error;
-      
-      // Only retry on network errors
-      if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        continue;
-      }
-      throw error;
-    }
-  }
-};
-
 // Error handling wrapper
 const handleFirestoreError = (error, operation) => {
   logger.error(`Firestore ${operation} failed:`, error);
@@ -105,10 +81,6 @@ const mapUserDoc = (doc) => {
   return {
     id: doc.id,
     ...data,
-    createdAt: normalizeTimestamp(data.createdAt),
-    updatedAt: normalizeTimestamp(data.updatedAt),
-    lastActive: normalizeTimestamp(data.lastActive),
-    lastLogin: normalizeTimestamp(data.lastLogin),
   };
 };
 
@@ -155,7 +127,9 @@ export const usersApi = createApi({
             logger.log("Fetching users from database...");
             const users = await fetchUsersFromFirestore();
 
-            const result = { data: users };
+            // Ensure timestamps are serialized before returning
+            const serializedUsers = serializeTimestampsForRedux(users);
+            const result = { data: serializedUsers };
             
             logApiCall('getUsers', {}, result.data);
             return result;
@@ -172,195 +146,13 @@ export const usersApi = createApi({
           }
         });
       },
-      // Transform response to ensure only serializable data is stored in Redux
-      transformResponse: (response) => {
-        return serializeTimestampsForRedux(response);
-      },
       providesTags: ["Users"],
-    }),
-
-    // Real-time subscription for users with enhanced error handling
-    subscribeToUsers: builder.query({
-      async queryFn() {
-        return { data: [] }; // Initial empty data
-      },
-      // Transform response to ensure only serializable data is stored in Redux
-      transformResponse: (response) => {
-        return serializeTimestampsForRedux(response);
-      },
-      async onCacheEntryAdded(
-        arg,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved, dispatch }
-      ) {
-        let unsubscribe = null;
-        
-        try {
-          await cacheDataLoaded;
-
-          unsubscribe = onSnapshot(
-            fsQuery(collection(db, "users"), orderBy("createdAt", "desc")),
-            async (snapshot) => {
-              if (!snapshot || !snapshot.docs) {
-                logger.log("[Real-time] Invalid users snapshot");
-                updateCachedData(() => []);
-                return;
-              }
-
-              if (snapshot.empty) {
-                logger.log("[Real-time] No users found");
-                updateCachedData(() => []);
-                return;
-              }
-
-              const users = deduplicateUsers(snapshot.docs.map((d) => mapUserDoc(d)));
-
-              updateCachedData(() => users);
-
-              // Only log significant updates (more than 1 user) to reduce noise
-              if (users.length > 1) {
-                logger.log("[Real-time] Users updated:", users.length);
-              }
-            },
-            (error) => {
-              logger.error("Real-time users subscription error:", error);
-            }
-          );
-
-          await cacheEntryRemoved;
-        } catch (error) {
-          logger.error("Error setting up real-time users subscription:", error);
-        } finally {
-          // Ensure cleanup
-          if (unsubscribe) {
-            unsubscribe();
-          }
-        }
-      },
-      providesTags: ["Users"],
-    }),
-
-    // Enhanced user update with retry logic
-    updateUser: builder.mutation({
-      async queryFn({ userId, updates }) {
-        return await withRetry(async () => {
-          try {
-            checkAuth();
-            const userRef = doc(db, "users", userId);
-            
-            const updatesWithTimestamp = {
-              ...updates,
-              updatedAt: serverTimestamp(),
-            };
-
-            await updateDoc(userRef, updatesWithTimestamp);
-
-            logger.log("[UpdateUser] User updated:", userId);
-
-            const result = { data: { id: userId, success: true } };
-            
-            logApiCall('updateUser', { userId }, result.data);
-            return result;
-          } catch (error) {
-            const errorResult = handleFirestoreError(error, 'update user');
-            logApiCall('updateUser', { userId }, null, error);
-            return errorResult;
-          }
-        });
-      },
-      // Enhanced optimistic update
-      async onQueryStarted({ userId, updates }, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          usersApi.util.updateQueryData("getUsers", {}, (draft) => {
-            const userIndex = draft.findIndex((user) => user.id === userId);
-            if (userIndex !== -1) {
-              draft[userIndex] = {
-                ...draft[userIndex],
-                ...updates,
-                updatedAt: new Date().toISOString(),
-              };
-            }
-          })
-        );
-
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
-        }
-      },
-      invalidatesTags: ["Users"],
-    }),
-
-    // Enhanced user deletion with retry logic
-    deleteUser: builder.mutation({
-      async queryFn({ userId }) {
-        return await withRetry(async () => {
-          try {
-            checkAuth();
-            const userRef = doc(db, "users", userId);
-            await deleteDoc(userRef);
-
-            logger.log("[DeleteUser] User deleted:", userId);
-
-            const result = { data: { id: userId, success: true } };
-            
-            logApiCall('deleteUser', { userId }, result.data);
-            return result;
-          } catch (error) {
-            const errorResult = handleFirestoreError(error, 'delete user');
-            logApiCall('deleteUser', { userId }, null, error);
-            return errorResult;
-          }
-        });
-      },
-      // Enhanced optimistic update
-      async onQueryStarted({ userId }, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          usersApi.util.updateQueryData("getUsers", {}, (draft) => {
-            const userIndex = draft.findIndex((user) => user.id === userId);
-            if (userIndex !== -1) {
-              draft.splice(userIndex, 1);
-            }
-          })
-        );
-
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
-        }
-      },
-      invalidatesTags: ["Users"],
-    }),
-
-    // Get single user by ID
-    getUserById: builder.query({
-      async queryFn({ userId }) {
-        const cacheKey = `getUserById_${userId}`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
-          try {
-            checkAuth();
-            const userRef = doc(db, "users", userId);
-            const userSnap = await getDocFromServer(userRef);
-            
-            if (!userSnap.exists()) {
-              return { data: null };
-            }
-
-            const user = mapUserDoc(userSnap);
-            const result = { data: user };
-            
-            logApiCall('getUserById', { userId }, result.data);
-            return result;
-          } catch (error) {
-            const errorResult = handleFirestoreError(error, 'get user by ID');
-            logApiCall('getUserById', { userId }, null, error);
-            return errorResult;
-          }
-        });
-      },
-      providesTags: (result, error, arg) => [{ type: "Users", id: arg.userId }],
+      // Keep data for 5 minutes and don't refetch unnecessarily
+      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+      // Don't refetch on window focus or reconnect
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMountOrArgChange: false,
     }),
 
   }),
@@ -368,8 +160,4 @@ export const usersApi = createApi({
 
 export const {
   useGetUsersQuery,
-  useSubscribeToUsersQuery,
-  useUpdateUserMutation,
-  useDeleteUserMutation,
-  useGetUserByIdQuery,
 } = usersApi;

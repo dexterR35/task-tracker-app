@@ -1,12 +1,12 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useAuth } from "../../shared/hooks/useAuth";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
-import { useEffect } from "react";
-
-
+import { useEffect, useState } from "react";
+import { logger } from "../../shared/utils/logger";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../app/firebase";
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string()
@@ -18,32 +18,44 @@ const LoginSchema = Yup.object().shape({
 });
 
 const LoginPage = () => {
-  const { login, clearError } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Clear errors when component mounts
   useEffect(() => {
-    clearError();
-  }, [clearError]);
+    setError(null);
+  }, []);
 
   // Clear errors when location changes to login page
   useEffect(() => {
     if (location.pathname === "/login") {
-      clearError();
+      setError(null);
     }
-  }, [location.pathname, clearError]);
-
-
-
-
+  }, [location.pathname]);
 
   const handleSubmit = async (values, { setSubmitting, setFieldError }) => {
     try {
-      await login(values);
-      // Navigation will be handled by the useEffect above
-      // based on authentication state and user role
+      setIsLoading(true);
+      setError(null);
+      
+      // Use Firebase auth directly without Redux
+      const userCredential = await signInWithEmailAndPassword(
+        auth, 
+        values.email, 
+        values.password
+      );
+      
+      logger.log("Login successful:", userCredential.user.email);
+      
+      // After successful login, redirect to admin dashboard
+      // The AuthProvider will handle proper routing based on user role
+      navigate('/admin');
+      
     } catch (error) {
       logger.error("Login failed:", error);
+      setError(error.message);
       
       // Handle rate limiting error
       if (error.message?.includes("Too many login attempts")) {
@@ -55,9 +67,9 @@ const LoginPage = () => {
       } else if (error.message?.includes("password")) {
         setFieldError("password", error.message);
       }
-      // Global errors will be handled by the notification system
     } finally {
       setSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -80,6 +92,12 @@ const LoginPage = () => {
           onSubmit={handleSubmit}
         >
           {({ isSubmitting, errors, touched }) => (
+            <>
+              {error && (
+                <div className="mb-4 p-3 bg-red-error/10 border border-red-error/20 rounded-lg">
+                  <p className="text-red-error text-sm">{error}</p>
+                </div>
+              )}
             <Form className="space-y-6">
               <div>
                 <label className="label" htmlFor="email">
@@ -141,6 +159,7 @@ const LoginPage = () => {
               
 
             </Form>
+            </>
           )}
         </Formik>
 

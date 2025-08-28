@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
-import { useCentralizedAnalytics } from "../../../shared/hooks/analytics/useCentralizedAnalytics";
+import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
@@ -135,25 +135,26 @@ const OptimizedTaskMetricsBoard = ({
   userId = null,
   showSmallCards = true,
   className = "",
+  userOccupation = null, // Allow passing specific occupation
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { monthId } = useGlobalMonthId();
   
   // Don't render if not authenticated
-  if (!isAuthenticated) {
+  if (!user) {
     return null;
   }
   
   // For admins, always show all cards regardless of which user they're viewing
   // For regular users, filter based on their occupation
   const isAdmin = user?.role === 'admin';
-  const userOccupation = isAdmin ? 'admin' : (user?.occupation || user?.role || 'user');
+  const occupation = userOccupation || (isAdmin ? 'admin' : (user?.occupation || user?.role || 'user'));
   
   // Get allowed cards for this occupation - memoized to prevent recalculation
   const allowedCardIds = useMemo(() => 
-    OCCUPATION_CARD_MAPPING[userOccupation] || OCCUPATION_CARD_MAPPING['user'],
-    [userOccupation]
+    OCCUPATION_CARD_MAPPING[occupation] || OCCUPATION_CARD_MAPPING['user'],
+    [occupation]
   );
   
   // Filter cards based on occupation - memoized to prevent recalculation
@@ -166,17 +167,14 @@ const OptimizedTaskMetricsBoard = ({
     setShowKeyMetrics(!showKeyMetrics);
   }, [showKeyMetrics]);
 
-  // Use centralized analytics hook - reads directly from Redux state
+  // Use centralized data analytics hook - gets all data and analytics in one call
   const {
     analytics,
     getMetric,
     hasData,
     error,
     isLoading,
-  } = useCentralizedAnalytics(monthId, userId);
-
-
-
+  } = useCentralizedDataAnalytics(monthId, userId);
 
   // Add error boundary for analytics
   if (error) {
@@ -244,7 +242,6 @@ const OptimizedTaskMetricsBoard = ({
             type={cardConfig.type}
             category={cardConfig.category}
             icon={cardConfig.icon}
-            monthId={monthId}
             userId={userId}
             trend={cardConfig.trend}
             trendValue={cardConfig.trendValue}

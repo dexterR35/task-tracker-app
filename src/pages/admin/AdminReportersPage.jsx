@@ -4,19 +4,44 @@ import * as Yup from "yup";
 import { useAuth } from "../../shared/hooks/useAuth";
 
 import { 
-  useSubscribeToReportersQuery, 
   useCreateReporterMutation, 
   useUpdateReporterMutation, 
   useDeleteReporterMutation 
 } from "../../features/reporters/reportersApi";
+import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import Loader from "../../shared/components/ui/Loader";
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { sanitizeText } from "../../shared/utils/sanitization";
 import { logger } from "../../shared/utils/logger";
+import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
+import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
 
 const AdminReportersPage = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, canAccess } = useAuth();
+  const { monthId } = useGlobalMonthId();
+  
+  // Debug logging
+  logger.debug('[AdminReportersPage] Rendering with:', {
+    user: currentUser?.email,
+    canAccessAdmin: canAccess('admin'),
+    monthId
+  });
+
+  // Check access
+  if (!canAccess('admin')) {
+    logger.warn('[AdminReportersPage] Access denied for user:', currentUser?.email);
+    return (
+      <div className="min-h-screen flex-center bg-primary">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">
+            You don't have permission to access the reporters page.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Local state
   const [editingId, setEditingId] = useState(null);
@@ -56,11 +81,19 @@ const AdminReportersPage = () => {
     occupation: "",
   };
 
-  // API hooks
-  const { data: reporters = [], error: reportersError, isLoading } = useSubscribeToReportersQuery();
+  // Use centralized data system - reporters are loaded globally
+  const { reporters = [], isLoading, isFetching, error: reportersError } = useCentralizedDataAnalytics(monthId);
+  
+  // Show loading state if data is being fetched or loaded
+  const showLoading = isLoading || isFetching;
+  
+  // API hooks from centralized store
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
   const [deleteReporter] = useDeleteReporterMutation();
+  
+  // Cache management
+  const { clearReportersCache, clearCacheOnDataChange } = useCacheManagement();
 
   // Handle create reporter
   const startCreate = () => {
@@ -99,6 +132,7 @@ const AdminReportersPage = () => {
 
       await createReporter(reporterData).unwrap();
       logger.log("[AdminReportersPage] created reporter", reporterData);
+      clearCacheOnDataChange('reporters', 'create');
       const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess("Reporter created successfully!");
       setShowCreateForm(false);
@@ -152,6 +186,7 @@ const AdminReportersPage = () => {
 
       await updateReporter({ id: editingId, updates }).unwrap();
       logger.log("[AdminReportersPage] updated reporter", { id: editingId, updates });
+      clearCacheOnDataChange('reporters', 'update');
       const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess("Reporter updated successfully!");
     } catch (e) {
@@ -175,6 +210,7 @@ const AdminReportersPage = () => {
     try {
       setRowActionId(reporter.id);
       await deleteReporter(reporter.id).unwrap();
+      clearCacheOnDataChange('reporters', 'delete');
       const { showSuccess } = await import("../../shared/utils/toast");
       showSuccess("Reporter deleted successfully!");
     } catch (e) {
@@ -203,12 +239,12 @@ const AdminReportersPage = () => {
     );
   }
 
-  if (isLoading) {
+  if (showLoading) {
     return (
       <Loader 
         size="xl" 
         variant="spinner" 
-        text="Please wait..." 
+        text="Loading reporters..." 
         fullScreen={true}
       />
     );
@@ -226,7 +262,7 @@ const AdminReportersPage = () => {
           </div>
 
           {/* Create Reporter Button */}
-          <div className="mb-6">
+          <div className="mb-6 flex gap-4">
             <DynamicButton
               onClick={startCreate}
               variant="primary"
@@ -236,6 +272,17 @@ const AdminReportersPage = () => {
             >
               Add Reporter
             </DynamicButton>
+            
+            {/* Debug: Clear Cache Button */}
+            {import.meta.env.MODE === 'development' && (
+              <DynamicButton
+                onClick={clearReportersCache}
+                variant="outline"
+                size="md"
+              >
+                Clear Cache (Debug)
+              </DynamicButton>
+            )}
           </div>
 
           {/* Create Reporter Form */}

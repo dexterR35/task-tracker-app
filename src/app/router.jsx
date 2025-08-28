@@ -1,10 +1,21 @@
 // src/router.jsx
-import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { createBrowserRouter, Navigate, useLocation, Link } from "react-router-dom";
+import { lazy, Suspense, memo, useMemo, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { useAuth } from "../shared/hooks/useAuth";
+import { logger } from "../shared/utils/logger";
+import { AuthProvider } from "../shared/context/AuthProvider";
+import {
+  selectUser,
+  selectIsLoading,
+  selectIsAuthChecking,
+  selectAuthError
+} from "../features/auth/authSlice";
 
-import Layout from "../shared/components/layout/Layout";
+import PublicLayout from "../shared/components/layout/PublicLayout";
+import AuthenticatedLayout from "../shared/components/layout/AuthenticatedLayout";
 import Loader from "../shared/components/ui/Loader";
+import ComingSoonPage from "../shared/components/ui/ComingSoonPage";
 
 // Import static pages directly (no lazy loading needed)
 import LoginPage from "../pages/auth/LoginPage";
@@ -14,12 +25,13 @@ import HomePage from "../pages/dashboard/HomePage";
 const TaskDetailPage = lazy(() => import("../pages/dashboard/TaskDetailPage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
+const UserProfilePage = lazy(() => import("../pages/admin/UserProfilePage"));
 const AdminReportersPage = lazy(() => import("../pages/admin/AdminReportersPage"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
 
-// Loading component for lazy-loaded pages
+// Loading component for lazy-loaded pages with fade-in animation
 const PageLoader = ({ text = "Loading..." }) => (
-  <div className="min-h-screen flex-center bg-primary">
+  <div className="min-h-screen flex-center bg-primary animate-fade-in">
     <Loader 
       size="xl" 
       text={text} 
@@ -29,41 +41,53 @@ const PageLoader = ({ text = "Loading..." }) => (
   </div>
 );
 
-// Wrapper component for lazy-loaded pages with Suspense
+// Wrapper component for lazy-loaded pages with Suspense and fade-in
 const LazyPage = ({ children, loadingText = "Loading..." }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>
-    {children}
+    <div className="animate-fade-in">
+      {children}
+    </div>
   </Suspense>
 );
 
-// Unified route protection component
-const ProtectedRoute = ({ children, requiredRole = null, redirectToLogin = true }) => {
-  const { isAuthenticated, user, isLoading, error } = useAuth();
+// Use individual selectors directly for better performance
+const useAuthState = () => {
+    const user = useSelector(selectUser);
+  const isLoading = useSelector(selectIsLoading);
+  const isAuthChecking = useSelector(selectIsAuthChecking);
+  const error = useSelector(selectAuthError);
+
+  return { user, isLoading, isAuthChecking, error };
+};
+
+// Unified route protection component with memoization
+const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = true }) => {
+  const { user, isLoading, isAuthChecking, error } = useAuthState();
+  const { canAccess } = useAuth(); // Get canAccess directly from useAuth
   const location = useLocation();
+  
 
-  // Debug logging
-  console.log(`[ProtectedRoute] path: ${location.pathname}, isAuthenticated: ${isAuthenticated}, user: ${user?.email}, role: ${user?.role}, requiredRole: ${requiredRole}, isLoading: ${isLoading}, error: ${error}`);
+  // Debug logging removed - not needed in production
 
-  // Show loading state during login/logout operations only
-  if (isLoading) {
+  // Show loading state during auth checking or login/logout operations
+  if (isLoading || isAuthChecking) {
     return (
       <Loader 
         size="xl" 
         text="Processing..." 
-        variant="spinner" 
+        variant="dots" 
         fullScreen={true}
       />
     );
   }
 
   // Handle authentication errors - only redirect if not already on login page
-  // Don't redirect if we're already on login page to prevent loops
   if (error && location.pathname !== "/login") {
     return <Navigate to="/login" replace state={{ error: error }} />;
   }
 
   // Check if user is authenticated
-  if (!isAuthenticated || !user) {
+  if (!user) {
     if (redirectToLogin) {
       return (
         <Navigate
@@ -76,39 +100,31 @@ const ProtectedRoute = ({ children, requiredRole = null, redirectToLogin = true 
     return children; // Allow unauthenticated access for login page
   }
 
-  // If user is authenticated and on login page, redirect to appropriate dashboard
+  // If user is authenticated and on login page, redirect to homepage
   if (location.pathname === "/login") {
-    const redirectTo = user.role === "admin" ? "/admin" : "/user";
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to="/" replace />;
   }
 
-  // Check if user account is active
-  if (user.isActive === false) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ error: "Account is deactivated. Please contact administrator." }}
-      />
-    );
+  // Auto-redirect admins from /user to /admin
+  if (location.pathname === "/user" && canAccess('admin')) {
+    return <Navigate to="/admin" replace />;
   }
 
-  // Check role-based access if required
-  if (requiredRole === "admin" && user.role !== "admin") {
-    return <Navigate to="/unauthorized" replace />;
-  }
-  
-  if (requiredRole === "user" && user.role !== "user" && user.role !== "admin") {
+  // Check role-based access using the simplified canAccess function
+  if (requiredRole && !canAccess(requiredRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
   return children;
-};
+});
 
-// Unauthorized page component
+ProtectedRoute.displayName = 'ProtectedRoute';
+
+// Unauthorized page component with proper React Router usage
 const UnauthorizedPage = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const { user } = useAuthState();
+  const { canAccess } = useAuth();
+  const isAdmin = canAccess('admin');
 
   return (
     <div className="min-h-screen flex-center bg-primary">
@@ -119,170 +135,163 @@ const UnauthorizedPage = () => {
         </p>
         <div className="space-y-2">
           {isAdmin ? (
-            <a
-              href="/admin"
+            <Link
+              to="/admin"
               className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
             >
               Go to Admin Dashboard
-            </a>
+            </Link>
           ) : (
-            <a
-              href="/user"
+            <Link
+              to="/user"
               className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
             >
               Go to User Dashboard
-            </a>
+            </Link>
           )}
-          <a
-            href="/"
+          <Link
+            to="/"
             className="block w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
           >
             Go to Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>
   );
 };
 
-// Root index wrapper: redirect authenticated users based on role
-const RootIndex = () => {
-  const { isAuthenticated, user, isLoading } = useAuth();
-
-  // Debug logging
-  console.log(`[RootIndex] isAuthenticated: ${isAuthenticated}, user: ${user?.email}, role: ${user?.role}, isLoading: ${isLoading}`);
-
-  if (isLoading) {
-    return (
-      <Loader 
-        size="xl" 
-        text="Processing..." 
-        variant="spinner" 
-        fullScreen={true}
-      />
-    );
-  }
-
-  if (isAuthenticated && user) {
-    // Check if user account is active
-    if (user.isActive === false) {
-      console.log(`[RootIndex] User account is deactivated, redirecting to login`);
-      return <Navigate to="/login" replace state={{ error: "Account is deactivated. Please contact administrator." }} />;
-    }
-
-    // Redirect based on user role
-    const redirectTo = user.role === "admin" ? "/admin" : "/user";
-    console.log(`[RootIndex] Redirecting to: ${redirectTo}`);
-    return <Navigate to={redirectTo} replace />;
-  }
-
-  return <HomePage />;
+// Memoized route components to prevent re-creation
+const createMemoizedRoute = (Component, requiredRole = null, loadingText = "Loading...") => {
+  const MemoizedComponent = memo(Component);
+  
+  return (
+    <ProtectedRoute requiredRole={requiredRole}>
+      <LazyPage loadingText={loadingText}>
+        <MemoizedComponent />
+      </LazyPage>
+    </ProtectedRoute>
+  );
 };
 
+// Helper function to create protected routes with lazy loading
+const createProtectedRoute = (Component, requiredRole = null, loadingText = "Loading...") => 
+  createMemoizedRoute(Component, requiredRole, loadingText);
+
+// Helper function to create admin-only routes
+const createAdminRoute = (Component, loadingText = "Loading admin...") => 
+  createProtectedRoute(Component, "admin", loadingText);
+
+// Helper function to create user routes (accessible by both users and admins)
+const createUserRoute = (Component, loadingText = "Loading...") => 
+  createProtectedRoute(Component, "user", loadingText);
+
+// Single AuthProvider wrapper for all authenticated routes
+const AuthenticatedRoutes = ({ children }) => (
+  <AuthProvider>
+    {children}
+  </AuthProvider>
+);
+
 const router = createBrowserRouter([
+  // Public routes (no authentication, no Redux/store loading)
   {
     path: "/",
-    element: <Layout />,
-    errorElement: <NotFoundPage />,
+    element: <PublicLayout />,
     children: [
       { 
         index: true, 
-        element: <RootIndex /> 
+        element: <HomePage /> 
       },
       {
         path: "login",
-        element: (
-          <ProtectedRoute redirectToLogin={false}>
-            <LoginPage />
-          </ProtectedRoute>
-        ),
+        element: <LoginPage />, // Remove ProtectedRoute wrapper for truly static login
       },
       {
         path: "unauthorized",
         element: <UnauthorizedPage />,
       },
-      {
-        path: "user",
-        element: (
-          <ProtectedRoute requiredRole="user">
-            <LazyPage loadingText="Loading dashboard...">
-              <DashboardPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin",
-        element: (
-          <ProtectedRoute requiredRole="admin">
-            <LazyPage loadingText="Loading dashboard...">
-              <DashboardPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "task/:monthId/:taskId",
-        element: (
-          <ProtectedRoute requiredRole="user">
-            <LazyPage>
-              <TaskDetailPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin/users",
-        element: (
-          <ProtectedRoute requiredRole="admin">
-            <LazyPage>
-              <AdminUsersPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin/reporters",
-        element: (
-          <ProtectedRoute requiredRole="admin">
-            <LazyPage>
-              <AdminReportersPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "preview/:monthId",
-        element: (
-          <ProtectedRoute requiredRole="admin">
-            <LazyPage>
-              <NotFoundPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin/task/:monthId/:taskId",
-        element: (
-          <ProtectedRoute requiredRole="admin">
-            <LazyPage>
-              <TaskDetailPage />
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin/analytics",
-        element: (
-          <ProtectedRoute requiredRole="admin">
-            <LazyPage>
-              <NotFoundPage /> {/* Placeholder for future analytics page */}
-            </LazyPage>
-          </ProtectedRoute>
-        ),
-      },
-      { path: "*", element: <LazyPage><NotFoundPage /></LazyPage> },
     ],
+  },
+  
+  // All authenticated routes wrapped in a single AuthProvider
+  {
+    element: <AuthenticatedRoutes><AuthenticatedLayout /></AuthenticatedRoutes>,
+    children: [
+      // User routes
+      {
+        path: "/user",
+        children: [
+          {
+            index: true,
+            element: createUserRoute(DashboardPage, "Loading dashboard..."),
+          },
+          {
+            path: "task/:monthId/:taskId",
+            element: createUserRoute(TaskDetailPage),
+          },
+        ],
+      },
+      
+      // Admin routes
+      {
+        path: "/admin",
+        children: [
+          {
+            index: true,
+            element: createAdminRoute(DashboardPage, "Loading admin dashboard..."),
+          },
+          {
+            path: "users",
+            element: createAdminRoute(AdminUsersPage),
+          },
+          {
+            path: "users/:userId",
+            element: createAdminRoute(UserProfilePage),
+          },
+          {
+            path: "reporters",
+            element: createAdminRoute(AdminReportersPage),
+          },
+          {
+            path: "task/:monthId/:taskId",
+            element: createAdminRoute(TaskDetailPage),
+          },
+          {
+            path: "analytics",
+            element: createAdminRoute(ComingSoonPage),
+          },
+        ],
+      },
+      
+      // Shared task routes
+      {
+        path: "/task/:monthId/:taskId",
+        children: [
+          {
+            index: true,
+            element: createUserRoute(TaskDetailPage),
+          },
+        ],
+      },
+      
+      // Preview routes
+      {
+        path: "/preview/:monthId",
+        children: [
+          {
+            index: true,
+            element: createAdminRoute(ComingSoonPage),
+          },
+        ],
+      },
+    ],
+  },
+  
+  // Catch-all route
+  {
+    path: "*",
+    element: <LazyPage><NotFoundPage /></LazyPage>
   },
 ]);
 

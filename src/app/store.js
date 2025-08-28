@@ -1,26 +1,11 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
+import { logger } from "../shared/utils/logger";
+
+// Import RTK Query APIs - required for RTK Query to function
 import { tasksApi } from "../features/tasks/tasksApi";
 import { usersApi } from "../features/users/usersApi";
 import { reportersApi } from "../features/reporters/reportersApi";
-import { logger } from "../shared/utils/logger";
-
-
-const staticReducers = {
-  auth: authReducer,
-  [tasksApi.reducerPath]: tasksApi.reducer,
-  [usersApi.reducerPath]: usersApi.reducer,
-  [reportersApi.reducerPath]: reportersApi.reducer,
-};
-
-function createReducer(asyncReducers = {}) {
-  return combineReducers({
-    ...staticReducers,
-    ...asyncReducers,
-  });
-}
-
-
 
 // Enhanced error notification middleware with better error categorization
 const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
@@ -72,9 +57,14 @@ const performanceMiddleware = (storeAPI) => (next) => (action) => {
   return result;
 };
 
-// Create the store with enhanced configuration
+// Create the store with all required reducers and middleware
 const store = configureStore({
-  reducer: createReducer(),
+  reducer: {
+    auth: authReducer,
+    [tasksApi.reducerPath]: tasksApi.reducer,
+    [usersApi.reducerPath]: usersApi.reducer,
+    [reportersApi.reducerPath]: reportersApi.reducer,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -87,44 +77,31 @@ const store = configureStore({
           'persist/FLUSH',
         ],
         ignoredPaths: [
-          'auth.user', 
-                  'usersApi.queries.subscribeToUsers.data',
-        'usersApi.queries.getUsers.data',
-        'tasksApi.queries.subscribeToMonthTasks.data',
-        'tasksApi.queries.getMonthTasks.data',
-        'reportersApi.queries.subscribeToReporters.data',
-        'reportersApi.queries.getReporters.data',
-        'reportersApi.queries.subscribeToReporters.originalArgs',
-        'reportersApi.queries.getReporters.originalArgs',
+          'auth.user',
+          'usersApi.queries.getUsers.data',
+          'usersApi.queries.getUsers.originalArgs',
+          'tasksApi.queries.subscribeToMonthTasks.data',
+          'tasksApi.queries.getMonthTasks.data',
+          'reportersApi.queries.getReporters.data',
+          'reportersApi.queries.getReporters.originalArgs',
         ],
       },
       immutableCheck: {
         ignoredPaths: ['auth.user'],
       },
     }).concat([
+      // Custom middleware - order matters for proper execution
+      // 1. Error notification middleware (handles rejected actions)
       errorNotificationMiddleware,
+      // 2. Performance monitoring middleware (tracks action timing)
       performanceMiddleware,
+      // 3. RTK Query API middleware - must be last to handle API actions
       tasksApi.middleware,
       usersApi.middleware,
       reportersApi.middleware,
     ]),
   devTools: process.env.NODE_ENV !== 'production',
-  preloadedState: {},
 });
-
-// Add async reducer injection capability
-store.asyncReducers = {};
-
-store.injectReducer = (key, asyncReducer) => {
-  if (store.asyncReducers[key]) {
-    return;
-  }
-  
-  store.asyncReducers[key] = asyncReducer;
-  store.replaceReducer(createReducer(store.asyncReducers));
-  
-  logger.log(`Injected reducer: ${key}`);
-};
 
 // Add store utilities for debugging
 if (process.env.NODE_ENV === 'development') {

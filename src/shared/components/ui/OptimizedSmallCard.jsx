@@ -7,8 +7,10 @@ import {
   getTrendIcon,
   formatAdditionalInfo,
 } from "../../utils/formatUtils.jsx";
-import { FiArrowUp, FiArrowDown, FiMinus, FiUser, FiZap, FiPackage, FiTarget } from "react-icons/fi";
-import { useSubscribeToReportersQuery } from "../../../features/reporters/reportersApi";
+import { FiArrowUp, FiArrowDown, FiMinus, FiUser, FiZap, FiPackage, FiTarget, FiTrendingUp, FiTrendingDown, FiActivity } from "react-icons/fi";
+import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useAuth } from "../../hooks/useAuth";
+import { useGlobalMonthId } from "../../hooks/useGlobalMonthId";
 
 // Get color based on metric type
 const getMetricColor = (type) => {
@@ -165,7 +167,6 @@ const OptimizedSmallCard = ({
   title,
   type,
   category = null,
-  monthId,
   userId = null,
   icon: Icon,
   trend,
@@ -176,8 +177,15 @@ const OptimizedSmallCard = ({
   analyticsData = null,
   ...props
 }) => {
-  // Get reporters data from API
-  const { data: reporters = [] } = useSubscribeToReportersQuery();
+  // Get reporters data from API - only if authenticated
+  const { user } = useAuth();
+  const { monthId } = useGlobalMonthId();
+  
+  // Only call analytics hook if authenticated and have valid monthId
+  const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
+  const { reporters = [] } = useCentralizedDataAnalytics(
+    shouldCallAnalytics ? monthId : null
+  );
 
   // Use provided analytics data or fallback to zero values
   const metricData = analyticsData || {

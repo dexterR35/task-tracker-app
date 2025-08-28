@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useFormat } from './useFormat';
+import { logger } from '../utils/logger';
 
 export const useGlobalMonthId = () => {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ export const useGlobalMonthId = () => {
   // Update month ID when a new board is generated
   const updateMonthId = useCallback((newMonthId) => {
     if (newMonthId && typeof newMonthId === 'string') {
-      console.log(`[useGlobalMonthId] updateMonthId called with: ${newMonthId}, current: ${monthId}`);
+      logger.log(`[useGlobalMonthId] updateMonthId called with: ${newMonthId}, current: ${monthId}`);
       setMonthId(newMonthId);
     }
   }, []); // Remove monthId from dependencies to prevent circular updates

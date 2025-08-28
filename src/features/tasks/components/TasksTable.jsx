@@ -2,7 +2,8 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactPaginate from "react-paginate";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../tasksApi";
-import { useSubscribeToReportersQuery } from "../../reporters/reportersApi";
+import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useAuth } from "../../../shared/hooks/useAuth";
 import {
   taskNameOptions,
   marketOptions,
@@ -29,7 +30,7 @@ const useFormatDay = () => {
       try {
         return format(ts, "MMM d");
       } catch (error) {
-        console.warn("Date formatting error:", error);
+        logger.warn("Date formatting error:", error);
         return "Invalid Date";
       }
     },
@@ -87,8 +88,14 @@ const TasksTable = ({
   const [rowActionId, setRowActionId] = useState(null);
   const formatDay = useFormatDay();
 
-  // Get reporters for selection
-  const { data: reporters = [] } = useSubscribeToReportersQuery();
+  // Get reporters for selection - only if authenticated
+  const { user } = useAuth();
+  
+  // Only call analytics hook if authenticated and have valid monthId
+  const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
+  const { reporters = [] } = useCentralizedDataAnalytics(
+    shouldCallAnalytics ? monthId : null
+  );
 
   // Force re-render when form changes to update conditional columns
   const [forceUpdate, setForceUpdate] = useState(0);

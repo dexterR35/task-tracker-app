@@ -9,18 +9,12 @@ import { AuthProvider } from './shared/context/AuthProvider';
 import { DarkModeProvider } from './shared/context/DarkModeProvider';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
-
-
 const App = () => (
   <ErrorBoundary>
     <Provider store={store}>
       <DarkModeProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-          <ToastContainer />
-  
-          
-        </AuthProvider>
+        <RouterProvider router={router} />
+        <ToastContainer />
       </DarkModeProvider>
     </Provider>
   </ErrorBoundary>

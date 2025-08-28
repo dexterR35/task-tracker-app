@@ -5,7 +5,7 @@ import DynamicButton from "../../../shared/components/ui/DynamicButton";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import { useCreateTaskMutation } from "../tasksApi";
-import { useSubscribeToReportersQuery } from "../../reporters/reportersApi";
+import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
 import { logger } from "../../../shared/utils/logger";
 import {
   marketOptions,
@@ -35,8 +35,11 @@ const TaskForm = ({
   const { monthId } = useGlobalMonthId();
   const [createTask] = useCreateTaskMutation();
   
-  // Get reporters for selection
-  const { data: reporters = [] } = useSubscribeToReportersQuery();
+  // Only call analytics hook if authenticated and have valid monthId
+  const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
+  const { reporters = [] } = useCentralizedDataAnalytics(
+    shouldCallAnalytics ? monthId : null
+  );
 
   const defaultInitialValues = {
     jiraLink: "",
@@ -158,6 +161,9 @@ const TaskForm = ({
 
   // Prepare task data for submission
   const prepareTaskData = (sanitizedValues, taskNumber) => {
+    // Find the selected reporter to get their name
+    const selectedReporter = reporters.find(reporter => reporter.id === sanitizedValues.reporters);
+    
     return {
       ...sanitizedValues,
       taskNumber,
@@ -186,10 +192,12 @@ const TaskForm = ({
         : [],
       deliverablesCount: Number(sanitizedValues.deliverablesCount) || 0,
       reporters: sanitizedValues.reporters || "",
+      reporterName: selectedReporter?.name || "",
+      reporterEmail: selectedReporter?.email || "",
       createdBy: user?.uid,
       createdByName: user?.name || user?.email,
       userUID: user?.uid,
-      // monthId is automatically added by the API from global state
+      monthId: monthId, // Explicitly pass the global monthId
     };
   };
 

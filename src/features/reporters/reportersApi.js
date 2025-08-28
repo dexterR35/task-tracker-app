@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   where,
 } from "firebase/firestore";
+import { logger } from "../../shared/utils/logger";
 
 // Custom base query for Firestore
 const firestoreBaseQuery = () => async ({ url, method, body }) => {
@@ -34,6 +35,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
               updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : null,
             };
           });
+          logger.debug(`[Reporters API] Fetched ${reporters.length} reporters`);
           return { data: reporters };
         }
         break;
@@ -67,58 +69,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
         }
         break;
 
-      case "GET_TASKS_PER_REPORTER":
-        try {
-          const { monthId, userId } = body;
-          console.log('[firestoreBaseQuery] Getting tasks per reporter with monthId:', monthId, 'userId:', userId);
-          
-          // Check if month board exists first
-          const monthDocRef = doc(db, "tasks", monthId);
-          const monthDoc = await getDoc(monthDocRef);
-          
-          if (!monthDoc.exists()) {
-            console.log('[firestoreBaseQuery] Month board does not exist');
-            return { data: {} };
-          }
-          
-          // Get all tasks from the subcollection: /tasks/{monthId}/monthTasks
-          const colRef = collection(db, "tasks", monthId, "monthTasks");
-          let tasksQuery = query(colRef, orderBy("createdAt", "desc"));
-          
-          if (userId && userId.trim() !== '') {
-            tasksQuery = query(colRef, where("userUID", "==", userId), orderBy("createdAt", "desc"));
-          }
-          
-          const tasksSnapshot = await getDocs(tasksQuery);
-          const tasks = tasksSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
 
-          console.log('[firestoreBaseQuery] Found tasks:', tasks.length);
-          console.log('[firestoreBaseQuery] Sample task:', tasks[0]);
-
-          // Count tasks per reporter
-          const reporterTaskCounts = {};
-          
-          tasks.forEach(task => {
-            const reporterId = task.reporters;
-            console.log('[firestoreBaseQuery] Task ID:', task.id, 'Reporter ID:', reporterId);
-            if (reporterId && reporterId.trim() !== '') {
-              if (!reporterTaskCounts[reporterId]) {
-                reporterTaskCounts[reporterId] = 0;
-              }
-              reporterTaskCounts[reporterId] += 1;
-              console.log('[firestoreBaseQuery] Updated count for reporter', reporterId, ':', reporterTaskCounts[reporterId]);
-            }
-          });
-
-          console.log('[firestoreBaseQuery] Final reporter task counts:', reporterTaskCounts);
-          return { data: reporterTaskCounts };
-        } catch (error) {
-          console.error('[firestoreBaseQuery] Error:', error);
-          return { error: { status: "CUSTOM_ERROR", error: error.message } };
-        }
 
       default:
         throw new Error(`Unsupported method: ${method}`);
@@ -137,48 +88,15 @@ export const reportersApi = createApi({
     getReporters: builder.query({
       query: () => ({ url: "reporters", method: "GET" }),
       providesTags: ["Reporter"],
+      // Keep data forever and don't refetch unnecessarily
+      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+      // Don't refetch on window focus or reconnect
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMountOrArgChange: false,
     }),
 
-    // Subscribe to reporters in real-time
-    subscribeToReporters: builder.query({
-      queryFn: () => ({ data: [] }), // Placeholder
-      async onCacheEntryAdded(
-        arg,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved, dispatch }
-      ) {
-        let unsubscribe;
-        try {
-          await cacheDataLoaded;
 
-          const q = query(
-            collection(db, "reporters"),
-            orderBy("createdAt", "desc")
-          );
-
-          unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const reporters = querySnapshot.docs.map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                ...data,
-                // Convert Firebase Timestamps to serializable format
-                createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : null,
-                updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : null,
-              };
-            });
-            updateCachedData(() => reporters);
-          });
-        } catch (error) {
-          console.error("Error subscribing to reporters:", error);
-        }
-
-        await cacheEntryRemoved;
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      },
-      providesTags: ["Reporter"],
-    }),
 
     // Create reporter
     createReporter: builder.mutation({
@@ -188,6 +106,24 @@ export const reportersApi = createApi({
         body: reporter,
       }),
       invalidatesTags: ["Reporter"],
+      // Optimistic update for immediate UI feedback
+      async onQueryStarted(reporter, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
+            // Add the new reporter optimistically
+            draft.unshift({
+              id: `temp-${Date.now()}`, // Temporary ID
+              ...reporter,
+              createdAt: new Date().toISOString(),
+            });
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
     // Update reporter
@@ -198,6 +134,24 @@ export const reportersApi = createApi({
         body: updates,
       }),
       invalidatesTags: ["Reporter"],
+      // Optimistic update for immediate UI feedback
+      async onQueryStarted({ id, updates }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
+            const reporter = draft.find(r => r.id === id);
+            if (reporter) {
+              Object.assign(reporter, updates, {
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
     // Delete reporter
@@ -207,25 +161,31 @@ export const reportersApi = createApi({
         method: "DELETE",
       }),
       invalidatesTags: ["Reporter"],
+      // Optimistic update to remove from cache immediately
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
+            const index = draft.findIndex(reporter => reporter.id === id);
+            if (index !== -1) {
+              draft.splice(index, 1);
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
-    // Get tasks count per reporter
-    getTasksPerReporter: builder.query({
-      query: ({ monthId, userId = null }) => ({ 
-        url: "tasks-per-reporter", 
-        method: "GET_TASKS_PER_REPORTER",
-        body: { monthId, userId }
-      }),
-      providesTags: ["Reporter"],
-    }),
+
   }),
 });
 
 export const {
   useGetReportersQuery,
-  useSubscribeToReportersQuery,
   useCreateReporterMutation,
   useUpdateReporterMutation,
   useDeleteReporterMutation,
-  useGetTasksPerReporterQuery,
 } = reportersApi;

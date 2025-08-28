@@ -157,7 +157,7 @@ export const formatUserPerformanceAdditionalInfo = (additionalData) => {
   if (!additionalData?.userStats) return null;
   
   const { userStats } = additionalData;
-  const topUsers = userStats
+  const topUsers = [...userStats]
     .sort((a, b) => b.tasks - a.tasks)
     .slice(0, 3);
 
@@ -253,7 +253,7 @@ export const formatTopReporterAdditionalInfo = (additionalData) => {
 export const formatMarketsAdditionalInfo = (additionalData) => {
   if (!additionalData?.markets) return null;
   
-  const markets = additionalData.markets.sort((a, b) => b.count - a.count);
+  const markets = [...additionalData.markets].sort((a, b) => b.count - a.count);
   
   return (
     <div className="mt-3 space-y-2">
@@ -292,7 +292,7 @@ export const formatMarketsAdditionalInfo = (additionalData) => {
 export const formatProductsAdditionalInfo = (additionalData) => {
   if (!additionalData?.products) return null;
   
-  const products = additionalData.products.sort((a, b) => b.count - a.count);
+  const products = [...additionalData.products].sort((a, b) => b.count - a.count);
   
   return (
     <div className="mt-3 space-y-2">

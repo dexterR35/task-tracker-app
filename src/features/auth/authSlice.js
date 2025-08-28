@@ -1,20 +1,17 @@
-import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
+import { useMemo } from "react";
+import {
+  createSlice,
+  createAsyncThunk,
+  createSelector,
+} from "@reduxjs/toolkit";
 import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../app/firebase";
 import { logger } from "../../shared/utils/logger";
-
-
-
 
 // --- Configuration & Constants ---
 const VALID_ROLES = ["admin", "user"];
@@ -35,6 +32,8 @@ const normalizeUser = (firebaseUser, firestoreData) => {
   if (!firestoreData?.role || !VALID_ROLES.includes(firestoreData.role)) {
     throw new Error("Invalid or undefined user role");
   }
+  
+  // Convert Firestore timestamp to milliseconds for consistent comparison
   const createdAtMs = firestoreData.createdAt
     ? typeof firestoreData.createdAt.toDate === "function"
       ? firestoreData.createdAt.toDate().getTime()
@@ -42,6 +41,8 @@ const normalizeUser = (firebaseUser, firestoreData) => {
         ? firestoreData.createdAt
         : new Date(firestoreData.createdAt).getTime()
     : null;
+  
+  // Create a stable user object with consistent property order
   return {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
@@ -49,7 +50,7 @@ const normalizeUser = (firebaseUser, firestoreData) => {
     role: firestoreData.role,
     occupation: firestoreData.occupation || "user",
     createdAt: createdAtMs,
-    permissions: firestoreData.permissions || [],
+    permissions: Array.isArray(firestoreData.permissions) ? [...firestoreData.permissions].sort() : [],
     isActive: firestoreData.isActive !== false, // Default to true if not specified
   };
 };
@@ -75,23 +76,32 @@ export const setupAuthListener = (dispatch) => {
       if (user) {
         // Only show loading when there's actually a user to authenticate
         dispatch(authSlice.actions.startAuthInit());
-        
+
         try {
           // Fetch user data from Firestore
           const firestoreData = await fetchUserFromFirestore(user.uid);
-          
+
           // Check if user is active
           if (firestoreData.isActive === false) {
-            throw new Error("Account is deactivated. Please contact administrator.");
+            throw new Error(
+              "Account is deactivated. Please contact administrator."
+            );
           }
-          
+
           const normalizedUser = normalizeUser(user, firestoreData);
-          
+
           // Dispatch auth success action
-          dispatch(authSlice.actions.authStateChanged({ user: normalizedUser }));
+          dispatch(
+            authSlice.actions.authStateChanged({ user: normalizedUser })
+          );
         } catch (error) {
           logger.error("Error fetching user data:", error);
-          dispatch(authSlice.actions.authStateChanged({ user: null, error: error.message }));
+          dispatch(
+            authSlice.actions.authStateChanged({
+              user: null,
+              error: error.message,
+            })
+          );
         }
       } else {
         // User signed out - set auth checking to false and clear user
@@ -100,7 +110,9 @@ export const setupAuthListener = (dispatch) => {
     },
     (error) => {
       logger.error("Auth state change error:", error);
-      dispatch(authSlice.actions.authStateChanged({ user: null, error: error.message }));
+      dispatch(
+        authSlice.actions.authStateChanged({ user: null, error: error.message })
+      );
     }
   );
 };
@@ -111,69 +123,81 @@ export const loginUser = createAsyncThunk(
   async ({ email, password }, { rejectWithValue }) => {
     try {
       // Authenticate with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       // Step 3: Fetch user data from Firestore
-      const firestoreData = await fetchUserFromFirestore(userCredential.user.uid);
-      
+      const firestoreData = await fetchUserFromFirestore(
+        userCredential.user.uid
+      );
+
       // Step 4: Validate user status and role
       if (firestoreData.isActive === false) {
         // Sign out the user if account is deactivated
         await signOut(auth);
-        throw new Error("Account is deactivated. Please contact administrator.");
+        throw new Error(
+          "Account is deactivated. Please contact administrator."
+        );
       }
-      
+
       if (!firestoreData.role || !VALID_ROLES.includes(firestoreData.role)) {
         // Sign out the user if role is invalid
         await signOut(auth);
         throw new Error("Invalid user role. Please contact administrator.");
       }
-      
-      // Step 5: Update lastLogin in Firestore for user experience
-      try {
-        const userRef = doc(db, "users", userCredential.user.uid);
-        await updateDoc(userRef, {
-          lastLogin: serverTimestamp(),
-          lastActive: serverTimestamp(),
-        });
-        logger.log("Updated lastLogin timestamp for user:", userCredential.user.uid);
-      } catch (updateError) {
-        logger.warn("Failed to update lastLogin timestamp:", updateError);
-        // Don't fail login if timestamp update fails
-      }
-      
+
+      // Step 5: lastLogin update removed - will be implemented later
+
       // Return normalized user data
       const normalizedUser = normalizeUser(userCredential.user, firestoreData);
-      
+
       return { user: normalizedUser };
     } catch (error) {
       logger.error("Login error:", error);
-      
+
       // Handle specific Firebase auth errors
-      if (error.code === 'auth/user-not-found') {
+      if (error.code === "auth/user-not-found") {
         return rejectWithValue("No account found with this email address.");
-      } else if (error.code === 'auth/wrong-password') {
+      } else if (error.code === "auth/wrong-password") {
         return rejectWithValue("Incorrect password. Please try again.");
-      } else if (error.code === 'auth/too-many-requests') {
-        return rejectWithValue("Too many failed attempts. Please try again later.");
-      } else if (error.code === 'auth/user-disabled') {
+      } else if (error.code === "auth/too-many-requests") {
+        return rejectWithValue(
+          "Too many failed attempts. Please try again later."
+        );
+      } else if (error.code === "auth/user-disabled") {
         return rejectWithValue("This account has been disabled.");
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (error.code === "auth/invalid-email") {
         return rejectWithValue("Invalid email address format.");
       }
-      
-      return rejectWithValue(error.message || "Login failed. Please try again.");
+
+      return rejectWithValue(
+        error.message || "Login failed. Please try again."
+      );
     }
   }
 );
 
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       await signOut(auth);
-      // Clear session data
-
+      
+      // Clear all API cache on logout
+      // Import APIs dynamically to avoid circular dependencies
+      const { usersApi } = await import('../users/usersApi');
+      const { reportersApi } = await import('../reporters/reportersApi');
+      const { tasksApi } = await import('../tasks/tasksApi');
+      
+      dispatch(usersApi.util.resetApiState());
+      dispatch(reportersApi.util.resetApiState());
+      dispatch(tasksApi.util.resetApiState());
+      
+      logger.log("Cache cleared on logout");
+      
       // The auth listener will handle the state update automatically
       return null;
     } catch (error) {
@@ -182,8 +206,6 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
-
-
 
 // --- Slice ---
 const initialState = {
@@ -207,13 +229,25 @@ const authSlice = createSlice({
     },
     authStateChanged: (state, action) => {
       const { user, error } = action.payload;
+      
+      // Only update if user data has actually changed
+      const userChanged = !state.user || !user || 
+        state.user.uid !== user.uid ||
+        state.user.email !== user.email ||
+        state.user.role !== user.role ||
+        state.user.name !== user.name ||
+        state.user.occupation !== user.occupation ||
+        state.user.isActive !== user.isActive ||
+        JSON.stringify(state.user.permissions) !== JSON.stringify(user.permissions);
+      
+      if (userChanged) {
+        state.user = user;
+        state.isAuthenticated = !!user;
+      }
+      
       state.isLoading = false; // Always set loading to false when auth state changes
       state.isAuthChecking = false; // Stop auth checking - this is crucial for preventing login page flash
-      state.user = user;
-      state.isAuthenticated = !!user;
       state.error = error || null;
-      
-
     },
     // Add a new action to start auth initialization
     startAuthInit: (state) => {
@@ -221,7 +255,6 @@ const authSlice = createSlice({
       state.isAuthChecking = true; // Mark that we're checking auth
       state.error = null;
     },
-
   },
   extraReducers: (builder) => {
     builder
@@ -247,7 +280,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
       })
-      
+
       // Logout
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;
@@ -262,17 +295,15 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthChecking = false;
         state.error = action.payload;
-      })
-      
-
+      });
   },
 });
 
-export const { clearError, setLoading, authStateChanged, startAuthInit } = authSlice.actions;
+export const { clearError, setLoading, authStateChanged, startAuthInit } =
+  authSlice.actions;
 
 // --- Selectors ---
 export const selectUser = (state) => state.auth.user;
-export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectIsLoading = (state) => state.auth.isLoading;
 export const selectIsAuthChecking = (state) => state.auth.isAuthChecking;
 export const selectAuthError = (state) => state.auth.error;
@@ -280,15 +311,17 @@ export const selectAuthError = (state) => state.auth.error;
 export const selectUserRole = (state) => state.auth.user?.role;
 export const selectIsAdmin = (state) => state.auth.user?.role === "admin";
 export const selectIsUser = (state) => state.auth.user?.role === "user";
+
 // Memoized selector for user permissions to prevent unnecessary re-renders
 export const selectUserPermissions = createSelector(
   [selectUser],
   (user) => user?.permissions || []
 );
 
-export const selectIsUserActive = (state) => state.auth.user?.isActive !== false;
+export const selectIsUserActive = (state) =>
+  state.auth.user?.isActive !== false;
 
-// Role-based selectors
+// Role-based access selectors (used by canAccess function)
 export const selectCanAccessAdmin = createSelector(
   [selectUser],
   (user) => user?.role === "admin" && user?.isActive !== false
@@ -296,7 +329,54 @@ export const selectCanAccessAdmin = createSelector(
 
 export const selectCanAccessUser = createSelector(
   [selectUser],
-  (user) => (user?.role === "user" || user?.role === "admin") && user?.isActive !== false
+  (user) =>
+    (user?.role === "user" || user?.role === "admin") &&
+    user?.isActive !== false
+);
+
+// Legacy selector for backward compatibility (deprecated - use canAccess instead)
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
+
+// Combined selector for the entire auth state
+export const selectAuthState = createSelector(
+  [
+    selectUser,
+    selectIsLoading,
+    selectIsAuthChecking,
+    selectAuthError,
+    selectUserRole,
+    selectIsAdmin,
+    selectIsUser,
+    selectUserPermissions,
+    selectIsUserActive,
+    selectCanAccessAdmin,
+    selectCanAccessUser
+  ],
+  (
+    user,
+    isLoading,
+    isAuthChecking,
+    error,
+    role,
+    isAdmin,
+    isUser,
+    permissions,
+    isUserActive,
+    canAccessAdmin,
+    canAccessUser
+  ) => ({
+    user,
+    isLoading,
+    isAuthChecking,
+    error,
+    role,
+    isAdmin,
+    isUser,
+    permissions,
+    isUserActive,
+    canAccessAdmin,
+    canAccessUser
+  })
 );
 
 export default authSlice.reducer;

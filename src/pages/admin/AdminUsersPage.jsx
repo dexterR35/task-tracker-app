@@ -1,24 +1,20 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { useSubscribeToUsersQuery } from "../../features/users/usersApi";
+import { Link } from "react-router-dom";
+import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
+import { useAuth } from "../../shared/hooks/useAuth";
+import { logger } from "../../shared/utils/logger";
 import Loader from "../../shared/components/ui/Loader";
 import { format } from "date-fns";
 
 const AdminUsersPage = () => {
-  const navigate = useNavigate();
+  const { monthId } = useGlobalMonthId();
+  // Use centralized data system - users are loaded globally
+  // For users page, we only need users data, not month-specific data
+  const { users = [], error: usersError, isLoading, isFetching } = useCentralizedDataAnalytics(monthId);
 
-  // API hooks
-  const { data: users = [], error: usersError, isLoading } = useSubscribeToUsersQuery();
-  
-
-  
-
-
-  // Handle user click to view their tasks
-  const handleUserClick = (user) => {
-    const userId = user.userUID || user.id;
-    navigate(`/admin?user=${userId}`);
-  };
+  // Show loading state if data is being fetched or loaded
+  const showLoading = isLoading || isFetching;
 
   // Show error state
   if (usersError) {
@@ -37,12 +33,12 @@ const AdminUsersPage = () => {
     );
   }
 
-  if (isLoading) {
+  if (showLoading) {
     return (
       <Loader 
         size="xl" 
         variant="spinner" 
-        text="Please wait..." 
+        text="Loading users..." 
         fullScreen={true}
       />
     );
@@ -55,7 +51,7 @@ const AdminUsersPage = () => {
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-100 mb-2">Users</h1>
             <p className="text-sm text-gray-300">
-              Click on a user to view their tasks
+              Click on a user name to view their profile and tasks
             </p>
           </div>
 
@@ -77,17 +73,21 @@ const AdminUsersPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr 
-                    key={user.id} 
-                    className="border-b border-gray-700 hover:bg-gray-800 cursor-pointer transition-colors"
-                    onClick={() => handleUserClick(user)}
-                  >
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-blue-400 hover:text-blue-300">
-                        {user.name || "N/A"}
-                      </span>
-                    </td>
+                {users.map((user) => {
+                  const userId = user.userUID || user.id;
+                  return (
+                    <tr 
+                      key={user.id} 
+                      className="border-b border-gray-700 hover:bg-gray-800 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <Link 
+                          to={`/admin/users/${userId}`}
+                          className="font-medium text-blue-400 hover:text-blue-300 block"
+                        >
+                          {user.name || "N/A"}
+                        </Link>
+                      </td>
                     <td className="px-6 py-4">
                       <span>{user.email || "N/A"}</span>
                     </td>
@@ -104,7 +104,8 @@ const AdminUsersPage = () => {
                       <span>{user.occupation || "N/A"}</span>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
 

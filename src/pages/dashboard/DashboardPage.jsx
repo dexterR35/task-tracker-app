@@ -2,18 +2,15 @@ import React, { useState } from "react";
 import { useAuth } from "../../shared/hooks/useAuth";
 import { useSelector } from "react-redux";
 import { selectIsAdmin } from "../../features/auth/authSlice";
-import {
-  useSubscribeToMonthBoardQuery,
-  useSubscribeToMonthTasksQuery,
-  useGenerateMonthBoardMutation,
-} from "../../features/tasks/tasksApi";
+import { useGenerateMonthBoardMutation } from "../../features/tasks/tasksApi";
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
 import Loader from "../../shared/components/ui/Loader";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
 import { format } from "date-fns";
+import { logger } from "../../shared/utils/logger";
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading, canAccess } = useAuth();
   const isAdmin = useSelector(selectIsAdmin);
 
   const { monthId, setMonthId } = useGlobalMonthId();
@@ -24,33 +21,21 @@ const DashboardPage = () => {
   const [generateMonthBoard, { isLoading: isGeneratingBoard }] =
     useGenerateMonthBoardMutation();
 
-  // Board queries - both admin and user use real-time subscription
-  const {
-    data: board = { exists: false },
-    isLoading: boardLoading,
-    error: boardError,
-  } = useSubscribeToMonthBoardQuery({ monthId });
+  // Don't render anything if not authenticated or still loading
+  if (!user || authLoading) {
+    return null;
+  }
 
-  // Get tasks loading state to ensure all data is loaded
-  const { 
-    data: tasks = [], 
-    isLoading: tasksLoading,
-    error: tasksError 
-  } = useSubscribeToMonthTasksQuery(
-    { monthId, userId: user?.uid },
-    { skip: !monthId || !user }
-  );
+  // Simplified loading logic - only show loading when generating board
+  const isLoading = isGeneratingBoard;
 
-  // Simplified loading logic - only show loading when data is being fetched
-  const isLoading = boardLoading || tasksLoading || isGeneratingBoard;
-
-  // Show loading state only when data is being fetched
+  // Show loading state only when generating board
   if (isLoading) {
     return (
       <Loader 
         size="xl" 
         variant="spinner" 
-        text="Loading dashboard..." 
+        text="Generating board..." 
         fullScreen={true}
       />
     );
@@ -83,15 +68,15 @@ const DashboardPage = () => {
         },
       }).unwrap();
 
-      console.log(`[DashboardPage] Month board generated successfully. API result:`, result);
+      logger.log(`[DashboardPage] Month board generated successfully. API result:`, result);
 
       // Update the global month ID to the newly created board from API
       if (result?.monthId) {
-        console.log(`[DashboardPage] Setting global monthId to API-generated value: ${result.monthId}`);
+        logger.log(`[DashboardPage] Setting global monthId to API-generated value: ${result.monthId}`);
         setMonthId(result.monthId);
       } else {
         // Fallback to the original monthId if API doesn't return one
-        console.log(`[DashboardPage] API didn't return monthId, using fallback: ${monthId}`);
+        logger.log(`[DashboardPage] API didn't return monthId, using fallback: ${monthId}`);
         setMonthId(monthId);
       }
 
@@ -100,7 +85,7 @@ const DashboardPage = () => {
         `Board for ${format(new Date(monthId + "-01"), "MMMM yyyy")} created successfully!`
       );
     } catch (error) {
-      console.error("[DashboardPage] Error generating month board:", error);
+      logger.error("[DashboardPage] Error generating month board:", error);
       const { showError } = await import("../../shared/utils/toast");
       showError(
         `Failed to create board: ${error?.data?.message || error?.message || "Unknown error"}`
@@ -111,7 +96,6 @@ const DashboardPage = () => {
   return (
     <div className="container mx-auto px-4 py-6">
       <DashboardWrapper
-        board={board}
         onGenerateBoard={handleGenerateBoard}
         isGeneratingBoard={isGeneratingBoard}
         showTaskForm={showTaskForm}

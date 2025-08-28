@@ -44,7 +44,7 @@ export const serializeTimestampsForRedux = (data) => {
     
     for (const [key, value] of Object.entries(data)) {
       // Check if this field is likely a timestamp field
-      if (/at$|At$|date$|Date$|time$|Time$|lastActive|lastLogin|savedAt/.test(key)) {
+      if (/at$|At$|date$|Date$|time$|Time$|lastLogin|savedAt|generatedAt|expiresAt|validUntil|completedAt/.test(key)) {
         if (value) {
           // Convert to ISO string if it's a valid timestamp
           const timestamp = normalizeTimestamp(value);
@@ -70,7 +70,7 @@ export const normalizeObjectTimestamps = (input) => {
   if (typeof input === 'object') {
     const out = Array.isArray(input) ? [] : {};
     for (const [k, v] of Object.entries(input)) {
-      if (/at$|At$|date$|Date$|time$|Time$|lastActive|lastLogin|savedAt/.test(k)) {
+      if (/at$|At$|date$|Date$|time$|Time$|lastLogin|savedAt|generatedAt|expiresAt|validUntil/.test(k)) {
         const ms = normalizeTimestamp(v);
         out[k] = ms != null ? ms : normalizeObjectTimestamps(v);
       } else {

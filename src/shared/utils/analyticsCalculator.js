@@ -89,7 +89,7 @@ export class AnalyticsCalculator {
     }
 
     // Create a more stable cache key based on task IDs and update timestamps
-    const taskIds = tasks.map(t => t.id).sort().join(',');
+    const taskIds = [...tasks.map(t => t.id)].sort().join(',');
     const lastUpdate = Math.max(...tasks.map(t => t.updatedAt || 0));
     const taskCount = tasks.length;
     
@@ -116,7 +116,7 @@ export class AnalyticsCalculator {
    * @param {string|null} userId - Optional user filter
    * @returns {Object} Complete analytics object
    */
-  calculateAllAnalytics(tasks, monthId, userId = null, reporters = [], reporterTaskCounts = {}) {
+  calculateAllAnalytics(tasks, monthId, userId = null, reporters = []) {
     // Generate stable cache key
     const cacheKey = this._generateCacheKey(tasks, monthId, userId);
     
@@ -171,7 +171,7 @@ export class AnalyticsCalculator {
       deliverables: this.calculateDeliverablesAnalytics(filteredTasks),
       bestAI: this.calculateBestAIAnalytics(filteredTasks),
       bestCategory: this.calculateBestCategoryAnalytics(filteredTasks),
-      topReporter: this.calculateTopReporterAnalytics(filteredTasks, reporters, reporterTaskCounts),
+              topReporter: this.calculateTopReporterAnalytics(filteredTasks, reporters),
       designDeliverables: this.calculateDesignDeliverablesAnalytics(filteredTasks),
       raw: {
         totalTasks: filteredTasks.length,
@@ -416,7 +416,7 @@ export class AnalyticsCalculator {
       }
     });
 
-    const markets = Object.entries(marketStats).map(([market, stats]) => ({
+    let markets = Object.entries(marketStats).map(([market, stats]) => ({
       name: market,
       count: stats.count,
       hours: parseFloat(stats.hours.toFixed(2)),
@@ -431,7 +431,7 @@ export class AnalyticsCalculator {
     }));
 
     // Sort markets by hours (most active first)
-    markets.sort((a, b) => b.hours - a.hours);
+    markets = [...markets].sort((a, b) => b.hours - a.hours);
 
     // Create the structure that PreviewPage expects - simplified for charts
     const marketsForCharts = {};
@@ -524,7 +524,7 @@ export class AnalyticsCalculator {
       }
     });
 
-    const products = Object.entries(productStats).map(([product, stats]) => ({
+    let products = Object.entries(productStats).map(([product, stats]) => ({
       name: product,
       count: stats.count,
       hours: parseFloat(stats.hours.toFixed(2)),
@@ -539,7 +539,7 @@ export class AnalyticsCalculator {
     }));
 
     // Sort products by hours (most active first)
-    products.sort((a, b) => b.hours - a.hours);
+    products = [...products].sort((a, b) => b.hours - a.hours);
 
     // Create the structure that PreviewPage expects - simplified for charts
     const productsForCharts = {};
@@ -635,9 +635,9 @@ export class AnalyticsCalculator {
       }
     });
 
-    const dates = Object.keys(tasksByDate).sort();
-    const weeks = Object.keys(tasksByWeek).sort();
-    const months = Object.keys(tasksByMonth).sort();
+    const dates = [...Object.keys(tasksByDate)].sort();
+    const weeks = [...Object.keys(tasksByWeek)].sort();
+    const months = [...Object.keys(tasksByMonth)].sort();
     
     const dailyTrends = dates.map(date => ({
       date,
@@ -1141,41 +1141,28 @@ export class AnalyticsCalculator {
   /**
    * Calculate top reporter from task data
    * @param {Array} tasks 
-   * @param {Array} reporters - Array of reporter objects from API
+   * @param {Array} reporters - Array of reporter objects from API (for reference)
    * @returns {Object}
    */
-  calculateTopReporterAnalytics(tasks, reporters = [], reporterTaskCounts = {}) {
+  calculateTopReporterAnalytics(tasks, reporters = []) {
     const reporterStats = {};
 
-
-
-    // First, add all reporters from the database with accurate task counts
-    reporters.forEach(reporter => {
-      const taskCount = reporterTaskCounts[reporter.id] || 0;
-      reporterStats[reporter.id] = {
-        id: reporter.id,
-        name: reporter.name || "Unknown Reporter",
-        occupation: reporter.occupation || "Reporter",
-        department: reporter.departament || "Unknown",
-        tasks: taskCount, // Use accurate count from RTK Query
-        hours: 0
-      };
-    });
-
-    // Calculate hours for reporters who have tasks
+    // Calculate reporter stats directly from tasks data
+    // This ensures we only count reporters that actually appear in tasks
     tasks.forEach(task => {
-      // Get reporter ID from the correct field - tasks store it as 'reporters' (string or array)
-      let reporterId = task.reporters;
-      
-      // Handle case where reporters is an array (take first unique reporter)
-      if (Array.isArray(reporterId)) {
-        // Get unique reporter IDs from the array
-        const uniqueReporterIds = [...new Set(reporterId)];
-        reporterId = uniqueReporterIds[0]; // Take the first unique reporter
-      }
-      
-      if (reporterId && reporterId.trim() !== '' && reporterStats[reporterId]) {
-        // Add hours to existing reporter stats
+      const reporterId = task.reporters;
+      if (reporterId && reporterId.trim() !== '') {
+        if (!reporterStats[reporterId]) {
+          reporterStats[reporterId] = {
+            id: reporterId,
+            name: task.reporterName || "Unknown Reporter",
+            occupation: "Reporter", // Default occupation
+            department: "Unknown", // Default department
+            tasks: 0,
+            hours: 0
+          };
+        }
+        reporterStats[reporterId].tasks += 1;
         reporterStats[reporterId].hours += parseFloat(task.timeInHours) || 0;
       }
     });

@@ -22,6 +22,7 @@ import {
   normalizeTimestamp,
   serializeTimestampsForRedux,
 } from "../../shared/utils/dateUtils";
+import { logger } from "../../shared/utils/logger";
 
 // Simple task normalization
 const normalizeTask = (monthId, id, data) => {
@@ -82,32 +83,7 @@ const fetchTasksFromFirestore = async (
   return snap.docs.map((d) => normalizeTask(monthId, d.id, d.data()));
 };
 
-// Token validation utility
-const validateToken = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('No authenticated user');
-    }
-    
-    // Get token result to check expiration
-    const tokenResult = await user.getIdTokenResult();
-    const expiresAt = tokenResult.expirationTime ? new Date(tokenResult.expirationTime).getTime() : 0;
-    const now = Date.now();
-    const timeUntilExpiry = expiresAt - now;
-    
-    // If token expires in less than 10 minutes, refresh it proactively
-    if (timeUntilExpiry < 10 * 60 * 1000) {
-      logger.log("Token expires soon, refreshing proactively");
-      await user.getIdToken(true);
-    }
-    
-    return true;
-  } catch (error) {
-    logger.error('Token validation failed:', error);
-    throw new Error('Authentication required');
-  }
-};
+
 
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
@@ -223,6 +199,11 @@ export const tasksApi = createApi({
       transformResponse: (response) => {
         return serializeTimestampsForRedux(response);
       },
+      // Optimized caching configuration
+      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+      refetchOnFocus: false, // Don't refetch when window gains focus
+      refetchOnReconnect: false, // Don't refetch when reconnecting
+      refetchOnMountOrArgChange: false, // Don't refetch on mount or arg change (real-time handles updates)
       async onCacheEntryAdded(
         arg,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
@@ -301,13 +282,13 @@ export const tasksApi = createApi({
               }, 50); // Small delay to batch multiple updates
             },
             (error) => {
-              console.error("Real-time subscription error:", error);
+              logger.error("Real-time subscription error:", error);
             }
           );
 
           await cacheEntryRemoved;
         } catch (error) {
-          console.error("Error setting up real-time subscription:", error);
+          logger.error("Error setting up real-time subscription:", error);
         } finally {
           if (unsubscribe) {
             unsubscribe();
@@ -358,13 +339,13 @@ export const tasksApi = createApi({
               }));
             },
             (error) => {
-              console.error("Real-time board subscription error:", error);
+              logger.error("Real-time board subscription error:", error);
             }
           );
 
           await cacheEntryRemoved;
         } catch (error) {
-          console.error(
+          logger.error(
             "Error setting up real-time board subscription:",
             error
           );
@@ -387,8 +368,12 @@ export const tasksApi = createApi({
             return { error: { message: "Authentication required" } };
           }
           
-          // Use task's monthId or fallback to current month
-          const monthId = task.monthId || format(new Date(), 'yyyy-MM');
+          // Use task's monthId - should always be provided by the component
+          const monthId = task.monthId;
+          
+          if (!monthId) {
+            return { error: { message: "Month ID is required" } };
+          }
           
           // Use transaction to ensure atomic operations
           const result = await runTransaction(db, async (transaction) => {
@@ -418,36 +403,15 @@ export const tasksApi = createApi({
             return created;
           });
 
-          // Trigger real-time update with delay to allow cache to update
-          setTimeout(() => {
-            window.dispatchEvent(
-              new CustomEvent("task-changed", {
-                detail: {
-                  monthId: task.monthId,
-                  operation: "create",
-                  taskId: result.id,
-                  taskUserId: task.userUID,
-                  source: "crud-operation",
-                  timestamp: Date.now(),
-                },
-              })
-            );
-          }, 100);
+          logger.log("Task created successfully, real-time subscription will update cache automatically");
 
           return { data: result };
         } catch (error) {
           return { error: { message: error.message } };
         }
       },
-      invalidatesTags: (result, error, arg) => [
-        { type: "MonthTasks", id: arg.monthId },
-        { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        {
-          type: "MonthTasks",
-          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
-        },
-        { type: "Analytics", id: arg.monthId },
-      ],
+      // No cache invalidation needed - real-time subscription handles updates
+      // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
     }),
 
     // Update task with transaction
@@ -478,36 +442,15 @@ export const tasksApi = createApi({
             transaction.update(taskRef, updatesWithMonthId);
           });
 
-          // Trigger real-time update with delay to allow cache to update
-          setTimeout(() => {
-            window.dispatchEvent(
-              new CustomEvent("task-changed", {
-                detail: {
-                  monthId,
-                  operation: "update",
-                  taskId: id,
-                  taskUserId: updates.userUID || null,
-                  source: "crud-operation",
-                  timestamp: Date.now(),
-                },
-              })
-            );
-          }, 100);
+          logger.log("Task updated successfully, real-time subscription will update cache automatically");
 
           return { data: { id, monthId, success: true } };
         } catch (error) {
           return { error: { message: error.message } };
         }
       },
-      invalidatesTags: (result, error, arg) => [
-        { type: "MonthTasks", id: arg.monthId },
-        { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        {
-          type: "MonthTasks",
-          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
-        },
-        { type: "Analytics", id: arg.monthId },
-      ],
+      // No cache invalidation needed - real-time subscription handles updates
+      // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
     }),
 
     // Delete task with transaction
@@ -532,43 +475,22 @@ export const tasksApi = createApi({
             transaction.delete(taskRef);
           });
 
-          // Trigger real-time update with delay to allow cache to update
-          setTimeout(() => {
-            window.dispatchEvent(
-              new CustomEvent("task-changed", {
-                detail: {
-                  monthId,
-                  operation: "delete",
-                  taskId: id,
-                  taskUserId: null,
-                  source: "crud-operation",
-                  timestamp: Date.now(),
-                },
-              })
-            );
-          }, 100);
+          logger.log("Task deleted successfully, real-time subscription will update cache automatically");
 
           return { data: { id, monthId } };
         } catch (error) {
           return { error: { message: error.message } };
         }
       },
-      invalidatesTags: (result, error, arg) => [
-        { type: "MonthTasks", id: arg.monthId },
-        { type: "MonthTasks", id: `${arg.monthId}_user_all` },
-        {
-          type: "MonthTasks",
-          id: `${arg.monthId}_user_${arg.userUID || "all"}`,
-        },
-        { type: "Analytics", id: arg.monthId },
-      ],
+      // No cache invalidation needed - real-time subscription handles updates
+      // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
     }),
 
     // Generate month board (admin only)
     generateMonthBoard: builder.mutation({
       async queryFn({ monthId, meta = {} }) {
         try {
-          console.log(`[tasksApi] Starting month board generation for monthId: ${monthId}`);
+          logger.log(`[tasksApi] Starting month board generation for monthId: ${monthId}`);
           
           if (!auth.currentUser) {
             return { error: { message: "Authentication required" } };
@@ -596,12 +518,12 @@ export const tasksApi = createApi({
               ...meta,
             };
 
-            console.log(`[tasksApi] Creating month board with data:`, { monthId, boardId, createdBy: auth.currentUser.uid });
+            logger.log(`[tasksApi] Creating month board with data:`, { monthId, boardId, createdBy: auth.currentUser.uid });
             transaction.set(boardRef, boardData);
             return { monthId, boardId };
           });
 
-          console.log(`[tasksApi] Month board generated successfully. Result:`, result);
+          logger.log(`[tasksApi] Month board generated successfully. Result:`, result);
 
           return { data: result };
         } catch (error) {
@@ -655,6 +577,8 @@ export const tasksApi = createApi({
         { type: "Analytics", id: arg.monthId },
       ],
     }),
+
+
   }),
 });
 

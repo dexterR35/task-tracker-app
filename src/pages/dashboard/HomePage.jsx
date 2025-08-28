@@ -1,6 +1,7 @@
 import React from "react";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import netbetLogo from "../../assets/netbet-logo.png";
+import { useAuth } from "../../shared/hooks/useAuth";
 
 import {
   FiClock,
@@ -317,6 +318,10 @@ const HomepageCard = ({ card }) => {
 };
 
 const HomePage = () => {
+  const { user, canAccess } = useAuth();
+  const isAuthenticated = !!user;
+  const isAdmin = canAccess('admin');
+
   return (
     <div className="min-h-[90vh] w-full bg-white-dark flex items-center justify-center flex-col">
       <div className="max-w-[86%] w-full mx-auto px-4  relative">
@@ -335,26 +340,31 @@ const HomePage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 ">
-            <DynamicButton
-              to="/login"
-              variant="primary"
-              size="lg"
-              className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-102"
-              type="button"
-              iconName="default"
-            >
-              Get Started
-            </DynamicButton>
-            <DynamicButton
-              to="/dashboard"
-              variant="danger"
-              size="lg"
-              className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-102"
-              type="button"
-              iconName="funny"
-            >
-              View Dashboard
-            </DynamicButton>
+            {isAuthenticated ? (
+              // Show "View Dashboard" button when authenticated
+              <DynamicButton
+                to={isAdmin ? "/admin" : "/user"}
+                variant="danger"
+                size="lg"
+                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-102"
+                type="button"
+                iconName="funny"
+              >
+                View Dashboard
+              </DynamicButton>
+            ) : (
+              // Show "Get Started" button when not authenticated
+              <DynamicButton
+                to="/login"
+                variant="primary"
+                size="lg"
+                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-102"
+                type="button"
+                iconName="default"
+              >
+                Get Started
+              </DynamicButton>
+            )}
           </div>
         </div>
 
@@ -372,7 +382,7 @@ const HomePage = () => {
         </div>
 
         {/* Stats Section */}
-        <div className="absolute -bottom-18 left-1/2 -translate-1/2 z-4 bg-soft-white-dark rounded-2xl p-4 mb-16 border border-gray-600/30 w-[55.5%]">
+        <div className="absolute -bottom-18 left-1/2 -translate-x-1/2 z-4 bg-soft-white-dark rounded-2xl p-4 mb-16 border border-gray-600/30 w-[55.5%]">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold text-green-success ">40+</div>
@@ -393,7 +403,7 @@ const HomePage = () => {
         
       </div>
      
-          <div className="flex items-center justify-center space-x-4 absolute bottom-0 left-1/2 -translate-1/2">
+          <div className="flex items-center justify-center space-x-4 absolute bottom-0 left-1/2 -translate-x-1/2">
             <p className="font-base italic text-sm text-gray-500">Powered by</p>
             <img
               src={netbetLogo}

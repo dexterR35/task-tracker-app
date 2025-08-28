@@ -50,20 +50,8 @@ export const showAuthError = (message) => {
   return showError(message, { autoClose: 5000 });
 };
 
-export const showWelcomeMessage = (userName, lastLogin = null) => {
-  let message = `Welcome, ${userName}!`;
-  
-  if (lastLogin) {
-    const daysSinceLastLogin = (Date.now() - new Date(lastLogin).getTime()) / (1000 * 60 * 60 * 24);
-    
-    if (daysSinceLastLogin > 30) {
-      message = `Welcome back, ${userName}! It's been ${Math.floor(daysSinceLastLogin)} days since your last login. 👋`;
-    } else if (daysSinceLastLogin > 7) {
-      message = `Welcome back, ${userName}! It's been ${Math.floor(daysSinceLastLogin)} days since your last login. 😊`;
-    } else if (daysSinceLastLogin > 1) {
-      message = `Welcome back, ${userName}! It's been ${Math.floor(daysSinceLastLogin)} days since your last login. ✨`;
-    }
-  }
+export const showWelcomeMessage = (userName) => {
+  const message = `Welcome, ${userName}! 👋`;
   
   return showSuccess(message, { 
     autoClose: 3000, // Longer duration for welcome message
