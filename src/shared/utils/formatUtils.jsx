@@ -15,6 +15,7 @@ export const formatAnalyticsValue = (value, type) => {
       return `${Number(value).toFixed(1)}h`;
     
     case ANALYTICS_TYPES.USER_PERFORMANCE:
+    case ANALYTICS_TYPES.TOP_REPORTER:
       return `${value} users`;
     
     case ANALYTICS_TYPES.MARKETS:
@@ -24,6 +25,8 @@ export const formatAnalyticsValue = (value, type) => {
     case ANALYTICS_TYPES.DEVELOPMENT:
     case ANALYTICS_TYPES.DESIGN:
     case ANALYTICS_TYPES.VIDEO:
+    case ANALYTICS_TYPES.AI_TASKS:
+    case ANALYTICS_TYPES.AI_COMBINED:
       return `${value} tasks`;
     
     default:
@@ -187,6 +190,62 @@ export const formatUserPerformanceAdditionalInfo = (additionalData) => {
 };
 
 /**
+ * Format additional information for top reporter card
+ * @param {Object} additionalData - Additional data from analytics
+ * @returns {JSX.Element|null} Formatted additional info component
+ */
+export const formatTopReporterAdditionalInfo = (additionalData) => {
+  if (!additionalData?.reporterStats) {
+    return null;
+  }
+  
+  const { reporterStats } = additionalData;
+  
+  const topReporters = Object.entries(reporterStats)
+    .map(([reporterId, stats]) => ({
+      id: reporterId,
+      name: stats.name || `Reporter ${reporterId}`,
+      occupation: stats.occupation || 'Reporter',
+      department: stats.departament || 'Unknown',
+      tasks: stats.tasks || 0
+    }))
+    .sort((a, b) => b.tasks - a.tasks) // Sort by task count (highest first)
+    .slice(0, 5); // Show top 5 reporters
+
+  return (
+    <div className="mt-3 space-y-2">
+      {topReporters.map((reporter, index) => (
+        <div
+          key={`${reporter.name}-${reporter.id || index}`}
+          className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
+        >
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${
+              index === 0 ? 'bg-yellow-400' : 
+              index === 1 ? 'bg-gray-300' : 
+              index === 2 ? 'bg-orange-500' :
+              index === 3 ? 'bg-blue-400' : 'bg-purple-400'
+            }`}></div>
+            <div className="flex flex-col">
+              <span className="text-xs text-gray-300 truncate max-w-20">{reporter.name}</span>
+              <span className="text-xs text-gray-500 truncate max-w-20">{reporter.occupation}</span>
+            </div>
+          </div>
+          <div className="text-xs font-medium text-gray-300">
+            {reporter.tasks} tasks
+          </div>
+        </div>
+      ))}
+      {Object.keys(reporterStats).length > 5 && (
+        <div className="text-xs text-gray-500 text-center italic">
+          +{Object.keys(reporterStats).length - 5} more reporters
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
  * Format additional information for markets card
  * @param {Object} additionalData - Additional data from analytics
  * @returns {JSX.Element|null} Formatted additional info component
@@ -279,6 +338,9 @@ export const formatAdditionalInfo = (type, additionalData) => {
     
     case ANALYTICS_TYPES.USER_PERFORMANCE:
       return formatUserPerformanceAdditionalInfo(additionalData);
+    
+    case ANALYTICS_TYPES.TOP_REPORTER:
+      return formatTopReporterAdditionalInfo(additionalData);
     
     case ANALYTICS_TYPES.MARKETS:
       return formatMarketsAdditionalInfo(additionalData);

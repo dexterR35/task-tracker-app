@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useRef } from 'react';
 import { useSubscribeToMonthTasksQuery } from '../../../features/tasks/tasksApi';
+import { useSubscribeToReportersQuery, useGetTasksPerReporterQuery } from '../../../features/reporters/reportersApi';
 import { analyticsCalculator } from '../../utils/analyticsCalculator';
 import { logger } from '../../utils/logger';
 import { useAnalyticsCache } from '../analytics/useAnalyticsCache';
@@ -24,6 +25,32 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       skip: !monthId
     }
   );
+
+    // Get reporters data for reporter analytics
+  const {
+    data: reporters = [],
+    isLoading: reportersLoading,
+    error: reportersError
+  } = useSubscribeToReportersQuery();
+
+  // Get accurate task counts per reporter
+  const {
+    data: reporterTaskCounts = {},
+    isLoading: taskCountsLoading,
+    error: taskCountsError
+  } = useGetTasksPerReporterQuery(
+    { monthId, userId },
+    { skip: !monthId }
+  );
+
+  // Debug logging (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[useCentralizedAnalytics] Data loaded:', {
+      reportersCount: reporters.length,
+      taskCountsKeys: Object.keys(reporterTaskCounts).length,
+      loadingStates: { tasksLoading, reportersLoading, taskCountsLoading }
+    });
+  }
 
   // Memoize the filtered tasks to prevent unnecessary recalculations
   const filteredTasks = useMemo(() => {
@@ -68,8 +95,18 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
 
       logger.debug(`[Analytics] Calculating analytics for ${filteredTasks.length} tasks (${userId ? `user ${userId}` : 'all users'})`);
 
+      // Skip calculation if any required data is still loading
+      if (tasksLoading || reportersLoading || taskCountsLoading) {
+        console.log('[useCentralizedAnalytics] Skipping calculation - data still loading');
+        return prevAnalytics || {
+          tasks: filteredTasks,
+          analytics: null,
+          hasData: false
+        };
+      }
+
       // Calculate analytics from current data
-      const analytics = analyticsCalculator.calculateAllAnalytics(filteredTasks, monthId, userId);
+      const analytics = analyticsCalculator.calculateAllAnalytics(filteredTasks, monthId, userId, reporters, reporterTaskCounts);
 
       const result = {
         tasks: filteredTasks,
@@ -90,7 +127,7 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
         hasData: false
       };
     }
-  }, [filteredTasks, monthId, userId]);
+  }, [filteredTasks, monthId, userId, reporters, reporterTaskCounts, tasksLoading, reportersLoading, taskCountsLoading]);
 
   // Memoize the getMetric function to prevent unnecessary re-renders
   const getMetric = useCallback((type, category = null) => {
@@ -98,18 +135,18 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
       return {
         value: 0,
         additionalData: {},
-        isLoading: tasksLoading,
-        error: tasksError
+        isLoading: tasksLoading || reportersLoading || taskCountsLoading,
+        error: tasksError || reportersError || taskCountsError
       };
     }
 
     const metric = analyticsCalculator.getMetricForCard(type, analyticsData.analytics, category);
     return {
       ...metric,
-      isLoading: tasksLoading,
-      error: tasksError
+      isLoading: tasksLoading || reportersLoading || taskCountsLoading,
+      error: tasksError || reportersError || taskCountsError
     };
-  }, [analyticsData?.analytics, tasksLoading, tasksError]);
+  }, [analyticsData?.analytics, tasksLoading, reportersLoading, taskCountsLoading, tasksError, reportersError, taskCountsError]);
 
   // Memoize the getAllMetrics function
   const getAllMetrics = useCallback(() => {

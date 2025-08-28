@@ -116,7 +116,7 @@ export class AnalyticsCalculator {
    * @param {string|null} userId - Optional user filter
    * @returns {Object} Complete analytics object
    */
-  calculateAllAnalytics(tasks, monthId, userId = null) {
+  calculateAllAnalytics(tasks, monthId, userId = null, reporters = [], reporterTaskCounts = {}) {
     // Generate stable cache key
     const cacheKey = this._generateCacheKey(tasks, monthId, userId);
     
@@ -169,6 +169,10 @@ export class AnalyticsCalculator {
       daily: this.calculateDailyAnalytics(filteredTasks),
       aiModels: this.calculateAIModelsAnalytics(filteredTasks),
       deliverables: this.calculateDeliverablesAnalytics(filteredTasks),
+      bestAI: this.calculateBestAIAnalytics(filteredTasks),
+      bestCategory: this.calculateBestCategoryAnalytics(filteredTasks),
+      topReporter: this.calculateTopReporterAnalytics(filteredTasks, reporters, reporterTaskCounts),
+      designDeliverables: this.calculateDesignDeliverablesAnalytics(filteredTasks),
       raw: {
         totalTasks: filteredTasks.length,
         tasks: filteredTasks
@@ -211,6 +215,10 @@ export class AnalyticsCalculator {
       daily: {},
       aiModels: {},
       deliverables: {},
+      bestAI: { aiUsage: {}, bestAI: "No AI Used", totalAITasks: 0, maxUsage: 0 },
+      bestCategory: { categories: {}, bestCategory: "N/A", totalTasks: 0, maxCount: 0 },
+      topReporter: { reporterStats: {}, topReporter: null, maxTasks: 0 },
+      designDeliverables: { totalDeliverables: 0, designTasksCount: 0 },
       raw: { totalTasks: 0, tasks: [] }
     };
   }
@@ -714,7 +722,8 @@ export class AnalyticsCalculator {
             completed: summary.completedTasks,
             pending: summary.pendingTasks,
             inProgress: summary.inProgressTasks,
-            completionRate: summary.completionRate
+            completionRate: summary.completionRate,
+            bestCategory: analytics.bestCategory.bestCategory
           }
         };
 
@@ -723,7 +732,8 @@ export class AnalyticsCalculator {
           value: summary.totalHours,
           additionalData: {
             avgHoursPerTask: summary.avgHoursPerTask,
-            totalTasks: summary.totalTasks
+            totalTasks: summary.totalTasks,
+            bestCategory: analytics.bestCategory.bestCategory
           }
         };
 
@@ -733,7 +743,8 @@ export class AnalyticsCalculator {
           additionalData: {
             aiPercentage: ai.aiHoursPercentage,
             totalAITasks: ai.totalAITasks,
-            avgAIHoursPerTask: ai.avgAIHoursPerTask
+            avgAIHoursPerTask: ai.avgAIHoursPerTask,
+            bestCategory: analytics.bestCategory.bestCategory
           }
         };
 
@@ -743,7 +754,22 @@ export class AnalyticsCalculator {
           additionalData: {
             aiPercentage: ai.aiPercentage,
             totalAIHours: ai.totalAIHours,
-            avgAIHoursPerTask: ai.avgAIHoursPerTask
+            avgAIHoursPerTask: ai.avgAIHoursPerTask,
+            aiUsage: analytics.bestAI.aiUsage,
+            bestCategory: analytics.bestCategory.bestCategory
+          }
+        };
+
+      case ANALYTICS_TYPES.AI_COMBINED:
+        return {
+          value: ai.totalAITasks,
+          additionalData: {
+            aiPercentage: ai.aiPercentage,
+            totalAIHours: ai.totalAIHours,
+            avgAIHoursPerTask: ai.avgAIHoursPerTask,
+            aiUsage: analytics.bestAI.aiUsage,
+            bestCategory: analytics.bestCategory.bestCategory,
+            aiHoursPercentage: ai.aiHoursPercentage
           }
         };
 
@@ -755,7 +781,8 @@ export class AnalyticsCalculator {
             aiTasks: categories[TASK_CATEGORIES.DEV]?.aiTasks || 0,
             aiHours: categories[TASK_CATEGORIES.DEV]?.aiHours || 0,
             avgHoursPerTask: categories[TASK_CATEGORIES.DEV]?.avgHoursPerTask || 0,
-            aiPercentage: categories[TASK_CATEGORIES.DEV]?.aiPercentage || 0
+            aiPercentage: categories[TASK_CATEGORIES.DEV]?.aiPercentage || 0,
+            bestCategory: analytics.bestCategory.bestCategory
           }
         };
 
@@ -767,7 +794,9 @@ export class AnalyticsCalculator {
             aiTasks: categories[TASK_CATEGORIES.DESIGN]?.aiTasks || 0,
             aiHours: categories[TASK_CATEGORIES.DESIGN]?.aiHours || 0,
             avgHoursPerTask: categories[TASK_CATEGORIES.DESIGN]?.avgHoursPerTask || 0,
-            aiPercentage: categories[TASK_CATEGORIES.DESIGN]?.aiPercentage || 0
+            aiPercentage: categories[TASK_CATEGORIES.DESIGN]?.aiPercentage || 0,
+            bestCategory: analytics.bestCategory.bestCategory,
+            deliverables: analytics.designDeliverables.totalDeliverables
           }
         };
 
@@ -779,7 +808,8 @@ export class AnalyticsCalculator {
             aiTasks: categories[TASK_CATEGORIES.VIDEO]?.aiTasks || 0,
             aiHours: categories[TASK_CATEGORIES.VIDEO]?.aiHours || 0,
             avgHoursPerTask: categories[TASK_CATEGORIES.VIDEO]?.avgHoursPerTask || 0,
-            aiPercentage: categories[TASK_CATEGORIES.VIDEO]?.aiPercentage || 0
+            aiPercentage: categories[TASK_CATEGORIES.VIDEO]?.aiPercentage || 0,
+            bestCategory: analytics.bestCategory.bestCategory
           }
         };
 
@@ -790,7 +820,8 @@ export class AnalyticsCalculator {
             totalHours: performance.totalHours,
             avgHoursPerTask: performance.avgHoursPerTask,
             userStats: performance.users,
-            totalTasks: performance.totalTasks
+            totalTasks: performance.totalTasks,
+            bestCategory: analytics.bestCategory.bestCategory
           }
         };
 
@@ -811,6 +842,46 @@ export class AnalyticsCalculator {
             products: products.productsList, // Use the detailed list for metrics
             totalTasks: products.totalTasks,
             totalHours: products.totalHours
+          }
+        };
+
+      case ANALYTICS_TYPES.BEST_AI:
+        return {
+          value: analytics.bestAI.maxUsage,
+          additionalData: {
+            aiUsage: analytics.bestAI.aiUsage,
+            bestAI: analytics.bestAI.bestAI,
+            totalAITasks: analytics.bestAI.totalAITasks
+          }
+        };
+
+      case ANALYTICS_TYPES.BEST_CATEGORY:
+        return {
+          value: analytics.bestCategory.maxCount,
+          additionalData: {
+            categories: analytics.bestCategory.categories,
+            bestCategory: analytics.bestCategory.bestCategory,
+            totalTasks: analytics.bestCategory.totalTasks
+          }
+        };
+
+      case ANALYTICS_TYPES.DELIVERABLES:
+        return {
+          value: analytics.deliverables.totalDeliverables,
+          additionalData: {
+            totalDeliverables: analytics.deliverables.totalDeliverables,
+            designTasksCount: analytics.designDeliverables.designTasksCount
+          }
+        };
+
+      case ANALYTICS_TYPES.TOP_REPORTER:
+        return {
+          value: Object.keys(analytics.topReporter.reporterStats).length,
+          additionalData: {
+            reporterStats: analytics.topReporter.reporterStats,
+            topReporter: analytics.topReporter.topReporter,
+            maxTasks: analytics.topReporter.maxTasks,
+            totalReporters: Object.keys(analytics.topReporter.reporterStats).length
           }
         };
 
@@ -985,6 +1056,172 @@ export class AnalyticsCalculator {
     });
 
     return deliverables;
+  }
+
+  /**
+   * Calculate best AI from task data
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateBestAIAnalytics(tasks) {
+    const aiUsage = {};
+    let totalAITasks = 0;
+
+    tasks.forEach(task => {
+      if (task.aiUsed && Array.isArray(task.aiModels)) {
+        task.aiModels.forEach(model => {
+          if (!aiUsage[model]) {
+            aiUsage[model] = 0;
+          }
+          aiUsage[model] += 1;
+          totalAITasks += 1;
+        });
+      }
+    });
+
+    // Find the AI with highest usage
+    let bestAI = "No AI Used";
+    let maxUsage = 0;
+
+    Object.entries(aiUsage).forEach(([ai, count]) => {
+      if (count > maxUsage) {
+        maxUsage = count;
+        bestAI = ai;
+      }
+    });
+
+    return {
+      aiUsage,
+      bestAI,
+      totalAITasks,
+      maxUsage
+    };
+  }
+
+  /**
+   * Calculate best category from task data
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateBestCategoryAnalytics(tasks) {
+    const categories = {};
+    let totalTasks = 0;
+
+    tasks.forEach(task => {
+      if (Array.isArray(task.markets)) {
+        task.markets.forEach(market => {
+          if (!categories[market]) {
+            categories[market] = 0;
+          }
+          categories[market] += 1;
+          totalTasks += 1;
+        });
+      }
+    });
+
+    // Find the category with highest count
+    let bestCategory = "N/A";
+    let maxCount = 0;
+
+    Object.entries(categories).forEach(([category, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        bestCategory = category;
+      }
+    });
+
+    return {
+      categories,
+      bestCategory,
+      totalTasks,
+      maxCount
+    };
+  }
+
+  /**
+   * Calculate top reporter from task data
+   * @param {Array} tasks 
+   * @param {Array} reporters - Array of reporter objects from API
+   * @returns {Object}
+   */
+  calculateTopReporterAnalytics(tasks, reporters = [], reporterTaskCounts = {}) {
+    const reporterStats = {};
+
+
+
+    // First, add all reporters from the database with accurate task counts
+    reporters.forEach(reporter => {
+      const taskCount = reporterTaskCounts[reporter.id] || 0;
+      reporterStats[reporter.id] = {
+        id: reporter.id,
+        name: reporter.name || "Unknown Reporter",
+        occupation: reporter.occupation || "Reporter",
+        department: reporter.departament || "Unknown",
+        tasks: taskCount, // Use accurate count from RTK Query
+        hours: 0
+      };
+    });
+
+    // Calculate hours for reporters who have tasks
+    tasks.forEach(task => {
+      // Get reporter ID from the correct field - tasks store it as 'reporters' (string or array)
+      let reporterId = task.reporters;
+      
+      // Handle case where reporters is an array (take first unique reporter)
+      if (Array.isArray(reporterId)) {
+        // Get unique reporter IDs from the array
+        const uniqueReporterIds = [...new Set(reporterId)];
+        reporterId = uniqueReporterIds[0]; // Take the first unique reporter
+      }
+      
+      if (reporterId && reporterId.trim() !== '' && reporterStats[reporterId]) {
+        // Add hours to existing reporter stats
+        reporterStats[reporterId].hours += parseFloat(task.timeInHours) || 0;
+      }
+    });
+
+    // Find the reporter with most tasks
+    let topReporter = null;
+    let maxTasks = 0;
+
+    Object.values(reporterStats).forEach(reporter => {
+      if (reporter.tasks > maxTasks) {
+        maxTasks = reporter.tasks;
+        topReporter = reporter.id;
+      }
+    });
+
+
+
+    return {
+      reporterStats,
+      topReporter,
+      maxTasks
+    };
+  }
+
+  /**
+   * Calculate deliverables count for design tasks
+   * @param {Array} tasks 
+   * @returns {Object}
+   */
+  calculateDesignDeliverablesAnalytics(tasks) {
+    let totalDeliverables = 0;
+    const designTasks = tasks.filter(task => {
+      const taskName = (task.taskName || '').toLowerCase();
+      return taskName === TASK_CATEGORIES.DESIGN;
+    });
+
+    designTasks.forEach(task => {
+      if (Array.isArray(task.deliverables)) {
+        totalDeliverables += task.deliverables.length;
+      }
+    });
+
+    return {
+      totalDeliverables,
+      designTasksCount: designTasks.length
+    };
   }
 }
 

@@ -19,6 +19,7 @@ import {
   PaintBrushIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 // Memoized OptimizedSmallCard component to prevent unnecessary re-renders
@@ -26,11 +27,11 @@ const MemoizedOptimizedSmallCard = React.memo(OptimizedSmallCard);
 
 // Occupation-based card filtering configuration
 const OCCUPATION_CARD_MAPPING = {
-  'designer': ['design', 'total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks','markets', 'products', 'ai-models','user-performance'],
-  'developer': ['development', 'total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks','markets', 'products', 'ai-models','user-performance'],
-  'video-editor': ['video', 'total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks','markets', 'products', 'ai-models','user-performance'],
-  'admin': ['total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks', 'development', 'design', 'video', 'user-performance', 'markets', 'products', 'ai-models', 'deliverables'],
-  'user': ['total-tasks', 'total-hours', 'total-time-with-ai', 'ai-tasks', 'development', 'design', 'video'] // Default for users without specific occupation
+  'designer': ['design', 'total-tasks', 'total-hours', 'ai-combined','markets', 'products', 'ai-models','user-performance', 'top-reporter'],
+  'developer': ['development', 'total-tasks', 'total-hours', 'ai-combined','markets', 'products', 'ai-models','user-performance', 'top-reporter'],
+  'video-editor': ['video', 'total-tasks', 'total-hours', 'ai-combined','markets', 'products', 'ai-models','user-performance', 'top-reporter'],
+  'admin': ['total-tasks', 'total-hours', 'ai-combined', 'development', 'design', 'video', 'user-performance', 'markets', 'products', 'ai-models', 'deliverables', 'top-reporter'],
+  'user': ['total-tasks', 'total-hours', 'ai-combined', 'development', 'design', 'video', 'top-reporter'] // Default for users without specific occupation
 };
 
 // Configuration array for all metric cards using type-based approach
@@ -54,18 +55,9 @@ const METRIC_CARDS_CONFIG = [
     trendDirection: "up",
   },
   {
-    id: "total-time-with-ai",
-    title: "Total Time with AI",
-    type: ANALYTICS_TYPES.TOTAL_TIME_WITH_AI,
-    icon: SparklesIcon,
-    trend: true,
-    trendValue: "AI Assisted",
-    trendDirection: "up",
-  },
-  {
-    id: "ai-tasks",
-    title: "AI Tasks",
-    type: ANALYTICS_TYPES.AI_TASKS,
+    id: "ai-combined",
+    title: "AI Analytics",
+    type: ANALYTICS_TYPES.AI_COMBINED,
     icon: SparklesIcon,
     trend: true,
     trendValue: "AI Usage",
@@ -108,6 +100,15 @@ const METRIC_CARDS_CONFIG = [
     icon: UserGroupIcon,
     trend: true,
     trendValue: "Team Stats",
+    trendDirection: "up",
+  },
+  {
+    id: "top-reporter",
+    title: "Reporters",
+    type: ANALYTICS_TYPES.TOP_REPORTER,
+    icon: UserIcon,
+    trend: true,
+    trendValue: "Reporter Stats",
     trendDirection: "up",
   },
   {

@@ -37,10 +37,10 @@ const AdminReportersPage = () => {
       .required("Role is required")
       .min(1, "Role is required")
       .max(50, "Role must be less than 50 characters"),
-    department: Yup.string()
-      .required("Department is required")
-      .min(1, "Department is required")
-      .max(50, "Department must be less than 50 characters"),
+    departament: Yup.string()
+      .required("Departament is required")
+      .min(1, "Departament is required")
+      .max(50, "Departament must be less than 50 characters"),
     occupation: Yup.string()
       .required("Occupation is required")
       .min(1, "Occupation is required")
@@ -52,7 +52,7 @@ const AdminReportersPage = () => {
     name: "",
     email: "",
     role: "",
-    department: "",
+    departament: "",
     occupation: "",
   };
 
@@ -76,7 +76,7 @@ const AdminReportersPage = () => {
       setRowActionId("create");
 
       // Additional validation check
-      const requiredFields = ['name', 'email', 'role', 'department', 'occupation'];
+      const requiredFields = ['name', 'email', 'role', 'departament', 'occupation'];
       const missingFields = requiredFields.filter(field => !values[field] || values[field].trim() === '');
       
       if (missingFields.length > 0) {
@@ -91,7 +91,7 @@ const AdminReportersPage = () => {
         name: sanitizeText(values.name),
         email: sanitizeText(values.email),
         role: sanitizeText(values.role),
-        department: sanitizeText(values.department),
+        departament: sanitizeText(values.departament),
         occupation: sanitizeText(values.occupation),
         createdBy: currentUser?.uid,
         createdByName: currentUser?.name || currentUser?.email,
@@ -120,7 +120,7 @@ const AdminReportersPage = () => {
       name: reporter.name || "",
       email: reporter.email || "",
       role: reporter.role || "",
-      department: reporter.department || "",
+              departament: reporter.departament || "",
       occupation: reporter.occupation || "",
     });
   };
@@ -132,7 +132,7 @@ const AdminReportersPage = () => {
       setRowActionId(editingId);
 
       // Additional validation check
-      const requiredFields = ['name', 'email', 'role', 'department', 'occupation'];
+      const requiredFields = ['name', 'email', 'role', 'departament', 'occupation'];
       const missingFields = requiredFields.filter(field => !values[field] || values[field].trim() === '');
       
       if (missingFields.length > 0) {
@@ -146,7 +146,7 @@ const AdminReportersPage = () => {
         name: sanitizeText(values.name),
         email: sanitizeText(values.email),
         role: sanitizeText(values.role),
-        department: sanitizeText(values.department),
+        departament: sanitizeText(values.departament),
         occupation: sanitizeText(values.occupation),
       };
 
@@ -300,16 +300,16 @@ const AdminReportersPage = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Department *
+                          Departament *
                         </label>
                         <Field
-                          name="department"
+                          name="departament"
                           type="text"
                           className="w-full px-3 py-2 border rounded-md bg-secondary text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-600"
-                          placeholder="Enter department"
+                          placeholder="Enter departament"
                         />
                         <ErrorMessage
-                          name="department"
+                          name="departament"
                           component="div"
                           className="text-red-error text-sm mt-1"
                         />
@@ -372,7 +372,7 @@ const AdminReportersPage = () => {
                   <th className="px-6 py-3">Name</th>
                   <th className="px-6 py-3">Email</th>
                   <th className="px-6 py-3">Role</th>
-                  <th className="px-6 py-3">Department</th>
+                                          <th className="px-6 py-3">Departament</th>
                   <th className="px-6 py-3">Occupation</th>
                   <th className="px-6 py-3">Created</th>
                   <th className="px-6 py-3">Actions</th>
@@ -410,8 +410,8 @@ const AdminReportersPage = () => {
                         <td className="px-6 py-4">
                           <input
                             type="text"
-                            value={editingForm.department || ""}
-                            onChange={(e) => setEditingForm({ ...editingForm, department: e.target.value })}
+                                                    value={editingForm.departament || ""}
+                        onChange={(e) => setEditingForm({ ...editingForm, departament: e.target.value })}
                             className="w-full px-2 py-1 border rounded bg-gray-700 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600"
                           />
                         </td>
@@ -466,7 +466,7 @@ const AdminReportersPage = () => {
                           <span>{reporter.role || "N/A"}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span>{reporter.department || "N/A"}</span>
+                          <span>{reporter.departament || "N/A"}</span>
                         </td>
                         <td className="px-6 py-4">
                           <span>{reporter.occupation || "N/A"}</span>
