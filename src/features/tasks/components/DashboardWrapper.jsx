@@ -211,7 +211,7 @@ const DashboardWrapper = ({
         </div>
       )}
 
-      {/* Main Dashboard Content */}
+      {/* Main Dashboard Content - Only show when board exists */}
       {board?.exists && (
         <div>
           <OptimizedTaskMetricsBoard userId={userId} showSmallCards={true} />

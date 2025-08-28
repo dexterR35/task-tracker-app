@@ -43,14 +43,7 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     { skip: !monthId }
   );
 
-  // Debug logging (development only)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[useCentralizedAnalytics] Data loaded:', {
-      reportersCount: reporters.length,
-      taskCountsKeys: Object.keys(reporterTaskCounts).length,
-      loadingStates: { tasksLoading, reportersLoading, taskCountsLoading }
-    });
-  }
+
 
   // Memoize the filtered tasks to prevent unnecessary recalculations
   const filteredTasks = useMemo(() => {
@@ -95,10 +88,10 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
 
       logger.debug(`[Analytics] Calculating analytics for ${filteredTasks.length} tasks (${userId ? `user ${userId}` : 'all users'})`);
 
-      // Skip calculation if any required data is still loading
+      // Wait for all required data to be loaded before calculating
       if (tasksLoading || reportersLoading || taskCountsLoading) {
-        console.log('[useCentralizedAnalytics] Skipping calculation - data still loading');
-        return prevAnalytics || {
+        console.log('[useCentralizedAnalytics] Waiting for data to load...');
+        return {
           tasks: filteredTasks,
           analytics: null,
           hasData: false
@@ -179,8 +172,8 @@ export const useCentralizedAnalytics = (monthId, userId = null) => {
     analytics: analyticsData.analytics,
     tasks: analyticsData.tasks,
     hasData: analyticsData.hasData,
-    isLoading: tasksLoading,
-    error: tasksError,
+    isLoading: tasksLoading || reportersLoading || taskCountsLoading,
+    error: tasksError || reportersError || taskCountsError,
     getMetric,
     getAllMetrics,
     reload,

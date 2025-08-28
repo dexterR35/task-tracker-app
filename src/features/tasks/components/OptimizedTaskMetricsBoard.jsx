@@ -177,6 +177,7 @@ const OptimizedTaskMetricsBoard = ({
 
 
 
+
   // Add error boundary for analytics
   if (error) {
     return (
@@ -201,29 +202,39 @@ const OptimizedTaskMetricsBoard = ({
       );
     }
 
-    // ALWAYS render cards - show zero values if no data
-    // This ensures cards are always visible regardless of data availability
+    // Show loading state while data is being fetched
+    if (isLoading) {
+      return (
+        <div className="col-span-full text-center py-8">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <span className="text-gray-400">Loading analytics...</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Show message when no analytics data is available
+    if (!analytics || typeof analytics !== 'object') {
+      return (
+        <div className="col-span-full text-center py-8">
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg p-6">
+            <div className="text-gray-400 mb-2">
+              <svg className="w-8 h-8 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-200 mb-2">No Analytics Data</h3>
+            <p className="text-sm text-gray-400">
+              {monthId ? `No board exists for ${monthId}. Create a board to start tracking tasks and view analytics.` : 'Select a month to view analytics.'}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return filteredCardsConfig.map((cardConfig) => {
       try {
-        // If no analytics data, show cards with zero values
-        if (!analytics || typeof analytics !== 'object') {
-          return (
-            <MemoizedOptimizedSmallCard
-              key={cardConfig.id}
-              title={cardConfig.title}
-              type={cardConfig.type}
-              category={cardConfig.category}
-              icon={cardConfig.icon}
-              monthId={monthId}
-              userId={userId}
-              trend={cardConfig.trend}
-              trendValue={cardConfig.trendValue}
-              trendDirection={cardConfig.trendDirection}
-              analyticsData={{ value: 0, additionalData: {} }}
-            />
-          );
-        }
-
         const metricData = getMetric(cardConfig.type, cardConfig.category);
         
         return (
@@ -256,6 +267,7 @@ const OptimizedTaskMetricsBoard = ({
     userId, 
     hasData, 
     error, 
+    isLoading,
     getMetric,
     filteredCardsConfig,
     analytics
