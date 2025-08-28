@@ -6,6 +6,7 @@ import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import { useCreateTaskMutation } from "../tasksApi";
 import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useCacheManagement } from "../../../shared/hooks/useCacheManagement";
 import { logger } from "../../../shared/utils/logger";
 import {
   marketOptions,
@@ -34,6 +35,7 @@ const TaskForm = ({
   const [outerSubmitting, setOuterSubmitting] = useState(false);
   const { monthId } = useGlobalMonthId();
   const [createTask] = useCreateTaskMutation();
+  const { clearCacheOnDataChange } = useCacheManagement();
   
   // Only call analytics hook if authenticated and have valid monthId
   const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
@@ -161,8 +163,10 @@ const TaskForm = ({
 
   // Prepare task data for submission
   const prepareTaskData = (sanitizedValues, taskNumber) => {
-    // Find the selected reporter to get their name
-    const selectedReporter = reporters.find(reporter => reporter.id === sanitizedValues.reporters);
+    // Find the selected reporter to get their name (supports both document ID and reporterUID)
+    const selectedReporter = reporters.find(reporter => 
+      reporter.id === sanitizedValues.reporters || reporter.reporterUID === sanitizedValues.reporters
+    );
     
     return {
       ...sanitizedValues,
@@ -215,6 +219,10 @@ const TaskForm = ({
         id: created?.id,
         monthId: created?.monthId,
       });
+      
+      // Clear analytics cache to ensure reporter data is updated
+      clearCacheOnDataChange('tasks', 'create');
+      
       showSuccess(
         "Task created successfully! The task list will update automatically."
       );

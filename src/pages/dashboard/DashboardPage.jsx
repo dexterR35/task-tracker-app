@@ -3,6 +3,7 @@ import { useAuth } from "../../shared/hooks/useAuth";
 import { useSelector } from "react-redux";
 import { selectIsAdmin } from "../../features/auth/authSlice";
 import { useGenerateMonthBoardMutation } from "../../features/tasks/tasksApi";
+import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
 import Loader from "../../shared/components/ui/Loader";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
@@ -20,6 +21,7 @@ const DashboardPage = () => {
 
   const [generateMonthBoard, { isLoading: isGeneratingBoard }] =
     useGenerateMonthBoardMutation();
+  const { clearCacheOnDataChange } = useCacheManagement();
 
   // Don't render anything if not authenticated or still loading
   if (!user || authLoading) {
@@ -69,6 +71,9 @@ const DashboardPage = () => {
       }).unwrap();
 
       logger.log(`[DashboardPage] Month board generated successfully. API result:`, result);
+
+      // Clear cache to ensure UI updates immediately
+      clearCacheOnDataChange('tasks', 'create');
 
       // Update the global month ID to the newly created board from API
       if (result?.monthId) {

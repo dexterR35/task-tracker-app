@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { useAuth } from '../useAuth';
-import { useSubscribeToMonthTasksQuery } from '../../../features/tasks/tasksApi';
+import { useSubscribeToMonthTasksQuery, useSubscribeToMonthBoardQuery } from '../../../features/tasks/tasksApi';
 import { useGetUsersQuery } from '../../../features/users/usersApi';
 import { useGetReportersQuery } from '../../../features/reporters/reportersApi';
 import { analyticsCalculator } from '../../utils/analyticsCalculator';
@@ -28,7 +28,7 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
   // Normalize userId - convert empty string or "null" string to null
   const normalizedUserId = userId && userId !== "" && userId !== "null" ? userId : null;
 
-  // Single subscription for tasks - this also handles board existence check
+  // Single subscription for tasks
   const { 
     data: tasks = [], 
     error: tasksError, 
@@ -40,6 +40,29 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
       skip: shouldSkipMonthData,
     }
   );
+
+  // Real-time subscription for board status
+  const { 
+    data: boardData = { exists: false }, 
+    error: boardError, 
+    isLoading: boardLoading,
+    isFetching: boardFetching 
+  } = useSubscribeToMonthBoardQuery(
+    { monthId: isValidMonthId ? monthId : undefined },
+    { 
+      skip: shouldSkipMonthData,
+    }
+  );
+
+  // Debug board subscription
+  logger.debug('[useCentralizedDataAnalytics] Board subscription:', {
+    monthId,
+    isValidMonthId,
+    shouldSkipMonthData,
+    boardData,
+    boardLoading,
+    boardError
+  });
 
   // Use API calls with proper caching configuration
   const { 
@@ -87,11 +110,55 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     normalizedUserId,
     user: user?.email
   });
+  
+  // Debug reporter data
+  if (reporters.length > 0) {
+    logger.debug('[useCentralizedDataAnalytics] Sample reporter data:', {
+      firstReporter: {
+        id: reporters[0].id,
+        reporterUID: reporters[0].reporterUID,
+        name: reporters[0].name,
+        email: reporters[0].email
+      },
+      totalReporters: reporters.length
+    });
+  }
+  
+  // Debug tasks data
+  logger.debug('[useCentralizedDataAnalytics] Tasks data:', {
+    totalTasks: tasks.length,
+    tasksLoading,
+    tasksError,
+    monthId,
+    userId: normalizedUserId
+  });
+  
+  if (tasks.length > 0) {
+    logger.debug('[useCentralizedDataAnalytics] Sample task data:', {
+      firstTask: {
+        id: tasks[0].id,
+        reporters: tasks[0].reporters,
+        reporterName: tasks[0].reporterName,
+        reporterEmail: tasks[0].reporterEmail
+      }
+    });
+  }
+  
+  // Debug board data
+  logger.debug('[useCentralizedDataAnalytics] Board data:', {
+    boardExists: boardData?.exists,
+    boardData,
+    boardError,
+    boardLoading,
+    monthId,
+    shouldSkipMonthData,
+    isValidMonthId
+  });
 
   // Combine loading states
-  const isLoading = tasksLoading || usersLoading || reportersLoading;
-  const isFetching = tasksFetching || usersFetching || reportersFetching;
-  const error = tasksError || usersError || reportersError;
+  const isLoading = tasksLoading || usersLoading || reportersLoading || boardLoading;
+  const isFetching = tasksFetching || usersFetching || reportersFetching || boardFetching;
+  const error = tasksError || usersError || reportersError || boardError;
 
   // Calculate analytics from the data
   const analytics = useMemo(() => {
@@ -190,10 +257,10 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     return analytics !== null && typeof analytics === 'object' && tasks.length > 0;
   }, [analytics, tasks.length]);
 
-  // Check if month board exists - if we have tasks, the board exists
+  // Check if month board exists - use the real-time board subscription
   const boardExists = useMemo(() => {
-    return tasks.length > 0;
-  }, [tasks.length]);
+    return boardData?.exists || false;
+  }, [boardData?.exists]);
 
   // Get data freshness
   const timestamp = useMemo(() => {
@@ -236,9 +303,11 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     return users.find(user => user.id === userId || user.userUID === userId);
   }, [users]);
 
-  // Get reporter by ID
+  // Get reporter by ID (supports both document ID and reporterUID)
   const getReporterById = useCallback((reporterId) => {
-    return reporters.find(reporter => reporter.id === reporterId);
+    return reporters.find(reporter => 
+      reporter.id === reporterId || reporter.reporterUID === reporterId
+    );
   }, [reporters]);
 
   // Get task by ID
@@ -249,15 +318,30 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
   // Get tasks count by reporter (computed from tasks data)
   const getTasksCountByReporter = useCallback(() => {
     const counts = {};
+    
+    // Create a lookup map for reporters by document ID and reporterUID
+    const reporterLookup = new Map();
+    reporters.forEach(reporter => {
+      // Map by document ID
+      reporterLookup.set(reporter.id, reporter);
+      // Also map by reporterUID if it exists
+      if (reporter.reporterUID) {
+        reporterLookup.set(reporter.reporterUID, reporter);
+      }
+    });
+    
     tasks.forEach(task => {
       const reporterId = task.reporters;
       if (reporterId && reporterId.trim() !== '') {
+        // Try to find the reporter in our lookup
+        const reporter = reporterLookup.get(reporterId);
+        
         if (!counts[reporterId]) {
           counts[reporterId] = {
             count: 0,
             hours: 0,
-            name: task.reporterName || "Unknown Reporter",
-            email: task.reporterEmail || ""
+            name: reporter?.name || task.reporterName || "Unknown Reporter",
+            email: reporter?.email || task.reporterEmail || ""
           };
         }
         counts[reporterId].count += 1;
@@ -265,7 +349,7 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
       }
     });
     return counts;
-  }, [tasks]);
+  }, [tasks, reporters]);
 
   // Get tasks count by user
   const getTasksCountByUser = useCallback(() => {

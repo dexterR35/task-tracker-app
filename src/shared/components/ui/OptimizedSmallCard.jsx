@@ -31,13 +31,13 @@ const getMetricColor = (type) => {
   }
 };
 
-// Get reporter name from reporter ID
+// Get reporter name from reporter ID (supports both document ID and reporterUID)
 const getReporterName = (reporterId, reporters) => {
   if (!reporterId || !reporters || !Array.isArray(reporters)) {
     return "Unknown Reporter";
   }
 
-  const reporter = reporters.find(r => r.id === reporterId);
+  const reporter = reporters.find(r => r.id === reporterId || r.reporterUID === reporterId);
   return reporter ? reporter.name : "Unknown Reporter";
 };
 
@@ -177,15 +177,28 @@ const OptimizedSmallCard = ({
   analyticsData = null,
   ...props
 }) => {
-  // Get reporters data from API - only if authenticated
+  // Get reporters data from analytics or API - only if authenticated
   const { user } = useAuth();
   const { monthId } = useGlobalMonthId();
   
-  // Only call analytics hook if authenticated and have valid monthId
-  const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
-  const { reporters = [] } = useCentralizedDataAnalytics(
-    shouldCallAnalytics ? monthId : null
-  );
+  // Use reporters data from analytics if available, otherwise fallback to API
+  let reporters = [];
+  if (analyticsData && analyticsData.additionalData && analyticsData.additionalData.reporterStats) {
+    // Extract reporters from analytics data
+    reporters = Object.values(analyticsData.additionalData.reporterStats).map(reporter => ({
+      id: reporter.id,
+      name: reporter.name,
+      occupation: reporter.occupation || "Reporter",
+      department: reporter.department || "Unknown"
+    }));
+  } else {
+    // Fallback to API call only if needed
+    const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
+    const { reporters: apiReporters = [] } = useCentralizedDataAnalytics(
+      shouldCallAnalytics ? monthId : null
+    );
+    reporters = apiReporters;
+  }
 
   // Use provided analytics data or fallback to zero values
   const metricData = analyticsData || {

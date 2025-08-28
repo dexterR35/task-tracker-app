@@ -2,10 +2,12 @@ import { useDispatch } from 'react-redux';
 import { usersApi } from '../../features/users/usersApi';
 import { reportersApi } from '../../features/reporters/reportersApi';
 import { tasksApi } from '../../features/tasks/tasksApi';
+import { useDataCache } from './analytics/useCentralizedDataAnalytics';
 import { logger } from '../utils/logger';
 
 export const useCacheManagement = () => {
   const dispatch = useDispatch();
+  const { clearCache } = useDataCache();
 
   const clearAllCache = () => {
     dispatch(usersApi.util.resetApiState());
@@ -50,6 +52,12 @@ export const useCacheManagement = () => {
   const clearCacheOnDataChange = (entityType, operation) => {
     logger.log(`Cache cleared due to ${operation} on ${entityType}`);
     clearEntityCache(entityType);
+    
+    // Also clear analytics cache for task operations to ensure reporter data is updated
+    if (entityType === 'tasks') {
+      clearCache(); // Clear all analytics cache
+      logger.log('Analytics cache cleared due to task operation');
+    }
   };
 
   return {

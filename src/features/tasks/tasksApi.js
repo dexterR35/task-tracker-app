@@ -263,6 +263,8 @@ export const tasksApi = createApi({
                 .map((d) => normalizeTask(arg.monthId, d.id, d.data()))
                 .filter((task) => task !== null);
 
+              logger.debug(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
+              
               updateCachedData(() => tasks);
 
               // Trigger analytics recalculation with debouncing
@@ -404,6 +406,11 @@ export const tasksApi = createApi({
           });
 
           logger.log("Task created successfully, real-time subscription will update cache automatically");
+          logger.debug(`[tasksApi] Created task:`, { 
+            id: result.id, 
+            monthId: result.monthId,
+            taskName: result.taskName 
+          });
 
           return { data: result };
         } catch (error) {

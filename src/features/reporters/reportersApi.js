@@ -42,11 +42,20 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
 
       case "POST":
         if (url === "reporters") {
+          // First create the document to get the ID
           const docRef = await addDoc(collection(db, "reporters"), {
             ...body,
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
           });
-          return { data: { id: docRef.id, ...body } };
+          
+          // Then update the document to add the reporterUID field
+          await updateDoc(docRef, {
+            reporterUID: docRef.id,
+            updatedAt: serverTimestamp(),
+          });
+          
+          return { data: { id: docRef.id, reporterUID: docRef.id, ...body } };
         }
         break;
 
@@ -108,13 +117,17 @@ export const reportersApi = createApi({
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
       async onQueryStarted(reporter, { dispatch, queryFulfilled }) {
+        const tempId = `temp-${Date.now()}`;
+        const now = new Date().toISOString();
         const patchResult = dispatch(
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
             // Add the new reporter optimistically
             draft.unshift({
-              id: `temp-${Date.now()}`, // Temporary ID
+              id: tempId, // Temporary ID
+              reporterUID: tempId, // Same temporary ID
               ...reporter,
-              createdAt: new Date().toISOString(),
+              createdAt: now,
+              updatedAt: now,
             });
           })
         );

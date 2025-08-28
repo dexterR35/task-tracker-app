@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ReactPaginate from "react-paginate";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../tasksApi";
 import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useCacheManagement } from "../../../shared/hooks/useCacheManagement";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import {
   taskNameOptions,
@@ -83,6 +84,7 @@ const TasksTable = ({
 
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
+  const { clearCacheOnDataChange } = useCacheManagement();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
@@ -308,6 +310,10 @@ const TasksTable = ({
         monthId: taskMonthId,
         updates: updatesWithMonthId,
       });
+      
+      // Clear analytics cache to ensure reporter data is updated
+      clearCacheOnDataChange('tasks', 'update');
+      
       const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task updated successfully!");
     } catch (e) {
@@ -337,6 +343,10 @@ const TasksTable = ({
 
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
+      
+      // Clear analytics cache to ensure reporter data is updated
+      clearCacheOnDataChange('tasks', 'delete');
+      
       const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task deleted successfully!");
     } catch (e) {
@@ -825,7 +835,7 @@ const TasksTable = ({
                   ) : (
                     (() => {
                       const reporter = reporters.find(
-                        (r) => r.id === t.reporters
+                        (r) => r.id === t.reporters || r.reporterUID === t.reporters
                       );
                       return reporter
                         ? `${reporter.name} (${reporter.email})`

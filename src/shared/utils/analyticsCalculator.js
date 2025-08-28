@@ -1147,17 +1147,34 @@ export class AnalyticsCalculator {
   calculateTopReporterAnalytics(tasks, reporters = []) {
     const reporterStats = {};
 
-    // Calculate reporter stats directly from tasks data
-    // This ensures we only count reporters that actually appear in tasks
+    // Create a lookup map for reporters by document ID and reporterUID
+    const reporterLookup = new Map();
+    reporters.forEach(reporter => {
+      // Map by document ID
+      reporterLookup.set(reporter.id, reporter);
+      // Also map by reporterUID if it exists
+      if (reporter.reporterUID) {
+        reporterLookup.set(reporter.reporterUID, reporter);
+      }
+    });
+
+    // Calculate reporter stats from tasks data
     tasks.forEach(task => {
       const reporterId = task.reporters;
       if (reporterId && reporterId.trim() !== '') {
+        // Try to find the reporter in our lookup
+        const reporter = reporterLookup.get(reporterId);
+        
+        // Debug logging
+        logger.debug(`[AnalyticsCalculator] Task ${task.id} has reporterId: ${reporterId}, found reporter:`, reporter);
+        
         if (!reporterStats[reporterId]) {
           reporterStats[reporterId] = {
             id: reporterId,
-            name: task.reporterName || "Unknown Reporter",
-            occupation: "Reporter", // Default occupation
-            department: "Unknown", // Default department
+            name: reporter?.name || task.reporterName || "Unknown Reporter",
+            occupation: reporter?.occupation || "Reporter",
+            department: reporter?.departament || "Unknown",
+            email: reporter?.email || task.reporterEmail || "",
             tasks: 0,
             hours: 0
           };
@@ -1177,8 +1194,6 @@ export class AnalyticsCalculator {
         topReporter = reporter.id;
       }
     });
-
-
 
     return {
       reporterStats,
