@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, useLocation, Link } from "react-router-d
 import { lazy, Suspense, memo, useMemo, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "../shared/hooks/useAuth";
-import { logger } from "../shared/utils/logger";
+
 import {
   selectUser,
   selectIsLoading,
@@ -18,16 +18,16 @@ import ComingSoonPage from "../shared/components/ui/ComingSoonPage";
 
 // Import static pages directly (no lazy loading needed)
 import LoginPage from "../pages/auth/LoginPage";
-import HomePage from "../pages/dashboard/HomePage";
+import HomePage from "../pages/HomePage";
 
 // Lazy load dynamic pages that need data
-const TaskDetailPage = lazy(() => import("../pages/dashboard/TaskDetailPage"));
+
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
-const TasksPage = lazy(() => import("../pages/dashboard/TasksPage"));
+const TasksPage = lazy(() => import("../pages/task/TasksPage"));
 const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
 const UserProfilePage = lazy(() => import("../pages/admin/UserProfilePage"));
 const AdminReportersPage = lazy(() => import("../pages/admin/AdminReportersPage"));
-const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
+const NotFoundPage = lazy(() => import("../pages/errorPages/NotFoundPage"));
 
 // Loading component for lazy-loaded pages with fade-in animation
 const PageLoader = ({ text = "Loading..." }) => (

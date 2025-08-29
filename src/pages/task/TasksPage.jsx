@@ -4,12 +4,11 @@ import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCen
 import { useAuth } from "../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
 import { format } from "date-fns";
-import Loader from "../../shared/components/ui/Loader";
 import { Icons } from "../../shared/icons";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
-import TasksTable from "../../features/tasks/components/TasksTable";
-import TaskForm from "../../features/tasks/components/TaskForm";
-import TaskDetailPage from "./TaskDetailPage";
+import TasksTable from "../../shared/task/TasksTable";
+import TaskForm from "../../shared/task/TaskForm";
+import TaskDetailPage from "../../pages/task/TaskDetailPage";
 import { showError, showSuccess } from "../../shared/utils/toast";
 
 const TasksPage = () => {

@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "../../../shared/hooks/useAuth";
-import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
-import { useCreateTaskMutation } from "../tasksApi";
-import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
-import { logger } from "../../../shared/utils/logger";
+import { useAuth } from "../hooks/useAuth";
+import { useGlobalMonthId } from "../hooks/useGlobalMonthId";
+import { useCreateTaskMutation } from "../../features/tasks/tasksApi";
+import { useCentralizedDataAnalytics } from "../hooks/analytics/useCentralizedDataAnalytics";
+import { logger } from "../utils/logger";
 import {
   marketOptions,
   productOptions,
   taskNameOptions,
   aiModelOptions,
   deliverables,
-} from "../../../shared/utils/taskOptions";
+} from "../utils/taskOptions";
 
 import {
   DynamicForm,
   TASK_FORM_FIELDS,
-} from "../../../shared/forms";
-import { showSuccess, showError, showInfo, showWarning } from "../../../shared/utils/toast";
-import { extractTaskNumber } from "../../../shared/forms/sanitization";
+} from "../forms";
+import { showSuccess, showError, showInfo, showWarning } from "../utils/toast";
+import { extractTaskNumber } from "../forms/sanitization";
 
 const TaskForm = ({
   onSubmit: customOnSubmit,

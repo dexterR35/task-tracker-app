@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback } from "react";
-import DynamicButton from "../../../shared/components/ui/DynamicButton";
-import OptimizedSmallCard from "../../../shared/components/ui/OptimizedSmallCard";
-import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
-import { useAuth } from "../../../shared/hooks/useAuth";
-import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
-import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../../shared/utils/analyticsTypes";
+import DynamicButton from "../ui/DynamicButton";
+import OptimizedSmallCard from "../ui/OptimizedSmallCard";
+import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
+import { useAuth } from "../../hooks/useAuth";
+import { useGlobalMonthId } from "../../hooks/useGlobalMonthId";
+import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../utils/analyticsTypes";
 
 
 import {

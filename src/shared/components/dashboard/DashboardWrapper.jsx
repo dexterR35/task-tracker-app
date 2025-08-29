@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
-import { useAuth } from "../../../shared/hooks/useAuth";
-import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
-import DynamicButton from "../../../shared/components/ui/DynamicButton";
+import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
+import { useAuth } from "../../hooks/useAuth";
+import { useGlobalMonthId } from "../../hooks/useGlobalMonthId";
+import DynamicButton from "../ui/DynamicButton";
 import { format } from "date-fns";
 
 
 // Import components directly since data is already loaded
-import OptimizedTaskMetricsBoard from "./OptimizedTaskMetricsBoard";
+import OptimizedTaskMetricsBoard from "./DashboardMetrics";
 
 const DashboardWrapper = ({
   className = "",

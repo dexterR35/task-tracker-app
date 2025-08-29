@@ -1,7 +1,7 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
-import Loader from "../../shared/components/ui/Loader";
+
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();

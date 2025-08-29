@@ -1,30 +1,29 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactPaginate from "react-paginate";
-import { useUpdateTaskMutation, useDeleteTaskMutation } from "../tasksApi";
-import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
-import { useCacheManagement } from "../../../shared/hooks/useCacheManagement";
-import { useAuth } from "../../../shared/hooks/useAuth";
+import { useUpdateTaskMutation, useDeleteTaskMutation } from "../../features/tasks/tasksApi";
+import { useCentralizedDataAnalytics } from "../hooks/analytics/useCentralizedDataAnalytics";
+import { useAuth } from "../hooks/useAuth";
 import {
   taskNameOptions,
   marketOptions,
   productOptions,
   aiModelOptions,
   deliverables,
-} from "../../../shared/utils/taskOptions";
-import { useFormat } from "../../../shared/hooks/useFormat";
-import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
+} from "../utils/taskOptions";
+import { useFormat } from "../hooks/useFormat";
+import { useGlobalMonthId } from "../hooks/useGlobalMonthId";
 import {
   sanitizeTaskData,
   sanitizeText,
-} from "../../../shared/forms/sanitization";
-import { logger } from "../../../shared/utils/logger";
-import { showSuccess, showError, showInfo, showWarning } from "../../../shared/utils/toast";
+} from "../forms/sanitization";
+import { logger } from "../utils/logger";
+import { showSuccess, showError, showInfo } from "../utils/toast";
 
-import MultiValueInput from "../../../shared/forms/components/inputs/MultiValueInput";
-import DynamicButton from "../../../shared/components/ui/DynamicButton";
-import DynamicForm from "../../../shared/forms/components/DynamicForm";
-import { FIELD_TYPES } from "../../../shared/forms/validation/fieldTypes";
+
+import DynamicButton from "../components/ui/DynamicButton";
+import DynamicForm from "../forms/components/DynamicForm";
+import { FIELD_TYPES } from "../forms/validation/fieldTypes";
 
 const useFormatDay = () => {
   const { format } = useFormat();

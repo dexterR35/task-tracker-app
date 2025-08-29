@@ -1,6 +1,6 @@
-import { useAuth } from "../shared/hooks/useAuth";
+import { useAuth } from "../../shared/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { Icons } from "../shared/icons";
+import { Icons } from "../../shared/icons";
 
 const NotFoundPage = () => {
   const { user, canAccess } = useAuth();

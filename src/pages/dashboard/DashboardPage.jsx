@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { selectIsAdmin } from "../../features/auth/authSlice";
 import { useGenerateMonthBoardMutation } from "../../features/tasks/tasksApi";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
-import DashboardWrapper from "../../features/tasks/components/DashboardWrapper";
+import DashboardWrapper from "../../shared/components/dashboard/DashboardWrapper";
 import Loader from "../../shared/components/ui/Loader";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
 import { format } from "date-fns";

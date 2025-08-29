@@ -1,9 +1,9 @@
 import React from "react";
-import DynamicButton from "../../shared/components/ui/DynamicButton";
-import netbetLogo from "../../assets/netbet-logo.png";
-import { useAuth } from "../../shared/hooks/useAuth";
+import DynamicButton from "../shared/components/ui/DynamicButton";
+import netbetLogo from "../assets/netbet-logo.png";
+import { useAuth } from "../shared/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
-import DarkModeToggle from "../../shared/components/ui/DarkModeToggle";
+import DarkModeToggle from "../shared/components/ui/DarkModeToggle";
 
 import {
   FiClock,
