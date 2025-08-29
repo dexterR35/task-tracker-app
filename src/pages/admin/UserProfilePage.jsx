@@ -149,7 +149,7 @@ const UserProfilePage = () => {
             // Handle task selection - navigate to task detail with task data
             const taskId = task.id;
             const taskMonthId = task.monthId || monthId;
-            navigate(`/admin/task/${taskMonthId}/${taskId}`, {
+            navigate(`/admin/tasks/${taskMonthId}/${taskId}`, {
               state: { taskData: task }
             });
           }}

@@ -8,6 +8,9 @@ const MultiValueInput = ({
   className = "",
   disabled = false,
   maxValues = 10,
+  addButtonText = "Add",
+  removeButtonText = "Remove",
+  // Filter out custom props that shouldn't go to DOM
   ...props
 }) => {
   const [inputValue, setInputValue] = useState("");
@@ -21,13 +24,17 @@ const MultiValueInput = ({
       return;
 
     const updatedValues = [...values, newValue.trim()];
-    onChange(updatedValues);
+    if (onChange && typeof onChange === 'function') {
+      onChange(updatedValues);
+    }
     setInputValue("");
   };
 
   const removeValue = (valueToRemove) => {
     const updatedValues = values.filter((v) => v !== valueToRemove);
-    onChange(updatedValues);
+    if (onChange && typeof onChange === 'function') {
+      onChange(updatedValues);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -69,12 +76,19 @@ const MultiValueInput = ({
     });
   };
 
+  // Filter out custom props that shouldn't be passed to DOM elements
+  const {
+    addButtonText: _addButtonText,
+    removeButtonText: _removeButtonText,
+    ...domProps
+  } = props;
+
   return (
     <div className={`relative ${className}`}>
       <div
-        className={` rounded-md space-y-2 ${
-          isFocused ? "border-focus" : "border-gray-700"
-        } ${disabled ? "bg-gray-700 cursor-not-allowed" : ""}`}
+        className={`border rounded-md p-2 space-y-2 ${
+          isFocused ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-300"
+        } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
         onClick={() => !disabled && inputRef.current?.focus()}
       >
         {/* Input field */}
@@ -89,38 +103,57 @@ const MultiValueInput = ({
           onPaste={handlePaste}
           placeholder={values.length === 0 ? placeholder : "Add more values..."}
           disabled={disabled || values.length >= maxValues}
-          className="w-full text-gray-200 "
-          {...props}
+          className="w-full px-3 py-2 border-0 outline-none text-sm bg-transparent"
+          {...domProps}
         />
+        
         {/* Display existing values as tags */}
-        <div className="flex flex-col gap-1 text-xs">
-          {values.map((val, index) => (
-            <span key={`${val}-${index}`} className="rounded-grid-small !w-fit">
-              {val}
-              {!disabled && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeValue(val);
-                  }}
-                  className="ml-2 text-gray-800"
-                >
-                  ×
-                </button>
-              )}
-            </span>
-          ))}
-        </div>
-
-      
+        {values.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {values.map((val, index) => (
+              <span
+                key={`${val}-${index}`}
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                title={`${removeButtonText} ${val}`}
+              >
+                {val}
+                {!disabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeValue(val);
+                    }}
+                    className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none"
+                    aria-label={`${removeButtonText} ${val}`}
+                    title={`${removeButtonText} ${val}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Helper text */}
       {values.length >= maxValues && (
-        <p className="text-md font-medium text-red-error mt-1">
+        <p className="text-sm text-red-500 mt-1">
           Maximum {maxValues} values reached
         </p>
+      )}
+      
+      {/* Add button for better UX */}
+      {inputValue.trim() && values.length < maxValues && (
+        <button
+          type="button"
+          onClick={() => addValue(inputValue.trim())}
+          className="mt-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          disabled={disabled}
+        >
+          {addButtonText}
+        </button>
       )}
     </div>
   );

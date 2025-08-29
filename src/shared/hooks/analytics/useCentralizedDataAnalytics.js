@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useAuth } from '../useAuth';
 import { useSubscribeToMonthTasksQuery, useSubscribeToMonthBoardQuery } from '../../../features/tasks/tasksApi';
-import { useGetUsersQuery } from '../../../features/users/usersApi';
+import { useGetUsersQuery, useGetUserByUIDQuery } from '../../../features/users/usersApi';
 import { useGetReportersQuery } from '../../../features/reporters/reportersApi';
 import { analyticsCalculator } from '../../utils/analyticsCalculator';
 import { logger } from '../../utils/logger';
@@ -15,8 +15,7 @@ import { logger } from '../../utils/logger';
  * @returns {Object} Complete data and analytics object
  */
 export const useCentralizedDataAnalytics = (monthId, userId = null) => {
-  // Get auth state to conditionally load data
-  const { user, isLoading: authLoading, isAuthChecking } = useAuth();
+  const { user, canAccess, isLoading: authLoading, isAuthChecking } = useAuth();
   
   // Skip API calls if not authenticated or still checking auth
   const shouldSkip = !user || authLoading || isAuthChecking;
@@ -66,20 +65,52 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
 
   // Use API calls with proper caching configuration
   const { 
-    data: users = [], 
-    error: usersError, 
-    isLoading: usersLoading,
-    isFetching: usersFetching 
+    data: allUsers = [], 
+    error: allUsersError, 
+    isLoading: allUsersLoading,
+    isFetching: allUsersFetching 
   } = useGetUsersQuery(
     {},
     { 
-      skip: shouldSkip,
-      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+      skip: shouldSkip || !canAccess('admin'), // Only admins fetch all users
+      keepUnusedDataFor: 300,
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
     }
   );
+
+  // Get current user data (for regular users)
+  const { 
+    data: currentUserData = null, 
+    error: currentUserError, 
+    isLoading: currentUserLoading,
+    isFetching: currentUserFetching 
+  } = useGetUserByUIDQuery(
+    { userUID: user?.uid },
+    { 
+      skip: shouldSkip || canAccess('admin') || !user?.uid, // Only regular users fetch their own data
+      keepUnusedDataFor: 300,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMountOrArgChange: false,
+    }
+  );
+
+  // Combine users data based on role
+  const users = useMemo(() => {
+    if (canAccess('admin')) {
+      return allUsers;
+    } else if (currentUserData) {
+      return [currentUserData];
+    }
+    return [];
+  }, [allUsers, currentUserData, canAccess]);
+
+  // Combine loading states
+  const usersLoading = canAccess('admin') ? allUsersLoading : currentUserLoading;
+  const usersFetching = canAccess('admin') ? allUsersFetching : currentUserFetching;
+  const usersError = canAccess('admin') ? allUsersError : currentUserError;
 
   const { 
     data: reporters = [], 

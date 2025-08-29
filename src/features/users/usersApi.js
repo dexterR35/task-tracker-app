@@ -105,6 +105,25 @@ const fetchUsersFromFirestore = async () => {
   return users;
 };
 
+// Shared function for fetching a single user by UID
+const fetchUserByUIDFromFirestore = async (userUID) => {
+  const snap = await getDocs(
+    fsQuery(
+      collection(db, "users"), 
+      orderBy("createdAt", "desc")
+    )
+  );
+  
+  // Find user by userUID
+  const userDoc = snap.docs.find(doc => doc.data().userUID === userUID);
+  
+  if (!userDoc) {
+    return null;
+  }
+  
+  return mapUserDoc(userDoc);
+};
+
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fakeBaseQuery(),
@@ -155,9 +174,60 @@ export const usersApi = createApi({
       refetchOnMountOrArgChange: false,
     }),
 
+    // Get single user by UID (for regular users)
+    getUserByUID: builder.query({
+      async queryFn({ userUID }) {
+        const cacheKey = `getUserByUID_${userUID}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            // Check if user is authenticated before proceeding
+            if (!isUserAuthenticated()) {
+              logger.log('User not authenticated yet, skipping user fetch');
+              return { data: null };
+            }
+
+            checkAuth();
+            logger.log(`Fetching user ${userUID} from database...`);
+            const user = await fetchUserByUIDFromFirestore(userUID);
+
+            if (!user) {
+              return { error: { message: 'User not found', code: 'USER_NOT_FOUND' } };
+            }
+
+            // Ensure timestamps are serialized before returning
+            const serializedUser = serializeTimestampsForRedux(user);
+            const result = { data: serializedUser };
+            
+            logApiCall('getUserByUID', { userUID }, result.data);
+            return result;
+          } catch (error) {
+            // If it's an auth error, return null instead of error
+            if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
+              logger.log('Auth required for user fetch, returning null');
+              return { data: null };
+            }
+            
+            const errorResult = handleFirestoreError(error, 'fetch user');
+            logApiCall('getUserByUID', { userUID }, null, error);
+            return errorResult;
+          }
+        });
+      },
+      providesTags: (result, error, { userUID }) => [
+        { type: "Users", id: userUID }
+      ],
+      // Keep data for 5 minutes and don't refetch unnecessarily
+      keepUnusedDataFor: 300,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMountOrArgChange: false,
+    }),
+
   }),
 });
 
 export const {
   useGetUsersQuery,
+  useGetUserByUIDQuery,
 } = usersApi;

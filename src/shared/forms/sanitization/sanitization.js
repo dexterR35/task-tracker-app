@@ -1,0 +1,226 @@
+import DOMPurify from 'dompurify';
+import { FIELD_TYPES } from '../validation/fieldTypes';
+import { VALIDATION_PATTERNS } from '../validation/validationRules';
+
+// Sanitize HTML content
+export const sanitizeHtml = (html) => {
+  if (typeof html !== 'string') return '';
+  return DOMPurify.sanitize(html, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+};
+
+// Sanitize text content
+export const sanitizeText = (text) => {
+  if (typeof text !== 'string') return '';
+  return text.trim().replace(/[<>]/g, '');
+};
+
+// Sanitize email
+export const sanitizeEmail = (email) => {
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+};
+
+// Sanitize URL
+export const sanitizeUrl = (url) => {
+  if (typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  
+  // Basic URL validation
+  try {
+    const urlObj = new URL(trimmed);
+    return urlObj.toString();
+  } catch {
+    return '';
+  }
+};
+
+// Sanitize form data based on field configuration
+export const sanitizeFormData = (data, fields) => {
+  const sanitizedData = {};
+  
+  fields.forEach(field => {
+    const value = data[field.name];
+    sanitizedData[field.name] = sanitizeFieldValue(value, field);
+  });
+  
+  return sanitizedData;
+};
+
+// Sanitize individual field value based on field type
+export const sanitizeFieldValue = (value, fieldConfig) => {
+  const { type, sanitization = {} } = fieldConfig;
+  
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  let sanitizedValue = value;
+
+  // Apply type-specific sanitization
+  switch (type) {
+    case FIELD_TYPES.TEXT:
+    case FIELD_TYPES.TEXTAREA:
+      sanitizedValue = sanitizeText(value);
+      break;
+      
+    case FIELD_TYPES.EMAIL:
+      sanitizedValue = sanitizeEmail(value);
+      break;
+      
+    case FIELD_TYPES.URL:
+      sanitizedValue = sanitizeUrl(value);
+      break;
+      
+    case FIELD_TYPES.NUMBER:
+      sanitizedValue = Number(value) || 0;
+      break;
+      
+    case FIELD_TYPES.CHECKBOX:
+      sanitizedValue = Boolean(value);
+      break;
+      
+    case FIELD_TYPES.MULTI_SELECT:
+    case FIELD_TYPES.MULTI_VALUE:
+      if (Array.isArray(value)) {
+        sanitizedValue = value.map(item => sanitizeText(item)).filter(Boolean);
+      } else {
+        sanitizedValue = [];
+      }
+      break;
+      
+    case FIELD_TYPES.SELECT:
+      sanitizedValue = sanitizeText(value);
+      break;
+      
+    case FIELD_TYPES.DATE:
+      sanitizedValue = typeof value === 'string' ? value.trim() : value;
+      break;
+      
+    case FIELD_TYPES.PASSWORD:
+      sanitizedValue = typeof value === 'string' ? value.trim() : String(value).trim();
+      break;
+      
+    default:
+      sanitizedValue = sanitizeText(value);
+  }
+
+  // Apply custom sanitization
+  if (sanitization.custom) {
+    sanitizedValue = sanitization.custom(sanitizedValue);
+  }
+
+  return sanitizedValue;
+};
+
+// Extract task number from Jira link
+export const extractTaskNumber = (jiraLink) => {
+  if (!jiraLink) return null;
+  
+  const match = jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
+  return match ? match[1] : null;
+};
+
+// Validate Jira link format
+export const validateJiraLink = (jiraLink) => {
+  if (!jiraLink) return false;
+  return VALIDATION_PATTERNS.JIRA_LINK.test(jiraLink);
+};
+
+// Sanitize task data (pure sanitization, no validation)
+export const sanitizeTaskData = (taskData, includeSystemFields = true) => {
+  if (!taskData || typeof taskData !== 'object') return {};
+
+  const baseFields = {
+    jiraLink: sanitizeUrl(taskData.jiraLink || ''),
+    markets: Array.isArray(taskData.markets) 
+      ? taskData.markets.map(m => sanitizeText(m)).filter(Boolean)
+      : [],
+    product: sanitizeText(taskData.product || ''),
+    taskName: sanitizeText(taskData.taskName || ''),
+    aiUsed: Boolean(taskData.aiUsed),
+    timeSpentOnAI: Number(taskData.timeSpentOnAI) || 0,
+    // Always use arrays - empty array if not selected
+    aiModels: Array.isArray(taskData.aiModels)
+      ? taskData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
+      : [],
+    timeInHours: Number(taskData.timeInHours) || 0,
+    reworked: Boolean(taskData.reworked),
+    deliverables: Array.isArray(taskData.deliverables)
+      ? taskData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
+      : [],
+    deliverablesCount: Number(taskData.deliverablesCount) || 0,
+    // Always use arrays - empty array if not selected
+    deliverablesOther: Array.isArray(taskData.deliverablesOther)
+      ? taskData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
+      : [],
+    taskNumber: sanitizeText(taskData.taskNumber || ''),
+    reporters: sanitizeText(taskData.reporters || ''),
+  };
+
+  // Include system fields only when needed (for updates, not creation)
+  if (includeSystemFields) {
+    return {
+      ...baseFields,
+      createdBy: sanitizeText(taskData.createdBy || ''),
+      createdByName: sanitizeText(taskData.createdByName || ''),
+      userUID: sanitizeText(taskData.userUID || ''),
+      monthId: sanitizeText(taskData.monthId || ''),
+    };
+  }
+
+  return baseFields;
+};
+
+// Alias for task creation data (maintains backward compatibility)
+export const sanitizeTaskCreationData = (formData) => {
+  return sanitizeTaskData(formData, false);
+};
+
+// Sanitize user data (pure sanitization, no validation)
+export const sanitizeUserData = (userData) => {
+  if (!userData || typeof userData !== 'object') return {};
+
+  return {
+    name: sanitizeText(userData.name || ''),
+    email: sanitizeEmail(userData.email || ''),
+    role: sanitizeText(userData.role || 'user'),
+    userUID: sanitizeText(userData.userUID || ''),
+    isActive: Boolean(userData.isActive),
+  };
+};
+
+// Sanitize user creation form data (pure sanitization, no validation)
+export const sanitizeUserCreationData = (formData) => {
+  if (!formData || typeof formData !== 'object') return {};
+
+  return {
+    name: sanitizeText(formData.name || ''),
+    email: sanitizeEmail(formData.email || ''),
+    role: sanitizeText(formData.role || 'user'),
+    isActive: Boolean(formData.isActive),
+  };
+};
+
+// Sanitize reporter data
+export const sanitizeReporterData = (reporterData) => {
+  if (!reporterData || typeof reporterData !== 'object') return {};
+
+  return {
+    name: sanitizeText(reporterData.name || ''),
+    email: sanitizeEmail(reporterData.email || ''),
+    userUID: sanitizeText(reporterData.userUID || ''),
+    isActive: Boolean(reporterData.isActive),
+  };
+};
+
+// Sanitize login form data
+export const sanitizeLoginData = (loginData) => {
+  if (!loginData || typeof loginData !== 'object') return {};
+
+  return {
+    email: sanitizeEmail(loginData.email || ''),
+    password: typeof loginData.password === 'string' ? loginData.password.trim() : '',
+    rememberMe: Boolean(loginData.rememberMe),
+  };
+};

@@ -23,6 +23,7 @@ import HomePage from "../pages/dashboard/HomePage";
 // Lazy load dynamic pages that need data
 const TaskDetailPage = lazy(() => import("../pages/dashboard/TaskDetailPage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
+const TasksPage = lazy(() => import("../pages/dashboard/TasksPage"));
 const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
 const UserProfilePage = lazy(() => import("../pages/admin/UserProfilePage"));
 const AdminReportersPage = lazy(() => import("../pages/admin/AdminReportersPage"));
@@ -244,8 +245,17 @@ const router = createBrowserRouter([
             element: createUserRoute(DashboardPage, "Loading dashboard..."),
           },
           {
-            path: "task/:monthId/:taskId",
-            element: createUserRoute(TaskDetailPage),
+            path: "tasks",
+            children: [
+              {
+                index: true,
+                element: createUserRoute(TasksPage, "Loading user tasks..."),
+              },
+              {
+                path: ":monthId/:taskId",
+                element: createUserRoute(TasksPage),
+              },
+            ],
           },
         ],
       },
@@ -271,23 +281,21 @@ const router = createBrowserRouter([
             element: createAdminRoute(AdminReportersPage),
           },
           {
-            path: "task/:monthId/:taskId",
-            element: createAdminRoute(TaskDetailPage),
+            path: "tasks",
+            children: [
+              {
+                index: true,
+                element: createAdminRoute(TasksPage, "Loading admin tasks..."),
+              },
+              {
+                path: ":monthId/:taskId",
+                element: createAdminRoute(TasksPage),
+              },
+            ],
           },
           {
             path: "analytics",
             element: createAdminRoute(ComingSoonPage),
-          },
-        ],
-      },
-      
-      // Shared task routes
-      {
-        path: "/task/:monthId/:taskId",
-        children: [
-          {
-            index: true,
-            element: createUserRoute(TaskDetailPage),
           },
         ],
       },

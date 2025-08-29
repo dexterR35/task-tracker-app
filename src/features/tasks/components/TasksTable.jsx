@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactPaginate from "react-paginate";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../tasksApi";
@@ -17,11 +17,14 @@ import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import {
   sanitizeTaskData,
   sanitizeText,
-} from "../../../shared/utils/sanitization";
+} from "../../../shared/forms/sanitization";
 import { logger } from "../../../shared/utils/logger";
+import { showSuccess, showError, showInfo, showWarning } from "../../../shared/utils/toast";
 
-import MultiValueInput from "../../../shared/components/ui/MultiValueInput";
+import MultiValueInput from "../../../shared/forms/components/inputs/MultiValueInput";
 import DynamicButton from "../../../shared/components/ui/DynamicButton";
+import DynamicForm from "../../../shared/forms/components/DynamicForm";
+import { FIELD_TYPES } from "../../../shared/forms/validation/fieldTypes";
 
 const useFormatDay = () => {
   const { format } = useFormat();
@@ -77,8 +80,8 @@ const TasksTable = ({
     // Check if we're on admin route and use appropriate path
     const isAdminRoute = window.location.pathname.includes("/admin");
     const route = isAdminRoute
-      ? `/admin/task/${taskMonthId}/${taskId}`
-      : `/task/${taskMonthId}/${taskId}`;
+      ? `/admin/tasks/${taskMonthId}/${taskId}`
+      : `/user/tasks/${taskMonthId}/${taskId}`;
       
     // Pass task data via navigation state for instant task detail view
     navigate(route, { 
@@ -89,9 +92,14 @@ const TasksTable = ({
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
+  const [formRef, setFormRef] = useState(null);
   const formatDay = useFormatDay();
+
+  // Memoize the onFormReady callback to prevent infinite re-renders
+  const handleFormReady = useCallback((formikProps) => {
+    setFormRef(formikProps);
+  }, []);
 
   // Get reporters for selection - only if authenticated
   const { user } = useAuth();
@@ -121,6 +129,263 @@ const TasksTable = ({
     [filteredTasks, startIdx, endIdx]
   );
 
+  // Generate dynamic form configuration for task editing
+  const getTaskFormConfig = useCallback((task) => {
+    return [
+      {
+        name: 'taskName',
+        type: FIELD_TYPES.SELECT,
+        label: 'Task Type',
+        required: true,
+        options: taskNameOptions,
+        validation: {
+          custom: {
+            test: (value) => {
+              if (!value || value.trim() === '') return false;
+              return true;
+            },
+            message: 'Please select a task type'
+          }
+        },
+        helpText: 'Select the type of task being performed'
+      },
+      {
+        name: 'markets',
+        type: FIELD_TYPES.MULTI_SELECT,
+        label: 'Markets',
+        required: true,
+        options: marketOptions,
+        validation: {
+          minItems: 1,
+          custom: {
+            test: (value) => {
+              if (!value || !Array.isArray(value) || value.length === 0) return false;
+              return true;
+            },
+            message: 'Please select at least one market'
+          }
+        },
+        helpText: 'Select all markets where this task applies',
+        props: {
+          maxItems: 10
+        }
+      },
+      {
+        name: 'product',
+        type: FIELD_TYPES.SELECT,
+        label: 'Product',
+        required: true,
+        options: productOptions,
+        validation: {
+          custom: {
+            test: (value) => {
+              if (!value || value.trim() === '') return false;
+              return true;
+            },
+            message: 'Please select a product'
+          }
+        },
+        helpText: 'Select the primary product this task relates to'
+      },
+      {
+        name: 'timeInHours',
+        type: FIELD_TYPES.NUMBER,
+        label: 'Total Time (Hours)',
+        required: true,
+        validation: {
+          minValue: 0.5,
+          maxValue: 24,
+          custom: {
+            test: (value) => {
+              if (!value || value < 0.5) return false;
+              if (value > 24) return false;
+              return true;
+            },
+            message: 'Time must be between 0.5 and 24 hours'
+          }
+        },
+        placeholder: '2.5',
+        helpText: 'Total time spent on this task (0.5 - 24 hours)',
+        props: {
+          step: 0.5,
+          min: 0.5,
+          max: 24
+        }
+      },
+      {
+        name: 'aiUsed',
+        type: FIELD_TYPES.CHECKBOX,
+        label: 'AI Tools Used',
+        helpText: 'Check if AI tools were used in this task',
+        props: {
+          className: 'mt-2'
+        }
+      },
+      {
+        name: 'timeSpentOnAI',
+        type: FIELD_TYPES.NUMBER,
+        label: 'Time Spent on AI (Hours)',
+        validation: {
+          minValue: 0.5,
+          maxValue: 24,
+          custom: {
+            test: (value, allValues) => {
+              if (allValues.aiUsed && (!value || value < 0.5)) return false;
+              if (value && value > allValues.timeInHours) return false;
+              return true;
+            },
+            message: 'AI time must be between 0.5 hours and cannot exceed total time'
+          }
+        },
+        placeholder: '1.0',
+        helpText: 'Hours spent specifically using AI tools (auto-calculated based on AI models)',
+        props: {
+          step: 0.5,
+          min: 0.5,
+          max: 24
+        },
+        conditional: {
+          field: 'aiUsed',
+          value: true
+        }
+      },
+      {
+        name: 'aiModels',
+        type: FIELD_TYPES.MULTI_SELECT,
+        label: 'AI Models Used',
+        validation: {
+          minItems: 1,
+          custom: {
+            test: (value, allValues) => {
+              if (allValues.aiUsed && (!value || !Array.isArray(value) || value.length === 0)) return false;
+              return true;
+            },
+            message: 'Please select at least one AI model when AI is used'
+          }
+        },
+        options: aiModelOptions,
+        helpText: 'Select all AI models used in this task',
+        props: {
+          maxItems: 5
+        },
+        conditional: {
+          field: 'aiUsed',
+          value: true
+        }
+      },
+      {
+        name: 'reworked',
+        type: FIELD_TYPES.CHECKBOX,
+        label: 'Task Required Rework',
+        helpText: 'Check if this task required rework or revisions',
+        props: {
+          className: 'mt-2'
+        }
+      },
+      {
+        name: 'deliverables',
+        type: FIELD_TYPES.MULTI_SELECT,
+        label: 'Deliverables',
+        required: true,
+        options: deliverables,
+        validation: {
+          minItems: 1,
+          custom: {
+            test: (value) => {
+              if (!value || !Array.isArray(value) || value.length === 0) return false;
+              return true;
+            },
+            message: 'Please select at least one deliverable'
+          }
+        },
+        helpText: 'Select all deliverables produced by this task (count will be auto-calculated)',
+        props: {
+          maxItems: 8
+        }
+      },
+      {
+        name: 'deliverablesCount',
+        type: FIELD_TYPES.NUMBER,
+        label: 'Number of Deliverables',
+        required: true,
+        validation: {
+          minValue: 1,
+          maxValue: 100,
+          custom: {
+            test: (value, allValues) => {
+              if (!value || value < 1) return false;
+              if (allValues.deliverables && Array.isArray(allValues.deliverables)) {
+                const expectedCount = allValues.deliverables.length;
+                if (value < expectedCount) return false;
+              }
+              return true;
+            },
+            message: 'Deliverables count must be at least 1 and match selected deliverables'
+          }
+        },
+        placeholder: '1',
+        helpText: 'Total number of deliverables produced (auto-calculated from selection)',
+        props: {
+          step: 1,
+          min: 1,
+          max: 100
+        }
+      },
+      {
+        name: 'deliverablesOther',
+        type: FIELD_TYPES.MULTI_VALUE,
+        label: 'Other Deliverables',
+        validation: {
+          minItems: 1,
+          custom: {
+            test: (value, allValues) => {
+              if (allValues.deliverables && allValues.deliverables.includes('others')) {
+                if (!value || !Array.isArray(value) || value.length === 0) return false;
+              }
+              return true;
+            },
+            message: 'Please specify other deliverables when "Others" is selected'
+          }
+        },
+        placeholder: 'Enter deliverable name',
+        helpText: 'Specify other deliverables not listed in the main options',
+        props: {
+          maxValues: 5,
+          addButtonText: 'Add Deliverable',
+          removeButtonText: 'Remove'
+        },
+        conditional: {
+          field: 'deliverables',
+          value: 'others',
+          operator: 'includes'
+        }
+      },
+      {
+        name: 'reporters',
+        type: FIELD_TYPES.SELECT,
+        label: 'Reporter',
+        required: true,
+        options: reporters.map(reporter => ({
+          value: reporter.id,
+          label: `${reporter.name} (${reporter.email})`
+        })),
+        validation: {
+          custom: {
+            test: (value) => {
+              if (!value || value.trim() === '') return false;
+              return true;
+            },
+            message: 'Please select a reporter'
+          }
+        },
+        helpText: 'Select the person responsible for this task (defaults to current user)',
+        props: {
+          autoComplete: 'off'
+        }
+      }
+    ];
+  }, [reporters]);
+
   // Handle page change from ReactPaginate
   const handlePageChange = (selectedItem) => {
     setCurrentPage(selectedItem.selected);
@@ -142,7 +407,7 @@ const TasksTable = ({
     if (isAnyTaskEditing) {
       setForceUpdate((prev) => prev + 1);
     }
-  }, [form.deliverables, form.aiUsed, isAnyTaskEditing]);
+  }, [isAnyTaskEditing]);
 
   // Force re-render when tasks change to ensure cache updates are reflected
   useEffect(() => {
@@ -157,120 +422,33 @@ const TasksTable = ({
       taskId = pathParts[pathParts.length - 1];
     }
     setEditingId(taskId);
-
-    // Sanitize the task data before setting it in the form
-    const sanitizedTask = sanitizeTaskData(t);
-
-    setForm({
-      taskName: sanitizedTask.taskName || "",
-      markets: Array.isArray(sanitizedTask.markets)
-        ? sanitizedTask.markets
-        : sanitizedTask.market
-          ? [sanitizedTask.market]
-          : [],
-      product: sanitizedTask.product || "",
-      timeInHours: sanitizedTask.timeInHours || 0,
-      timeSpentOnAI: sanitizedTask.timeSpentOnAI || 0,
-      aiUsed: Boolean(sanitizedTask.aiUsed),
-      aiModels: Array.isArray(sanitizedTask.aiModels)
-        ? sanitizedTask.aiModels
-        : sanitizedTask.aiModels === false
-          ? false
-          : [],
-      reworked: Boolean(sanitizedTask.reworked),
-      deliverables: Array.isArray(sanitizedTask.deliverables)
-        ? sanitizedTask.deliverables
-        : sanitizedTask.deliverable
-          ? [String(sanitizedTask.deliverable)]
-          : [],
-      deliverablesOther: Array.isArray(sanitizedTask.deliverablesOther)
-        ? sanitizedTask.deliverablesOther
-        : sanitizedTask.deliverablesOther === false
-          ? false
-          : [],
-      deliverablesCount: Number(sanitizedTask.deliverablesCount) || 0,
-      reporters: sanitizedTask.reporters || "",
-    });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setForm({});
   };
 
-  const saveEdit = async (t) => {
+  const saveEdit = async (formData, formikHelpers) => {
     try {
-      setRowActionId(t.id);
-
-      // Prepare form data for sanitization
-      const formData = {
-        taskName: form.taskName || "",
-        product: form.product || "",
-        markets: Array.isArray(form.markets) ? form.markets : [],
-        aiUsed: Boolean(form.aiUsed),
-        // Always use arrays - empty array if not selected
-        aiModels: Array.isArray(form.aiModels) ? form.aiModels : [],
-        deliverables: Array.isArray(form.deliverables) ? form.deliverables : [],
-        reworked: Boolean(form.reworked),
-        timeInHours: Number(form.timeInHours) || 0,
-        timeSpentOnAI: form.aiUsed ? Number(form.timeSpentOnAI) || 0 : 0,
-        taskNumber: t.taskNumber || "", // Preserve the original task number
-        jiraLink: t.jiraLink || "", // Preserve the original Jira link
-        // Always use arrays - empty array if not selected
-        deliverablesOther: Array.isArray(form.deliverablesOther)
-          ? form.deliverablesOther
-          : [],
-        deliverablesCount: Number(form.deliverablesCount) || 0, // Use form value for deliverablesCount
-        reporters: form.reporters || "", // Use form value for reporters
-        createdBy: t.createdBy || "", // Preserve creator info
-        createdByName: t.createdByName || "", // Preserve creator name
-        userUID: t.userUID || "", // Preserve user UID
-      };
-
-      logger.debug("Form data before sanitization:", formData);
-
-      // Sanitize the form data
-      const sanitizedUpdates = sanitizeTaskData(formData);
-      logger.debug("Sanitized updates:", sanitizedUpdates);
-
-      // Additional validation for required fields
-      const errs = [];
-      if (!sanitizedUpdates.taskName) errs.push("Task");
-      if (!sanitizedUpdates.product) errs.push("Product");
-      if (!sanitizedUpdates.markets.length) errs.push("Markets");
-      if (!sanitizedUpdates.deliverables.length) errs.push("Deliverables");
-      if (!sanitizedUpdates.reporters) errs.push("Reporters");
-      if (sanitizedUpdates.timeInHours < 0.5) errs.push("Hours ≥ 0.5");
-
-      // Validate AI fields only if AI is used
-      if (sanitizedUpdates.aiUsed) {
-        if (
-          !Array.isArray(sanitizedUpdates.aiModels) ||
-          sanitizedUpdates.aiModels.length === 0
-        ) {
-          errs.push("AI Models (required when AI is used)");
+      const task = currentPageTasks.find(t => {
+        let taskId = t.id;
+        if (typeof taskId === "string" && taskId.includes("/")) {
+          const pathParts = taskId.split("/");
+          taskId = pathParts[pathParts.length - 1];
         }
-        if (sanitizedUpdates.timeSpentOnAI < 0.5) {
-          errs.push("AI Hours ≥ 0.5 (required when AI is used)");
-        }
-      }
+        return taskId === editingId;
+      });
 
-      // Validate "others" deliverables only if "others" is selected
-      if (sanitizedUpdates.deliverables.includes("others")) {
-        if (
-          !Array.isArray(sanitizedUpdates.deliverablesOther) ||
-          sanitizedUpdates.deliverablesOther.length === 0
-        ) {
-          errs.push('Other Deliverables (required when "others" is selected)');
-        }
-      }
-
-      if (errs.length) {
-        const { showError } = await import("../../../shared/utils/toast");
-        showError("Please complete: " + errs.join(", "));
-        setRowActionId(null);
+      if (!task) {
+        showError("Task not found");
         return;
       }
+
+      setRowActionId(task.id);
+
+      // Prepare form data for sanitization
+      const sanitizedUpdates = sanitizeTaskData(formData);
+      logger.debug("Sanitized updates:", sanitizedUpdates);
 
       // Quantize time values (round to nearest 0.5)
       const quant = (n) => Math.round((Number(n) || 0) * 2) / 2;
@@ -286,7 +464,7 @@ const TasksTable = ({
 
       // Update task using Redux mutation (automatically updates cache)
       // Extract the document ID from the task ID (in case it's a full path)
-      let taskId = t.id;
+      let taskId = task.id;
       logger.debug("Processing task ID:", taskId);
       if (typeof taskId === "string" && taskId.includes("/")) {
         // If it's a full path like "tasks/monthTasks/gYMI5ZUOGgoY1isWCdPP"
@@ -295,7 +473,7 @@ const TasksTable = ({
       }
 
       // Preserve the original monthId from the task
-      const taskMonthId = t.monthId || monthId;
+      const taskMonthId = task.monthId || monthId;
 
       // Ensure the monthId is included in the updates
       const updatesWithMonthId = {
@@ -309,21 +487,17 @@ const TasksTable = ({
         updates: updatesWithMonthId,
       }).unwrap();
       logger.log("[TasksTable] updated task", {
-        id: t.id,
+        id: task.id,
         monthId: taskMonthId,
         updates: updatesWithMonthId,
       });
       
-     
-      
-      const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task updated successfully!");
+      setEditingId(null);
     } catch (e) {
       logger.error("Task update error:", e);
-      const { showError } = await import("../../../shared/utils/toast");
       showError(`Failed to update task: ${e?.message || "Please try again."}`);
     } finally {
-      setEditingId(null);
       setRowActionId(null);
     }
   };
@@ -346,13 +520,9 @@ const TasksTable = ({
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
       
-
-      
-      const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task deleted successfully!");
     } catch (e) {
       logger.error("Task delete error:", e);
-      const { showError } = await import("../../../shared/utils/toast");
       showError(`Failed to delete task: ${e?.message || "Please try again."}`);
     } finally {
       setRowActionId(null);
@@ -374,8 +544,7 @@ const TasksTable = ({
           variant="danger"
           iconName="alert"
           iconPosition="left"
-          size="sm
-          "
+          size="sm"
         >
           Refresh Page
         </DynamicButton>
@@ -393,7 +562,7 @@ const TasksTable = ({
   }
 
   return (
-    <div className="card p-4 overflow-x-auto ">
+    <div className="card p-4 overflow-x-auto">
       <div className="flex-center !mx-0 !justify-between p-3 text-xs text-gray-300">
         <div>
           Showing {startIdx + 1}–{endIdx} of {filteredTasks.length} tasks
@@ -430,17 +599,14 @@ const TasksTable = ({
             <th>AI?</th>
             <th>Reworked?</th>
             <th>Deliverables</th>
-            {(currentPageTasks.some((t) => {
-              const deliverables = Array.isArray(t.deliverables)
-                ? t.deliverables
-                : t.deliverable
-                  ? [t.deliverable]
+            {(currentPageTasks.some((currentTask) => {
+              const deliverables = Array.isArray(currentTask.deliverables)
+                ? currentTask.deliverables
+                : currentTask.deliverable
+                  ? [currentTask.deliverable]
                   : [];
               return deliverables.includes("others");
-            }) ||
-              (isAnyTaskEditing &&
-                form.deliverables &&
-                form.deliverables.includes("others"))) && (
+            })) && (
               <th key={`others-header-${forceUpdate}`}>Other Deliverables</th>
             )}
             <th>Reporters</th>
@@ -456,470 +622,198 @@ const TasksTable = ({
               taskId = pathParts[pathParts.length - 1];
             }
             const isEdit = editingId === taskId;
+            
             return (
               <tr
                 key={taskId}
                 className={` cursor-pointer border-t ${isEdit ? "bg-inherit" : "hover:bg-gray-700/90"} `}
               >
-                <td className="truncate max-w-[60px]  ">
-                  {safeDisplay(t.taskNumber)}
-                </td>
-                <td className="truncate max-w-[100px] ">
-                  {isEdit ? (
-                    <select
-                      className=" px-2 py-2.5.5 w-full "
-                      value={form.taskName}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          taskName: sanitizeText(e.target.value),
-                        }))
-                      }
-                    >
-                      <option value="">Select For</option>
-                      {taskNameOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    safeDisplay(t.taskName)
-                  )}
-                </td>
-                <td className="truncate max-w-[120px] ">
-                  {isEdit ? (
-                    <div>
-                      <select
-                        className="px-2 py-2.5.5 w-full "
-                        value=""
-                        onChange={(e) => {
-                          const val = sanitizeText(e.target.value);
-                          if (!val) return;
-                          setForm((f) => ({
-                            ...f,
-                            markets: (f.markets || []).includes(val)
-                              ? f.markets
-                              : [...(f.markets || []), val],
-                          }));
-                        }}
-                      >
-                        <option value="">Add market</option>
-                        {marketOptions
-                          .filter(
-                            (o) => !(form.markets || []).includes(o.value)
-                          )
-                          .map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                      </select>
-                      <div className="mt-2 flex flex-wrap gap-1 uppercase">
-                        {(form.markets || []).map((m) => (
-                          <span key={m} className="rounded-grid-small">
-                            {m}
-                            <DynamicButton
-                              type="button"
-                              className="!ml-2 !p-1 text-xs !m-0 !h-auto !bg-transparent !text-gray-700 !shadow-none"
-                              onClick={() =>
-                                setForm((f) => ({
-                                  ...f,
-                                  markets: (f.markets || []).filter(
-                                    (x) => x !== m
-                                  ),
-                                }))
+                {isEdit ? (
+                  // Edit mode - show dynamic form
+                  <td colSpan="14" className="p-4">
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">Edit Task: {safeDisplay(t.taskNumber)}</h3>
+                        <div className="flex space-x-2">
+                          <DynamicButton
+                            variant="success"
+                            size="sm"
+                            onClick={() => {
+                              // Trigger form submission using form reference
+                              if (formRef && formRef.submitForm) {
+                                formRef.submitForm();
                               }
-                            >
-                              ×
-                            </DynamicButton>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    safeDisplay(t.markets || t.market)
-                  )}
-                </td>
-                <td className="truncate max-w-[120px] ">
-                  {isEdit ? (
-                    <select
-                      className=" px-2 py-2.5 rounded w-full"
-                      value={form.product}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          product: sanitizeText(e.target.value),
-                        }))
-                      }
-                    >
-                      <option value="">Select product</option>
-                      {productOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    safeDisplay(t.product)
-                  )}
-                </td>
-                {/* <td>{formatDay(t.createdAt)}</td> */}
-                <td className="truncate max-w-[70px">
-                  {isEdit ? (
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0.5"
-                      className="border px-2 py-2.5 rounded text-left w-full "
-                      value={form.timeInHours}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, timeInHours: e.target.value }))
-                      }
-                    />
-                  ) : (
-                    numberFmt(parseFloat(t.timeInHours) || 0)
-                  )}
-                </td>
-                <td className="truncate max-w-[80px]">
-                  {isEdit ? (
-                    form.aiUsed ? (
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0.5"
-                        className="border px-2 py-2.5 rounded w-full"
-                        value={form.timeSpentOnAI}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            timeSpentOnAI: e.target.value,
-                          }))
-                        }
-                      />
-                    ) : (
-                      <span className="text-white-dark">--</span>
-                    )
-                  ) : (
-                    numberFmt(parseFloat(t.timeSpentOnAI) || 0)
-                  )}
-                </td>
-                <td>
-                  {isEdit ? (
-                    form.aiUsed ? (
-                      <div>
-                        <select
-                          className="border px-2 py-2.5 rounded w-full"
-                          value=""
-                          onChange={(e) => {
-                            const v = sanitizeText(e.target.value);
-                            if (!v) return;
-                            setForm((f) => ({
-                              ...f,
-                              aiModels: (f.aiModels || []).includes(v)
-                                ? f.aiModels
-                                : [...(f.aiModels || []), v],
-                            }));
-                          }}
-                        >
-                          <option value="">Add model</option>
-                          {aiModelOptions
-                            .filter(
-                              (o) => !(form.aiModels || []).includes(o.value)
-                            )
-                            .map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                        </select>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {(form.aiModels || []).map((m) => (
-                            <span key={m} className="rounded-grid-small">
-                              {m}
-                              <DynamicButton
-                                type="button"
-                                className="!ml-2 !p-1 text-xs !m-0 !h-auto !bg-transparent !text-gray-700 !shadow-none"
-                                onClick={() =>
-                                  setForm((f) => ({
-                                    ...f,
-                                    aiModels: (f.aiModels || []).filter(
-                                      (x) => x !== m
-                                    ),
-                                  }))
-                                }
-                              >
-                                ×
-                              </DynamicButton>
-                            </span>
-                          ))}
+                            }}
+                            iconName="save"
+                            iconPosition="left"
+                            disabled={rowActionId === t.id}
+                          >
+                            Save
+                          </DynamicButton>
+                          <DynamicButton
+                            variant="danger"
+                            size="sm"
+                            onClick={cancelEdit}
+                            iconName="cancel"
+                            iconPosition="left"
+                          >
+                            Cancel
+                          </DynamicButton>
                         </div>
                       </div>
-                    ) : (
-                      <span className="text-white-dark">AI off</span>
-                    )
-                  ) : t.aiUsed ? (
-                    t.aiModels && t.aiModels !== false ? (
-                      safeDisplay(t.aiModels || t.aiModel)
-                    ) : (
-                      "-"
-                    )
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="text-center">
-                  {isEdit ? (
-                    <input
-                      type="checkbox"
-                      checked={form.aiUsed}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          aiUsed: e.target.checked,
-                          ...(e.target.checked
-                            ? {}
-                            : { timeSpentOnAI: 0, aiModels: false }),
-                        }))
-                      }
-                    />
-                  ) : t.aiUsed ? (
-                    "✓"
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className=" text-center">
-                  {isEdit ? (
-                    <input
-                      type="checkbox"
-                      checked={form.reworked}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, reworked: e.target.checked }))
-                      }
-                    />
-                  ) : t.reworked ? (
-                    "✓"
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td>
-                  {isEdit ? (
-                    <div>
-                      <select
-                        className="px-2 py-2.5"
-                        value=""
-                        onChange={(e) => {
-                          const v = sanitizeText(e.target.value);
-                          if (!v) return;
-                          setForm((f) => ({
-                            ...f,
-                            deliverables: (f.deliverables || []).includes(v)
-                              ? f.deliverables
-                              : [...(f.deliverables || []), v],
-                          }));
+                      
+                      <DynamicForm
+                        fields={getTaskFormConfig(t)}
+                        initialValues={{
+                          taskName: t.taskName || "",
+                          markets: Array.isArray(t.markets)
+                            ? t.markets
+                            : t.market
+                              ? [t.market]
+                              : [],
+                          product: t.product || "",
+                          timeInHours: t.timeInHours || 0,
+                          timeSpentOnAI: t.timeSpentOnAI || 0,
+                          aiUsed: Boolean(t.aiUsed),
+                          aiModels: Array.isArray(t.aiModels)
+                            ? t.aiModels
+                            : t.aiModels === false
+                              ? false
+                              : [],
+                          reworked: Boolean(t.reworked),
+                          deliverables: Array.isArray(t.deliverables)
+                            ? t.deliverables
+                            : t.deliverable
+                              ? [String(t.deliverable)]
+                              : [],
+                          deliverablesOther: Array.isArray(t.deliverablesOther)
+                            ? t.deliverablesOther
+                            : t.deliverablesOther === false
+                              ? false
+                              : [],
+                          deliverablesCount: Number(t.deliverablesCount) || 0,
+                          reporters: t.reporters || "",
                         }}
-                      >
-                        <option value="">Add deliverable</option>
-                        {deliverables
-                          .filter(
-                            (o) => !(form.deliverables || []).includes(o.value)
-                          )
-                          .map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                      </select>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {(form.deliverables || []).map((d) => (
-                          <span key={d} className="rounded-grid-small">
-                            {d}
-                            <DynamicButton
-                              type="button"
-                              className="!ml-2 !p-1 text-xs !m-0 !h-auto !bg-transparent !text-gray-700 !shadow-none"
-                              onClick={() =>
-                                setForm((f) => ({
-                                  ...f,
-                                  deliverables: (f.deliverables || []).filter(
-                                    (x) => x !== d
-                                  ),
-                                }))
-                              }
-                            >
-                              ×
-                            </DynamicButton>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    safeDisplay(t.deliverables || t.deliverable)
-                  )}
-                </td>
-                {(() => {
-                  const hasOthersInAnyTask = currentPageTasks.some((task) => {
-                    const deliverables = Array.isArray(task.deliverables)
-                      ? task.deliverables
-                      : t.deliverable
-                        ? [t.deliverable]
-                        : [];
-                    return deliverables.includes("others");
-                  });
-                  const isEditingWithOthers =
-                    isAnyTaskEditing &&
-                    form.deliverables &&
-                    form.deliverables.includes("others");
-
-                  if (!hasOthersInAnyTask && !isEditingWithOthers) return null;
-
-                  const deliverables = Array.isArray(t.deliverables)
-                    ? t.deliverables
-                    : t.deliverable
-                      ? [t.deliverable]
-                      : [];
-                  const isEditingThisTask =
-                    isAnyTaskEditing && editingId === taskId;
-                  const shouldShowOthers =
-                    deliverables.includes("others") ||
-                    (isEditingThisTask &&
-                      form.deliverables &&
-                      form.deliverables.includes("others"));
-
-                  return (
-                    <td key={`others-cell-${forceUpdate}`}>
-                      {!shouldShowOthers ? (
-                        "-"
-                      ) : isEditingThisTask ? (
-                        <MultiValueInput
-                          value={form.deliverablesOther || []}
-                          onChange={(newValues) =>
-                            setForm((f) => ({
-                              ...f,
-                              deliverablesOther: newValues,
-                            }))
+                        onSubmit={saveEdit}
+                        submitText="Update Task"
+                        submitButtonProps={{
+                          loadingText: "Updating...",
+                          iconName: "save",
+                          iconPosition: "left",
+                          variant: "success",
+                          size: "sm"
+                        }}
+                        showSubmitButton={false} // We handle the submit button manually
+                        context={{ user, monthId, reporters }}
+                        onFormReady={handleFormReady}
+                        onFieldChange={(fieldName, value, formikHelpers) => {
+                          // Auto-calculation features
+                          if (fieldName === 'deliverables') {
+                            const deliverablesCount = Array.isArray(value) ? value.length : 0;
+                            formikHelpers.setFieldValue('deliverablesCount', deliverablesCount);
                           }
-                          placeholder="Enter other deliverables"
-                          maxValues={5}
-                        />
-                      ) : t.deliverablesOther &&
-                        t.deliverablesOther !== false ? (
-                        safeDisplay(t.deliverablesOther)
+                          
+                          if (fieldName === 'aiModels') {
+                            const aiModelsCount = Array.isArray(value) ? value.length : 0;
+                            if (aiModelsCount > 0 && !formikHelpers.values.timeSpentOnAI) {
+                              const suggestedTime = Math.max(0.5, aiModelsCount * 0.5);
+                              formikHelpers.setFieldValue('timeSpentOnAI', suggestedTime);
+                              showInfo(`Suggested AI time: ${suggestedTime} hours`);
+                            }
+                          }
+                        }}
+                        className="max-w-4xl mx-auto"
+                      />
+                    </div>
+                  </td>
+                ) : (
+                  // View mode - show regular table row
+                  <>
+                    <td className="truncate max-w-[60px]">
+                      {safeDisplay(t.taskNumber)}
+                    </td>
+                    <td className="truncate max-w-[100px]">
+                      {safeDisplay(t.taskName)}
+                    </td>
+                    <td className="truncate max-w-[120px]">
+                      {safeDisplay(t.markets || t.market)}
+                    </td>
+                    <td className="truncate max-w-[120px]">
+                      {safeDisplay(t.product)}
+                    </td>
+                    {/* <td>{formatDay(t.createdAt)}</td> */}
+                    <td className="truncate max-w-[70px]">
+                      {numberFmt(parseFloat(t.timeInHours) || 0)}
+                    </td>
+                    <td className="truncate max-w-[80px]">
+                      {numberFmt(parseFloat(t.timeSpentOnAI) || 0)}
+                    </td>
+                    <td>
+                      {t.aiUsed ? (
+                        t.aiModels && t.aiModels !== false ? (
+                          safeDisplay(t.aiModels || t.aiModel)
+                        ) : (
+                          "-"
+                        )
                       ) : (
                         "-"
                       )}
                     </td>
-                  );
-                })()}
-                <td className="truncate max-w-[120px]">
-                  {isEdit ? (
-                    <div>
-                      <select
-                        className="border px-2 py-2.5  w-full"
-                        value={form.reporters || ""}
-                        onChange={(e) => {
-                          setForm((f) => ({
-                            ...f,
-                            reporters: e.target.value,
-                          }));
-                        }}
-                      >
-                        <option value="">Select reporter…</option>
-                        {reporters.map((reporter) => (
-                          <option key={reporter.id} value={reporter.id}>
-                            {reporter.name} ({reporter.email})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    (() => {
-                      const reporter = reporters.find(
-                        (r) => r.id === t.reporters || r.reporterUID === t.reporters
+                    <td className="text-center">
+                      {t.aiUsed ? "✓" : "-"}
+                    </td>
+                    <td className="text-center">
+                      {t.reworked ? "✓" : "-"}
+                    </td>
+                    <td>
+                      {safeDisplay(t.deliverables || t.deliverable)}
+                    </td>
+                    {(() => {
+                      const hasOthersInAnyTask = currentPageTasks.some((currentTask) => {
+                        const deliverables = Array.isArray(currentTask.deliverables)
+                          ? currentTask.deliverables
+                          : currentTask.deliverable
+                            ? [currentTask.deliverable]
+                            : [];
+                        return deliverables.includes("others");
+                      });
+
+                      if (!hasOthersInAnyTask) return null;
+
+                      const deliverables = Array.isArray(t.deliverables)
+                        ? t.deliverables
+                        : t.deliverable
+                          ? [t.deliverable]
+                          : [];
+                      const shouldShowOthers = deliverables.includes("others");
+
+                      return (
+                        <td key={`others-cell-${forceUpdate}`}>
+                          {!shouldShowOthers ? (
+                            "-"
+                          ) : t.deliverablesOther &&
+                            t.deliverablesOther !== false ? (
+                            safeDisplay(t.deliverablesOther)
+                          ) : (
+                            "-"
+                          )}
+                        </td>
                       );
-                      return reporter
-                        ? `${reporter.name} (${reporter.email})`
-                        : t.reporters || "No reporter";
-                    })()
-                  )}
-                </td>
-                <td>
-                  {isEdit ? (
-                    <input
-                      type="number"
-                      min="1"
-                      className="px-2 py-2.5 rounded w-20 text-start"
-                      value={form.deliverablesCount || 0}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          deliverablesCount: parseInt(e.target.value) || 0,
-                        }))
-                      }
-                    />
-                  ) : (
-                    Number(t.deliverablesCount) || 0
-                  )}
-                </td>
-                <td className="text-start space-x-2 flex flex-row">
-                  {isEdit ? (
-                    <>
-                      <DynamicButton
-                        variant="success"
-                        size="xs"
-                        onClick={() => saveEdit(t)}
-                        iconName="save"
-                        iconPosition="center"
-                        disabled={
-                          rowActionId === taskId ||
-                          !(() => {
-                            // Custom validation logic for table edit
-                            if (
-                              !form.taskName ||
-                              !form.product ||
-                              !form.markets?.length ||
-                              !form.deliverables?.length ||
-                              !form.timeInHours ||
-                              form.timeInHours < 0.5 ||
-                              !form.reporters
-                            ) {
-                              return false;
-                            }
-
-                            // AI validation only if AI is used
-                            if (form.aiUsed) {
-                              if (
-                                !form.aiModels?.length ||
-                                !form.timeSpentOnAI ||
-                                form.timeSpentOnAI < 0.5
-                              ) {
-                                return false;
-                              }
-                            }
-
-                            // Other deliverables validation only if "others" is selected
-                            if (form.deliverables?.includes("others")) {
-                              if (!form.deliverablesOther?.length) {
-                                return false;
-                              }
-                            }
-
-                            return true;
-                          })()
-                        }
-                      />
-
-                      <DynamicButton
-                        variant="danger"
-                        size="xs"
-                        onClick={cancelEdit}
-                        iconName="cancel"
-                        iconPosition="center"
-                      />
-                    </>
-                  ) : (
-                    <>
+                    })()}
+                    <td className="truncate max-w-[120px]">
+                      {(() => {
+                        const reporter = reporters.find(
+                          (r) => r.id === t.reporters || r.reporterUID === t.reporters
+                        );
+                        return reporter
+                          ? `${reporter.name} (${reporter.email})`
+                          : t.reporters || "No reporter";
+                      })()}
+                    </td>
+                    <td>
+                      {Number(t.deliverablesCount) || 0}
+                    </td>
+                    <td className="text-start space-x-2 flex flex-row">
                       <DynamicButton
                         variant="primary"
                         size="xs"
@@ -931,7 +825,7 @@ const TasksTable = ({
                       <DynamicButton
                         variant="edit"
                         size="xs"
-                        disabled={rowActionId === taskId}
+                        disabled={rowActionId === t.id}
                         onClick={() => startEdit(t)}
                         iconName="edit"
                         iconPosition="center"
@@ -939,19 +833,19 @@ const TasksTable = ({
                       <DynamicButton
                         variant="danger"
                         size="xs"
-                        disabled={rowActionId === taskId}
+                        disabled={rowActionId === t.id}
                         onClick={() => removeTask(t)}
                         iconName="delete"
                         iconPosition="center"
                         className={
-                          rowActionId === taskId
+                          rowActionId === t.id
                             ? "bg-red-400 cursor-not-allowed"
                             : "bg-red-600 hover:bg-red-700"
                         }
                       />
-                    </>
-                  )}
-                </td>
+                    </td>
+                  </>
+                )}
               </tr>
             );
           })}

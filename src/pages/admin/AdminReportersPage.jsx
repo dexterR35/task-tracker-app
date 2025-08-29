@@ -12,7 +12,7 @@ import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCen
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import Loader from "../../shared/components/ui/Loader";
 import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { sanitizeText } from "../../shared/utils/sanitization";
+import { sanitizeText } from "../../shared/forms/sanitization";
 import { logger } from "../../shared/utils/logger";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";

@@ -12,6 +12,7 @@ import {
   UsersIcon,
   HomeIcon,
   UserGroupIcon,
+  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { Icons } from "../../icons";
 
@@ -71,6 +72,12 @@ const AuthenticatedLayout = () => {
           icon: ChartBarIcon,
           current: location.pathname === "/admin/analytics",
         },
+        {
+          name: "Tasks",
+          href: "/admin/tasks",
+          icon: ListBulletIcon,
+          current: location.pathname === "/admin/tasks",
+        },
       ];
     } else if (canAccess('user')) {
       return [
@@ -79,6 +86,12 @@ const AuthenticatedLayout = () => {
           href: "/user",
           icon: HomeIcon,
           current: location.pathname === "/user",
+        },
+        {
+          name: "Tasks",
+          href: "/user/tasks",
+          icon: ListBulletIcon,
+          current: location.pathname === "/user/tasks",
         },
       ];
     }
