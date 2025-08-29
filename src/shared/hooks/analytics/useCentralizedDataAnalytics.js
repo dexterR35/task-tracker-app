@@ -310,11 +310,6 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     );
   }, [reporters]);
 
-  // Get task by ID
-  const getTaskById = useCallback((taskId) => {
-    return tasks.find(task => task.id === taskId);
-  }, [tasks]);
-
   // Get tasks count by reporter (computed from tasks data)
   const getTasksCountByReporter = useCallback(() => {
     const counts = {};
@@ -391,7 +386,6 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     getFilteredData,
     getUserById,
     getReporterById,
-    getTaskById,
     getTasksCountByReporter,
     getTasksCountByUser,
     

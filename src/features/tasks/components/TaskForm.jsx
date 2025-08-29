@@ -6,7 +6,6 @@ import { useAuth } from "../../../shared/hooks/useAuth";
 import { useGlobalMonthId } from "../../../shared/hooks/useGlobalMonthId";
 import { useCreateTaskMutation } from "../tasksApi";
 import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
-import { useCacheManagement } from "../../../shared/hooks/useCacheManagement";
 import { logger } from "../../../shared/utils/logger";
 import {
   marketOptions,

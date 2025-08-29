@@ -1,60 +1,25 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
-import { useGetTaskByIdQuery } from "../../features/tasks/tasksApi";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import Loader from "../../shared/components/ui/Loader";
 
 const TaskDetailPage = () => {
   const { taskId, monthId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Use RTK Query to fetch task data
-  const {
-    data: task,
-    isLoading,
-    error,
-  } = useGetTaskByIdQuery(
-    { monthId, taskId },
-    {
-      skip: !monthId || !taskId,
-    }
-  );
+  // Get passed task data from navigation state
+  const task = location.state?.taskData;
 
-  if (isLoading) {
-    return (
-      <Loader 
-        text="Loading task details..." 
-        size="lg"
-        variant="spinner"
-        minHeight="min-h-[50vh]"
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-3xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-red-800 font-semibold mb-2">Error Loading Task</h2>
-          <p className="text-red-600">{error?.data?.message || error?.message || "Failed to load task"}</p>
-          <DynamicButton 
-            variant="outline" 
-            onClick={() => navigate(-1)}
-            className="mt-4"
-          >
-            Go Back
-          </DynamicButton>
-        </div>
-      </div>
-    );
-  }
-
+  // If no task data is passed, show error (this should not happen when navigating from table)
   if (!task) {
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h2 className="text-yellow-800 font-semibold mb-2">Task Not Found</h2>
-          <p className="text-yellow-600">The requested task could not be found.</p>
+          <h2 className="text-yellow-800 font-semibold mb-2">Task Data Not Available</h2>
+          <p className="text-yellow-600">
+            Task data is not available. Please navigate from the task table to view task details.
+          </p>
           <DynamicButton 
             variant="outline" 
             onClick={() => navigate(-1)}

@@ -79,7 +79,11 @@ const TasksTable = ({
     const route = isAdminRoute
       ? `/admin/task/${taskMonthId}/${taskId}`
       : `/task/${taskMonthId}/${taskId}`;
-    navigate(route);
+      
+    // Pass task data via navigation state for instant task detail view
+    navigate(route, { 
+      state: { taskData: t } 
+    });
   };
 
   const [updateTask] = useUpdateTaskMutation();

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
 import { useAuth } from "../../shared/hooks/useAuth";
@@ -14,6 +14,7 @@ const UserProfilePage = () => {
   const { user: currentUser, canAccess } = useAuth();
   const { monthId } = useGlobalMonthId();
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const navigate = useNavigate();
 
   // Use centralized data system to get data filtered for the specific user
   const { 
@@ -145,10 +146,12 @@ const UserProfilePage = () => {
         <TasksTable 
           tasks={userTasks}
           onSelect={(task) => {
-            // Handle task selection - navigate to task detail
+            // Handle task selection - navigate to task detail with task data
             const taskId = task.id;
             const taskMonthId = task.monthId || monthId;
-            window.location.href = `/admin/task/${taskMonthId}/${taskId}`;
+            navigate(`/admin/task/${taskMonthId}/${taskId}`, {
+              state: { taskData: task }
+            });
           }}
         />
       </div>

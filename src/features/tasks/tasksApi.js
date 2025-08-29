@@ -88,37 +88,8 @@ const fetchTasksFromFirestore = async (
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "MonthBoard", "Charts", "Analytics", "Task"],
+  tagTypes: ["MonthTasks", "MonthBoard", "Charts", "Analytics"],
   endpoints: (builder) => ({
-    // Get single task by ID
-    getTaskById: builder.query({
-      async queryFn({ monthId, taskId }) {
-        try {
-          if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
-          }
-
-          const ref = doc(db, "tasks", monthId, "monthTasks", taskId);
-          const snap = await getDoc(ref);
-          
-          if (!snap.exists()) {
-            return { error: { message: "Task not found" } };
-          }
-
-          const task = normalizeTask(monthId, snap.id, snap.data());
-          return { data: task };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      transformResponse: (response) => {
-        return serializeTimestampsForRedux(response);
-      },
-      providesTags: (result, error, arg) => [
-        { type: "Task", id: `${arg.monthId}_${arg.taskId}` },
-      ],
-    }),
-
     // Check if month board exists
     getMonthBoardExists: builder.query({
       async queryFn({ monthId }) {
@@ -599,5 +570,4 @@ export const {
   useGetMonthBoardExistsQuery,
   useGenerateMonthBoardMutation,
   useSaveChartsDataMutation,
-  useGetTaskByIdQuery,
 } = tasksApi;
