@@ -35,7 +35,7 @@ const TaskForm = ({
   const [outerSubmitting, setOuterSubmitting] = useState(false);
   const { monthId } = useGlobalMonthId();
   const [createTask] = useCreateTaskMutation();
-  const { clearCacheOnDataChange } = useCacheManagement();
+
   
   // Only call analytics hook if authenticated and have valid monthId
   const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
@@ -221,7 +221,7 @@ const TaskForm = ({
       });
       
       // Clear analytics cache to ensure reporter data is updated
-      clearCacheOnDataChange('tasks', 'create');
+
       
       showSuccess(
         "Task created successfully! The task list will update automatically."

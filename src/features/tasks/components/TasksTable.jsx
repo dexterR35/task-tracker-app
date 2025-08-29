@@ -84,7 +84,6 @@ const TasksTable = ({
 
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
-  const { clearCacheOnDataChange } = useCacheManagement();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
@@ -311,8 +310,7 @@ const TasksTable = ({
         updates: updatesWithMonthId,
       });
       
-      // Clear analytics cache to ensure reporter data is updated
-      clearCacheOnDataChange('tasks', 'update');
+     
       
       const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task updated successfully!");
@@ -344,8 +342,7 @@ const TasksTable = ({
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
       
-      // Clear analytics cache to ensure reporter data is updated
-      clearCacheOnDataChange('tasks', 'delete');
+
       
       const { showSuccess } = await import("../../../shared/utils/toast");
       showSuccess("Task deleted successfully!");

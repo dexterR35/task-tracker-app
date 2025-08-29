@@ -10,11 +10,10 @@ import {
   getDoc,
   query,
   orderBy,
-  onSnapshot,
   serverTimestamp,
-  where,
 } from "firebase/firestore";
 import { logger } from "../../shared/utils/logger";
+import { serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
 
 // Custom base query for Firestore
 const firestoreBaseQuery = () => async ({ url, method, body }) => {
@@ -27,13 +26,12 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
           );
           const reporters = querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            return {
+            const reporter = {
               id: doc.id,
               ...data,
-              // Convert Firebase Timestamps to serializable format
-              createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : null,
-              updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : null,
             };
+            // Use standardized timestamp serialization
+            return serializeTimestampsForRedux(reporter);
           });
           logger.debug(`[Reporters API] Fetched ${reporters.length} reporters`);
           return { data: reporters };
@@ -55,7 +53,16 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             updatedAt: serverTimestamp(),
           });
           
-          return { data: { id: docRef.id, reporterUID: docRef.id, ...body } };
+          // Get the created document to return properly serialized data
+          const createdDoc = await getDoc(docRef);
+          const createdData = {
+            id: docRef.id,
+            reporterUID: docRef.id,
+            ...body,
+            ...createdDoc.data()
+          };
+          
+          return { data: serializeTimestampsForRedux(createdData) };
         }
         break;
 
@@ -66,7 +73,15 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             ...body,
             updatedAt: serverTimestamp(),
           });
-          return { data: { id, ...body } };
+          // Get the updated document to return properly serialized data
+          const updatedDoc = await getDoc(doc(db, "reporters", id));
+          const updatedData = {
+            id,
+            ...body,
+            ...updatedDoc.data()
+          };
+          
+          return { data: serializeTimestampsForRedux(updatedData) };
         }
         break;
 

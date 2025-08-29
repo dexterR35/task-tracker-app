@@ -1,7 +1,6 @@
 import { useDispatch } from 'react-redux';
 import { usersApi } from '../../features/users/usersApi';
 import { reportersApi } from '../../features/reporters/reportersApi';
-import { tasksApi } from '../../features/tasks/tasksApi';
 import { useDataCache } from './analytics/useCentralizedDataAnalytics';
 import { logger } from '../utils/logger';
 
@@ -12,8 +11,7 @@ export const useCacheManagement = () => {
   const clearAllCache = () => {
     dispatch(usersApi.util.resetApiState());
     dispatch(reportersApi.util.resetApiState());
-    dispatch(tasksApi.util.resetApiState());
-    logger.log("All cache cleared");
+    logger.log("All cache cleared (excluding tasks - handled by real-time)");
   };
 
   const clearReportersCache = () => {
@@ -26,11 +24,6 @@ export const useCacheManagement = () => {
     logger.log("Users cache cleared");
   };
 
-  const clearTasksCache = () => {
-    dispatch(tasksApi.util.resetApiState());
-    logger.log("Tasks cache cleared");
-  };
-
   // Clear cache for specific entity
   const clearEntityCache = (entityType) => {
     switch (entityType) {
@@ -41,7 +34,8 @@ export const useCacheManagement = () => {
         clearUsersCache();
         break;
       case 'tasks':
-        clearTasksCache();
+        clearCache();
+        logger.log('Analytics cache cleared due to task operation');
         break;
       default:
         clearAllCache();
@@ -53,18 +47,14 @@ export const useCacheManagement = () => {
     logger.log(`Cache cleared due to ${operation} on ${entityType}`);
     clearEntityCache(entityType);
     
-    // Also clear analytics cache for task operations to ensure reporter data is updated
-    if (entityType === 'tasks') {
-      clearCache(); // Clear all analytics cache
-      logger.log('Analytics cache cleared due to task operation');
-    }
+    // For tasks, analytics cache is already cleared in clearEntityCache
+    // No additional logic needed
   };
 
   return {
     clearAllCache,
     clearReportersCache,
     clearUsersCache,
-    clearTasksCache,
     clearEntityCache,
     clearCacheOnDataChange,
   };
