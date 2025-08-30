@@ -10,4 +10,8 @@ export { default as MultiValueInput } from './ui/MultiValueInput';
 export { default as OptimizedSmallCard } from './ui/OptimizedSmallCard';
 export { default as MonthCalendar } from './ui/MonthCalendar';
 
+// Table components
+export { default as DynamicTable } from './ui/DynamicTable';
+export { getColumns } from './ui/tableColumns.jsx';
+
 

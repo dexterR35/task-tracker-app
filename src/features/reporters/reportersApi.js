@@ -113,7 +113,7 @@ export const reportersApi = createApi({
       query: () => ({ url: "reporters", method: "GET" }),
       providesTags: ["Reporter"],
       // Keep data forever and don't refetch unnecessarily
-      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+              keepUnusedDataFor: Infinity, // Never expire - Reporters never change once created
       // Don't refetch on window focus or reconnect
       refetchOnFocus: false,
       refetchOnReconnect: false,

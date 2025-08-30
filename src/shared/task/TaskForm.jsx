@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { useCreateTaskMutation } from "../../features/tasks/tasksApi";
+import { useCreateTaskMutation, useUpdateTaskMutation } from "../../features/tasks/tasksApi";
 import { useCentralizedDataAnalytics } from "../hooks/analytics/useCentralizedDataAnalytics";
+import { useCacheManagement } from "../hooks/useCacheManagement";
 import { logger } from "../utils/logger";
 import {
   marketOptions,
@@ -34,9 +35,13 @@ const TaskForm = ({
   const [formProgress, setFormProgress] = useState(0);
   const [lastSaved, setLastSaved] = useState(null);
   const [createTask] = useCreateTaskMutation();
+  const [updateTask] = useUpdateTaskMutation();
 
   // Get reporters and monthId from centralized data
   const { reporters = [], monthId } = useCentralizedDataAnalytics();
+  
+  // Cache management
+  const { clearCacheOnDataChange } = useCacheManagement();
 
   // Get field configuration and add options
   const getFieldConfig = useCallback(() => {
@@ -162,13 +167,30 @@ const TaskForm = ({
         return;
       }
 
-      // Create the task - data is already prepared
-      const result = await createTask(preparedData).unwrap();
-      
-      logger.log(`Task ${mode === 'edit' ? 'updated' : 'created'} successfully:`, result);
-      
-      // Show success message
-      showSuccess(`Task ${mode === 'edit' ? 'updated' : 'created'} successfully!`);
+      let result;
+      if (mode === 'edit') {
+        // For edit mode, we need to extract the task ID and format the data correctly
+        const currentTaskId = taskId || customInitialValues?.id;
+        if (!currentTaskId) {
+          throw new Error('Task ID is required for editing');
+        }
+        
+        // Remove the id from updates to avoid conflicts
+        const { id, ...updates } = preparedData;
+        
+        result = await updateTask({
+          monthId,
+          id: currentTaskId,
+          updates
+        }).unwrap();
+        
+        logger.log(`Task updated successfully:`, result);
+        showSuccess(`Task updated successfully!`);
+      } else {
+        result = await createTask(preparedData).unwrap();
+        logger.log(`Task created successfully:`, result);
+        showSuccess(`Task created successfully!`);
+      }
       
       // Reset form only in create mode
       if (mode === 'create') {

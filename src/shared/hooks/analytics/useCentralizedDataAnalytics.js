@@ -35,12 +35,12 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     return userId;
   }, [userId, canAccess]);
 
-  // Skip API calls if not authenticated
+  // Determine if we should skip data fetching
   const shouldSkip = !user || authLoading || isAuthChecking;
   const isValidMonthId = monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
   const shouldSkipMonthData = shouldSkip || !isValidMonthId;
 
-  // Fetch tasks and board status
+  // Always call all hooks to maintain hook order, but use skip parameter to control execution
   const { 
     data: tasksData = { tasks: [], boardExists: false, monthId }, 
     error: tasksError, 
@@ -54,7 +54,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
   const tasks = tasksData.tasks || [];
   const boardData = { exists: tasksData.boardExists, monthId: tasksData.monthId };
 
-  // Fetch users
+  // Always call users query hook
   const { 
     data: allUsers = [], 
     error: allUsersError, 
@@ -64,14 +64,14 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     {},
     { 
       skip: shouldSkip || !canAccess('admin'),
-      keepUnusedDataFor: 300,
+      keepUnusedDataFor: Infinity, // Never expire - Users never change once created
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
     }
   );
 
-  // Fetch current user data
+  // Always call current user query hook
   const { 
     data: currentUser = null, 
     error: currentUserError, 
@@ -81,14 +81,14 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     { userUID: user?.uid },
     { 
       skip: shouldSkip || !user?.uid || canAccess('admin'),
-      keepUnusedDataFor: 300,
+      keepUnusedDataFor: 86400, // 24 hours (24 * 60 * 60 seconds) - User profile rarely changes
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
     }
   );
 
-  // Fetch reporters
+  // Always call reporters query hook
   const { 
     data: reporters = [], 
     error: reportersError, 
@@ -98,7 +98,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     {},
     { 
       skip: shouldSkip,
-      keepUnusedDataFor: 300,
+      keepUnusedDataFor: Infinity, // Never expire - Reporters never change once created
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
@@ -197,7 +197,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     return counts;
   }, [tasks]);
 
-  const getTasksCountByUser = useCallback(() => {
+  const getTasksCountByUser = useCallback((userId) => {
     const counts = {};
     tasks.forEach(task => {
       const userId = task.userUID;
@@ -232,8 +232,23 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     return tasks.filter(task => task.product === product);
   }, [tasks]);
 
-  // Combined loading states
-  const isLoading = tasksLoading || allUsersLoading || currentUserLoading || reportersLoading || authLoading || isAuthChecking;
+  // Combined loading states - only show loading if we're actually fetching new data
+  const isLoading = useMemo(() => {
+    // If we're skipping data fetching, don't show loading
+    if (shouldSkipMonthData) {
+      return false;
+    }
+    
+    // Only show loading for the first load, not for refetches
+    return tasksLoading || allUsersLoading || currentUserLoading || reportersLoading;
+  }, [
+    shouldSkipMonthData,
+    tasksLoading, 
+    allUsersLoading, 
+    currentUserLoading, 
+    reportersLoading
+  ]);
+  
   const isFetching = tasksFetching || allUsersFetching || currentUserFetching || reportersFetching;
 
   // Combined error state

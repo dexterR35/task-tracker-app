@@ -167,7 +167,7 @@ export const usersApi = createApi({
       },
       providesTags: ["Users"],
       // Keep data for 5 minutes and don't refetch unnecessarily
-      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+              keepUnusedDataFor: Infinity, // Never expire - Users never change once created
       // Don't refetch on window focus or reconnect
       refetchOnFocus: false,
       refetchOnReconnect: false,

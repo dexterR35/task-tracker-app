@@ -23,14 +23,13 @@ import LoginPage from "../pages/auth/LoginPage";
 import HomePage from "../pages/HomePage";
 
 // Lazy load dynamic pages that need data
-
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const AdminManagementPage = lazy(() => import("../pages/admin/AdminManagementPage"));
 const NotFoundPage = lazy(() => import("../pages/errorPages/NotFoundPage"));
 
-// Loading component for lazy-loaded pages with fade-in animation
+// Simplified loading component for lazy-loaded pages
 const PageLoader = ({ text = "Loading..." }) => (
-  <div className="min-h-screen flex-center bg-primary animate-fade-in">
+  <div className="min-h-screen flex-center bg-primary">
     <Loader 
       size="xl" 
       text={text} 
@@ -40,12 +39,10 @@ const PageLoader = ({ text = "Loading..." }) => (
   </div>
 );
 
-// Wrapper component for lazy-loaded pages with Suspense and fade-in
+// Wrapper component for lazy-loaded pages with Suspense
 const LazyPage = ({ children, loadingText = "Loading..." }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>
-    <div className="animate-fade-in">
-      {children}
-    </div>
+    {children}
   </Suspense>
 );
 
@@ -80,7 +77,7 @@ const useAuthState = () => {
   return { user, isLoading, isAuthChecking, error, canAccess };
 };
 
-// Unified route protection component with memoization
+// Route protection component with auth checking loader
 const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = true }) => {
   const { user, isLoading, isAuthChecking, error, canAccess } = useAuthState();
   const location = useLocation();
@@ -93,12 +90,12 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
     return children;
   }
 
-  // Show loading state during login/logout operations or initial auth check
-  if (isLoading || isAuthChecking) {
+  // Show loading state during initial auth check (only for auth checking, not login/logout)
+  if (isAuthChecking) {
     return (
       <Loader 
         size="xl" 
-        text={isAuthChecking ? "Checking authentication..." : "Processing..."} 
+        text="Checking authentication..." 
         variant="dots" 
         fullScreen={true}
       />
@@ -124,8 +121,6 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
     }
     return children; // Allow unauthenticated access for login page
   }
-
-
 
   // Auto-redirect admins from /user to /admin
   if (location.pathname === "/user" && canAccess('admin')) {

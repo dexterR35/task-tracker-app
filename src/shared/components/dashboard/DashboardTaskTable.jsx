@@ -2,10 +2,15 @@ import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCurrentMonth } from "../../hooks/useCurrentMonth";
 import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
+import { useUpdateTaskMutation, useDeleteTaskMutation } from "../../../features/tasks/tasksApi";
+import { useCacheManagement } from "../../hooks/useCacheManagement";
 import DynamicButton from "../ui/DynamicButton";
-import TasksTable from "../../task/TasksTable";
-import TaskForm from "../../task/TaskForm";
+import DynamicTable from "../ui/DynamicTable";
+import { getColumns } from "../ui/tableColumns.jsx";
 import { showError, showSuccess } from "../../utils/toast";
+import { logger } from "../../utils/logger";
+import { sanitizeText } from "../../forms/sanitization";
+import TaskForm from "../../task/TaskForm";
 
 const DashboardTaskTable = ({
   userId = null,
@@ -15,9 +20,11 @@ const DashboardTaskTable = ({
   const { user, canAccess } = useAuth();
   const isAdmin = canAccess('admin');
   const { monthId, monthName, boardExists } = useCurrentMonth();
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [rowActionId, setRowActionId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
 
-  // Use the centralized hook directly
+  // Use the centralized hook directly - single source of truth
   const {
     tasks = [],
     users,
@@ -25,28 +32,73 @@ const DashboardTaskTable = ({
     error: tasksError,
   } = useCentralizedDataAnalytics(userId);
 
-  // Handle create task
-  const handleCreateTask = async () => {
-    if (!boardExists) {
-      showError(
-        `Cannot create task: Board for ${monthName || 'current month'} is not created yet. Please create the board first.`
-      );
+  // API hooks for task CRUD
+  const [updateTask] = useUpdateTaskMutation();
+  const [deleteTask] = useDeleteTaskMutation();
+  
+  // Cache management
+  const { clearCacheOnDataChange } = useCacheManagement();
+
+  // Get task columns
+  const taskColumns = getColumns('tasks');
+
+  // Handle task selection
+  const handleTaskSelect = (task) => {
+    showSuccess(`Selected task: ${task.taskName || task.taskNumber}`);
+    console.log('Task selected:', task);
+  };
+
+  // Handle task edit - open modal with TaskForm
+  const handleTaskEdit = (task) => {
+    setEditingTask(task);
+    setShowEditModal(true);
+  };
+
+  // Handle edit form success
+  const handleEditFormSuccess = (result) => {
+    console.log('Task updated successfully:', result);
+    setShowEditModal(false);
+    setEditingTask(null);
+    clearCacheOnDataChange('tasks', 'update');
+    showSuccess("Task updated successfully! The task list will update automatically.");
+  };
+
+  // Handle edit form error
+  const handleEditFormError = (error) => {
+    console.error('Task update failed:', error);
+    showError("Failed to update task. Please try again.");
+  };
+
+  // Handle task delete
+  const handleTaskDelete = async (task) => {
+    if (!window.confirm(`Are you sure you want to delete task: ${task.taskName || task.taskNumber}?`)) {
       return;
     }
-    setShowTaskForm(!showTaskForm);
-  };
 
-  // Handle form success
-  const handleFormSuccess = (result) => {
-    console.log('Task created successfully:', result);
-    setShowTaskForm(false); // Hide form after successful creation
-    showSuccess("Task created successfully! The task list will update automatically.");
-  };
+    try {
+      setRowActionId(task.id);
 
-  // Handle form error
-  const handleFormError = (error) => {
-    console.error('Task creation failed:', error);
-    showError("Failed to create task. Please try again.");
+      // Extract the document ID from the task ID (in case it's a full path)
+      let taskId = task.id;
+      if (typeof taskId === "string" && taskId.includes("/")) {
+        const pathParts = taskId.split("/");
+        taskId = pathParts[pathParts.length - 1];
+      }
+
+      // Preserve the original monthId from the task
+      const taskMonthId = task.monthId || monthId;
+
+      // Delete task using Redux mutation (automatically updates cache)
+      await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
+      
+      clearCacheOnDataChange('tasks', 'delete');
+      showSuccess("Task deleted successfully!");
+    } catch (error) {
+      logger.error("Task delete error:", error);
+      showError(`Failed to delete task: ${error?.message || "Please try again."}`);
+    } finally {
+      setRowActionId(null);
+    }
   };
 
   // Derive title based on context
@@ -84,49 +136,39 @@ const DashboardTaskTable = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Section Header - Only show if not hiding create button */}
-      {!hideCreateButton && (
-        <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2">
-          <h3 className="mb-0">{title}</h3>
-          <div className="flex items-center space-x-2">
-            {boardExists && (
-              <DynamicButton
-                variant="primary"
-                onClick={handleCreateTask}
-                size="sm"
-                iconName="generate"
-                iconPosition="left"
-              >
-                {showTaskForm ? "Hide Form" : "Create Task"}
-              </DynamicButton>
-            )}
-          </div>
+      {/* Section Header */}
+      <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2">
+        <h3 className="mb-0">{title}</h3>
+        <div className="flex items-center space-x-2">
+          {!boardExists && (
+            <div className="text-sm text-red-400">
+              Board not ready for {monthName || 'current month'}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Task Form - Only show if not hiding create button */}
-      {!hideCreateButton && showTaskForm && boardExists && (
-        <div className="mb-6">
-          <TaskForm
-            onSubmit={handleFormSuccess}
-            onError={handleFormError}
-          />
-        </div>
-      )}
-
-      {/* Tasks Table */}
+      {/* Tasks Table - Using DynamicTable with built-in CRUD */}
       <div>
         {tasks.length > 0 ? (
-          <TasksTable 
-            tasks={tasks} 
-            error={null} 
-            monthId={monthId}
-            onSelect={(task) => {
-              // For now, just show a success message since we removed task detail pages
-              // In the future, this could open a modal or expand the row inline
-              showSuccess(`Selected task: ${task.taskName || task.taskNumber}`);
-              console.log('Task selected:', task);
-            }}
+          <DynamicTable
+            data={tasks}
+            columns={taskColumns}
+            tableType="tasks"
+            onSelect={handleTaskSelect}
+            onEdit={handleTaskEdit}
+            onDelete={handleTaskDelete}
+            isLoading={isLoading}
+            error={tasksError}
+            showPagination={true}
+            showFilters={true}
+            showColumnToggle={true}
+            pageSize={25}
+            enableSorting={true}
+            enableFiltering={true}
+            enablePagination={true}
+            enableColumnResizing={true}
+            enableRowSelection={false}
           />
         ) : (
           <div className="border border-gray-700 rounded-lg p-6 text-center">
@@ -139,24 +181,44 @@ const DashboardTaskTable = ({
             <p className="text-sm text-gray-400">
               {isAdmin 
                 ? `No tasks found for ${monthName || 'current month'}.`
-                : `No tasks found for ${monthName || 'current month'}. Create your first task!`
+                : `No tasks found for ${monthName || 'current month'}.`
               }
             </p>
-            {boardExists && !hideCreateButton && (
-              <DynamicButton
-                variant="primary"
-                onClick={handleCreateTask}
-                size="sm"
-                className="mt-3"
-                iconName="generate"
-                iconPosition="left"
-              >
-                Create First Task
-              </DynamicButton>
-            )}
           </div>
         )}
       </div>
+
+      {/* Edit Task Modal */}
+      {showEditModal && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Edit Task: {editingTask.taskName || editingTask.taskNumber}
+              </h2>
+              <DynamicButton
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingTask(null);
+                }}
+                iconName="close"
+                iconPosition="center"
+              />
+            </div>
+            <div className="p-6">
+              <TaskForm
+                mode="edit"
+                taskId={editingTask.id}
+                initialValues={editingTask}
+                onSubmit={handleEditFormSuccess}
+                onError={handleEditFormError}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

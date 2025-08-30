@@ -7,6 +7,8 @@ import { useCurrentMonth } from "../../shared/hooks/useCurrentMonth";
 import { useCreateReporterMutation, useUpdateReporterMutation, useDeleteReporterMutation } from "../../features/reporters/reportersApi";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
+import DynamicTable from "../../shared/components/ui/DynamicTable";
+import { getColumns } from "../../shared/components/ui/tableColumns.jsx";
 import Loader from "../../shared/components/ui/Loader";
 import { showSuccess, showError, showInfo } from "../../shared/utils/toast";
 import { logger } from "../../shared/utils/logger";
@@ -37,6 +39,9 @@ const AdminManagementPage = () => {
   
   // Cache management
   const { clearCacheOnDataChange } = useCacheManagement();
+
+  // Get columns based on active tab
+  const tableColumns = getColumns(activeTab);
 
   // Validation schema for reporters
   const reporterValidationSchema = Yup.object({
@@ -200,6 +205,9 @@ const AdminManagementPage = () => {
     setEditingItem(null);
   };
 
+  // Get current table data
+  const tableData = activeTab === 'users' ? users : reporters;
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Page Header */}
@@ -261,191 +269,25 @@ const AdminManagementPage = () => {
         </DynamicButton>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-gray-800 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-700">
-              <tr>
-                {activeTab === 'users' ? (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Occupation
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Status
-                    </th>
-                  </>
-                ) : (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Reporter
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Department
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Occupation
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Created
-                    </th>
-                  </>
-                )}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-gray-800 divide-y divide-gray-700">
-              {(activeTab === 'users' ? users : reporters)?.map((item) => (
-                <tr key={item.id || item.userUID} className="hover:bg-gray-700">
-                  {activeTab === 'users' ? (
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                              <span className="text-sm font-medium text-white">
-                                {(item.name || item.email || 'U').charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-white">
-                              {item.name || 'No Name'}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.email || 'No Email'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          item.role === 'admin' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {item.role || 'user'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.occupation || 'Not specified'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          Active
-                        </span>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
-                              <span className="text-sm font-medium text-white">
-                                {(item.name || 'R').charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-white">
-                              {item.name || 'No Name'}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.email || 'No Email'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.role || 'Not specified'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.departament || 'Not specified'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.occupation || 'Not specified'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {item.createdAt 
-                          ? new Date(item.createdAt).toLocaleDateString()
-                          : "N/A"
-                        }
-                      </td>
-                    </>
-                  )}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <DynamicButton
-                        variant="edit"
-                        size="xs"
-                        onClick={() => handleEdit(item)}
-                        iconName="edit"
-                        iconPosition="center"
-                        disabled={activeTab === 'users'} // Disable for users until implemented
-                      />
-                      <DynamicButton
-                        variant="danger"
-                        size="xs"
-                        onClick={() => handleDelete(item)}
-                        iconName="delete"
-                        iconPosition="center"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {((activeTab === 'users' && (!users || users.length === 0)) || 
-        (activeTab === 'reporters' && (!reporters || reporters.length === 0))) && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-200 mb-2">No {activeTab} Found</h3>
-          <p className="text-sm text-gray-400 mb-4">
-            {activeTab === 'users' 
-              ? 'No users have been added yet.'
-              : 'No reporters have been added yet.'
-            }
-          </p>
-          <DynamicButton
-            variant="primary"
-            onClick={handleCreate}
-            size="sm"
-            iconName="plus"
-            iconPosition="left"
-            disabled={activeTab === 'users'} // Disable for users until implemented
-          >
-            Add First {activeTab.slice(0, -1)}
-          </DynamicButton>
-        </div>
-      )}
+      {/* Dynamic Table */}
+      <DynamicTable
+        data={tableData || []}
+        columns={tableColumns}
+        tableType={activeTab}
+        onEdit={activeTab === 'reporters' ? handleEdit : null}
+        onDelete={handleDelete}
+        isLoading={isLoading}
+        error={error}
+        showPagination={true}
+        showFilters={true}
+        showColumnToggle={true}
+        pageSize={25}
+        enableSorting={true}
+        enableFiltering={true}
+        enablePagination={true}
+        enableColumnResizing={true}
+        enableRowSelection={false}
+      />
 
       {/* Reporter Form Modal */}
       {showForm && activeTab === 'reporters' && (

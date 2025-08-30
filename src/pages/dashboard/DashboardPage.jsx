@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useCurrentMonth } from "../../shared/hooks/useCurrentMonth";
-import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useUnifiedLoading } from "../../shared/hooks/useUnifiedLoading";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import Loader from "../../shared/components/ui/Loader";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
@@ -16,24 +15,13 @@ import { showInfo, showError, showSuccess } from "../../shared/utils/toast";
 const DashboardPage = () => {
   const { user, canAccess } = useAuth();
   const isAdmin = canAccess('admin');
-  const { 
-    monthId, 
-    monthName, 
-    boardExists, 
-    isLoading: monthLoading, 
-    isGenerating, 
-    generateBoard,
-    startDate,
-    endDate,
-    daysInMonth,
-    isNewMonth
-  } = useCurrentMonth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { clearCacheOnDataChange } = useCacheManagement();
 
   // Local state for UI controls
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
+  const [isUserChanging, setIsUserChanging] = useState(false);
 
   // Get selected user from URL params (admin only)
   const selectedUserId = searchParams.get("user") || "";
@@ -41,18 +29,75 @@ const DashboardPage = () => {
   // Derive userId based on context: URL param > current user
   const userId = isAdmin ? selectedUserId : user?.uid;
 
-  // Single source of truth - all data comes from this hook
-  const dashboardData = useCentralizedDataAnalytics(userId);
+  // Use unified loading hook for data loading (auth is handled by router)
+  const {
+    isLoading,
+    message: loadingMessage,
+    progress,
+    monthId,
+    monthName,
+    startDate,
+    endDate,
+    daysInMonth,
+    boardExists,
+    isGenerating,
+    generateBoard,
+    isNewMonth,
+    dashboardData
+  } = useUnifiedLoading(userId, !!user); // Pass authentication state
 
-  // Combined loading logic
-  const isLoading = monthLoading || isGenerating || dashboardData.isLoading;
+  // Track user selection changes for admin
+  useEffect(() => {
+    if (isAdmin && selectedUserId) {
+      setIsUserChanging(true);
+      // Reset the changing state after a short delay to allow data to load
+      const timer = setTimeout(() => {
+        setIsUserChanging(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setIsUserChanging(false);
+    }
+  }, [selectedUserId, isAdmin]);
 
-  // Show notification when new month is detected
+  // Show notification when new month is detected - ALWAYS call useEffect
   React.useEffect(() => {
     if (isNewMonth && monthName) {
       showInfo(`New month detected: ${monthName}. Board status will be updated automatically.`);
     }
   }, [isNewMonth, monthName]);
+
+  // Show unified loading state for data loading or user changing
+  if (isLoading || isUserChanging) {
+    return (
+      <Loader 
+        size="xl" 
+        variant="spinner" 
+        text={isUserChanging ? "Loading user data..." : loadingMessage || "Loading..."} 
+        fullScreen={true}
+      />
+    );
+  }
+
+  // Don't render anything if not authenticated (router should handle this, but safety check)
+  if (!user) {
+    return null;
+  }
+
+  // Show error state
+  if (dashboardData?.error) {
+    return (
+      <div className="card mt-10">
+        <div className="text-center py-8">
+          <h2>Error Loading Dashboard</h2>
+          <p className="text-sm">
+            {dashboardData.error?.message ||
+              "Failed to load dashboard data. Please try refreshing the page."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Handle user selection (admin only)
   const handleUserSelect = (event) => {
@@ -107,13 +152,14 @@ const DashboardPage = () => {
       );
       return;
     }
-    setShowTaskForm(!showTaskForm);
+    setShowCreateModal(true);
   };
 
   // Handle form success
   const handleFormSuccess = (result) => {
     console.log('Task created successfully:', result);
-    setShowTaskForm(false); // Hide form after successful creation
+    setShowCreateModal(false); // Hide modal after successful creation
+    clearCacheOnDataChange('tasks', 'create');
     showSuccess("Task created successfully! The task list will update automatically.");
   };
 
@@ -123,41 +169,9 @@ const DashboardPage = () => {
     showError("Failed to create task. Please try again.");
   };
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <Loader 
-        size="xl" 
-        variant="spinner" 
-        text={monthLoading ? "Loading current month..." : isGenerating ? "Generating board..." : "Loading dashboard data..."} 
-        fullScreen={true}
-      />
-    );
-  }
-
-  // Don't render anything if not authenticated
-  if (!user) {
-    return null;
-  }
-
-  // Show error state
-  if (dashboardData.error) {
-    return (
-      <div className="card mt-10">
-        <div className="text-center py-8">
-          <h2>Error Loading Dashboard</h2>
-          <p className="text-sm">
-            {dashboardData.error?.message ||
-              "Failed to load dashboard data. Please try refreshing the page."}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Derive title based on context
   const title = isAdmin && selectedUserId 
-    ? `Viewing ${dashboardData.users?.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}'s Board`
+    ? `Viewing ${dashboardData?.users?.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}'s Board`
     : `${user?.name || user?.email}'s - Board`;
 
   // Derive showCreateBoard - only for admins when board doesn't exist
@@ -216,43 +230,40 @@ const DashboardPage = () => {
             <select
               value={selectedUserId}
               onChange={handleUserSelect}
-              className="border border-gray-600 rounded px-3 py-2 bg-gray-800 text-white"
+              disabled={isUserChanging}
+              className={`border border-gray-600 rounded px-3 py-2 bg-gray-800 text-white ${
+                isUserChanging ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <option value="">All Users</option>
-              {dashboardData.users?.map((user) => (
+              {dashboardData?.users?.map((user) => (
                 <option key={user.userUID || user.id} value={user.userUID || user.id}>
                   {user.name || user.email}
                 </option>
               ))}
             </select>
+            {isUserChanging && (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-gray-400">Loading user data...</span>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Create Task Button and Form - Only show when board exists */}
+      {/* Create Task Button - Only show when board exists */}
       {boardExists && (
         <div className="mb-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <DynamicButton
-              variant="primary"
-              onClick={handleCreateTask}
-              size="sm"
-              iconName="generate"
-              iconPosition="left"
-            >
-              {showTaskForm ? "Hide Form" : "Create Task"}
-            </DynamicButton>
-          </div>
-
-          {/* Task Form */}
-          {showTaskForm && (
-            <div className="mb-6">
-              <TaskForm
-                onSubmit={handleFormSuccess}
-                onError={handleFormError}
-              />
-            </div>
-          )}
+          <DynamicButton
+            variant="primary"
+            onClick={handleCreateTask}
+            size="sm"
+            iconName="generate"
+            iconPosition="left"
+          >
+            Create Task
+          </DynamicButton>
         </div>
       )}
 
@@ -270,7 +281,7 @@ const DashboardPage = () => {
             <div className="flex items-center justify-between border-b border-gray-700 pb-2">
               <h3 className="text-lg font-semibold text-white">
                 {isAdmin && selectedUserId 
-                  ? `Tasks for ${dashboardData.users?.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}`
+                  ? `Tasks for ${dashboardData?.users?.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}`
                   : isAdmin 
                   ? "All Tasks" 
                   : "My Tasks"
@@ -304,6 +315,33 @@ const DashboardPage = () => {
             Board not ready for {monthName || 'current month'}
             . Please contact an admin to create the board.
           </p>
+        </div>
+      )}
+
+      {/* Create Task Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Create New Task
+              </h2>
+              <DynamicButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCreateModal(false)}
+                iconName="close"
+                iconPosition="center"
+              />
+            </div>
+            <div className="p-6">
+              <TaskForm
+                mode="create"
+                onSubmit={handleFormSuccess}
+                onError={handleFormError}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
