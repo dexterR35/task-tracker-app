@@ -1,36 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
-import { useAuth } from "../../shared/hooks/useAuth";
+import { useFetchData } from "../../shared/hooks/useFetchData";
 import { useCurrentMonth } from "../../shared/hooks/useCurrentMonth";
 import { useCreateReporterMutation, useUpdateReporterMutation, useDeleteReporterMutation } from "../../features/reporters/reportersApi";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import DynamicTable from "../../shared/components/ui/DynamicTable";
 import { getColumns } from "../../shared/components/ui/tableColumns.jsx";
+import TableInfo from "../../shared/components/ui/TableInfo";
 import Loader from "../../shared/components/ui/Loader";
 import { showSuccess, showError, showInfo } from "../../shared/utils/toast";
 import { logger } from "../../shared/utils/logger";
 import { sanitizeText } from "../../shared/forms/sanitization";
 
 const AdminManagementPage = () => {
-  const { user: currentUser, canAccess } = useAuth();
   const { monthId, monthName } = useCurrentMonth();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [editingItem, setEditingItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [rowActionId, setRowActionId] = useState(null);
 
-  // Get all data using centralized hook (no user filter for admin management)
+  // Get all data using fetch data hook (no user filter for admin management)
   const {
     users,
     reporters,
+    user: currentUser, // Get user from useFetchData instead of useAuth
+    canAccess, // Get canAccess from useFetchData instead of useAuth
     isLoading,
     error,
-    getUserById,
-    getReporterById,
-  } = useCentralizedDataAnalytics();
+  } = useFetchData();
+
+  // Helper functions for getting items by ID
+  const getUserById = useMemo(() => {
+    return (id) => users?.find(user => (user.userUID || user.id) === id);
+  }, [users]);
+
+  const getReporterById = useMemo(() => {
+    return (id) => reporters?.find(reporter => reporter.id === id);
+  }, [reporters]);
 
   // API hooks for reporters
   const [createReporter] = useCreateReporterMutation();
@@ -269,6 +277,13 @@ const AdminManagementPage = () => {
         </DynamicButton>
       </div>
 
+      {/* Table Information */}
+      <TableInfo 
+        tableType={activeTab} 
+        data={tableData || []} 
+        columns={tableColumns} 
+      />
+
       {/* Dynamic Table */}
       <DynamicTable
         data={tableData || []}
@@ -281,6 +296,7 @@ const AdminManagementPage = () => {
         showPagination={true}
         showFilters={true}
         showColumnToggle={true}
+        showActions={true} // You can set this to false to hide the Actions column
         pageSize={25}
         enableSorting={true}
         enableFiltering={true}
@@ -311,11 +327,12 @@ const AdminManagementPage = () => {
               {({ isSubmitting }) => (
                 <Form className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
                       Name *
                     </label>
                     <Field
                       name="name"
+                      id="name"
                       type="text"
                       className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter reporter name"
@@ -324,11 +341,12 @@ const AdminManagementPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
                       Email *
                     </label>
                     <Field
                       name="email"
+                      id="email"
                       type="email"
                       className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter email address"
@@ -337,11 +355,12 @@ const AdminManagementPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-1">
                       Role *
                     </label>
                     <Field
                       name="role"
+                      id="role"
                       type="text"
                       className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter role"
@@ -350,11 +369,12 @@ const AdminManagementPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="departament" className="block text-sm font-medium text-gray-300 mb-1">
                       Department *
                     </label>
                     <Field
                       name="departament"
+                      id="departament"
                       type="text"
                       className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter department"
@@ -363,11 +383,12 @@ const AdminManagementPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="occupation" className="block text-sm font-medium text-gray-300 mb-1">
                       Occupation *
                     </label>
                     <Field
                       name="occupation"
+                      id="occupation"
                       type="text"
                       className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter occupation"

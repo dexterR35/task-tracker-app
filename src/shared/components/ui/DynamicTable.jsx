@@ -1,22 +1,80 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
-  useReactTable,
+  createColumnHelper,
+  flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
+  getSortedRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
-import { useAuth } from '../../hooks/useAuth';
 import { useCurrentMonth } from '../../hooks/useCurrentMonth';
+import { useFetchData } from '../../hooks/useFetchData';
 import DynamicButton from './DynamicButton';
-import { showSuccess, showError } from '../../utils/toast';
+import { showError, showSuccess, showInfo } from '../../utils/toast';
 import { logger } from '../../utils/logger';
 import { getColumns } from "./tableColumns.jsx";
 
 // Column helper for type safety
 const columnHelper = createColumnHelper();
+
+// CSV Export utility function
+const exportToCSV = (data, columns, tableType) => {
+  try {
+    // Get visible columns (excluding actions and selection columns)
+    const visibleColumns = columns.filter(col => 
+      col.id !== 'actions' && col.id !== 'select' && col.accessorKey
+    );
+
+    // Create headers
+    const headers = visibleColumns.map(col => {
+      // Handle different header types
+      if (typeof col.header === 'string') return col.header;
+      if (typeof col.header === 'function') return col.accessorKey || col.id;
+      return col.accessorKey || col.id;
+    }).join(',');
+
+    // Create rows
+    const rows = data.map(row => {
+      return visibleColumns.map(col => {
+        const value = row[col.accessorKey];
+        // Handle different data types
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'object') {
+          // Handle arrays, objects, etc.
+          if (Array.isArray(value)) return value.join('; ');
+          return JSON.stringify(value);
+        }
+        // Escape commas and quotes in string values
+        const stringValue = String(value);
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      }).join(',');
+    });
+
+    // Combine headers and rows
+    const csvContent = [headers, ...rows].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${tableType}_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return true;
+  } catch (error) {
+    logger.error('Error exporting CSV:', error);
+    return false;
+  }
+};
 
 const DynamicTable = ({
   data = [],
@@ -31,6 +89,7 @@ const DynamicTable = ({
   showPagination = true,
   showFilters = true,
   showColumnToggle = true,
+  showActions = true, // New prop to control Actions column visibility
   pageSize = 25,
   enableSorting = true,
   enableFiltering = true,
@@ -39,8 +98,8 @@ const DynamicTable = ({
   enableRowSelection = false,
   onRowSelectionChange = null,
 }) => {
-  const { user, canAccess } = useAuth();
   const { monthId } = useCurrentMonth();
+  const { user, canAccess } = useFetchData();
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState([]);
@@ -59,6 +118,8 @@ const DynamicTable = ({
           id: 'select',
           header: ({ table }) => (
             <input
+              name="select-all"
+              id="select-all"
               type="checkbox"
               checked={table.getIsAllPageRowsSelected()}
               onChange={table.getToggleAllPageRowsSelectedHandler()}
@@ -67,6 +128,8 @@ const DynamicTable = ({
           ),
           cell: ({ row }) => (
             <input
+              name={`select-row-${row.id}`}
+              id={`select-row-${row.id}`}
               type="checkbox"
               checked={row.getIsSelected()}
               onChange={row.getToggleSelectedHandler()}
@@ -79,8 +142,8 @@ const DynamicTable = ({
       );
     }
 
-    // Add action columns
-    const actionColumn = columnHelper.display({
+    // Add action columns only if showActions is true
+    const actionColumn = showActions ? columnHelper.display({
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => {
@@ -126,10 +189,10 @@ const DynamicTable = ({
       },
       enableSorting: false,
       enableHiding: false,
-    });
+    }) : null;
 
-    // Combine base columns, data columns, and action column
-    return [...baseColumns, ...columns, actionColumn];
+    // Combine base columns, data columns, and action column (if exists)
+    return [...baseColumns, ...columns, ...(actionColumn ? [actionColumn] : [])];
   }, [columns, enableRowSelection, onSelect, onEdit, onDelete, rowActionId]);
 
   // Handle delete with confirmation
@@ -237,6 +300,8 @@ const DynamicTable = ({
         {showFilters && (
           <div className="flex-1 max-w-sm">
             <input
+              name={`${tableType}-search`}
+              id={`${tableType}-search`}
               type="text"
               value={globalFilter ?? ''}
               onChange={(e) => setGlobalFilter(e.target.value)}
@@ -250,16 +315,34 @@ const DynamicTable = ({
         <div className="flex items-center space-x-2">
           {/* Column Visibility Toggle */}
           {showColumnToggle && (
-            <div className="relative">
+            <div className="relative group">
               <DynamicButton
                 variant="outline"
                 size="sm"
-                onClick={() => {}} // Will be implemented with dropdown
                 iconName="settings"
                 iconPosition="left"
               >
                 Columns
               </DynamicButton>
+              <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="py-1">
+                  {table.getAllLeafColumns()
+                    .filter(column => column.getCanHide())
+                    .map(column => (
+                      <label key={column.id} className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 cursor-pointer">
+                        <input
+                          name={`column-${column.id}`}
+                          id={`column-${column.id}`}
+                          type="checkbox"
+                          checked={column.getIsVisible()}
+                          onChange={column.getToggleVisibilityHandler()}
+                          className="mr-2 rounded border-gray-500 bg-gray-600"
+                        />
+                        {column.columnDef.header || column.id}
+                      </label>
+                    ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -268,13 +351,21 @@ const DynamicTable = ({
             variant="outline"
             size="sm"
             onClick={() => {
-              // TODO: Implement CSV export
-              // showInfo('Export functionality coming soon!'); // This line was removed as per the new_code
+              const success = exportToCSV(
+                table.getFilteredRowModel().rows.map(row => row.original),
+                columns,
+                tableType
+              );
+              if (success) {
+                showSuccess(`${tableType} exported successfully!`);
+              } else {
+                showError('Failed to export data. Please try again.');
+              }
             }}
             iconName="download"
             iconPosition="left"
           >
-            Export
+            Export CSV
           </DynamicButton>
         </div>
       </div>
@@ -387,6 +478,8 @@ const DynamicTable = ({
             </DynamicButton>
 
             <select
+              name="page-size"
+              id="page-size"
               value={table.getState().pagination.pageSize}
               onChange={(e) => {
                 table.setPageSize(Number(e.target.value));

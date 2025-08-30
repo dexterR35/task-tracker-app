@@ -15,16 +15,14 @@ const LoginPage = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { user, canAccess, isAuthChecking, isLoading: authLoading } = useAuth();
+  const { user, isAuthChecking, isLoading: authLoading } = useAuth();
 
-  // Redirect authenticated users to appropriate dashboard
+  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (!isAuthChecking && !authLoading && user) {
-      const isAdmin = canAccess('admin');
-      const redirectTo = isAdmin ? '/admin/dashboard' : '/user/dashboard';
-      navigate(redirectTo, { replace: true });
+      navigate('/dashboard', { replace: true });
     }
-  }, [user, canAccess, isAuthChecking, authLoading, navigate]);
+  }, [user, isAuthChecking, authLoading, navigate]);
 
   // Show loading while checking authentication
   const showLoading = isAuthChecking || authLoading;
@@ -56,13 +54,11 @@ const LoginPage = () => {
       logger.log("Login successful:", userCredential.user.email);
       
       // Show success message
-      showSuccess("Login successful! Redirecting...");
+      showSuccess("Login successful! first message");
       
-      // After successful login, redirect to appropriate dashboard
+      // After successful login, redirect to dashboard
       // The user data will be available after Firebase auth completes
-      const isAdmin = canAccess('admin');
-      const redirectTo = isAdmin ? '/admin/dashboard' : '/user/dashboard';
-      navigate(redirectTo, { replace: true });
+      navigate('/dashboard', { replace: true });
       
     } catch (error) {
       logger.error("Login failed:", error);

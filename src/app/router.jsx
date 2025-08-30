@@ -6,7 +6,7 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { lazy, Suspense, memo, useCallback } from "react";
+import { lazy, Suspense, memo, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 
 import {
@@ -18,24 +18,22 @@ import {
   selectCanAccessUser,
 } from "../features/auth/authSlice";
 
-import PublicLayout from "../shared/components/layout/PublicLayout";
-import AuthenticatedLayout from "../shared/components/layout/AuthenticatedLayout";
+import AppLayout from "../shared/components/layout/AppLayout";
 import Loader from "../shared/components/ui/Loader";
-import ComingSoonPage from "../shared/components/ui/ComingSoonPage";
 
 // Import static pages directly (no lazy loading needed)
 import LoginPage from "../pages/auth/LoginPage";
 import HomePage from "../pages/HomePage";
 
 // Lazy load dynamic pages that need data
-const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const AdminManagementPage = lazy(
   () => import("../pages/admin/AdminManagementPage")
 );
+const ComingSoonPage = lazy(() => import("../shared/components/ui/ComingSoonPage"));
 const NotFoundPage = lazy(() => import("../pages/errorPages/NotFoundPage"));
 
 // Simplified loading component for lazy-loaded pages
-const PageLoader = ({ text = "Loading...frist" }) => (
+const PageLoader = ({ text = "Loading..." }) => (
   <div className="min-h-screen flex-center bg-primary">
     <Loader size="xl" text={text} variant="spinner" fullScreen={true} />
   </div>
@@ -46,7 +44,7 @@ const LazyPage = ({ children, loadingText = "Loading..." }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>{children}</Suspense>
 );
 
-// Use individual selectors directly for better performance
+// Optimized auth state hook with memoization
 const useAuthState = () => {
   const user = useSelector(selectUser);
   const isLoading = useSelector(selectIsLoading);
@@ -55,9 +53,9 @@ const useAuthState = () => {
   const canAccessAdmin = useSelector(selectCanAccessAdmin);
   const canAccessUser = useSelector(selectCanAccessUser);
 
-  // Create canAccess function locally to avoid useAuth dependency
-  const canAccess = useCallback(
-    (requiredRole) => {
+  // Memoized canAccess function to prevent recreation
+  const canAccess = useMemo(() => {
+    return (requiredRole) => {
       // If still checking auth, don't make access decisions yet
       if (isAuthChecking) {
         return false;
@@ -73,9 +71,8 @@ const useAuthState = () => {
         return !!user;
       }
       return false;
-    },
-    [canAccessAdmin, canAccessUser, user, isAuthChecking]
-  );
+    };
+  }, [canAccessAdmin, canAccessUser, user, isAuthChecking]);
 
   return { user, isLoading, isAuthChecking, error, canAccess };
 };
@@ -126,20 +123,9 @@ ProtectedRoute.displayName = "ProtectedRoute";
 // Unauthorized page component
 const UnauthorizedPage = () => {
   const { user } = useAuthState();
-  const canAccess = useCallback(
-    (requiredRole) => {
-      if (requiredRole === "admin") {
-        return user?.role === "admin";
-      }
-      if (requiredRole === "user") {
-        return user?.role === "user" || user?.role === "admin";
-      }
-      return false;
-    },
-    [user]
-  );
-
-  const isAdmin = canAccess("admin");
+  
+  // Memoized access check
+  const isAdmin = useMemo(() => user?.role === "admin", [user?.role]);
 
   return (
     <div className="min-h-screen flex-center bg-primary">
@@ -197,6 +183,17 @@ const RootLayout = () => {
   const { user, isAuthChecking } = useAuthState();
   const location = useLocation();
 
+  // Memoized route checks
+  const isOnPublicRoute = useMemo(() => 
+    ["/", "/login", "/unauthorized"].includes(location.pathname),
+    [location.pathname]
+  );
+
+  const isOnLoginPage = useMemo(() => 
+    location.pathname === "/login",
+    [location.pathname]
+  );
+
   // Show loading during auth check
   if (isAuthChecking) {
     return (
@@ -210,12 +207,12 @@ const RootLayout = () => {
   }
 
   // If user is authenticated and on login page, redirect to dashboard
-  if (user && location.pathname === "/login") {
+  if (user && isOnLoginPage) {
     return <Navigate to="/dashboard" replace />;
   }
 
   // If not authenticated and trying to access protected routes, redirect to login
-  if (!user && !["/", "/login", "/unauthorized"].includes(location.pathname)) {
+  if (!user && !isOnPublicRoute) {
     return <Navigate to="/login" replace />;
   }
 
@@ -227,9 +224,9 @@ const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
-      // Public routes with PublicLayout
+      // All routes use the same layout
       {
-        element: <PublicLayout />,
+        element: <AppLayout />,
         children: [
           {
             index: true,
@@ -243,17 +240,11 @@ const router = createBrowserRouter([
             path: "unauthorized",
             element: <UnauthorizedPage />,
           },
-        ],
-      },
-
-      // Authenticated routes with AuthenticatedLayout
-      {
-        element: <AuthenticatedLayout />,
-        children: [
-          // Dashboard route that handles both admin and user views
+          
+          // Dashboard route - now handled by AppLayout
           {
             path: "dashboard",
-            element: createUserRoute(DashboardPage, "Loading dashboard..."),
+            element: <div />, // Placeholder - dashboard content is in AppLayout
           },
 
           // Admin management (admin-only, but no /admin in URL)

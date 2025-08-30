@@ -12,6 +12,7 @@ export { default as MonthCalendar } from './ui/MonthCalendar';
 
 // Table components
 export { default as DynamicTable } from './ui/DynamicTable';
+export { default as TableInfo } from './ui/TableInfo';
 export { getColumns } from './ui/tableColumns.jsx';
 
 

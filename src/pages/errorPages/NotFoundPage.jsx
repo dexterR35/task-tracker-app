@@ -1,14 +1,13 @@
-import { useAuth } from "../../shared/hooks/useAuth";
+import { useFetchData } from "../../shared/hooks/useFetchData";
 import { Link } from "react-router-dom";
 import { Icons } from "../../shared/icons";
 
 const NotFoundPage = () => {
-  const { user, canAccess } = useAuth();
+  const { user, canAccess } = useFetchData();
 
   const getHomePath = () => {
     if (!user) return "/";
-    if (canAccess('admin')) return "/admin/dashboard";
-    return "/user/dashboard";
+    return "/dashboard";
   };
 
   return (

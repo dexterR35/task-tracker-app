@@ -13,14 +13,13 @@ import {
   selectCurrentMonthError,
   initializeCurrentMonth,
   generateMonthBoard,
-  setBoardExists
+  setBoardExists,
+  cleanupBoardListener
 } from '../../features/currentMonth/currentMonthSlice';
 import { logger } from '../utils/logger';
 import { format } from 'date-fns';
 
 /**
- * Simplified hook to manage current month
- * Only includes features actually used in the app
  * Automatically detects new month changes
  */
 export const useCurrentMonth = () => {
@@ -28,7 +27,7 @@ export const useCurrentMonth = () => {
   const { user, isAuthChecking } = useAuth();
   const lastMonthIdRef = useRef(null);
   
-  // Get state from Redux store - only what we actually use
+  // Get state from Redux store
   const monthId = useSelector(selectCurrentMonthId);
   const monthName = useSelector(selectCurrentMonthName);
   const startDate = useSelector(selectCurrentMonthStartDate);
@@ -47,7 +46,7 @@ export const useCurrentMonth = () => {
     }
   }, [user, isAuthChecking, monthId, dispatch]);
 
-  // Check for month changes and auto-refresh
+  // Check for month changes 
   useEffect(() => {
     if (!monthId) return;
 
@@ -57,29 +56,17 @@ export const useCurrentMonth = () => {
     // Check if month has changed
     if (monthId !== currentMonthId) {
       logger.log(`[useCurrentMonth] Month changed from ${monthId} to ${currentMonthId}, reinitializing`);
+      
+      // Clean up old month's listener before switching
+      if (lastMonthIdRef.current) {
+        cleanupBoardListener(lastMonthIdRef.current);
+      }
+      
       dispatch(initializeCurrentMonth());
     }
     
     // Store current month for next check
     lastMonthIdRef.current = monthId;
-  }, [monthId, dispatch]);
-
-  // Periodic check for month changes (every hour)
-  useEffect(() => {
-    if (!monthId) return;
-
-    const checkMonthChange = () => {
-      const currentMonthId = format(new Date(), 'yyyy-MM');
-      if (monthId !== currentMonthId) {
-        logger.log(`[useCurrentMonth] Periodic check: Month changed from ${monthId} to ${currentMonthId}, reinitializing`);
-        dispatch(initializeCurrentMonth());
-      }
-    };
-
-    // Check every hour
-    const interval = setInterval(checkMonthChange, 60 * 60 * 1000);
-    
-    return () => clearInterval(interval);
   }, [monthId, dispatch]);
 
   // Set board exists (for when admin creates board)

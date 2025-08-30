@@ -136,6 +136,9 @@ export const initializeCurrentMonth = createAsyncThunk(
     // Check if board exists for current month
     const boardCheckResult = await dispatch(checkMonthBoardExists(monthInfo.monthId)).unwrap();
     
+    // Set up real-time board listener
+    dispatch(setupBoardListener(monthInfo.monthId));
+    
     return {
       monthId: monthInfo.monthId,
       monthName: monthInfo.monthName,
@@ -145,6 +148,51 @@ export const initializeCurrentMonth = createAsyncThunk(
       boardExists: boardCheckResult.exists,
       lastChecked: boardCheckResult.lastChecked
     };
+  }
+);
+
+// Action to set up real-time board listener
+export const setupBoardListener = createAsyncThunk(
+  'currentMonth/setupBoardListener',
+  async (monthId, { dispatch, getState }) => {
+    try {
+      // Import Firebase dynamically to avoid circular dependencies
+      const { db } = await import('../../app/firebase');
+      const { doc, onSnapshot } = await import('firebase/firestore');
+      
+      const monthDocRef = doc(db, "tasks", monthId);
+      
+      // Set up real-time listener for board status
+      const unsubscribe = onSnapshot(
+        monthDocRef,
+        (doc) => {
+          const currentExists = doc.exists();
+          
+          // Dispatch the update - the reducer will handle the state comparison
+          logger.log(`[currentMonthSlice] Board status changed in real-time: ${currentExists} for ${monthId}`);
+          dispatch(setBoardExists(currentExists));
+        },
+        (error) => {
+          logger.error(`[currentMonthSlice] Board listener error:`, error);
+          // If there's an error, assume board doesn't exist
+          dispatch(setBoardExists(false));
+        }
+      );
+      
+      logger.log(`[currentMonthSlice] Real-time board listener set up for ${monthId}`);
+      
+      // Store unsubscribe function in a global map for cleanup
+      if (!window.boardListeners) {
+        window.boardListeners = new Map();
+      }
+      window.boardListeners.set(monthId, unsubscribe);
+      
+      // Return only serializable data
+      return { monthId, success: true };
+    } catch (error) {
+      logger.error(`[currentMonthSlice] Error setting up board listener:`, error);
+      throw error;
+    }
   }
 );
 
@@ -179,9 +227,13 @@ const currentMonthSlice = createSlice({
     
     // Set board exists (for when admin creates board)
     setBoardExists: (state, action) => {
-      state.boardExists = action.payload;
-      state.lastUpdated = Date.now();
-      logger.log(`[currentMonthSlice] Board status set to: ${action.payload}`);
+      const newValue = action.payload;
+      // Only update if the value actually changed
+      if (state.boardExists !== newValue) {
+        state.boardExists = newValue;
+        state.lastUpdated = Date.now();
+        logger.log(`[currentMonthSlice] Board status changed: ${state.boardExists} -> ${newValue}`);
+      }
     }
   },
   extraReducers: (builder) => {
@@ -258,6 +310,16 @@ const currentMonthSlice = createSlice({
       });
   },
 });
+
+// Clean up board listener
+export const cleanupBoardListener = (monthId) => {
+  if (window.boardListeners && window.boardListeners.has(monthId)) {
+    const unsubscribe = window.boardListeners.get(monthId);
+    unsubscribe();
+    window.boardListeners.delete(monthId);
+    logger.log(`[currentMonthSlice] Board listener cleaned up for ${monthId}`);
+  }
+};
 
 export const { 
   clearError, 

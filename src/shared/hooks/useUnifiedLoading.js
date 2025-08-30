@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useCurrentMonth } from './useCurrentMonth';
-import { useCentralizedDataAnalytics } from './analytics/useCentralizedDataAnalytics';
+import { useFetchData } from './useFetchData';
 import { logger } from '../utils/logger';
 
 /**
@@ -28,7 +28,7 @@ export const useUnifiedLoading = (userId = null, isAuthenticated = false) => {
   
   // Only fetch dashboard data when authenticated and month is ready
   const shouldFetchDashboard = isAuthenticated && monthReady;
-  const dashboardData = useCentralizedDataAnalytics(
+  const dashboardData = useFetchData(
     shouldFetchDashboard ? userId : null
   );
 

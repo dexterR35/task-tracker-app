@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 const MultiValueInput = ({
+  name, // Add name prop
   value = [],
   onChange,
   placeholder = "Enter values...",
@@ -94,6 +95,8 @@ const MultiValueInput = ({
         {/* Input field */}
         <input
           ref={inputRef}
+          name={name}
+          id={name}
           type="text"
           value={inputValue}
           onChange={handleInputChange}

@@ -1,4 +1,4 @@
-import { ANALYTICS_TYPES } from "./analyticsTypes";
+import { ANALYTICS_TYPES } from "./analytics/analyticsTypes";
 
 /**
  * Format value based on analytics type
@@ -109,6 +109,163 @@ export const getTrendIcon = (trendDirection, dynamicTrend = null) => {
 };
 
 /**
+ * Get color based on metric type
+ * @param {string} type - The analytics type
+ * @returns {string} Color hex code
+ */
+export const getMetricColor = (type) => {
+  switch (type) {
+    case 'total-tasks': return "#3d48c9";
+    case 'total-hours': return "#2fd181";
+    case 'total-time-with-ai': return "#538cff";
+    case 'ai-tasks': return "#a99952";
+    case 'ai-combined': return "#a99952";
+    case 'development': return "#c10f29";
+    case 'design': return "#eb2743";
+    case 'video': return "#a99952";
+    case 'user-performance': return "#3d48c9";
+    case 'top-reporter': return "#3d48c9";
+    case 'user-reporter': return "#3d48c9";
+    case 'markets': return "#2fd181";
+    case 'products': return "#538cff";
+    default: return "#3d48c9";
+  }
+};
+
+/**
+ * Get enhanced data from analytics
+ * @param {string} type - The analytics type
+ * @param {number} value - The metric value
+ * @param {Object} additionalData - Additional analytics data
+ * @param {Array} reporters - Array of reporters
+ * @returns {Object} Enhanced data object
+ */
+export const getEnhancedData = (type, value, additionalData, reporters) => {
+  const bestAI = additionalData?.aiUsage ? 
+    Object.entries(additionalData.aiUsage).reduce((best, [ai, count]) => 
+      count > (best.count || 0) ? { ai, count } : best, { ai: "No AI Used", count: 0 }
+    ).ai : null;
+  
+  const deliverables = additionalData?.deliverables || null;
+  const bestCategory = additionalData?.bestCategory || "N/A";
+  
+  switch (type) {
+    case 'total-tasks':
+      return {
+        subtitle: "Active Tasks",
+        bestAI: null, // Not shown for tasks
+        deliverables: null, // Not shown for tasks
+        bestCategory: bestCategory,
+        trend: "+12% from last month"
+      };
+    case 'total-hours':
+      return {
+        subtitle: "Hours Tracked",
+        bestAI: null, // Not shown for hours
+        deliverables: null, // Not shown for hours
+        bestCategory: bestCategory,
+        trend: "+8% from last month"
+      };
+    case 'total-time-with-ai':
+      return {
+        subtitle: "AI Assisted Time",
+        bestAI: null, // Not shown for AI time
+        deliverables: null, // Not shown for AI time
+        bestCategory: bestCategory,
+        trend: "+15% from last month"
+      };
+    case 'ai-tasks':
+      return {
+        subtitle: "AI Enhanced Tasks",
+        bestAI: bestAI, // Only shown for AI tasks
+        deliverables: null, // Not shown for AI tasks
+        bestCategory: bestCategory,
+        trend: "+20% from last month"
+      };
+    case 'ai-combined':
+      return {
+        subtitle: "AI Analytics",
+        bestAI: bestAI, // Show best AI
+        deliverables: null, // Not shown for AI
+        bestCategory: bestCategory,
+        trend: "+20% from last month"
+      };
+    case 'development':
+      return {
+        subtitle: "Development Work",
+        bestAI: null, // Not shown for development
+        deliverables: null, // Not shown for development
+        bestCategory: bestCategory,
+        trend: "+10% from last month"
+      };
+    case 'design':
+      return {
+        subtitle: "Design Projects",
+        bestAI: null, // Not shown for design
+        deliverables: deliverables, // Only shown for design
+        bestCategory: bestCategory,
+        trend: "+18% from last month"
+      };
+    case 'video':
+      return {
+        subtitle: "Video Production",
+        bestAI: null, // Not shown for video
+        deliverables: null, // Not shown for video
+        bestCategory: bestCategory,
+        trend: "+25% from last month"
+      };
+    case 'user-performance':
+      return {
+        subtitle: "Team Performance",
+        bestAI: null, // Not shown for performance
+        deliverables: null, // Not shown for performance
+        bestCategory: bestCategory,
+        trend: "+5% from last month"
+      };
+    case 'top-reporter':
+      return {
+        subtitle: "Reporter Team",
+        bestAI: null, // Not shown for reporter
+        deliverables: null, // Not shown for reporter
+        bestCategory: null, // Not shown for reporter
+        trend: "+12% from last month"
+      };
+    case 'user-reporter':
+      return {
+        subtitle: "All Reporters",
+        bestAI: null, // Not shown for reporter
+        deliverables: null, // Not shown for reporter
+        bestCategory: null, // Not shown for reporter
+        trend: "+12% from last month"
+      };
+    case 'markets':
+      return {
+        subtitle: "Active Markets",
+        bestAI: null, // Not shown for markets
+        deliverables: null, // Not shown for markets
+        bestCategory: bestCategory,
+        trend: "+3% from last month"
+      };
+    case 'products':
+      return {
+        subtitle: "Product Focus",
+        bestAI: null, // Not shown for products
+        deliverables: null, // Not shown for products
+        bestCategory: bestCategory,
+        trend: "+7% from last month"
+      };
+    default:
+      return {
+        subtitle: "Current Period",
+        bestAI: null,
+        deliverables: null,
+        bestCategory: "N/A",
+        trend: "+0% from last month"
+      };
+  }
+};
+
+/**
  * Format additional information for task type cards (Development, Design, Video)
  * @param {Object} additionalData - Additional data from analytics
  * @returns {JSX.Element|null} Formatted additional info component
@@ -154,35 +311,44 @@ export const formatTaskTypeAdditionalInfo = (additionalData) => {
  * @returns {JSX.Element|null} Formatted additional info component
  */
 export const formatUserPerformanceAdditionalInfo = (additionalData) => {
-  if (!additionalData?.userStats) return null;
+  // Check if we have performance data
+  if (!additionalData?.completedTasks && !additionalData?.overallScore) {
+    return (
+      <div className="mt-3 text-xs text-gray-500 text-center">
+        No performance data available
+      </div>
+    );
+  }
   
-  const { userStats } = additionalData;
-  const topUsers = [...userStats]
-    .sort((a, b) => b.tasks - a.tasks)
-    .slice(0, 3);
-
   return (
     <div className="mt-3 space-y-2">
-      {topUsers.map((user, index) => (
-        <div
-          key={`${user.name}-${user.userUID || user.id || index}`}
-          className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
-        >
+      {additionalData.completedTasks > 0 && (
+        <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${
-              index === 0 ? 'bg-yellow-400' : 
-              index === 1 ? 'bg-gray-300' : 'bg-orange-500'
-            }`}></div>
-            <span className="text-xs text-gray-300 truncate max-w-20">{user.name}</span>
+            <div className="w-2 h-2 rounded-full bg-green-400"></div>
+            <span className="text-xs text-gray-300">Completed Tasks</span>
           </div>
           <div className="text-xs font-medium text-gray-300">
-            {user.tasks}t / {user.hours.toFixed(1)}h
+            {additionalData.completedTasks}
           </div>
         </div>
-      ))}
-      {userStats.length > 3 && (
-        <div className="text-xs text-gray-500 text-center italic">
-          +{userStats.length - 3} more users
+      )}
+      
+      {additionalData.overallScore > 0 && (
+        <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+            <span className="text-xs text-gray-300">Performance Score</span>
+          </div>
+          <div className="text-xs font-medium text-gray-300">
+            {Math.round(additionalData.overallScore)}%
+          </div>
+        </div>
+      )}
+      
+      {(additionalData.efficiency > 0 || additionalData.productivity > 0) && (
+        <div className="text-xs text-gray-500 text-center">
+          Efficiency: {Math.round(additionalData.efficiency)}% • Productivity: {Math.round(additionalData.productivity)}%
         </div>
       )}
     </div>
@@ -195,50 +361,82 @@ export const formatUserPerformanceAdditionalInfo = (additionalData) => {
  * @returns {JSX.Element|null} Formatted additional info component
  */
 export const formatTopReporterAdditionalInfo = (additionalData) => {
-  if (!additionalData?.reporterStats) {
-    return null;
+  // Check if we have reporter data
+  if (!additionalData?.reporterName || additionalData.reporterName === 'Unknown') {
+    return (
+      <div className="mt-3 text-xs text-gray-500 text-center">
+        No reporter data available
+      </div>
+    );
   }
   
-  const { reporterStats } = additionalData;
-  
-  const topReporters = Object.entries(reporterStats)
-    .map(([reporterId, stats]) => ({
-      id: reporterId,
-      name: stats.name || `Reporter ${reporterId}`,
-      occupation: stats.occupation || 'Reporter',
-      department: stats.departament || 'Unknown',
-      tasks: stats.tasks || 0
-    }))
-    .sort((a, b) => b.tasks - a.tasks) // Sort by task count (highest first)
-    .slice(0, 5); // Show top 5 reporters
-
   return (
     <div className="mt-3 space-y-2">
-      {topReporters.map((reporter, index) => (
+      <div className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-300 truncate max-w-20">
+              {additionalData.reporterName}
+            </span>
+            <span className="text-xs text-gray-500">Top Reporter</span>
+          </div>
+        </div>
+        <div className="text-xs font-medium text-gray-300">
+          {additionalData.topReporterTasks || 0} tasks
+        </div>
+      </div>
+      
+      {additionalData.totalHours > 0 && (
+        <div className="text-xs text-gray-500 text-center">
+          {additionalData.totalHours}h total • {additionalData.averageHours}h avg
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Format additional information for user reporter card (All Reporters)
+ * @param {Object} additionalData - Additional data from analytics
+ * @returns {JSX.Element|null} Formatted additional info component
+ */
+export const formatUserReporterAdditionalInfo = (additionalData) => {
+  // Check if we have reporter data
+  if (!additionalData?.userReporters || additionalData.userReporters.length === 0) {
+    return (
+      <div className="mt-3 text-xs text-gray-500 text-center">
+        No reporter data available
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mt-3 space-y-2">
+      {additionalData.userReporters.slice(0, 3).map((reporter, index) => (
         <div
-          key={`${reporter.name}-${reporter.id || index}`}
+          key={`reporter-${reporter.id}-${index}`}
           className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
         >
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${
-              index === 0 ? 'bg-yellow-400' : 
-              index === 1 ? 'bg-gray-300' : 
-              index === 2 ? 'bg-orange-500' :
-              index === 3 ? 'bg-blue-400' : 'bg-purple-400'
-            }`}></div>
+            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
             <div className="flex flex-col">
-              <span className="text-xs text-gray-300 truncate max-w-20">{reporter.name}</span>
-              <span className="text-xs text-gray-500 truncate max-w-20">{reporter.occupation}</span>
+              <span className="text-xs font-medium text-gray-200 truncate max-w-24">
+                {reporter.name}
+              </span>
+              <span className="text-xs text-gray-400">
+                {reporter.totalTasks}t / {reporter.totalHours.toFixed(1)}h
+              </span>
             </div>
           </div>
-          <div className="text-xs font-medium text-gray-300">
-            {reporter.tasks} tasks
+          <div className="text-xs text-gray-400">
+            {reporter.completionRate.toFixed(0)}%
           </div>
         </div>
       ))}
-      {Object.keys(reporterStats).length > 5 && (
-        <div className="text-xs text-gray-500 text-center italic">
-          +{Object.keys(reporterStats).length - 5} more reporters
+      {additionalData.userReporters.length > 3 && (
+        <div className="text-xs text-gray-500 text-center">
+          +{additionalData.userReporters.length - 3} more reporters
         </div>
       )}
     </div>
@@ -251,15 +449,24 @@ export const formatTopReporterAdditionalInfo = (additionalData) => {
  * @returns {JSX.Element|null} Formatted additional info component
  */
 export const formatMarketsAdditionalInfo = (additionalData) => {
-  if (!additionalData?.markets) return null;
+  if (!additionalData?.marketData || Object.keys(additionalData.marketData).length === 0) {
+    return (
+      <div className="mt-3 text-xs text-gray-500 text-center">
+        No market data available
+      </div>
+    );
+  }
   
-  const markets = [...additionalData.markets].sort((a, b) => b.count - a.count);
+  const markets = Object.entries(additionalData.marketData)
+    .map(([name, data]) => ({ name, count: data.count || 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
   
   return (
     <div className="mt-3 space-y-2">
-      {markets.slice(0, 5).map((m, index) => (
+      {markets.map((market, index) => (
         <div
-          key={`market-${m.name}-${index}`}
+          key={`market-${market.name}-${index}`}
           className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
         >
           <div className="flex items-center space-x-2">
@@ -268,16 +475,16 @@ export const formatMarketsAdditionalInfo = (additionalData) => {
               index === 1 ? 'bg-green-400' : 
               index === 2 ? 'bg-purple-400' : 'bg-gray-400'
             }`}></div>
-            <span className="text-xs text-gray-300 truncate max-w-20">{m.name}</span>
+            <span className="text-xs text-gray-300 truncate max-w-20">{market.name}</span>
           </div>
           <div className="text-xs font-medium text-gray-200">
-            {m.count} tasks
+            {market.count} tasks
           </div>
         </div>
       ))}
-      {markets.length > 5 && (
+      {Object.keys(additionalData.marketData).length > 5 && (
         <div className="text-xs text-gray-500 text-center italic">
-          +{markets.length - 5} more markets
+          +{Object.keys(additionalData.marketData).length - 5} more markets
         </div>
       )}
     </div>
@@ -290,33 +497,42 @@ export const formatMarketsAdditionalInfo = (additionalData) => {
  * @returns {JSX.Element|null} Formatted additional info component
  */
 export const formatProductsAdditionalInfo = (additionalData) => {
-  if (!additionalData?.products) return null;
+  if (!additionalData?.productData || Object.keys(additionalData.productData).length === 0) {
+    return (
+      <div className="mt-3 text-xs text-gray-500 text-center">
+        No product data available
+      </div>
+    );
+  }
   
-  const products = [...additionalData.products].sort((a, b) => b.count - a.count);
+  const products = Object.entries(additionalData.productData)
+    .map(([name, data]) => ({ name, count: data.count || 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
   
   return (
     <div className="mt-3 space-y-2">
-      {products.slice(0, 5).map((p, index) => (
+      {products.map((product, index) => (
         <div
-          key={`product-${p.name}-${index}`}
+          key={`product-${product.name}-${index}`}
           className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg"
         >
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${
-              index === 0 ? 'bg-indigo-400' : 
+              index === 0 ? 'bg-purple-400' : 
               index === 1 ? 'bg-pink-400' : 
-              index === 2 ? 'bg-teal-400' : 'bg-gray-400'
+              index === 2 ? 'bg-indigo-400' : 'bg-gray-400'
             }`}></div>
-            <span className="text-xs text-gray-300 truncate max-w-20">{p.name}</span>
+            <span className="text-xs text-gray-300 truncate max-w-20">{product.name}</span>
           </div>
           <div className="text-xs font-medium text-gray-200">
-            {p.count} tasks
+            {product.count} tasks
           </div>
         </div>
       ))}
-      {products.length > 5 && (
+      {Object.keys(additionalData.productData).length > 5 && (
         <div className="text-xs text-gray-500 text-center italic">
-          +{products.length - 5} more products
+          +{Object.keys(additionalData.productData).length - 5} more products
         </div>
       )}
     </div>
@@ -341,6 +557,9 @@ export const formatAdditionalInfo = (type, additionalData) => {
     
     case ANALYTICS_TYPES.TOP_REPORTER:
       return formatTopReporterAdditionalInfo(additionalData);
+    
+    case ANALYTICS_TYPES.USER_REPORTER:
+      return formatUserReporterAdditionalInfo(additionalData);
     
     case ANALYTICS_TYPES.MARKETS:
       return formatMarketsAdditionalInfo(additionalData);

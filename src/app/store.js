@@ -43,20 +43,22 @@ const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
   return result;
 };
 
-// Performance monitoring middleware
-const performanceMiddleware = (storeAPI) => (next) => (action) => {
-  const startTime = performance.now();
-  const result = next(action);
-  const endTime = performance.now();
-  
-  // Log slow actions for performance monitoring
-  const duration = endTime - startTime;
-  if (duration > 100) { // Log actions taking more than 100ms
-    logger.warn(`Slow action detected: ${action.type} took ${duration.toFixed(2)}ms`);
-  }
-  
-  return result;
-};
+// Performance monitoring middleware - only in development
+const performanceMiddleware = process.env.NODE_ENV === 'development' 
+  ? (storeAPI) => (next) => (action) => {
+      const startTime = performance.now();
+      const result = next(action);
+      const endTime = performance.now();
+      
+      // Log slow actions for performance monitoring
+      const duration = endTime - startTime;
+      if (duration > 100) { // Log actions taking more than 100ms
+        logger.warn(`Slow action detected: ${action.type} took ${duration.toFixed(2)}ms`);
+      }
+      
+      return result;
+    }
+  : (storeAPI) => (next) => (action) => next(action); // No-op in production
 
 // Create the store with all required reducers and middleware
 const store = configureStore({
@@ -99,7 +101,7 @@ const store = configureStore({
       // Custom middleware - order matters for proper execution
       // 1. Error notification middleware (handles rejected actions)
       errorNotificationMiddleware,
-      // 2. Performance monitoring middleware (tracks action timing)
+      // 2. Performance monitoring middleware (tracks action timing) - only in development
       performanceMiddleware,
       // 3. RTK Query API middleware - must be last to handle API actions
       usersApi.middleware,
@@ -109,7 +111,7 @@ const store = configureStore({
   devTools: process.env.NODE_ENV !== 'production',
 });
 
-// Add store utilities for debugging
+// Add store utilities for debugging - only in development
 if (process.env.NODE_ENV === 'development') {
   store.debug = {
     getState: () => store.getState(),

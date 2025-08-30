@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useCallback } from "react";
 import DynamicButton from "../ui/DynamicButton";
 import OptimizedSmallCard from "../ui/OptimizedSmallCard";
-import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
-import { useAuth } from "../../hooks/useAuth";
-import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../utils/analyticsTypes";
+import { useFetchData } from "../../hooks/useFetchData";
+import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../utils/analytics/analyticsTypes";
 
 
 import {
@@ -24,13 +23,13 @@ import {
 // Memoized OptimizedSmallCard component to prevent unnecessary re-renders
 const MemoizedOptimizedSmallCard = React.memo(OptimizedSmallCard);
 
-// Occupation-based card filtering configuration
+// Occupation-based card filtering configuration - moved to constants
 const OCCUPATION_CARD_MAPPING = {
-  'designer': ['design', 'total-tasks', 'total-hours', 'ai-combined','markets', 'products', 'ai-models','user-performance', 'top-reporter'],
-  'developer': ['development', 'total-tasks', 'total-hours', 'ai-combined','markets', 'products', 'ai-models','user-performance', 'top-reporter'],
-  'video-editor': ['video', 'total-tasks', 'total-hours', 'ai-combined','markets', 'products', 'ai-models','user-performance', 'top-reporter'],
-  'admin': ['total-tasks', 'total-hours', 'ai-combined', 'development', 'design', 'video', 'user-performance', 'markets', 'products', 'ai-models', 'deliverables', 'top-reporter'],
-  'user': ['total-tasks', 'total-hours', 'ai-combined', 'development', 'design', 'video', 'top-reporter'] // Default for users without specific occupation
+  'designer': ['design', 'total-tasks', 'total-hours', 'ai-combined', 'markets', 'products', 'ai-models', 'user-performance', 'top-reporter', 'user-reporter'],
+  'developer': ['development', 'total-tasks', 'total-hours', 'ai-combined', 'markets', 'products', 'ai-models', 'user-performance', 'top-reporter', 'user-reporter'],
+  'video-editor': ['video', 'total-tasks', 'total-hours', 'ai-combined', 'markets', 'products', 'ai-models', 'user-performance', 'top-reporter', 'user-reporter'],
+  'admin': ['total-tasks', 'total-hours', 'ai-combined', 'development', 'design', 'video', 'user-performance', 'markets', 'products', 'ai-models', 'deliverables', 'top-reporter', 'user-reporter'],
+  'user': ['total-tasks', 'total-hours', 'ai-combined', 'development', 'design', 'video', 'user-performance', 'markets', 'products', 'ai-models', 'top-reporter', 'user-reporter']
 };
 
 // Configuration array for all metric cards using type-based approach
@@ -128,7 +127,32 @@ const METRIC_CARDS_CONFIG = [
     trendValue: "Active Products",
     trendDirection: "up",
   },
+  {
+    id: "user-reporter",
+    title: "All Reporters",
+    type: ANALYTICS_TYPES.USER_REPORTER,
+    icon: UserIcon,
+    trend: true,
+    trendValue: "All Reporters",
+    trendDirection: "up",
+  },
 ];
+
+// Memoized card filtering hook to eliminate redundant calculations
+const useFilteredCards = (user, userOccupation) => {
+  return useMemo(() => {
+    // For admins, always show all cards regardless of which user they're viewing
+    // For regular users, filter based on their occupation
+    const isAdmin = user?.role === 'admin';
+    const occupation = userOccupation || (isAdmin ? 'admin' : (user?.occupation || user?.role || 'user'));
+    
+    // Get allowed cards for this occupation
+    const allowedCardIds = OCCUPATION_CARD_MAPPING[occupation] || OCCUPATION_CARD_MAPPING['user'];
+    
+    // Filter cards based on occupation
+    return METRIC_CARDS_CONFIG.filter(card => allowedCardIds.includes(card.id));
+  }, [user?.role, user?.occupation, userOccupation]);
+};
 
 const OptimizedTaskMetricsBoard = ({
   userId = null,
@@ -137,10 +161,10 @@ const OptimizedTaskMetricsBoard = ({
   userOccupation = null, // Allow passing specific occupation
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
-  const { user } = useAuth();
   
   // Use the centralized hook directly
   const {
+    user,
     analytics,
     getMetric,
     getAllMetrics,
@@ -154,30 +178,16 @@ const OptimizedTaskMetricsBoard = ({
     getFilteredData,
     getUserById,
     getReporterById
-  } = useCentralizedDataAnalytics(userId);
+  } = useFetchData(userId);
+  
+  // Use memoized card filtering
+  const filteredCardsConfig = useFilteredCards(user, userOccupation);
   
   // Don't render if not authenticated
   if (!user) {
     return null;
   }
-  
-  // For admins, always show all cards regardless of which user they're viewing
-  // For regular users, filter based on their occupation
-  const isAdmin = user?.role === 'admin';
-  const occupation = userOccupation || (isAdmin ? 'admin' : (user?.occupation || user?.role || 'user'));
-  
-  // Get allowed cards for this occupation - memoized to prevent recalculation
-  const allowedCardIds = useMemo(() => 
-    OCCUPATION_CARD_MAPPING[occupation] || OCCUPATION_CARD_MAPPING['user'],
-    [occupation]
-  );
-  
-  // Filter cards based on occupation - memoized to prevent recalculation
-  const filteredCardsConfig = useMemo(() => 
-    METRIC_CARDS_CONFIG.filter(card => allowedCardIds.includes(card.id)),
-    [allowedCardIds]
-  );
-  
+
   const toggleTableButton = useCallback(() => {
     setShowKeyMetrics(!showKeyMetrics);
   }, [showKeyMetrics]);
@@ -256,6 +266,7 @@ const OptimizedTaskMetricsBoard = ({
           />
         );
       } catch (error) {
+        console.error(`[DashboardMetrics] Error rendering card ${cardConfig.id}:`, error);
         return (
           <div key={cardConfig.id} className="text-center text-red-400 py-4">
             Error loading {cardConfig.title}
@@ -284,31 +295,51 @@ const OptimizedTaskMetricsBoard = ({
     );
   }
 
+  // Temporary debug section - remove this after fixing the issue
+  const debugSection = process.env.NODE_ENV === 'development' && (
+    <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Debug Info</h3>
+      <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+        <p>User Role: {user?.role}</p>
+        <p>User Occupation: {user?.occupation}</p>
+        <p>Filtered Cards Count: {filteredCardsConfig.length}</p>
+        <p>All Available Cards: {METRIC_CARDS_CONFIG.map(card => card.id).join(', ')}</p>
+        <p>Analytics Available: {analytics ? 'Yes' : 'No'}</p>
+        <p>Has Data: {hasData ? 'Yes' : 'No'}</p>
+        <p>Month ID: {monthId}</p>
+        <p>User ID: {userId}</p>
+      </div>
+    </div>
+  );
+
   // ALWAYS show the metrics board - don't hide it when no data
   // The cards will show zero values if no data is available
   return (
     <div className={`space-y-6 ${className}`}>
-      <div className="flex-center !flex-row !items-end !justify-between border-b border-gray-700 pb-2 mb-6">
-        <h3 className="mb-0">Task Metrics Per Month</h3>
-        <DynamicButton
-          onClick={toggleTableButton}
-          variant="outline"
-          icon={showKeyMetrics ? ChevronUpIcon : ChevronDownIcon}
-          size="sm"
-          className="w-38"
-        >
-          {showKeyMetrics ? "Hide Cards" : "Show Cards"}
-        </DynamicButton>
-      </div>
+      {debugSection}
       
-      {/* Small Cards Section */}
-      {showSmallCards && showKeyMetrics && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Metrics Cards Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Key Metrics
+          </h2>
+          <DynamicButton
+            variant="secondary"
+            size="sm"
+            onClick={toggleTableButton}
+            icon={showKeyMetrics ? ChevronUpIcon : ChevronDownIcon}
+          >
+            {showKeyMetrics ? "Hide" : "Show"} Metrics
+          </DynamicButton>
+        </div>
+
+        {showKeyMetrics && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {metricCards}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

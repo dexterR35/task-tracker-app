@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import Loader from './Loader';
 import {
   formatAnalyticsValue,
@@ -6,30 +6,13 @@ import {
   getTrendColor,
   getTrendIcon,
   formatAdditionalInfo,
-} from "../../utils/formatUtils.jsx";
+  getMetricColor,
+  getEnhancedData,
+} from "../../utils/formatUtils";
 import { FiArrowUp, FiArrowDown, FiMinus, FiUser, FiZap, FiPackage, FiTarget, FiTrendingUp, FiTrendingDown, FiActivity } from "react-icons/fi";
-import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
-import { useAuth } from "../../hooks/useAuth";
+import { useFetchData } from "../../hooks/useFetchData";
 import { useCurrentMonth } from "../../hooks/useCurrentMonth";
 
-// Get color based on metric type
-const getMetricColor = (type) => {
-  switch (type) {
-    case 'total-tasks': return "#3d48c9";
-    case 'total-hours': return "#2fd181";
-    case 'total-time-with-ai': return "#538cff";
-    case 'ai-tasks': return "#a99952";
-    case 'ai-combined': return "#a99952";
-    case 'development': return "#c10f29";
-    case 'design': return "#eb2743";
-    case 'video': return "#a99952";
-    case 'user-performance': return "#3d48c9";
-    case 'top-reporter': return "#3d48c9";
-    case 'markets': return "#2fd181";
-    case 'products': return "#538cff";
-    default: return "#3d48c9";
-  }
-};
 
 // Get reporter name from reporter ID (supports both document ID and reporterUID)
 const getReporterName = (reporterId, reporters) => {
@@ -42,122 +25,6 @@ const getReporterName = (reporterId, reporters) => {
 };
 
 // Get enhanced data from analytics
-const getEnhancedData = (type, value, additionalData, reporters) => {
-  const bestAI = additionalData?.aiUsage ? 
-    Object.entries(additionalData.aiUsage).reduce((best, [ai, count]) => 
-      count > (best.count || 0) ? { ai, count } : best, { ai: "No AI Used", count: 0 }
-    ).ai : null;
-  
-  const deliverables = additionalData?.deliverables || null;
-  const bestCategory = additionalData?.bestCategory || "N/A";
-  
-  switch (type) {
-    case 'total-tasks':
-      return {
-        subtitle: "Active Tasks",
-        bestAI: null, // Not shown for tasks
-        deliverables: null, // Not shown for tasks
-        bestCategory: bestCategory,
-        trend: "+12% from last month"
-      };
-    case 'total-hours':
-      return {
-        subtitle: "Hours Tracked",
-        bestAI: null, // Not shown for hours
-        deliverables: null, // Not shown for hours
-        bestCategory: bestCategory,
-        trend: "+8% from last month"
-      };
-    case 'total-time-with-ai':
-      return {
-        subtitle: "AI Assisted Time",
-        bestAI: null, // Not shown for AI time
-        deliverables: null, // Not shown for AI time
-        bestCategory: bestCategory,
-        trend: "+15% from last month"
-      };
-    case 'ai-tasks':
-      return {
-        subtitle: "AI Enhanced Tasks",
-        bestAI: bestAI, // Only shown for AI tasks
-        deliverables: null, // Not shown for AI tasks
-        bestCategory: bestCategory,
-        trend: "+20% from last month"
-      };
-    case 'ai-combined':
-      return {
-        subtitle: "AI Analytics",
-        bestAI: bestAI, // Show best AI
-        deliverables: null, // Not shown for AI
-        bestCategory: bestCategory,
-        trend: "+20% from last month"
-      };
-    case 'development':
-      return {
-        subtitle: "Development Work",
-        bestAI: null, // Not shown for development
-        deliverables: null, // Not shown for development
-        bestCategory: bestCategory,
-        trend: "+10% from last month"
-      };
-    case 'design':
-      return {
-        subtitle: "Design Projects",
-        bestAI: null, // Not shown for design
-        deliverables: deliverables, // Only shown for design
-        bestCategory: bestCategory,
-        trend: "+18% from last month"
-      };
-    case 'video':
-      return {
-        subtitle: "Video Production",
-        bestAI: null, // Not shown for video
-        deliverables: null, // Not shown for video
-        bestCategory: bestCategory,
-        trend: "+25% from last month"
-      };
-    case 'user-performance':
-      return {
-        subtitle: "Team Performance",
-        bestAI: null, // Not shown for performance
-        deliverables: null, // Not shown for performance
-        bestCategory: bestCategory,
-        trend: "+5% from last month"
-      };
-    case 'markets':
-      return {
-        subtitle: "Active Markets",
-        bestAI: null, // Not shown for markets
-        deliverables: null, // Not shown for markets
-        bestCategory: bestCategory,
-        trend: "+3% from last month"
-      };
-    case 'products':
-      return {
-        subtitle: "Product Focus",
-        bestAI: null, // Not shown for products
-        deliverables: null, // Not shown for products
-        bestCategory: bestCategory,
-        trend: "+7% from last month"
-      };
-    case 'top-reporter':
-      return {
-        subtitle: "Reporter Team",
-        bestAI: null, // Not shown for reporter
-        deliverables: null, // Not shown for reporter
-        bestCategory: null, // Not shown for reporter
-        trend: "+12% from last month"
-      };
-    default:
-      return {
-        subtitle: "Current Period",
-        bestAI: null,
-        deliverables: null,
-        bestCategory: "N/A",
-        trend: "+0% from last month"
-      };
-  }
-};
 
 /**
  * Enhanced Optimized SmallCard Component
@@ -177,11 +44,10 @@ const OptimizedSmallCard = ({
   onClick,
   ...props
 }) => {
-  const { user } = useAuth();
   const { monthId } = useCurrentMonth();
   
   // Use the centralized hook directly
-  const { reporters: apiReporters = [] } = useCentralizedDataAnalytics(userId);
+  const { user, reporters: apiReporters = [] } = useFetchData(userId);
 
   // Use provided analytics data or fallback to zero values
   const metricData = analyticsData || {

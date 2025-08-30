@@ -315,6 +315,7 @@ const DynamicForm = ({
               
               return (
                 <MultiValueInput
+                  name={field.name}
                   value={formikField.value || []}
                   onChange={(newValue) => {
                     formikField.onChange({

@@ -9,8 +9,6 @@ import {
   selectIsLoading,
   selectIsAuthChecking,
   selectAuthError,
-  selectUserRole,
-  selectUserPermissions,
   selectCanAccessAdmin,
   selectCanAccessUser,
 } from '../../features/auth/authSlice';
@@ -25,13 +23,11 @@ import {
 export const useAuth = () => {
   const dispatch = useDispatch();
 
-  // Use individual selectors for better performance and memoization
+  // Core state selectors
   const user = useSelector(selectUser);
   const isLoading = useSelector(selectIsLoading);
   const isAuthChecking = useSelector(selectIsAuthChecking);
   const error = useSelector(selectAuthError);
-  const role = useSelector(selectUserRole);
-  const permissions = useSelector(selectUserPermissions);
   const canAccessAdmin = useSelector(selectCanAccessAdmin);
   const canAccessUser = useSelector(selectCanAccessUser);
 
@@ -40,13 +36,34 @@ export const useAuth = () => {
     if (!user) return null;
     return {
       ...user,
-      role: user.role || 'user',
-      isActive: user.isActive !== false,
+      // Core properties (used in tables and UI)
+      userUID: user.userUID || user.uid || user.id || '',
       email: user.email || '',
       name: user.name || '',
-      uid: user.uid || ''
+      
+      // Role and permissions (used for filtering and permissions)
+      role: user.role || 'user',
+      occupation: user.occupation || user.role || 'user',
+      isActive: user.isActive !== false,
+      
+      // Timestamp (used in user/reporter tables)
+      createdAt: user.createdAt || null,
+      
+      // Compatibility (used internally)
+      uid: user.uid || user.userUID || user.id || '',
+      id: user.id || user.uid || user.userUID || ''
     };
-  }, [user?.uid, user?.role, user?.isActive, user?.email, user?.name]);
+  }, [
+    user?.userUID,
+    user?.uid, 
+    user?.id,
+    user?.email, 
+    user?.name,
+    user?.role, 
+    user?.occupation,
+    user?.isActive,
+    user?.createdAt
+  ]);
 
   // Auth actions
   const login = useCallback(async (credentials) => {
@@ -90,10 +107,6 @@ export const useAuth = () => {
     return false;
   }, [canAccessAdmin, canAccessUser, user]);
 
-  const hasPermission = useCallback((permission) => {
-    return permissions.includes(permission) || role === 'admin';
-  }, [permissions, role]);
-
   // Simplified auth status check
   const isReady = useCallback(() => {
     return !isAuthChecking && !isLoading;
@@ -106,15 +119,10 @@ export const useAuth = () => {
     isAuthChecking,
     error,
     
-    // Role and permissions
-    role,
-    permissions,
-    
-    // Access control (primary API)
+    // Access control
     canAccess,
-    hasPermission,
     
-    // Actions
+    // Auth actions
     login,
     logout,
     clearError,

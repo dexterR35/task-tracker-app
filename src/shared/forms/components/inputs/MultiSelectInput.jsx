@@ -294,6 +294,8 @@ const MultiSelectInput = forwardRef(({
                     <div className="p-2">
                       <input
                         ref={inputRef}
+                        name={`${name}_search`}
+                        id={`${name}_search`}
                         type="text"
                         placeholder="Search options..."
                         value={searchTerm}

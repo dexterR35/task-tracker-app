@@ -1,4 +1,30 @@
-import { format } from 'date-fns';
+import { format, parseISO, isValid, startOfMonth, endOfMonth } from 'date-fns';
+
+// Centralized month ID generation to eliminate redundancy
+export const generateMonthId = (date = new Date()) => {
+  return format(date, 'yyyy-MM');
+};
+
+// Centralized month ID validation
+export const isValidMonthId = (monthId) => {
+  return monthId && 
+         typeof monthId === 'string' && 
+         /^\d{4}-\d{2}$/.test(monthId);
+};
+
+// Centralized month info generation
+export const getMonthInfo = (date = new Date()) => {
+  const start = startOfMonth(date);
+  const end = endOfMonth(date);
+  
+  return {
+    monthId: generateMonthId(date),
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+    monthName: format(date, 'MMMM yyyy'),
+    daysInMonth: end.getDate()
+  };
+};
 
 /**
  * Normalize timestamp to consistent format

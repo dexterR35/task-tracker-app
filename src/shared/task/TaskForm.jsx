@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "../hooks/useAuth";
+import React, { useState, useCallback, useMemo } from "react";
 import { useCreateTaskMutation, useUpdateTaskMutation } from "../../features/tasks/tasksApi";
-import { useCentralizedDataAnalytics } from "../hooks/analytics/useCentralizedDataAnalytics";
-import { useCacheManagement } from "../hooks/useCacheManagement";
+import { useFetchData } from "../hooks/useFetchData";
 import { logger } from "../utils/logger";
 import {
   marketOptions,
@@ -29,7 +27,6 @@ const TaskForm = ({
   onFormChange = null, // Callback for form changes
   autoSave = false, // Enable auto-save functionality
 }) => {
-  const { user } = useAuth();
   const [outerSubmitting, setOuterSubmitting] = useState(false);
   const [formData, setFormData] = useState(null);
   const [formProgress, setFormProgress] = useState(0);
@@ -37,12 +34,9 @@ const TaskForm = ({
   const [createTask] = useCreateTaskMutation();
   const [updateTask] = useUpdateTaskMutation();
 
-  // Get reporters and monthId from centralized data
-  const { reporters = [], monthId } = useCentralizedDataAnalytics();
+  // Get data from centralized hook (including user)
+  const { user, reporters = [], monthId } = useFetchData();
   
-  // Cache management
-  const { clearCacheOnDataChange } = useCacheManagement();
-
   // Get field configuration and add options
   const getFieldConfig = useCallback(() => {
     const fields = [...TASK_FORM_FIELDS];

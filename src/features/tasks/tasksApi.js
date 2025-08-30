@@ -9,7 +9,6 @@ import {
   addDoc,
   doc,
   getDoc,
-  getDocFromServer,
   serverTimestamp,
   onSnapshot,
   limit,
@@ -139,14 +138,7 @@ export const tasksApi = createApi({
             return { error: { message: "Authentication required" } };
           }
 
-          // Check if board exists first
-          const monthDocRef = doc(db, "tasks", monthId);
-          const monthDoc = await getDoc(monthDocRef);
-
-          if (!monthDoc.exists()) {
-            return { data: { tasks: [], boardExists: false, monthId } };
-          }
-
+          // Always return boardExists: true - let currentMonthSlice handle board status
           const normalizedUserId =
             userId && userId.trim() !== "" ? userId : null;
           const tasks = await fetchTasksFromFirestore(
@@ -169,20 +161,12 @@ export const tasksApi = createApi({
       ) {
         let unsubscribe = null;
         let lastUpdateTime = 0;
-        const updateDebounce = 100; // Debounce updates by 100ms
+        const updateDebounce = 200; // Debounce updates by 200ms
 
         try {
           await cacheDataLoaded;
 
-          // Check if board exists
-          const monthDocRef = doc(db, "tasks", arg.monthId);
-          const monthDoc = await getDoc(monthDocRef);
-
-          if (!monthDoc.exists()) {
-            updateCachedData(() => ({ tasks: [], boardExists: false, monthId: arg.monthId }));
-            return;
-          }
-
+          // Set up task listener - let currentMonthSlice handle board status
           const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
           let query = fsQuery(colRef, orderBy("createdAt", "desc"));
 

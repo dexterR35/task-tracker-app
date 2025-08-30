@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
 import { useCurrentMonth } from "../../hooks/useCurrentMonth";
-import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
+import { useFetchData } from "../../hooks/useFetchData.js";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../../../features/tasks/tasksApi";
 import { useCacheManagement } from "../../hooks/useCacheManagement";
 import DynamicButton from "../ui/DynamicButton";
@@ -17,8 +16,6 @@ const DashboardTaskTable = ({
   className = "",
   hideCreateButton = false, // New prop to hide the create button
 }) => {
-  const { user, canAccess } = useAuth();
-  const isAdmin = canAccess('admin');
   const { monthId, monthName, boardExists } = useCurrentMonth();
   const [rowActionId, setRowActionId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -28,9 +25,13 @@ const DashboardTaskTable = ({
   const {
     tasks = [],
     users,
+    user,
+    canAccess,
     isLoading,
     error: tasksError,
-  } = useCentralizedDataAnalytics(userId);
+  } = useFetchData(userId);
+
+  const isAdmin = canAccess('admin');
 
   // API hooks for task CRUD
   const [updateTask] = useUpdateTaskMutation();
@@ -108,32 +109,83 @@ const DashboardTaskTable = ({
     ? "All Tasks" 
     : "My Tasks";
 
-  // Show loading state
-  if (isLoading) {
+  // Render loading state
+  const renderLoadingState = () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading tasks...</p>
+      </div>
+    </div>
+  );
+
+  // Render error state
+  const renderErrorState = () => (
+    <div className="card mt-4">
+      <div className="text-center py-4">
+        <h3 className="text-lg font-semibold text-red-400 mb-2">Error Loading Tasks</h3>
+        <p className="text-sm text-gray-400">
+          {tasksError?.message || "Failed to load tasks data. Please try refreshing the page."}
+        </p>
+      </div>
+    </div>
+  );
+
+  // Render empty state
+  const renderEmptyState = () => (
+    <div className="border border-gray-700 rounded-lg p-6 text-center">
+      <div className="text-gray-400 mb-2">
+        <svg className="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-200 mb-2">No Tasks Found</h3>
+      <p className="text-sm text-gray-400">
+        {isAdmin 
+          ? `No tasks found for ${monthName || 'current month'}.`
+          : `No tasks found for ${monthName || 'current month'}.`
+        }
+      </p>
+    </div>
+  );
+
+  // Render edit modal
+  const renderEditModal = () => {
+    if (!showEditModal || !editingTask) return null;
+    
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading tasks...</p>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Edit Task: {editingTask.taskName || editingTask.taskNumber}
+            </h2>
+            <DynamicButton
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowEditModal(false);
+                setEditingTask(null);
+              }}
+              iconName="close"
+              iconPosition="center"
+            />
+          </div>
+          <div className="p-6">
+            <TaskForm
+              mode="edit"
+              taskId={editingTask.id}
+              initialValues={editingTask}
+              onSubmit={handleEditFormSuccess}
+              onError={handleEditFormError}
+            />
+          </div>
         </div>
       </div>
     );
-  }
+  };
 
-  // Show error state
-  if (tasksError) {
-    return (
-      <div className="card mt-4">
-        <div className="text-center py-4">
-          <h3 className="text-lg font-semibold text-red-400 mb-2">Error Loading Tasks</h3>
-          <p className="text-sm text-gray-400">
-            {tasksError?.message || "Failed to load tasks data. Please try refreshing the page."}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  // Main render - all hooks are called before this point
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Section Header */}
@@ -150,7 +202,9 @@ const DashboardTaskTable = ({
 
       {/* Tasks Table - Using DynamicTable with built-in CRUD */}
       <div>
-        {tasks.length > 0 ? (
+        {isLoading ? renderLoadingState() : 
+         tasksError ? renderErrorState() :
+         tasks.length > 0 ? (
           <DynamicTable
             data={tasks}
             columns={taskColumns}
@@ -170,55 +224,11 @@ const DashboardTaskTable = ({
             enableColumnResizing={true}
             enableRowSelection={false}
           />
-        ) : (
-          <div className="border border-gray-700 rounded-lg p-6 text-center">
-            <div className="text-gray-400 mb-2">
-              <svg className="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-200 mb-2">No Tasks Found</h3>
-            <p className="text-sm text-gray-400">
-              {isAdmin 
-                ? `No tasks found for ${monthName || 'current month'}.`
-                : `No tasks found for ${monthName || 'current month'}.`
-              }
-            </p>
-          </div>
-        )}
+        ) : renderEmptyState()}
       </div>
 
       {/* Edit Task Modal */}
-      {showEditModal && editingTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Edit Task: {editingTask.taskName || editingTask.taskNumber}
-              </h2>
-              <DynamicButton
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingTask(null);
-                }}
-                iconName="close"
-                iconPosition="center"
-              />
-            </div>
-            <div className="p-6">
-              <TaskForm
-                mode="edit"
-                taskId={editingTask.id}
-                initialValues={editingTask}
-                onSubmit={handleEditFormSuccess}
-                onError={handleEditFormError}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {renderEditModal()}
     </div>
   );
 };

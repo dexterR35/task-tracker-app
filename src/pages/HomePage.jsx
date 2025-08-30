@@ -1,7 +1,7 @@
 import React from "react";
 import DynamicButton from "../shared/components/ui/DynamicButton";
 import netbetLogo from "../assets/netbet-logo.png";
-import { useAuth } from "../shared/hooks/useAuth";
+import { useFetchData } from "../shared/hooks/useFetchData";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -320,7 +320,7 @@ const HomepageCard = ({ card }) => {
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, canAccess } = useAuth();
+  const { user, canAccess } = useFetchData();
   const isAuthenticated = !!user;
 
 

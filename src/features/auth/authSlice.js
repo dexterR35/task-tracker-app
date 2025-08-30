@@ -50,7 +50,6 @@ const normalizeUser = (firebaseUser, firestoreData) => {
     role: firestoreData.role,
     occupation: firestoreData.occupation || "user",
     createdAt: createdAtMs,
-    permissions: Array.isArray(firestoreData.permissions) ? [...firestoreData.permissions].sort() : [],
     isActive: firestoreData.isActive !== false, // Default to true if not specified
   };
 };
@@ -237,8 +236,7 @@ const authSlice = createSlice({
         state.user.role !== user.role ||
         state.user.name !== user.name ||
         state.user.occupation !== user.occupation ||
-        state.user.isActive !== user.isActive ||
-        JSON.stringify(state.user.permissions) !== JSON.stringify(user.permissions);
+        state.user.isActive !== user.isActive;
       
       if (userChanged) {
         state.user = user;
@@ -308,16 +306,6 @@ export const selectIsLoading = (state) => state.auth.isLoading;
 export const selectIsAuthChecking = (state) => state.auth.isAuthChecking;
 export const selectAuthError = (state) => state.auth.error;
 
-export const selectUserRole = (state) => state.auth.user?.role;
-export const selectIsAdmin = (state) => state.auth.user?.role === "admin";
-export const selectIsUser = (state) => state.auth.user?.role === "user";
-
-// Memoized selector for user permissions to prevent unnecessary re-renders
-export const selectUserPermissions = createSelector(
-  [selectUser],
-  (user) => user?.permissions || []
-);
-
 export const selectIsUserActive = (state) =>
   state.auth.user?.isActive !== false;
 
@@ -344,10 +332,6 @@ export const selectAuthState = createSelector(
     selectIsLoading,
     selectIsAuthChecking,
     selectAuthError,
-    selectUserRole,
-    selectIsAdmin,
-    selectIsUser,
-    selectUserPermissions,
     selectIsUserActive,
     selectCanAccessAdmin,
     selectCanAccessUser
@@ -357,10 +341,6 @@ export const selectAuthState = createSelector(
     isLoading,
     isAuthChecking,
     error,
-    role,
-    isAdmin,
-    isUser,
-    permissions,
     isUserActive,
     canAccessAdmin,
     canAccessUser
@@ -369,10 +349,6 @@ export const selectAuthState = createSelector(
     isLoading,
     isAuthChecking,
     error,
-    role,
-    isAdmin,
-    isUser,
-    permissions,
     isUserActive,
     canAccessAdmin,
     canAccessUser
