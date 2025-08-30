@@ -96,8 +96,8 @@ const store = configureStore({
       // 2. Performance monitoring middleware (tracks action timing)
       performanceMiddleware,
       // 3. RTK Query API middleware - must be last to handle API actions
-      tasksApi.middleware,
       usersApi.middleware,
+      tasksApi.middleware,
       reportersApi.middleware,
     ]),
   devTools: process.env.NODE_ENV !== 'production',

@@ -40,22 +40,7 @@ const TasksPage = () => {
   // Show loading state if data is being fetched or loaded
   const showLoading = isLoading || isFetching;
 
-  // Don't render if not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen flex-center">
-        <div className="card p-8 text-center max-w-md mx-4">
-          <h2 className="text-red-error mb-4">Access Denied</h2>
-          <p className="mb-6">
-            You need to be logged in to access this page.
-          </p>
-          <DynamicButton onClick={() => navigate('/login')} variant="primary">
-            Login
-          </DynamicButton>
-        </div>
-      </div>
-    );
-  }
+
 
   // Show loading state
   if (showLoading) {

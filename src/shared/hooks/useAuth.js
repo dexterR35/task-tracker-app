@@ -76,12 +76,19 @@ export const useAuth = () => {
 
   // Enhanced access control with better consistency
   const canAccess = useCallback((requiredRole) => {
-    // Use the pre-computed values from the slice for consistency
-    if (requiredRole === 'admin') return canAccessAdmin;
-    if (requiredRole === 'user') return canAccessUser;
-    // For any other role or no role specified, check basic authentication
-    return canAccessUser; // Use canAccessUser for basic auth check
-  }, [canAccessAdmin, canAccessUser]);
+    if (requiredRole === 'admin') {
+      return canAccessAdmin;
+    }
+    if (requiredRole === 'user') {
+      return canAccessUser;
+    }
+    // This explicitly handles a request for any authenticated user
+    if (requiredRole === 'authenticated') {
+      return !!user; // Check if the user object exists
+    }
+    // By default, if the requested role is not recognized, deny access
+    return false;
+  }, [canAccessAdmin, canAccessUser, user]);
 
   const hasPermission = useCallback((permission) => {
     return permissions.includes(permission) || role === 'admin';

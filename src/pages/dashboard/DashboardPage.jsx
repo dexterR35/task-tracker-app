@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useSelector } from "react-redux";
-import { selectIsAdmin } from "../../features/auth/authSlice";
+
 import { useGenerateMonthBoardMutation } from "../../features/tasks/tasksApi";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import DashboardWrapper from "../../shared/components/dashboard/DashboardWrapper";
@@ -11,8 +10,8 @@ import { format } from "date-fns";
 import { logger } from "../../shared/utils/logger";
 
 const DashboardPage = () => {
-  const { user, isLoading: authLoading, canAccess } = useAuth();
-  const isAdmin = useSelector(selectIsAdmin);
+  const { user, canAccess } = useAuth();
+
 
   const { monthId, setMonthId } = useGlobalMonthId();
 
@@ -22,11 +21,6 @@ const DashboardPage = () => {
   const [generateMonthBoard, { isLoading: isGeneratingBoard }] =
     useGenerateMonthBoardMutation();
   const { clearCacheOnDataChange } = useCacheManagement();
-
-  // Don't render anything if not authenticated or still loading
-  if (!user || authLoading) {
-    return null;
-  }
 
   // Simplified loading logic - only show loading when generating board
   const isLoading = isGeneratingBoard;
@@ -43,22 +37,15 @@ const DashboardPage = () => {
     );
   }
 
-  // Ensure user is authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen flex-center">
-        <div className="card p-8 text-center max-w-md mx-4">
-          <h2 className="text-red-error mb-4">Access Denied</h2>
-          <p className="mb-6">
-            You need to be authenticated to access the dashboard.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Handle generate month board (admin only)
   const handleGenerateBoard = async () => {
+    // Check if user has admin access before proceeding
+    if (!canAccess('admin')) {
+      const { showError } = await import("../../shared/utils/toast");
+      showError("You need admin permissions to generate month boards.");
+      return;
+    }
+
     try {
       // Use the month ID from the API response
       const result = await generateMonthBoard({

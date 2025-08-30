@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useMemo } from "react";
+import {  useMemo } from "react";
 import { useAuth } from "../../hooks/useAuth";
 
 import DynamicButton from "../ui/DynamicButton";

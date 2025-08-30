@@ -2,18 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
 import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
-import { useAuth } from "../../shared/hooks/useAuth";
-import { logger } from "../../shared/utils/logger";
 import Loader from "../../shared/components/ui/Loader";
-import { format } from "date-fns";
 
 const AdminUsersPage = () => {
   const { monthId } = useGlobalMonthId();
-  // Use centralized data system - users are loaded globally
-  // For users page, we only need users data, not month-specific data
   const { users = [], error: usersError, isLoading, isFetching } = useCentralizedDataAnalytics(monthId);
-
-  // Show loading state if data is being fetched or loaded
   const showLoading = isLoading || isFetching;
 
   // Show error state

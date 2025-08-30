@@ -3,9 +3,8 @@ import { useAuth } from "../../hooks/useAuth";
 import DarkModeToggle from "../ui/DarkModeToggle";
 
 const PublicLayout = () => {
-  const { user, canAccess } = useAuth();
+  const { user } = useAuth();
   const isAuthenticated = !!user;
-  const isAdmin = canAccess('admin');
 
   return (
     <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
