@@ -1,5 +1,11 @@
 // src/router.jsx
-import { createBrowserRouter, Navigate, useLocation, Link, Outlet } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Navigate,
+  useLocation,
+  Link,
+  Outlet,
+} from "react-router-dom";
 import { lazy, Suspense, memo, useCallback } from "react";
 import { useSelector } from "react-redux";
 
@@ -9,7 +15,7 @@ import {
   selectIsAuthChecking,
   selectAuthError,
   selectCanAccessAdmin,
-  selectCanAccessUser
+  selectCanAccessUser,
 } from "../features/auth/authSlice";
 
 import PublicLayout from "../shared/components/layout/PublicLayout";
@@ -23,26 +29,21 @@ import HomePage from "../pages/HomePage";
 
 // Lazy load dynamic pages that need data
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
-const AdminManagementPage = lazy(() => import("../pages/admin/AdminManagementPage"));
+const AdminManagementPage = lazy(
+  () => import("../pages/admin/AdminManagementPage")
+);
 const NotFoundPage = lazy(() => import("../pages/errorPages/NotFoundPage"));
 
 // Simplified loading component for lazy-loaded pages
-const PageLoader = ({ text = "Loading..." }) => (
+const PageLoader = ({ text = "Loading...frist" }) => (
   <div className="min-h-screen flex-center bg-primary">
-    <Loader 
-      size="xl" 
-      text={text} 
-      variant="spinner" 
-      fullScreen={true}
-    />
+    <Loader size="xl" text={text} variant="spinner" fullScreen={true} />
   </div>
 );
 
 // Wrapper component for lazy-loaded pages with Suspense
 const LazyPage = ({ children, loadingText = "Loading..." }) => (
-  <Suspense fallback={<PageLoader text={loadingText} />}>
-    {children}
-  </Suspense>
+  <Suspense fallback={<PageLoader text={loadingText} />}>{children}</Suspense>
 );
 
 // Use individual selectors directly for better performance
@@ -55,23 +56,26 @@ const useAuthState = () => {
   const canAccessUser = useSelector(selectCanAccessUser);
 
   // Create canAccess function locally to avoid useAuth dependency
-  const canAccess = useCallback((requiredRole) => {
-    // If still checking auth, don't make access decisions yet
-    if (isAuthChecking) {
+  const canAccess = useCallback(
+    (requiredRole) => {
+      // If still checking auth, don't make access decisions yet
+      if (isAuthChecking) {
+        return false;
+      }
+
+      if (requiredRole === "admin") {
+        return canAccessAdmin;
+      }
+      if (requiredRole === "user") {
+        return canAccessUser;
+      }
+      if (requiredRole === "authenticated") {
+        return !!user;
+      }
       return false;
-    }
-    
-    if (requiredRole === 'admin') {
-      return canAccessAdmin;
-    }
-    if (requiredRole === 'user') {
-      return canAccessUser;
-    }
-    if (requiredRole === 'authenticated') {
-      return !!user;
-    }
-    return false;
-  }, [canAccessAdmin, canAccessUser, user, isAuthChecking]);
+    },
+    [canAccessAdmin, canAccessUser, user, isAuthChecking]
+  );
 
   return { user, isLoading, isAuthChecking, error, canAccess };
 };
@@ -84,10 +88,10 @@ const ProtectedRoute = memo(({ children, requiredRole = null }) => {
   // Show loading state during initial auth check
   if (isAuthChecking) {
     return (
-      <Loader 
-        size="xl" 
-        text="Checking authentication..." 
-        variant="dots" 
+      <Loader
+        size="xl"
+        text="Checking authentication..."
+        variant="dots"
         fullScreen={true}
       />
     );
@@ -117,22 +121,25 @@ const ProtectedRoute = memo(({ children, requiredRole = null }) => {
   return children;
 });
 
-ProtectedRoute.displayName = 'ProtectedRoute';
+ProtectedRoute.displayName = "ProtectedRoute";
 
 // Unauthorized page component
 const UnauthorizedPage = () => {
   const { user } = useAuthState();
-  const canAccess = useCallback((requiredRole) => {
-    if (requiredRole === 'admin') {
-      return user?.role === 'admin';
-    }
-    if (requiredRole === 'user') {
-      return user?.role === 'user' || user?.role === 'admin';
-    }
-    return false;
-  }, [user]);
+  const canAccess = useCallback(
+    (requiredRole) => {
+      if (requiredRole === "admin") {
+        return user?.role === "admin";
+      }
+      if (requiredRole === "user") {
+        return user?.role === "user" || user?.role === "admin";
+      }
+      return false;
+    },
+    [user]
+  );
 
-  const isAdmin = canAccess('admin');
+  const isAdmin = canAccess("admin");
 
   return (
     <div className="min-h-screen flex-center bg-primary">
@@ -161,9 +168,13 @@ const UnauthorizedPage = () => {
 };
 
 // Helper function to create protected routes with lazy loading
-const createProtectedRoute = (Component, requiredRole = null, loadingText = "Loading...") => {
+const createProtectedRoute = (
+  Component,
+  requiredRole = null,
+  loadingText = "Loading..."
+) => {
   const MemoizedComponent = memo(Component);
-  
+
   return (
     <ProtectedRoute requiredRole={requiredRole}>
       <LazyPage loadingText={loadingText}>
@@ -174,11 +185,11 @@ const createProtectedRoute = (Component, requiredRole = null, loadingText = "Loa
 };
 
 // Helper function to create admin-only routes
-const createAdminRoute = (Component, loadingText = "Loading admin...") => 
+const createAdminRoute = (Component, loadingText = "Loading admin...") =>
   createProtectedRoute(Component, "admin", loadingText);
 
 // Helper function to create user routes (accessible by both users and admins)
-const createUserRoute = (Component, loadingText = "Loading...") => 
+const createUserRoute = (Component, loadingText = "Loading...") =>
   createProtectedRoute(Component, "user", loadingText);
 
 // Root layout that handles auth state and redirects
@@ -189,22 +200,22 @@ const RootLayout = () => {
   // Show loading during auth check
   if (isAuthChecking) {
     return (
-      <Loader 
-        size="xl" 
-        text="Checking authentication..." 
-        variant="dots" 
+      <Loader
+        size="xl"
+        text="Checking authentication..."
+        variant="dots"
         fullScreen={true}
       />
     );
   }
 
   // If user is authenticated and on login page, redirect to dashboard
-  if (user && location.pathname === '/login') {
+  if (user && location.pathname === "/login") {
     return <Navigate to="/dashboard" replace />;
   }
 
   // If not authenticated and trying to access protected routes, redirect to login
-  if (!user && !['/', '/login', '/unauthorized'].includes(location.pathname)) {
+  if (!user && !["/", "/login", "/unauthorized"].includes(location.pathname)) {
     return <Navigate to="/login" replace />;
   }
 
@@ -220,9 +231,9 @@ const router = createBrowserRouter([
       {
         element: <PublicLayout />,
         children: [
-          { 
-            index: true, 
-            element: <HomePage /> 
+          {
+            index: true,
+            element: <HomePage />,
           },
           {
             path: "login",
@@ -234,7 +245,7 @@ const router = createBrowserRouter([
           },
         ],
       },
-      
+
       // Authenticated routes with AuthenticatedLayout
       {
         element: <AuthenticatedLayout />,
@@ -244,19 +255,22 @@ const router = createBrowserRouter([
             path: "dashboard",
             element: createUserRoute(DashboardPage, "Loading dashboard..."),
           },
-          
+
           // Admin management (admin-only, but no /admin in URL)
           {
             path: "management",
-            element: createAdminRoute(AdminManagementPage, "Loading management..."),
+            element: createAdminRoute(
+              AdminManagementPage,
+              "Loading management..."
+            ),
           },
-          
+
           // Analytics (admin-only, but no /admin in URL)
           {
             path: "analytics",
             element: createAdminRoute(ComingSoonPage, "Loading analytics..."),
           },
-          
+
           // Preview routes
           {
             path: "preview/:monthId",
@@ -271,11 +285,15 @@ const router = createBrowserRouter([
       },
     ],
   },
-  
+
   // Catch-all route
   {
     path: "*",
-    element: <LazyPage><NotFoundPage /></LazyPage>
+    element: (
+      <LazyPage>
+        <NotFoundPage />
+      </LazyPage>
+    ),
   },
 ]);
 
