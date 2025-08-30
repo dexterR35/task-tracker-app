@@ -3,7 +3,6 @@ import DynamicButton from "../ui/DynamicButton";
 import OptimizedSmallCard from "../ui/OptimizedSmallCard";
 import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
 import { useAuth } from "../../hooks/useAuth";
-import { useGlobalMonthId } from "../../hooks/useGlobalMonthId";
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from "../../utils/analyticsTypes";
 
 
@@ -139,7 +138,23 @@ const OptimizedTaskMetricsBoard = ({
 }) => {
   const [showKeyMetrics, setShowKeyMetrics] = useState(true);
   const { user } = useAuth();
-  const { monthId } = useGlobalMonthId();
+  
+  // Use the centralized hook directly
+  const {
+    analytics,
+    getMetric,
+    getAllMetrics,
+    hasData,
+    error,
+    isLoading,
+    monthId,
+    tasks,
+    users,
+    reporters,
+    getFilteredData,
+    getUserById,
+    getReporterById
+  } = useCentralizedDataAnalytics(userId);
   
   // Don't render if not authenticated
   if (!user) {
@@ -166,15 +181,6 @@ const OptimizedTaskMetricsBoard = ({
   const toggleTableButton = useCallback(() => {
     setShowKeyMetrics(!showKeyMetrics);
   }, [showKeyMetrics]);
-
-  // Use centralized data analytics hook - gets all data and analytics in one call
-  const {
-    analytics,
-    getMetric,
-    hasData,
-    error,
-    isLoading,
-  } = useCentralizedDataAnalytics(monthId, userId);
 
   // Add error boundary for analytics
   if (error) {

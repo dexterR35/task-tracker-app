@@ -12,6 +12,23 @@ export const toastConfig = {
   theme: "light",
 };
 
+// Generic toast function that accepts an object with type, title, message, and duration
+export const showToast = ({ type = 'info', title, message, duration = 3000, ...options } = {}) => {
+  const toastMessage = title ? `${title}: ${message}` : message;
+  
+  switch (type.toLowerCase()) {
+    case 'success':
+      return toast.success(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+    case 'error':
+      return toast.error(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+    case 'warning':
+      return toast.warning(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+    case 'info':
+    default:
+      return toast.info(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+  }
+};
+
 // Toast types
 export const showSuccess = (message, options = {}) => {
   return toast.success(message, { ...toastConfig, ...options });

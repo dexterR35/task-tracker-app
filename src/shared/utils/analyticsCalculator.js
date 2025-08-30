@@ -1,79 +1,62 @@
 import { ANALYTICS_TYPES, TASK_CATEGORIES } from './analyticsTypes';
 import { logger } from './logger';
+import { normalizeTimestamp } from './dateUtils';
+import { format } from 'date-fns'; // Added for consistent date formatting
 
 /**
- * Centralized Analytics Calculator
- * Computes all metrics from cached Redux data without individual API calls
+ * Analytics Calculator Class
+ * Handles all analytics calculations for tasks data
  */
-export class AnalyticsCalculator {
+class AnalyticsCalculator {
   constructor() {
-    this.cache = new Map();
-    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes cache
-    this._analyticsCache = new Map(); // In-memory cache for memoization
-    this._lastCalculation = new Map(); // Track last calculation time per key
-    this._calculationDebounce = 100; // Debounce calculations by 100ms
+    this.logger = logger;
   }
 
   /**
-   * Clear cache for a specific month
-   * @param {string} monthId 
+   * Safely parse a date from various formats
+   * @param {any} dateValue - Date value (Firestore timestamp, Date object, ISO string, etc.)
+   * @returns {Date|null} - Parsed date or null if invalid
    */
-  clearCache(monthId) {
-    this.cache.delete(monthId);
-    // Clear related memoization cache entries
-    const keysToDelete = [];
-    for (const [key] of this._analyticsCache) {
-      if (key.includes(monthId)) {
-        keysToDelete.push(key);
-      }
-    }
-    keysToDelete.forEach(key => this._analyticsCache.delete(key));
-  }
-
-  /**
-   * Clear all cache
-   */
-  clearAllCache() {
-    this.cache.clear();
-    this._analyticsCache.clear();
-    this._lastCalculation.clear();
-  }
-
-  /**
-   * Check if cache is valid for a month
-   * @param {string} monthId 
-   * @returns {boolean}
-   */
-  isCacheValid(monthId) {
-    const cached = this.cache.get(monthId);
-    if (!cached) return false;
+  parseDate(dateValue) {
+    if (!dateValue) return null;
     
-    const now = Date.now();
-    return (now - cached.timestamp) < this.cacheTimeout;
-  }
-
-  /**
-   * Get cached analytics for a month
-   * @param {string} monthId 
-   * @returns {Object|null}
-   */
-  getCachedAnalytics(monthId) {
-    if (this.isCacheValid(monthId)) {
-      return this.cache.get(monthId).data;
+    try {
+      // Use normalizeTimestamp to handle all date formats
+      const normalized = normalizeTimestamp(dateValue);
+      if (!normalized) return null;
+      
+      // Validate the date
+      if (isNaN(normalized.getTime())) return null;
+      
+      return normalized;
+    } catch (error) {
+      this.logger.error('Error parsing date:', error, 'dateValue:', dateValue);
+      return null;
     }
-    return null;
   }
 
   /**
-   * Cache analytics data for a month
-   * @param {string} monthId 
-   * @param {Object} data 
+   * Get week key for grouping (YYYY-WW format)
+   * @param {Date} date 
+   * @returns {string}
    */
-  cacheAnalytics(monthId, data) {
-    this.cache.set(monthId, {
-      data,
-      timestamp: Date.now()
-    });
+  getWeekKey(date) {
+    const year = date.getFullYear();
+    const week = this.getWeekNumber(date);
+    return `${year}-W${week.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Get week number of the year
+   * @param {Date} date 
+   * @returns {number}
+   */
+  getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
 
   /**
@@ -102,11 +85,8 @@ export class AnalyticsCalculator {
    * @returns {boolean}
    */
   _shouldSkipCalculation(cacheKey) {
-    const lastCalc = this._lastCalculation.get(cacheKey);
-    if (!lastCalc) return false;
-    
-    const now = Date.now();
-    return (now - lastCalc) < this._calculationDebounce;
+    // This method is no longer used as _lastCalculation is removed
+    return false;
   }
 
   /**
@@ -122,36 +102,39 @@ export class AnalyticsCalculator {
     
     // Check debouncing
     if (this._shouldSkipCalculation(cacheKey)) {
-      const cached = this._analyticsCache.get(cacheKey);
-      if (cached) {
-        logger.debug(`[AnalyticsCalculator] Skipping calculation due to debouncing for ${cacheKey}`);
-        return cached;
-      }
+      // This check is no longer relevant as _lastCalculation is removed
+      // const cached = this._analyticsCache.get(cacheKey);
+      // if (cached) {
+      //   logger.debug(`[AnalyticsCalculator] Skipping calculation due to debouncing for ${cacheKey}`);
+      //   return cached;
+      // }
     }
     
     // Check if we have cached analytics for this exact data
-    if (this._analyticsCache.has(cacheKey)) {
-      logger.debug(`[AnalyticsCalculator] Using cached analytics for ${cacheKey}`);
-      return this._analyticsCache.get(cacheKey);
-    }
+    // This check is no longer relevant as _analyticsCache is removed
+    // if (this._analyticsCache.has(cacheKey)) {
+    //   logger.debug(`[AnalyticsCalculator] Using cached analytics for ${cacheKey}`);
+    //   return this._analyticsCache.get(cacheKey);
+    // }
     
     // Validate input
     if (!Array.isArray(tasks)) {
-      logger.error('AnalyticsCalculator: tasks is not an array:', tasks);
-      logger.error('Type of tasks:', typeof tasks);
-      logger.error('Tasks value:', tasks);
+      this.logger.error('AnalyticsCalculator: tasks is not an array:', tasks);
+      this.logger.error('Type of tasks:', typeof tasks);
+      this.logger.error('Tasks value:', tasks);
       return this._getEmptyAnalytics(monthId, userId);
     }
 
     // Update last calculation time
-    this._lastCalculation.set(cacheKey, Date.now());
+    // This method is no longer used as _lastCalculation is removed
+    // this._lastCalculation.set(cacheKey, Date.now());
 
     // Filter tasks by user if specified
     const filteredTasks = userId 
       ? tasks.filter(task => task.userUID === userId)
       : tasks;
 
-    logger.debug(`[AnalyticsCalculator] Calculating fresh analytics for ${monthId} from ${filteredTasks.length} tasks (cacheKey: ${cacheKey})`);
+    this.logger.debug(`[AnalyticsCalculator] Calculating fresh analytics for ${monthId} from ${filteredTasks.length} tasks (cacheKey: ${cacheKey})`);
 
     const analytics = {
       monthId,
@@ -160,10 +143,10 @@ export class AnalyticsCalculator {
       summary: this.calculateSummary(filteredTasks),
       categories: this.calculateCategoryAnalytics(filteredTasks),
       performance: this.calculatePerformanceAnalytics(filteredTasks),
-      markets: this.calculateMarketAnalytics(filteredTasks),
-      products: this.calculateProductAnalytics(filteredTasks),
+      markets: this.calculateMarketAnalytics(filteredTasks, monthId),
+      products: this.calculateProductAnalytics(filteredTasks, monthId),
       ai: this.calculateAIAnalytics(filteredTasks),
-      trends: this.calculateTrends(filteredTasks),
+      trends: this.calculateTrends(filteredTasks, monthId),
       aiBreakdownByProduct: this.calculateAIBreakdownByProduct(filteredTasks),
       aiBreakdownByMarket: this.calculateAIBreakdownByMarket(filteredTasks),
       daily: this.calculateDailyAnalytics(filteredTasks),
@@ -180,14 +163,16 @@ export class AnalyticsCalculator {
     };
 
     // Cache the results
-    this.cacheAnalytics(monthId, analytics);
-    this._analyticsCache.set(cacheKey, analytics);
+    // This method is no longer used as cache is removed
+    // this.cacheAnalytics(monthId, analytics);
+    // this._analyticsCache.set(cacheKey, analytics);
     
     // Limit cache size to prevent memory leaks
-    if (this._analyticsCache.size > 50) {
-      const firstKey = this._analyticsCache.keys().next().value;
-      this._analyticsCache.delete(firstKey);
-    }
+    // This check is no longer relevant as _analyticsCache is removed
+    // if (this._analyticsCache.size > 50) {
+    //   const firstKey = this._analyticsCache.keys().next().value;
+    //   this._analyticsCache.delete(firstKey);
+    // }
     
     return analytics;
   }
@@ -353,7 +338,7 @@ export class AnalyticsCalculator {
    * @param {Array} tasks 
    * @returns {Object}
    */
-  calculateMarketAnalytics(tasks) {
+  calculateMarketAnalytics(tasks, monthId) {
     const marketStats = {};
     const marketByTime = {};
     const marketByCategory = {};
@@ -391,17 +376,15 @@ export class AnalyticsCalculator {
             marketStats[market].aiHours += aiHours;
           }
 
-          // Time-based market analysis
-          const date = task.createdAt?.toDate?.() || new Date(task.createdAt);
-          const monthKey = date.toISOString().substring(0, 7);
+          // Time-based market analysis - use the monthId from Redux store
           
           if (!marketByTime[market]) marketByTime[market] = {};
-          if (!marketByTime[market][monthKey]) {
-            marketByTime[market][monthKey] = { count: 0, hours: 0, aiTasks: 0 };
+          if (!marketByTime[market][monthId]) {
+            marketByTime[market][monthId] = { count: 0, hours: 0, aiTasks: 0 };
           }
-          marketByTime[market][monthKey].count += 1;
-          marketByTime[market][monthKey].hours += hours;
-          if (task.aiUsed) marketByTime[market][monthKey].aiTasks += 1;
+          marketByTime[market][monthId].count += 1;
+          marketByTime[market][monthId].hours += hours;
+          if (task.aiUsed) marketByTime[market][monthId].aiTasks += 1;
 
           // Category-based market analysis
           const taskName = (task.taskName || '').toLowerCase();
@@ -460,7 +443,7 @@ export class AnalyticsCalculator {
    * @param {Array} tasks 
    * @returns {Object}
    */
-  calculateProductAnalytics(tasks) {
+  calculateProductAnalytics(tasks, monthId) {
     const productStats = {};
     const productByTime = {};
     const productByMarket = {};
@@ -497,17 +480,15 @@ export class AnalyticsCalculator {
           productStats[task.product].aiHours += aiHours;
         }
 
-        // Time-based product analysis
-        const date = task.createdAt?.toDate?.() || new Date(task.createdAt);
-        const monthKey = date.toISOString().substring(0, 7);
+        // Time-based product analysis - use the monthId from Redux store
         
         if (!productByTime[task.product]) productByTime[task.product] = {};
-        if (!productByTime[task.product][monthKey]) {
-          productByTime[task.product][monthKey] = { count: 0, hours: 0, aiTasks: 0 };
+        if (!productByTime[task.product][monthId]) {
+          productByTime[task.product][monthId] = { count: 0, hours: 0, aiTasks: 0 };
         }
-        productByTime[task.product][monthKey].count += 1;
-        productByTime[task.product][monthKey].hours += hours;
-        if (task.aiUsed) productByTime[task.product][monthKey].aiTasks += 1;
+        productByTime[task.product][monthId].count += 1;
+        productByTime[task.product][monthId].hours += hours;
+        if (task.aiUsed) productByTime[task.product][monthId].aiTasks += 1;
 
         // Market-based product analysis
         if (Array.isArray(task.markets)) {
@@ -587,19 +568,22 @@ export class AnalyticsCalculator {
   /**
    * Calculate trend analytics
    * @param {Array} tasks 
+   * @param {string} monthId
    * @returns {Object}
    */
-  calculateTrends(tasks) {
+  calculateTrends(tasks, monthId) {
     // Group tasks by date
     const tasksByDate = {};
     const tasksByWeek = {};
     const tasksByMonth = {};
     
     tasks.forEach(task => {
-      const date = task.createdAt?.toDate?.() || new Date(task.createdAt);
-      const dateKey = date.toISOString().split('T')[0];
+      const date = this.parseDate(task.createdAt);
+      if (!date) return; // Skip if invalid date
+      
+      // Use consistent date formatting with date-fns
+      const dateKey = format(date, 'yyyy-MM-dd');  // Use date-fns instead of manual string manipulation
       const weekKey = this.getWeekKey(date);
-      const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
       
       // Daily grouping
       if (!tasksByDate[dateKey]) {
@@ -624,14 +608,14 @@ export class AnalyticsCalculator {
       }
       
       // Monthly grouping
-      if (!tasksByMonth[monthKey]) {
-        tasksByMonth[monthKey] = { tasks: 0, hours: 0, aiTasks: 0, aiHours: 0 };
+      if (!tasksByMonth[monthId]) {
+        tasksByMonth[monthId] = { tasks: 0, hours: 0, aiTasks: 0, aiHours: 0 };
       }
-      tasksByMonth[monthKey].tasks += 1;
-      tasksByMonth[monthKey].hours += parseFloat(task.timeInHours) || 0;
+      tasksByMonth[monthId].tasks += 1;
+      tasksByMonth[monthId].hours += parseFloat(task.timeInHours) || 0;
       if (task.aiUsed) {
-        tasksByMonth[monthKey].aiTasks += 1;
-        tasksByMonth[monthKey].aiHours += parseFloat(task.timeSpentOnAI) || 0;
+        tasksByMonth[monthId].aiTasks += 1;
+        tasksByMonth[monthId].aiHours += parseFloat(task.timeSpentOnAI) || 0;
       }
     });
 
@@ -678,30 +662,6 @@ export class AnalyticsCalculator {
       avgTasksPerWeek: weeks.length > 0 ? (tasks.length / weeks.length).toFixed(1) : 0,
       avgHoursPerWeek: weeks.length > 0 ? (tasks.reduce((sum, task) => sum + (parseFloat(task.timeInHours) || 0), 0) / weeks.length).toFixed(2) : 0
     };
-  }
-
-  /**
-   * Get week key for grouping (YYYY-WW format)
-   * @param {Date} date 
-   * @returns {string}
-   */
-  getWeekKey(date) {
-    const year = date.getFullYear();
-    const week = this.getWeekNumber(date);
-    return `${year}-W${week.toString().padStart(2, '0')}`;
-  }
-
-  /**
-   * Get week number of the year
-   * @param {Date} date 
-   * @returns {number}
-   */
-  getWeekNumber(date) {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
 
   /**
@@ -995,7 +955,9 @@ export class AnalyticsCalculator {
     const daily = {};
 
     tasks.forEach(task => {
-      const date = task.createdAt?.toDate?.() || new Date(task.createdAt);
+      const date = this.parseDate(task.createdAt);
+      if (!date) return; // Skip if invalid date
+      
       const dateKey = date.toISOString().split('T')[0];
 
       if (!daily[dateKey]) {
@@ -1166,7 +1128,7 @@ export class AnalyticsCalculator {
         const reporter = reporterLookup.get(reporterId);
         
         // Debug logging
-        logger.debug(`[AnalyticsCalculator] Task ${task.id} has reporterId: ${reporterId}, found reporter:`, reporter);
+        this.logger.debug(`[AnalyticsCalculator] Task ${task.id} has reporterId: ${reporterId}, found reporter:`, reporter);
         
         if (!reporterStats[reporterId]) {
           reporterStats[reporterId] = {
@@ -1246,16 +1208,16 @@ export const getAllMetrics = (analytics) => {
 // Test function to verify analytics calculations
 export const testAnalyticsCalculation = (tasks, monthId, userId = null) => {
   try {
-    console.log(`[testAnalyticsCalculation] Testing with ${tasks.length} tasks for monthId: ${monthId}, userId: ${userId || 'all'}`);
+    logger.log(`[testAnalyticsCalculation] Testing with ${tasks.length} tasks for monthId: ${monthId}, userId: ${userId || 'all'}`);
     
     // Log first few tasks for debugging
     if (tasks.length > 0) {
-      console.log('[testAnalyticsCalculation] Sample task:', tasks[0]);
+      logger.log('[testAnalyticsCalculation] Sample task:', tasks[0]);
     }
     
     const analytics = calculateAnalyticsFromTasks(tasks, monthId, userId);
     
-    console.log('[testAnalyticsCalculation] Calculated analytics:', {
+    logger.log('[testAnalyticsCalculation] Calculated analytics:', {
       totalTasks: analytics.summary?.totalTasks || 0,
       totalHours: analytics.summary?.totalHours || 0,
       totalAITasks: analytics.ai?.totalAITasks || 0,
@@ -1271,7 +1233,7 @@ export const testAnalyticsCalculation = (tasks, monthId, userId = null) => {
       taskCount: tasks.length
     };
   } catch (error) {
-    console.error('[testAnalyticsCalculation] Error:', error);
+    logger.error('[testAnalyticsCalculation] Error:', error);
     return {
       success: false,
       error: error.message,
@@ -1283,7 +1245,7 @@ export const testAnalyticsCalculation = (tasks, monthId, userId = null) => {
 // Test function to verify cache optimization
 export const testCacheOptimization = (tasks, monthId, userId = null) => {
   try {
-    console.log(`[testCacheOptimization] Testing cache optimization for ${monthId}`);
+    logger.log(`[testCacheOptimization] Testing cache optimization for ${monthId}`);
     
     // First calculation
     const start1 = performance.now();
@@ -1295,9 +1257,9 @@ export const testCacheOptimization = (tasks, monthId, userId = null) => {
     const analytics2 = calculateAnalyticsFromTasks(tasks, monthId, userId);
     const time2 = performance.now() - start2;
     
-    console.log(`[testCacheOptimization] First calculation: ${time1.toFixed(2)}ms`);
-    console.log(`[testCacheOptimization] Second calculation: ${time2.toFixed(2)}ms`);
-    console.log(`[testCacheOptimization] Cache hit: ${time2 < time1 * 0.1 ? 'YES' : 'NO'}`);
+    logger.log(`[testCacheOptimization] First calculation: ${time1.toFixed(2)}ms`);
+    logger.log(`[testCacheOptimization] Second calculation: ${time2.toFixed(2)}ms`);
+    logger.log(`[testCacheOptimization] Cache hit: ${time2 < time1 * 0.1 ? 'YES' : 'NO'}`);
     
     return {
       success: true,
@@ -1306,7 +1268,7 @@ export const testCacheOptimization = (tasks, monthId, userId = null) => {
       cacheHit: time2 < time1 * 0.1
     };
   } catch (error) {
-    console.error('[testCacheOptimization] Error:', error);
+    logger.error('[testCacheOptimization] Error:', error);
     return {
       success: false,
       error: error.message

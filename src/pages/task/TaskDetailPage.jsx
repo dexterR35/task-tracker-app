@@ -1,15 +1,29 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
+import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useCurrentMonth } from "../../shared/hooks/useCurrentMonth";
 
 
 const TaskDetailPage = () => {
-  const { taskId, monthId } = useParams();
+  const { taskId, monthId: paramMonthId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { monthId: globalMonthId } = useCurrentMonth();
+
+  // Use effective monthId (param takes precedence)
+  const effectiveMonthId = paramMonthId || globalMonthId;
 
   // Get passed task data from navigation state
   const task = location.state?.taskData;
+
+  // Get additional data from centralized hook for enhanced display
+  const { 
+    reporters = [],
+    users = [],
+    getReporterById,
+    getUserById
+  } = useCentralizedDataAnalytics();
 
   // If no task data is passed, show error (this should not happen when navigating from table)
   if (!task) {
@@ -74,8 +88,12 @@ const TaskDetailPage = () => {
           {task.taskName}
         </div>
         <div>
-          <span className="font-medium text-gray-700">User UID:</span>{" "}
-          {task.userUID}
+          <span className="font-medium text-gray-700">User:</span>{" "}
+          {getUserById(task.userUID)?.name || task.userUID}
+        </div>
+        <div>
+          <span className="font-medium text-gray-700">Reporter:</span>{" "}
+          {getReporterById(task.reporters)?.name || task.reporters || "Not assigned"}
         </div>
         <div>
           <span className="font-medium text-gray-700">Month ID:</span>{" "}

@@ -345,13 +345,10 @@ const HomePage = () => {
 
   // Show loading state if we're actually checking auth and have a user
   // This prevents the spinner from showing on the homepage when it's a public route
-  const showLoading = isAuthChecking && user !== null;
+
 
   return (
     <div className="min-h-[90vh] w-full bg-white-dark flex items-center justify-center flex-col">
-      {showLoading ? (
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      ) : (
         <>
           {/* Navigation Header for Authenticated Users - Only Dark Mode Toggle */}
           {isAuthenticated && (
@@ -462,7 +459,6 @@ const HomePage = () => {
             />
           </div>
         </>
-      )}
     </div>
   );
 };

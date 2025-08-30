@@ -67,14 +67,6 @@ export const DarkModeProvider = ({ children }) => {
 
   return (
     <DarkModeContext.Provider value={value}>
-      {isTransitioning && (
-        <Loader 
-          size="xl" 
-          text="Changing colors..." 
-          variant="spinner" 
-          fullScreen={true}
-        />
-      )}
       {children}
     </DarkModeContext.Provider>
   );

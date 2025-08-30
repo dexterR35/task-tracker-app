@@ -11,8 +11,6 @@ import {
   ChartBarIcon,
   UsersIcon,
   HomeIcon,
-  UserGroupIcon,
-  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { Icons } from "../../icons";
 
@@ -38,9 +36,7 @@ const AuthenticatedLayout = () => {
     }
   };
 
-  // If auth is loading or checking, show loading state
-  // Only show loading if we're actually checking auth (not on public routes)
-  const showLoading = (isLoading || isAuthChecking) && user !== null;
+
 
   // Navigation items based on user role using simplified API - memoized
   const navigationItems = useMemo(() => {
@@ -55,28 +51,16 @@ const AuthenticatedLayout = () => {
           current: location.pathname === "/admin",
         },
         {
-          name: "Users",
-          href: "/admin/users",
+          name: "Management",
+          href: "/admin/management",
           icon: UsersIcon,
-          current: location.pathname === "/admin/users",
-        },
-        {
-          name: "Reporters",
-          href: "/admin/reporters",
-          icon: UserGroupIcon,
-          current: location.pathname === "/admin/reporters",
+          current: location.pathname === "/admin/management",
         },
         {
           name: "Analytics",
           href: "/admin/analytics",
           icon: ChartBarIcon,
           current: location.pathname === "/admin/analytics",
-        },
-        {
-          name: "Tasks",
-          href: "/admin/tasks",
-          icon: ListBulletIcon,
-          current: location.pathname === "/admin/tasks",
         },
       ];
     } else if (canAccess('user')) {
@@ -87,12 +71,6 @@ const AuthenticatedLayout = () => {
           icon: HomeIcon,
           current: location.pathname === "/user",
         },
-        {
-          name: "Tasks",
-          href: "/user/tasks",
-          icon: ListBulletIcon,
-          current: location.pathname === "/user/tasks",
-        },
       ];
     }
     
@@ -101,12 +79,7 @@ const AuthenticatedLayout = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
-      {showLoading ? (
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        <>
+      <>
           {/* Navigation - Always visible for authenticated routes */}
           <nav className="bg-white dark:bg-primary shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -201,7 +174,6 @@ const AuthenticatedLayout = () => {
             <Outlet />
           </main>
         </>
-      )}
     </div>
   );
 };

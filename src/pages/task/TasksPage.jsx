@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useCentralizedDataAnalytics } from "../../shared/hooks/analytics/useCentralizedDataAnalytics";
 import { useAuth } from "../../shared/hooks/useAuth";
-import { useGlobalMonthId } from "../../shared/hooks/useGlobalMonthId";
+import { useCurrentMonth } from "../../shared/hooks/useCurrentMonth";
 import { format } from "date-fns";
 import { Icons } from "../../shared/icons";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
@@ -14,7 +14,7 @@ import { showError, showSuccess } from "../../shared/utils/toast";
 const TasksPage = () => {
   const { user, canAccess } = useAuth();
   const isAdmin = canAccess('admin');
-  const { monthId: currentMonthId } = useGlobalMonthId();
+  const { monthId, monthName, boardExists, isLoading: monthLoading, startDate, endDate, daysInMonth } = useCurrentMonth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showTaskForm, setShowTaskForm] = useState(false);
   const navigate = useNavigate();
@@ -29,18 +29,15 @@ const TasksPage = () => {
   // Use centralized data system - gets data based on role and current month
   const {
     tasks,
-    monthBoard: board,
+    boardExists: apiBoardExists,
     isLoading,
     isFetching,
     error: tasksError,
-    hasData,
-    boardExists
-  } = useCentralizedDataAnalytics(currentMonthId, targetUserId);
+    hasData
+  } = useCentralizedDataAnalytics(targetUserId);
 
   // Show loading state if data is being fetched or loaded
-  const showLoading = isLoading || isFetching;
-
-
+  const showLoading = isLoading || isFetching || monthLoading;
 
   // Show loading state
   if (showLoading) {
@@ -78,7 +75,7 @@ const TasksPage = () => {
   const handleCreateTask = async () => {
     if (!boardExists) {
       showError(
-        `Cannot create task: Board for ${format(new Date(currentMonthId + "-01"), "MMMM yyyy")} is not created yet. Please create the board first.`
+        `Cannot create task: Board for ${monthName || 'current month'} is not created yet. Please create the board first.`
       );
       return;
     }
@@ -122,13 +119,19 @@ const TasksPage = () => {
               {title}
             </h1>
             <p className="text-sm text-gray-400">
-              {format(new Date(currentMonthId + "-01"), "MMMM yyyy")} • {tasks.length} tasks
+              <span>Month:</span> {monthName || 'Loading...'} ({monthId})
               {boardExists ? (
                 <span className="ml-2 text-green-success"> • Board ready</span>
               ) : (
                 <span className="ml-2 text-red-error"> • Board not ready</span>
               )}
             </p>
+            {/* Additional month info */}
+            {startDate && endDate && daysInMonth && (
+              <p className="text-xs text-gray-400 mt-1">
+                Period: {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd, yyyy')} ({daysInMonth} days)
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -138,7 +141,7 @@ const TasksPage = () => {
         <div className="card mt-2 border border-red-error text-red-error text-sm rounded-lg mb-6">
           <div className="flex-center !flex-row !items-center !justify-between gap-4">
             <p className="text-white-dark text-sm">
-              ❌ The board for {format(new Date(currentMonthId + "-01"), "MMMM yyyy")}{" "}
+              ❌ The board for {monthName || 'current month'}{" "}
               is not created yet. {isAdmin ? 'Please create the board first.' : 'Please contact an admin to create the board first.'}
             </p>
           </div>
@@ -177,12 +180,12 @@ const TasksPage = () => {
           {isAdmin ? "All Tasks" : "My Tasks"}
         </h2>
         {tasks.length > 0 ? (
-          <TasksTable tasks={tasks} error={null} />
+          <TasksTable tasks={tasks} error={null} monthId={monthId} />
         ) : (
           <div className="border rounded-lg p-6 text-center text-sm text-gray-200">
             {isAdmin 
-              ? `No tasks found for ${format(new Date(currentMonthId + "-01"), "MMMM yyyy")}.`
-              : `No tasks found for ${format(new Date(currentMonthId + "-01"), "MMMM yyyy")}. Create your first task!`
+              ? `No tasks found for ${monthName || 'current month'}.`
+              : `No tasks found for ${monthName || 'current month'}. Create your first task!`
             }
           </div>
         )}

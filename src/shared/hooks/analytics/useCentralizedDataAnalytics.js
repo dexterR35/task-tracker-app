@@ -1,69 +1,60 @@
-import { useMemo, useCallback } from 'react';
+import { useSelector } from 'react-redux';
+import { useMemo, useRef, useCallback } from 'react';
+import { selectCurrentMonthName, selectCurrentMonthId, selectBoardExists } from '../../../features/currentMonth/currentMonthSlice';
 import { useAuth } from '../useAuth';
-import { useSubscribeToMonthTasksQuery, useSubscribeToMonthBoardQuery } from '../../../features/tasks/tasksApi';
+import { useSubscribeToMonthTasksQuery } from '../../../features/tasks/tasksApi';
 import { useGetUsersQuery, useGetUserByUIDQuery } from '../../../features/users/usersApi';
 import { useGetReportersQuery } from '../../../features/reporters/reportersApi';
-import { analyticsCalculator } from '../../utils/analyticsCalculator';
+import { calculateAnalyticsFromTasks, getMetricForCard, getAllMetrics } from '../../utils/analyticsCalculator';
 import { logger } from '../../utils/logger';
 
 /**
- * Centralized data analytics hook that coordinates data from existing APIs
- * This provides a single interface for all data and analytics without duplicating logic
+ * Complete unified hook that handles all data fetching, filtering, analytics, and helper functions
+ * This eliminates the need for multiple hooks and prop passing
  * 
- * @param {string} monthId - Month identifier
  * @param {string|null} userId - Optional user filter
- * @returns {Object} Complete data and analytics object
+ * @returns {Object} Complete data and analytics object with all helper functions
  */
-export const useCentralizedDataAnalytics = (monthId, userId = null) => {
+export const useCentralizedDataAnalytics = (userId = null) => {
+  const prevDataRef = useRef(null);
   const { user, canAccess, isLoading: authLoading, isAuthChecking } = useAuth();
   
-  // Skip API calls if not authenticated or still checking auth
-  const shouldSkip = !user || authLoading || isAuthChecking;
+  // Get month data from Redux store
+  const monthName = useSelector(selectCurrentMonthName);
+  const monthId = useSelector(selectCurrentMonthId);
+  const boardExists = useSelector(selectBoardExists);
   
-  // Skip month-specific data if no monthId or monthId is invalid
+  // Normalize userId
+  const normalizedUserId = useMemo(() => {
+    if (!userId || userId === "" || userId === "null") {
+      return null;
+    }
+    if (canAccess('admin') && !userId) {
+      return null;
+    }
+    return userId;
+  }, [userId, canAccess]);
+
+  // Skip API calls if not authenticated
+  const shouldSkip = !user || authLoading || isAuthChecking;
   const isValidMonthId = monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
   const shouldSkipMonthData = shouldSkip || !isValidMonthId;
 
-  // Normalize userId - convert empty string or "null" string to null
-  const normalizedUserId = userId && userId !== "" && userId !== "null" ? userId : null;
-
-  // Single subscription for tasks
+  // Fetch tasks and board status
   const { 
-    data: tasks = [], 
+    data: tasksData = { tasks: [], boardExists: false, monthId }, 
     error: tasksError, 
     isLoading: tasksLoading,
     isFetching: tasksFetching 
   } = useSubscribeToMonthTasksQuery(
     { monthId: isValidMonthId ? monthId : undefined, userId: normalizedUserId },
-    { 
-      skip: shouldSkipMonthData,
-    }
+    { skip: shouldSkipMonthData }
   );
 
-  // Real-time subscription for board status
-  const { 
-    data: boardData = { exists: false }, 
-    error: boardError, 
-    isLoading: boardLoading,
-    isFetching: boardFetching 
-  } = useSubscribeToMonthBoardQuery(
-    { monthId: isValidMonthId ? monthId : undefined },
-    { 
-      skip: shouldSkipMonthData,
-    }
-  );
+  const tasks = tasksData.tasks || [];
+  const boardData = { exists: tasksData.boardExists, monthId: tasksData.monthId };
 
-  // Debug board subscription
-  logger.debug('[useCentralizedDataAnalytics] Board subscription:', {
-    monthId,
-    isValidMonthId,
-    shouldSkipMonthData,
-    boardData,
-    boardLoading,
-    boardError
-  });
-
-  // Use API calls with proper caching configuration
+  // Fetch users
   const { 
     data: allUsers = [], 
     error: allUsersError, 
@@ -72,7 +63,7 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
   } = useGetUsersQuery(
     {},
     { 
-      skip: shouldSkip || !canAccess('admin'), // Only admins fetch all users
+      skip: shouldSkip || !canAccess('admin'),
       keepUnusedDataFor: 300,
       refetchOnFocus: false,
       refetchOnReconnect: false,
@@ -80,16 +71,16 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     }
   );
 
-  // Get current user data (for regular users)
+  // Fetch current user data
   const { 
-    data: currentUserData = null, 
+    data: currentUser = null, 
     error: currentUserError, 
     isLoading: currentUserLoading,
     isFetching: currentUserFetching 
   } = useGetUserByUIDQuery(
     { userUID: user?.uid },
     { 
-      skip: shouldSkip || canAccess('admin') || !user?.uid, // Only regular users fetch their own data
+      skip: shouldSkip || !user?.uid || canAccess('admin'),
       keepUnusedDataFor: 300,
       refetchOnFocus: false,
       refetchOnReconnect: false,
@@ -97,21 +88,7 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     }
   );
 
-  // Combine users data based on role
-  const users = useMemo(() => {
-    if (canAccess('admin')) {
-      return allUsers;
-    } else if (currentUserData) {
-      return [currentUserData];
-    }
-    return [];
-  }, [allUsers, currentUserData, canAccess]);
-
-  // Combine loading states
-  const usersLoading = canAccess('admin') ? allUsersLoading : currentUserLoading;
-  const usersFetching = canAccess('admin') ? allUsersFetching : currentUserFetching;
-  const usersError = canAccess('admin') ? allUsersError : currentUserError;
-
+  // Fetch reporters
   const { 
     data: reporters = [], 
     error: reportersError, 
@@ -121,391 +98,244 @@ export const useCentralizedDataAnalytics = (monthId, userId = null) => {
     {},
     { 
       skip: shouldSkip,
-      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
+      keepUnusedDataFor: 300,
       refetchOnFocus: false,
       refetchOnReconnect: false,
       refetchOnMountOrArgChange: false,
     }
   );
 
-  // Debug logging
-  logger.debug('[useCentralizedDataAnalytics] API data:', {
-    usersCount: users.length,
-    reportersCount: reporters.length,
-    usersLoading,
-    reportersLoading,
-    shouldSkip,
-    shouldSkipMonthData,
-    isValidMonthId,
-    monthId,
-    normalizedUserId,
-    user: user?.email
-  });
-  
-  // Debug reporter data
-  if (reporters.length > 0) {
-    logger.debug('[useCentralizedDataAnalytics] Sample reporter data:', {
-      firstReporter: {
-        id: reporters[0].id,
-        reporterUID: reporters[0].reporterUID,
-        name: reporters[0].name,
-        email: reporters[0].email
-      },
-      totalReporters: reporters.length
-    });
-  }
-  
-  // Debug tasks data
-  logger.debug('[useCentralizedDataAnalytics] Tasks data:', {
-    totalTasks: tasks.length,
-    tasksLoading,
-    tasksError,
-    monthId,
-    userId: normalizedUserId
-  });
-  
-  if (tasks.length > 0) {
-    logger.debug('[useCentralizedDataAnalytics] Sample task data:', {
-      firstTask: {
-        id: tasks[0].id,
-        reporters: tasks[0].reporters,
-        reporterName: tasks[0].reporterName,
-        reporterEmail: tasks[0].reporterEmail
-      }
-    });
-  }
-  
-  // Debug board data
-  logger.debug('[useCentralizedDataAnalytics] Board data:', {
-    boardExists: boardData?.exists,
-    boardData,
-    boardError,
-    boardLoading,
-    monthId,
-    shouldSkipMonthData,
-    isValidMonthId
-  });
+  // Filter users based on role
+  const users = useMemo(() => {
+    if (canAccess('admin')) {
+      return allUsers;
+    } else if (currentUser) {
+      return [currentUser];
+    }
+    return [];
+  }, [allUsers, currentUser, canAccess]);
 
-  // Combine loading states
-  const isLoading = tasksLoading || usersLoading || reportersLoading || boardLoading;
-  const isFetching = tasksFetching || usersFetching || reportersFetching || boardFetching;
-  const error = tasksError || usersError || reportersError || boardError;
+  // Use real-time board data if available, otherwise fall back to Redux store
+  const effectiveBoardExists = useMemo(() => 
+    boardData?.exists !== undefined ? boardData.exists : boardExists,
+    [boardData?.exists, boardExists]
+  );
 
-  // Calculate analytics from the data
+  // Data availability check
+  const hasData = useMemo(() => 
+    tasks.length > 0 || users.length > 0 || reporters.length > 0,
+    [tasks.length, users.length, reporters.length]
+  );
+
+  // Calculate analytics from tasks
   const analytics = useMemo(() => {
-    if (!monthId || isLoading) {
+    if (!tasks || tasks.length === 0) {
       return null;
     }
-
-    if (error) {
-      logger.error('[useCentralizedDataAnalytics] Data error:', error);
-      return null;
-    }
-
+    
     try {
-      logger.debug(`[useCentralizedDataAnalytics] Calculating analytics for ${monthId} with ${tasks.length} tasks`);
-      return analyticsCalculator.calculateAllAnalytics(tasks, monthId, normalizedUserId, reporters);
+      const result = calculateAnalyticsFromTasks(tasks, monthId, normalizedUserId);
+      return result;
     } catch (error) {
       logger.error('[useCentralizedDataAnalytics] Analytics calculation failed:', error);
       return null;
     }
-  }, [monthId, normalizedUserId, tasks, reporters, isLoading, error]);
+  }, [tasks, monthId, normalizedUserId]);
 
-  // Get specific metric for dashboard cards
+  // Helper function to get specific metric
   const getMetric = useCallback((type, category = null) => {
     if (!analytics) {
-      return {
-        value: 0,
-        additionalData: {},
-        isLoading: true
-      };
+      return null;
     }
-
-    try {
-      const metric = analyticsCalculator.getMetricForCard(type, analytics, category);
-      return {
-        ...metric,
-        isLoading: false
-      };
-    } catch (error) {
-      logger.error('[useCentralizedDataAnalytics] getMetric failed:', error);
-      return {
-        value: 0,
-        additionalData: {},
-        isLoading: false,
-        error: error.message
-      };
-    }
+    return getMetricForCard(type, analytics, category);
   }, [analytics]);
 
-  // Get all metrics for dashboard cards
-  const getAllMetrics = useCallback(() => {
+  // Helper function to get all metrics
+  const getAllMetricsData = useCallback(() => {
     if (!analytics) {
-      return {
-        summary: { value: 0, additionalData: {} },
-        categories: { value: 0, additionalData: {} },
-        performance: { value: 0, additionalData: {} },
-        markets: { value: 0, additionalData: {} },
-        products: { value: 0, additionalData: {} },
-        ai: { value: 0, additionalData: {} },
-        trends: { value: 0, additionalData: {} },
-        topReporter: { value: 0, additionalData: {} },
-        isLoading: true
-      };
+      return {};
     }
-
-    try {
-      return {
-        summary: analyticsCalculator.getMetricForCard('summary', analytics),
-        categories: analyticsCalculator.getMetricForCard('categories', analytics),
-        performance: analyticsCalculator.getMetricForCard('performance', analytics),
-        markets: analyticsCalculator.getMetricForCard('markets', analytics),
-        products: analyticsCalculator.getMetricForCard('products', analytics),
-        ai: analyticsCalculator.getMetricForCard('ai', analytics),
-        trends: analyticsCalculator.getMetricForCard('trends', analytics),
-        topReporter: analyticsCalculator.getMetricForCard('topReporter', analytics),
-        isLoading: false
-      };
-    } catch (error) {
-      logger.error('[useCentralizedDataAnalytics] getAllMetrics failed:', error);
-      return {
-        summary: { value: 0, additionalData: {} },
-        categories: { value: 0, additionalData: {} },
-        performance: { value: 0, additionalData: {} },
-        markets: { value: 0, additionalData: {} },
-        products: { value: 0, additionalData: {} },
-        ai: { value: 0, additionalData: {} },
-        trends: { value: 0, additionalData: {} },
-        topReporter: { value: 0, additionalData: {} },
-        isLoading: false,
-        error: error.message
-      };
-    }
+    return getAllMetrics(analytics);
   }, [analytics]);
 
-  // Check if data is available
-  const hasData = useMemo(() => {
-    return analytics !== null && typeof analytics === 'object' && tasks.length > 0;
-  }, [analytics, tasks.length]);
-
-  // Check if month board exists - use the real-time board subscription
-  const boardExists = useMemo(() => {
-    return boardData?.exists || false;
-  }, [boardData?.exists]);
-
-  // Get data freshness
-  const timestamp = useMemo(() => {
-    return Date.now();
-  }, [tasks, users, reporters]);
-
-  const dataAge = useMemo(() => {
-    return 0; // Since we're using real-time subscriptions, data is always fresh
-  }, [timestamp]);
-
-  // Check if data is stale (older than 5 minutes)
-  const isDataStale = useMemo(() => {
-    return false; // Real-time subscriptions keep data fresh
-  }, [dataAge]);
-
-  // Get filtered data for specific use cases
-  const getFilteredData = useCallback((filterType, filterValue = null) => {
+  // Helper functions for data filtering
+  const getFilteredData = useCallback((filterType) => {
+    if (!tasks) return [];
+    
     switch (filterType) {
-      case 'tasksByUser':
-        return tasks.filter(task => task.userUID === filterValue);
-      case 'tasksByReporter':
-        return tasks.filter(task => task.reporters === filterValue);
-      case 'tasksByCategory':
-        return tasks.filter(task => task.category === filterValue);
-      case 'tasksByStatus':
-        return tasks.filter(task => task.status === filterValue);
       case 'recentTasks':
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        return tasks.filter(task => new Date(task.createdAt) > oneWeekAgo);
-      case 'highPriorityTasks':
-        return tasks.filter(task => task.priority === 'high');
+        return tasks.slice(0, 10);
+      case 'aiTasks':
+        return tasks.filter(task => task.aiUsed);
+      case 'designTasks':
+        return tasks.filter(task => task.category === 'design');
+      case 'developmentTasks':
+        return tasks.filter(task => task.category === 'development');
+      case 'videoTasks':
+        return tasks.filter(task => task.category === 'video');
       default:
         return tasks;
     }
   }, [tasks]);
 
-  // Get user by ID
   const getUserById = useCallback((userId) => {
-    return users.find(user => user.id === userId || user.userUID === userId);
+    return users.find(user => (user.userUID || user.id) === userId);
   }, [users]);
 
-  // Get reporter by ID (supports both document ID and reporterUID)
   const getReporterById = useCallback((reporterId) => {
-    return reporters.find(reporter => 
-      reporter.id === reporterId || reporter.reporterUID === reporterId
-    );
+    return reporters.find(reporter => (reporter.id || reporter.reporterUID) === reporterId);
   }, [reporters]);
 
-  // Get tasks count by reporter (computed from tasks data)
   const getTasksCountByReporter = useCallback(() => {
     const counts = {};
-    
-    // Create a lookup map for reporters by document ID and reporterUID
-    const reporterLookup = new Map();
-    reporters.forEach(reporter => {
-      // Map by document ID
-      reporterLookup.set(reporter.id, reporter);
-      // Also map by reporterUID if it exists
-      if (reporter.reporterUID) {
-        reporterLookup.set(reporter.reporterUID, reporter);
-      }
-    });
-    
     tasks.forEach(task => {
       const reporterId = task.reporters;
-      if (reporterId && reporterId.trim() !== '') {
-        // Try to find the reporter in our lookup
-        const reporter = reporterLookup.get(reporterId);
-        
-        if (!counts[reporterId]) {
-          counts[reporterId] = {
-            count: 0,
-            hours: 0,
-            name: reporter?.name || task.reporterName || "Unknown Reporter",
-            email: reporter?.email || task.reporterEmail || ""
-          };
-        }
-        counts[reporterId].count += 1;
-        counts[reporterId].hours += parseFloat(task.timeInHours) || 0;
+      if (reporterId) {
+        counts[reporterId] = (counts[reporterId] || 0) + 1;
       }
     });
     return counts;
-  }, [tasks, reporters]);
+  }, [tasks]);
 
-  // Get tasks count by user
   const getTasksCountByUser = useCallback(() => {
     const counts = {};
     tasks.forEach(task => {
       const userId = task.userUID;
-      if (userId && userId.trim() !== '') {
+      if (userId) {
         counts[userId] = (counts[userId] || 0) + 1;
       }
     });
     return counts;
   }, [tasks]);
 
-  return {
-    // Core data
+  const getTasksByUser = useCallback((userId) => {
+    return tasks.filter(task => task.userUID === userId);
+  }, [tasks]);
+
+  const getTasksByReporter = useCallback((reporterId) => {
+    return tasks.filter(task => task.reporters === reporterId);
+  }, [tasks]);
+
+  const getTasksByCategory = useCallback((category) => {
+    return tasks.filter(task => task.category === category);
+  }, [tasks]);
+
+  const getTasksByMarket = useCallback((market) => {
+    return tasks.filter(task => 
+      Array.isArray(task.markets) 
+        ? task.markets.includes(market)
+        : task.market === market
+    );
+  }, [tasks]);
+
+  const getTasksByProduct = useCallback((product) => {
+    return tasks.filter(task => task.product === product);
+  }, [tasks]);
+
+  // Combined loading states
+  const isLoading = tasksLoading || allUsersLoading || currentUserLoading || reportersLoading || authLoading || isAuthChecking;
+  const isFetching = tasksFetching || allUsersFetching || currentUserFetching || reportersFetching;
+
+  // Combined error state
+  const error = tasksError || allUsersError || currentUserError || reportersError;
+
+  // Memoize the complete result
+  const result = useMemo(() => ({
+    // Data
     tasks,
     users,
     reporters,
-    monthBoard: { exists: boardExists }, // Expose board existence
     analytics,
+    monthId,
+    monthName,
     
-    // Loading and error states
+    // State
     isLoading,
     isFetching,
     error,
     hasData,
-    boardExists,
+    boardExists: effectiveBoardExists,
     
-    // Data freshness
-    timestamp,
-    dataAge,
-    isDataStale,
-    
-    // Analytics methods
+    // Helper functions
     getMetric,
-    getAllMetrics,
-    
-    // Data filtering and lookup methods
+    getAllMetrics: getAllMetricsData,
     getFilteredData,
     getUserById,
     getReporterById,
     getTasksCountByReporter,
     getTasksCountByUser,
+    getTasksByUser,
+    getTasksByReporter,
+    getTasksByCategory,
+    getTasksByMarket,
+    getTasksByProduct,
     
-    // Utility methods
-    refetch: () => {
-      // Individual APIs handle their own refetching
-      logger.debug('[useCentralizedDataAnalytics] Refetch requested');
-    },
+    // Legacy support
+    summary: analytics?.summary || {},
+    categories: analytics?.categories || {},
+    performance: analytics?.performance || {},
+    markets: analytics?.markets || {},
+    products: analytics?.products || {},
+    ai: analytics?.ai || {},
+    trends: analytics?.trends || {},
+    topReporter: analytics?.topReporter || {},
     
-    // Raw data for debugging
+    // Debug data
     rawData: {
       tasks,
       users,
       reporters,
-      monthBoard: { exists: boardExists },
       analytics,
-      timestamp,
       monthId,
-      userId: normalizedUserId
-    },
-    
-    // Convenience properties
-    summary: analytics?.summary || null,
-    categories: analytics?.categories || null,
-    performance: analytics?.performance || null,
-    markets: analytics?.markets || null,
-    products: analytics?.products || null,
-    ai: analytics?.ai || null,
-    trends: analytics?.trends || null,
-    topReporter: analytics?.topReporter || null,
-  };
-};
-
-/**
- * Hook for data cache management
- */
-export const useDataCache = () => {
-  const clearCache = useCallback((monthId = null) => {
-    if (monthId) {
-      analyticsCalculator.clearCache(monthId);
-    } else {
-      analyticsCalculator.clearAllCache();
+      boardExists: effectiveBoardExists,
+      errors: {
+        tasks: error,
+        users: error,
+        reporters: error
+      }
     }
-    logger.debug(`[useDataCache] Cache cleared for ${monthId || 'all'}`);
-  }, []);
-
-  const getCachedData = useCallback((monthId) => {
-    return analyticsCalculator.getCachedAnalytics(monthId);
-  }, []);
-
-  const isCacheValid = useCallback((monthId) => {
-    return analyticsCalculator.isCacheValid(monthId);
-  }, []);
-
-  return {
-    clearCache,
-    getCachedData,
-    isCacheValid
-  };
+  }), [
+    tasks,
+    users,
+    reporters,
+    analytics,
+    monthId,
+    monthName,
+    isLoading,
+    isFetching,
+    error,
+    hasData,
+    effectiveBoardExists,
+    getMetric,
+    getAllMetricsData,
+    getFilteredData,
+    getUserById,
+    getReporterById,
+    getTasksCountByReporter,
+    getTasksCountByUser,
+    getTasksByUser,
+    getTasksByReporter,
+    getTasksByCategory,
+    getTasksByMarket,
+    getTasksByProduct
+  ]);
+  
+  // Only log when data actually changes
+  const currentDataKey = `${result.tasks?.length}-${result.users?.length}-${result.reporters?.length}-${!!result.analytics}`;
+  if (prevDataRef.current !== currentDataKey) {
+    logger.log('[useCentralizedDataAnalytics] Data updated:', {
+      tasksCount: result.tasks?.length,
+      usersCount: result.users?.length,
+      reportersCount: result.reporters?.length,
+      hasAnalytics: !!result.analytics,
+      userId: normalizedUserId
+    });
+    prevDataRef.current = currentDataKey;
+  }
+  
+  return result;
 };
 
-/**
- * Hook for data export and reporting
- */
-export const useDataExport = () => {
-  const exportData = useCallback((monthId, userId = null, format = 'json') => {
-    // This would integrate with your export functionality
-    logger.debug(`[useDataExport] Exporting data for ${monthId}, user: ${userId}, format: ${format}`);
-    return {
-      monthId,
-      userId,
-      format,
-      timestamp: Date.now()
-    };
-  }, []);
+export default useCentralizedDataAnalytics;
 
-  const generateReport = useCallback((monthId, userId = null, reportType = 'summary') => {
-    // This would generate different types of reports
-    logger.debug(`[useDataExport] Generating ${reportType} report for ${monthId}, user: ${userId}`);
-    return {
-      monthId,
-      userId,
-      reportType,
-      timestamp: Date.now()
-    };
-  }, []);
 
-  return {
-    exportData,
-    generateReport
-  };
-};

@@ -1,4 +1,4 @@
-/* @import "react-day-picker/style.css"; */
+@import "react-day-picker/dist/style.css";
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 

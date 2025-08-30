@@ -8,9 +8,9 @@ import {
   formatAdditionalInfo,
 } from "../../utils/formatUtils.jsx";
 import { FiArrowUp, FiArrowDown, FiMinus, FiUser, FiZap, FiPackage, FiTarget, FiTrendingUp, FiTrendingDown, FiActivity } from "react-icons/fi";
-import { useCentralizedDataAnalytics } from "../../../shared/hooks/analytics/useCentralizedDataAnalytics";
+import { useCentralizedDataAnalytics } from "../../hooks/analytics/useCentralizedDataAnalytics";
 import { useAuth } from "../../hooks/useAuth";
-import { useGlobalMonthId } from "../../hooks/useGlobalMonthId";
+import { useCurrentMonth } from "../../hooks/useCurrentMonth";
 
 // Get color based on metric type
 const getMetricColor = (type) => {
@@ -167,38 +167,21 @@ const OptimizedSmallCard = ({
   title,
   type,
   category = null,
-  userId = null,
   icon: Icon,
-  trend,
-  trendValue,
-  trendDirection = "neutral",
+  userId = null,
+  trend = false,
+  trendValue = "",
+  trendDirection = "up",
+  analyticsData = null,
   className = "",
   onClick,
-  analyticsData = null,
   ...props
 }) => {
-  // Get reporters data from analytics or API - only if authenticated
   const { user } = useAuth();
-  const { monthId } = useGlobalMonthId();
+  const { monthId } = useCurrentMonth();
   
-  // Use reporters data from analytics if available, otherwise fallback to API
-  let reporters = [];
-  if (analyticsData && analyticsData.additionalData && analyticsData.additionalData.reporterStats) {
-    // Extract reporters from analytics data
-    reporters = Object.values(analyticsData.additionalData.reporterStats).map(reporter => ({
-      id: reporter.id,
-      name: reporter.name,
-      occupation: reporter.occupation || "Reporter",
-      department: reporter.department || "Unknown"
-    }));
-  } else {
-    // Fallback to API call only if needed
-    const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
-    const { reporters: apiReporters = [] } = useCentralizedDataAnalytics(
-      shouldCallAnalytics ? monthId : null
-    );
-    reporters = apiReporters;
-  }
+  // Use the centralized hook directly
+  const { reporters: apiReporters = [] } = useCentralizedDataAnalytics(userId);
 
   // Use provided analytics data or fallback to zero values
   const metricData = analyticsData || {
@@ -225,7 +208,7 @@ const OptimizedSmallCard = ({
 
   // Get color and enhanced data for this metric
   const metricColor = getMetricColor(type);
-  const enhancedData = getEnhancedData(type, value, additionalData, reporters);
+  const enhancedData = getEnhancedData(type, value, additionalData, apiReporters);
 
   // Get trend icon component
   const getTrendIconComponent = (direction) => {

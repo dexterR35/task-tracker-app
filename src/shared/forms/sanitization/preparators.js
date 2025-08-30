@@ -1,4 +1,5 @@
 import { extractTaskNumber } from './sanitization';
+import { normalizeTimestamp } from '../../utils/dateUtils';
 
 // Data preparation functions for different form types
 export const prepareTaskData = (values, context = {}) => {
@@ -30,8 +31,7 @@ export const prepareTaskData = (values, context = {}) => {
     createdByName: user?.displayName || user?.email,
     userUID: user?.uid,
     monthId: monthId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    // Remove client-side timestamps - server will handle with serverTimestamp()
   };
 };
 
@@ -42,8 +42,7 @@ export const prepareUserData = (values, context = {}) => {
     ...values,
     createdBy: user?.uid,
     createdByName: user?.displayName || user?.email,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    // Remove client-side timestamps - server will handle with serverTimestamp()
   };
 };
 
@@ -54,8 +53,7 @@ export const prepareReporterData = (values, context = {}) => {
     ...values,
     createdBy: user?.uid,
     createdByName: user?.displayName || user?.email,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    // Remove client-side timestamps - server will handle with serverTimestamp()
   };
 };
 
@@ -63,7 +61,7 @@ export const prepareLoginData = (values, context = {}) => {
   // Login data doesn't need much preparation
   return {
     ...values,
-    timestamp: new Date().toISOString(),
+    // Remove client-side timestamp - server will handle if needed
   };
 };
 

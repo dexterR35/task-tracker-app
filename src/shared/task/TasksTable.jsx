@@ -12,7 +12,7 @@ import {
   deliverables,
 } from "../utils/taskOptions";
 import { useFormat } from "../hooks/useFormat";
-import { useGlobalMonthId } from "../hooks/useGlobalMonthId";
+
 import {
   sanitizeTaskData,
   sanitizeText,
@@ -56,10 +56,10 @@ const TasksTable = ({
   onSelect,
   error = null,
   tasks = [], // Tasks passed from parent component
+  monthId = null, // monthId passed from parent component
 }) => {
   const navigate = useNavigate();
   const { format } = useFormat();
-  const { monthId } = useGlobalMonthId();
 
   // Tasks are already filtered by the server query, so use them directly
   const filteredTasks = tasks || [];
@@ -100,14 +100,8 @@ const TasksTable = ({
     setFormRef(formikProps);
   }, []);
 
-  // Get reporters for selection - only if authenticated
-  const { user } = useAuth();
-  
-  // Only call analytics hook if authenticated and have valid monthId
-  const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
-  const { reporters = [] } = useCentralizedDataAnalytics(
-    shouldCallAnalytics ? monthId : null
-  );
+ 
+  const { reporters = [] } = useCentralizedDataAnalytics();
 
   // Force re-render when form changes to update conditional columns
   const [forceUpdate, setForceUpdate] = useState(0);

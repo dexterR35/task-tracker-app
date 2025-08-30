@@ -1,5 +1,6 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
+import currentMonthReducer from "../features/currentMonth/currentMonthSlice";
 import { logger } from "../shared/utils/logger";
 
 // Import RTK Query APIs - required for RTK Query to function
@@ -61,6 +62,7 @@ const performanceMiddleware = (storeAPI) => (next) => (action) => {
 const store = configureStore({
   reducer: {
     auth: authReducer,
+    currentMonth: currentMonthReducer,
     [tasksApi.reducerPath]: tasksApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [reportersApi.reducerPath]: reportersApi.reducer,
@@ -78,6 +80,10 @@ const store = configureStore({
         ],
         ignoredPaths: [
           'auth.user',
+          'currentMonth.lastChecked',
+          'currentMonth.lastUpdated',
+          'currentMonth.startDate', // ISO string - serializable
+          'currentMonth.endDate', // ISO string - serializable
           'usersApi.queries.getUsers.data',
           'usersApi.queries.getUsers.originalArgs',
           'tasksApi.queries.subscribeToMonthTasks.data',

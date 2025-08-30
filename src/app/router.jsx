@@ -1,6 +1,6 @@
 // src/router.jsx
 import { createBrowserRouter, Navigate, useLocation, Link } from "react-router-dom";
-import { lazy, Suspense, memo, useMemo, useEffect } from "react";
+import { lazy, Suspense, memo, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "../shared/hooks/useAuth";
 
@@ -8,7 +8,9 @@ import {
   selectUser,
   selectIsLoading,
   selectIsAuthChecking,
-  selectAuthError
+  selectAuthError,
+  selectCanAccessAdmin,
+  selectCanAccessUser
 } from "../features/auth/authSlice";
 
 import PublicLayout from "../shared/components/layout/PublicLayout";
@@ -23,10 +25,7 @@ import HomePage from "../pages/HomePage";
 // Lazy load dynamic pages that need data
 
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
-const TasksPage = lazy(() => import("../pages/task/TasksPage"));
-const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
-const UserProfilePage = lazy(() => import("../pages/admin/UserProfilePage"));
-const AdminReportersPage = lazy(() => import("../pages/admin/AdminReportersPage"));
+const AdminManagementPage = lazy(() => import("../pages/admin/AdminManagementPage"));
 const NotFoundPage = lazy(() => import("../pages/errorPages/NotFoundPage"));
 
 // Loading component for lazy-loaded pages with fade-in animation
@@ -52,18 +51,38 @@ const LazyPage = ({ children, loadingText = "Loading..." }) => (
 
 // Use individual selectors directly for better performance
 const useAuthState = () => {
-    const user = useSelector(selectUser);
+  const user = useSelector(selectUser);
   const isLoading = useSelector(selectIsLoading);
   const isAuthChecking = useSelector(selectIsAuthChecking);
   const error = useSelector(selectAuthError);
+  const canAccessAdmin = useSelector(selectCanAccessAdmin);
+  const canAccessUser = useSelector(selectCanAccessUser);
 
-  return { user, isLoading, isAuthChecking, error };
+  // Create canAccess function locally to avoid useAuth dependency
+  const canAccess = useCallback((requiredRole) => {
+    // If still checking auth, don't make access decisions yet
+    if (isAuthChecking) {
+      return false;
+    }
+    
+    if (requiredRole === 'admin') {
+      return canAccessAdmin;
+    }
+    if (requiredRole === 'user') {
+      return canAccessUser;
+    }
+    if (requiredRole === 'authenticated') {
+      return !!user;
+    }
+    return false;
+  }, [canAccessAdmin, canAccessUser, user, isAuthChecking]);
+
+  return { user, isLoading, isAuthChecking, error, canAccess };
 };
 
 // Unified route protection component with memoization
 const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = true }) => {
-  const { user, isLoading, isAuthChecking, error } = useAuthState();
-  const { canAccess } = useAuth(); // Get canAccess directly from useAuth
+  const { user, isLoading, isAuthChecking, error, canAccess } = useAuthState();
   const location = useLocation();
   
   // Check if this is a public route that doesn't need protection
@@ -74,12 +93,12 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
     return children;
   }
 
-  // Show loading state only during login/logout operations, not during initial auth check
-  if (isLoading) {
+  // Show loading state during login/logout operations or initial auth check
+  if (isLoading || isAuthChecking) {
     return (
       <Loader 
         size="xl" 
-        text="Processing..." 
+        text={isAuthChecking ? "Checking authentication..." : "Processing..."} 
         variant="dots" 
         fullScreen={true}
       />
@@ -106,17 +125,6 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
     return children; // Allow unauthenticated access for login page
   }
 
-  // If we're still checking auth, show a minimal loading state
-  if (isAuthChecking) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
-  }
-
 
 
   // Auto-redirect admins from /user to /admin
@@ -131,7 +139,10 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
   }
 
   // Check role-based access using the simplified canAccess function
-  if (requiredRole && !canAccess(requiredRole)) {
+  // Only check if we're not still checking auth and user exists
+  if (requiredRole && user && !canAccess(requiredRole)) {
+    // Add a small delay to ensure auth state is fully loaded
+    console.log('Access denied:', { requiredRole, userRole: user?.role, canAccess: canAccess(requiredRole) });
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -244,19 +255,6 @@ const router = createBrowserRouter([
             index: true,
             element: createUserRoute(DashboardPage, "Loading dashboard..."),
           },
-          {
-            path: "tasks",
-            children: [
-              {
-                index: true,
-                element: createUserRoute(TasksPage, "Loading user tasks..."),
-              },
-              {
-                path: ":monthId/:taskId",
-                element: createUserRoute(TasksPage),
-              },
-            ],
-          },
         ],
       },
       
@@ -269,29 +267,8 @@ const router = createBrowserRouter([
             element: createAdminRoute(DashboardPage, "Loading admin dashboard..."),
           },
           {
-            path: "users",
-            element: createAdminRoute(AdminUsersPage),
-          },
-          {
-            path: "users/:userId",
-            element: createAdminRoute(UserProfilePage),
-          },
-          {
-            path: "reporters",
-            element: createAdminRoute(AdminReportersPage),
-          },
-          {
-            path: "tasks",
-            children: [
-              {
-                index: true,
-                element: createAdminRoute(TasksPage, "Loading admin tasks..."),
-              },
-              {
-                path: ":monthId/:taskId",
-                element: createAdminRoute(TasksPage),
-              },
-            ],
+            path: "management",
+            element: createAdminRoute(AdminManagementPage),
           },
           {
             path: "analytics",

@@ -1,83 +1,93 @@
-import { parseISO, isValid } from 'date-fns';
+import { format } from 'date-fns';
 
 /**
- * Convert a Firestore Timestamp, Date, number, or string into milliseconds since epoch.
+ * Normalize timestamp to consistent format
+ * Handles both Firestore timestamps and regular Date objects
  */
 export const normalizeTimestamp = (value) => {
   if (!value) return null;
-  try {
-    // Firestore Timestamp
-    if (value?.toDate) {
-      const d = value.toDate();
-      return isValid(d) ? d.getTime() : null;
+  
+  // If it's already a Date object
+  if (value instanceof Date) {
+    return value;
+  }
+  
+  // If it's a Firestore timestamp
+  if (value && typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+  
+  // If it's a number (milliseconds)
+  if (typeof value === 'number') {
+    return new Date(value);
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
     }
-    // JS Date
-    if (value instanceof Date) {
-      return isValid(value) ? value.getTime() : null;
-    }
-    // Number (assumed ms)
-    if (typeof value === 'number') {
-      return Number.isFinite(value) ? value : null;
-    }
-    // ISO or date-like string
-    if (typeof value === 'string') {
-      const parsed = parseISO(value);
-      return isValid(parsed) ? parsed.getTime() : null;
-    }
-  } catch (_) {}
+  }
+  
+  // If it's an object with seconds/nanoseconds (Firestore timestamp)
+  if (value && typeof value === 'object' && 'seconds' in value) {
+    const milliseconds = value.seconds * 1000 + (value.nanoseconds || 0) / 1000000;
+    return new Date(milliseconds);
+  }
+  
   return null;
 };
 
 /**
- * Serialize timestamps for Redux state (convert to ISO strings)
- * This ensures all timestamp fields are serializable in Redux
+ * Serialize timestamps for Redux store
+ * Converts all timestamp fields to ISO strings for serialization
  */
 export const serializeTimestampsForRedux = (data) => {
-  if (data == null) return data;
-  
-  if (Array.isArray(data)) {
-    return data.map(item => serializeTimestampsForRedux(item));
+  if (!data || typeof data !== 'object') {
+    return data;
   }
   
-  if (typeof data === 'object') {
-    const serialized = Array.isArray(data) ? [] : {};
-    
-    for (const [key, value] of Object.entries(data)) {
-      // Check if this field is likely a timestamp field
-      if (/at$|At$|date$|Date$|time$|Time$|lastLogin|savedAt|generatedAt|expiresAt|validUntil|completedAt/.test(key)) {
-        if (value) {
-          // Convert to ISO string if it's a valid timestamp
-          const timestamp = normalizeTimestamp(value);
-          serialized[key] = timestamp ? new Date(timestamp).toISOString() : null;
-        } else {
-          serialized[key] = null;
-        }
-      } else {
-        // Recursively serialize nested objects
-        serialized[key] = serializeTimestampsForRedux(value);
-      }
+  const serialized = Array.isArray(data) ? [] : {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (value && typeof value === 'object') {
+      // Recursively serialize nested objects
+      serialized[key] = serializeTimestampsForRedux(value);
+    } else if (value && typeof value.toDate === 'function') {
+      // Convert Firestore timestamp to ISO string
+      serialized[key] = value.toDate().toISOString();
+    } else if (value instanceof Date) {
+      // Convert Date object to ISO string
+      serialized[key] = value.toISOString();
+    } else {
+      // Keep other values as is
+      serialized[key] = value;
     }
-    
-    return serialized;
   }
   
-  return data;
+  return serialized;
 };
 
+/**
+ * Normalize timestamps in an object recursively
+ */
 export const normalizeObjectTimestamps = (input) => {
-  if (input == null) return input;
-  if (Array.isArray(input)) return input.map((v) => normalizeObjectTimestamps(v));
-  if (typeof input === 'object') {
-    const out = Array.isArray(input) ? [] : {};
-    for (const [k, v] of Object.entries(input)) {
-      if (/at$|At$|date$|Date$|time$|Time$|lastLogin|savedAt|generatedAt|expiresAt|validUntil/.test(k)) {
-        const ms = normalizeTimestamp(v);
-        out[k] = ms != null ? ms : normalizeObjectTimestamps(v);
-      } else {
-        out[k] = normalizeObjectTimestamps(v);
-      }
-    }
-    return out;
+  if (!input || typeof input !== 'object') {
+    return input;
   }
-  return input;
+  
+  const normalized = Array.isArray(input) ? [] : {};
+  
+  for (const [key, value] of Object.entries(input)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Recursively normalize nested objects
+      normalized[key] = normalizeObjectTimestamps(value);
+    } else {
+      // Normalize timestamp fields
+      normalized[key] = normalizeTimestamp(value);
+    }
+  }
+  
+  return normalized;
 };

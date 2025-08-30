@@ -8,6 +8,7 @@ import router from './app/router';
 import { AuthProvider } from './shared/context/AuthProvider';
 import { DarkModeProvider } from './shared/context/DarkModeProvider';
 import ErrorBoundary from './shared/components/ErrorBoundary';
+import CacheDebugger from './shared/components/ui/CacheDebugger';
 
 const App = () => (
   <ErrorBoundary>
@@ -16,6 +17,7 @@ const App = () => (
         <AuthProvider>
           <RouterProvider router={router} />
           <ToastContainer />
+          <CacheDebugger />
         </AuthProvider>
       </DarkModeProvider>
     </Provider>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { useGlobalMonthId } from "../hooks/useGlobalMonthId";
 import { useCreateTaskMutation } from "../../features/tasks/tasksApi";
 import { useCentralizedDataAnalytics } from "../hooks/analytics/useCentralizedDataAnalytics";
 import { logger } from "../utils/logger";
@@ -34,14 +33,10 @@ const TaskForm = ({
   const [formData, setFormData] = useState(null);
   const [formProgress, setFormProgress] = useState(0);
   const [lastSaved, setLastSaved] = useState(null);
-  const { monthId } = useGlobalMonthId();
   const [createTask] = useCreateTaskMutation();
 
-  // Only call analytics hook if authenticated and have valid monthId
-  const shouldCallAnalytics = user && monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
-  const { reporters = [] } = useCentralizedDataAnalytics(
-    shouldCallAnalytics ? monthId : null
-  );
+  // Get reporters and monthId from centralized data
+  const { reporters = [], monthId } = useCentralizedDataAnalytics();
 
   // Get field configuration and add options
   const getFieldConfig = useCallback(() => {

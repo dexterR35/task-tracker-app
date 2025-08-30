@@ -20,18 +20,19 @@ import {
 import { db, auth } from "../../app/firebase";
 import {
   normalizeTimestamp,
-  serializeTimestampsForRedux,
 } from "../../shared/utils/dateUtils";
 import { logger } from "../../shared/utils/logger";
 
-// Simple task normalization
+// Simple task normalization with proper serialization for Redux
 const normalizeTask = (monthId, id, data) => {
   if (!data || typeof data !== "object") {
     return null;
   }
 
+  // Normalize timestamps to Date objects and convert to ISO strings for Redux
   const createdAt = normalizeTimestamp(data.createdAt);
   const updatedAt = normalizeTimestamp(data.updatedAt);
+  
   const timeInHours = Number(data.timeInHours) || 0;
   const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
   // Always use arrays - empty array if not selected
@@ -48,8 +49,8 @@ const normalizeTask = (monthId, id, data) => {
     deliverablesOther,
     aiModels,
     deliverablesCount,
-    createdAt,
-    updatedAt,
+    createdAt: createdAt ? createdAt.toISOString() : null, // Convert to ISO string immediately
+    updatedAt: updatedAt ? updatedAt.toISOString() : null, // Convert to ISO string immediately
     timeInHours,
     timeSpentOnAI,
   };
@@ -88,28 +89,12 @@ const fetchTasksFromFirestore = async (
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "MonthBoard", "Charts", "Analytics"],
+  tagTypes: ["MonthTasks", "Charts", "Analytics"],
+  // Add cache cleanup configuration
+  keepUnusedDataFor: 300, // Keep unused data for 5 minutes
+  refetchOnFocus: false,
+  refetchOnReconnect: false,
   endpoints: (builder) => ({
-    // Check if month board exists
-    getMonthBoardExists: builder.query({
-      async queryFn({ monthId }) {
-        try {
-          if (!auth.currentUser) {
-            return { data: { exists: false } };
-          }
-
-          const ref = doc(db, "tasks", monthId);
-          const snap = await getDocFromServer(ref);
-          return { data: { exists: snap.exists() } };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      providesTags: (result, error, arg) => [
-        { type: "MonthBoard", id: arg.monthId },
-      ],
-    }),
-
     // One-time fetch for tasks (for initial load or pagination)
     getMonthTasks: builder.query({
       async queryFn({ monthId, limitCount = 50, startAfterDoc = null } = {}) {
@@ -136,9 +121,7 @@ export const tasksApi = createApi({
           return { error: { message: error.message } };
         }
       },
-      transformResponse: (response) => {
-        return serializeTimestampsForRedux(response);
-      },
+      // No transformResponse needed - normalizeTask already returns serialized timestamps
       providesTags: (result, error, arg) => [
         { type: "MonthTasks", id: arg.monthId },
         {
@@ -156,19 +139,24 @@ export const tasksApi = createApi({
             return { error: { message: "Authentication required" } };
           }
 
+          // Check if board exists first
+          const monthDocRef = doc(db, "tasks", monthId);
+          const monthDoc = await getDoc(monthDocRef);
+
+          if (!monthDoc.exists()) {
+            return { data: { tasks: [], boardExists: false, monthId } };
+          }
+
           const normalizedUserId =
             userId && userId.trim() !== "" ? userId : null;
           const tasks = await fetchTasksFromFirestore(
             monthId,
             normalizedUserId
           );
-          return { data: tasks };
+          return { data: { tasks, boardExists: true, monthId } };
         } catch (error) {
           return { error: { message: error.message } };
         }
-      },
-      transformResponse: (response) => {
-        return serializeTimestampsForRedux(response);
       },
       // Optimized caching configuration
       keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
@@ -191,7 +179,7 @@ export const tasksApi = createApi({
           const monthDoc = await getDoc(monthDocRef);
 
           if (!monthDoc.exists()) {
-            updateCachedData(() => []);
+            updateCachedData(() => ({ tasks: [], boardExists: false, monthId: arg.monthId }));
             return;
           }
 
@@ -217,12 +205,12 @@ export const tasksApi = createApi({
               lastUpdateTime = now;
 
               if (!snapshot || !snapshot.docs) {
-                updateCachedData(() => []);
+                updateCachedData(() => ({ tasks: [], boardExists: true, monthId: arg.monthId }));
                 return;
               }
 
               if (snapshot.empty) {
-                updateCachedData(() => []);
+                updateCachedData(() => ({ tasks: [], boardExists: true, monthId: arg.monthId }));
                 return;
               }
 
@@ -236,7 +224,8 @@ export const tasksApi = createApi({
 
               logger.debug(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
               
-              updateCachedData(() => tasks);
+              // Tasks are already serialized by normalizeTask
+              updateCachedData(() => ({ tasks, boardExists: true, monthId: arg.monthId }));
 
               // Trigger analytics recalculation with debouncing
               setTimeout(() => {
@@ -268,70 +257,22 @@ export const tasksApi = createApi({
           }
         }
       },
-      providesTags: (result, error, arg) => [
-        {
-          type: "MonthTasks",
-          id: arg.userId ? `${arg.monthId}_user_${arg.userId}` : arg.monthId,
-        },
-      ],
+      providesTags: (result, error, arg) => {
+        // Optimized cache tags - use fewer, more general tags
+        const tags = [
+          { type: "MonthTasks", id: arg.monthId }, // All tasks for this month
+        ];
+        
+        // Only add user-specific tag if userId is provided
+        if (arg.userId) {
+          tags.push({ type: "MonthTasks", id: `${arg.monthId}_user_${arg.userId}` });
+        }
+        
+        return tags;
+      },
     }),
 
-    // Real-time subscription for board status
-    subscribeToMonthBoard: builder.query({
-      async queryFn({ monthId } = {}) {
-        try {
-          if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
-          }
 
-          const ref = doc(db, "tasks", monthId);
-          const snap = await getDoc(ref);
-          return { data: { exists: snap.exists(), monthId } };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      async onCacheEntryAdded(
-        arg,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
-      ) {
-        let unsubscribe = null;
-
-        try {
-          await cacheDataLoaded;
-
-          const ref = doc(db, "tasks", arg.monthId);
-
-          unsubscribe = onSnapshot(
-            ref,
-            (snapshot) => {
-              updateCachedData(() => ({
-                exists: snapshot.exists(),
-                monthId: arg.monthId,
-                lastUpdated: Date.now(),
-              }));
-            },
-            (error) => {
-              logger.error("Real-time board subscription error:", error);
-            }
-          );
-
-          await cacheEntryRemoved;
-        } catch (error) {
-          logger.error(
-            "Error setting up real-time board subscription:",
-            error
-          );
-        } finally {
-          if (unsubscribe) {
-            unsubscribe();
-          }
-        }
-      },
-      providesTags: (result, error, arg) => [
-        { type: "MonthBoard", id: arg.monthId },
-      ],
-    }),
 
     // Create task with transaction for atomic operations
     createTask: builder.mutation({
@@ -380,7 +321,9 @@ export const tasksApi = createApi({
           logger.debug(`[tasksApi] Created task:`, { 
             id: result.id, 
             monthId: result.monthId,
-            taskName: result.taskName 
+            taskName: result.taskName,
+            createdAt: result.createdAt,
+            updatedAt: result.updatedAt
           });
 
           return { data: result };
@@ -388,6 +331,7 @@ export const tasksApi = createApi({
           return { error: { message: error.message } };
         }
       },
+      // No transformResponse needed - normalizeTask already returns serialized timestamps
       // No cache invalidation needed - real-time subscription handles updates
       // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
     }),
@@ -464,54 +408,7 @@ export const tasksApi = createApi({
       // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
     }),
 
-    // Generate month board (admin only)
-    generateMonthBoard: builder.mutation({
-      async queryFn({ monthId, meta = {} }) {
-        try {
-          logger.log(`[tasksApi] Starting month board generation for monthId: ${monthId}`);
-          
-          if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
-          }
 
-          // Use transaction to ensure atomic board creation
-          const result = await runTransaction(db, async (transaction) => {
-            // Read operation first: Check if board already exists
-            const boardRef = doc(db, "tasks", monthId);
-            const boardDoc = await transaction.get(boardRef);
-
-            if (boardDoc.exists()) {
-              throw new Error("Month board already exists");
-            }
-
-            // Write operation: Create the board
-            const boardId = `${monthId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const boardData = {
-              monthId,
-              boardId,
-              createdAt: serverTimestamp(),
-              createdBy: auth.currentUser.uid,
-              createdByName:
-                auth.currentUser.displayName || auth.currentUser.email,
-              ...meta,
-            };
-
-            logger.log(`[tasksApi] Creating month board with data:`, { monthId, boardId, createdBy: auth.currentUser.uid });
-            transaction.set(boardRef, boardData);
-            return { monthId, boardId };
-          });
-
-          logger.log(`[tasksApi] Month board generated successfully. Result:`, result);
-
-          return { data: result };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      invalidatesTags: (result, error, arg) => [
-        { type: "MonthBoard", id: arg.monthId },
-      ],
-    }),
 
     // Save charts data with batch operations
     saveChartsData: builder.mutation({
@@ -563,11 +460,8 @@ export const tasksApi = createApi({
 export const {
   useGetMonthTasksQuery,
   useSubscribeToMonthTasksQuery,
-  useSubscribeToMonthBoardQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
-  useGetMonthBoardExistsQuery,
-  useGenerateMonthBoardMutation,
   useSaveChartsDataMutation,
 } = tasksApi;

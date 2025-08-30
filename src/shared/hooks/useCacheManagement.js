@@ -1,61 +1,73 @@
+import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
+import { tasksApi } from '../../features/tasks/tasksApi';
 import { usersApi } from '../../features/users/usersApi';
 import { reportersApi } from '../../features/reporters/reportersApi';
-import { useDataCache } from './analytics/useCentralizedDataAnalytics';
 import { logger } from '../utils/logger';
 
+/**
+ * Hook for managing cache operations
+ * Provides utilities to clear cache, invalidate specific data, and manage cache lifecycle
+ */
 export const useCacheManagement = () => {
   const dispatch = useDispatch();
-  const { clearCache } = useDataCache();
 
-  const clearAllCache = () => {
+  // Clear all cache entries
+  const clearAllCache = useCallback(() => {
+    logger.log('[useCacheManagement] Clearing all cache entries');
+    dispatch(tasksApi.util.resetApiState());
     dispatch(usersApi.util.resetApiState());
     dispatch(reportersApi.util.resetApiState());
-    logger.log("All cache cleared (excluding tasks - handled by real-time)");
-  };
+  }, [dispatch]);
 
-  const clearReportersCache = () => {
-    dispatch(reportersApi.util.resetApiState());
-    logger.log("Reporters cache cleared");
-  };
+  // Clear cache for specific month
+  const clearMonthCache = useCallback((monthId) => {
+    logger.log(`[useCacheManagement] Clearing cache for month: ${monthId}`);
+    dispatch(tasksApi.util.invalidateTags([{ type: 'MonthTasks', id: monthId }]));
+  }, [dispatch]);
 
-  const clearUsersCache = () => {
-    dispatch(usersApi.util.resetApiState());
-    logger.log("Users cache cleared");
-  };
+  // Clear cache for specific user
+  const clearUserCache = useCallback((userId) => {
+    logger.log(`[useCacheManagement] Clearing cache for user: ${userId}`);
+    dispatch(usersApi.util.invalidateTags([{ type: 'Users', id: userId }]));
+  }, [dispatch]);
 
-  // Clear cache for specific entity
-  const clearEntityCache = (entityType) => {
-    switch (entityType) {
-      case 'reporters':
-        clearReportersCache();
+  // Clear cache when data changes (for real-time updates)
+  const clearCacheOnDataChange = useCallback((dataType, operation) => {
+    logger.log(`[useCacheManagement] Clearing cache due to ${operation} on ${dataType}`);
+    
+    switch (dataType) {
+      case 'tasks':
+        dispatch(tasksApi.util.invalidateTags([{ type: 'MonthTasks' }]));
         break;
       case 'users':
-        clearUsersCache();
+        dispatch(usersApi.util.invalidateTags([{ type: 'Users' }]));
         break;
-      case 'tasks':
-        clearCache();
-        logger.log('Analytics cache cleared due to task operation');
+      case 'reporters':
+        dispatch(reportersApi.util.invalidateTags([{ type: 'Reporters' }]));
         break;
       default:
-        clearAllCache();
+        logger.warn(`[useCacheManagement] Unknown data type: ${dataType}`);
     }
-  };
+  }, [dispatch]);
 
-  // Clear cache when data changes significantly
-  const clearCacheOnDataChange = (entityType, operation) => {
-    logger.log(`Cache cleared due to ${operation} on ${entityType}`);
-    clearEntityCache(entityType);
+  // Clean up old cache entries (remove unused data)
+  const cleanupOldCache = useCallback(() => {
+    logger.log('[useCacheManagement] Cleaning up old cache entries');
     
-    // For tasks, analytics cache is already cleared in clearEntityCache
-    // No additional logic needed
-  };
+    // Remove cache entries older than 10 minutes
+    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+    
+    // This is a manual cleanup - RTK Query handles most cleanup automatically
+    // but we can trigger additional cleanup if needed
+    dispatch(tasksApi.util.resetApiState());
+  }, [dispatch]);
 
   return {
     clearAllCache,
-    clearReportersCache,
-    clearUsersCache,
-    clearEntityCache,
+    clearMonthCache,
+    clearUserCache,
     clearCacheOnDataChange,
+    cleanupOldCache,
   };
 };
