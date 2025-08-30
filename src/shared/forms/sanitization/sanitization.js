@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify';
 import { FIELD_TYPES } from '../validation/fieldTypes';
-import { VALIDATION_PATTERNS } from '../validation/validationRules';
+
 
 // Sanitize HTML content
 export const sanitizeHtml = (html) => {
@@ -113,26 +113,57 @@ export const sanitizeFieldValue = (value, fieldConfig) => {
   return sanitizedValue;
 };
 
-// Extract task number from Jira link
-export const extractTaskNumber = (jiraLink) => {
-  if (!jiraLink) return null;
+
+
+// Extract and normalize document ID from various formats (Firestore paths, objects, etc.)
+export const extractDocumentId = (documentId) => {
+  if (!documentId) return null;
   
-  const match = jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
-  return match ? match[1] : null;
+  // If it's already a simple ID, return it
+  if (typeof documentId === 'string' && !documentId.includes('/')) {
+    return documentId;
+  }
+  
+  // If it's a full Firestore path, extract the last part
+  if (typeof documentId === 'string' && documentId.includes('/')) {
+    const pathParts = documentId.split('/');
+    return pathParts[pathParts.length - 1];
+  }
+  
+  // If it's an object with id property
+  if (typeof documentId === 'object' && documentId.id) {
+    return extractDocumentId(documentId.id);
+  }
+  
+  return documentId;
 };
 
-// Validate Jira link format
-export const validateJiraLink = (jiraLink) => {
-  if (!jiraLink) return false;
-  return VALIDATION_PATTERNS.JIRA_LINK.test(jiraLink);
+// Normalize task data for API operations
+export const normalizeTaskData = (taskData, context = {}) => {
+  const { monthId } = context;
+  
+  // Extract document ID
+  const taskId = extractDocumentId(taskData.id || taskData);
+  
+  // Preserve original monthId or use context
+  const taskMonthId = taskData.monthId || monthId;
+  
+  return {
+    taskId,
+    monthId: taskMonthId,
+    originalData: taskData
+  };
 };
 
-// Sanitize task data (pure sanitization, no validation)
-export const sanitizeTaskData = (taskData, includeSystemFields = true) => {
+
+
+// Sanitize task data (pure sanitization only)
+export const sanitizeTaskData = (taskData) => {
   if (!taskData || typeof taskData !== 'object') return {};
 
-  const baseFields = {
+  return {
     jiraLink: sanitizeUrl(taskData.jiraLink || ''),
+    taskNumber: sanitizeText(taskData.taskNumber || ''),
     markets: Array.isArray(taskData.markets) 
       ? taskData.markets.map(m => sanitizeText(m)).filter(Boolean)
       : [],
@@ -140,8 +171,7 @@ export const sanitizeTaskData = (taskData, includeSystemFields = true) => {
     taskName: sanitizeText(taskData.taskName || ''),
     aiUsed: Boolean(taskData.aiUsed),
     timeSpentOnAI: Number(taskData.timeSpentOnAI) || 0,
-    // Always use arrays - empty array if not selected
-    aiModels: Array.isArray(taskData.aiModels)
+    aiModels: Array.isArray(taskData.aiModels) 
       ? taskData.aiModels.map(m => sanitizeText(m)).filter(Boolean)
       : [],
     timeInHours: Number(taskData.timeInHours) || 0,
@@ -149,33 +179,19 @@ export const sanitizeTaskData = (taskData, includeSystemFields = true) => {
     deliverables: Array.isArray(taskData.deliverables)
       ? taskData.deliverables.map(d => sanitizeText(d)).filter(Boolean)
       : [],
-    deliverablesCount: Number(taskData.deliverablesCount) || 0,
-    // Always use arrays - empty array if not selected
     deliverablesOther: Array.isArray(taskData.deliverablesOther)
       ? taskData.deliverablesOther.map(d => sanitizeText(d)).filter(Boolean)
       : [],
-    taskNumber: sanitizeText(taskData.taskNumber || ''),
+    deliverablesCount: Number(taskData.deliverablesCount) || 0,
     reporters: sanitizeText(taskData.reporters || ''),
+    createdBy: sanitizeText(taskData.createdBy || ''),
+    createdByName: sanitizeText(taskData.createdByName || ''),
+    userUID: sanitizeText(taskData.userUID || ''),
+    monthId: sanitizeText(taskData.monthId || ''),
   };
-
-  // Include system fields only when needed (for updates, not creation)
-  if (includeSystemFields) {
-    return {
-      ...baseFields,
-      createdBy: sanitizeText(taskData.createdBy || ''),
-      createdByName: sanitizeText(taskData.createdByName || ''),
-      userUID: sanitizeText(taskData.userUID || ''),
-      monthId: sanitizeText(taskData.monthId || ''),
-    };
-  }
-
-  return baseFields;
 };
 
-// Alias for task creation data (maintains backward compatibility)
-export const sanitizeTaskCreationData = (formData) => {
-  return sanitizeTaskData(formData, false);
-};
+
 
 // Sanitize user data (pure sanitization, no validation)
 export const sanitizeUserData = (userData) => {
@@ -223,4 +239,15 @@ export const sanitizeLoginData = (loginData) => {
     password: typeof loginData.password === 'string' ? loginData.password.trim() : '',
     rememberMe: Boolean(loginData.rememberMe),
   };
+};
+
+
+
+// Format task display name for table
+export const formatTaskDisplayName = (taskId, taskNumber) => {
+  if (!taskId) return 'Unknown Task';
+  
+  // Use taskNumber if available, otherwise use document ID
+  const displayNumber = taskNumber || taskId;
+  return `gimodear-${displayNumber}`;
 };

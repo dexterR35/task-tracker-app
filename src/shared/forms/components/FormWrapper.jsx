@@ -2,7 +2,6 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Formik, Form, useFormikContext } from 'formik';
 import * as Yup from 'yup';
 import { logger } from '../../utils/logger';
-import { sanitizeText } from '../sanitization';
 import DynamicButton from '../../components/ui/DynamicButton';
 import Loader from '../../components/ui/Loader';
 
@@ -32,13 +31,15 @@ const FormWrapper = ({
   children,
   showSubmitButton = true, // New prop to control submit button display
   onFormReady = null, // Callback when form is ready
+  bypassSubmitWrapper = false, // New prop to bypass submit wrapper (for DynamicForm)
   ...props
 }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
 
-  // Handle form submission
+  // Handle form submission (for standalone forms)
+  // DynamicForm uses bypassSubmitWrapper=true to handle its own submission logic
   const handleSubmit = useCallback(async (values, formikHelpers) => {
     try {
       setIsSubmitting(true);
@@ -48,7 +49,7 @@ const FormWrapper = ({
         logger.log('Form submission:', { values });
       }
 
-      // Call the onSubmit function (DynamicForm will handle sanitization)
+      // Call the onSubmit function (DynamicForm will handle sanitization and validation)
       await onSubmit(values, formikHelpers);
       
     } catch (error) {
@@ -66,12 +67,12 @@ const FormWrapper = ({
   const formProps = useMemo(() => ({
     initialValues,
     validationSchema,
-    onSubmit: handleSubmit,
+    onSubmit: bypassSubmitWrapper ? onSubmit : handleSubmit,
     enableReinitialize: true,
     validateOnChange: true,
     validateOnBlur: true,
     ...props
-  }), [initialValues, validationSchema, handleSubmit, props]);
+  }), [initialValues, validationSchema, bypassSubmitWrapper ? onSubmit : handleSubmit, props]);
 
   // Show loading state
   if (loading) {
@@ -110,7 +111,7 @@ const FormWrapper = ({
             )}
 
             {/* Debug Information */}
-            {!debug && (
+            {debug && (
               <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-xs">
                 <h4 className="font-semibold mb-2">Debug Info:</h4>
                 <div className="space-y-1">
@@ -121,6 +122,14 @@ const FormWrapper = ({
                   {hasErrors && (
                     <div>
                       <strong>Error Details:</strong>
+                      <pre className="mt-1 text-xs bg-gray-100 p-2 rounded">
+                        {JSON.stringify(errors, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {!hasErrors && Object.keys(errors).length > 0 && (
+                    <div>
+                      <strong>Raw Errors Object:</strong>
                       <pre className="mt-1 text-xs bg-gray-100 p-2 rounded">
                         {JSON.stringify(errors, null, 2)}
                       </pre>

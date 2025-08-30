@@ -3,18 +3,17 @@ import { useCurrentMonth } from "../../hooks/useCurrentMonth";
 import { useFetchData } from "../../hooks/useFetchData.js";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "../../../features/tasks/tasksApi";
 import { useCacheManagement } from "../../hooks/useCacheManagement";
+import { extractDocumentId, normalizeTaskData } from "../../forms/sanitization";
 import DynamicButton from "../ui/DynamicButton";
 import DynamicTable from "../ui/DynamicTable";
 import { getColumns } from "../ui/tableColumns.jsx";
 import { showError, showSuccess } from "../../utils/toast";
 import { logger } from "../../utils/logger";
-import { sanitizeText } from "../../forms/sanitization";
 import TaskForm from "../../task/TaskForm";
 
 const DashboardTaskTable = ({
   userId = null,
   className = "",
-  hideCreateButton = false, // New prop to hide the create button
 }) => {
   const { monthId, monthName, boardExists } = useCurrentMonth();
   const [rowActionId, setRowActionId] = useState(null);
@@ -25,7 +24,6 @@ const DashboardTaskTable = ({
   const {
     tasks = [],
     users,
-    user,
     canAccess,
     isLoading,
     error: tasksError,
@@ -56,12 +54,34 @@ const DashboardTaskTable = ({
   };
 
   // Handle edit form success
-  const handleEditFormSuccess = (result) => {
-    console.log('Task updated successfully:', result);
-    setShowEditModal(false);
-    setEditingTask(null);
-    clearCacheOnDataChange('tasks', 'update');
-    showSuccess("Task updated successfully! The task list will update automatically.");
+  const handleEditFormSuccess = async (formData) => {
+    try {
+      setRowActionId(editingTask.id);
+      
+      // Use utility function to normalize task data
+      const { taskId, monthId: taskMonthId } = normalizeTaskData(editingTask, { monthId });
+
+      // Remove the id from updates to avoid conflicts
+      const { id, ...updates } = formData;
+
+      // Update task using Redux mutation
+      const result = await updateTask({
+        monthId: taskMonthId,
+        id: taskId,
+        updates
+      }).unwrap();
+
+      console.log('Task updated successfully:', result);
+      setShowEditModal(false);
+      setEditingTask(null);
+      clearCacheOnDataChange('tasks', 'update');
+      showSuccess("Task updated successfully! The task list will update automatically.");
+    } catch (error) {
+      logger.error("Task update error:", error);
+      showError(`Failed to update task: ${error?.message || "Please try again."}`);
+    } finally {
+      setRowActionId(null);
+    }
   };
 
   // Handle edit form error
@@ -79,15 +99,8 @@ const DashboardTaskTable = ({
     try {
       setRowActionId(task.id);
 
-      // Extract the document ID from the task ID (in case it's a full path)
-      let taskId = task.id;
-      if (typeof taskId === "string" && taskId.includes("/")) {
-        const pathParts = taskId.split("/");
-        taskId = pathParts[pathParts.length - 1];
-      }
-
-      // Preserve the original monthId from the task
-      const taskMonthId = task.monthId || monthId;
+      // Use utility function to normalize task data
+      const { taskId, monthId: taskMonthId } = normalizeTaskData(task, { monthId });
 
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
@@ -178,6 +191,7 @@ const DashboardTaskTable = ({
               initialValues={editingTask}
               onSubmit={handleEditFormSuccess}
               onError={handleEditFormError}
+              skipInternalUpdate={true} // Tell TaskForm to skip internal update handling
             />
           </div>
         </div>

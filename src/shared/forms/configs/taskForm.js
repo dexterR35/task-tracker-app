@@ -10,13 +10,7 @@ export const TASK_FORM_FIELDS = [
     required: true,
     validation: {
       pattern: VALIDATION_PATTERNS.JIRA_LINK,
-      custom: {
-        test: (value) => {
-          if (!value) return false;
-          return VALIDATION_PATTERNS.JIRA_LINK.test(value);
-        },
-        message: 'Invalid Jira link format. Must be a valid Atlassian Jira URL'
-      }
+      message: 'Invalid Jira link format. Must be a valid Atlassian Jira URL'
     },
     placeholder: 'https://jira.company.com/browse/TASK-123',
     helpText: 'Enter the complete Jira ticket URL. Task number will be auto-extracted.',
@@ -30,21 +24,15 @@ export const TASK_FORM_FIELDS = [
     label: 'Task Number',
     required: true,
     validation: {
-      minLength: 1,
-      custom: {
-        test: (value) => {
-          if (!value) return false;
-          // Basic task number validation (e.g., TASK-123, PROJ-456)
-          return /^[A-Z]+-\d+$/.test(value);
-        },
-        message: 'Invalid task number format (e.g., TASK-123, PROJ-456)'
-      }
+      pattern: VALIDATION_PATTERNS.TASK_NUMBER,
+      message: 'Task number must be in format TASK-123'
     },
     placeholder: 'TASK-123',
-    helpText: 'Task number (auto-extracted from Jira link)',
+    helpText: 'Task number (auto-extracted from Jira link, cannot be manually edited)',
     props: {
       autoComplete: 'off',
-      readOnly: false // Allow manual editing if needed
+      readOnly: true, // Disable manual editing
+      disabled: true // Disable the field
     }
   },
   {
@@ -54,13 +42,7 @@ export const TASK_FORM_FIELDS = [
     required: true,
     validation: {
       minItems: 1,
-      custom: {
-        test: (value) => {
-          if (!value || !Array.isArray(value) || value.length === 0) return false;
-          return true;
-        },
-        message: 'Please select at least one market'
-      }
+      message: 'Please select at least one market'
     },
     helpText: 'Select all markets where this task applies',
     props: {
@@ -73,13 +55,7 @@ export const TASK_FORM_FIELDS = [
     label: 'Product',
     required: true,
     validation: {
-      custom: {
-        test: (value) => {
-          if (!value || value.trim() === '') return false;
-          return true;
-        },
-        message: 'Please select a product'
-      }
+      message: 'Please select a product'
     },
     helpText: 'Select the primary product this task relates to'
   },
@@ -89,13 +65,7 @@ export const TASK_FORM_FIELDS = [
     label: 'Task Name',
     required: true,
     validation: {
-      custom: {
-        test: (value) => {
-          if (!value || value.trim() === '') return false;
-          return true;
-        },
-        message: 'Please select a task type'
-      }
+      message: 'Please select a task type'
     },
     helpText: 'Select the type of task being performed'
   },
@@ -107,14 +77,7 @@ export const TASK_FORM_FIELDS = [
     validation: {
       minValue: 0.5,
       maxValue: 24,
-      custom: {
-        test: (value) => {
-          if (!value || value < 0.5) return false;
-          if (value > 24) return false;
-          return true;
-        },
-        message: 'Time must be between 0.5 and 24 hours'
-      }
+      message: 'Time must be between 0.5 and 24 hours'
     },
     placeholder: '2.5',
     helpText: 'Total time spent on this task (0.5 - 24 hours)',
@@ -142,14 +105,7 @@ export const TASK_FORM_FIELDS = [
     validation: {
       minValue: 0.5,
       maxValue: 24,
-      custom: {
-        test: (value, allValues) => {
-          if (allValues.aiUsed && (!value || value < 0.5)) return false;
-          if (value && value > allValues.timeInHours) return false;
-          return true;
-        },
-        message: 'AI time must be between 0.5 hours and cannot exceed total time'
-      }
+      message: 'AI time must be between 0.5 and 24 hours'
     },
     conditional: {
       field: 'aiUsed',
@@ -157,7 +113,7 @@ export const TASK_FORM_FIELDS = [
       required: true
     },
     placeholder: '1.0',
-    helpText: 'Hours spent specifically using AI tools (auto-calculated based on AI models)',
+    helpText: 'Hours spent specifically using AI tools (required when AI is used)',
     props: {
       step: 0.5,
       min: 0.5,
@@ -171,20 +127,14 @@ export const TASK_FORM_FIELDS = [
     required: false,
     validation: {
       minItems: 1,
-      custom: {
-        test: (value, allValues) => {
-          if (allValues.aiUsed && (!value || !Array.isArray(value) || value.length === 0)) return false;
-          return true;
-        },
-        message: 'Please select at least one AI model when AI is used'
-      }
+      message: 'Please select at least one AI model when AI is used'
     },
     conditional: {
       field: 'aiUsed',
       value: true,
       required: true
     },
-    helpText: 'Select all AI models used in this task',
+    helpText: 'Select all AI models used in this task (required when AI is used)',
     props: {
       maxItems: 5
     }
@@ -194,7 +144,7 @@ export const TASK_FORM_FIELDS = [
     type: FIELD_TYPES.CHECKBOX,
     label: 'Task Required Rework',
     required: false,
-    helpText: 'Check if this task required rework or revisions',
+    helpText: 'Check if this task required rework or revisions (will be submitted as true/false)',
     props: {
       className: 'mt-2'
     }
@@ -206,13 +156,7 @@ export const TASK_FORM_FIELDS = [
     required: true,
     validation: {
       minItems: 1,
-      custom: {
-        test: (value) => {
-          if (!value || !Array.isArray(value) || value.length === 0) return false;
-          return true;
-        },
-        message: 'Please select at least one deliverable'
-      }
+      message: 'Please select at least one deliverable'
     },
     helpText: 'Select all deliverables produced by this task (count will be auto-calculated)',
     props: {
@@ -227,17 +171,7 @@ export const TASK_FORM_FIELDS = [
     validation: {
       minValue: 1,
       maxValue: 100,
-      custom: {
-        test: (value, allValues) => {
-          if (!value || value < 1) return false;
-          if (allValues.deliverables && Array.isArray(allValues.deliverables)) {
-            const expectedCount = allValues.deliverables.length;
-            if (value < expectedCount) return false;
-          }
-          return true;
-        },
-        message: 'Deliverables count must be at least 1 and match selected deliverables'
-      }
+      message: 'Deliverables count must be at least 1'
     },
     placeholder: '1',
     helpText: 'Total number of deliverables produced (auto-calculated from selection)',
@@ -254,15 +188,7 @@ export const TASK_FORM_FIELDS = [
     required: false,
     validation: {
       minItems: 1,
-      custom: {
-        test: (value, allValues) => {
-          if (allValues.deliverables && allValues.deliverables.includes('others')) {
-            if (!value || !Array.isArray(value) || value.length === 0) return false;
-          }
-          return true;
-        },
-        message: 'Please specify other deliverables when "Others" is selected'
-      }
+      message: 'Please specify other deliverables when "Others" is selected'
     },
     conditional: {
       field: 'deliverables',
@@ -283,13 +209,7 @@ export const TASK_FORM_FIELDS = [
     label: 'Reporter',
     required: true,
     validation: {
-      custom: {
-        test: (value) => {
-          if (!value || value.trim() === '') return false;
-          return true;
-        },
-        message: 'Please select a reporter'
-      }
+      message: 'Please select a reporter'
     },
     helpText: 'Select the person responsible for this task (defaults to current user)',
     props: {

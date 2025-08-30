@@ -167,17 +167,11 @@ const OptimizedTaskMetricsBoard = ({
     user,
     analytics,
     getMetric,
-    getAllMetrics,
     hasData,
     error,
     isLoading,
     monthId,
-    tasks,
-    users,
-    reporters,
-    getFilteredData,
-    getUserById,
-    getReporterById
+
   } = useFetchData(userId);
   
   // Use memoized card filtering
@@ -300,7 +294,7 @@ const OptimizedTaskMetricsBoard = ({
     <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
       <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Debug Info</h3>
       <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-        <p>User Role: {user?.role}</p>
+        <p>Users Role: {user?.role}</p>
         <p>User Occupation: {user?.occupation}</p>
         <p>Filtered Cards Count: {filteredCardsConfig.length}</p>
         <p>All Available Cards: {METRIC_CARDS_CONFIG.map(card => card.id).join(', ')}</p>

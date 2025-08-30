@@ -5,12 +5,12 @@ export {
   sanitizeEmail,
   sanitizeUrl,
   sanitizeTaskData,
-  sanitizeTaskCreationData,
   sanitizeUserData,
   sanitizeUserCreationData,
   sanitizeFormData,
-  extractTaskNumber,
-  validateJiraLink
+  extractDocumentId,
+  normalizeTaskData,
+  formatTaskDisplayName
 } from './sanitization';
 
 // Data preparation exports
@@ -19,5 +19,6 @@ export {
   prepareUserData,
   prepareReporterData,
   prepareLoginData,
-  prepareFormData
+  prepareFormData,
+  handleConditionalFieldDefaults
 } from './preparators';

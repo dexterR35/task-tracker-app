@@ -76,10 +76,16 @@ const SelectInput = forwardRef(({
   label,
   required = false,
   labelProps = {},
+  placeholder = "Select an option",
   ...props
 }, ref) => {
   // Filter out custom props that shouldn't go to DOM
   const domProps = filterDOMProps(props);
+
+  // Validate and normalize options
+  const normalizedOptions = Array.isArray(options) ? options.filter(option => 
+    option && (typeof option === 'string' || (typeof option === 'object' && (option.value || option.label)))
+  ) : [];
 
   // If value and onChange are provided, use them directly (for DynamicForm usage)
   if (value !== undefined && onChange) {
@@ -87,6 +93,11 @@ const SelectInput = forwardRef(({
     
     return (
       <div className={`select-input-wrapper ${className}`}>
+        {normalizedOptions.length === 0 && (
+          <div className="text-yellow-600 text-sm mb-2">
+            ⚠️ No options available for {name}
+          </div>
+        )}
         <select
           name={name}
           id={name}
@@ -94,14 +105,14 @@ const SelectInput = forwardRef(({
           onChange={onChange}
           onBlur={onBlur}
           ref={ref}
-          disabled={disabled}
+          disabled={disabled || normalizedOptions.length === 0}
           className={selectClasses}
           {...domProps}
         >
-          <option value="">Select an option</option>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+          <option value="">{placeholder}</option>
+          {normalizedOptions.map((option) => (
+            <option key={option.value || option} value={option.value || option}>
+              {option.label || option}
             </option>
           ))}
         </select>
@@ -119,6 +130,12 @@ const SelectInput = forwardRef(({
         </label>
       )}
       
+      {normalizedOptions.length === 0 && (
+        <div className="text-yellow-600 text-sm mb-2">
+          ⚠️ No options available for {name}
+        </div>
+      )}
+      
       <Field name={name}>
         {({ field, meta }) => {
           const hasError = meta.touched && meta.error;
@@ -132,13 +149,13 @@ const SelectInput = forwardRef(({
                 {...field}
                 {...domProps}
                 ref={ref}
-                disabled={disabled}
+                disabled={disabled || normalizedOptions.length === 0}
                 className={selectClasses}
               >
-                <option value="">Select an option</option>
-                {options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                <option value="">{placeholder}</option>
+                {normalizedOptions.map((option) => (
+                  <option key={option.value || option} value={option.value || option}>
+                    {option.label || option}
                   </option>
                 ))}
               </select>

@@ -5,13 +5,14 @@ import { format } from "date-fns";
 import { selectIsAuthChecking } from "../../../features/auth/authSlice";
 import { useAuth } from "../../hooks/useAuth";
 import { useFetchData } from "../../hooks/useFetchData";
-import { useCurrentMonth } from "../../hooks/useCurrentMonth";
 import { useUnifiedLoading } from "../../hooks/useUnifiedLoading";
 import { useCacheManagement } from "../../hooks/useCacheManagement";
+import { showSuccess, showError, showInfo } from "../../utils/toast";
+import { logger } from "../../utils/logger";
 import DynamicButton from "../ui/DynamicButton";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import Loader from "../ui/Loader";
-import OptimizedTaskMetricsBoard from "../dashboard/DashboardMetrics";
+import OptimizedTaskMetricsBoard from "../dashboard/CardsMetrics";
 import DashboardTaskTable from "../dashboard/DashboardTaskTable";
 import TaskForm from "../../task/TaskForm";
 import {
@@ -148,13 +149,23 @@ const AppLayout = () => {
     console.log('Task created successfully:', result);
     setShowCreateModal(false);
     clearCacheOnDataChange('tasks', 'create');
-    showSuccess("Task created successfully! The task list will update automatically.");
+    try {
+      showSuccess("Task created successfully! The task list will update automatically.");
+    } catch (error) {
+      console.error('showSuccess error:', error);
+      console.log('Task created successfully! The task list will update automatically.');
+    }
   };
 
   // Handle form error
   const handleFormError = (error) => {
     console.error('Task creation failed:', error);
-    showError("Failed to create task. Please try again.");
+    try {
+      showError("Failed to create task. Please try again.");
+    } catch (toastError) {
+      console.error('showError error:', toastError);
+      console.log("Failed to create task. Please try again.");
+    }
   };
 
   // Derive title based on context

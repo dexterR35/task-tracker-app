@@ -1,5 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { format } from 'date-fns';
+import { formatTaskDisplayName } from '../../forms/sanitization';
 
 const columnHelper = createColumnHelper();
 
@@ -27,14 +28,24 @@ const formatDate = (date) => {
 
 // Tasks Table Columns
 export const getTaskColumns = () => [
-  columnHelper.accessor('taskNumber', {
+  columnHelper.accessor('id', {
     header: '# ID',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue, row }) => {
+      const taskId = getValue();
+      const taskNumber = row.original.taskNumber;
+      return formatTaskDisplayName(taskId, taskNumber);
+    },
     size: 80,
   }),
   columnHelper.accessor('taskName', {
     header: 'Task Name',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue, row }) => {
+      const taskName = getValue();
+      const taskId = row.original.id;
+      const taskNumber = row.original.taskNumber;
+      const displayId = formatTaskDisplayName(taskId, taskNumber);
+      return `${taskName} (${displayId})`;
+    },
     size: 150,
   }),
   columnHelper.accessor('markets', {

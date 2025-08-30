@@ -60,119 +60,129 @@ export const buildFieldValidation = (fieldConfig) => {
     schema = schema.required(VALIDATION_MESSAGES.REQUIRED);
   }
 
-  // Apply custom validation rules
-  if (validation.minLength) {
-    schema = schema.min(validation.minLength, VALIDATION_MESSAGES.MIN_LENGTH(validation.minLength));
+  // Apply min/max length validations (only for non-conditional fields)
+  if (!conditional) {
+    if (validation.minLength) {
+      schema = schema.min(validation.minLength, VALIDATION_MESSAGES.MIN_LENGTH(validation.minLength));
+    }
+
+    if (validation.maxLength) {
+      schema = schema.max(validation.maxLength, VALIDATION_MESSAGES.MAX_LENGTH(validation.maxLength));
+    }
   }
 
-  if (validation.maxLength) {
-    schema = schema.max(validation.maxLength, VALIDATION_MESSAGES.MAX_LENGTH(validation.maxLength));
-  }
 
-  if (validation.minValue !== undefined) {
-    schema = schema.min(validation.minValue, VALIDATION_MESSAGES.MIN_VALUE(validation.minValue));
-  }
 
-  if (validation.maxValue !== undefined) {
-    schema = schema.max(validation.maxValue, VALIDATION_MESSAGES.MAX_VALUE(validation.maxValue));
-  }
 
-  if (validation.pattern) {
-    schema = schema.matches(validation.pattern, VALIDATION_MESSAGES.INVALID_FORMAT);
-  }
 
-  if (validation.custom) {
-    schema = schema.test('custom', validation.custom.message, validation.custom.test);
-  }
+
 
   // Apply conditional validation
   if (conditional) {
     schema = schema.when(conditional.field, {
       is: conditional.value,
       then: (schema) => {
+        // Apply all validations when condition is met
         if (conditional.required) {
-          return schema.required(VALIDATION_MESSAGES.CONDITIONAL_REQUIRED);
+          schema = schema.required(VALIDATION_MESSAGES.CONDITIONAL_REQUIRED);
         }
-        if (conditional.validation) {
-          return buildFieldValidation({
-            ...fieldConfig,
-            validation: conditional.validation
-          });
+        
+        // Apply custom validation
+        if (validation.custom) {
+          schema = schema.test('custom', validation.custom.message, validation.custom.test);
         }
+        
+        // Apply min/max length validations
+        if (validation.minLength) {
+          schema = schema.min(validation.minLength, VALIDATION_MESSAGES.MIN_LENGTH(validation.minLength));
+        }
+        if (validation.maxLength) {
+          schema = schema.max(validation.maxLength, VALIDATION_MESSAGES.MAX_LENGTH(validation.maxLength));
+        }
+        
+        // Apply min/max value validations
+        if (validation.minValue !== undefined) {
+          schema = schema.min(validation.minValue, VALIDATION_MESSAGES.MIN_VALUE(validation.minValue));
+        }
+        if (validation.maxValue !== undefined) {
+          schema = schema.max(validation.maxValue, VALIDATION_MESSAGES.MAX_VALUE(validation.maxValue));
+        }
+        
+        // Apply pattern validation
+        if (validation.pattern) {
+          schema = schema.matches(validation.pattern, VALIDATION_MESSAGES.INVALID_FORMAT);
+        }
+        
+        // Apply array validations
+        if (type === FIELD_TYPES.MULTI_SELECT || type === FIELD_TYPES.MULTI_VALUE) {
+          if (validation.minItems) {
+            schema = schema.min(validation.minItems, VALIDATION_MESSAGES.ARRAY_MIN(validation.minItems));
+          }
+          if (validation.maxItems) {
+            schema = schema.max(validation.maxItems, VALIDATION_MESSAGES.ARRAY_MAX(validation.maxItems));
+          }
+        }
+        
         return schema;
       },
-      otherwise: (schema) => schema.optional()
+      otherwise: (schema) => {
+        // When condition is not met, make field completely optional and skip all validation
+        return schema.optional().nullable().transform(() => {
+          // Return appropriate default values based on field type
+          if (type === FIELD_TYPES.MULTI_SELECT || type === FIELD_TYPES.MULTI_VALUE) {
+            return [];
+          }
+          if (type === FIELD_TYPES.NUMBER) {
+            return 0;
+          }
+          if (type === FIELD_TYPES.CHECKBOX) {
+            return false;
+          }
+          return '';
+        });
+      }
     });
-  }
-
-  // Special validations for specific field types
-  if (type === FIELD_TYPES.MULTI_SELECT || type === FIELD_TYPES.MULTI_VALUE) {
-    if (validation.minItems) {
-      schema = schema.min(validation.minItems, VALIDATION_MESSAGES.ARRAY_MIN(validation.minItems));
+  } else {
+    // Apply validations only for non-conditional fields
+    if (validation.custom) {
+      schema = schema.test('custom', validation.custom.message, validation.custom.test);
     }
-    if (validation.maxItems) {
-      schema = schema.max(validation.maxItems, VALIDATION_MESSAGES.ARRAY_MAX(validation.maxItems));
+    
+    // Apply min/max length validations
+    if (validation.minLength) {
+      schema = schema.min(validation.minLength, VALIDATION_MESSAGES.MIN_LENGTH(validation.minLength));
+    }
+    if (validation.maxLength) {
+      schema = schema.max(validation.maxLength, VALIDATION_MESSAGES.MAX_LENGTH(validation.maxLength));
+    }
+    
+    if (validation.minValue !== undefined) {
+      schema = schema.min(validation.minValue, VALIDATION_MESSAGES.MIN_VALUE(validation.minValue));
+    }
+    if (validation.maxValue !== undefined) {
+      schema = schema.max(validation.maxValue, VALIDATION_MESSAGES.MAX_VALUE(validation.maxValue));
+    }
+    
+    // Apply pattern validation
+    if (validation.pattern) {
+      schema = schema.matches(validation.pattern, VALIDATION_MESSAGES.INVALID_FORMAT);
+    }
+    
+    // Special validations for specific field types
+    if (type === FIELD_TYPES.MULTI_SELECT || type === FIELD_TYPES.MULTI_VALUE) {
+      if (validation.minItems) {
+        schema = schema.min(validation.minItems, VALIDATION_MESSAGES.ARRAY_MIN(validation.minItems));
+      }
+      if (validation.maxItems) {
+        schema = schema.max(validation.maxItems, VALIDATION_MESSAGES.ARRAY_MAX(validation.maxItems));
+      }
     }
   }
 
   return schema;
 };
 
-// Sanitize field value
-export const sanitizeFieldValue = (value, fieldConfig) => {
-  const { type, sanitization = {} } = fieldConfig;
-  
-  if (value === null || value === undefined) {
-    return value;
-  }
 
-  let sanitizedValue = value;
-
-  // Apply type-specific sanitization
-  switch (type) {
-    case FIELD_TYPES.TEXT:
-    case FIELD_TYPES.TEXTAREA:
-      sanitizedValue = typeof value === 'string' ? value.trim() : String(value).trim();
-      break;
-      
-    case FIELD_TYPES.EMAIL:
-      sanitizedValue = typeof value === 'string' ? value.trim().toLowerCase() : String(value).trim().toLowerCase();
-      break;
-      
-    case FIELD_TYPES.URL:
-      sanitizedValue = typeof value === 'string' ? value.trim() : String(value).trim();
-      break;
-      
-    case FIELD_TYPES.NUMBER:
-      sanitizedValue = Number(value) || 0;
-      break;
-      
-    case FIELD_TYPES.CHECKBOX:
-      sanitizedValue = Boolean(value);
-      break;
-      
-    case FIELD_TYPES.MULTI_SELECT:
-    case FIELD_TYPES.MULTI_VALUE:
-      if (Array.isArray(value)) {
-        sanitizedValue = value.map(item => typeof item === 'string' ? item.trim() : String(item).trim()).filter(Boolean);
-      }
-      break;
-      
-    case FIELD_TYPES.SELECT:
-      sanitizedValue = typeof value === 'string' ? value.trim() : String(value).trim();
-      break;
-      
-    default:
-      sanitizedValue = typeof value === 'string' ? value.trim() : String(value).trim();
-  }
-
-  // Apply custom sanitization
-  if (sanitization.custom) {
-    sanitizedValue = sanitization.custom(sanitizedValue);
-  }
-
-  return sanitizedValue;
-};
 
 // Build complete form validation schema
 export const buildFormValidationSchema = (fields) => {
@@ -185,17 +195,7 @@ export const buildFormValidationSchema = (fields) => {
   return Yup.object().shape(schemaObject);
 };
 
-// Sanitize complete form data
-export const sanitizeFormData = (data, fields) => {
-  const sanitizedData = {};
-  
-  fields.forEach(field => {
-    const value = data[field.name];
-    sanitizedData[field.name] = sanitizeFieldValue(value, field);
-  });
-  
-  return sanitizedData;
-};
+
 
 // Validate form data
 export const validateFormData = (data, fields) => {
@@ -245,13 +245,21 @@ export const validateConditionalFields = (values, fields) => {
       
       const fieldValue = values[conditionalField];
       const shouldBeRequired = typeof conditionalValue === 'function' 
-        ? conditionalValue(fieldValue)
+        ? conditionalValue(fieldValue, values)
         : fieldValue === conditionalValue;
       
+
+      
+      // Only validate if the field should be required AND visible
       if (shouldBeRequired && required) {
         const currentValue = values[field.name];
         if (!currentValue || (Array.isArray(currentValue) && currentValue.length === 0)) {
           errors[field.name] = VALIDATION_MESSAGES.CONDITIONAL_REQUIRED;
+        }
+      } else if (!shouldBeRequired) {
+        // If field should not be visible, clear any existing errors
+        if (errors[field.name]) {
+          delete errors[field.name];
         }
       }
     }
@@ -260,16 +268,4 @@ export const validateConditionalFields = (values, fields) => {
   return errors;
 };
 
-// Extract task number from Jira link
-export const extractTaskNumber = (jiraLink) => {
-  if (!jiraLink) return null;
-  
-  const match = jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
-  return match ? match[1] : null;
-};
 
-// Validate Jira link format
-export const validateJiraLink = (jiraLink) => {
-  if (!jiraLink) return false;
-  return VALIDATION_PATTERNS.JIRA_LINK.test(jiraLink);
-};
