@@ -7,8 +7,8 @@ const NotFoundPage = () => {
 
   const getHomePath = () => {
     if (!user) return "/";
-    if (canAccess('admin')) return "/admin";
-    return "/user";
+    if (canAccess('admin')) return "/admin/dashboard";
+    return "/user/dashboard";
   };
 
   return (

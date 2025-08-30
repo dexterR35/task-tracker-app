@@ -23,33 +23,24 @@ const CacheDebugger = () => {
   const getCacheEntries = () => {
     const entries = [];
     
-    // Tasks API cache entries
-    if (tasksApiState?.queries) {
-      Object.entries(tasksApiState.queries).forEach(([key, value]) => {
-        entries.push({
-          type: 'Tasks API',
-          key,
-          status: value?.status,
-          timestamp: value?.startedTimeStamp,
-          data: value?.data
-        });
-      });
-    }
-    
-    // Users API cache entries
+    // Users API cache entries (Admin: all users, User: current user only)
     if (usersApiState?.queries) {
       Object.entries(usersApiState.queries).forEach(([key, value]) => {
+        const isAllUsers = key.includes('getUsers') && !key.includes('getUserByUID');
+        const isCurrentUser = key.includes('getUserByUID');
+        
         entries.push({
-          type: 'Users API',
+          type: isAllUsers ? 'Users API (All)' : 'Users API (Current)',
           key,
           status: value?.status,
           timestamp: value?.startedTimeStamp,
-          data: value?.data
+          data: value?.data,
+          role: isAllUsers ? 'Admin Only' : 'User Only'
         });
       });
     }
     
-    // Reporters API cache entries
+    // Reporters API cache entries (Both roles)
     if (reportersApiState?.queries) {
       Object.entries(reportersApiState.queries).forEach(([key, value]) => {
         entries.push({
@@ -57,12 +48,28 @@ const CacheDebugger = () => {
           key,
           status: value?.status,
           timestamp: value?.startedTimeStamp,
-          data: value?.data
+          data: value?.data,
+          role: 'Both Roles'
         });
       });
     }
     
-    return entries;
+    // Tasks API cache entries (Both roles, filtered by user)
+    if (tasksApiState?.queries) {
+      Object.entries(tasksApiState.queries).forEach(([key, value]) => {
+        entries.push({
+          type: 'Tasks API',
+          key,
+          status: value?.status,
+          timestamp: value?.startedTimeStamp,
+          data: value?.data,
+          role: 'Both Roles (Filtered)'
+        });
+      });
+    }
+    
+    // Sort by timestamp to show execution order
+    return entries.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
   };
 
   const cacheEntries = getCacheEntries();
@@ -106,7 +113,10 @@ const CacheDebugger = () => {
                 {cacheEntries.map((entry, index) => (
                   <div key={index} className="bg-gray-800 p-3 rounded border border-gray-700">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-blue-400 text-xs font-medium">{entry.type}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-purple-400 text-xs font-bold">#{index + 1}</span>
+                        <span className="text-blue-400 text-xs font-medium">{entry.type}</span>
+                      </div>
                       <span className={`text-xs px-2 py-1 rounded ${
                         entry.status === 'fulfilled' ? 'bg-green-600 text-white' :
                         entry.status === 'pending' ? 'bg-yellow-600 text-white' :
@@ -116,6 +126,11 @@ const CacheDebugger = () => {
                         {entry.status}
                       </span>
                     </div>
+                    {entry.role && (
+                      <div className="text-gray-400 text-xs mb-1">
+                        Role: {entry.role}
+                      </div>
+                    )}
                     <div className="text-gray-300 text-xs font-mono break-all">
                       {entry.key}
                     </div>

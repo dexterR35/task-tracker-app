@@ -1,8 +1,7 @@
 // src/router.jsx
-import { createBrowserRouter, Navigate, useLocation, Link } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation, Link, Outlet } from "react-router-dom";
 import { lazy, Suspense, memo, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { useAuth } from "../shared/hooks/useAuth";
 
 import {
   selectUser,
@@ -78,19 +77,11 @@ const useAuthState = () => {
 };
 
 // Route protection component with auth checking loader
-const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = true }) => {
-  const { user, isLoading, isAuthChecking, error, canAccess } = useAuthState();
+const ProtectedRoute = memo(({ children, requiredRole = null }) => {
+  const { user, isAuthChecking, error, canAccess } = useAuthState();
   const location = useLocation();
-  
-  // Check if this is a public route that doesn't need protection
-  const isPublicRoute = location.pathname === '/login' || location.pathname === '/unauthorized';
-  
-  // For public routes, don't show loading or check authentication
-  if (isPublicRoute) {
-    return children;
-  }
 
-  // Show loading state during initial auth check (only for auth checking, not login/logout)
+  // Show loading state during initial auth check
   if (isAuthChecking) {
     return (
       <Loader 
@@ -102,42 +93,24 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
     );
   }
 
-  // Handle authentication errors - only redirect if not already on login page
-  if (error && location.pathname !== "/login") {
+  // Handle authentication errors
+  if (error) {
     return <Navigate to="/login" replace state={{ error: error }} />;
   }
 
   // Check if user is authenticated
-  // Only redirect to login if we're not currently checking auth (prevents redirect during refresh)
-  if (!user && !isAuthChecking) {
-    if (redirectToLogin) {
-      return (
-        <Navigate
-          to="/login"
-          replace
-          state={{ from: location.pathname + location.search + location.hash }}
-        />
-      );
-    }
-    return children; // Allow unauthenticated access for login page
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search + location.hash }}
+      />
+    );
   }
 
-  // Auto-redirect admins from /user to /admin
-  if (location.pathname === "/user" && canAccess('admin')) {
-    return <Navigate to="/admin" replace />;
-  }
-
-  // For homepage, allow authenticated users to stay (don't redirect them away)
-  // But mark that they came from an authenticated route
-  if (location.pathname === "/") {
-    return children;
-  }
-
-  // Check role-based access using the simplified canAccess function
-  // Only check if we're not still checking auth and user exists
-  if (requiredRole && user && !canAccess(requiredRole)) {
-    // Add a small delay to ensure auth state is fully loaded
-    console.log('Access denied:', { requiredRole, userRole: user?.role, canAccess: canAccess(requiredRole) });
+  // Check role-based access
+  if (requiredRole && !canAccess(requiredRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -146,10 +119,19 @@ const ProtectedRoute = memo(({ children, requiredRole = null, redirectToLogin = 
 
 ProtectedRoute.displayName = 'ProtectedRoute';
 
-// Unauthorized page component with proper React Router usage
+// Unauthorized page component
 const UnauthorizedPage = () => {
   const { user } = useAuthState();
-  const { canAccess } = useAuth();
+  const canAccess = useCallback((requiredRole) => {
+    if (requiredRole === 'admin') {
+      return user?.role === 'admin';
+    }
+    if (requiredRole === 'user') {
+      return user?.role === 'user' || user?.role === 'admin';
+    }
+    return false;
+  }, [user]);
+
   const isAdmin = canAccess('admin');
 
   return (
@@ -160,21 +142,12 @@ const UnauthorizedPage = () => {
           You don't have permission to access this page.
         </p>
         <div className="space-y-2">
-          {isAdmin ? (
-            <Link
-              to="/admin"
-              className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
-            >
-              Go to Admin Dashboard
-            </Link>
-          ) : (
-            <Link
-              to="/user"
-              className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
-            >
-              Go to User Dashboard
-            </Link>
-          )}
+          <Link
+            to="/dashboard"
+            className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+          >
+            Go to Dashboard
+          </Link>
           <Link
             to="/"
             className="block w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
@@ -187,8 +160,8 @@ const UnauthorizedPage = () => {
   );
 };
 
-// Memoized route components to prevent re-creation
-const createMemoizedRoute = (Component, requiredRole = null, loadingText = "Loading...") => {
+// Helper function to create protected routes with lazy loading
+const createProtectedRoute = (Component, requiredRole = null, loadingText = "Loading...") => {
   const MemoizedComponent = memo(Component);
   
   return (
@@ -200,10 +173,6 @@ const createMemoizedRoute = (Component, requiredRole = null, loadingText = "Load
   );
 };
 
-// Helper function to create protected routes with lazy loading
-const createProtectedRoute = (Component, requiredRole = null, loadingText = "Loading...") => 
-  createMemoizedRoute(Component, requiredRole, loadingText);
-
 // Helper function to create admin-only routes
 const createAdminRoute = (Component, loadingText = "Loading admin...") => 
   createProtectedRoute(Component, "admin", loadingText);
@@ -212,73 +181,91 @@ const createAdminRoute = (Component, loadingText = "Loading admin...") =>
 const createUserRoute = (Component, loadingText = "Loading...") => 
   createProtectedRoute(Component, "user", loadingText);
 
-// Single wrapper for all authenticated routes
-const AuthenticatedRoutes = ({ children }) => (
-  <>{children}</>
-);
+// Root layout that handles auth state and redirects
+const RootLayout = () => {
+  const { user, isAuthChecking } = useAuthState();
+  const location = useLocation();
+
+  // Show loading during auth check
+  if (isAuthChecking) {
+    return (
+      <Loader 
+        size="xl" 
+        text="Checking authentication..." 
+        variant="dots" 
+        fullScreen={true}
+      />
+    );
+  }
+
+  // If user is authenticated and on login page, redirect to dashboard
+  if (user && location.pathname === '/login') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If not authenticated and trying to access protected routes, redirect to login
+  if (!user && !['/', '/login', '/unauthorized'].includes(location.pathname)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+};
 
 const router = createBrowserRouter([
-  // Public routes (no authentication required)
   {
     path: "/",
-    element: <PublicLayout />,
+    element: <RootLayout />,
     children: [
-      { 
-        index: true, 
-        element: <HomePage /> 
-      },
+      // Public routes with PublicLayout
       {
-        path: "login",
-        element: <LoginPage />,
-      },
-      {
-        path: "unauthorized",
-        element: <UnauthorizedPage />,
-      },
-    ],
-  },
-  
-  // All authenticated routes wrapped in a single AuthProvider
-  {
-    element: <AuthenticatedRoutes><AuthenticatedLayout /></AuthenticatedRoutes>,
-    children: [
-      // User routes
-      {
-        path: "/user",
+        element: <PublicLayout />,
         children: [
+          { 
+            index: true, 
+            element: <HomePage /> 
+          },
           {
-            index: true,
+            path: "login",
+            element: <LoginPage />,
+          },
+          {
+            path: "unauthorized",
+            element: <UnauthorizedPage />,
+          },
+        ],
+      },
+      
+      // Authenticated routes with AuthenticatedLayout
+      {
+        element: <AuthenticatedLayout />,
+        children: [
+          // Dashboard route that handles both admin and user views
+          {
+            path: "dashboard",
             element: createUserRoute(DashboardPage, "Loading dashboard..."),
           },
-        ],
-      },
-      
-      // Admin routes
-      {
-        path: "/admin",
-        children: [
-          {
-            index: true,
-            element: createAdminRoute(DashboardPage, "Loading admin dashboard..."),
-          },
+          
+          // Admin management (admin-only, but no /admin in URL)
           {
             path: "management",
-            element: createAdminRoute(AdminManagementPage),
+            element: createAdminRoute(AdminManagementPage, "Loading management..."),
           },
+          
+          // Analytics (admin-only, but no /admin in URL)
           {
             path: "analytics",
-            element: createAdminRoute(ComingSoonPage),
+            element: createAdminRoute(ComingSoonPage, "Loading analytics..."),
           },
-        ],
-      },
-      
-      // Preview routes
-      {
-        path: "/preview/:monthId",
-        children: [
+          
+          // Preview routes
           {
-            index: true,
-            element: createAdminRoute(ComingSoonPage),
+            path: "preview/:monthId",
+            children: [
+              {
+                index: true,
+                element: createAdminRoute(ComingSoonPage),
+              },
+            ],
           },
         ],
       },

@@ -16,7 +16,7 @@ const DarkModeToggle = () => {
         focus:outline-none 
         ${isTransitioning ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}
       `}
-      title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode (default)'}
     >
       {/* Sun Icon */}
       <Icons.generic.sun

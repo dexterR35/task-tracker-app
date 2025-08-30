@@ -21,7 +21,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (!isAuthChecking && !authLoading && user) {
       const isAdmin = canAccess('admin');
-      const redirectTo = isAdmin ? '/admin' : '/user';
+      const redirectTo = isAdmin ? '/admin/dashboard' : '/user/dashboard';
       navigate(redirectTo, { replace: true });
     }
   }, [user, canAccess, isAuthChecking, authLoading, navigate]);
@@ -61,7 +61,7 @@ const LoginPage = () => {
       // After successful login, redirect to appropriate dashboard
       // The user data will be available after Firebase auth completes
       const isAdmin = canAccess('admin');
-      const redirectTo = isAdmin ? '/admin' : '/user';
+      const redirectTo = isAdmin ? '/admin/dashboard' : '/user/dashboard';
       navigate(redirectTo, { replace: true });
       
     } catch (error) {

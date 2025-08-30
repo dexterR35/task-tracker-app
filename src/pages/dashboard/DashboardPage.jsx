@@ -14,20 +14,22 @@ import { showInfo, showError, showSuccess } from "../../shared/utils/toast";
 
 const DashboardPage = () => {
   const { user, canAccess } = useAuth();
-  const isAdmin = canAccess('admin');
+  
+  // Determine if user is admin based on permissions
+  const isUserAdmin = canAccess('admin');
   const [searchParams, setSearchParams] = useSearchParams();
   const { clearCacheOnDataChange } = useCacheManagement();
 
   // Local state for UI controls
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
-  const [isUserChanging, setIsUserChanging] = useState(false);
+
 
   // Get selected user from URL params (admin only)
   const selectedUserId = searchParams.get("user") || "";
   
   // Derive userId based on context: URL param > current user
-  const userId = isAdmin ? selectedUserId : user?.uid;
+  const userId = isUserAdmin ? selectedUserId : user?.uid;
 
   // Use unified loading hook for data loading (auth is handled by router)
   const {
@@ -46,34 +48,22 @@ const DashboardPage = () => {
     dashboardData
   } = useUnifiedLoading(userId, !!user); // Pass authentication state
 
-  // Track user selection changes for admin
-  useEffect(() => {
-    if (isAdmin && selectedUserId) {
-      setIsUserChanging(true);
-      // Reset the changing state after a short delay to allow data to load
-      const timer = setTimeout(() => {
-        setIsUserChanging(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setIsUserChanging(false);
-    }
-  }, [selectedUserId, isAdmin]);
+
 
   // Show notification when new month is detected - ALWAYS call useEffect
-  React.useEffect(() => {
+  useEffect(() => {
     if (isNewMonth && monthName) {
       showInfo(`New month detected: ${monthName}. Board status will be updated automatically.`);
     }
   }, [isNewMonth, monthName]);
 
-  // Show unified loading state for data loading or user changing
-  if (isLoading || isUserChanging) {
+  // Show unified loading state for data loading
+  if (isLoading) {
     return (
       <Loader 
         size="xl" 
         variant="spinner" 
-        text={isUserChanging ? "Loading user data..." : loadingMessage || "Loading..."} 
+        text={loadingMessage || "Loading. shit.."} 
         fullScreen={true}
       />
     );
@@ -170,12 +160,12 @@ const DashboardPage = () => {
   };
 
   // Derive title based on context
-  const title = isAdmin && selectedUserId 
+  const title = isUserAdmin && selectedUserId 
     ? `Viewing ${dashboardData?.users?.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}'s Board`
     : `${user?.name || user?.email}'s - Board`;
 
   // Derive showCreateBoard - only for admins when board doesn't exist
-  const showCreateBoard = isAdmin && !boardExists;
+  const showCreateBoard = isUserAdmin && !boardExists;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -221,7 +211,7 @@ const DashboardPage = () => {
       )}
 
       {/* User Filter (Admin Only) */}
-      {isAdmin && (
+      {isUserAdmin && (
         <div className="mt-4 mb-6">
           <div className="flex items-center space-x-4">
             <label className="text-sm font-medium text-gray-300">
@@ -230,10 +220,7 @@ const DashboardPage = () => {
             <select
               value={selectedUserId}
               onChange={handleUserSelect}
-              disabled={isUserChanging}
-              className={`border border-gray-600 rounded px-3 py-2 bg-gray-800 text-white ${
-                isUserChanging ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="border border-gray-600 rounded px-3 py-2 bg-gray-800 text-white"
             >
               <option value="">All Users</option>
               {dashboardData?.users?.map((user) => (
@@ -242,12 +229,12 @@ const DashboardPage = () => {
                 </option>
               ))}
             </select>
-            {isUserChanging && (
+            {/* {isUserChanging && (
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-sm text-gray-400">Loading user data...</span>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       )}
@@ -280,9 +267,9 @@ const DashboardPage = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-gray-700 pb-2">
               <h3 className="text-lg font-semibold text-white">
-                {isAdmin && selectedUserId 
+                {isUserAdmin && selectedUserId 
                   ? `Tasks for ${dashboardData?.users?.find(u => (u.userUID || u.id) === selectedUserId)?.name || selectedUserId}`
-                  : isAdmin 
+                  : isUserAdmin 
                   ? "All Tasks" 
                   : "My Tasks"
                 }
@@ -309,7 +296,7 @@ const DashboardPage = () => {
       )}
 
       {/* Board not ready message - shows for non-admin users when board doesn't exist */}
-      {!boardExists && !isAdmin && (
+      {!boardExists && !isUserAdmin && (
         <div className="text-center py-12">
           <p className="text-gray-400">
             Board not ready for {monthName || 'current month'}

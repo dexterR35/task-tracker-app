@@ -40,21 +40,10 @@ export const useCentralizedDataAnalytics = (userId = null) => {
   const isValidMonthId = monthId && typeof monthId === 'string' && monthId.match(/^\d{4}-\d{2}$/);
   const shouldSkipMonthData = shouldSkip || !isValidMonthId;
 
-  // Always call all hooks to maintain hook order, but use skip parameter to control execution
-  const { 
-    data: tasksData = { tasks: [], boardExists: false, monthId }, 
-    error: tasksError, 
-    isLoading: tasksLoading,
-    isFetching: tasksFetching 
-  } = useSubscribeToMonthTasksQuery(
-    { monthId: isValidMonthId ? monthId : undefined, userId: normalizedUserId },
-    { skip: shouldSkipMonthData }
-  );
-
-  const tasks = tasksData.tasks || [];
-  const boardData = { exists: tasksData.boardExists, monthId: tasksData.monthId };
-
-  // Always call users query hook
+  // Role-based data loading strategy
+  const isAdmin = canAccess('admin');
+  
+  // ADMIN: Get all users data
   const { 
     data: allUsers = [], 
     error: allUsersError, 
@@ -63,7 +52,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
   } = useGetUsersQuery(
     {},
     { 
-      skip: shouldSkip || !canAccess('admin'),
+      skip: shouldSkip || !isAdmin, // Only load all users for admin
       keepUnusedDataFor: Infinity, // Never expire - Users never change once created
       refetchOnFocus: false,
       refetchOnReconnect: false,
@@ -71,7 +60,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     }
   );
 
-  // Always call current user query hook
+  // USER: Get only current user data
   const { 
     data: currentUser = null, 
     error: currentUserError, 
@@ -80,7 +69,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
   } = useGetUserByUIDQuery(
     { userUID: user?.uid },
     { 
-      skip: shouldSkip || !user?.uid || canAccess('admin'),
+      skip: shouldSkip || !user?.uid || isAdmin, // Only load current user for non-admin
       keepUnusedDataFor: 86400, // 24 hours (24 * 60 * 60 seconds) - User profile rarely changes
       refetchOnFocus: false,
       refetchOnReconnect: false,
@@ -88,7 +77,7 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     }
   );
 
-  // Always call reporters query hook
+  // Both roles: Get reporters data
   const { 
     data: reporters = [], 
     error: reportersError, 
@@ -105,15 +94,29 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     }
   );
 
-  // Filter users based on role
+  // Both roles: Get tasks data (filtered by user for non-admin)
+  const { 
+    data: tasksData = { tasks: [], boardExists: false, monthId }, 
+    error: tasksError, 
+    isLoading: tasksLoading,
+    isFetching: tasksFetching 
+  } = useSubscribeToMonthTasksQuery(
+    { monthId: isValidMonthId ? monthId : undefined, userId: normalizedUserId },
+    { skip: shouldSkipMonthData }
+  );
+
+  const tasks = tasksData.tasks || [];
+  const boardData = { exists: tasksData.boardExists, monthId: tasksData.monthId };
+
+  // Role-based user data
   const users = useMemo(() => {
-    if (canAccess('admin')) {
-      return allUsers;
+    if (isAdmin) {
+      return allUsers; // Admin sees all users
     } else if (currentUser) {
-      return [currentUser];
+      return [currentUser]; // User sees only themselves
     }
     return [];
-  }, [allUsers, currentUser, canAccess]);
+  }, [allUsers, currentUser, isAdmin]);
 
   // Use real-time board data if available, otherwise fall back to Redux store
   const effectiveBoardExists = useMemo(() => 
@@ -232,27 +235,44 @@ export const useCentralizedDataAnalytics = (userId = null) => {
     return tasks.filter(task => task.product === product);
   }, [tasks]);
 
-  // Combined loading states - only show loading if we're actually fetching new data
+  // Role-based loading states
   const isLoading = useMemo(() => {
     // If we're skipping data fetching, don't show loading
     if (shouldSkipMonthData) {
       return false;
     }
     
-    // Only show loading for the first load, not for refetches
-    return tasksLoading || allUsersLoading || currentUserLoading || reportersLoading;
+    // Admin: Load all users + reporters + tasks
+    if (isAdmin) {
+      return tasksLoading || allUsersLoading || reportersLoading;
+    }
+    
+    // User: Load current user + reporters + tasks
+    return tasksLoading || currentUserLoading || reportersLoading;
   }, [
     shouldSkipMonthData,
+    isAdmin,
     tasksLoading, 
     allUsersLoading, 
     currentUserLoading, 
     reportersLoading
   ]);
   
-  const isFetching = tasksFetching || allUsersFetching || currentUserFetching || reportersFetching;
+  // Role-based fetching states
+  const isFetching = useMemo(() => {
+    if (isAdmin) {
+      return tasksFetching || allUsersFetching || reportersFetching;
+    }
+    return tasksFetching || currentUserFetching || reportersFetching;
+  }, [isAdmin, tasksFetching, allUsersFetching, currentUserFetching, reportersFetching]);
 
-  // Combined error state
-  const error = tasksError || allUsersError || currentUserError || reportersError;
+  // Role-based error state
+  const error = useMemo(() => {
+    if (isAdmin) {
+      return tasksError || allUsersError || reportersError;
+    }
+    return tasksError || currentUserError || reportersError;
+  }, [isAdmin, tasksError, allUsersError, currentUserError, reportersError]);
 
   // Memoize the complete result
   const result = useMemo(() => ({
