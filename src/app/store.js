@@ -8,6 +8,14 @@ import { tasksApi } from "../features/tasks/tasksApi";
 import { usersApi } from "../features/users/usersApi";
 import { reportersApi } from "../features/reporters/reportersApi";
 
+// Utility function to reset all API states
+export const resetAllApiStates = () => (dispatch) => {
+  dispatch(tasksApi.util.resetApiState());
+  dispatch(usersApi.util.resetApiState());
+  dispatch(reportersApi.util.resetApiState());
+  logger.log("All API states reset successfully");
+};
+
 // Enhanced error notification middleware with better error categorization
 const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
   const result = next(action);

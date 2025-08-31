@@ -102,7 +102,7 @@ const LoginPage = () => {
               rememberMe: false 
             }}
             onSubmit={handleSubmit}
-            loading={isLoading}
+
             error={error}
             className="space-y-6"
             submitText="Login"

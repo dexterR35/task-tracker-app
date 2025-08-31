@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { Formik, Form, Field, useFormikContext } from 'formik';
 import {
   buildFormValidationSchema,
   validateFormData,
@@ -7,7 +8,6 @@ import {
 } from '../validation';
 import { sanitizeFormData } from '../sanitization';
 import {
-  FormWrapper,
   TextInput,
   SelectInput,
   CheckboxInput,
@@ -16,35 +16,47 @@ import {
 } from './index';
 import MultiValueInput from './inputs/MultiValueInput';
 import DynamicButton from '../../components/ui/DynamicButton';
-import { prepareFormData } from '../sanitization';
 import { extractTaskNumber } from '../validation/validationRules';
-import { Field, useFormikContext } from 'formik';
 import { showInfo } from '../../utils/toast';
+
+// Helper function to check if field should be visible
+const shouldShowField = (field, values) => {
+  if (!field.conditional) return true;
+  
+  const { field: conditionalField, value: conditionalValue, and } = field.conditional;
+  const fieldValue = values[conditionalField];
+  
+  // Check main condition
+  let mainCondition = false;
+  if (typeof conditionalValue === 'function') {
+    mainCondition = conditionalValue(fieldValue, values);
+  } else {
+    mainCondition = fieldValue === conditionalValue;
+  }
+  
+  // If no 'and' condition, return main condition
+  if (!and) return mainCondition;
+  
+  // Check 'and' condition
+  const { field: andField, value: andValue } = and;
+  const andFieldValue = values[andField];
+  
+  let andCondition = false;
+  if (typeof andValue === 'function') {
+    andCondition = andValue(andFieldValue, values);
+  } else {
+    andCondition = andFieldValue === andValue;
+  }
+  
+  return mainCondition && andCondition;
+};
 
 // Conditional Field Wrapper Component
 const ConditionalFieldWrapper = ({ field, children }) => {
   const { values } = useFormikContext();
+  const isVisible = shouldShowField(field, values);
   
-  // Check if field should be visible based on conditional logic
-  const shouldShowField = () => {
-    if (!field.conditional) return true;
-    
-    const { field: conditionalField, value: conditionalValue } = field.conditional;
-    const fieldValue = values[conditionalField];
-    
-    if (typeof conditionalValue === 'function') {
-      return conditionalValue(fieldValue, values);
-    }
-    
-    return fieldValue === conditionalValue;
-  };
-  
-  const isVisible = shouldShowField();
-  
-  if (!isVisible) {
-    return null;
-  }
-  
+  if (!isVisible) return null;
   return children;
 };
 
@@ -53,46 +65,24 @@ const DynamicForm = ({
   fields = [],
   initialValues = {},
   onSubmit,
-  loading = false,
   error = null,
   className = "",
   title,
   subtitle,
   submitText = "Submit",
   submitButtonProps = {},
-  showSubmitButton = true, // New prop to control submit button display
   options = {}, // Options for select/multiSelect fields
-  formType = null, // Form type for data preparation
-  context = {}, // Context data for preparation (user, monthId, etc.)
   onFormReady = null, // Callback when form is ready
+  debug = true, // Debug mode for form state
   ...props
 }) => {
-  // Example usage:
-  // - showSubmitButton={true} (default): Shows submit button (good for simple forms like login)
-  // - showSubmitButton={false}: No submit button (good for complex forms with custom buttons)
-  // - submitButtonProps: Customize button appearance and behavior
+
   // Build validation schema from field configuration
   const validationSchema = buildFormValidationSchema(fields);
 
   // Handle form submission with dynamic validation and sanitization
-  // This bypasses FormWrapper's submit handling via bypassSubmitWrapper=true
   const handleSubmit = async (values, formikHelpers) => {
     try {
-      // Clear validation errors for hidden conditional fields
-      fields.forEach(field => {
-        if (field.conditional) {
-          const { field: conditionalField, value: conditionalValue } = field.conditional;
-          const fieldValue = values[conditionalField];
-          const shouldBeVisible = typeof conditionalValue === 'function' 
-            ? conditionalValue(fieldValue, values)
-            : fieldValue === conditionalValue;
-          
-          if (!shouldBeVisible) {
-            formikHelpers.setFieldError(field.name, undefined);
-          }
-        }
-      });
-
       // First sanitize the data
       const sanitizedData = sanitizeFormData(values, fields);
       
@@ -100,7 +90,6 @@ const DynamicForm = ({
       const validation = validateFormData(sanitizedData, fields);
       
       if (!validation.isValid) {
-        // Set field errors
         validation.errors.forEach(error => {
           formikHelpers.setFieldError(error.field, error.message);
         });
@@ -116,13 +105,7 @@ const DynamicForm = ({
         return;
       }
 
-      // Prepare data if formType is provided (business logic only, no sanitization)
-      const preparedData = formType 
-        ? prepareFormData(formType, sanitizedData, context)
-        : sanitizedData;
-
-      // Call the original onSubmit with prepared data
-      await onSubmit(preparedData, formikHelpers);
+      await onSubmit(sanitizedData, formikHelpers);
       
     } catch (error) {
       console.error('Form submission error:', error);
@@ -130,53 +113,7 @@ const DynamicForm = ({
     }
   };
 
-  // Calculate form progress
-  const calculateFormProgress = useCallback((values) => {
-    // Filter out conditional fields that are not visible
-    const visibleRequiredFields = fields.filter(field => {
-      if (!field.required) return false;
-      
-      // Check if field should be visible based on conditional logic
-      if (field.conditional) {
-        const { field: conditionalField, value: conditionalValue } = field.conditional;
-        const fieldValue = values[conditionalField];
-        
-        if (typeof conditionalValue === 'function') {
-          return conditionalValue(fieldValue, values);
-        }
-        
-        return fieldValue === conditionalValue;
-      }
-      
-      return true;
-    });
-    
-    const filledRequiredFields = visibleRequiredFields.filter(field => {
-      const value = values[field.name];
-      if (field.type === 'checkbox') return value !== undefined;
-      if (field.type === 'multiSelect' || field.type === 'multiValue') {
-        return Array.isArray(value) && value.length > 0;
-      }
-      return value && value.toString().trim() !== '';
-    });
-    
-    return Math.round((filledRequiredFields.length / visibleRequiredFields.length) * 100);
-  }, [fields]);
 
-  // Get form validation feedback
-  const getFormValidationFeedback = useCallback((progress) => {
-    if (progress === 100) {
-      return { type: 'success', message: 'All required fields completed!' };
-    } else if (progress >= 75) {
-      return { type: 'info', message: 'Almost done! Just a few more fields to go.' };
-    } else if (progress >= 50) {
-      return { type: 'warning', message: 'Halfway there! Keep going.' };
-    } else if (progress >= 25) {
-      return { type: 'info', message: 'Good start! Fill in more required fields.' };
-    } else {
-      return { type: 'warning', message: 'Please fill in the required fields to continue.' };
-    }
-  }, []);
 
 
 
@@ -187,7 +124,6 @@ const DynamicForm = ({
     return (
       <ConditionalFieldWrapper key={field.name} field={field}>
         <div className="field-wrapper">
-          {/* Field Label */}
           {field.label && (
             <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
               {field.label}
@@ -195,15 +131,12 @@ const DynamicForm = ({
             </label>
           )}
           
-          {/* Field Component */}
           {renderField(field, fieldOptions)}
           
-          {/* Help Text */}
           {field.helpText && (
             <p className="text-sm text-gray-500 mt-1">{field.helpText}</p>
           )}
           
-          {/* Error Display */}
           <Field name={field.name}>
             {({ meta }) => (
               meta.touched && meta.error ? (
@@ -224,42 +157,28 @@ const DynamicForm = ({
       ...field.props
     };
 
+    const renderBasicField = (Component, additionalProps = {}) => (
+      <Field name={field.name}>
+        {({ field: formikField }) => (
+          <Component
+            {...formikField}
+            {...commonProps}
+            {...additionalProps}
+            name={field.name}
+            id={field.name}
+            onChange={(e) => formikField.onChange(e)}
+          />
+        )}
+      </Field>
+    );
+
     switch (field.type) {
       case FIELD_TYPES.TEXT:
       case FIELD_TYPES.TEXTAREA:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <TextInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(TextInput);
 
       case FIELD_TYPES.EMAIL:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <TextInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                type="email"
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(TextInput, { type: "email" });
 
       case FIELD_TYPES.URL:
         return (
@@ -292,47 +211,19 @@ const DynamicForm = ({
         );
 
       case FIELD_TYPES.NUMBER:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <NumberInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                min={field.validation?.minValue}
-                max={field.validation?.maxValue}
-                step={field.props?.step || 1}
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(NumberInput, {
+          min: field.validation?.minValue,
+          max: field.validation?.maxValue,
+          step: field.props?.step || 1
+        });
 
       case FIELD_TYPES.SELECT:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <SelectInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                options={fieldOptions}
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(SelectInput, { options: fieldOptions });
 
       case FIELD_TYPES.MULTI_SELECT:
         return (
           <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
+            {({ field: formikField }) => (
               <MultiSelectInput
                 {...formikField}
                 {...commonProps}
@@ -342,10 +233,7 @@ const DynamicForm = ({
                 value={formikField.value || []}
                 onChange={(newValue) => {
                   formikField.onChange({
-                    target: {
-                      name: field.name,
-                      value: newValue
-                    }
+                    target: { name: field.name, value: newValue }
                   });
                 }}
               />
@@ -354,40 +242,10 @@ const DynamicForm = ({
         );
 
       case FIELD_TYPES.CHECKBOX:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <CheckboxInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                renderLabel={false} // Don't show label in CheckboxInput since DynamicForm handles it
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(CheckboxInput, { renderLabel: false });
 
       case FIELD_TYPES.PASSWORD:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <TextInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                type="password"
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(TextInput, { type: "password" });
 
       case FIELD_TYPES.MULTI_VALUE:
         return (
@@ -425,39 +283,10 @@ const DynamicForm = ({
         );
 
       case FIELD_TYPES.DATE:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <TextInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                type="date"
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(TextInput, { type: "date" });
 
       default:
-        return (
-          <Field name={field.name}>
-            {({ field: formikField, meta, form }) => (
-              <TextInput
-                {...formikField}
-                {...commonProps}
-                name={field.name}
-                id={field.name}
-                onChange={(e) => {
-                  formikField.onChange(e);
-                }}
-              />
-            )}
-          </Field>
-        );
+        return renderBasicField(TextInput);
     }
   };
 
@@ -477,6 +306,17 @@ const DynamicForm = ({
     return values;
   };
 
+  // Memoize form props
+  const formProps = useMemo(() => ({
+    initialValues: buildInitialValues(),
+    validationSchema,
+    onSubmit: handleSubmit,
+    enableReinitialize: true,
+    validateOnChange: true,
+    validateOnBlur: true,
+    ...props
+  }), [validationSchema, handleSubmit, props]);
+
   return (
     <div className={`dynamic-form ${className}`}>
       {(title || subtitle) && (
@@ -486,77 +326,79 @@ const DynamicForm = ({
         </div>
       )}
 
-      <FormWrapper
-        initialValues={buildInitialValues()}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-        loading={loading}
-        error={error}
-        className="space-y-6"
-        showSubmitButton={false} // Don't show FormWrapper's submit button since DynamicForm has its own
-        bypassSubmitWrapper={true} // Bypass FormWrapper's submit handling since DynamicForm handles it
-        onFormReady={onFormReady}
-        {...props}
-      >
-        {/* Progress Display */}
-        <Field name="__formValues">
-          {({ form }) => {
-            const progress = calculateFormProgress(form.values);
-            const feedback = getFormValidationFeedback(progress);
-            
-            return (
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm text-gray-600">
-                    Progress: {progress}%
-                  </div>
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        progress === 100 ? 'bg-green-500' :
-                        progress >= 75 ? 'bg-blue-500' :
-                        progress >= 50 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}
-                      style={{ width: `${progress}%` }}
-                    />
+      <Formik {...formProps}>
+        {(formikProps) => {
+          const { isValid, dirty, errors, touched } = formikProps;
+          const hasErrors = Object.keys(errors).length > 0;
+          const hasTouched = Object.keys(touched).length > 0;
+
+          // Call onFormReady callback when form is ready
+          useEffect(() => {
+            if (onFormReady) {
+              onFormReady(formikProps);
+            }
+          }, [onFormReady]);
+
+          return (
+            <div className="form-wrapper space-y-6">
+              {/* Error Display */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-error/10 border border-red-error/20 rounded-lg">
+                  <p className="text-red-error text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Debug Information */}
+              {debug && (
+                <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-xs">
+                  <h4 className="font-semibold mb-2">Debug Info:</h4>
+                  <div className="space-y-1">
+                    <p><strong>Valid:</strong> {isValid ? 'Yes' : 'No'}</p>
+                    <p><strong>Dirty:</strong> {dirty ? 'Yes' : 'No'}</p>
+                    <p><strong>Errors:</strong> {Object.keys(errors).length}</p>
+                    <p><strong>Touched:</strong> {Object.keys(touched).length}</p>
+                    {hasErrors && (
+                      <div>
+                        <strong>Error Details:</strong>
+                        <pre className="mt-1 text-xs bg-gray-100 p-2 rounded">
+                          {JSON.stringify(errors, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {!hasErrors && Object.keys(errors).length > 0 && (
+                      <div>
+                        <strong>Raw Errors Object:</strong>
+                        <pre className="mt-1 text-xs bg-gray-100 p-2 rounded">
+                          {JSON.stringify(errors, null, 2)}
+                        </pre>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                {/* Validation feedback */}
-                {progress > 0 && (
-                  <div className={`p-3 rounded-md text-sm ${
-                    feedback.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
-                    feedback.type === 'warning' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                    'bg-blue-50 text-blue-700 border border-blue-200'
-                  }`}>
-                    {feedback.message}
-                  </div>
-                )}
-              </div>
-            );
-          }}
-        </Field>
+              )}
 
-        {fields.map((field) => renderFieldWithWrapper(field))}
-        
-        {/* Submit Button */}
-        {showSubmitButton && (
-          <div className="pt-4">
-            <DynamicButton
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              loading={loading}
-              loadingText="Submitting..."
-              {...submitButtonProps}
-            >
-              {submitText}
-            </DynamicButton>
-          </div>
-        )}
-      </FormWrapper>
+              {/* Form Content */}
+              <Form className="space-y-6">
+                {fields.map((field) => renderFieldWithWrapper(field))}
+                
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <DynamicButton
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                    loadingText="Submitting..."
+                    {...submitButtonProps}
+                  >
+                    {submitText}
+                  </DynamicButton>
+                </div>
+              </Form>
+            </div>
+          );
+        }}
+      </Formik>
     </div>
   );
 };

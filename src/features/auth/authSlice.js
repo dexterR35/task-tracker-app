@@ -132,7 +132,7 @@ export const loginUser = createAsyncThunk(
       const firestoreData = await fetchUserFromFirestore(
         userCredential.user.uid
       );
-
+      logger.error("firestoreData:", firestoreData);
       // Step 4: Validate user status and role
       if (firestoreData.isActive === false) {
         // Sign out the user if account is deactivated
@@ -148,11 +148,9 @@ export const loginUser = createAsyncThunk(
         throw new Error("Invalid user role. Please contact administrator.");
       }
 
-      // Step 5: lastLogin update removed - will be implemented later
-
       // Return normalized user data
       const normalizedUser = normalizeUser(userCredential.user, firestoreData);
-
+      logger.error("normalizedUseraaaaaaaaaaaaaaa:", normalizedUser);
       return { user: normalizedUser };
     } catch (error) {
       logger.error("Login error:", error);
@@ -181,23 +179,11 @@ export const loginUser = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
-  async (_, { rejectWithValue, dispatch }) => {
+  async (_, { rejectWithValue }) => {
     try {
+      // Just sign out from Firebase - everything else is automatic!
       await signOut(auth);
-      
-      // Clear all API cache on logout
-      // Import APIs dynamically to avoid circular dependencies
-      const { usersApi } = await import('../users/usersApi');
-      const { reportersApi } = await import('../reporters/reportersApi');
-      const { tasksApi } = await import('../tasks/tasksApi');
-      
-      dispatch(usersApi.util.resetApiState());
-      dispatch(reportersApi.util.resetApiState());
-      dispatch(tasksApi.util.resetApiState());
-      
-      logger.log("Cache cleared on logout");
-      
-      // The auth listener will handle the state update automatically
+      logger.log("User signed out successfully");
       return null;
     } catch (error) {
       logger.error("Logout error:", error);
@@ -279,13 +265,13 @@ const authSlice = createSlice({
         state.user = null;
       })
 
-      // Logout
+      // Logout - simplified since auth listener handles everything
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;
-        state.isAuthChecking = true; // Mark that we're checking auth during logout
+        state.isAuthChecking = true;
       })
       .addCase(logoutUser.fulfilled, (state) => {
-        // Auth listener will handle the actual state update
+        // Auth listener will handle the state update
         state.isLoading = false;
         state.isAuthChecking = false;
       })

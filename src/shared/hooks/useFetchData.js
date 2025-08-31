@@ -42,16 +42,17 @@ export const useFetchData = (userId = null) => {
 
   // Determine if we should skip data fetching - memoized
   const shouldSkip = useMemo(() => {
-    const skip = authLoading || isAuthChecking || !monthId || !boardExists;
+    const skip = authLoading || isAuthChecking || !monthId || !boardExists || !user;
     logger.debug('[useFetchData] Should skip data fetching:', {
       skip,
       authLoading,
       isAuthChecking,
       monthId,
-      boardExists
+      boardExists,
+      hasUser: !!user
     });
     return skip;
-  }, [authLoading, isAuthChecking, monthId, boardExists]);
+  }, [authLoading, isAuthChecking, monthId, boardExists, user]);
   
   // Fetch tasks, users, and reporters data
   const { data: tasks = [], isLoading: tasksLoading, error: tasksError } = useGetMonthTasksQuery(
@@ -156,6 +157,13 @@ export const useFetchData = (userId = null) => {
       normalizedUserId
     });
   }, [tasks.length, users.length, reporters.length, isLoading, error, hasData, monthId, normalizedUserId]);
+
+  // Cleanup effect for logout
+  useEffect(() => {
+    if (!user && !isAuthChecking) {
+      logger.debug('[useFetchData] User logged out, cleaning up data');
+    }
+  }, [user, isAuthChecking]);
 
   return {
     // Raw data

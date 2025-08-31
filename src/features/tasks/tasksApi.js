@@ -99,7 +99,8 @@ export const tasksApi = createApi({
       async queryFn({ monthId, limitCount = 50, startAfterDoc = null } = {}) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
+            // During logout, this is expected - return empty data instead of error
+            return { data: [] };
           }
 
           // Check if board exists first
@@ -135,7 +136,8 @@ export const tasksApi = createApi({
       async queryFn({ monthId, userId = null } = {}) {
         try {
           if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
+            // During logout, this is expected - return empty data instead of error
+            return { data: { tasks: [], boardExists: true, monthId } };
           }
 
           // Always return boardExists: true - let currentMonthSlice handle board status

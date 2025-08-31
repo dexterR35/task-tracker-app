@@ -178,7 +178,7 @@ const DynamicTable = ({
                 variant="danger"
                 size="xs"
                 disabled={isActionLoading}
-                onClick={() => handleDelete(item)}
+                onClick={() => onDelete(item)}
                 iconName="delete"
                 iconPosition="center"
                 title="Delete"
@@ -195,25 +195,7 @@ const DynamicTable = ({
     return [...baseColumns, ...columns, ...(actionColumn ? [actionColumn] : [])];
   }, [columns, enableRowSelection, onSelect, onEdit, onDelete, rowActionId]);
 
-  // Handle delete with confirmation
-  const handleDelete = async (item) => {
-    const itemName = item.name || item.email || item.taskName || item.taskNumber || 'this item';
-    
-    if (!window.confirm(`Are you sure you want to delete ${itemName}?`)) {
-      return;
-    }
 
-    try {
-      setRowActionId(item.id);
-      await onDelete(item);
-      showSuccess(`${tableType.slice(0, -1)} deleted successfully!`);
-    } catch (error) {
-      logger.error(`Error deleting ${tableType.slice(0, -1)}:`, error);
-      showError(`Failed to delete: ${error?.message || "Unknown error"}`);
-    } finally {
-      setRowActionId(null);
-    }
-  };
 
   // Create table instance
   const table = useReactTable({

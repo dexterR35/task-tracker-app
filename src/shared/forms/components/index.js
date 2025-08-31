@@ -1,6 +1,5 @@
 // Form components exports
 export { default as DynamicForm } from './DynamicForm';
-export { default as FormWrapper } from './FormWrapper';
 
 // Input components
 export { default as TextInput } from './inputs/TextInput';

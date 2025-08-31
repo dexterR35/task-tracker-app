@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useCallback } from "react";
 import { useCreateTaskMutation, useUpdateTaskMutation } from "../../features/tasks/tasksApi";
 import { useFetchData } from "../hooks/useFetchData";
 import { logger } from "../utils/logger";
@@ -8,28 +8,25 @@ import {
   taskNameOptions,
   aiModelOptions,
   deliverables,
-} from "../utils/taskOptions";
+} from "./TaskOptions";
 
 import {
   DynamicForm,
-  TASK_FORM_FIELDS,
 } from "../forms";
-import { showSuccess, showError, showInfo, showWarning } from "../utils/toast";
-import { handleConditionalFieldDefaults } from "../forms/sanitization/preparators";
+import { TASK_FORM_FIELDS } from "../forms/configs";
+import { showSuccess, showError } from "../utils/toast";
+import { extractTaskNumber } from "../forms/validation/validationRules";
+
 
 
 const TaskForm = ({
-  onSubmit: customOnSubmit,
   initialValues: customInitialValues,
-  loading = false,
   error = null,
   mode = "create", // "create" or "edit"
   taskId = null, // For edit mode
-  onFormChange = null, // Callback for form changes
-  skipInternalUpdate = false, // Skip internal update handling for external control
   debug = true, // Enable debug mode to see validation errors
 }) => {
-  const [outerSubmitting, setOuterSubmitting] = useState(false);
+
   const [createTask] = useCreateTaskMutation();
   const [updateTask] = useUpdateTaskMutation();
 
@@ -58,19 +55,63 @@ const TaskForm = ({
 
   const { fields, options } = getFieldConfig();
 
-
-
-
-
-
-
-
-
   const handleSubmit = async (preparedData, { setSubmitting, resetForm, setFieldError }) => {
     try {
-      setOuterSubmitting(true);
+      // Handle deliverables logic
+      let processedData = { ...preparedData };
       
-      logger.log(`${mode === 'edit' ? 'Updating' : 'Creating'} task with data:`, preparedData);
+      if (!preparedData.hasDeliverables) {
+        // If no deliverables, set defaults for database
+        processedData = {
+          ...processedData,
+          deliverables: [],
+          deliverablesCount: 0,
+          deliverablesOther: []
+        };
+      } else {
+        // If has deliverables, ensure required fields are present
+        if (!preparedData.deliverables || preparedData.deliverables.length === 0) {
+          throw new Error('Please select at least one deliverable when deliverables are enabled');
+        }
+        if (!preparedData.deliverablesCount || preparedData.deliverablesCount < 1) {
+          throw new Error('Please specify the number of deliverables');
+        }
+        // If "others" is selected, ensure deliverablesOther is provided
+        if (preparedData.deliverables.includes('others') && 
+            (!preparedData.deliverablesOther || preparedData.deliverablesOther.length === 0)) {
+          throw new Error('Please specify other deliverables when "Others" is selected');
+        }
+      }
+      
+      // Handle AI tools logic
+      if (!preparedData.aiUsed) {
+        // If no AI used, set defaults for database
+        processedData = {
+          ...processedData,
+          timeSpentOnAI: 0,
+          aiModels: []
+        };
+      } else {
+        // If AI is used, ensure required fields are present
+        if (!preparedData.timeSpentOnAI || preparedData.timeSpentOnAI < 0.5) {
+          throw new Error('Please specify time spent on AI (minimum 0.5 hours)');
+        }
+        if (!preparedData.aiModels || preparedData.aiModels.length === 0) {
+          throw new Error('Please select at least one AI model when AI is used');
+        }
+      }
+      
+      // Remove UI-only fields from database data (they're only for form control)
+      const { hasDeliverables, aiUsed, ...dataForDatabase } = processedData;
+      
+      // Extract task number from Jira link if present and add monthId
+      const data = {
+        ...dataForDatabase,
+        monthId, // Add monthId from useFetchData
+        taskNumber: dataForDatabase.jiraLink ? extractTaskNumber(dataForDatabase.jiraLink) : dataForDatabase.taskNumber,
+      };
+      
+      logger.log(`${mode === 'edit' ? 'Updating' : 'Creating'} task with data:`, data);
 
 
 
@@ -82,26 +123,20 @@ const TaskForm = ({
           throw new Error('Task ID is required for editing');
         }
         
-        if (skipInternalUpdate) {
-          // Skip internal update handling - let parent component handle it
-          result = preparedData;
-          logger.log(`Task data prepared for external update:`, result);
-        } else {
-          // Remove the id from updates to avoid conflicts
-          const { id, ...updates } = preparedData;
-          
-          result = await updateTask({
-            monthId,
-            id: currentTaskId,
-            updates
-          }).unwrap();
-          
-          logger.log(`Task updated successfully:`, result);
-          showSuccess(`Task updated successfully!`);
-        }
+        // Remove the id from updates to avoid conflicts
+        const { id, ...updates } = data;
+        
+        result = await updateTask({
+          monthId,
+          id: currentTaskId,
+          updates
+        }).unwrap();
+        
+        logger.log(`Task updated successfull111:`, result);
+        showSuccess(`Task updated successfully!`);
       } else {
-        result = await createTask(preparedData).unwrap();
-        logger.log(`Task created successfully:`, result);
+        result = await createTask(data).unwrap();
+        logger.log(`Task created successfully222:`, result);
         showSuccess(`Task created successfully!`);
       }
       
@@ -110,15 +145,10 @@ const TaskForm = ({
         resetForm();
       }
       
-      // Call custom onSubmit if provided
-      if (customOnSubmit) {
-        customOnSubmit(result);
-      }
-      
     } catch (error) {
       logger.error(`Task ${mode === 'edit' ? 'update' : 'creation'} failed:`, error);
       
-      // Handle specific error types with better messages
+      // Show error message
       if (error?.message?.includes("permission")) {
         showError("Permission denied. Please check your access rights.");
       } else if (error?.message?.includes("network")) {
@@ -132,37 +162,12 @@ const TaskForm = ({
       } else {
         showError(error?.message || `Failed to ${mode === 'edit' ? 'update' : 'create'} task. Please try again.`);
       }
-      
-      // Call custom error handler if provided
-      if (customOnSubmit && typeof customOnSubmit === 'function') {
-        customOnSubmit(null, error);
-      }
     } finally {
       setSubmitting(false);
-      setOuterSubmitting(false);
     }
   };
 
-  // Enhanced initial values with better defaults
-  const getEnhancedInitialValues = useCallback(() => {
-    // Find current user as reporter
-    const currentUserReporter = reporters.find(reporter => 
-      reporter.userUID === user?.uid || reporter.id === user?.uid
-    );
-    
-    const baseValues = {
-      ...customInitialValues,
-      // Set default values for better UX
-      aiUsed: customInitialValues?.aiUsed || false,
-      reworked: customInitialValues?.reworked || false,
-      timeInHours: customInitialValues?.timeInHours || 1,
-      deliverablesCount: customInitialValues?.deliverablesCount || 1,
-      // Auto-set reporter to current user if not specified
-      reporters: customInitialValues?.reporters || (currentUserReporter?.id || ''),
-    };
 
-    return baseValues;
-  }, [customInitialValues, user, reporters]);
 
   // Simple form header
   const renderFormHeader = () => (
@@ -172,7 +177,7 @@ const TaskForm = ({
       </h2>
       <p className="text-gray-600 mt-1">
         {mode === 'edit' 
-          ? `Update the task details below`
+          ? `Update the task details below  ${monthId}`
           : `Fill in the details below to create a new task for ${monthId}`
         }
       </p>
@@ -186,13 +191,14 @@ const TaskForm = ({
       <DynamicForm
         fields={fields}
         options={options}
-        initialValues={getEnhancedInitialValues()}
+        initialValues={{
+          hasDeliverables: false,
+          ...customInitialValues
+        }}
         onSubmit={handleSubmit}
-        loading={loading || outerSubmitting}
+
         error={error}
         className="space-y-6"
-        formType="task"
-        context={{ user, monthId, reporters, mode, taskId }}
         debug={debug} // Enable debug mode to see validation errors
 
         submitText={mode === 'edit' ? 'Update Task' : 'Create Task'}
@@ -201,10 +207,8 @@ const TaskForm = ({
           iconName: mode === 'edit' ? "edit" : "plus",
           iconPosition: "left",
           variant: mode === 'edit' ? "secondary" : "primary",
-          disabled: false // Progress validation handled by DynamicForm
+          disabled: false
         }}
-        // Enhanced validation feedback
-        showSubmitButton={true}
         // Add form-level validation
         validateOnMount={false}
         validateOnChange={true}

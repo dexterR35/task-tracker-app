@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import { FIELD_TYPES } from './fieldTypes';
+import { FIELD_TYPES } from '../configs/fieldTypes';
 import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from './validationRules';
 
 // Dynamic field validation builder

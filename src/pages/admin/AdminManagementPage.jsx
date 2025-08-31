@@ -1,9 +1,7 @@
 import React, { useState, useMemo } from "react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
 import { useFetchData } from "../../shared/hooks/useFetchData";
 import { useCurrentMonth } from "../../shared/hooks/useCurrentMonth";
-import { useCreateReporterMutation, useUpdateReporterMutation, useDeleteReporterMutation } from "../../features/reporters/reportersApi";
+import { useDeleteReporterMutation } from "../../features/reporters/reportersApi";
 import { useCacheManagement } from "../../shared/hooks/useCacheManagement";
 import DynamicButton from "../../shared/components/ui/DynamicButton";
 import DynamicTable from "../../shared/components/ui/DynamicTable";
@@ -12,14 +10,14 @@ import TableInfo from "../../shared/components/ui/TableInfo";
 import Loader from "../../shared/components/ui/Loader";
 import { showSuccess, showError, showInfo } from "../../shared/utils/toast";
 import { logger } from "../../shared/utils/logger";
-import { sanitizeText } from "../../shared/forms/sanitization";
+import ReporterForm from "../../shared/reporter/ReporterForm";
 
 const AdminManagementPage = () => {
   const { monthId, monthName } = useCurrentMonth();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
-  const [editingItem, setEditingItem] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [rowActionId, setRowActionId] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingReporter, setEditingReporter] = useState(null);
 
   // Get all data using fetch data hook (no user filter for admin management)
   const {
@@ -41,8 +39,6 @@ const AdminManagementPage = () => {
   }, [reporters]);
 
   // API hooks for reporters
-  const [createReporter] = useCreateReporterMutation();
-  const [updateReporter] = useUpdateReporterMutation();
   const [deleteReporter] = useDeleteReporterMutation();
   
   // Cache management
@@ -50,38 +46,6 @@ const AdminManagementPage = () => {
 
   // Get columns based on active tab
   const tableColumns = getColumns(activeTab);
-
-  // Validation schema for reporters
-  const reporterValidationSchema = Yup.object({
-    name: Yup.string()
-      .required("Name is required")
-      .min(2, "Name must be at least 2 characters")
-      .max(50, "Name must be less than 50 characters"),
-    email: Yup.string()
-      .email("Invalid email format")
-      .required("Email is required"),
-    role: Yup.string()
-      .required("Role is required")
-      .min(1, "Role is required")
-      .max(50, "Role must be less than 50 characters"),
-    departament: Yup.string()
-      .required("Department is required")
-      .min(1, "Department is required")
-      .max(50, "Department must be less than 50 characters"),
-    occupation: Yup.string()
-      .required("Occupation is required")
-      .min(1, "Occupation is required")
-      .max(100, "Occupation must be less than 100 characters"),
-  });
-
-  // Initial values for reporter form
-  const reporterInitialValues = {
-    name: "",
-    email: "",
-    role: "",
-    departament: "",
-    occupation: "",
-  };
 
   // Check admin access
   if (!canAccess('admin')) {
@@ -122,96 +86,36 @@ const AdminManagementPage = () => {
   }
 
   const handleCreate = () => {
-    setEditingItem(null);
-    setShowForm(true);
+    setShowCreateModal(true);
   };
 
-  const handleEdit = (item) => {
-    setEditingItem(item);
-    setShowForm(true);
+  const handleEdit = (reporter) => {
+    setEditingReporter(reporter);
+    setShowEditModal(true);
   };
 
-  const handleDelete = async (item) => {
-    const itemType = activeTab === 'users' ? 'user' : 'reporter';
-    const itemName = activeTab === 'users' ? item.name || item.email : item.name;
-    
-    if (!window.confirm(`Are you sure you want to delete this ${itemType}: ${itemName}?`)) {
+  const handleReporterDelete = async (reporter) => {
+    if (!window.confirm(`Are you sure you want to delete reporter: ${reporter.name}?`)) {
       return;
     }
 
     try {
-      if (activeTab === 'reporters') {
-        await deleteReporter(item.id).unwrap();
-        clearCacheOnDataChange('reporters', 'delete');
-        showSuccess('Reporter deleted successfully!');
-      } else {
-        // TODO: Implement user deletion
-        logger.log('User deletion not implemented yet');
-        showInfo('User deletion not implemented yet');
-      }
+      await deleteReporter(reporter.id).unwrap();
+      clearCacheOnDataChange('reporters', 'delete');
+      showSuccess("Reporter deleted successfully!");
     } catch (error) {
-      logger.error(`Error deleting ${itemType}:`, error);
-      showError(`Failed to delete ${itemType}: ${error?.message || "Unknown error"}`);
+      logger.error("Reporter delete error:", error);
+      showError(`Failed to delete reporter: ${error?.message || "Please try again."}`);
     }
   };
 
-  const handleFormSubmit = async (values, { setSubmitting, resetForm }) => {
-    try {
-      setRowActionId("form");
-
-      if (activeTab === 'reporters') {
-        // Handle reporter creation/update
-        if (editingItem) {
-          // Update reporter
-          const updates = {
-            name: sanitizeText(values.name),
-            email: sanitizeText(values.email),
-            role: sanitizeText(values.role),
-            departament: sanitizeText(values.departament),
-            occupation: sanitizeText(values.occupation),
-          };
-
-          await updateReporter({ id: editingItem.id, updates }).unwrap();
-          clearCacheOnDataChange('reporters', 'update');
-          showSuccess('Reporter updated successfully!');
-        } else {
-          // Create reporter
-          const reporterData = {
-            name: sanitizeText(values.name),
-            email: sanitizeText(values.email),
-            role: sanitizeText(values.role),
-            departament: sanitizeText(values.departament),
-            occupation: sanitizeText(values.occupation),
-            createdBy: currentUser?.uid,
-            createdByName: currentUser?.name || currentUser?.email,
-          };
-
-          await createReporter(reporterData).unwrap();
-          clearCacheOnDataChange('reporters', 'create');
-          showSuccess('Reporter created successfully!');
-        }
-      } else {
-        // TODO: Implement user creation/update
-        logger.log('User creation/update not implemented yet');
-        showInfo('User creation/update not implemented yet');
-      }
-      
-      setShowForm(false);
-      setEditingItem(null);
-      resetForm();
-    } catch (error) {
-      logger.error(`Error saving ${activeTab}:`, error);
-      showError(`Failed to save: ${error?.message || "Unknown error"}`);
-    } finally {
-      setRowActionId(null);
-      setSubmitting(false);
-    }
+  const handleUserDelete = async (user) => {
+    // TODO: Implement user deletion
+    logger.log('User deletion not implemented yet');
+    showInfo('User deletion not implemented yet');
   };
 
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingItem(null);
-  };
+
 
   // Get current table data
   const tableData = activeTab === 'users' ? users : reporters;
@@ -290,7 +194,7 @@ const AdminManagementPage = () => {
         columns={tableColumns}
         tableType={activeTab}
         onEdit={activeTab === 'reporters' ? handleEdit : null}
-        onDelete={handleDelete}
+        onDelete={activeTab === 'reporters' ? handleReporterDelete : handleUserDelete}
         isLoading={isLoading}
         error={error}
         showPagination={true}
@@ -305,145 +209,62 @@ const AdminManagementPage = () => {
         enableRowSelection={false}
       />
 
-      {/* Reporter Form Modal */}
-      {showForm && activeTab === 'reporters' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              {editingItem ? 'Edit' : 'Add'} Reporter
-            </h3>
-            
-            <Formik
-              initialValues={editingItem ? {
-                name: editingItem.name || "",
-                email: editingItem.email || "",
-                role: editingItem.role || "",
-                departament: editingItem.departament || "",
-                occupation: editingItem.occupation || "",
-              } : reporterInitialValues}
-              validationSchema={reporterValidationSchema}
-              onSubmit={handleFormSubmit}
-            >
-              {({ isSubmitting }) => (
-                <Form className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                      Name *
-                    </label>
-                    <Field
-                      name="name"
-                      id="name"
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter reporter name"
-                    />
-                    <ErrorMessage name="name" component="div" className="text-red-400 text-xs mt-1" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-                      Email *
-                    </label>
-                    <Field
-                      name="email"
-                      id="email"
-                      type="email"
-                      className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter email address"
-                    />
-                    <ErrorMessage name="email" component="div" className="text-red-400 text-xs mt-1" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-1">
-                      Role *
-                    </label>
-                    <Field
-                      name="role"
-                      id="role"
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter role"
-                    />
-                    <ErrorMessage name="role" component="div" className="text-red-400 text-xs mt-1" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="departament" className="block text-sm font-medium text-gray-300 mb-1">
-                      Department *
-                    </label>
-                    <Field
-                      name="departament"
-                      id="departament"
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter department"
-                    />
-                    <ErrorMessage name="departament" component="div" className="text-red-400 text-xs mt-1" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="occupation" className="block text-sm font-medium text-gray-300 mb-1">
-                      Occupation *
-                    </label>
-                    <Field
-                      name="occupation"
-                      id="occupation"
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter occupation"
-                    />
-                    <ErrorMessage name="occupation" component="div" className="text-red-400 text-xs mt-1" />
-                  </div>
-
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <DynamicButton
-                      variant="outline"
-                      onClick={handleFormCancel}
-                      size="sm"
-                      type="button"
-                    >
-                      Cancel
-                    </DynamicButton>
-                    <DynamicButton
-                      variant="primary"
-                      type="submit"
-                      size="sm"
-                      loading={isSubmitting}
-                      disabled={isSubmitting}
-                    >
-                      {editingItem ? 'Update' : 'Create'} Reporter
-                    </DynamicButton>
-                  </div>
-                </Form>
-              )}
-            </Formik>
-          </div>
-        </div>
-      )}
-
-      {/* User Form Modal - Placeholder */}
-      {showForm && activeTab === 'users' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              User Management
-            </h3>
-            <p className="text-gray-400 mb-4">
-              User creation and editing functionality is coming soon...
-            </p>
-            <div className="flex justify-end space-x-2">
+      {/* Create Reporter Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Create New Reporter
+              </h2>
               <DynamicButton
                 variant="outline"
-                onClick={handleFormCancel}
                 size="sm"
-              >
-                Close
-              </DynamicButton>
+                onClick={() => setShowCreateModal(false)}
+                iconName="close"
+                iconPosition="center"
+              />
+            </div>
+            <div className="p-6">
+              <ReporterForm
+                mode="create"
+              />
             </div>
           </div>
         </div>
       )}
+
+      {/* Edit Reporter Modal */}
+      {showEditModal && editingReporter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Edit Reporter: {editingReporter.name}
+              </h2>
+              <DynamicButton
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingReporter(null);
+                }}
+                iconName="close"
+                iconPosition="center"
+              />
+            </div>
+            <div className="p-6">
+              <ReporterForm
+                mode="edit"
+                reporterId={editingReporter.id}
+                initialValues={editingReporter}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 };

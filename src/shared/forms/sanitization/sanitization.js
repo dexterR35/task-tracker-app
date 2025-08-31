@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { FIELD_TYPES } from '../validation/fieldTypes';
+import { FIELD_TYPES } from '../configs/fieldTypes';
 
 
 // Sanitize HTML content
@@ -35,12 +35,50 @@ export const sanitizeUrl = (url) => {
   }
 };
 
+// Handle conditional field defaults
+const handleConditionalFieldDefaults = (data) => {
+  const updatedData = { ...data };
+
+  // Handle AI fields
+  if (!updatedData.aiUsed) {
+    updatedData.timeSpentOnAI = 0;
+    updatedData.aiModels = [];
+  } else {
+    if (!updatedData.timeSpentOnAI) {
+      updatedData.timeSpentOnAI = 0.5;
+    }
+    if (!Array.isArray(updatedData.aiModels)) {
+      updatedData.aiModels = [];
+    }
+  }
+
+  // Handle Other Deliverables
+  const deliverables = Array.isArray(updatedData.deliverables) ? updatedData.deliverables : [];
+  const hasOthers = deliverables.includes('others');
+  
+  if (!hasOthers) {
+    updatedData.deliverablesOther = [];
+  } else {
+    if (!Array.isArray(updatedData.deliverablesOther)) {
+      updatedData.deliverablesOther = [];
+    }
+  }
+
+  // Auto-calculate deliverables count
+  updatedData.deliverablesCount = deliverables.length;
+
+  return updatedData;
+};
+
 // Sanitize form data based on field configuration
 export const sanitizeFormData = (data, fields) => {
+  // Handle conditional field defaults first
+  const dataWithDefaults = handleConditionalFieldDefaults(data);
+  
   const sanitizedData = {};
   
   fields.forEach(field => {
-    const value = data[field.name];
+    const value = dataWithDefaults[field.name];
     sanitizedData[field.name] = sanitizeFieldValue(value, field);
   });
   
@@ -206,18 +244,6 @@ export const sanitizeUserData = (userData) => {
   };
 };
 
-// Sanitize user creation form data (pure sanitization, no validation)
-export const sanitizeUserCreationData = (formData) => {
-  if (!formData || typeof formData !== 'object') return {};
-
-  return {
-    name: sanitizeText(formData.name || ''),
-    email: sanitizeEmail(formData.email || ''),
-    role: sanitizeText(formData.role || 'user'),
-    isActive: Boolean(formData.isActive),
-  };
-};
-
 // Sanitize reporter data
 export const sanitizeReporterData = (reporterData) => {
   if (!reporterData || typeof reporterData !== 'object') return {};
@@ -225,8 +251,11 @@ export const sanitizeReporterData = (reporterData) => {
   return {
     name: sanitizeText(reporterData.name || ''),
     email: sanitizeEmail(reporterData.email || ''),
-    userUID: sanitizeText(reporterData.userUID || ''),
-    isActive: Boolean(reporterData.isActive),
+    role: sanitizeText(reporterData.role || ''),
+    departament: sanitizeText(reporterData.departament || ''),
+    occupation: sanitizeText(reporterData.occupation || ''),
+    createdBy: sanitizeText(reporterData.createdBy || ''),
+    createdByName: sanitizeText(reporterData.createdByName || ''),
   };
 };
 

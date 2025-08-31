@@ -1,5 +1,5 @@
 // Validation system exports
-export { FIELD_TYPES } from './fieldTypes';
+export { FIELD_TYPES } from '../configs/fieldTypes';
 export { 
   VALIDATION_PATTERNS, 
   VALIDATION_MESSAGES,

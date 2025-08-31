@@ -13,7 +13,7 @@ import DynamicButton from "../ui/DynamicButton";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import Loader from "../ui/Loader";
 import OptimizedTaskMetricsBoard from "../dashboard/CardsMetrics";
-import DashboardTaskTable from "../dashboard/DashboardTaskTable";
+import DashboardTaskTable from "../../task/TaskTable";
 import TaskForm from "../../task/TaskForm";
 import {
   ArrowRightOnRectangleIcon,
@@ -144,29 +144,7 @@ const AppLayout = () => {
     setShowCreateModal(true);
   };
 
-  // Handle form success
-  const handleFormSuccess = (result) => {
-    console.log('Task created successfully:', result);
-    setShowCreateModal(false);
-    clearCacheOnDataChange('tasks', 'create');
-    try {
-      showSuccess("Task created successfully! The task list will update automatically.");
-    } catch (error) {
-      console.error('showSuccess error:', error);
-      console.log('Task created successfully! The task list will update automatically.');
-    }
-  };
 
-  // Handle form error
-  const handleFormError = (error) => {
-    console.error('Task creation failed:', error);
-    try {
-      showError("Failed to create task. Please try again.");
-    } catch (toastError) {
-      console.error('showError error:', toastError);
-      console.log("Failed to create task. Please try again.");
-    }
-  };
 
   // Derive title based on context
   const title = isUserAdmin && selectedUserId 
@@ -488,8 +466,6 @@ const AppLayout = () => {
                       <div className="p-6">
                         <TaskForm
                           mode="create"
-                          onSubmit={handleFormSuccess}
-                          onError={handleFormError}
                         />
                       </div>
                     </div>
