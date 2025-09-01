@@ -1,30 +1,4 @@
-import { format, parseISO, isValid, startOfMonth, endOfMonth } from 'date-fns';
-
-// Centralized month ID generation to eliminate redundancy
-export const generateMonthId = (date = new Date()) => {
-  return format(date, 'yyyy-MM');
-};
-
-// Centralized month ID validation
-export const isValidMonthId = (monthId) => {
-  return monthId && 
-         typeof monthId === 'string' && 
-         /^\d{4}-\d{2}$/.test(monthId);
-};
-
-// Centralized month info generation
-export const getMonthInfo = (date = new Date()) => {
-  const start = startOfMonth(date);
-  const end = endOfMonth(date);
-  
-  return {
-    monthId: generateMonthId(date),
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
-    monthName: format(date, 'MMMM yyyy'),
-    daysInMonth: end.getDate()
-  };
-};
+// Standalone date utility functions (extracted from useFormat for non-React usage)
 
 /**
  * Normalize timestamp to consistent format
@@ -93,27 +67,4 @@ export const serializeTimestampsForRedux = (data) => {
   }
   
   return serialized;
-};
-
-/**
- * Normalize timestamps in an object recursively
- */
-export const normalizeObjectTimestamps = (input) => {
-  if (!input || typeof input !== 'object') {
-    return input;
-  }
-  
-  const normalized = Array.isArray(input) ? [] : {};
-  
-  for (const [key, value] of Object.entries(input)) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Recursively normalize nested objects
-      normalized[key] = normalizeObjectTimestamps(value);
-    } else {
-      // Normalize timestamp fields
-      normalized[key] = normalizeTimestamp(value);
-    }
-  }
-  
-  return normalized;
 };

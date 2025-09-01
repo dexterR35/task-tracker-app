@@ -28,7 +28,7 @@ const ReporterForm = ({
       return {
         name: initialValues.name || "",
         email: initialValues.email || "",
-        role: initialValues.role || "",
+        role: "reporter", // Always set to reporter
         departament: initialValues.departament || "",
         occupation: initialValues.occupation || "",
       };
@@ -36,7 +36,7 @@ const ReporterForm = ({
     return {
       name: "",
       email: "",
-      role: "",
+      role: "reporter", // Always set to reporter
       departament: "",
       occupation: "",
     };
@@ -48,7 +48,7 @@ const ReporterForm = ({
       const data = {
         name: sanitizeText(preparedData.name),
         email: sanitizeText(preparedData.email),
-        role: sanitizeText(preparedData.role),
+        role: "reporter", // Always set to reporter
         departament: sanitizeText(preparedData.departament),
         occupation: sanitizeText(preparedData.occupation),
       };

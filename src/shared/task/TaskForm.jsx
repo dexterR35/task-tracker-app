@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 import { useCreateTaskMutation, useUpdateTaskMutation } from "../../features/tasks/tasksApi";
 import { useFetchData } from "../hooks/useFetchData";
 import { logger } from "../utils/logger";
@@ -29,6 +29,9 @@ const TaskForm = ({
 
   const [createTask] = useCreateTaskMutation();
   const [updateTask] = useUpdateTaskMutation();
+  
+  // Local state for form submission control
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get data from centralized hook (including user)
   const { user, reporters = [], monthId } = useFetchData();
@@ -55,8 +58,21 @@ const TaskForm = ({
 
   const { fields, options } = getFieldConfig();
 
+  // Reset submission state when mode or taskId changes
+  useEffect(() => {
+    setIsSubmitting(false);
+  }, [mode, taskId]);
+
   const handleSubmit = async (preparedData, { setSubmitting, resetForm, setFieldError }) => {
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      logger.warn('Task submission blocked - already submitting');
+      return;
+    }
+    
     try {
+      setIsSubmitting(true);
+      
       // Handle deliverables logic
       let processedData = { ...preparedData };
       
@@ -163,6 +179,7 @@ const TaskForm = ({
         showError(error?.message || `Failed to ${mode === 'edit' ? 'update' : 'create'} task. Please try again.`);
       }
     } finally {
+      setIsSubmitting(false);
       setSubmitting(false);
     }
   };
@@ -181,6 +198,14 @@ const TaskForm = ({
           : `Fill in the details below to create a new task for ${monthId}`
         }
       </p>
+      {isSubmitting && (
+        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-700 text-sm flex items-center">
+            <span className="w-4 h-4 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin mr-2"></span>
+            {mode === 'edit' ? 'Updating task...' : 'Creating task...'}
+          </p>
+        </div>
+      )}
     </div>
   );
 
@@ -203,16 +228,24 @@ const TaskForm = ({
 
         submitText={mode === 'edit' ? 'Update Task' : 'Create Task'}
         submitButtonProps={{
+          loading: isSubmitting,
           loadingText: mode === 'edit' ? "Updating..." : "Creating...",
           iconName: mode === 'edit' ? "edit" : "plus",
           iconPosition: "left",
           variant: mode === 'edit' ? "secondary" : "primary",
-          disabled: false
+          disabled: isSubmitting
         }}
         // Add form-level validation
         validateOnMount={false}
         validateOnChange={true}
         validateOnBlur={true}
+        // Prevent form submission during loading
+        onFormReady={(formikProps) => {
+          // Disable form submission via Enter key during loading
+          if (isSubmitting) {
+            formikProps.setSubmitting(true);
+          }
+        }}
       />
     </div>
   );

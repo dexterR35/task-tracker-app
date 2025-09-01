@@ -17,9 +17,7 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db, auth } from "../../app/firebase";
-import {
-  normalizeTimestamp,
-} from "../../shared/utils/dateUtils";
+import { normalizeTimestamp } from "../../shared/utils/dateUtils";
 import { logger } from "../../shared/utils/logger";
 
 // Simple task normalization with proper serialization for Redux

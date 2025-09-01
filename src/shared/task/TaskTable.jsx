@@ -31,8 +31,8 @@ const TaskTable = ({
   const [deleteTask] = useDeleteTaskMutation();
   // Cache management
   const { clearCacheOnDataChange } = useCacheManagement();
-  // Get task columns
-  const taskColumns = getColumns('tasks');
+  // Get task columns with monthId for date formatting
+  const taskColumns = getColumns('tasks', monthId);
   // Handle task selection
   const handleTaskSelect = (task) => {
     showSuccess(`Selected task: ${task.taskName || task.taskNumber}`);

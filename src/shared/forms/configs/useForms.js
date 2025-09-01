@@ -370,19 +370,22 @@ export const REPORTER_FORM_FIELDS = [
     type: FIELD_TYPES.TEXT,
     label: 'Role',
     required: true,
+    defaultValue: 'reporter',
     validation: {
-      minLength: 1,
-      maxLength: 50,
       custom: {
         test: (value) => {
-          if (!value) return false;
-          return value.length >= 1 && value.length <= 50;
+          return value === 'reporter';
         },
-        message: 'Role must be between 1 and 50 characters'
+        message: 'Role must be reporter'
       }
     },
-    placeholder: 'Enter role',
-    helpText: 'Enter the reporter\'s role'
+    placeholder: 'reporter',
+    helpText: 'Reporter role is automatically assigned',
+    props: {
+      disabled: true,
+      readOnly: true,
+      autoComplete: 'off'
+    }
   },
   {
     name: 'departament',

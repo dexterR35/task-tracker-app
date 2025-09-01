@@ -251,7 +251,7 @@ export const sanitizeReporterData = (reporterData) => {
   return {
     name: sanitizeText(reporterData.name || ''),
     email: sanitizeEmail(reporterData.email || ''),
-    role: sanitizeText(reporterData.role || ''),
+    role: 'reporter', // Always set to reporter
     departament: sanitizeText(reporterData.departament || ''),
     occupation: sanitizeText(reporterData.occupation || ''),
     createdBy: sanitizeText(reporterData.createdBy || ''),

@@ -44,8 +44,8 @@ const AdminManagementPage = () => {
   // Cache management
   const { clearCacheOnDataChange } = useCacheManagement();
 
-  // Get columns based on active tab
-  const tableColumns = getColumns(activeTab);
+  // Get columns based on active tab with monthId for date formatting
+  const tableColumns = getColumns(activeTab, monthId);
 
   // Check admin access
   if (!canAccess('admin')) {

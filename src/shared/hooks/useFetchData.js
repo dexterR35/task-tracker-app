@@ -53,66 +53,94 @@ export const useFetchData = (userId = null) => {
     });
     return skip;
   }, [authLoading, isAuthChecking, monthId, boardExists, user]);
+
+  // Determine if we should skip global data fetching (users and reporters)
+  const shouldSkipGlobalData = useMemo(() => {
+    const skip = authLoading || isAuthChecking || !user;
+    logger.debug('[useFetchData] Should skip global data fetching:', {
+      skip,
+      authLoading,
+      isAuthChecking,
+      hasUser: !!user
+    });
+    return skip;
+  }, [authLoading, isAuthChecking, user]);
   
   // Fetch tasks, users, and reporters data
   const { data: tasks = [], isLoading: tasksLoading, error: tasksError } = useGetMonthTasksQuery(
     { monthId, userId: normalizedUserId },
-    { skip: shouldSkip }
+    { skip: shouldSkip } // Tasks depend on board existence
   );
   
   const { data: users = [], isLoading: usersLoading, error: usersError } = useGetUsersQuery(
     undefined,
-    { skip: shouldSkip }
+    { skip: shouldSkipGlobalData } // Users are global, don't depend on board
   );
   
   const { data: reporters = [], isLoading: reportersLoading, error: reportersError } = useGetReportersQuery(
     undefined,
-    { skip: shouldSkip }
+    { skip: shouldSkipGlobalData } // Reporters are global, don't depend on board
   );
 
   // Log data fetching results
   useEffect(() => {
-    if (!shouldSkip) {
+    if (!shouldSkip || !shouldSkipGlobalData) {
       logger.debug('[useFetchData] Data fetching results:', {
         tasksCount: tasks.length,
         usersCount: users.length,
         reportersCount: reporters.length,
-        tasksLoading,
-        usersLoading,
-        reportersLoading,
-        tasksError: tasksError?.message,
-        usersError: usersError?.message,
-        reportersError: reportersError?.message
+        tasksLoading: shouldSkip ? 'skipped' : tasksLoading,
+        usersLoading: shouldSkipGlobalData ? 'skipped' : usersLoading,
+        reportersLoading: shouldSkipGlobalData ? 'skipped' : reportersLoading,
+        tasksError: shouldSkip ? 'skipped' : tasksError?.message,
+        usersError: shouldSkipGlobalData ? 'skipped' : usersError?.message,
+        reportersError: shouldSkipGlobalData ? 'skipped' : reportersError?.message,
+        shouldSkip,
+        shouldSkipGlobalData
       });
     }
-  }, [tasks.length, users.length, reporters.length, tasksLoading, usersLoading, reportersLoading, tasksError, usersError, reportersError, shouldSkip]);
+  }, [tasks.length, users.length, reporters.length, tasksLoading, usersLoading, reportersLoading, tasksError, usersError, reportersError, shouldSkip, shouldSkipGlobalData]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
-    const loading = authLoading || isAuthChecking || tasksLoading || usersLoading || reportersLoading;
+    // Only consider loading states for data that we're actually trying to fetch
+    const tasksLoadingState = shouldSkip ? false : tasksLoading;
+    const usersLoadingState = shouldSkipGlobalData ? false : usersLoading;
+    const reportersLoadingState = shouldSkipGlobalData ? false : reportersLoading;
+    
+    const loading = authLoading || isAuthChecking || tasksLoadingState || usersLoadingState || reportersLoadingState;
     logger.debug('[useFetchData] Loading state:', {
       loading,
       authLoading,
       isAuthChecking,
-      tasksLoading,
-      usersLoading,
-      reportersLoading
+      tasksLoading: tasksLoadingState,
+      usersLoading: usersLoadingState,
+      reportersLoading: reportersLoadingState,
+      shouldSkip,
+      shouldSkipGlobalData
     });
     return loading;
-  }, [authLoading, isAuthChecking, tasksLoading, usersLoading, reportersLoading]);
+  }, [authLoading, isAuthChecking, tasksLoading, usersLoading, reportersLoading, shouldSkip, shouldSkipGlobalData]);
 
   // Determine error state
   const error = useMemo(() => {
-    const hasError = tasksError || usersError || reportersError;
+    // Only consider errors for data that we're actually trying to fetch
+    const tasksErrorState = shouldSkip ? null : tasksError;
+    const usersErrorState = shouldSkipGlobalData ? null : usersError;
+    const reportersErrorState = shouldSkipGlobalData ? null : reportersError;
+    
+    const hasError = tasksErrorState || usersErrorState || reportersErrorState;
     if (hasError) {
       logger.error('[useFetchData] Error detected:', {
-        tasksError: tasksError?.message,
-        usersError: usersError?.message,
-        reportersError: reportersError?.message
+        tasksError: tasksErrorState?.message,
+        usersError: usersErrorState?.message,
+        reportersError: reportersErrorState?.message,
+        shouldSkip,
+        shouldSkipGlobalData
       });
     }
     return hasError;
-  }, [tasksError, usersError, reportersError]);
+  }, [tasksError, usersError, reportersError, shouldSkip, shouldSkipGlobalData]);
 
   // Check if data has changed - memoized
   const hasData = useMemo(() => {
@@ -154,9 +182,11 @@ export const useFetchData = (userId = null) => {
       hasError: !!error,
       hasData,
       monthId,
-      normalizedUserId
+      normalizedUserId,
+      shouldSkip,
+      shouldSkipGlobalData
     });
-  }, [tasks.length, users.length, reporters.length, isLoading, error, hasData, monthId, normalizedUserId]);
+  }, [tasks.length, users.length, reporters.length, isLoading, error, hasData, monthId, normalizedUserId, shouldSkip, shouldSkipGlobalData]);
 
   // Cleanup effect for logout
   useEffect(() => {

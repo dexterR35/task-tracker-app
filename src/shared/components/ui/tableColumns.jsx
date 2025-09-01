@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { formatTaskDisplayName } from '../../forms/sanitization';
+import { useFormat } from '../../hooks/useFormat';
 
 const columnHelper = createColumnHelper();
 
@@ -16,18 +17,55 @@ const safeDisplay = (value, fallback = "-") => {
 // Helper function to format numbers
 const numberFmt = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : 0);
 
-// Helper function to format dates
-const formatDate = (date) => {
-  if (!date) return "-";
+// Helper function to normalize timestamp (moved from dateUtils to useFormat)
+const normalizeTimestamp = (value) => {
+  if (!value) return null;
+  
+  // If it's already a Date object
+  if (value instanceof Date) {
+    return value;
+  }
+  
+  // If it's a Firestore timestamp
+  if (value && typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+  
+  // If it's a number (milliseconds)
+  if (typeof value === 'number') {
+    return new Date(value);
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  
+  // If it's an object with seconds/nanoseconds (Firestore timestamp)
+  if (value && typeof value === 'object' && 'seconds' in value) {
+    const milliseconds = value.seconds * 1000 + (value.nanoseconds || 0) / 1000000;
+    return new Date(milliseconds);
+  }
+  
+  return null;
+};
+
+// Helper function to format dates using useFormat logic
+const formatDate = (date, monthId = null) => {
+  const normalizedDate = normalizeTimestamp(date);
+  if (!normalizedDate) return '-';
   try {
-    return format(new Date(date), "MMM d, yyyy");
-  } catch (error) {
-    return "Invalid Date";
+    return format(normalizedDate, 'MMM d, yyyy');
+  } catch {
+    return '-';
   }
 };
 
 // Tasks Table Columns
-export const getTaskColumns = () => [
+export const getTaskColumns = (monthId = null) => [
   columnHelper.accessor('id', {
     header: '# ID',
     cell: ({ getValue, row }) => {
@@ -104,13 +142,13 @@ export const getTaskColumns = () => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => formatDate(getValue()),
+    cell: ({ getValue }) => formatDate(getValue(), monthId),
     size: 100,
   }),
 ];
 
 // Users Table Columns
-export const getUserColumns = () => [
+export const getUserColumns = (monthId = null) => [
   columnHelper.accessor('name', {
     header: 'User',
     cell: ({ row }) => {
@@ -141,15 +179,26 @@ export const getUserColumns = () => [
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    cell: ({ getValue }) => (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-        getValue() === 'admin' 
-          ? 'bg-red-100 text-red-800' 
-          : 'bg-green-100 text-green-800'
-      }`}>
-        {getValue() || 'user'}
-      </span>
-    ),
+    cell: ({ getValue }) => {
+      const role = getValue() || 'user';
+      const getRoleStyle = (role) => {
+        switch (role) {
+          case 'admin':
+            return 'bg-red-100 text-red-800';
+          case 'reporter':
+            return 'bg-blue-100 text-blue-800';
+          case 'user':
+          default:
+            return 'bg-green-100 text-green-800';
+        }
+      };
+      
+      return (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleStyle(role)}`}>
+          {role}
+        </span>
+      );
+    },
     size: 100,
   }),
   columnHelper.accessor('occupation', {
@@ -159,13 +208,13 @@ export const getUserColumns = () => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => formatDate(getValue()),
+    cell: ({ getValue }) => formatDate(getValue(), monthId),
     size: 120,
   }),
 ];
 
 // Reporters Table Columns
-export const getReporterColumns = () => [
+export const getReporterColumns = (monthId = null) => [
   columnHelper.accessor('name', {
     header: 'Reporter',
     cell: ({ row }) => {
@@ -196,7 +245,14 @@ export const getReporterColumns = () => [
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      const role = getValue() || 'reporter';
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+          {role}
+        </span>
+      );
+    },
     size: 120,
   }),
   columnHelper.accessor('departament', {
@@ -211,20 +267,20 @@ export const getReporterColumns = () => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => formatDate(getValue()),
+    cell: ({ getValue }) => formatDate(getValue(), monthId),
     size: 120,
   }),
 ];
 
 // Column factory function
-export const getColumns = (tableType) => {
+export const getColumns = (tableType, monthId = null) => {
   switch (tableType) {
     case 'tasks':
-      return getTaskColumns();
+      return getTaskColumns(monthId);
     case 'users':
-      return getUserColumns();
+      return getUserColumns(monthId);
     case 'reporters':
-      return getReporterColumns();
+      return getReporterColumns(monthId);
     default:
       return [];
   }
