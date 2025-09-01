@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Icons from "../../icons";
+import { showSuccess, showError } from "../../utils/toast";
 
 const DynamicButton = ({
   id,
@@ -65,12 +66,10 @@ const DynamicButton = ({
         setLocalLoading(true);
         await onClick(e);
         if (successMessage) {
-          const { showSuccess } = await import("../../utils/toast");
           showSuccess(successMessage);
         }
       } catch (error) {
         const message = errorMessage || error.message || "An error occurred";
-        const { showError } = await import("../../utils/toast");
         showError(message);
       } finally {
         setLocalLoading(false);

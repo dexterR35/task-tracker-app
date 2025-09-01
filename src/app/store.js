@@ -2,6 +2,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
 import currentMonthReducer from "../features/currentMonth/currentMonthSlice";
 import { logger } from "../shared/utils/logger";
+import { showError, showWarning, showInfo } from "../shared/utils/toast";
 
 // Import RTK Query APIs - required for RTK Query to function
 import { tasksApi } from "../features/tasks/tasksApi";
@@ -26,26 +27,24 @@ const errorNotificationMiddleware = (storeAPI) => (next) => (action) => {
     const errorCode = error?.code || error?.status || 'UNKNOWN_ERROR';
     
     // Import toast functions dynamically to avoid circular dependencies
-    import('../shared/utils/toast').then(({ showError, showWarning, showInfo }) => {
-      // Categorize errors for better user experience
-      let enhancedMessage = errorMessage;
-      
-      if (errorCode === 'PERMISSION_DENIED') {
-        enhancedMessage = "You don't have permission to perform this action.";
-        showWarning(enhancedMessage);
-      } else if (errorCode === 'SERVICE_UNAVAILABLE') {
-        enhancedMessage = "Service temporarily unavailable. Please try again later.";
-        showWarning(enhancedMessage);
-      } else if (errorCode === 'NOT_FOUND') {
-        enhancedMessage = "The requested resource was not found.";
-        showInfo(enhancedMessage);
-      } else if (errorCode === 'month-not-generated') {
-        enhancedMessage = "Please generate a month board first.";
-        showInfo(enhancedMessage);
-      } else {
-        showError(enhancedMessage);
-      }
-    });
+    // Categorize errors for better user experience
+    let enhancedMessage = errorMessage;
+    
+    if (errorCode === 'PERMISSION_DENIED') {
+      enhancedMessage = "You don't have permission to perform this action.";
+      showWarning(enhancedMessage);
+    } else if (errorCode === 'SERVICE_UNAVAILABLE') {
+      enhancedMessage = "Service temporarily unavailable. Please try again later.";
+      showWarning(enhancedMessage);
+    } else if (errorCode === 'NOT_FOUND') {
+      enhancedMessage = "The requested resource was not found.";
+      showInfo(enhancedMessage);
+    } else if (errorCode === 'month-not-generated') {
+      enhancedMessage = "Please generate a month board first.";
+      showInfo(enhancedMessage);
+    } else {
+      showError(enhancedMessage);
+    }
   }
   
   return result;

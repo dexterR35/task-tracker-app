@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { logger } from '../../shared/utils/logger';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { db, auth } from '../../app/firebase';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
 // Helper function to get current month ID using date-fns
 const getCurrentMonthId = () => {
@@ -38,10 +40,6 @@ export const checkMonthBoardExists = createAsyncThunk(
         return rejectWithValue(`Invalid month ID format: ${monthId}`);
       }
 
-      // Import Firebase dynamically to avoid circular dependencies
-      const { db } = await import('../../app/firebase');
-      const { doc, getDoc } = await import('firebase/firestore');
-
       const monthDocRef = doc(db, "tasks", monthId);
       const monthDoc = await getDoc(monthDocRef);
 
@@ -67,10 +65,6 @@ export const generateMonthBoard = createAsyncThunk(
       if (!isValidMonthId(monthId)) {
         return rejectWithValue(`Invalid month ID format: ${monthId}`);
       }
-
-      // Import Firebase dynamically to avoid circular dependencies
-      const { db, auth } = await import('../../app/firebase');
-      const { doc, getDoc, setDoc, serverTimestamp } = await import('firebase/firestore');
 
       // Check if user is authenticated
       if (!auth.currentUser) {
@@ -156,10 +150,6 @@ export const setupBoardListener = createAsyncThunk(
   'currentMonth/setupBoardListener',
   async (monthId, { dispatch, getState }) => {
     try {
-      // Import Firebase dynamically to avoid circular dependencies
-      const { db } = await import('../../app/firebase');
-      const { doc, onSnapshot } = await import('firebase/firestore');
-      
       const monthDocRef = doc(db, "tasks", monthId);
       
       // Set up real-time listener for board status
