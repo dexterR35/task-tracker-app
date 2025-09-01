@@ -115,7 +115,7 @@ const LoginPage = () => {
 
           <div className="mt-6 text-center">
             <p className="text-xs">
-              Need help? Contact your <span className="text-blue-default underline">administrator 1</span>
+              Need help? Contact your <span className="text-blue-default underline">administrator 2</span>
             </p>
           </div>
         </div>
