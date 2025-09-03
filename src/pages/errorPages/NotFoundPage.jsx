@@ -1,9 +1,9 @@
-import { useFetchData } from "../../shared/hooks/useFetchData";
+import { useFetchData } from "@/hooks/useFetchData";
 import { Link } from "react-router-dom";
-import { Icons } from "../../shared/icons";
+import { Icons } from "@/components/icons";
 
 const NotFoundPage = () => {
-  const { user, canAccess } = useFetchData();
+  const { user } = useFetchData();
 
   const getHomePath = () => {
     if (!user) return "/";

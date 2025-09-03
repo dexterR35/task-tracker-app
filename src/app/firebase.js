@@ -9,7 +9,7 @@ import {
   getFirestore, 
   connectFirestoreEmulator 
 } from "firebase/firestore";
-import { logger } from "../shared/utils/logger";
+import { logger } from "@/utils/logger";
 
 // Use environment variables for sensitive config
 const firebaseConfig = {

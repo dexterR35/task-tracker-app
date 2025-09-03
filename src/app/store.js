@@ -1,13 +1,13 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import authReducer from "../features/auth/authSlice";
-import currentMonthReducer from "../features/currentMonth/currentMonthSlice";
-import { logger } from "../shared/utils/logger";
-import { showError, showWarning, showInfo } from "../shared/utils/toast";
+import { authReducer } from "@/features/auth";
+import { currentMonthReducer } from "@/features/currentMonth";
+import { logger } from "@/utils/logger";
+import { showError, showWarning, showInfo } from "@/utils/toast";
 
 // Import RTK Query APIs - required for RTK Query to function
-import { tasksApi } from "../features/tasks/tasksApi";
-import { usersApi } from "../features/users/usersApi";
-import { reportersApi } from "../features/reporters/reportersApi";
+import { tasksApi } from "@/features/tasks";
+import { usersApi } from "@/features/users";
+import { reportersApi } from "@/features/reporters";
 
 // Utility function to reset all API states
 export const resetAllApiStates = () => (dispatch) => {

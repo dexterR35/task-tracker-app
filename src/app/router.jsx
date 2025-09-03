@@ -8,29 +8,30 @@ import {
 } from "react-router-dom";
 import { lazy, Suspense, memo, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
+import { useAuth } from "@/features/auth";
 
 import {
   selectUser,
   selectIsLoading,
   selectIsAuthChecking,
   selectAuthError,
-  selectCanAccessAdmin,
-  selectCanAccessUser,
-} from "../features/auth/authSlice";
+} from "@/features/auth";
 
-import AppLayout from "../shared/components/layout/AppLayout";
-import Loader from "../shared/components/ui/Loader";
+import AppLayout from "@/components/layout/AppLayout";
+import Loader from "@/components/ui/Loader/Loader";
 
 // Import static pages directly (no lazy loading needed)
-import LoginPage from "../pages/auth/LoginPage";
-import HomePage from "../pages/HomePage";
+import LoginPage from "@/pages/auth/LoginPage";
+import HomePage from "@/pages/HomePage";
+import DashboardPage from "@/pages/DashboardPage";
 
 // Lazy load dynamic pages that need data
 const AdminManagementPage = lazy(
-  () => import("../pages/admin/AdminManagementPage")
+  () => import("@/pages/admin/ManagmentPage")
 );
-const ComingSoonPage = lazy(() => import("../shared/components/ui/ComingSoonPage"));
-const NotFoundPage = lazy(() => import("../pages/errorPages/NotFoundPage"));
+const AnalyticsPage = lazy(() => import("@/pages/admin/AnalyticsPage"));
+const ComingSoonPage = lazy(() => import("@/components/ui/ComingSoon/ComingSoon"));
+const NotFoundPage = lazy(() => import("@/pages/errorPages/NotFoundPage"));
 
 // Simplified loading component for lazy-loaded pages
 const PageLoader = ({ text = "Loading..." }) => (
@@ -44,43 +45,13 @@ const LazyPage = ({ children, loadingText = "Loading..." }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>{children}</Suspense>
 );
 
-// Optimized auth state hook with memoization
-const useAuthState = () => {
-  const user = useSelector(selectUser);
-  const isLoading = useSelector(selectIsLoading);
-  const isAuthChecking = useSelector(selectIsAuthChecking);
-  const error = useSelector(selectAuthError);
-  const canAccessAdmin = useSelector(selectCanAccessAdmin);
-  const canAccessUser = useSelector(selectCanAccessUser);
-
-  // Memoized canAccess function to prevent recreation
-  const canAccess = useMemo(() => {
-    return (requiredRole) => {
-      // If still checking auth, don't make access decisions yet
-      if (isAuthChecking) {
-        return false;
-      }
-
-      if (requiredRole === "admin") {
-        return canAccessAdmin;
-      }
-      if (requiredRole === "user") {
-        return canAccessUser;
-      }
-      if (requiredRole === "authenticated") {
-        return !!user;
-      }
-      return false;
-    };
-  }, [canAccessAdmin, canAccessUser, user, isAuthChecking]);
-
-  return { user, isLoading, isAuthChecking, error, canAccess };
-};
-
 // Route protection component with auth checking loader
 const ProtectedRoute = memo(({ children, requiredRole = null }) => {
-  const { user, isAuthChecking, error, canAccess } = useAuthState();
+  const user = useSelector(selectUser);
+  const isAuthChecking = useSelector(selectIsAuthChecking);
+  const error = useSelector(selectAuthError);
   const location = useLocation();
+  const { canAccess } = useAuth();
 
   // Show loading state during initial auth check
   if (isAuthChecking) {
@@ -110,7 +81,7 @@ const ProtectedRoute = memo(({ children, requiredRole = null }) => {
     );
   }
 
-  // Check role-based access
+  // Check role-based access using centralized canAccess function
   if (requiredRole && !canAccess(requiredRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
@@ -122,10 +93,10 @@ ProtectedRoute.displayName = "ProtectedRoute";
 
 // Unauthorized page component
 const UnauthorizedPage = () => {
-  const { user } = useAuthState();
+  const { canAccess } = useAuth();
   
-  // Memoized access check
-  const isAdmin = useMemo(() => user?.role === "admin", [user?.role]);
+  // Memoized access check using centralized function
+  const isAdmin = useMemo(() => canAccess('admin'), [canAccess]);
 
   return (
     <div className="min-h-screen flex-center bg-primary">
@@ -180,7 +151,8 @@ const createUserRoute = (Component, loadingText = "Loading...") =>
 
 // Root layout that handles auth state and redirects
 const RootLayout = () => {
-  const { user, isAuthChecking } = useAuthState();
+  const user = useSelector(selectUser);
+  const isAuthChecking = useSelector(selectIsAuthChecking);
   const location = useLocation();
 
   // Memoized route checks
@@ -241,10 +213,13 @@ const router = createBrowserRouter([
             element: <UnauthorizedPage />,
           },
           
-          // Dashboard route - now handled by AppLayout
+          // Dashboard route - now properly rendered
           {
             path: "dashboard",
-            element: <div />, // Placeholder - dashboard content is in AppLayout
+            element: createUserRoute(
+              DashboardPage,
+              "Loading dashboard..."
+            ),
           },
 
           // Admin management (admin-only, but no /admin in URL)
@@ -259,7 +234,7 @@ const router = createBrowserRouter([
           // Analytics (admin-only, but no /admin in URL)
           {
             path: "analytics",
-            element: createAdminRoute(ComingSoonPage, "Loading analytics..."),
+            element: createAdminRoute(AnalyticsPage, "Loading analytics..."),
           },
 
           // Preview routes

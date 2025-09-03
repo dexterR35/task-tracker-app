@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import { logger } from '../../shared/utils/logger';
+import { logger } from '../../utils/logger';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { db, auth } from '../../app/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
@@ -43,11 +43,13 @@ export const checkMonthBoardExists = createAsyncThunk(
       const monthDocRef = doc(db, "tasks", monthId);
       const monthDoc = await getDoc(monthDocRef);
 
-      logger.log(`[currentMonthSlice] Board check for ${monthId}: ${monthDoc.exists() ? 'EXISTS' : 'NOT FOUND'}`);
+      const exists = monthDoc.exists();
+      logger.log(`[currentMonthSlice] Board check for ${monthId}: ${exists ? 'EXISTS' : 'NOT FOUND'}`);
+      logger.log(`[currentMonthSlice] Board check result:`, { monthId, exists, lastChecked: Date.now() });
       
       return {
         monthId,
-        exists: monthDoc.exists(),
+        exists,
         lastChecked: Date.now()
       };
     } catch (error) {
@@ -74,6 +76,12 @@ export const generateMonthBoard = createAsyncThunk(
       // Get user role from Redux state (not from Firebase Auth)
       const state = getState();
       const userRole = state.auth.user?.role;
+      
+      // Validate user role exists and is valid
+      if (!userRole || !['admin', 'user'].includes(userRole)) {
+        logger.error(`[currentMonthSlice] Invalid user role: ${userRole}`);
+        return rejectWithValue("Invalid user role. Please contact administrator.");
+      }
       
       logger.log(`[currentMonthSlice] User role check:`, { 
         uid: auth.currentUser.uid, 
@@ -125,13 +133,26 @@ export const initializeCurrentMonth = createAsyncThunk(
     const monthInfo = getMonthInfo();
     const currentState = getState();
     
+    logger.log(`[currentMonthSlice] initializeCurrentMonth called with monthInfo:`, monthInfo);
+    logger.log(`[currentMonthSlice] Current state:`, currentState.currentMonth);
+    
+    // Only skip if we already have valid month data for the current month
+    if (currentState.currentMonth.monthId === monthInfo.monthId && 
+        currentState.currentMonth.monthName && 
+        currentState.currentMonth.boardExists !== null) {
+      logger.log(`[currentMonthSlice] Month ${monthInfo.monthId} already initialized, skipping`);
+      return currentState.currentMonth;
+    }
+    
     logger.log(`[currentMonthSlice] Initializing current month: ${monthInfo.monthId}`);
     
     // Check if board exists for current month
     const boardCheckResult = await dispatch(checkMonthBoardExists(monthInfo.monthId)).unwrap();
     
-    // Set up real-time board listener
-    dispatch(setupBoardListener(monthInfo.monthId));
+    // Set up real-time board listener AFTER board check completes (only if not already set up)
+    if (!window.boardListeners || !window.boardListeners.has(monthInfo.monthId)) {
+      dispatch(setupBoardListener(monthInfo.monthId));
+    }
     
     return {
       monthId: monthInfo.monthId,
@@ -150,7 +171,17 @@ export const setupBoardListener = createAsyncThunk(
   'currentMonth/setupBoardListener',
   async (monthId, { dispatch, getState }) => {
     try {
+      // Prevent setting up multiple listeners for the same month
+      if (window.boardListeners && window.boardListeners.has(monthId)) {
+        logger.log(`[currentMonthSlice] Listener already exists for ${monthId}, skipping setup`);
+        return { monthId, success: true, alreadyExists: true };
+      }
+      
       const monthDocRef = doc(db, "tasks", monthId);
+      
+      // Get current state to compare with real-time updates
+      const currentState = getState();
+      const currentBoardExists = currentState.currentMonth.boardExists;
       
       // Set up real-time listener for board status
       const unsubscribe = onSnapshot(
@@ -158,13 +189,29 @@ export const setupBoardListener = createAsyncThunk(
         (doc) => {
           const currentExists = doc.exists();
           
-          // Dispatch the update - the reducer will handle the state comparison
-          logger.log(`[currentMonthSlice] Board status changed in real-time: ${currentExists} for ${monthId}`);
-          dispatch(setBoardExists(currentExists));
+          // Get current state again to check if we're in the middle of board generation
+          const currentStateSnapshot = getState();
+          const isGenerating = currentStateSnapshot.currentMonth.isGenerating;
+          
+          // Skip updates if we're generating a board (prevents duplicate updates)
+          if (isGenerating) {
+            logger.debug(`[currentMonthSlice] Skipping real-time update - board generation in progress`);
+            return;
+          }
+          
+          // Only dispatch if the value actually changed (prevents initial setup from triggering updates)
+          if (currentBoardExists !== currentExists) {
+            logger.log(`[currentMonthSlice] Board status changed in real-time: ${currentExists} for ${monthId} (doc.exists() = ${doc.exists()})`);
+            logger.log(`[currentMonthSlice] Real-time listener payload:`, { monthId, currentExists, timestamp: Date.now() });
+            dispatch(setBoardExists(currentExists));
+          } else {
+            logger.debug(`[currentMonthSlice] Board status unchanged: ${currentExists} for ${monthId} (skipping dispatch)`);
+          }
         },
         (error) => {
           logger.error(`[currentMonthSlice] Board listener error:`, error);
           // If there's an error, assume board doesn't exist
+          logger.log(`[currentMonthSlice] Board listener error, setting boardExists to false`);
           dispatch(setBoardExists(false));
         }
       );
@@ -267,13 +314,14 @@ const currentMonthSlice = createSlice({
       })
       .addCase(checkMonthBoardExists.fulfilled, (state, action) => {
         const { monthId, exists, lastChecked } = action.payload;
-        // Only update if it's the current month
-        if (state.monthId === monthId) {
+        // Update boardExists if it's for the current month OR if we're initializing (state.monthId is null)
+        if (state.monthId === monthId || state.monthId === null) {
           state.boardExists = exists;
           state.lastChecked = lastChecked;
+          logger.debug(`[currentMonthSlice] Board check completed for ${monthId}: ${exists} (state updated)`);
+        } else {
+          logger.debug(`[currentMonthSlice] Board check completed for ${monthId}: ${exists} (state not updated - different month)`);
         }
-        // state.isChecking = false; // Removed as per edit hint
-        logger.debug(`[currentMonthSlice] Board check completed for ${monthId}: ${exists}`);
       })
       .addCase(checkMonthBoardExists.rejected, (state, action) => {
         // state.isChecking = false; // Removed as per edit hint

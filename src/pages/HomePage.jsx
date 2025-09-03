@@ -1,7 +1,7 @@
 import React from "react";
-import DynamicButton from "../shared/components/ui/DynamicButton";
-import netbetLogo from "../assets/netbet-logo.png";
-import { useFetchData } from "../shared/hooks/useFetchData";
+import { useSelector } from 'react-redux';
+import { selectUser } from '../features/auth/authSlice';
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -196,8 +196,8 @@ const HomepageCard = ({ card }) => {
   };
 
   return (
-    <div className="bg-soft-white-dark border  border-gray-700/50  rounded-lg p-6 w-full ">
-      <div className=" h-auto ">
+    <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-6 w-full">
+      <div className="h-auto">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
@@ -207,7 +207,7 @@ const HomepageCard = ({ card }) => {
                 style={{ backgroundColor: `${metricColor}20` }}
               >
                 <card.icon
-                  className="w-6.5 h-6.5"
+                  className="w-6 h-6"
                   style={{ color: metricColor }}
                 />
               </div>
@@ -223,7 +223,7 @@ const HomepageCard = ({ card }) => {
             <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
               {getTrendIconComponent(card.trendDirection)}
               <span className="text-xs font-medium text-green-success">
-                +12%
+                {card.trend}
               </span>
             </div>
           </div>
@@ -299,13 +299,17 @@ const HomepageCard = ({ card }) => {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-400">Progress</span>
-                <span className="text-xs text-gray-400">75%</span>
+                <span className="text-xs text-gray-400">
+                  {card.type === "ai-tasks" ? "85%" : 
+                   card.type === "design" ? "70%" : "75%"}
+                </span>
               </div>
               <div className="w-full bg-gray-700/50 rounded-full h-2">
                 <div
-                  className="h-2 rounded-full "
+                  className="h-2 rounded-full"
                   style={{
-                    width: "75%",
+                    width: card.type === "ai-tasks" ? "85%" : 
+                           card.type === "design" ? "70%" : "75%",
                     backgroundColor: metricColor,
                   }}
                 ></div>
@@ -320,42 +324,37 @@ const HomepageCard = ({ card }) => {
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { user, canAccess } = useFetchData();
-  const isAuthenticated = !!user;
-
-
-
-
+  // ✅ Use Redux instead of useFetchData
+  const user = useSelector(selectUser);
 
   // Show loading state if we're actually checking auth and have a user
   // This prevents the spinner from showing on the homepage when it's a public route
-
 
   return (
     <div className="min-h-[90vh] w-full bg-white-dark flex items-center justify-center flex-col">
       <div className="max-w-[86%] w-full mx-auto px-4 relative">
         {/* Hero Section */}
 
-        <div className=" mb-2">
-          <h1 className="mb-2 text-[6rem]">
+        <div className="mb-2">
+          <h1 className="mb-2 text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
             <span className="text-white-dark">Welcome to</span>
             <span className=" text-red-error ">SYNC</span>
           </h1>
-          <p className="text-lg leading-6 soft-white max-w-xl mx-auto text-center  mb-16  ">
-            The   task management platform designed for teams that
+          <p className="text-base md:text-lg leading-6 text-gray-300 max-w-xl mx-auto text-center mb-16">
+            The task management platform designed for teams that
             prioritize{" "}
             <span className="text-red-error ">calculate monthly reports</span>{" "}
             and <span className="text-blue-default ">analyze performance</span>
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 ">
-            {isAuthenticated ? (
+            {!!user ? (
               // Show "View Dashboard" button when authenticated
               <DynamicButton
                 to="/dashboard"
                 variant="danger"
                 size="lg"
-                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-102"
+                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-105"
                 type="button"
                 iconName="funny"
               >
@@ -367,7 +366,7 @@ const HomePage = () => {
                 to="/login"
                 variant="primary"
                 size="lg"
-                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-102"
+                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-105"
                 type="button"
                 iconName="default"
               >
@@ -381,7 +380,7 @@ const HomePage = () => {
         <div className="mb-10 relative">
        
           {/* Homepage Cards Grid */}
-          <div className="max-w-7xl mx-auto b">
+          <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 items-start">
               {homepageCards.map((card) => (
                 <HomepageCard key={card.id} card={card} />
@@ -391,14 +390,14 @@ const HomePage = () => {
         </div>
 
         {/* Stats Section */}
-        <div className="absolute -bottom-18 left-1/2 -translate-x-1/2 z-4 bg-soft-white-dark rounded-2xl p-4 mb-16 border border-gray-600/30 w-[55.5%]">
+        <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 z-10 bg-gray-800 rounded-2xl p-4 mb-16 border border-gray-600/30 w-1/2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-green-success ">40+</div>
+              <div className="text-4xl font-bold text-green-success">40+</div>
               <div className="text-gray-300">Active Teams</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-blue-500 ">300+</div>
+              <div className="text-4xl font-bold text-blue-500">300+</div>
               <div className="text-gray-300">Tasks Completed per month</div>
             </div>
             <div>

@@ -1,10 +1,24 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
 export default defineConfig({
   base: "/",
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@features': path.resolve(__dirname, './src/features'),
+      '@pages': path.resolve(__dirname, './src/pages'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@services': path.resolve(__dirname, './src/services'),
+      '@context': path.resolve(__dirname, './src/context'),
+      '@constants': path.resolve(__dirname, './src/constants'),
+    },
+  },
   build: {
     chunkSizeWarningLimit: 5000,
     minify: 'esbuild',
@@ -21,6 +35,22 @@ export default defineConfig({
           'utils-vendor': ['date-fns', 'dompurify'],
           'table-vendor': ['react-paginate'],
           'chart-vendor': ['recharts'],
+          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          
+          // Feature-based chunks for better code splitting
+          'auth-feature': ['@features/auth'],
+          'tasks-feature': ['@features/tasks'],
+          'reporters-feature': ['@features/reporters'],
+          'analytics-feature': ['@features/analytics'],
+          'currentMonth-feature': ['@features/currentMonth'],
+          
+          // Component chunks
+          'ui-components': ['@components/ui'],
+          'form-components': ['@components/forms'],
+          'layout-components': ['@components/layout'],
+          
+          // Utility chunks
+          'utils': ['@utils', '@hooks'],
         },
       },
     },

@@ -5,10 +5,10 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import store from './app/store';
 import router from './app/router';
-import { AuthProvider } from './shared/context/AuthProvider';
-import { DarkModeProvider } from './shared/context/DarkModeProvider';
-import ErrorBoundary from './shared/components/ErrorBoundary';
-import CacheDebugger from './shared/components/ui/CacheDebugger';
+import { AuthProvider } from './context/AuthProvider';
+import { DarkModeProvider } from './context/DarkModeProvider';
+import ErrorBoundary from '@/components/layout/ErrorBoundary';
+import CacheDebugger from '@/components/ui/Debug/CacheDebugger';
 
 const App = () => (
   <ErrorBoundary>

@@ -6,9 +6,9 @@ import {
   query as fsQuery,
 } from "firebase/firestore";
 
-import { normalizeTimestamp, serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
-import { db, auth } from "../../app/firebase";
-import { logger } from "../../shared/utils/logger";
+import { normalizeTimestamp, serializeTimestampsForRedux } from "@/utils/dateUtils";
+import { db, auth } from "@/app/firebase";
+import { logger } from "@/utils/logger";
 
 
 

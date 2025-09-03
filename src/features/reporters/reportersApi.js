@@ -1,5 +1,5 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import { db } from "../../app/firebase";
+import { db } from "@/app/firebase";
 import {
   collection,
   doc,
@@ -12,8 +12,8 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { logger } from "../../shared/utils/logger";
-import { serializeTimestampsForRedux } from "../../shared/utils/dateUtils";
+import { logger } from "@/utils/logger";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
 // Custom base query for Firestore
 const firestoreBaseQuery = () => async ({ url, method, body }) => {

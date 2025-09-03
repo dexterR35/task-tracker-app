@@ -1,13 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import netbetLogo from "../../assets/netbet-logo.png";
+import netbetLogo from "@/assets/netbet-logo.png";
 import { useEffect, useState } from "react";
-import { logger } from "../../shared/utils/logger";
+import { logger } from "@/utils/logger";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../app/firebase";
-import { useAuth } from "../../shared/hooks/useAuth";
-import { DynamicForm } from "../../shared/forms/components";
-import { LOGIN_FORM_FIELDS } from "../../shared/forms/configs";
-import { showSuccess, showError } from "../../shared/utils/toast";
+import { auth } from "@/app/firebase";
+import { useAuth } from "@/features/auth";
+import { DynamicForm } from "@/components/forms";
+import { LOGIN_FORM_FIELDS } from "@/components/forms/configs";
+import { showSuccess, showError } from "@/utils/toast";
 
 
 const LoginPage = () => {

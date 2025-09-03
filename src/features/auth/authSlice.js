@@ -10,8 +10,8 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../app/firebase";
-import { logger } from "../../shared/utils/logger";
+import { auth, db } from "@/app/firebase";
+import { logger } from "@/utils/logger";
 
 // --- Configuration & Constants ---
 const VALID_ROLES = ["admin", "user"];
@@ -195,7 +195,6 @@ export const logoutUser = createAsyncThunk(
 // --- Slice ---
 const initialState = {
   user: null,
-  isAuthenticated: false,
   isLoading: false, // Only true during login/logout attempts
   isAuthChecking: true, // Start as true to indicate we're checking auth on app load
   error: null,
@@ -226,7 +225,7 @@ const authSlice = createSlice({
       
       if (userChanged) {
         state.user = user;
-        state.isAuthenticated = !!user;
+        // Remove isAuthenticated - derive it in selector instead
       }
       
       state.isLoading = false; // Always set loading to false when auth state changes
@@ -252,7 +251,7 @@ const authSlice = createSlice({
         // Set user data immediately from the thunk result
         const { user } = action.payload;
         state.user = user;
-        state.isAuthenticated = true;
+        // Remove isAuthenticated - derive it in selector instead
         state.isLoading = false;
         state.isAuthChecking = false;
         state.error = null;
@@ -261,7 +260,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthChecking = false; // Stop checking on error
         state.error = action.payload;
-        state.isAuthenticated = false;
+        // Remove isAuthenticated - derive it in selector instead
         state.user = null;
       })
 
@@ -295,22 +294,6 @@ export const selectAuthError = (state) => state.auth.error;
 export const selectIsUserActive = (state) =>
   state.auth.user?.isActive !== false;
 
-// Role-based access selectors (used by canAccess function)
-export const selectCanAccessAdmin = createSelector(
-  [selectUser],
-  (user) => user?.role === "admin" && user?.isActive !== false
-);
-
-export const selectCanAccessUser = createSelector(
-  [selectUser],
-  (user) =>
-    (user?.role === "user" || user?.role === "admin") &&
-    user?.isActive !== false
-);
-
-// Legacy selector for backward compatibility (deprecated - use canAccess instead)
-export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-
 // Combined selector for the entire auth state
 export const selectAuthState = createSelector(
   [
@@ -319,8 +302,6 @@ export const selectAuthState = createSelector(
     selectIsAuthChecking,
     selectAuthError,
     selectIsUserActive,
-    selectCanAccessAdmin,
-    selectCanAccessUser
   ],
   (
     user,
@@ -328,16 +309,12 @@ export const selectAuthState = createSelector(
     isAuthChecking,
     error,
     isUserActive,
-    canAccessAdmin,
-    canAccessUser
   ) => ({
     user,
     isLoading,
     isAuthChecking,
     error,
     isUserActive,
-    canAccessAdmin,
-    canAccessUser
   })
 );
 
