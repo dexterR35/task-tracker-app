@@ -76,7 +76,7 @@
   }
   /* Labels */
   label {
-    @apply block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5;
+    @apply block text-sm font-medium text-gray-800 dark:!text-gray-200 mb-1.5;
   }
   ::placeholder {
     @apply text-gray-500;
@@ -89,7 +89,9 @@
   p {
     @apply text-gray-800 dark:text-gray-300;
   }
-
+p  {
+    @apply text-gray-300 dark:text-gray-800;
+  }
   /* Headings */
   h1 {
     @apply mt-2 text-7xl font-black tracking-tight flex items-center justify-center gap-4 text-gray-800 dark:text-gray-200;

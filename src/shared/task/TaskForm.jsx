@@ -192,7 +192,7 @@ const TaskForm = ({
       <h2 className="text-xl font-semibold">
         {mode === 'edit' ? 'Edit Task' : 'Create New Task'}
       </h2>
-      <p className="text-gray-600 mt-1">
+      <p className="text-gray-300 mt-1">
         {mode === 'edit' 
           ? `Update the task details below  ${monthId}`
           : `Fill in the details below to create a new task for ${monthId}`

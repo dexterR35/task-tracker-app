@@ -86,13 +86,13 @@ const LoginPage = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       ) : !user ? (
         <div className="card w-full max-w-md">
-          <div className="text-center mb-8 mt-4">
+          {/* <div className="text-center mb-8 mt-4">
             <img
               src={netbetLogo}
               alt="NetBet Logo"
               className="h-fit w-38 object-contain mx-auto"
             />
-          </div>
+          </div> */}
 
           <DynamicForm
             fields={LOGIN_FORM_FIELDS}

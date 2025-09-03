@@ -342,7 +342,7 @@ const HomePage = () => {
             <span className=" text-red-error ">SYNC</span>
           </h1>
           <p className="text-lg leading-6 soft-white max-w-xl mx-auto text-center  mb-16  ">
-            The ultimate track task management platform designed for teams that
+            The   task management platform designed for teams that
             prioritize{" "}
             <span className="text-red-error ">calculate monthly reports</span>{" "}
             and <span className="text-blue-default ">analyze performance</span>
@@ -409,14 +409,14 @@ const HomePage = () => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-center space-x-4 absolute bottom-0 left-1/2 -translate-x-1/2">
+        {/* <div className="flex items-center justify-center space-x-4 absolute bottom-0 left-1/2 -translate-x-1/2">
           <p className="font-base italic text-sm text-gray-500">Powered by</p>
           <img
             src={netbetLogo}
             alt="NetBet Logo"
             className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity duration-300"
           />
-        </div>
+        </div> */}
       </div>
     </div>
   );

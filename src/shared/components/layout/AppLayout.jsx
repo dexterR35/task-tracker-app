@@ -168,9 +168,9 @@ const AppLayout = () => {
             <div className="flex items-center">
               <Link
                 to="/"
-                className="text-2xl font-bold text-gray-800 dark:text-white hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                className="uppercase text-2xl font-bold text-gray-800 dark:text-white hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
               >
-                Task Tracker
+                SYNC
               </Link>
 
               {/* Navigation Links - Show different links based on auth status */}

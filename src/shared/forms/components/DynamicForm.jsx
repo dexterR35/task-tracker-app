@@ -353,7 +353,7 @@ const DynamicForm = ({
                 <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-xs">
                   <h4 className="font-semibold mb-2">Debug Info:</h4>
                   <div className="space-y-1">
-                    <p><strong>Valid:</strong> {isValid ? 'Yes' : 'No'}</p>
+                    <p className='text-gray-800"'><strong>Valid:</strong> {isValid ? 'Yes' : 'No'}</p>
                     <p><strong>Dirty:</strong> {dirty ? 'Yes' : 'No'}</p>
                     <p><strong>Errors:</strong> {Object.keys(errors).length}</p>
                     <p><strong>Touched:</strong> {Object.keys(touched).length}</p>
