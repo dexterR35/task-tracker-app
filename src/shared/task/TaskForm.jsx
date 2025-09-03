@@ -188,7 +188,7 @@ const TaskForm = ({
 
   // Simple form header
   const renderFormHeader = () => (
-    <div className="form-header mb-6">
+    <div className="form-header mb-6 ">
       <h2 className="text-xl font-semibold">
         {mode === 'edit' ? 'Edit Task' : 'Create New Task'}
       </h2>
@@ -199,7 +199,7 @@ const TaskForm = ({
         }
       </p>
       {isSubmitting && (
-        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+        <div className="mt-2 p-2 bg-white-dark border border-blue-200 rounded-md">
           <p className="text-blue-700 text-sm flex items-center">
             <span className="w-4 h-4 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin mr-2"></span>
             {mode === 'edit' ? 'Updating task...' : 'Creating task...'}
@@ -210,7 +210,7 @@ const TaskForm = ({
   );
 
   return (
-    <div className="card">
+    <div className="card bg-white-dark">
       {renderFormHeader()}
       
       <DynamicForm

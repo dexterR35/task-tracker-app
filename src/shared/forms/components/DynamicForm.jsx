@@ -340,19 +340,19 @@ const DynamicForm = ({
           }, [onFormReady]);
 
           return (
-            <div className="form-wrapper space-y-6">
+            <div className="form-wrapper space-y-6 ">
               {/* Error Display */}
               {error && (
-                <div className="mb-4 p-3 bg-red-error/10 border border-red-error/20 rounded-lg">
+                <div className="mb-4 p-3 rounded-lg">
                   <p className="text-red-error text-sm">{error}</p>
                 </div>
               )}
 
               {/* Debug Information */}
               {debug && (
-                <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-xs">
+                <div className="mb-4 p-3 bg-white border border-blue-300 rounded-lg text-xs">
                   <h4 className="font-semibold mb-2">Debug Info:</h4>
-                  <div className="space-y-1">
+                  <div className="space-y-1 text-gray-800">
                     <p className='text-gray-800"'><strong>Valid:</strong> {isValid ? 'Yes' : 'No'}</p>
                     <p><strong>Dirty:</strong> {dirty ? 'Yes' : 'No'}</p>
                     <p><strong>Errors:</strong> {Object.keys(errors).length}</p>

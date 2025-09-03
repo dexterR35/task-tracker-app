@@ -161,7 +161,7 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
       {/* Navigation Bar */}
-      <nav className="bg-white dark:bg-primary shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+      <nav className="bg-white dark:bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Left Side - Logo and Navigation */}
@@ -449,10 +449,10 @@ const AppLayout = () => {
 
                 {/* Create Task Modal */}
                 {showCreateModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white-dark text-white-dark rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                       <div className="flex justify-between items-center p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-900">
+                        <h2 className="text-xl font-semibold ">
                           Create New Task
                         </h2>
                         <DynamicButton
