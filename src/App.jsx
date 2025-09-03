@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthProvider';
 import { DarkModeProvider } from './context/DarkModeProvider';
 import ErrorBoundary from '@/components/layout/ErrorBoundary';
 import CacheDebugger from '@/components/ui/Debug/CacheDebugger';
+import PerformanceMonitor from '@/components/PerformanceMonitor';
 
 const App = () => (
   <ErrorBoundary>
@@ -18,6 +19,7 @@ const App = () => (
           <RouterProvider router={router} />
           <ToastContainer />
           <CacheDebugger />
+          <PerformanceMonitor />
         </AuthProvider>
       </DarkModeProvider>
     </Provider>

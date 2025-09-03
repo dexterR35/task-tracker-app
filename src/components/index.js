@@ -12,3 +12,6 @@ export * from './dashboard';
 
 // Icons
 export * from './icons';
+
+// Performance monitoring
+export { default as PerformanceMonitor } from './PerformanceMonitor';
