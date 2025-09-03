@@ -4,8 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Vite React App</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Preconnect to external domains for faster connections -->
+    <link rel="preconnect" href="https://task-tracker-app-eb03e.firebaseapp.com" crossorigin>
+    <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- DNS prefetch for additional performance -->
+    <link rel="dns-prefetch" href="https://task-tracker-app-eb03e.firebaseapp.com">
+    <link rel="dns-prefetch" href="https://www.googleapis.com">
+    
+    <!-- Preload critical fonts with font-display: swap -->
+    <link rel="preload" href="/src/assets/fonts/roboto-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/src/assets/fonts/roboto-500.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <!-- Performance optimizations -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#131b30">
+    
     <script>
+      // Font loading optimization
+      if ('fonts' in document) {
+        // Use Font Loading API for better performance
+        document.fonts.ready.then(() => {
+          document.documentElement.classList.add('fonts-loaded');
+        });
+      }
       
+      // Performance monitoring
+      if ('performance' in window) {
+        window.addEventListener('load', () => {
+          const perfData = performance.getEntriesByType('navigation')[0];
+          console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        });
+      }
     </script>
   </head>
   <body>

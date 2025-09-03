@@ -2,39 +2,37 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import "@fontsource/roboto/400.css";//normal - critical for initial render
-import "@fontsource/roboto/500.css";// medium - critical for initial render
 import store from './app/store';
+import fontLoader from './utils/fontLoader';
 
-// Lazy load non-critical fonts using a more efficient approach
-const loadNonCriticalFonts = async () => {
-  try {
-    // Load fonts in parallel for better performance
-    await Promise.all([
-      import("@fontsource/roboto/300.css"),//thin
-      import("@fontsource/roboto/300-italic.css"),
-      import("@fontsource/roboto/400-italic.css"),
-      import("@fontsource/roboto/700.css"),// bold
-      import("@fontsource/roboto/800.css"),// extrabold
-      import("@fontsource/roboto/900.css"),// Black
-    ]);
-  } catch (error) {
-    console.warn('Failed to load non-critical fonts:', error);
-  }
-};
+// Register service worker for better caching and performance
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registered: ', registration);
+      })
+      .catch((registrationError) => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
 
-// Load non-critical fonts when the page becomes idle or after a short delay
+// Load critical fonts immediately but don't block rendering
+fontLoader.loadCriticalFonts();
+
+// Load non-critical fonts when the page becomes idle
 const loadFontsWhenIdle = () => {
   if ('requestIdleCallback' in window) {
     // Use requestIdleCallback if available (more efficient)
-    requestIdleCallback(() => loadNonCriticalFonts(), { timeout: 2000 });
+    requestIdleCallback(() => fontLoader.loadNonCriticalFonts(), { timeout: 3000 });
   } else {
-    // Fallback to a shorter timeout
-    setTimeout(loadNonCriticalFonts, 500);
+    // Fallback to a longer timeout to avoid blocking
+    setTimeout(() => fontLoader.loadNonCriticalFonts(), 1000);
   }
 };
 
-// Start loading fonts after initial render
+// Start loading non-critical fonts after initial render
 loadFontsWhenIdle();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -42,5 +40,5 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <App />
-  // </React.StrictMode>
+  </React.StrictMode>
 );

@@ -25,35 +25,82 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom'],
-          'router-vendor': ['react-router-dom'],
-          'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
-          'ui-vendor': ['@heroicons/react', 'react-icons'],
-          'form-vendor': ['formik', 'yup'],
-          'utils-vendor': ['date-fns', 'dompurify'],
-          'table-vendor': ['react-paginate'],
-          'chart-vendor': ['recharts'],
-          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('react-router')) {
+              return 'router-vendor';
+            }
+            if (id.includes('@reduxjs') || id.includes('react-redux')) {
+              return 'redux-vendor';
+            }
+            if (id.includes('@heroicons') || id.includes('react-icons')) {
+              return 'ui-vendor';
+            }
+            if (id.includes('formik') || id.includes('yup')) {
+              return 'form-vendor';
+            }
+            if (id.includes('date-fns') || id.includes('dompurify')) {
+              return 'utils-vendor';
+            }
+            if (id.includes('react-paginate')) {
+              return 'table-vendor';
+            }
+            if (id.includes('recharts')) {
+              return 'chart-vendor';
+            }
+            if (id.includes('firebase')) {
+              return 'firebase-vendor';
+            }
+            // Group other node_modules into a common vendor chunk
+            return 'vendor-common';
+          }
           
-          // Feature-based chunks for better code splitting
-          'auth-feature': ['@features/auth'],
-          'tasks-feature': ['@features/tasks'],
-          'reporters-feature': ['@features/reporters'],
-          'analytics-feature': ['@features/analytics'],
-          'currentMonth-feature': ['@features/currentMonth'],
+          // Font chunks - group font-related modules
+          if (id.includes('@fontsource/roboto')) {
+            if (id.includes('400.css') || id.includes('500.css')) {
+              return 'fonts-critical';
+            }
+            return 'fonts-non-critical';
+          }
+          
+          // Feature-based chunks
+          if (id.includes('/src/features/')) {
+            if (id.includes('/auth/')) return 'auth-feature';
+            if (id.includes('/tasks/')) return 'tasks-feature';
+            if (id.includes('/reporters/')) return 'reporters-feature';
+            if (id.includes('/analytics/')) return 'analytics-feature';
+            if (id.includes('/currentMonth/')) return 'currentMonth-feature';
+          }
           
           // Component chunks
-          'ui-components': ['@components/ui'],
-          'form-components': ['@components/forms'],
-          'layout-components': ['@components/layout'],
+          if (id.includes('/src/components/')) {
+            if (id.includes('/ui/')) return 'ui-components';
+            if (id.includes('/forms/')) return 'form-components';
+            if (id.includes('/layout/')) return 'layout-components';
+          }
           
           // Utility chunks
-          'utils': ['@utils', '@hooks'],
+          if (id.includes('/src/utils/') || id.includes('/src/hooks/')) {
+            return 'utils';
+          }
+        },
+        // Optimize font loading
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.woff2')) {
+            return 'assets/fonts/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
         },
       },
     },
+    // Optimize CSS
+    cssCodeSplit: true,
+    // Optimize assets
+    assetsInlineLimit: 4096, // 4KB
   },
   optimizeDeps: {
     include: [
@@ -70,6 +117,20 @@ export default defineConfig({
       'firebase/firestore',
       'date-fns',
     ],
+    // Exclude fonts from dependency optimization
+    exclude: ['@fontsource/roboto'],
+  },
+  // Server optimizations for development
+  server: {
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  },
+  // Preview optimizations
+  preview: {
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
   },
 });
 
