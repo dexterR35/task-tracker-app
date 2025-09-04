@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useFetchData } from "@/hooks/useFetchData.js";
 import { useDeleteTaskMutation } from "@/features/tasks";
 import { useCacheManagement } from "@/hooks/useCacheManagement.js";
-import {  normalizeTaskData } from "@/components/forms/utils/sanitization/index.js";
+import { normalizeTaskData } from "@/components/forms/utils/sanitization/sanitization";
 import { DynamicButton } from "@/components";
 import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";

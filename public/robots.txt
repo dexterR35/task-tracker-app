@@ -1,0 +1,20 @@
+# Robots.txt for Task Tracker App
+# Allow all crawlers to access all content
+
+User-agent: *
+Allow: /
+
+# Sitemap location (update with your actual domain)
+Sitemap: https://task-tracker-app-omega.vercel.app/sitemap.xml
+
+# Disallow access to admin areas (if any)
+Disallow: /admin/
+Disallow: /api/
+
+# Allow access to static assets
+Allow: /assets/
+Allow: /fonts/
+Allow: /images/
+
+# Crawl delay (optional - be respectful to servers)
+Crawl-delay: 1

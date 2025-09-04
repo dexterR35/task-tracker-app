@@ -53,8 +53,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip unsupported schemes (chrome-extension, moz-extension, etc.)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  // Skip chrome-extension and other extension schemes
+  if (url.protocol === 'chrome-extension:' || 
+      url.protocol === 'moz-extension:' || 
+      url.protocol === 'safari-extension:' ||
+      url.protocol === 'ms-browser-extension:') {
+    return;
+  }
+
   // Handle font requests with special caching strategy
-  if (url.pathname.includes('@fontsource') || url.pathname.includes('.woff2')) {
+  if (url.pathname.includes('@fontsource') || url.pathname.includes('.woff2') || url.pathname.includes('.woff')) {
     event.respondWith(
       caches.open(DYNAMIC_CACHE).then((cache) => {
         return cache.match(request).then((response) => {
@@ -62,7 +75,13 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
           return fetch(request).then((fetchResponse) => {
-            cache.put(request, fetchResponse.clone());
+            // Only cache successful responses
+            if (fetchResponse && fetchResponse.status === 200) {
+              cache.put(request, fetchResponse.clone());
+            }
+            return fetchResponse;
+          }).catch((error) => {
+            console.warn('Failed to fetch font:', request.url, error);
             return fetchResponse;
           });
         });
@@ -85,6 +104,9 @@ self.addEventListener('fetch', (event) => {
             cache.put(request, responseClone);
           });
         }
+        return fetchResponse;
+      }).catch((error) => {
+        console.warn('Failed to fetch resource:', request.url, error);
         return fetchResponse;
       });
     })

@@ -13,50 +13,56 @@ const PerformanceMonitor = () => {
     // Collect performance metrics
     const collectMetrics = () => {
       if ('performance' in window) {
-        const navigation = performance.getEntriesByType('navigation')[0];
-        const paint = performance.getEntriesByType('paint');
-        
-        const newMetrics = {
-          // Navigation timing
-          domContentLoaded: navigation?.domContentLoadedEventEnd - navigation?.domContentLoadedEventStart,
-          loadComplete: navigation?.loadEventEnd - navigation?.loadEventStart,
-          totalLoadTime: navigation?.loadEventEnd - navigation?.fetchStart,
+        try {
+          const navigation = performance.getEntriesByType('navigation')[0];
+          const paint = performance.getEntriesByType('paint');
           
-          // Paint timing
-          firstPaint: paint.find(p => p.name === 'first-paint')?.startTime,
-          firstContentfulPaint: paint.find(p => p.name === 'first-contentful-paint')?.startTime,
-          largestContentfulPaint: 0,
-          
-          // Resource timing
-          totalResources: performance.getEntriesByType('resource').length,
-          fontResources: performance.getEntriesByType('resource').filter(r => 
-            r.name.includes('.woff') || r.name.includes('.woff2')
-          ).length,
-          
-          // Memory usage (if available)
-          memory: performance.memory ? {
-            used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
-            total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
-            limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
-          } : null
-        };
+          const newMetrics = {
+            // Navigation timing
+            domContentLoaded: navigation?.domContentLoadedEventEnd - navigation?.domContentLoadedEventStart,
+            loadComplete: navigation?.loadEventEnd - navigation?.loadEventStart,
+            totalLoadTime: navigation?.loadEventEnd - navigation?.fetchStart,
+            
+            // Paint timing
+            firstPaint: paint.find(p => p.name === 'first-paint')?.startTime,
+            firstContentfulPaint: paint.find(p => p.name === 'first-contentful-paint')?.startTime,
+            largestContentfulPaint: 0,
+            
+            // Resource timing
+            totalResources: performance.getEntriesByType('resource').length,
+            fontResources: performance.getEntriesByType('resource').filter(r => 
+              r.name.includes('.woff') || r.name.includes('.woff2')
+            ).length,
+            
+            // Memory usage (if available)
+            memory: performance.memory ? {
+              used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+              total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+              limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+            } : null
+          };
 
-        // Get LCP if available
-        if ('PerformanceObserver' in window) {
-          try {
-            const observer = new PerformanceObserver((list) => {
-              const entries = list.getEntries();
-              const lastEntry = entries[entries.length - 1];
-              newMetrics.largestContentfulPaint = lastEntry.startTime;
-              setMetrics(newMetrics);
-            });
-            observer.observe({ entryTypes: ['largest-contentful-paint'] });
-          } catch (e) {
-            console.warn('LCP observer failed:', e);
+          // Get LCP if available
+          if ('PerformanceObserver' in window) {
+            try {
+              const observer = new PerformanceObserver((list) => {
+                const entries = list.getEntries();
+                const lastEntry = entries[entries.length - 1];
+                if (lastEntry) {
+                  newMetrics.largestContentfulPaint = lastEntry.startTime;
+                  setMetrics(prev => ({ ...prev, ...newMetrics }));
+                }
+              });
+              observer.observe({ entryTypes: ['largest-contentful-paint'] });
+            } catch (e) {
+              console.warn('LCP observer failed:', e);
+            }
           }
-        }
 
-        setMetrics(newMetrics);
+          setMetrics(newMetrics);
+        } catch (error) {
+          console.warn('Failed to collect performance metrics:', error);
+        }
       }
     };
 
@@ -73,8 +79,10 @@ const PerformanceMonitor = () => {
         setMetrics(prev => ({
           ...prev,
           fontsLoaded: true,
-          fontLoadTime: Date.now() - performance.timing.navigationStart
+          fontLoadTime: Date.now() - (performance.timing?.navigationStart || Date.now())
         }));
+      }).catch(error => {
+        console.warn('Font loading monitoring failed:', error);
       });
     }
 
@@ -86,12 +94,12 @@ const PerformanceMonitor = () => {
   if (!isVisible) return null;
 
   const formatTime = (ms) => {
-    if (!ms) return 'N/A';
+    if (!ms || isNaN(ms)) return 'N/A';
     return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
   };
 
   const getPerformanceGrade = (lcp) => {
-    if (!lcp) return 'N/A';
+    if (!lcp || isNaN(lcp)) return 'N/A';
     if (lcp < 2500) return '🟢 Good';
     if (lcp < 4000) return '🟡 Needs Improvement';
     return '🔴 Poor';

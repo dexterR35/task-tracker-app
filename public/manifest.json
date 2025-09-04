@@ -1,7 +1,7 @@
 {
-  "name": "Task Tracker App",
+  "name": "Task Tracker App - Efficient Task Management & Analytics",
   "short_name": "TaskTracker",
-  "description": "A modern task tracking application",
+  "description": "A modern task tracking application with advanced analytics, team collaboration, and performance monitoring. Track tasks, manage projects, and analyze productivity with our intuitive dashboard.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -14,7 +14,17 @@
       "type": "image/x-icon"
     }
   ],
-  "categories": ["productivity", "business"],
+  "categories": ["productivity", "business", "utilities"],
   "lang": "en",
-  "dir": "ltr"
+  "dir": "ltr",
+  "scope": "/",
+  "id": "task-tracker-app",
+  "screenshots": [
+    {
+      "src": "/assets/netbet-logo.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
 }

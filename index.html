@@ -3,7 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Vite React App</title>
+    <title>Task Tracker App - Efficient Task Management & Analytics</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="A modern task tracking application with advanced analytics, team collaboration, and performance monitoring. Track tasks, manage projects, and analyze productivity with our intuitive dashboard.">
+    <meta name="keywords" content="task tracker, project management, productivity, analytics, team collaboration, task management, project tracking, workflow management">
+    <meta name="author" content="Task Tracker App">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Task Tracker App - Efficient Task Management & Analytics">
+    <meta property="og:description" content="A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://task-tracker-app-omega.vercel.app">
+    <meta property="og:image" content="https://task-tracker-app-omega.vercel.app/assets/netbet-logo.png">
+    <meta property="og:site_name" content="Task Tracker App">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Task Tracker App - Efficient Task Management & Analytics">
+    <meta name="twitter:description" content="A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.">
+    <meta name="twitter:image" content="https://task-tracker-app-omega.vercel.app/assets/netbet-logo.png">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -19,12 +41,42 @@
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     
     <!-- Preload critical fonts with font-display: swap -->
-    <link rel="preload" href="/src/assets/fonts/roboto-400.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/src/assets/fonts/roboto-500.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/node_modules/@fontsource/roboto/files/roboto-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/node_modules/@fontsource/roboto/files/roboto-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
     
     <!-- Performance optimizations -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="theme-color" content="#131b30">
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Task Tracker App",
+      "description": "A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.",
+      "url": "https://task-tracker-app-omega.vercel.app",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Task Tracker App"
+      },
+      "featureList": [
+        "Task Management",
+        "Project Tracking",
+        "Analytics Dashboard",
+        "Team Collaboration",
+        "Performance Monitoring",
+        "Real-time Updates"
+      ]
+    }
+    </script>
     
     <script>
       // Font loading optimization
@@ -39,7 +91,9 @@
       if ('performance' in window) {
         window.addEventListener('load', () => {
           const perfData = performance.getEntriesByType('navigation')[0];
-          console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+          if (perfData) {
+            console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+          }
         });
       }
     </script>

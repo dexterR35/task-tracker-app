@@ -6,7 +6,7 @@ import DynamicForm from "@/components/forms/DynamicForm/DynamicForm.jsx";
 import { reporterFormConfig } from "@/components/forms/configs/index.js";
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import { sanitizeText } from "@/components/forms/utils/sanitization/index.js";
+import { sanitizeText } from "@/components/forms/utils/sanitization/sanitization";
 
 const ReporterForm = ({
   mode = 'create', // 'create' or 'edit'

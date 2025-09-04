@@ -2,6 +2,10 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Critical fonts with font-display: swap to prevent render blocking */
+@import "@fontsource/roboto/400.css";
+@import "@fontsource/roboto/500.css";
+
 /* Font loading optimization */
 @font-face {
   font-family: 'Roboto';
