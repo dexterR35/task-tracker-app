@@ -86,7 +86,7 @@ const fetchTasksFromFirestore = async (
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "Charts", "Analytics"],
+  tagTypes: ["MonthTasks", "Charts"],
   // Add cache cleanup configuration
   keepUnusedDataFor: 300, // Keep unused data for 5 minutes
   refetchOnFocus: false,
@@ -119,36 +119,18 @@ export const tasksApi = createApi({
           return { error: { message: error.message } };
         }
       },
-      // No transformResponse needed - normalizeTask already returns serialized timestamps
+      // Simplified tags - real-time subscription handles user-specific invalidation
       providesTags: (result, error, arg) => [
-        { type: "MonthTasks", id: arg.monthId },
-        {
-          type: "MonthTasks",
-          id: `${arg.monthId}_user_${arg.userId || "all"}`,
-        },
+        { type: "MonthTasks", id: arg.monthId }
       ],
     }),
 
     // Real-time subscription for tasks - optimized to reduce excessive updates
     subscribeToMonthTasks: builder.query({
       async queryFn({ monthId, userId = null } = {}) {
-        try {
-          if (!auth.currentUser) {
-            // During logout, this is expected - return empty data instead of error
-            return { data: { tasks: [], boardExists: true, monthId } };
-          }
-
-          // Always return boardExists: true - let currentMonthSlice handle board status
-          const normalizedUserId =
-            userId && userId.trim() !== "" ? userId : null;
-          const tasks = await fetchTasksFromFirestore(
-            monthId,
-            normalizedUserId
-          );
-          return { data: { tasks, boardExists: true, monthId } };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
+        // Return initial empty state - onSnapshot listener will populate the cache
+        // This eliminates redundant initial fetch since onSnapshot handles both initial data and updates
+        return { data: { tasks: [], boardExists: true, monthId } };
       },
       // Optimized caching configuration
       keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
@@ -161,10 +143,19 @@ export const tasksApi = createApi({
       ) {
         let unsubscribe = null;
         let lastUpdateTime = 0;
-        const updateDebounce = 200; // Debounce updates by 200ms
+        const updateDebounce = 100; // Reduced debounce for faster updates
 
         try {
           await cacheDataLoaded;
+          
+          // Check if monthId is valid before setting up subscription
+          if (!arg.monthId) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: monthId is null or undefined`);
+            return;
+          }
+          
+          // onSnapshot is the single source of truth - handles both initial data and updates
+          // No need for initial fetch in queryFn since this listener provides all data
 
           // Set up task listener - let currentMonthSlice handle board status
           const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
@@ -181,11 +172,8 @@ export const tasksApi = createApi({
           unsubscribe = onSnapshot(
             query,
             (snapshot) => {
-              // Debounce rapid updates
+              // Process all updates immediately for real-time experience
               const now = Date.now();
-              if (now - lastUpdateTime < updateDebounce) {
-                return;
-              }
               lastUpdateTime = now;
 
               if (!snapshot || !snapshot.docs) {
@@ -207,25 +195,11 @@ export const tasksApi = createApi({
                 .filter((task) => task !== null);
 
               logger.debug(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
+              logger.log(`[tasksApi] Real-time update - Tasks:`, tasks.map(t => ({ id: t.id, taskName: t.taskName, createdAt: t.createdAt })));
               
               // Tasks are already serialized by normalizeTask
               updateCachedData(() => ({ tasks, boardExists: true, monthId: arg.monthId }));
 
-              // Trigger analytics recalculation with debouncing
-              setTimeout(() => {
-                window.dispatchEvent(
-                  new CustomEvent("task-changed", {
-                    detail: {
-                      monthId: arg.monthId,
-                      userId: arg.userId,
-                      source: "firebase-realtime",
-                      operation: "update",
-                      tasksCount: tasks.length,
-                      timestamp: Date.now(),
-                    },
-                  })
-                );
-              }, 50); // Small delay to batch multiple updates
             },
             (error) => {
               logger.error("Real-time subscription error:", error);
@@ -309,15 +283,14 @@ export const tasksApi = createApi({
             createdAt: result.createdAt,
             updatedAt: result.updatedAt
           });
+          logger.log(`[tasksApi] Cache invalidation triggered for monthId: ${task.monthId}`);
 
           return { data: result };
         } catch (error) {
           return { error: { message: error.message } };
         }
       },
-      // No transformResponse needed - normalizeTask already returns serialized timestamps
-      // No cache invalidation needed - real-time subscription handles updates
-      // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
+      invalidatesTags: [], // Don't invalidate cache - let real-time subscription handle updates
     }),
 
     // Update task with transaction
@@ -355,8 +328,7 @@ export const tasksApi = createApi({
           return { error: { message: error.message } };
         }
       },
-      // No cache invalidation needed - real-time subscription handles updates
-      // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
+      invalidatesTags: [], // Don't invalidate cache - let real-time subscription handle updates
     }),
 
     // Delete task with transaction
@@ -388,54 +360,10 @@ export const tasksApi = createApi({
           return { error: { message: error.message } };
         }
       },
-      // No cache invalidation needed - real-time subscription handles updates
-      // invalidatesTags: [] // Removed - let real-time subscription handle cache updates
+      invalidatesTags: [], 
     }),
 
 
-
-    // Save charts data with batch operations
-    saveChartsData: builder.mutation({
-      async queryFn({ monthId, chartsData }) {
-        try {
-          if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
-          }
-
-          // Use batch operations for atomic writes
-          const batch = writeBatch(db);
-
-          // Save charts data to Firebase
-          const chartsRef = doc(db, "charts", monthId);
-          batch.set(chartsRef, {
-            ...chartsData,
-            updatedAt: serverTimestamp(),
-            updatedBy: auth.currentUser.uid,
-          });
-
-          // Also save to analytics collection for historical tracking
-          const analyticsRef = doc(db, "analytics", monthId);
-          batch.set(analyticsRef, {
-            monthId,
-            chartsData,
-            generatedAt: serverTimestamp(),
-            generatedBy: chartsData.generatedBy || auth.currentUser.uid,
-            version: Date.now(), // For versioning
-          });
-
-          // Commit the batch atomically
-          await batch.commit();
-
-          return { data: { monthId, success: true } };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      invalidatesTags: (result, error, arg) => [
-        { type: "Charts", id: arg.monthId },
-        { type: "Analytics", id: arg.monthId },
-      ],
-    }),
 
 
   }),
@@ -447,5 +375,4 @@ export const {
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
-  useSaveChartsDataMutation,
 } = tasksApi;

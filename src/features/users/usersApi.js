@@ -6,10 +6,9 @@ import {
   query as fsQuery,
 } from "firebase/firestore";
 
-import { normalizeTimestamp, serializeTimestampsForRedux } from "@/utils/dateUtils";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-
 
 
 // Simple authentication check
@@ -166,7 +165,7 @@ export const usersApi = createApi({
         });
       },
       providesTags: ["Users"],
-      // Keep data for 5 minutes and don't refetch unnecessarily
+      // Keep data for Infinity and don't refetch unnecessarily
               keepUnusedDataFor: Infinity, // Never expire - Users never change once created
       // Don't refetch on window focus or reconnect
       refetchOnFocus: false,
@@ -231,3 +230,17 @@ export const {
   useGetUsersQuery,
   useGetUserByUIDQuery,
 } = usersApi;
+
+// Utility function for manual cache invalidation
+// Use this when you manually add/update/delete users in Firestore
+// Example: After manually adding a user in Firestore console, call this to refresh the cache
+export const invalidateUsersCache = (dispatch) => {
+  dispatch(usersApi.util.invalidateTags(['Users']));
+  logger.log('Users cache invalidated manually');
+};
+
+// Utility function to reset all users API state
+export const resetUsersApiState = (dispatch) => {
+  dispatch(usersApi.util.resetApiState());
+  logger.log('Users API state reset');
+};

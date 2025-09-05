@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useCacheManagement } from '@/hooks/useCacheManagement';
+// import { useCacheManagement } from '@/hooks/useCacheManagement';
 
 /**
  * Debug component to visualize cache entries and manage cache
@@ -8,9 +8,9 @@ import { useCacheManagement } from '@/hooks/useCacheManagement';
  */
 const CacheDebugger = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { clearAllCache, cleanupOldCache } = useCacheManagement();
+
   
-  // Get cache state from Redux store
+  // Get cache state from Redux store using direct property access
   const tasksApiState = useSelector(state => state.tasksApi);
   const usersApiState = useSelector(state => state.usersApi);
   const reportersApiState = useSelector(state => state.reportersApi);
@@ -90,18 +90,8 @@ const CacheDebugger = () => {
           <div className="bg-gray-800 px-4 py-2 border-b border-gray-700 flex justify-between items-center">
             <h3 className="text-white font-medium">Cache Debugger</h3>
             <div className="space-x-2">
-              <button
-                onClick={cleanupOldCache}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
-              >
-                Cleanup
-              </button>
-              <button
-                onClick={clearAllCache}
-                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
-              >
-                Clear All
-              </button>
+            
+         \
             </div>
           </div>
           

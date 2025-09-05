@@ -6,16 +6,9 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { lazy, Suspense, memo, useCallback, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { lazy, Suspense } from "react";
 import { useAuth } from "@/features/auth";
 
-import {
-  selectUser,
-  selectIsLoading,
-  selectIsAuthChecking,
-  selectAuthError,
-} from "@/features/auth";
 
 import AppLayout from "@/components/layout/AppLayout";
 import Loader from "@/components/ui/Loader/Loader";
@@ -23,35 +16,42 @@ import Loader from "@/components/ui/Loader/Loader";
 // Import static pages directly (no lazy loading needed)
 import LoginPage from "@/pages/auth/LoginPage";
 import HomePage from "@/pages/HomePage";
-import DashboardPage from "@/pages/DashboardPage";
 
 // Lazy load dynamic pages that need data
 const AdminManagementPage = lazy(
   () => import("@/pages/admin/ManagmentPage")
 );
-const AnalyticsPage = lazy(() => import("@/pages/admin/AnalyticsPage"));
+const AdminDashboardPage = lazy(
+  () => import("@/pages/admin/AdminDashboardPage")
+);
+const AdminTasksPage = lazy(
+  () => import("@/pages/admin/AdminTasksPage")
+);
+const UserDashboardPage = lazy(
+  () => import("@/pages/user/UserDashboardPage")
+);
+const AnalyticsPage = lazy(
+  () => import("@/pages/admin/AnalyticsPage")
+);
 const ComingSoonPage = lazy(() => import("@/components/ui/ComingSoon/ComingSoon"));
 const NotFoundPage = lazy(() => import("@/pages/errorPages/NotFoundPage"));
 
 // Simplified loading component for lazy-loaded pages
-const PageLoader = ({ text = "Loading..." }) => (
+const PageLoader = ({ text = "Loading...page loader" }) => (
   <div className="min-h-screen flex-center bg-primary">
     <Loader size="xl" text={text} variant="spinner" fullScreen={true} />
   </div>
 );
 
 // Wrapper component for lazy-loaded pages with Suspense
-const LazyPage = ({ children, loadingText = "Loading..." }) => (
+const LazyPage = ({ children, loadingText = "Loading...page loader2" }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>{children}</Suspense>
 );
 
 // Route protection component with auth checking loader
-const ProtectedRoute = memo(({ children, requiredRole = null }) => {
-  const user = useSelector(selectUser);
-  const isAuthChecking = useSelector(selectIsAuthChecking);
-  const error = useSelector(selectAuthError);
+const ProtectedRoute = ({ children, requiredRole = null }) => {
+  const { user, isAuthChecking, authError, canAccess } = useAuth();
   const location = useLocation();
-  const { canAccess } = useAuth();
 
   // Show loading state during initial auth check
   if (isAuthChecking) {
@@ -66,8 +66,8 @@ const ProtectedRoute = memo(({ children, requiredRole = null }) => {
   }
 
   // Handle authentication errors
-  if (error) {
-    return <Navigate to="/login" replace state={{ error: error }} />;
+  if (authError) {
+    return <Navigate to="/login" replace state={{ error: authError }} />;
   }
 
   // Check if user is authenticated
@@ -87,7 +87,7 @@ const ProtectedRoute = memo(({ children, requiredRole = null }) => {
   }
 
   return children;
-});
+};
 
 ProtectedRoute.displayName = "ProtectedRoute";
 
@@ -95,8 +95,8 @@ ProtectedRoute.displayName = "ProtectedRoute";
 const UnauthorizedPage = () => {
   const { canAccess } = useAuth();
   
-  // Memoized access check using centralized function
-  const isAdmin = useMemo(() => canAccess('admin'), [canAccess]);
+  // Direct access check - canAccess is already memoized in useAuth hook
+  const isAdmin = canAccess('admin');
 
   return (
     <div className="min-h-screen flex-center bg-primary">
@@ -124,47 +124,12 @@ const UnauthorizedPage = () => {
   );
 };
 
-// Helper function to create protected routes with lazy loading
-const createProtectedRoute = (
-  Component,
-  requiredRole = null,
-  loadingText = "Loading..."
-) => {
-  const MemoizedComponent = memo(Component);
 
-  return (
-    <ProtectedRoute requiredRole={requiredRole}>
-      <LazyPage loadingText={loadingText}>
-        <MemoizedComponent />
-      </LazyPage>
-    </ProtectedRoute>
-  );
-};
-
-// Helper function to create admin-only routes
-const createAdminRoute = (Component, loadingText = "Loading admin...") =>
-  createProtectedRoute(Component, "admin", loadingText);
-
-// Helper function to create user routes (accessible by both users and admins)
-const createUserRoute = (Component, loadingText = "Loading...") =>
-  createProtectedRoute(Component, "user", loadingText);
-
-// Root layout that handles auth state and redirects
+// Root layout that handles initial auth checking and login page redirect
+// All other auth checks and redirects are handled by ProtectedRoute
 const RootLayout = () => {
-  const user = useSelector(selectUser);
-  const isAuthChecking = useSelector(selectIsAuthChecking);
+  const { user, isAuthChecking } = useAuth();
   const location = useLocation();
-
-  // Memoized route checks
-  const isOnPublicRoute = useMemo(() => 
-    ["/", "/login", "/unauthorized"].includes(location.pathname),
-    [location.pathname]
-  );
-
-  const isOnLoginPage = useMemo(() => 
-    location.pathname === "/login",
-    [location.pathname]
-  );
 
   // Show loading during auth check
   if (isAuthChecking) {
@@ -179,15 +144,11 @@ const RootLayout = () => {
   }
 
   // If user is authenticated and on login page, redirect to dashboard
-  if (user && isOnLoginPage) {
+  if (user && location.pathname === "/login") {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If not authenticated and trying to access protected routes, redirect to login
-  if (!user && !isOnPublicRoute) {
-    return <Navigate to="/login" replace />;
-  }
-
+  // Let ProtectedRoute handle all other auth checks and redirects
   return <Outlet />;
 };
 
@@ -213,37 +174,89 @@ const router = createBrowserRouter([
             element: <UnauthorizedPage />,
           },
           
-          // Dashboard route - now properly rendered
+          // User routes (no user ID in path for security)
           {
             path: "dashboard",
-            element: createUserRoute(
-              DashboardPage,
-              "Loading dashboard..."
+            element: (
+              <ProtectedRoute requiredRole="user">
+                <LazyPage loadingText="Loading user dashboard...">
+                  <UserDashboardPage />
+                </LazyPage>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "tasks",
+            element: (
+              <ProtectedRoute requiredRole="user">
+                <LazyPage loadingText="Loading user tasks...">
+                  <UserDashboardPage />
+                </LazyPage>
+              </ProtectedRoute>
             ),
           },
 
-          // Admin management (admin-only, but no /admin in URL)
+          // Admin analytics and management routes
           {
-            path: "management",
-            element: createAdminRoute(
-              AdminManagementPage,
-              "Loading management..."
-            ),
+            path: "admin",
+            children: [
+              {
+                path: "dashboard",
+                element: (
+                  <ProtectedRoute requiredRole="admin">
+                    <LazyPage loadingText="Loading admin dashboard...">
+                      <AdminDashboardPage />
+                    </LazyPage>
+                  </ProtectedRoute>
+                ),
+              },
+              {
+                path: "analytics",
+                element: (
+                  <ProtectedRoute requiredRole="admin">
+                    <LazyPage loadingText="Loading analytics...">
+                      <AnalyticsPage />
+                    </LazyPage>
+                  </ProtectedRoute>
+                ),
+              },
+              {
+                path: "users",
+                element: (
+                  <ProtectedRoute requiredRole="admin">
+                    <LazyPage loadingText="Loading user management...">
+                      <AdminManagementPage />
+                    </LazyPage>
+                  </ProtectedRoute>
+                ),
+              },
+              {
+                path: "tasks",
+                element: (
+                  <ProtectedRoute requiredRole="admin">
+                    <LazyPage loadingText="Loading task management...">
+                      <AdminTasksPage />
+                    </LazyPage>
+                  </ProtectedRoute>
+                ),
+              },
+            ],
           },
 
-          // Analytics (admin-only, but no /admin in URL)
-          {
-            path: "analytics",
-            element: createAdminRoute(AnalyticsPage, "Loading analytics..."),
-          },
 
-          // Preview routes
+          // Preview routes - admin access required
           {
             path: "preview/:monthId",
             children: [
               {
                 index: true,
-                element: createAdminRoute(ComingSoonPage),
+                element: (
+                  <ProtectedRoute requiredRole="admin">
+                    <LazyPage loadingText="Loading preview...">
+                      <ComingSoonPage />
+                    </LazyPage>
+                  </ProtectedRoute>
+                ),
               },
             ],
           },

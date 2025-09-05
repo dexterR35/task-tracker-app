@@ -8,7 +8,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useFetchData } from '@/hooks/useFetchData';
 import { DynamicButton } from "@/components";
 import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { logger } from '@/utils/logger';

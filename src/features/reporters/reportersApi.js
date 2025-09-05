@@ -3,11 +3,10 @@ import { db } from "@/app/firebase";
 import {
   collection,
   doc,
-  addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDocs,
-  getDoc,
   query,
   orderBy,
   serverTimestamp,
@@ -15,15 +14,18 @@ import {
 import { logger } from "@/utils/logger";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
+
 // Custom base query for Firestore
 const firestoreBaseQuery = () => async ({ url, method, body }) => {
   try {
     switch (method) {
       case "GET":
         if (url === "reporters") {
+          logger.log(`[Reporters API] Starting to fetch reporters...`);
           const querySnapshot = await getDocs(
             query(collection(db, "reporters"), orderBy("createdAt", "desc"))
           );
+          logger.log(`[Reporters API] Query snapshot size: ${querySnapshot.docs.length}`);
           const reporters = querySnapshot.docs.map((doc) => {
             const data = doc.data();
             const reporter = {
@@ -33,33 +35,30 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             // Use standardized timestamp serialization
             return serializeTimestampsForRedux(reporter);
           });
-          logger.debug(`[Reporters API] Fetched ${reporters.length} reporters`);
+          logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
           return { data: reporters };
         }
         break;
 
       case "POST":
         if (url === "reporters") {
-          // First create the document to get the ID
-          const docRef = await addDoc(collection(db, "reporters"), {
+          // OPTIMIZATION: Single write operation instead of addDoc + updateDoc
+          // Generate a new document ID and create the document in one operation
+          const newDocRef = doc(collection(db, "reporters"));
+          const reporterData = {
             ...body,
+            reporterUID: newDocRef.id,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-          });
+          };
           
-          // Then update the document to add the reporterUID field
-          await updateDoc(docRef, {
-            reporterUID: docRef.id,
-            updatedAt: serverTimestamp(),
-          });
+          await setDoc(newDocRef, reporterData);
           
-          // Get the created document to return properly serialized data
-          const createdDoc = await getDoc(docRef);
+          // OPTIMIZATION: Return data we just sent instead of re-fetching
+          // The invalidatesTags will ensure cache consistency
           const createdData = {
-            id: docRef.id,
-            reporterUID: docRef.id,
-            ...body,
-            ...createdDoc.data()
+            id: newDocRef.id,
+            ...reporterData,
           };
           
           return { data: serializeTimestampsForRedux(createdData) };
@@ -69,16 +68,18 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
       case "PUT":
         if (url.startsWith("reporters/")) {
           const id = url.split("/")[1];
-          await updateDoc(doc(db, "reporters", id), {
+          const updateData = {
             ...body,
             updatedAt: serverTimestamp(),
-          });
-          // Get the updated document to return properly serialized data
-          const updatedDoc = await getDoc(doc(db, "reporters", id));
+          };
+          
+          await updateDoc(doc(db, "reporters", id), updateData);
+          
+          // OPTIMIZATION: Return data we just sent instead of re-fetching
+          // The invalidatesTags will ensure cache consistency
           const updatedData = {
             id,
             ...body,
-            ...updatedDoc.data()
           };
           
           return { data: serializeTimestampsForRedux(updatedData) };
@@ -131,16 +132,16 @@ export const reportersApi = createApi({
       }),
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
-      async onQueryStarted(reporter, { dispatch, queryFulfilled }) {
-        const tempId = `temp-${Date.now()}`;
-        const now = new Date().toISOString();
+      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
         const patchResult = dispatch(
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
+            const tempId = `temp-${Date.now()}`;
+            const now = new Date().toISOString();
             // Add the new reporter optimistically
             draft.unshift({
               id: tempId, // Temporary ID
               reporterUID: tempId, // Same temporary ID
-              ...reporter,
+              ...arg,
               createdAt: now,
               updatedAt: now,
             });
@@ -163,12 +164,12 @@ export const reportersApi = createApi({
       }),
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
-      async onQueryStarted({ id, updates }, { dispatch, queryFulfilled }) {
+      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
         const patchResult = dispatch(
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const reporter = draft.find(r => r.id === id);
+            const reporter = draft.find(r => r.id === arg.id);
             if (reporter) {
-              Object.assign(reporter, updates, {
+              Object.assign(reporter, arg.updates, {
                 updatedAt: new Date().toISOString(),
               });
             }
@@ -190,10 +191,10 @@ export const reportersApi = createApi({
       }),
       invalidatesTags: ["Reporter"],
       // Optimistic update to remove from cache immediately
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
         const patchResult = dispatch(
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const index = draft.findIndex(reporter => reporter.id === id);
+            const index = draft.findIndex(reporter => reporter.id === arg);
             if (index !== -1) {
               draft.splice(index, 1);
             }

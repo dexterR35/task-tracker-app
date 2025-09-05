@@ -7,6 +7,5 @@ export {
   sanitizeTaskData,
   sanitizeUserData,
   extractDocumentId,
-  normalizeTaskData,
-  formatTaskDisplayName
+  normalizeTaskData
 } from './sanitization';

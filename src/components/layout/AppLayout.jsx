@@ -1,43 +1,51 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate, Link, Outlet } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { selectIsAuthChecking } from "@/features/auth";
 import { useAuth } from "@/features/auth";
-import { useFetchData } from "@/hooks/useFetchData";
 import { 
   selectCurrentMonthId, 
   selectCurrentMonthName, 
-  selectBoardExists 
+  selectBoardExists,
+  initializeCurrentMonth
 } from "@/features/currentMonth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import {
   ArrowRightOnRectangleIcon,
-  ChartBarIcon,
   UsersIcon,
   HomeIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { Icons } from "@/components/icons";
+import ReduxDebugger from "@/components/debug/ReduxDebugger";
+// import ReduxDataExample from "@/components/debug/ReduxDataExample";
+// import ApiStructureExplanation from "@/components/debug/ApiStructureExplanation";
 
 const AppLayout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const hasInitializedMonth = useRef(false);
   
-  // Get auth functions from useAuth
-  const { logout, clearError, canAccess } = useAuth();
+  // Get auth functions and user data from useAuth
+  const { user, logout, clearError, canAccess } = useAuth();
   
-  // Get user data from useFetchData
-  const { user } = useFetchData();
-  
-  // Get month data directly from Redux store (no hook calls)
+  // Get month data directly from Redux store using memoized selectors
   const monthId = useSelector(selectCurrentMonthId);
   const monthName = useSelector(selectCurrentMonthName);
-  const boardExists = useSelector(selectBoardExists);
   
   const isAuthChecking = useSelector(selectIsAuthChecking);
 
+  // Centralized month initialization - runs when user is authenticated and month needs initialization
+  // This ensures month data is available across all pages without duplication
+  useEffect(() => {
+    if (user && !hasInitializedMonth.current) {
+      hasInitializedMonth.current = true;
+      dispatch(initializeCurrentMonth());
+    }
+  }, [user, dispatch]);
+
   const isAuthenticated = !!user;
-  const isUserAdmin = canAccess('admin');
 
   const handleLogout = async () => {
     try {
@@ -55,7 +63,10 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
-      {/* Navigation Bar */}
+
+      <ReduxDebugger />
+
+      
       <nav className="bg-white dark:bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -72,29 +83,46 @@ const AppLayout = () => {
               {isAuthenticated ? (
                 // Authenticated Navigation
                 <div className="hidden md:ml-8 md:flex md:space-x-4">
-                  <Link
-                    to="/dashboard"
-                    className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
-                  >
-                    <HomeIcon className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Link>
+                  {/* User Dashboard Link - Only for regular users */}
+                  {!canAccess('admin') && (
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                    >
+                      <HomeIcon className="w-4 h-4 mr-2" />
+                      My Dashboard
+                    </Link>
+                  )}
                   
                   {canAccess('admin') && (
                     <>
                       <Link
-                        to="/management"
+                        to="/admin/dashboard"
+                        className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                      >
+                        <Icons.generic.settings className="w-4 h-4 mr-2" />
+                        Admin Dashboard
+                      </Link>
+                      <Link
+                        to="/admin/analytics"
+                        className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                      >
+                        <Icons.generic.chart className="w-4 h-4 mr-2" />
+                        Analytics
+                      </Link>
+                      <Link
+                        to="/admin/users"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <UsersIcon className="w-4 h-4 mr-2" />
-                        Management
+                        Users
                       </Link>
                       <Link
-                        to="/analytics"
+                        to="/admin/tasks"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
-                        <ChartBarIcon className="w-4 h-4 mr-2" />
-                        Analytics
+                        <Icons.generic.task className="w-4 h-4 mr-2" />
+                        All Tasks
                       </Link>
                     </>
                   )}
@@ -184,6 +212,60 @@ const AppLayout = () => {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Navigation Menu */}
+      {isAuthenticated && (
+        <div className="md:hidden bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-4 py-2">
+            <div className="flex flex-wrap gap-2">
+              {/* User Dashboard Link - Only for regular users */}
+              {!canAccess('admin') && (
+                <Link
+                  to="/dashboard"
+                  className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                >
+                  <HomeIcon className="w-4 h-4 mr-2" />
+                  My Dashboard
+                </Link>
+              )}
+              
+              {/* Admin Links */}
+              {canAccess('admin') && (
+                <>
+                  <Link
+                    to="/admin/dashboard"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    <Icons.generic.settings className="w-4 h-4 mr-2" />
+                    Admin Dashboard
+                  </Link>
+                  <Link
+                    to="/admin/analytics"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    <Icons.generic.chart className="w-4 h-4 mr-2" />
+                    Analytics
+                  </Link>
+                  <Link
+                    to="/admin/users"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    <UsersIcon className="w-4 h-4 mr-2" />
+                    Users
+                  </Link>
+                  <Link
+                    to="/admin/tasks"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    <Icons.generic.task className="w-4 h-4 mr-2" />
+                    All Tasks
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="relative">

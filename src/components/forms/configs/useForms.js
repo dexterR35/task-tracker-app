@@ -129,7 +129,6 @@ export const TASK_FORM_FIELDS = [
     type: FIELD_TYPES.MULTI_SELECT,
     label: 'Markets',
     required: true,
-    options: marketOptions,  // Add options
     placeholder: 'Select markets',
     validation: {
       required: true,
@@ -145,7 +144,6 @@ export const TASK_FORM_FIELDS = [
     type: FIELD_TYPES.SELECT,
     label: 'Product',
     required: true,
-    options: productOptions,  // Add options
     placeholder: 'Select product',
     validation: {
       required: true
@@ -157,7 +155,6 @@ export const TASK_FORM_FIELDS = [
     type: FIELD_TYPES.SELECT,
     label: 'Task Name',
     required: true,
-    options: taskNameOptions,  // Add options
     placeholder: 'Select task type',
     validation: {
       required: true
@@ -222,7 +219,6 @@ export const TASK_FORM_FIELDS = [
     type: FIELD_TYPES.MULTI_SELECT,
     label: 'AI Models Used',
     required: false,
-    options: aiModelOptions,  // Add options
     placeholder: 'Select AI models',
     conditional: {
       field: 'aiUsed',
@@ -264,7 +260,6 @@ export const TASK_FORM_FIELDS = [
     type: FIELD_TYPES.MULTI_SELECT,
     label: 'Deliverables',
     required: true,
-    options: deliverables,  // Add options
     placeholder: 'Select deliverables',
     validation: {
       required: true,

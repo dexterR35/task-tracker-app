@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 
-import { useFetchData } from "@/hooks/useFetchData.js";
 import { useDeleteTaskMutation } from "@/features/tasks";
-import { useCacheManagement } from "@/hooks/useCacheManagement.js";
 import { normalizeTaskData } from "@/components/forms/utils/sanitization/sanitization";
 import { DynamicButton } from "@/components";
 import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
@@ -13,24 +11,18 @@ import { TaskForm } from "@/features/tasks";
 
 const TaskTable = ({
   className = "",
+  tasks = [],
+  monthId,
+  isLoading = false,
+  error: tasksError = null,
 }) => {
 
   const [rowActionId, setRowActionId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
-  // Use the centralized hook directly - single source of truth
-  const {
-    monthId,
-    tasks = [],
-    isLoading,
-    error: tasksError,
-  } = useFetchData();
-
   // API hooks for task CRUD
   const [deleteTask] = useDeleteTaskMutation();
-  // Cache management
-  const { clearCacheOnDataChange } = useCacheManagement();
   // Get task columns with monthId for date formatting
   const taskColumns = getColumns('tasks', monthId);
   // Handle task selection
@@ -61,7 +53,6 @@ const TaskTable = ({
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
       
-      clearCacheOnDataChange('tasks', 'delete');
       showSuccess("Task deleted successfully!");
     } catch (error) {
       logger.error("Task delete error:", error);
@@ -102,6 +93,7 @@ const TaskTable = ({
               mode="edit"
               taskId={editingTask.id}
               initialValues={editingTask}
+              onSuccess={() => setShowEditModal(false)}
             />
           </div>
         </div>

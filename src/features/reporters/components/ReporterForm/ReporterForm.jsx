@@ -1,7 +1,6 @@
 import React from "react";
-import { useFetchData } from "@/hooks/useFetchData.js";
+import { useSelector } from "react-redux";
 import { useCreateReporterMutation, useUpdateReporterMutation } from "@/features/reporters";
-import { useCacheManagement } from "@/hooks/useCacheManagement.js";
 import DynamicForm from "@/components/forms/DynamicForm/DynamicForm.jsx";
 import { reporterFormConfig } from "@/components/forms/configs/index.js";
 import { showError, showSuccess } from "@/utils/toast.js";
@@ -14,10 +13,9 @@ const ReporterForm = ({
   initialValues = null,
   className = "",
 }) => {
-  const { user: currentUser } = useFetchData();
+  const currentUser = useSelector(state => state.auth.user);
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
-  const { clearCacheOnDataChange } = useCacheManagement();
 
   // Get form configuration
   const { fields, options } = reporterFormConfig;
@@ -63,7 +61,6 @@ const ReporterForm = ({
         result = await updateReporter({ id: reporterId, updates: data }).unwrap();
         logger.log(`Reporter updated successfully:`, result);
         showSuccess(`Reporter updated successfully!`);
-        clearCacheOnDataChange('reporters', 'update');
       } else {
         const reporterData = {
           ...data,
@@ -73,7 +70,6 @@ const ReporterForm = ({
         result = await createReporter(reporterData).unwrap();
         logger.log(`Reporter created successfully:`, result);
         showSuccess(`Reporter created successfully!`);
-        clearCacheOnDataChange('reporters', 'create');
       }
       
       if (mode === 'create') {

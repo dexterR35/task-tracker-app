@@ -1,6 +1,5 @@
 // CurrentMonth feature exports
 export { default as currentMonthReducer } from './currentMonthSlice';
-export { useCurrentMonth } from './hooks/useCurrentMonth';
 export { 
   selectCurrentMonthId, 
   selectCurrentMonthName, 
@@ -10,4 +9,9 @@ export {
   selectCurrentMonthStartDate,
   selectCurrentMonthEndDate
 } from './currentMonthSlice';
-export { generateMonthBoard, initializeCurrentMonth } from './currentMonthSlice';
+export { 
+  generateMonthBoard, 
+  initializeCurrentMonth,
+  checkMonthBoardExists,
+  refreshBoardStatus
+} from './currentMonthSlice';

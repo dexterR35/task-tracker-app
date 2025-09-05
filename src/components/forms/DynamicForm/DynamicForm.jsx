@@ -123,7 +123,7 @@ const DynamicForm = ({
     // Set prop priority: user props first, then defaults as fallback
     const commonProps = {
       placeholder: field.placeholder,
-      showError: false,
+      showError: true, // Enable error display by default
       ...field.props,  // User props first (highest priority)
       ...getFieldDefaultProps(field.type)  // Defaults as fallback
     };
@@ -193,14 +193,9 @@ const DynamicForm = ({
               {...commonProps}
               options={fieldOptions}  // Pass options for select fields
               onChange={(value) => {
-                // Handle array values properly
+                // Handle array values properly - MultiSelectInput and MultiValueInput pass arrays directly
                 const finalValue = Array.isArray(value) ? value : [value];
-                formikField.onChange({
-                  target: {
-                    name: field.name,
-                    value: finalValue
-                  }
-                });
+                formikField.onChange(finalValue);
               }}
             />
           )}

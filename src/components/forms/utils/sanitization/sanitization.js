@@ -281,5 +281,5 @@ export const formatTaskDisplayName = (taskId, taskNumber) => {
   
   // Use taskNumber if available, otherwise use document ID
   const displayNumber = taskNumber || taskId;
-  return `gimodear-${displayNumber}`;
+  return displayNumber;
 };

@@ -60,16 +60,10 @@ export default defineConfig({
     // Exclude fonts from dependency optimization
     exclude: ['@fontsource/roboto'],
   },
-  // Server optimizations for development
   server: {
-    headers: {
-      'Cache-Control': 'public, max-age=31536000, immutable',
-    },
-  },
-  // Preview optimizations
-  preview: {
-    headers: {
-      'Cache-Control': 'public, max-age=31536000, immutable',
+    hmr: true, // Enable Hot Module Replacement for real-time updates
+    watch: {
+      usePolling: false, // Use native file watching for better performance
     },
   },
 });

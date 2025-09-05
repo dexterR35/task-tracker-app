@@ -22,6 +22,8 @@ import {
   FiArrowUp,
   FiArrowDown,
   FiMinus,
+  FiSettings,
+  FiList,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
 import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
@@ -59,7 +61,6 @@ export const Icons = {
 
   pages: {
     dashboard: withSize(FiColumns),
-    analytics: withSize(FiBarChart2),
     users: withSize(FiUser),
   },
 
@@ -68,6 +69,9 @@ export const Icons = {
     dashboard: withSize(FiColumns),
     moon: withSize(IoMoonOutline),
     sun: withSize(IoSunnyOutline),
+    chart: withSize(FiBarChart2),
+    task: withSize(FiList),
+    settings: withSize(FiSettings),
   },
   profile:{
     user: withSize(IoPerson),

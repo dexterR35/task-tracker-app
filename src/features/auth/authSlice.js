@@ -121,37 +121,12 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      // Authenticate with Firebase
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      // Step 3: Fetch user data from Firestore
-      const firestoreData = await fetchUserFromFirestore(
-        userCredential.user.uid
-      );
-      logger.error("firestoreData:", firestoreData);
-      // Step 4: Validate user status and role
-      if (firestoreData.isActive === false) {
-        // Sign out the user if account is deactivated
-        await signOut(auth);
-        throw new Error(
-          "Account is deactivated. Please contact administrator."
-        );
-      }
-
-      if (!firestoreData.role || !VALID_ROLES.includes(firestoreData.role)) {
-        // Sign out the user if role is invalid
-        await signOut(auth);
-        throw new Error("Invalid user role. Please contact administrator.");
-      }
-
-      // Return normalized user data
-      const normalizedUser = normalizeUser(userCredential.user, firestoreData);
-      logger.error("normalizedUseraaaaaaaaaaaaaaa:", normalizedUser);
-      return { user: normalizedUser };
+      // Authenticate with Firebase - onAuthStateChanged will handle user state
+      // This makes onAuthStateChanged the single source of truth for user state
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // Return success - onAuthStateChanged listener will update user state
+      return { success: true };
     } catch (error) {
       logger.error("Login error:", error);
 
@@ -214,22 +189,11 @@ const authSlice = createSlice({
     authStateChanged: (state, action) => {
       const { user, error } = action.payload;
       
-      // Only update if user data has actually changed
-      const userChanged = !state.user || !user || 
-        state.user.uid !== user.uid ||
-        state.user.email !== user.email ||
-        state.user.role !== user.role ||
-        state.user.name !== user.name ||
-        state.user.occupation !== user.occupation ||
-        state.user.isActive !== user.isActive;
-      
-      if (userChanged) {
-        state.user = user;
-        // Remove isAuthenticated - derive it in selector instead
-      }
-      
-      state.isLoading = false; // Always set loading to false when auth state changes
-      state.isAuthChecking = false; // Stop auth checking - this is crucial for preventing login page flash
+      // onAuthStateChanged only fires when user actually changes
+      // Immer handles efficient state updates automatically
+      state.user = user;
+      state.isLoading = false;
+      state.isAuthChecking = false;
       state.error = error || null;
     },
     // Add a new action to start auth initialization
@@ -244,39 +208,29 @@ const authSlice = createSlice({
       // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
-        state.isAuthChecking = true; // Mark that we're checking auth during login
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        // Set user data immediately from the thunk result
-        const { user } = action.payload;
-        state.user = user;
-        // Remove isAuthenticated - derive it in selector instead
+      .addCase(loginUser.fulfilled, (state) => {
+        // onAuthStateChanged will handle user state updates
         state.isLoading = false;
-        state.isAuthChecking = false;
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthChecking = false; // Stop checking on error
         state.error = action.payload;
-        // Remove isAuthenticated - derive it in selector instead
         state.user = null;
       })
 
       // Logout - simplified since auth listener handles everything
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;
-        state.isAuthChecking = true;
       })
       .addCase(logoutUser.fulfilled, (state) => {
         // Auth listener will handle the state update
         state.isLoading = false;
-        state.isAuthChecking = false;
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.isAuthChecking = false;
         state.error = action.payload;
       });
   },
