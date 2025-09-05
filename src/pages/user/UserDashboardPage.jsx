@@ -1,17 +1,15 @@
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { format } from "date-fns";
 import { 
   selectCurrentMonthId, 
   selectCurrentMonthName, 
   selectBoardExists
 } from "@/features/currentMonth";
-import { showSuccess, showError } from "@/utils/toast.js";
-import { logger } from "@/utils/logger.js";
+import { showSuccess } from "@/utils/toast.js";
 import { DynamicButton, Loader, Modal } from "@/components/ui";
 import { TaskForm } from "@/features/tasks";
 import { useUserData } from "@/hooks";
-import { tasksApi } from "@/features/tasks";
 
 // User Dashboard - Shows user's own data with task creation
 const UserDashboardPage = () => {
@@ -20,42 +18,14 @@ const UserDashboardPage = () => {
   const monthName = useSelector(selectCurrentMonthName);
   
   // Use custom hook for user data fetching
-  const { user, reporters, tasks, isLoading, error } = useUserData();
+  const { user, tasks, isLoading, error } = useUserData();
   
   // Use the currentMonth state as the source of truth
   const boardExists = useSelector(selectBoardExists);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const dispatch = useDispatch();
-  
-  // Use the current user's ID for this dashboard
-  const userId = user?.uid || user?.id;
-
-  // Handle create task
-  const handleCreateTask = async (taskData) => {
-    try {
-      const result = await dispatch(tasksApi.endpoints.createTask.initiate({
-        ...taskData,
-        userId: userId,
-        monthId: monthId
-      }));
-
-      if (result.data) {
-        showSuccess("Task created successfully!");
-        setShowCreateModal(false);
-        logger.info("Task created", { taskData, result: result.data });
-      } else {
-        showError("Failed to create task. Please try again.");
-        logger.error("Task creation failed", { taskData, error: result.error });
-      }
-    } catch (error) {
-      showError("An error occurred while creating the task.");
-      logger.error("Task creation error", { taskData, error });
-    }
-  };
-
-  // For regular users, tasks are already filtered by the API call in AppLayout
+  // For regular users, tasks are already filtered by the API call in useUserData
   const userTasks = tasks;
 
   // Title for user dashboard
@@ -142,15 +112,14 @@ const UserDashboardPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Create New Task"
-        size="lg"
+        maxWidth="max-w-4xl"
       >
         <TaskForm
-          onSubmit={handleCreateTask}
-          onCancel={() => setShowCreateModal(false)}
-          reporters={reporters}
-          monthId={monthId}
-          userId={userId}
-          isAdminView={false}
+          mode="create"
+          onSuccess={() => {
+            showSuccess("Task created successfully!");
+            setShowCreateModal(false);
+          }}
         />
       </Modal>
     </div>

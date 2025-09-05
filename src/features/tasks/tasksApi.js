@@ -154,6 +154,36 @@ export const tasksApi = createApi({
             return;
           }
           
+          // Check if board exists before setting up task subscription
+          const monthDocRef = doc(db, "tasks", arg.monthId);
+          const monthDoc = await getDoc(monthDocRef);
+          
+          if (!monthDoc.exists()) {
+            logger.log(`[Tasks API] Board ${arg.monthId} does not exist yet, setting up board listener first`);
+            
+            // Set up board listener to restart task subscription when board is created
+            const boardUnsubscribe = onSnapshot(monthDocRef, (doc) => {
+              if (doc.exists()) {
+                logger.log(`[Tasks API] Board ${arg.monthId} created, restarting task subscription`);
+                // Board was created, restart the task subscription
+                if (unsubscribe) {
+                  unsubscribe();
+                }
+                // The subscription will be restarted by the component
+                return;
+              }
+            });
+            
+            // Store board listener for cleanup
+            if (!window.boardListeners) {
+              window.boardListeners = new Map();
+            }
+            window.boardListeners.set(`${arg.monthId}_tasks`, boardUnsubscribe);
+            
+            // Return early - no task subscription until board exists
+            return;
+          }
+          
           // onSnapshot is the single source of truth - handles both initial data and updates
           // No need for initial fetch in queryFn since this listener provides all data
 
@@ -212,6 +242,12 @@ export const tasksApi = createApi({
         } finally {
           if (unsubscribe) {
             unsubscribe();
+          }
+          // Clean up board listener if it exists
+          if (window.boardListeners && window.boardListeners.has(`${arg.monthId}_tasks`)) {
+            const boardUnsubscribe = window.boardListeners.get(`${arg.monthId}_tasks`);
+            boardUnsubscribe();
+            window.boardListeners.delete(`${arg.monthId}_tasks`);
           }
         }
       },

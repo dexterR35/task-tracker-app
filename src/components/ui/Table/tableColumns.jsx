@@ -1,7 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { formatTaskDisplayName } from '@/components/forms/utils/sanitization/sanitization';
-import { normalizeTimestamp, formatDate } from '@/utils/dateUtils';
+import { formatDate } from '@/utils/dateUtils';
 
 const columnHelper = createColumnHelper();
 

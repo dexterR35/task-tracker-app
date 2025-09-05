@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { format } from "date-fns";
 import { useAuth } from "@/features/auth";
 import { 
@@ -8,8 +8,7 @@ import {
   selectCurrentMonthName, 
   selectBoardExists
 } from "@/features/currentMonth";
-import { showSuccess, showError } from "@/utils/toast.js";
-import { logger } from "@/utils/logger.js";
+import { showSuccess } from "@/utils/toast.js";
 import { DynamicButton, Loader, Modal } from "@/components/ui";
 import { TaskTable, TaskForm } from "@/features/tasks";
 import { useAdminData } from "@/hooks";
@@ -32,8 +31,6 @@ const AdminTasksPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
-
-  const dispatch = useDispatch();
   
   // Get auth data
   const isUserAdmin = canAccess('admin');
@@ -221,16 +218,14 @@ const AdminTasksPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Create New Task"
-        size="lg"
+        maxWidth="max-w-4xl"
       >
         <TaskForm
-          onSubmit={handleCreateTask}
-          onCancel={() => setShowCreateModal(false)}
-          users={users}
-          reporters={reporters}
-          monthId={monthId}
-          userId={userId || user?.uid}
-          isAdminView={isUserAdmin}
+          mode="create"
+          onSuccess={() => {
+            showSuccess("Task created successfully!");
+            setShowCreateModal(false);
+          }}
         />
       </Modal>
     </div>
