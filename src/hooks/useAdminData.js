@@ -1,8 +1,9 @@
 import { useGetUsersQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
-import { useSubscribeToMonthTasksQuery } from "@/features/tasks/tasksApi";
+import { useGetMonthTasksQuery } from "@/features/tasks/tasksApi";
 import { useSelector } from "react-redux";
 import { selectCurrentMonthId } from "@/features/currentMonth";
+import { useAuth } from "@/features/auth";
 
 /**
  * Custom hook for admin data fetching
@@ -10,6 +11,8 @@ import { selectCurrentMonthId } from "@/features/currentMonth";
  */
 export const useAdminData = () => {
   const monthId = useSelector(selectCurrentMonthId);
+  const { user } = useAuth();
+  const userUID = user?.userUID;
   
   // Fetch all users (admin only)
   const { 
@@ -25,14 +28,14 @@ export const useAdminData = () => {
     error: reportersError 
   } = useGetReportersQuery();
   
-  // Fetch all tasks (admin only - userId: null)
+  // Fetch all tasks (admin only - with userUID but role determines filtering)
   const { 
-    data: tasksData = { tasks: [] }, 
+    data: tasksData = [], 
     isLoading: tasksLoading, 
     error: tasksError 
-  } = useSubscribeToMonthTasksQuery(
-    { monthId, userId: null },
-    { skip: !monthId }
+  } = useGetMonthTasksQuery(
+    { monthId, userId: userUID, role: 'admin' },
+    { skip: !monthId || !userUID }
   );
   
   const isLoading = usersLoading || reportersLoading || tasksLoading;
@@ -41,7 +44,7 @@ export const useAdminData = () => {
   return {
     users,
     reporters,
-    tasks: tasksData.tasks || [],
+    tasks: tasksData || [],
     isLoading,
     error,
     monthId

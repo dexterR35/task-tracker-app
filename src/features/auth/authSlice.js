@@ -45,10 +45,12 @@ const normalizeUser = (firebaseUser, firestoreData) => {
   // Create a stable user object with consistent property order
   return {
     uid: firebaseUser.uid,
+    userUID: firebaseUser.uid, // Add userUID for consistency
     email: firebaseUser.email,
     name: firestoreData.name || "",
     role: firestoreData.role,
     occupation: firestoreData.occupation || "user",
+    permissions: firestoreData.permissions || [], // Include permissions array
     createdAt: createdAtMs,
     isActive: firestoreData.isActive !== false, // Default to true if not specified
   };
@@ -211,8 +213,8 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state) => {
-        // onAuthStateChanged will handle user state updates
-        state.isLoading = false;
+        // Keep loading true until onAuthStateChanged updates the user
+        // Don't set isLoading = false here - let authStateChanged handle it
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {

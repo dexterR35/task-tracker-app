@@ -1,8 +1,13 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { formatTaskDisplayName } from '@/components/forms/utils/sanitization/sanitization';
 import { formatDate } from '@/utils/dateUtils';
 
 const columnHelper = createColumnHelper();
+
+// Simple task display formatter
+const formatTaskDisplayName = (taskId, taskNumber) => {
+  if (!taskId) return 'Unknown Task';
+  return taskNumber || taskId;
+};
 
 // Helper function to safely display data
 const safeDisplay = (value, fallback = "-") => {
@@ -27,11 +32,11 @@ export const getTaskColumns = (monthId = null) => [
     },
     size: 80,
   }),
-  columnHelper.accessor('taskName', {
-    header: 'Task Name',
+  columnHelper.accessor('departaments', {
+    header: 'departament',
     cell: ({ getValue }) => {
-      const taskName = getValue();
-      return taskName || 'Unnamed Task';
+      const departaments = getValue();
+      return departaments || 'Unnamed Task';
     },
     size: 150,
   }),
@@ -40,7 +45,7 @@ export const getTaskColumns = (monthId = null) => [
     cell: ({ getValue }) => safeDisplay(getValue()),
     size: 120,
   }),
-  columnHelper.accessor('product', {
+  columnHelper.accessor('products', {
     header: 'Product',
     cell: ({ getValue }) => safeDisplay(getValue()),
     size: 120,
@@ -50,23 +55,37 @@ export const getTaskColumns = (monthId = null) => [
     cell: ({ getValue }) => numberFmt(parseFloat(getValue()) || 0),
     size: 80,
   }),
-  columnHelper.accessor('timeSpentOnAI', {
+  columnHelper.accessor('userAI', {
+    id: 'aiTimeSpent',
     header: 'AI Hr',
-    cell: ({ getValue }) => numberFmt(parseFloat(getValue()) || 0),
+    cell: ({ getValue }) => {
+      const userAI = getValue();
+      if (Array.isArray(userAI) && userAI.length > 0 && userAI[0].timeSpent) {
+        return numberFmt(parseFloat(userAI[0].timeSpent) || 0);
+      }
+      return "-";
+    },
     size: 80,
   }),
-  columnHelper.accessor('aiModels', {
+  columnHelper.accessor('userAI', {
+    id: 'aiModels',
     header: 'AI Models',
-    cell: ({ row }) => {
-      const aiUsed = row.original.aiUsed;
-      const aiModels = row.original.aiModels || row.original.aiModel;
-      return aiUsed && aiModels ? safeDisplay(aiModels) : "-";
+    cell: ({ getValue }) => {
+      const userAI = getValue();
+      if (Array.isArray(userAI) && userAI.length > 0 && userAI[0].aiModels) {
+        return safeDisplay(userAI[0].aiModels);
+      }
+      return "-";
     },
     size: 120,
   }),
-  columnHelper.accessor('aiUsed', {
+  columnHelper.accessor('userAI', {
+    id: 'aiUsed',
     header: 'AI?',
-    cell: ({ getValue }) => getValue() ? "✓" : "-",
+    cell: ({ getValue }) => {
+      const userAI = getValue();
+      return (Array.isArray(userAI) && userAI.length > 0) ? "✓" : "-";
+    },
     size: 60,
   }),
   columnHelper.accessor('reworked', {
@@ -75,18 +94,55 @@ export const getTaskColumns = (monthId = null) => [
     size: 100,
   }),
   columnHelper.accessor('deliverables', {
+    id: 'deliverablesList',
     header: 'Deliverables',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      const deliverables = getValue();
+      if (Array.isArray(deliverables) && deliverables.length > 0 && deliverables[0].deliverables) {
+        return safeDisplay(deliverables[0].deliverables);
+      }
+      return "-";
+    },
     size: 120,
   }),
   columnHelper.accessor('reporters', {
     header: 'Reporters',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      const reporters = getValue();
+      if (Array.isArray(reporters) && reporters.length > 0) {
+        const reporterNames = reporters.map(reporter => 
+          typeof reporter === 'object' ? reporter.name : reporter
+        ).filter(Boolean);
+        return safeDisplay(reporterNames);
+      }
+      return "-";
+    },
     size: 120,
   }),
-  columnHelper.accessor('deliverablesCount', {
+  columnHelper.accessor('deliverables', {
+    id: 'deliverablesCount',
     header: 'Nr Deliverables',
-    cell: ({ getValue }) => Number(getValue()) || 0,
+    cell: ({ getValue }) => {
+      const deliverables = getValue();
+      if (Array.isArray(deliverables) && deliverables.length > 0 && deliverables[0].deliverablesCount) {
+        return Number(deliverables[0].deliverablesCount) || 0;
+      }
+      return 0;
+    },
+    size: 120,
+  }),
+  columnHelper.accessor('createdBy', {
+    header: 'Created By',
+    cell: ({ getValue }) => {
+      const createdBy = getValue();
+      if (Array.isArray(createdBy) && createdBy.length > 0) {
+        const creatorNames = createdBy.map(creator => 
+          typeof creator === 'object' ? creator.name : creator
+        ).filter(Boolean);
+        return safeDisplay(creatorNames);
+      }
+      return "-";
+    },
     size: 120,
   }),
   columnHelper.accessor('createdAt', {

@@ -1,6 +1,6 @@
 import { useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
-import { useSubscribeToMonthTasksQuery } from "@/features/tasks/tasksApi";
+import { useGetMonthTasksQuery } from "@/features/tasks/tasksApi";
 import { useSelector } from "react-redux";
 import { selectCurrentMonthId } from "@/features/currentMonth";
 import { useAuth } from "@/features/auth";
@@ -13,14 +13,35 @@ export const useUserData = () => {
   const { user } = useAuth();
   const monthId = useSelector(selectCurrentMonthId);
   
+  // Get the correct userUID - prioritize userUID from database over auth uid
+  const userUID = user?.userUID || user?.uid || user?.id;
+  
+  // Debug logging
+  console.log('useUserData Debug:', {
+    user,
+    userUID,
+    monthId,
+    hasUser: !!user,
+    hasUserUID: !!userUID,
+    hasMonthId: !!monthId,
+    currentDate: new Date().toISOString(),
+    expectedMonthId: new Date().toISOString().slice(0, 7), // YYYY-MM format
+    userUIDBreakdown: {
+      userUID: user?.userUID,
+      uid: user?.uid,
+      id: user?.id,
+      finalUserUID: userUID
+    }
+  });
+  
   // Fetch current user's data
   const { 
     data: userData, 
     isLoading: userLoading, 
     error: userError 
   } = useGetUserByUIDQuery(
-    { userUID: user?.uid },
-    { skip: !user?.uid }
+    { userUID },
+    { skip: !userUID }
   );
   
   // Fetch all reporters (needed for task creation)
@@ -33,15 +54,26 @@ export const useUserData = () => {
     { skip: !monthId }
   );
   
-  // Fetch user's own tasks (userId: user.uid)
+  // Fetch user's own tasks (userId: userUID)
   const { 
-    data: tasksData = { tasks: [] }, 
+    data: tasksData = [], 
     isLoading: tasksLoading, 
     error: tasksError 
-  } = useSubscribeToMonthTasksQuery(
-    { monthId, userId: user?.uid },
-    { skip: !user?.uid || !monthId }
+  } = useGetMonthTasksQuery(
+    { monthId, userId: userUID, role: 'user' },
+    { skip: !userUID || !monthId }
   );
+
+  // Debug API call
+  console.log('useGetMonthTasksQuery Debug:', {
+    monthId,
+    userId: userUID,
+    role: 'user',
+    skip: !userUID || !monthId,
+    tasksData,
+    tasksLoading,
+    tasksError
+  });
   
   const isLoading = userLoading || reportersLoading || tasksLoading;
   const error = userError || reportersError || tasksError;
@@ -49,7 +81,7 @@ export const useUserData = () => {
   return {
     user: userData,
     reporters,
-    tasks: tasksData.tasks || [],
+    tasks: tasksData || [],
     isLoading,
     error,
     monthId

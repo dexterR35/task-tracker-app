@@ -1,3 +1,3 @@
 // Form utilities barrel export
-export * from './validation';
-export * from './sanitization';
+export * from './validation.js';
+export * from './sanitization.js';

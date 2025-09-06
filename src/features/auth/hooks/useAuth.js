@@ -27,36 +27,33 @@ export const useAuth = () => {
   const isAuthChecking = useSelector(selectIsAuthChecking);
   const error = useSelector(selectAuthError);
 
-  // Ensure user object has required properties with fallbacks - memoized to prevent unnecessary re-renders
+  // Validate user object has all required properties - if missing, user is not authenticated
   const safeUser = useMemo(() => {
     if (!user) return null;
+    
+    // Check for required fields - if any are missing, return null (not authenticated)
+    if (!user.userUID || !user.email || !user.name || !user.role) {
+      console.warn('User data incomplete - missing required fields:', {
+        userUID: !!user.userUID,
+        email: !!user.email,
+        name: !!user.name,
+        role: !!user.role
+      });
+      return null;
+    }
+    
+    // Return user data as-is from database 
     return {
       ...user,
-      // Core properties (used in tables and UI)
-      userUID: user.userUID || user.uid || user.id || '',
-      email: user.email || '',
-      name: user.name || '',
-      
-      // Role and permissions (used for filtering and permissions)
-      role: user.role || 'user',
-      occupation: user.occupation || user.role || 'user',
-      isActive: user.isActive !== false,
-      
-      // Timestamp (used in user/reporter tables)
-      createdAt: user.createdAt || null,
-      
-      // Compatibility (used internally)
-      uid: user.uid || user.userUID || user.id || '',
-      id: user.id || user.uid || user.userUID || ''
+      permissions: Array.isArray(user.permissions) ? user.permissions : undefined
     };
   }, [
     user?.userUID,
-    user?.uid, 
-    user?.id,
     user?.email, 
     user?.name,
     user?.role, 
     user?.occupation,
+    user?.permissions,
     user?.isActive,
     user?.createdAt
   ]);
@@ -65,8 +62,6 @@ export const useAuth = () => {
   const login = useCallback(async (credentials) => {
     try {
       const result = await dispatch(loginUser(credentials)).unwrap();
-      const user = result.user || result;
-      showWelcomeMessage(user.name || user.email);
       return result;
     } catch (error) {
       showAuthError(error?.message || error || 'Login failed');
@@ -105,6 +100,22 @@ export const useAuth = () => {
     return false;
   }, [user]);
 
+  // Permission-based access control
+  const hasPermission = useCallback((permission) => {
+    if (!safeUser || !safeUser.permissions || !Array.isArray(safeUser.permissions)) return false;
+    return safeUser.permissions.includes(permission);
+  }, [safeUser]);
+
+  // Check if user can generate charts/analytics
+  const canGenerate = useCallback(() => {
+    return hasPermission('generate_charts');
+  }, [hasPermission]);
+
+  // Check if user can access task operations
+  const canAccessTasks = useCallback(() => {
+    return hasPermission('create_task') || hasPermission('update_task') || hasPermission('delete_task');
+  }, [hasPermission]);
+
   // Simplified auth status check
   const isReady = useCallback(() => {
     return !isAuthChecking && !isLoading;
@@ -119,6 +130,9 @@ export const useAuth = () => {
     
     // Access control
     canAccess,
+    hasPermission,
+    canGenerate,
+    canAccessTasks,
     
     // Auth actions
     login,

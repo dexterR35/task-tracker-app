@@ -33,6 +33,9 @@ const UserDashboardPage = lazy(
 const AnalyticsPage = lazy(
   () => import("@/pages/admin/AnalyticsPage")
 );
+const DebugPage = lazy(
+  () => import("@/pages/admin/DebugPage")
+);
 const ComingSoonPage = lazy(() => import("@/components/ui/ComingSoon/ComingSoon"));
 const NotFoundPage = lazy(() => import("@/pages/errorPages/NotFoundPage"));
 
@@ -47,6 +50,25 @@ const PageLoader = ({ text = "Loading...page loader" }) => (
 const LazyPage = ({ children, loadingText = "Loading...page loader2" }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>{children}</Suspense>
 );
+
+// Role-based dashboard component
+const RoleBasedDashboard = () => {
+  const { user } = useAuth();
+  
+  if (user?.role === 'admin') {
+    return (
+      <LazyPage loadingText="Loading admin dashboard...">
+        <AdminDashboardPage />
+      </LazyPage>
+    );
+  }
+  
+  return (
+    <LazyPage loadingText="Loading user dashboard...">
+      <UserDashboardPage />
+    </LazyPage>
+  );
+};
 
 // Route protection component with auth checking loader
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -143,10 +165,7 @@ const RootLayout = () => {
     );
   }
 
-  // If user is authenticated and on login page, redirect to dashboard
-  if (user && location.pathname === "/login") {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // Let LoginPage handle its own redirect logic to preserve intended destination
 
   // Let ProtectedRoute handle all other auth checks and redirects
   return <Outlet />;
@@ -179,8 +198,26 @@ const router = createBrowserRouter([
             path: "dashboard",
             element: (
               <ProtectedRoute requiredRole="user">
-                <LazyPage loadingText="Loading user dashboard...">
-                  <UserDashboardPage />
+                <RoleBasedDashboard />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "analytics",
+            element: (
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage loadingText="Loading analytics...">
+                  <AnalyticsPage />
+                </LazyPage>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "users",
+            element: (
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage loadingText="Loading user management...">
+                  <AdminManagementPage />
                 </LazyPage>
               </ProtectedRoute>
             ),
@@ -188,59 +225,22 @@ const router = createBrowserRouter([
           {
             path: "tasks",
             element: (
-              <ProtectedRoute requiredRole="user">
-                <LazyPage loadingText="Loading user tasks...">
-                  <UserDashboardPage />
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage loadingText="Loading task management...">
+                  <AdminTasksPage />
                 </LazyPage>
               </ProtectedRoute>
             ),
           },
-
-          // Admin analytics and management routes
           {
-            path: "admin",
-            children: [
-              {
-                path: "dashboard",
-                element: (
-                  <ProtectedRoute requiredRole="admin">
-                    <LazyPage loadingText="Loading admin dashboard...">
-                      <AdminDashboardPage />
-                    </LazyPage>
-                  </ProtectedRoute>
-                ),
-              },
-              {
-                path: "analytics",
-                element: (
-                  <ProtectedRoute requiredRole="admin">
-                    <LazyPage loadingText="Loading analytics...">
-                      <AnalyticsPage />
-                    </LazyPage>
-                  </ProtectedRoute>
-                ),
-              },
-              {
-                path: "users",
-                element: (
-                  <ProtectedRoute requiredRole="admin">
-                    <LazyPage loadingText="Loading user management...">
-                      <AdminManagementPage />
-                    </LazyPage>
-                  </ProtectedRoute>
-                ),
-              },
-              {
-                path: "tasks",
-                element: (
-                  <ProtectedRoute requiredRole="admin">
-                    <LazyPage loadingText="Loading task management...">
-                      <AdminTasksPage />
-                    </LazyPage>
-                  </ProtectedRoute>
-                ),
-              },
-            ],
+            path: "debug",
+            element: (
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage loadingText="Loading debug tools...">
+                  <DebugPage />
+                </LazyPage>
+              </ProtectedRoute>
+            ),
           },
 
 

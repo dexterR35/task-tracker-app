@@ -219,12 +219,9 @@ export const setupBoardListener = createAsyncThunk(
           logger.log(`[currentMonthSlice] Real-time board update: ${currentStateBoardExists} -> ${currentExists} for ${monthId}`);
           logger.log(`[currentMonthSlice] Real-time listener payload:`, { monthId, currentExists, timestamp: Date.now() });
           
-          // Force update the state regardless of current value
+          // Update the state if it has changed
           if (currentStateBoardExists !== currentExists) {
             logger.log(`[currentMonthSlice] Board status changed: ${currentStateBoardExists} -> ${currentExists}, dispatching update`);
-            dispatch(setBoardExists(currentExists));
-          } else {
-            logger.log(`[currentMonthSlice] Board status unchanged: ${currentExists}, but forcing update anyway`);
             dispatch(setBoardExists(currentExists));
           }
         },

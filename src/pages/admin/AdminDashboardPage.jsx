@@ -69,7 +69,7 @@ const AdminDashboardPage = () => {
 
       if (generateMonthBoard.fulfilled.match(result)) {
         showSuccess("Month board generated successfully!");
-        logger.info("Month board generated", { monthId, result: result.payload });
+        logger.log("Month board generated", { monthId, result: result.payload });
       } else {
         showError("Failed to generate month board. Please try again.");
         logger.error("Month board generation failed", { monthId, error: result.error });
@@ -176,7 +176,7 @@ const AdminDashboardPage = () => {
       )}
 
       {/* Tasks Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
             All Tasks
@@ -199,7 +199,7 @@ const AdminDashboardPage = () => {
             isAdminView={isUserAdmin}
           />
         )}
-      </div>
+      </div> */}
 
     </div>
   );

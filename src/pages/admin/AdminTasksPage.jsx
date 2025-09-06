@@ -63,7 +63,7 @@ const AdminTasksPage = () => {
       if (result.data) {
         showSuccess("Task created successfully!");
         setShowCreateModal(false);
-        logger.info("Task created", { taskData, result: result.data });
+        logger.log("Task created", { taskData, result: result.data });
       } else {
         showError("Failed to create task. Please try again.");
         logger.error("Task creation failed", { taskData, error: result.error });

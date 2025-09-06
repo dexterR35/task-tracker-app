@@ -8,7 +8,7 @@ import {
 } from "@/features/currentMonth";
 import { showSuccess } from "@/utils/toast.js";
 import { DynamicButton, Loader, Modal } from "@/components/ui";
-import { TaskForm } from "@/features/tasks";
+import { TaskForm, TaskTable } from "@/features/tasks";
 import { useUserData } from "@/hooks";
 
 // User Dashboard - Shows user's own data with task creation
@@ -19,6 +19,20 @@ const UserDashboardPage = () => {
   
   // Use custom hook for user data fetching
   const { user, tasks, isLoading, error } = useUserData();
+  
+  // Debug logging
+  console.log('UserDashboard Debug:', {
+    user,
+    userUID: user?.uid,
+    userID: user?.id,
+    userUserUID: user?.userUID,
+    finalUserUID: user?.uid || user?.id || user?.userUID,
+    tasks,
+    tasksLength: tasks?.length,
+    monthId,
+    isLoading,
+    error
+  });
   
   // Use the currentMonth state as the source of truth
   const boardExists = useSelector(selectBoardExists);
@@ -106,6 +120,16 @@ const UserDashboardPage = () => {
         </div>
       )}
 
+      {/* User Tasks Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">My Tasks</h2>
+        <TaskTable 
+          tasks={userTasks}
+          monthId={monthId}
+          isLoading={isLoading}
+          error={error}
+        />
+      </div>
 
       {/* Create Task Modal */}
       <Modal

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 import { useDeleteTaskMutation } from "@/features/tasks";
-import { normalizeTaskData } from "@/components/forms/utils/sanitization/sanitization";
 import { DynamicButton } from "@/components";
 import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
@@ -27,7 +26,7 @@ const TaskTable = ({
   const taskColumns = getColumns('tasks', monthId);
   // Handle task selection
   const handleTaskSelect = (task) => {
-    showSuccess(`Selected task: ${task.taskName || task.taskNumber}`);
+    showSuccess(`Selected task: ${task.departaments || task.taskNumber}`);
   };
 
   // Handle task edit - open modal with TaskForm
@@ -40,15 +39,16 @@ const TaskTable = ({
 
   // Handle task delete
   const handleTaskDelete = async (task) => {
-    if (!window.confirm(`Are you sure you want to delete task: ${task.taskName || task.taskNumber}?`)) {
+    if (!window.confirm(`Are you sure you want to delete task: ${task.departaments || task.taskNumber}?`)) {
       return;
     }
 
     try {
       setRowActionId(task.id);
 
-      // Use utility function to normalize task data
-      const { taskId, monthId: taskMonthId } = normalizeTaskData(task, { monthId });
+      // Extract task ID and month ID
+      const taskId = task.id;
+      const taskMonthId = task.monthId || monthId;
 
       // Delete task using Redux mutation (automatically updates cache)
       await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
@@ -75,7 +75,7 @@ const TaskTable = ({
         <div className="rounded-lg  bg-white-dark shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-white-dak">
-              Edit Task: {editingTask.taskName || editingTask.taskNumber}
+              Edit Task: {editingTask.departaments || editingTask.taskNumber}
             </h2>
             <DynamicButton
               variant="outline"

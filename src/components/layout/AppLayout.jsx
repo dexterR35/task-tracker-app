@@ -18,7 +18,6 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { Icons } from "@/components/icons";
-import ReduxDebugger from "@/components/debug/ReduxDebugger";
 // import ReduxDataExample from "@/components/debug/ReduxDataExample";
 // import ApiStructureExplanation from "@/components/debug/ApiStructureExplanation";
 
@@ -63,10 +62,6 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-primary transition-colors duration-300">
-
-      <ReduxDebugger />
-
-      
       <nav className="bg-white dark:bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -123,6 +118,13 @@ const AppLayout = () => {
                       >
                         <Icons.generic.task className="w-4 h-4 mr-2" />
                         All Tasks
+                      </Link>
+                      <Link
+                        to="/admin/debug"
+                        className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                      >
+                        <Icons.generic.settings className="w-4 h-4 mr-2" />
+                        Debug
                       </Link>
                     </>
                   )}
@@ -259,6 +261,13 @@ const AppLayout = () => {
                   >
                     <Icons.generic.task className="w-4 h-4 mr-2" />
                     All Tasks
+                  </Link>
+                  <Link
+                    to="/admin/debug"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  >
+                    <Icons.generic.settings className="w-4 h-4 mr-2" />
+                    Debug
                   </Link>
                 </>
               )}

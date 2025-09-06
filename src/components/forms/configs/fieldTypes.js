@@ -1,11 +1,4 @@
-import { 
-  TextInput,
-  SelectInput,
-  MultiSelectInput,
-  CheckboxInput,
-  NumberInput,
-  MultiValueInput
-} from '../inputs';
+// No need to import input components - using native Formik components
 
 // Field type definitions for validation and sanitization
 export const FIELD_TYPES = {
@@ -83,7 +76,7 @@ export const FIELD_HANDLERS = {
   [FIELD_TYPES.PASSWORD]: {
     render: 'TextInput',
     validation: 'string',
-    sanitize: 'text',
+    sanitize: 'password',
     defaultProps: { type: 'password' }
   },
   
@@ -97,7 +90,7 @@ export const FIELD_HANDLERS = {
   [FIELD_TYPES.DATE]: {
     render: 'TextInput',
     validation: 'date',
-    sanitize: 'text',
+    sanitize: 'date',
     defaultProps: { type: 'date' }
   }
 };
@@ -123,25 +116,25 @@ export const getFieldDefaultProps = (type) => {
   return getFieldHandler(type).defaultProps || {};
 };
 
-// Get the actual component class for rendering
+// Get the component type for Formik Field rendering
 export const getComponentForField = (type) => {
   const handler = getFieldHandler(type);
   const componentName = handler.render;
   
   switch (componentName) {
     case 'TextInput':
-      return TextInput;
+      return 'input';
     case 'SelectInput':
-      return SelectInput;
+      return 'select';
     case 'MultiSelectInput':
-      return MultiSelectInput;
+      return 'select';
     case 'CheckboxInput':
-      return CheckboxInput;
+      return 'input';
     case 'NumberInput':
-      return NumberInput;
+      return 'input';
     case 'MultiValueInput':
-      return MultiValueInput;
+      return 'input';
     default:
-      return TextInput; // Fallback to TextInput
+      return 'input'; // Fallback to input
   }
 };

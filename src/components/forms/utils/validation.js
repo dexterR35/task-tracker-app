@@ -1,8 +1,44 @@
 import * as Yup from 'yup';
-import { FIELD_TYPES, getFieldValidationType } from '../../configs/fieldTypes';
-import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from './validationRules';
+import { FIELD_TYPES, getFieldValidationType } from '../configs/fieldTypes';
 
-// Create base schema based on field type using handlers
+// Validation patterns
+export const VALIDATION_PATTERNS = {
+  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  URL: /^https?:\/\/.+/,
+  JIRA_LINK: /^https:\/\/.*\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
+  TASK_NUMBER: /^[A-Z]+-\d+$/,
+  PHONE: /^\+?[\d\s\-\(\)]+$/,
+  ALPHANUMERIC: /^[a-zA-Z0-9\s]+$/,
+  NUMERIC: /^\d+$/,
+  DECIMAL: /^\d+(\.\d+)?$/,
+};
+
+// Validation messages
+export const VALIDATION_MESSAGES = {
+  REQUIRED: 'This field is required',
+  EMAIL: 'Please enter a valid email address',
+  URL: 'Please enter a valid URL',
+  MIN_LENGTH: (min) => `Must be at least ${min} characters`,
+  MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
+  MIN_VALUE: (min) => `Must be at least ${min}`,
+  MAX_VALUE: (max) => `Must be no more than ${max}`,
+  INVALID_FORMAT: 'Invalid format',
+  SELECT_ONE: 'Please select at least one option',
+  SELECT_REQUIRED: 'Please select an option',
+  ARRAY_MIN: (min) => `Please select at least ${min} option${min > 1 ? 's' : ''}`,
+  ARRAY_MAX: (max) => `Please select no more than ${max} option${max > 1 ? 's' : ''}`,
+  CONDITIONAL_REQUIRED: 'This field is required when the condition is met',
+};
+
+// Extract task number from Jira link
+export const extractTaskNumber = (jiraLink) => {
+  if (!jiraLink || typeof jiraLink !== 'string') return '';
+  const jiraPattern = /([A-Z]+-\d+)/i;
+  const match = jiraLink.match(jiraPattern);
+  return match ? match[1].toUpperCase() : '';
+};
+
+// Create base schema based on field type
 const createBaseSchema = (type) => {
   const validationType = getFieldValidationType(type);
   
@@ -28,7 +64,6 @@ const createBaseSchema = (type) => {
 
 // Apply common validations to schema
 const applyCommonValidations = (schema, field, validation) => {
-  // Apply min/max length validations
   if (validation.minLength) {
     schema = schema.min(validation.minLength, VALIDATION_MESSAGES.MIN_LENGTH(validation.minLength));
   }
@@ -36,7 +71,6 @@ const applyCommonValidations = (schema, field, validation) => {
     schema = schema.max(validation.maxLength, VALIDATION_MESSAGES.MAX_LENGTH(validation.maxLength));
   }
   
-  // Apply min/max value validations
   if (validation.minValue !== undefined) {
     schema = schema.min(validation.minValue, VALIDATION_MESSAGES.MIN_VALUE(validation.minValue));
   }
@@ -44,17 +78,14 @@ const applyCommonValidations = (schema, field, validation) => {
     schema = schema.max(validation.maxValue, VALIDATION_MESSAGES.MAX_VALUE(validation.maxValue));
   }
   
-  // Apply pattern validation
   if (validation.pattern) {
     schema = schema.matches(validation.pattern, VALIDATION_MESSAGES.INVALID_FORMAT);
   }
   
-  // Apply custom validation
   if (validation.custom) {
     schema = schema.test('custom', validation.custom.message, validation.custom.test);
   }
   
-  // Apply array validations
   if (field.type === FIELD_TYPES.MULTI_SELECT || field.type === FIELD_TYPES.MULTI_VALUE) {
     if (validation.minItems) {
       schema = schema.min(validation.minItems, VALIDATION_MESSAGES.ARRAY_MIN(validation.minItems));
@@ -67,35 +98,27 @@ const applyCommonValidations = (schema, field, validation) => {
   return schema;
 };
 
-// Dynamic field validation builder
+// Build field validation schema
 export const buildFieldValidation = (fieldConfig) => {
   const { type, required, validation = {}, conditional } = fieldConfig;
   
-  // Create base schema using handlers
   let schema = createBaseSchema(type);
 
-  // Apply required validation
   if (required) {
     schema = schema.required(VALIDATION_MESSAGES.REQUIRED);
   }
 
-  // Apply conditional validation
   if (conditional) {
     schema = schema.when(conditional.field, {
       is: conditional.value,
       then: (schema) => {
-        // Apply all validations when condition is met
         if (conditional.required) {
           schema = schema.required(VALIDATION_MESSAGES.CONDITIONAL_REQUIRED);
         }
-        
-        // Apply common validations
         return applyCommonValidations(schema, fieldConfig, validation);
       },
       otherwise: (schema) => {
-        // When condition is not met, make field completely optional and skip all validation
         return schema.optional().nullable().transform(() => {
-          // Return appropriate default values based on field type
           if (type === FIELD_TYPES.MULTI_SELECT || type === FIELD_TYPES.MULTI_VALUE) {
             return [];
           }
@@ -110,7 +133,6 @@ export const buildFieldValidation = (fieldConfig) => {
       }
     });
   } else {
-    // Apply validations only for non-conditional fields
     schema = applyCommonValidations(schema, fieldConfig, validation);
   }
 
@@ -119,13 +141,10 @@ export const buildFieldValidation = (fieldConfig) => {
 
 // Build complete validation schema from field configuration
 export const buildFormValidationSchema = (fields) => {
-  const schemaObject = {};
-  
-  fields.forEach(field => {
-    schemaObject[field.name] = buildFieldValidation(field);
-  });
+  const schemaObject = fields.reduce((acc, field) => {
+    acc[field.name] = buildFieldValidation(field);
+    return acc;
+  }, {});
   
   return Yup.object().shape(schemaObject);
 };
-
-

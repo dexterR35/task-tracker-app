@@ -16,12 +16,12 @@
 │  │  Admin Users:                                                          │   │
 │  │  ├─ useGetUsersQuery() → All users                                     │   │
 │  │  ├─ useGetReportersQuery() → All reporters                             │   │
-│  │  └─ useSubscribeToMonthTasksQuery(userId: null) → All tasks            │   │
+│  │  └─ useGetMonthTasksQuery(userId: adminUID, role: 'admin') → All tasks │   │
 │  │                                                                         │   │
 │  │  Regular Users:                                                        │   │
 │  │  ├─ useGetUserByUIDQuery(user.uid) → Own user data                     │   │
 │  │  ├─ useGetReportersQuery() → SKIPPED (empty array)                     │   │
-│  │  └─ useSubscribeToMonthTasksQuery(userId: user.uid) → Own tasks        │   │
+│  │  └─ useGetMonthTasksQuery(userId: user.uid, role: 'user') → Own tasks  │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
@@ -104,8 +104,8 @@
 │  │  └─ queries['getReporters(undefined)'] → All reporters (admin only)    │   │
 │  │                                                                         │   │
 │  │  tasksApi:                                                             │   │
-│  │  ├─ queries['subscribeToMonthTasks({"userId":null})'] → All tasks      │   │
-│  │  └─ queries['subscribeToMonthTasks({"userId":"..."})'] → User tasks    │   │
+│  │  ├─ queries['getMonthTasks({"userId":null,"role":"admin"})'] → All tasks │   │
+│  │  └─ queries['getMonthTasks({"userId":"...","role":"user"})'] → User tasks │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                 │

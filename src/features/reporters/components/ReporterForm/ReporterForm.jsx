@@ -1,108 +1,246 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { Formik, Field } from "formik";
 import { useCreateReporterMutation, useUpdateReporterMutation } from "@/features/reporters";
-import DynamicForm from "@/components/forms/DynamicForm/DynamicForm.jsx";
-import { reporterFormConfig } from "@/components/forms/configs/index.js";
+import { useAuth } from "@/features/auth";
+import { reporterFormSchema, getReporterFormInitialValues, REPORTER_FORM_OPTIONS } from './reporterFormSchema';
+import { sanitizeText, sanitizeEmail } from "@/components/forms/utils/sanitization";
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import { sanitizeText } from "@/components/forms/utils/sanitization/sanitization";
+import { DynamicButton } from "@/components/ui";
 
 const ReporterForm = ({
   mode = 'create', // 'create' or 'edit'
   reporterId = null,
   initialValues = null,
+  onSuccess = null,
   className = "",
 }) => {
-  const currentUser = useSelector(state => state.auth.user);
+  const { user } = useAuth();
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
-
-  // Get form configuration
-  const { fields, options } = reporterFormConfig;
-
-  // Get initial values
-  const getInitialValues = () => {
-    if (mode === 'edit' && initialValues) {
-      return {
-        name: initialValues.name || "",
-        email: initialValues.email || "",
-        role: "reporter", // Always set to reporter
-        departament: initialValues.departament || "",
-        occupation: initialValues.occupation || "",
-      };
-    }
-    return {
-      name: "",
-      email: "",
-      role: "reporter", // Always set to reporter
-      departament: "",
-      occupation: "",
-    };
-  };
-
-  // Handle form submission
-  const handleSubmit = async (preparedData, { setSubmitting, resetForm, setFieldError }) => {
+  
+  // Get validation schema and initial values
+  const validationSchema = reporterFormSchema;
+  const formInitialValues = getReporterFormInitialValues(user, initialValues);
+  
+  
+  // Form submission handler
+  const handleSubmit = async (values, { setSubmitting, resetForm, setValues, setTouched, setErrors }) => {
     try {
-      const data = {
-        name: sanitizeText(preparedData.name),
-        email: sanitizeText(preparedData.email),
-        role: "reporter", // Always set to reporter
-        departament: sanitizeText(preparedData.departament),
-        occupation: sanitizeText(preparedData.occupation),
+      // Sanitize data directly
+      const sanitizedData = {
+        name: sanitizeText(values.name),
+        email: sanitizeEmail(values.email),
+        role: sanitizeText(values.role),
+        departament: sanitizeText(values.departament),
+        occupation: sanitizeText(values.occupation)
       };
-
-      logger.log(`${mode === 'edit' ? 'Updating' : 'Creating'} reporter with data:`, data);
-
-      let result;
-      if (mode === 'edit') {
-        if (!reporterId) {
-          throw new Error('Reporter ID is required for editing');
-        }
-        result = await updateReporter({ id: reporterId, updates: data }).unwrap();
-        logger.log(`Reporter updated successfully:`, result);
-        showSuccess(`Reporter updated successfully!`);
-      } else {
-        const reporterData = {
-          ...data,
-          createdBy: currentUser?.uid,
-          createdByName: currentUser?.name || currentUser?.email,
-        };
-        result = await createReporter(reporterData).unwrap();
-        logger.log(`Reporter created successfully:`, result);
-        showSuccess(`Reporter created successfully!`);
-      }
+      
+      // Prepare data for database
+      const dataForDatabase = {
+        ...sanitizedData,
+        createdBy: user?.uid || '',
+        createdByName: user?.displayName || user?.email || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
       
       if (mode === 'create') {
+        // Create new reporter
+        await createReporter(dataForDatabase).unwrap();
+        showSuccess('Reporter created successfully!');
+        logger.log('Reporter created successfully', { reporterData: dataForDatabase });
+      } else {
+        // Update existing reporter
+        await updateReporter({ id: reporterId, data: dataForDatabase }).unwrap();
+        showSuccess('Reporter updated successfully!');
+        logger.log('Reporter updated successfully', { reporterId, reporterData: dataForDatabase });
+      }
+      
+      // Reset form to default values for create mode
+      if (mode === 'create') {
+        const resetValues = {
+          name: "",
+          email: "",
+          role: "reporter",
+          departament: "",
+          occupation: "",
+          createdBy: user?.uid || "",
+          createdByName: user?.displayName || user?.email || ""
+        };
+        setValues(resetValues);
+        setTouched({});
+        setErrors({});
+      } else {
+        // For edit mode, just reset to initial values
         resetForm();
       }
+      
+      // Call success callback
+      if (onSuccess) {
+        onSuccess();
+      }
+      
     } catch (error) {
-      logger.error(`Reporter ${mode === 'edit' ? 'update' : 'creation'} failed:`, error);
-      showError(`Failed to ${mode === 'edit' ? 'update' : 'create'} reporter: ${error?.message || "Please try again."}`);
+      logger.error('Reporter submission failed', error);
+      showError(error?.data?.message || 'Failed to save reporter. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
-
+  
+  // Custom field change handler for field-specific logic
+  const handleFieldChange = useCallback((fieldName, event, formikHelpers) => {
+    const fieldConfig = fields.find(f => f.name === fieldName);
+    
+    // Create form object for field-specific logic
+    const form = {
+      setFieldValue: formikHelpers.setFieldValue,
+      getFieldValue: (name) => formikHelpers.values[name],
+      values: formikHelpers.values
+    };
+    
+    // Call field-specific onChange if it exists (no sanitization here)
+    fieldConfig?.onChange?.(event, form);
+  }, [fields]);
+  
+  // Custom field blur handler for field-specific logic
+  const handleFieldBlur = useCallback((fieldName, event, formikHelpers) => {
+    const fieldConfig = fields.find(f => f.name === fieldName);
+    
+    // Create form object for field-specific logic
+    const form = {
+      setFieldValue: formikHelpers.setFieldValue,
+      getFieldValue: (name) => formikHelpers.values[name],
+      values: formikHelpers.values
+    };
+    
+    // Call field-specific onBlur if it exists
+    fieldConfig?.onBlur?.(event, form);
+  }, [fields]);
+  
+  
+  const renderFormHeader = () => {
+    const title = mode === 'edit' ? 'Edit Reporter' : 'Create New Reporter';
+    const subtitle = mode === 'edit' 
+      ? 'Update reporter information and save changes'
+      : 'Fill in the details below to create a new reporter';
+    
+    return (
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">{subtitle}</p>
+      </div>
+    );
+  };
+  
   return (
-    <div className={className}>
-      <DynamicForm
-        fields={fields}
-        options={options}
-        initialValues={getInitialValues()}
+    <div className={`card bg-white-dark ${className}`}>
+      {renderFormHeader()}
+      
+      <Formik
+        initialValues={formInitialValues}
+        validationSchema={validationSchema}
+        enableReinitialize={true}
         onSubmit={handleSubmit}
-        className="space-y-6"
-        submitText={mode === 'edit' ? 'Update Reporter' : 'Create Reporter'}
-        submitButtonProps={{
-          loadingText: mode === 'edit' ? "Updating..." : "Creating...",
-          iconName: mode === 'edit' ? "edit" : "plus",
-          iconPosition: "left",
-          variant: mode === 'edit' ? "secondary" : "primary",
-          disabled: false
-        }}
-        validateOnMount={false}
-        validateOnChange={true}
-        validateOnBlur={true}
-      />
+      >
+        {(formik) => (
+          <>
+            {fields.map(field => (
+              <div key={field.name} className="field-wrapper">
+                {field.label && (
+                  <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                )}
+                
+                <Field name={field.name}>
+                  {({ field: fieldProps, meta }) => (
+                    <>
+                      {field.type === FIELD_TYPES.SELECT ? (
+                        <select
+                          {...fieldProps}
+                          {...field}
+                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors border-gray-300"
+                          onChange={(e) => {
+                            fieldProps.onChange(e);
+                            handleFieldChange(field.name, e, formik);
+                          }}
+                          onBlur={(e) => {
+                            fieldProps.onBlur(e);
+                            handleFieldBlur(field.name, e, formik);
+                          }}
+                        >
+                          <option value="">{field.placeholder || 'Select an option'}</option>
+                          {field.options?.map((option) => (
+                            <option key={option.value || option} value={option.value || option}>
+                              {option.label || option}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.type === FIELD_TYPES.CHECKBOX ? (
+                        <div className="flex items-start space-x-3">
+                          <input
+                            {...fieldProps}
+                            {...field}
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            onChange={(e) => {
+                              fieldProps.onChange(e);
+                              handleFieldChange(field.name, e, formik);
+                            }}
+                            onBlur={(e) => {
+                              fieldProps.onBlur(e);
+                              handleFieldBlur(field.name, e, formik);
+                            }}
+                          />
+                          {field.description && (
+                            <span className="text-sm text-gray-500">{field.description}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <input
+                          {...fieldProps}
+                          {...field}
+                          type={field.type === FIELD_TYPES.EMAIL ? 'email' : 'text'}
+                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors border-gray-300"
+                          onChange={(e) => {
+                            fieldProps.onChange(e);
+                            handleFieldChange(field.name, e, formik);
+                          }}
+                          onBlur={(e) => {
+                            fieldProps.onBlur(e);
+                            handleFieldBlur(field.name, e, formik);
+                          }}
+                        />
+                      )}
+                      {meta.touched && meta.error && <div className="text-red-500 text-sm mt-1">{meta.error}</div>}
+                    </>
+                  )}
+                </Field>
+                
+                {field.helpText && (
+                  <p className="text-sm text-gray-500 mt-1">{field.helpText}</p>
+                )}
+              </div>
+            ))}
+            
+            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <DynamicButton
+                onClick={formik.handleSubmit}
+                disabled={formik.isSubmitting}
+                loading={formik.isSubmitting}
+                variant="primary"
+                size="md"
+                loadingText="Saving..."
+              >
+                {mode === 'edit' ? 'Update Reporter' : 'Create Reporter'}
+              </DynamicButton>
+            </div>
+          </>
+        )}
+      </Formik>
     </div>
   );
 };

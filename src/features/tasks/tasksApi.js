@@ -12,13 +12,41 @@ import {
   serverTimestamp,
   onSnapshot,
   limit,
-  startAfter,
-  writeBatch,
   runTransaction,
 } from "firebase/firestore";
 import { db, auth } from "@/app/firebase";
 import { normalizeTimestamp } from "@/utils/dateUtils";
 import { logger } from "@/utils/logger";
+
+// Helper function to get current user data from Firestore
+const getCurrentUserData = async () => {
+  if (!auth.currentUser) {
+    return null;
+  }
+  
+  try {
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      return null;
+    }
+    return userSnap.data();
+  } catch (error) {
+    logger.error("Error fetching current user data:", error);
+    return null;
+  }
+};
+
+// Helper function to check if user has specific permission
+const hasPermission = (userData, permission) => {
+  if (!userData || !userData.permissions) return false;
+  return userData.permissions.includes(permission);
+};
+
+// Helper function to check if user can generate charts
+const canGenerateCharts = (userData) => {
+  return hasPermission(userData, 'generate_charts');
+};
 
 // Simple task normalization with proper serialization for Redux
 const normalizeTask = (monthId, id, data) => {
@@ -53,33 +81,6 @@ const normalizeTask = (monthId, id, data) => {
   };
 };
 
-// Fetch tasks from Firestore with pagination support
-const fetchTasksFromFirestore = async (
-  monthId,
-  userId = null,
-  options = {}
-) => {
-  const { limitCount = 50, startAfterDoc = null } = options;
-
-  const colRef = collection(db, "tasks", monthId, "monthTasks");
-  let query = fsQuery(colRef, orderBy("createdAt", "desc"), limit(limitCount));
-
-  if (userId && userId.trim() !== "") {
-    query = fsQuery(
-      colRef,
-      where("userUID", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(limitCount)
-    );
-  }
-
-  if (startAfterDoc) {
-    query = fsQuery(query, startAfter(startAfterDoc));
-  }
-
-  const snap = await getDocs(query);
-  return snap.docs.map((d) => normalizeTask(monthId, d.id, d.data()));
-};
 
 
 
@@ -92,58 +93,23 @@ export const tasksApi = createApi({
   refetchOnFocus: false,
   refetchOnReconnect: false,
   endpoints: (builder) => ({
-    // One-time fetch for tasks (for initial load or pagination)
+
+    // Real-time fetch for tasks - optimized for month changes and CRUD operations
     getMonthTasks: builder.query({
-      async queryFn({ monthId, limitCount = 50, startAfterDoc = null } = {}) {
-        try {
-          if (!auth.currentUser) {
-            // During logout, this is expected - return empty data instead of error
-            return { data: [] };
-          }
-
-          // Check if board exists first
-          const monthDocRef = doc(db, "tasks", monthId);
-          const monthDoc = await getDoc(monthDocRef);
-
-          if (!monthDoc.exists()) {
-            return { data: [] };
-          }
-
-          // Fetch tasks from Firestore
-          const tasks = await fetchTasksFromFirestore(monthId, null, {
-            limitCount,
-            startAfterDoc,
-          });
-          return { data: tasks };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      // Simplified tags - real-time subscription handles user-specific invalidation
-      providesTags: (result, error, arg) => [
-        { type: "MonthTasks", id: arg.monthId }
-      ],
-    }),
-
-    // Real-time subscription for tasks - optimized to reduce excessive updates
-    subscribeToMonthTasks: builder.query({
-      async queryFn({ monthId, userId = null } = {}) {
+      async queryFn({ 
+        monthId, 
+        userId = null, 
+        role = null,
+        limitCount = 500 // Covers all 300-400 tasks/month
+      } = {}) {
         // Return initial empty state - onSnapshot listener will populate the cache
-        // This eliminates redundant initial fetch since onSnapshot handles both initial data and updates
-        return { data: { tasks: [], boardExists: true, monthId } };
+        return { data: [] };
       },
-      // Optimized caching configuration
-      keepUnusedDataFor: 300, // Keep data for 5 minutes (300 seconds)
-      refetchOnFocus: false, // Don't refetch when window gains focus
-      refetchOnReconnect: false, // Don't refetch when reconnecting
-      refetchOnMountOrArgChange: false, // Don't refetch on mount or arg change (real-time handles updates)
       async onCacheEntryAdded(
         arg,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
       ) {
         let unsubscribe = null;
-        let lastUpdateTime = 0;
-        const updateDebounce = 100; // Reduced debounce for faster updates
 
         try {
           await cacheDataLoaded;
@@ -153,13 +119,88 @@ export const tasksApi = createApi({
             logger.warn(`[Tasks API] Cannot set up real-time subscription: monthId is null or undefined`);
             return;
           }
+
+          // Authentication and validation checks
+          if (!auth.currentUser) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: User not authenticated`);
+            return;
+          }
+
+          const currentUserUID = auth.currentUser.uid;
+
+          // Get current user data for validation
+          const userData = await getCurrentUserData();
+          if (!userData) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: User data not found`);
+            return;
+          }
+
+          // Validate user is active
+          if (userData.isActive === false) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: Account is deactivated`);
+            return;
+          }
+
+          // Validate role parameter
+          const isValidRole = ['admin', 'user'].includes(arg.role);
+          if (!isValidRole) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: Invalid role parameter`);
+            return;
+          }
+
+          // Validate that both userUID and role are provided for proper filtering
+          if (!arg.userId) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: userId is required for both admin and user roles`);
+            return;
+          }
+
+          logger.log(`[Tasks API] User validation passed:`, {
+            userId: arg.userId,
+            role: arg.role,
+            currentUserUID,
+            userData: {
+              userUID: userData.userUID,
+              role: userData.role,
+              permissions: userData.permissions,
+              isActive: userData.isActive
+            }
+          });
+
+          // Security check: Ensure user can only access their own data (for non-admin)
+          const canAccessThisUser = (arg.role === 'admin') || (arg.userId === currentUserUID);
+          
+          logger.log(`[Tasks API] Security check:`, {
+            argUserId: arg.userId,
+            currentUserUID,
+            role: arg.role,
+            canAccessThisUser,
+            isAdmin: arg.role === 'admin',
+            userIdMatch: arg.userId === currentUserUID
+          });
+          
+          if (!canAccessThisUser) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: Access denied - cannot access other user's data`);
+            return;
+          }
+
+          // Check if user has permission to view tasks
+          const hasTaskAccess = hasPermission(userData, 'view_task') || 
+                               hasPermission(userData, 'view_tasks') || 
+                               hasPermission(userData, 'create_task') || 
+                               hasPermission(userData, 'update_task') || 
+                               hasPermission(userData, 'delete_task');
+          if (!hasTaskAccess) {
+            logger.warn(`[Tasks API] Cannot set up real-time subscription: No task access permissions`);
+            return;
+          }
           
           // Check if board exists before setting up task subscription
           const monthDocRef = doc(db, "tasks", arg.monthId);
           const monthDoc = await getDoc(monthDocRef);
           
           if (!monthDoc.exists()) {
-            logger.log(`[Tasks API] Board ${arg.monthId} does not exist yet, setting up board listener first`);
+            logger.log(`[Tasks API] Board ${arg.monthId} does not exist, setting up board listener first`);
+            logger.warn(`[Tasks API] MONTH BOARD MISSING: ${arg.monthId} - This is why no tasks are showing!`);
             
             // Set up board listener to restart task subscription when board is created
             const boardUnsubscribe = onSnapshot(monthDocRef, (doc) => {
@@ -184,35 +225,85 @@ export const tasksApi = createApi({
             return;
           }
           
-          // onSnapshot is the single source of truth - handles both initial data and updates
-          // No need for initial fetch in queryFn since this listener provides all data
-
-          // Set up task listener - let currentMonthSlice handle board status
+          // Set up task listener with role-based filtering
           const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
-          let query = fsQuery(colRef, orderBy("createdAt", "desc"));
+          
+          // Single limit for all use cases - optimized for 300-400 tasks/month
+          const taskLimit = arg.limitCount || 500;
+          
+          let query = fsQuery(colRef, orderBy("createdAt", "desc"), limit(taskLimit));
 
-          if (arg.userId && arg.userId.trim() !== "") {
+          // Role-based filtering logic:
+          // Admin Role: role === 'admin' + userUID → Fetches ALL tasks (ignores userUID filter)
+          // User Role: role === 'user' + userUID → Fetches only tasks where userUID matches their ID
+          // Both userUID and role parameters are required for proper filtering
+          const userFilter = arg.role === 'admin' ? null : (arg.userId || currentUserUID);
+
+          // Apply user filtering
+          if (userFilter && userFilter.trim() !== "") {
             query = fsQuery(
               colRef,
-              where("userUID", "==", arg.userId),
-              orderBy("createdAt", "desc")
+              where("userUID", "==", userFilter),
+              orderBy("createdAt", "desc"),
+              limit(taskLimit)
             );
+            logger.log(`[Tasks API] Applied user filter:`, {
+              userFilter,
+              query: `where("userUID", "==", "${userFilter}")`
+            });
+          } else {
+            logger.log(`[Tasks API] No user filter applied (admin mode)`);
+          }
+
+          logger.log(`[Tasks API] Setting up real-time task listener for ${arg.monthId}`);
+          logger.log(`[Tasks API] Query parameters:`, { 
+            monthId: arg.monthId, 
+            userId: arg.userId, 
+            role: arg.role, 
+            limitCount: arg.limitCount,
+            userFilter,
+            taskLimit,
+            filteringLogic: arg.role === 'admin' ? 'ALL_TASKS' : 'USER_SPECIFIC_TASKS'
+          });
+          logger.log(`[Tasks API] About to start onSnapshot listener...`);
+
+          // Debug: Check what tasks exist in the database (without filtering)
+          try {
+            const debugQuery = fsQuery(colRef, orderBy("createdAt", "desc"), limit(10));
+            const debugSnap = await getDocs(debugQuery);
+            logger.log(`[Tasks API] Debug - All tasks in database:`, {
+              totalDocs: debugSnap.docs.length,
+              tasks: debugSnap.docs.map(doc => ({
+                id: doc.id,
+                userUID: doc.data().userUID,
+                taskName: doc.data().taskName
+              }))
+            });
+          } catch (debugError) {
+            logger.error(`[Tasks API] Debug query failed:`, debugError);
           }
 
           unsubscribe = onSnapshot(
             query,
             (snapshot) => {
-              // Process all updates immediately for real-time experience
-              const now = Date.now();
-              lastUpdateTime = now;
+              logger.log(`[tasksApi] Real-time snapshot received for ${arg.monthId}:`, {
+                hasSnapshot: !!snapshot,
+                hasDocs: !!(snapshot && snapshot.docs),
+                docCount: snapshot?.docs?.length || 0,
+                isEmpty: snapshot?.empty || false,
+                hasChanges: snapshot?.docChanges?.length || 0
+              });
 
+              // Process all updates immediately for real-time experience
               if (!snapshot || !snapshot.docs) {
-                updateCachedData(() => ({ tasks: [], boardExists: true, monthId: arg.monthId }));
+                logger.log(`[tasksApi] No snapshot or docs, setting empty array`);
+                updateCachedData(() => []);
                 return;
               }
 
               if (snapshot.empty) {
-                updateCachedData(() => ({ tasks: [], boardExists: true, monthId: arg.monthId }));
+                logger.log(`[tasksApi] Snapshot is empty, setting empty array`);
+                updateCachedData(() => []);
                 return;
               }
 
@@ -224,11 +315,22 @@ export const tasksApi = createApi({
                 .map((d) => normalizeTask(arg.monthId, d.id, d.data()))
                 .filter((task) => task !== null);
 
-              logger.debug(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
-              logger.log(`[tasksApi] Real-time update - Tasks:`, tasks.map(t => ({ id: t.id, taskName: t.taskName, createdAt: t.createdAt })));
+              logger.log(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
+              logger.log(`[tasksApi] Real-time update - Tasks:`, tasks.map(t => ({ 
+                id: t.id, 
+                taskName: t.taskName, 
+                userUID: t.userUID,
+                createdAt: t.createdAt 
+              })));
+              logger.log(`[tasksApi] Filtering info:`, {
+                userFilter,
+                role: arg.role,
+                userId: arg.userId,
+                currentUserUID
+              });
               
               // Tasks are already serialized by normalizeTask
-              updateCachedData(() => ({ tasks, boardExists: true, monthId: arg.monthId }));
+              updateCachedData(() => tasks);
 
             },
             (error) => {
@@ -251,21 +353,10 @@ export const tasksApi = createApi({
           }
         }
       },
-      providesTags: (result, error, arg) => {
-        // Optimized cache tags - use fewer, more general tags
-        const tags = [
-          { type: "MonthTasks", id: arg.monthId }, // All tasks for this month
-        ];
-        
-        // Only add user-specific tag if userId is provided
-        if (arg.userId) {
-          tags.push({ type: "MonthTasks", id: `${arg.monthId}_user_${arg.userId}` });
-        }
-        
-        return tags;
-      },
+      providesTags: (result, error, arg) => [
+        { type: "MonthTasks", id: arg.monthId }
+      ],
     }),
-
 
 
     // Create task with transaction for atomic operations
@@ -274,6 +365,17 @@ export const tasksApi = createApi({
         try {
           if (!auth.currentUser) {
             return { error: { message: "Authentication required" } };
+          }
+          
+          // Get current user data and check permissions
+          const userData = await getCurrentUserData();
+          if (!userData) {
+            return { error: { message: "User data not found" } };
+          }
+          
+          // Check if user has permission to create tasks
+          if (!hasPermission(userData, 'create_task')) {
+            return { error: { message: "Permission denied: You don't have permission to create tasks" } };
           }
           
           // Use task's monthId - should always be provided by the component
@@ -312,14 +414,14 @@ export const tasksApi = createApi({
           });
 
           logger.log("Task created successfully, real-time subscription will update cache automatically");
-          logger.debug(`[tasksApi] Created task:`, { 
+          logger.log(`[tasksApi] Created task:`, { 
             id: result.id, 
             monthId: result.monthId,
             taskName: result.taskName,
             createdAt: result.createdAt,
             updatedAt: result.updatedAt
           });
-          logger.log(`[tasksApi] Cache invalidation triggered for monthId: ${task.monthId}`);
+          logger.log(`[tasksApi] Task creation completed - real-time listener should detect this change`);
 
           return { data: result };
         } catch (error) {
@@ -335,6 +437,17 @@ export const tasksApi = createApi({
         try {
           if (!auth.currentUser) {
             return { error: { message: "Authentication required" } };
+          }
+
+          // Get current user data and check permissions
+          const userData = await getCurrentUserData();
+          if (!userData) {
+            return { error: { message: "User data not found" } };
+          }
+          
+          // Check if user has permission to update tasks
+          if (!hasPermission(userData, 'update_task')) {
+            return { error: { message: "Permission denied: You don't have permission to update tasks" } };
           }
 
           // Use transaction for atomic update
@@ -375,6 +488,17 @@ export const tasksApi = createApi({
             return { error: { message: "Authentication required" } };
           }
 
+          // Get current user data and check permissions
+          const userData = await getCurrentUserData();
+          if (!userData) {
+            return { error: { message: "User data not found" } };
+          }
+          
+          // Check if user has permission to delete tasks
+          if (!hasPermission(userData, 'delete_task')) {
+            return { error: { message: "Permission denied: You don't have permission to delete tasks" } };
+          }
+
           // Use transaction for atomic delete
           await runTransaction(db, async (transaction) => {
             // Read operation first: Check if task exists
@@ -396,19 +520,102 @@ export const tasksApi = createApi({
           return { error: { message: error.message } };
         }
       },
-      invalidatesTags: [], 
+      invalidatesTags: [], // Don't invalidate cache - let real-time subscription handle updates 
     }),
 
+    // Generate charts/analytics with permission check
+    generateCharts: builder.mutation({
+      async queryFn({ monthId, chartType = 'overview' }) {
+        try {
+          if (!auth.currentUser) {
+            return { error: { message: "Authentication required" } };
+          }
 
+          // Get current user data and check permissions
+          const userData = await getCurrentUserData();
+          if (!userData) {
+            return { error: { message: "User data not found" } };
+          }
+          
+          // Check if user has permission to generate charts
+          if (!canGenerateCharts(userData)) {
+            return { error: { message: "Permission denied: You don't have permission to generate charts" } };
+          }
 
+          // Check if board exists
+          const monthDocRef = doc(db, "tasks", monthId);
+          const monthDoc = await getDoc(monthDocRef);
+
+          if (!monthDoc.exists()) {
+            return { error: { message: "Month board not found" } };
+          }
+
+          // Fetch all tasks for the month for chart generation
+          const colRef = collection(db, "tasks", monthId, "monthTasks");
+          const query = fsQuery(colRef, orderBy("createdAt", "desc"));
+          const snap = await getDocs(query);
+          const tasks = snap.docs.map((d) => normalizeTask(monthId, d.id, d.data()));
+          
+          // Generate chart data based on chartType
+          let chartData = {};
+          
+          switch (chartType) {
+            case 'overview':
+              chartData = {
+                totalTasks: tasks.length,
+                totalHours: tasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0),
+                totalAIHours: tasks.reduce((sum, task) => sum + (task.timeSpentOnAI || 0), 0),
+                tasksByUser: tasks.reduce((acc, task) => {
+                  const userId = task.userUID || 'unknown';
+                  acc[userId] = (acc[userId] || 0) + 1;
+                  return acc;
+                }, {}),
+                tasksByStatus: tasks.reduce((acc, task) => {
+                  const status = task.status || 'unknown';
+                  acc[status] = (acc[status] || 0) + 1;
+                  return acc;
+                }, {})
+              };
+              break;
+            case 'user_performance':
+              chartData = tasks.reduce((acc, task) => {
+                const userId = task.userUID || 'unknown';
+                if (!acc[userId]) {
+                  acc[userId] = {
+                    tasks: 0,
+                    hours: 0,
+                    aiHours: 0
+                  };
+                }
+                acc[userId].tasks += 1;
+                acc[userId].hours += task.timeInHours || 0;
+                acc[userId].aiHours += task.timeSpentOnAI || 0;
+                return acc;
+              }, {});
+              break;
+            default:
+              return { error: { message: "Invalid chart type" } };
+          }
+
+          logger.log(`Charts generated successfully for ${monthId}, type: ${chartType}`);
+
+          return { data: { chartData, monthId, chartType, generatedAt: new Date().toISOString() } };
+        } catch (error) {
+          return { error: { message: error.message } };
+        }
+      },
+      invalidatesTags: (result, error, { monthId }) => [
+        { type: "Charts", id: monthId }
+      ],
+    }),
 
   }),
 });
 
 export const {
   useGetMonthTasksQuery,
-  useSubscribeToMonthTasksQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
+  useGenerateChartsMutation,
 } = tasksApi;
