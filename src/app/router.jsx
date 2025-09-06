@@ -150,7 +150,7 @@ const UnauthorizedPage = () => {
 // Root layout that handles initial auth checking and login page redirect
 // All other auth checks and redirects are handled by ProtectedRoute
 const RootLayout = () => {
-  const { user, isAuthChecking } = useAuth();
+  const { user, isAuthChecking, isLoading: authLoading } = useAuth();
   const location = useLocation();
 
   // Show loading during auth check
@@ -159,6 +159,19 @@ const RootLayout = () => {
       <Loader
         size="xl"
         text="Checking authentication..."
+        variant="dots"
+        fullScreen={true}
+      />
+    );
+  }
+
+  // Show loading during login process (covers entire screen including nav/layout)
+  const showLoginLoading = authLoading && !isAuthChecking && location.pathname === '/login';
+  if (showLoginLoading) {
+    return (
+      <Loader
+        size="xl"
+        text="Signing in..."
         variant="dots"
         fullScreen={true}
       />

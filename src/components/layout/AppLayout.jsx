@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { useNavigate, Link, Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { selectIsAuthChecking } from "@/features/auth";
 import { useAuth } from "@/features/auth";
@@ -22,7 +22,6 @@ import { Icons } from "@/components/icons";
 // import ApiStructureExplanation from "@/components/debug/ApiStructureExplanation";
 
 const AppLayout = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const hasInitializedMonth = useRef(false);
   
@@ -49,7 +48,7 @@ const AppLayout = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/");
+      // Navigation will be handled by Link component
     } catch (error) {
       console.error("Logout failed:", error);
       clearError();
@@ -92,35 +91,35 @@ const AppLayout = () => {
                   {canAccess('admin') && (
                     <>
                       <Link
-                        to="/admin/dashboard"
+                        to="/dashboard"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.settings className="w-4 h-4 mr-2" />
-                        Admin Dashboard
+                        Dashboard
                       </Link>
                       <Link
-                        to="/admin/analytics"
+                        to="/analytics"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.chart className="w-4 h-4 mr-2" />
                         Analytics
                       </Link>
                       <Link
-                        to="/admin/users"
+                        to="/users"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <UsersIcon className="w-4 h-4 mr-2" />
                         Users
                       </Link>
                       <Link
-                        to="/admin/tasks"
+                        to="/tasks"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.task className="w-4 h-4 mr-2" />
                         All Tasks
                       </Link>
                       <Link
-                        to="/admin/debug"
+                        to="/debug"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.settings className="w-4 h-4 mr-2" />
@@ -185,16 +184,14 @@ const AppLayout = () => {
                     </span>
                   </div>
 
-                  <DynamicButton
-                    id="logout-nav-btn"
-                    variant="outline"
-                    size="sm"
-                    icon={ArrowRightOnRectangleIcon}
+                  <Link
+                    to="/"
                     onClick={handleLogout}
-                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
+                    <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2" />
                     Logout
-                  </DynamicButton>
+                  </Link>
                 </>
               ) : (
                 // Public Actions
@@ -235,35 +232,35 @@ const AppLayout = () => {
               {canAccess('admin') && (
                 <>
                   <Link
-                    to="/admin/dashboard"
+                    to="/dashboard"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.settings className="w-4 h-4 mr-2" />
-                    Admin Dashboard
+                    Dashboard
                   </Link>
                   <Link
-                    to="/admin/analytics"
+                    to="/analytics"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.chart className="w-4 h-4 mr-2" />
                     Analytics
                   </Link>
                   <Link
-                    to="/admin/users"
+                    to="/users"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <UsersIcon className="w-4 h-4 mr-2" />
                     Users
                   </Link>
                   <Link
-                    to="/admin/tasks"
+                    to="/tasks"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.task className="w-4 h-4 mr-2" />
                     All Tasks
                   </Link>
                   <Link
-                    to="/admin/debug"
+                    to="/debug"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.settings className="w-4 h-4 mr-2" />

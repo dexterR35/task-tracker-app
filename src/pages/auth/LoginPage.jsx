@@ -8,15 +8,13 @@ import { buildFormValidationSchema } from "@/components/forms/utils/validation";
 import { showError, showSuccess } from "@/utils/toast";
 import { FIELD_TYPES } from "@/components/forms/configs/fieldTypes";
 import { DynamicButton } from "@/components/ui";
-
+import Loader from "@/components/ui/Loader/Loader";
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthChecking, isLoading: authLoading, login } = useAuth();
   const hasShownWelcome = useRef(false);
   
-  // Only show loading during login process, not during initial auth check
-  const showLoginLoading = authLoading && !isAuthChecking;
   
   const fields = LOGIN_FORM_FIELDS;
   
@@ -128,18 +126,6 @@ const LoginPage = () => {
       </div>
     );
   };
-  
-  // Show loading only during login process
-  if (showLoginLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Signing in...</p>
-        </div>
-      </div>
-    );
-  }
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
