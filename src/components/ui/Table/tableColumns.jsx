@@ -32,11 +32,11 @@ export const getTaskColumns = (monthId = null) => [
     },
     size: 80,
   }),
-  columnHelper.accessor('departaments', {
-    header: 'departament',
+  columnHelper.accessor('departments', {
+    header: 'Department',
     cell: ({ getValue }) => {
-      const departaments = getValue();
-      return departaments || 'Unnamed Task';
+      const departments = getValue();
+      return departments || 'Unnamed Task';
     },
     size: 150,
   }),

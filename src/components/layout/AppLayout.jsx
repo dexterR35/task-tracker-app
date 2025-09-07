@@ -11,6 +11,7 @@ import {
 } from "@/features/currentMonth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import {
   ArrowRightOnRectangleIcon,
   UsersIcon,
@@ -98,28 +99,28 @@ const AppLayout = () => {
                         Dashboard
                       </Link>
                       <Link
-                        to="/analytics"
+                        to="/admin/analytics"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.chart className="w-4 h-4 mr-2" />
                         Analytics
                       </Link>
                       <Link
-                        to="/users"
+                        to="/admin/users"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <UsersIcon className="w-4 h-4 mr-2" />
                         Users
                       </Link>
                       <Link
-                        to="/tasks"
+                        to="/admin/tasks"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.task className="w-4 h-4 mr-2" />
                         All Tasks
                       </Link>
                       <Link
-                        to="/debug"
+                        to="/admin/debug"
                         className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <Icons.generic.settings className="w-4 h-4 mr-2" />
@@ -239,28 +240,28 @@ const AppLayout = () => {
                     Dashboard
                   </Link>
                   <Link
-                    to="/analytics"
+                    to="/admin/analytics"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.chart className="w-4 h-4 mr-2" />
                     Analytics
                   </Link>
                   <Link
-                    to="/users"
+                    to="/admin/users"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <UsersIcon className="w-4 h-4 mr-2" />
                     Users
                   </Link>
                   <Link
-                    to="/tasks"
+                    to="/admin/tasks"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.task className="w-4 h-4 mr-2" />
                     All Tasks
                   </Link>
                   <Link
-                    to="/debug"
+                    to="/admin/debug"
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <Icons.generic.settings className="w-4 h-4 mr-2" />
@@ -275,7 +276,9 @@ const AppLayout = () => {
 
       {/* Main Content Area */}
       <main className="relative">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

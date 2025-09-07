@@ -21,7 +21,7 @@ const AdminManagementPage = () => {
   // Get current user for permissions
   const { user: currentUser, canAccess } = useAuth();
   
-  // Use custom hook for admin data fetching
+  // Use custom hook for admin data fetching (now uses cached data)
   const { users, reporters, isLoading, error } = useAdminData();
   
   // Debug logging - only log when data changes

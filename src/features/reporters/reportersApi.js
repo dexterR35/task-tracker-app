@@ -12,7 +12,9 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { logger } from "@/utils/logger";
-import { serializeTimestampsForRedux } from "@/utils/dateUtils";
+import { deduplicateRequest } from "@/features/utils/requestDeduplication";
+import { getCacheConfigByType } from "@/features/utils/cacheConfig";
+import { normalizeForRedux } from "@/utils/dateUtils";
 
 
 // Custom base query for Firestore
@@ -21,22 +23,21 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
     switch (method) {
       case "GET":
         if (url === "reporters") {
-          logger.log(`[Reporters API] Starting to fetch reporters...`);
-          const querySnapshot = await getDocs(
-            query(collection(db, "reporters"), orderBy("createdAt", "desc"))
-          );
-          logger.log(`[Reporters API] Query snapshot size: ${querySnapshot.docs.length}`);
-          const reporters = querySnapshot.docs.map((doc) => {
-            const data = doc.data();
-            const reporter = {
-              id: doc.id,
-              ...data,
-            };
+          const cacheKey = "getReporters";
+          return await deduplicateRequest(cacheKey, async () => {
+            logger.log(`[Reporters API] Starting to fetch reporters...`);
+            const querySnapshot = await getDocs(
+              query(collection(db, "reporters"), orderBy("createdAt", "desc"))
+            );
+            logger.log(`[Reporters API] Query snapshot size: ${querySnapshot.docs.length}`);
+            const reporters = querySnapshot.docs.map((doc) => {
+            const reporter = { id: doc.id, ...doc.data() };
             // Use standardized timestamp serialization
-            return serializeTimestampsForRedux(reporter);
+            return normalizeForRedux(reporter);
+            });
+            logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
+            return { data: reporters };
           });
-          logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
-          return { data: reporters };
         }
         break;
 
@@ -61,7 +62,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             ...reporterData,
           };
           
-          return { data: serializeTimestampsForRedux(createdData) };
+          return { data: normalizeForRedux(createdData) };
         }
         break;
 
@@ -82,7 +83,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             ...body,
           };
           
-          return { data: serializeTimestampsForRedux(updatedData) };
+          return { data: normalizeForRedux(updatedData) };
         }
         break;
 
@@ -108,17 +109,15 @@ export const reportersApi = createApi({
   reducerPath: "reportersApi",
   baseQuery: firestoreBaseQuery(),
   tagTypes: ["Reporter"],
+  // Cache optimization settings - using shared configuration
+  ...getCacheConfigByType('REPORTERS'),
   endpoints: (builder) => ({
     // Get all reporters
     getReporters: builder.query({
       query: () => ({ url: "reporters", method: "GET" }),
       providesTags: ["Reporter"],
-      // Keep data forever and don't refetch unnecessarily
-              keepUnusedDataFor: Infinity, // Never expire - Reporters never change once created
-      // Don't refetch on window focus or reconnect
-      refetchOnFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMountOrArgChange: false,
+      // Use shared cache configuration for reporters
+      ...getCacheConfigByType('REPORTERS')
     }),
 
 

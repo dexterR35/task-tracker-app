@@ -4,12 +4,15 @@ import {
   getDocs,
   orderBy,
   query as fsQuery,
+  limit,
+  where,
 } from "firebase/firestore";
 
-import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-
+import { deduplicateRequest } from "@/features/utils/requestDeduplication";
+import { getCacheConfigByType } from "@/features/utils/cacheConfig";
+import { normalizeForRedux } from "@/utils/dateUtils";
 
 // Simple authentication check
 const checkAuth = () => {
@@ -22,25 +25,6 @@ const checkAuth = () => {
 // Check if user is authenticated (for early returns)
 const isUserAuthenticated = () => {
   return auth.currentUser !== null;
-};
-
-// Request deduplication
-const pendingRequests = new Map();
-
-const deduplicateRequest = async (key, requestFn) => {
-  if (pendingRequests.has(key)) {
-    return pendingRequests.get(key);
-  }
-  
-  const promise = requestFn();
-  pendingRequests.set(key, promise);
-  
-  try {
-    const result = await promise;
-    return result;
-  } finally {
-    pendingRequests.delete(key);
-  }
 };
 
 // Error handling wrapper
@@ -74,59 +58,48 @@ const logApiCall = (endpoint, args, result, error = null) => {
   }
 };
 
-// User data normalization
-const mapUserDoc = (doc) => {
-  const data = doc.data();
-  return {
-    id: doc.id,
-    ...data,
-  };
-};
-
-// Deduplicate users by UID
-const deduplicateUsers = (users) => {
-  const seen = new Set();
-  return users.filter((user) => {
-    if (seen.has(user.userUID)) {
-      return false;
-    }
-    seen.add(user.userUID);
-    return true;
-  });
-};
 
 // Shared function for fetching users from Firestore
 const fetchUsersFromFirestore = async () => {
   const snap = await getDocs(
     fsQuery(collection(db, "users"), orderBy("createdAt", "desc"))
   );
-  const users = deduplicateUsers(snap.docs.map((d) => mapUserDoc(d)));
+  const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return users;
 };
 
-// Shared function for fetching a single user by UID
+// Shared function for fetching a single user by UID - OPTIMIZED
 const fetchUserByUIDFromFirestore = async (userUID) => {
-  const snap = await getDocs(
-    fsQuery(
-      collection(db, "users"), 
-      orderBy("createdAt", "desc")
-    )
-  );
+  const cacheKey = `getUserByUID_${userUID}`;
   
-  // Find user by userUID
-  const userDoc = snap.docs.find(doc => doc.data().userUID === userUID);
-  
-  if (!userDoc) {
-    return null;
-  }
-  
-  return mapUserDoc(userDoc);
+  return await deduplicateRequest(cacheKey, async () => {
+    try {
+      // OPTIMIZATION: Use direct query instead of fetching all users
+      const usersRef = collection(db, "users");
+      const q = fsQuery(usersRef, where("userUID", "==", userUID), limit(1));
+      const snap = await getDocs(q);
+      
+      if (snap.empty) {
+        logger.log(`[Users API] No user found with UID: ${userUID}`);
+        return null;
+      }
+      
+      const userDoc = snap.docs[0];
+      logger.log(`[Users API] Found user by UID: ${userUID}`);
+      return { id: userDoc.id, ...userDoc.data() };
+    } catch (error) {
+      logger.error(`[Users API] Error fetching user by UID ${userUID}:`, error);
+      throw error;
+    }
+  });
 };
 
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fakeBaseQuery(),
   tagTypes: ["Users"],
+  // Cache optimization settings - using shared configuration
+  ...getCacheConfigByType('USERS'),
   endpoints: (builder) => ({
     
     getUsers: builder.query({
@@ -146,7 +119,7 @@ export const usersApi = createApi({
             const users = await fetchUsersFromFirestore();
 
             // Ensure timestamps are serialized before returning
-            const serializedUsers = serializeTimestampsForRedux(users);
+            const serializedUsers = normalizeForRedux(users);
             const result = { data: serializedUsers };
             
             logApiCall('getUsers', {}, result.data);
@@ -165,12 +138,8 @@ export const usersApi = createApi({
         });
       },
       providesTags: ["Users"],
-      // Keep data for Infinity and don't refetch unnecessarily
-              keepUnusedDataFor: Infinity, // Never expire - Users never change once created
-      // Don't refetch on window focus or reconnect
-      refetchOnFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMountOrArgChange: false,
+      // Use shared cache configuration for users
+      ...getCacheConfigByType('USERS')
     }),
 
     // Get single user by UID (for regular users)
@@ -195,7 +164,7 @@ export const usersApi = createApi({
             }
 
             // Ensure timestamps are serialized before returning
-            const serializedUser = serializeTimestampsForRedux(user);
+            const serializedUser = normalizeForRedux(user);
             const result = { data: serializedUser };
             
             logApiCall('getUserByUID', { userUID }, result.data);
@@ -216,11 +185,8 @@ export const usersApi = createApi({
       providesTags: (result, error, { userUID }) => [
         { type: "Users", id: userUID }
       ],
-      // Keep data for 5 minutes and don't refetch unnecessarily
-      keepUnusedDataFor: 300,
-      refetchOnFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMountOrArgChange: false,
+      // Use shared cache configuration for users
+      ...getCacheConfigByType('USERS')
     }),
 
   }),

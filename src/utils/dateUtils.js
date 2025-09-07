@@ -4,7 +4,10 @@ import {
   formatDistanceToNow, 
   parseISO, 
   isValid,
+  startOfMonth,
+  endOfMonth,
 } from 'date-fns';
+
 
 // Standalone date utility functions (can be used outside React components)
 
@@ -136,6 +139,27 @@ export const parseMonthId = (monthId) => {
 };
 
 /**
+ * Get start of month for a given date
+ */
+export const getStartOfMonth = (date = new Date()) => {
+  return startOfMonth(date);
+};
+
+/**
+ * Get end of month for a given date
+ */
+export const getEndOfMonth = (date = new Date()) => {
+  return endOfMonth(date);
+};
+
+/**
+ * Format date with custom pattern
+ */
+export const formatDateWithPattern = (date, pattern = 'yyyy-MM-dd') => {
+  return format(date, pattern);
+};
+
+/**
  * Serialize timestamps for Redux store
  * Converts all timestamp fields to ISO strings for serialization
  */
@@ -180,3 +204,32 @@ export const useFormat = () => {
 };
 
 export default useFormat;
+
+// ============================================================================
+// DATA NORMALIZATION UTILITIES
+// ============================================================================
+
+
+
+
+/**
+ * Normalize and serialize data for Redux store
+ * @param {Object|Array} data - Data to normalize and serialize
+ * @param {Function} normalizer - Optional normalizer function
+ * @returns {Object|Array} - Normalized and serialized data
+ */
+export const normalizeForRedux = (data, normalizer = null) => {
+  if (!data) {
+    return data;
+  }
+
+  let normalizedData = data;
+  
+  // Apply custom normalizer if provided
+  if (normalizer && typeof normalizer === 'function') {
+    normalizedData = normalizer(data);
+  }
+
+  // Serialize timestamps for Redux
+  return serializeTimestampsForRedux(normalizedData);
+};

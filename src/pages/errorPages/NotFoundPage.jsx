@@ -1,15 +1,7 @@
-import { useAuth } from "@/features/auth";
 import { Link } from "react-router-dom";
 import { Icons } from "@/components/icons";
 
 const NotFoundPage = () => {
-  const { user } = useAuth();
-
-  const getHomePath = () => {
-    if (!user) return "/";
-    return "/dashboard";
-  };
-
   return (
     <div className="min-h-screen flex-center bg-primary">
       <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
@@ -28,17 +20,17 @@ const NotFoundPage = () => {
         
         <div className="space-y-2">
           <Link
-            to={getHomePath()}
+            to="/"
             className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
           >
-            {user ? 'Go to Dashboard' : 'Go to Home'}
+            Go to Homepage
           </Link>
           
           <Link
-            to="/"
+            to="/dashboard"
             className="block w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
           >
-            Go to Homepage
+            Go to Dashboard
           </Link>
         </div>
       </div>

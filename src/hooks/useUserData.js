@@ -4,6 +4,7 @@ import { useGetMonthTasksQuery } from "@/features/tasks/tasksApi";
 import { useSelector } from "react-redux";
 import { selectCurrentMonthId } from "@/features/currentMonth";
 import { useAuth } from "@/features/auth";
+import { logger } from "@/utils/logger";
 
 /**
  * Custom hook for user data fetching
@@ -13,11 +14,11 @@ export const useUserData = () => {
   const { user } = useAuth();
   const monthId = useSelector(selectCurrentMonthId);
   
-  // Get the correct userUID - prioritize userUID from database over auth uid
+  // Get the correct userUID using standardized utility
   const userUID = user?.userUID || user?.uid || user?.id;
   
   // Debug logging
-  console.log('useUserData Debug:', {
+  logger.log('useUserData Debug:', {
     user,
     userUID,
     monthId,
@@ -44,15 +45,12 @@ export const useUserData = () => {
     { skip: !userUID }
   );
   
-  // Fetch all reporters (needed for task creation)
+  // Fetch all reporters (needed for task creation) - this populates the cache
   const { 
     data: reporters = [], 
     isLoading: reportersLoading, 
     error: reportersError 
-  } = useGetReportersQuery(
-    undefined,
-    { skip: !monthId }
-  );
+  } = useGetReportersQuery();
   
   // Fetch user's own tasks (userId: userUID)
   const { 
@@ -65,7 +63,7 @@ export const useUserData = () => {
   );
 
   // Debug API call
-  console.log('useGetMonthTasksQuery Debug:', {
+  logger.log('useGetMonthTasksQuery Debug:', {
     monthId,
     userId: userUID,
     role: 'user',

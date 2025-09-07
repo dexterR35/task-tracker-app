@@ -15,26 +15,69 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db, auth } from "@/app/firebase";
-import { normalizeTimestamp } from "@/utils/dateUtils";
 import { logger } from "@/utils/logger";
+import listenerManager from "@/features/utils/firebaseListenerManager";
+import { deduplicateRequest } from "@/features/utils/requestDeduplication";
+import { getCacheConfigByType } from "@/features/utils/cacheConfig";
+import { handleApiError, ERROR_TYPES } from "@/features/utils/errorHandling";
+// Constants moved to specific feature files
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
-// Helper function to get current user data from Firestore
+// API Configuration - moved from constants.js
+const API_CONFIG = {
+  // Request limits
+  REQUEST_LIMITS: {
+    TASKS_PER_MONTH: 500,    // Maximum tasks to fetch per month
+    DEBUG_TASKS_LIMIT: 10,   // Limit for debug queries
+    USER_QUERY_LIMIT: 1      // Limit for single user queries
+  }
+};
+
+// Firebase Configuration - moved from constants.js
+const FIREBASE_CONFIG = {
+  // Collection names
+  COLLECTIONS: {
+    USERS: 'users',
+    TASKS: 'tasks',
+    REPORTERS: 'reporters',
+    MONTH_TASKS: 'monthTasks'
+  },
+  
+  // Field names
+  FIELDS: {
+    USER_UID: 'userUID',
+    CREATED_AT: 'createdAt',
+    UPDATED_AT: 'updatedAt',
+    MONTH_ID: 'monthId'
+  },
+  
+  // Query constraints
+  QUERY_LIMITS: {
+    MAX_QUERY_RESULTS: 1000,
+    DEFAULT_ORDER_LIMIT: 100
+  }
+};
+
+// Helper function to get current user data from Firestore with caching
 const getCurrentUserData = async () => {
   if (!auth.currentUser) {
     return null;
   }
   
-  try {
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
+  const cacheKey = `currentUser_${auth.currentUser.uid}`;
+  return await deduplicateRequest(cacheKey, async () => {
+    try {
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        return null;
+      }
+      return userSnap.data();
+    } catch (error) {
+      logger.error("Error fetching current user data:", error);
       return null;
     }
-    return userSnap.data();
-  } catch (error) {
-    logger.error("Error fetching current user data:", error);
-    return null;
-  }
+  });
 };
 
 // Helper function to check if user has specific permission
@@ -43,43 +86,7 @@ const hasPermission = (userData, permission) => {
   return userData.permissions.includes(permission);
 };
 
-// Helper function to check if user can generate charts
-const canGenerateCharts = (userData) => {
-  return hasPermission(userData, 'generate_charts');
-};
 
-// Simple task normalization with proper serialization for Redux
-const normalizeTask = (monthId, id, data) => {
-  if (!data || typeof data !== "object") {
-    return null;
-  }
-
-  // Normalize timestamps to Date objects and convert to ISO strings for Redux
-  const createdAt = normalizeTimestamp(data.createdAt);
-  const updatedAt = normalizeTimestamp(data.updatedAt);
-  
-  const timeInHours = Number(data.timeInHours) || 0;
-  const timeSpentOnAI = Number(data.timeSpentOnAI) || 0;
-  // Always use arrays - empty array if not selected
-  const deliverablesOther = Array.isArray(data.deliverablesOther)
-    ? data.deliverablesOther
-    : [];
-  const aiModels = Array.isArray(data.aiModels) ? data.aiModels : [];
-  const deliverablesCount = Number(data.deliverablesCount) || 0;
-
-  return {
-    id,
-    monthId,
-    ...data,
-    deliverablesOther,
-    aiModels,
-    deliverablesCount,
-    createdAt: createdAt ? createdAt.toISOString() : null, // Convert to ISO string immediately
-    updatedAt: updatedAt ? updatedAt.toISOString() : null, // Convert to ISO string immediately
-    timeInHours,
-    timeSpentOnAI,
-  };
-};
 
 
 
@@ -87,22 +94,16 @@ const normalizeTask = (monthId, id, data) => {
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "Charts"],
-  // Add cache cleanup configuration
-  keepUnusedDataFor: 300, // Keep unused data for 5 minutes
-  refetchOnFocus: false,
-  refetchOnReconnect: false,
+  tagTypes: ["MonthTasks"],
+  // Cache optimization settings - using shared configuration
+  ...getCacheConfigByType('TASKS'),
   endpoints: (builder) => ({
 
     // Real-time fetch for tasks - optimized for month changes and CRUD operations
     getMonthTasks: builder.query({
-      async queryFn({ 
-        monthId, 
-        userId = null, 
-        role = null,
-        limitCount = 500 // Covers all 300-400 tasks/month
-      } = {}) {
+      async queryFn() {
         // Return initial empty state - onSnapshot listener will populate the cache
+        // Parameters are handled in onCacheEntryAdded
         return { data: [] };
       },
       async onCacheEntryAdded(
@@ -195,7 +196,7 @@ export const tasksApi = createApi({
           }
           
           // Check if board exists before setting up task subscription
-          const monthDocRef = doc(db, "tasks", arg.monthId);
+          const monthDocRef = doc(db, FIREBASE_CONFIG.COLLECTIONS.TASKS, arg.monthId);
           const monthDoc = await getDoc(monthDocRef);
           
           if (!monthDoc.exists()) {
@@ -203,33 +204,30 @@ export const tasksApi = createApi({
             logger.warn(`[Tasks API] MONTH BOARD MISSING: ${arg.monthId} - This is why no tasks are showing!`);
             
             // Set up board listener to restart task subscription when board is created
-            const boardUnsubscribe = onSnapshot(monthDocRef, (doc) => {
-              if (doc.exists()) {
-                logger.log(`[Tasks API] Board ${arg.monthId} created, restarting task subscription`);
-                // Board was created, restart the task subscription
-                if (unsubscribe) {
-                  unsubscribe();
+            const boardListenerKey = `board_tasks_${arg.monthId}`;
+            const boardUnsubscribe = listenerManager.addListener(boardListenerKey, () => {
+              return onSnapshot(monthDocRef, (doc) => {
+                if (doc.exists()) {
+                  logger.log(`[Tasks API] Board ${arg.monthId} created, restarting task subscription`);
+                  // Board was created, restart the task subscription
+                  if (unsubscribe) {
+                    unsubscribe();
+                  }
+                  // The subscription will be restarted by the component
+                  return;
                 }
-                // The subscription will be restarted by the component
-                return;
-              }
+              });
             });
-            
-            // Store board listener for cleanup
-            if (!window.boardListeners) {
-              window.boardListeners = new Map();
-            }
-            window.boardListeners.set(`${arg.monthId}_tasks`, boardUnsubscribe);
             
             // Return early - no task subscription until board exists
             return;
           }
           
           // Set up task listener with role-based filtering
-          const colRef = collection(db, "tasks", arg.monthId, "monthTasks");
+          const colRef = collection(db, FIREBASE_CONFIG.COLLECTIONS.TASKS, arg.monthId, FIREBASE_CONFIG.COLLECTIONS.MONTH_TASKS);
           
           // Single limit for all use cases - optimized for 300-400 tasks/month
-          const taskLimit = arg.limitCount || 500;
+          const taskLimit = arg.limitCount || API_CONFIG.REQUEST_LIMITS.TASKS_PER_MONTH;
           
           let query = fsQuery(colRef, orderBy("createdAt", "desc"), limit(taskLimit));
 
@@ -255,7 +253,7 @@ export const tasksApi = createApi({
             logger.log(`[Tasks API] No user filter applied (admin mode)`);
           }
 
-          logger.log(`[Tasks API] Setting up real-time task listener for ${arg.monthId}`);
+          // logger.log(`[Tasks API] Setting up real-time task listener for ${arg.monthId}`);
           logger.log(`[Tasks API] Query parameters:`, { 
             monthId: arg.monthId, 
             userId: arg.userId, 
@@ -265,11 +263,11 @@ export const tasksApi = createApi({
             taskLimit,
             filteringLogic: arg.role === 'admin' ? 'ALL_TASKS' : 'USER_SPECIFIC_TASKS'
           });
-          logger.log(`[Tasks API] About to start onSnapshot listener...`);
+          // logger.log(`[Tasks API] About to start onSnapshot listener...`);
 
           // Debug: Check what tasks exist in the database (without filtering)
           try {
-            const debugQuery = fsQuery(colRef, orderBy("createdAt", "desc"), limit(10));
+            const debugQuery = fsQuery(colRef, orderBy("createdAt", "desc"), limit(API_CONFIG.REQUEST_LIMITS.DEBUG_TASKS_LIMIT));
             const debugSnap = await getDocs(debugQuery);
             logger.log(`[Tasks API] Debug - All tasks in database:`, {
               totalDocs: debugSnap.docs.length,
@@ -283,10 +281,13 @@ export const tasksApi = createApi({
             logger.error(`[Tasks API] Debug query failed:`, debugError);
           }
 
-          unsubscribe = onSnapshot(
-            query,
-            (snapshot) => {
-              logger.log(`[tasksApi] Real-time snapshot received for ${arg.monthId}:`, {
+          // Use centralized listener manager for task subscription
+          const taskListenerKey = `tasks_${arg.monthId}_${arg.role}_${arg.userId || 'all'}`;
+          unsubscribe = listenerManager.addListener(taskListenerKey, () => {
+            return onSnapshot(
+              query,
+              (snapshot) => {
+                logger.log(`[tasksApi] Real-time snapshot received for ${arg.monthId}:`, {
                 hasSnapshot: !!snapshot,
                 hasDocs: !!(snapshot && snapshot.docs),
                 docCount: snapshot?.docs?.length || 0,
@@ -312,31 +313,32 @@ export const tasksApi = createApi({
               );
 
               const tasks = validDocs
-                .map((d) => normalizeTask(arg.monthId, d.id, d.data()))
+                .map((d) => serializeTimestampsForRedux({ id: d.id, monthId: arg.monthId, ...d.data() }))
                 .filter((task) => task !== null);
 
-              logger.log(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
+              // logger.log(`[tasksApi] Real-time subscription update: ${tasks.length} tasks for ${arg.monthId}`);
               logger.log(`[tasksApi] Real-time update - Tasks:`, tasks.map(t => ({ 
                 id: t.id, 
                 taskName: t.taskName, 
                 userUID: t.userUID,
                 createdAt: t.createdAt 
               })));
-              logger.log(`[tasksApi] Filtering info:`, {
-                userFilter,
-                role: arg.role,
-                userId: arg.userId,
-                currentUserUID
-              });
+              // logger.log(`[tasksApi] Filtering info:`, {
+              //   userFilter,
+              //   role: arg.role,
+              //   userId: arg.userId,
+              //   currentUserUID
+              // });
               
-              // Tasks are already serialized by normalizeTask
+              // Tasks are ready for Redux
               updateCachedData(() => tasks);
 
-            },
-            (error) => {
-              logger.error("Real-time subscription error:", error);
-            }
-          );
+              },
+              (error) => {
+                logger.error("Real-time subscription error:", error);
+              }
+            );
+          });
 
           await cacheEntryRemoved;
         } catch (error) {
@@ -345,12 +347,11 @@ export const tasksApi = createApi({
           if (unsubscribe) {
             unsubscribe();
           }
-          // Clean up board listener if it exists
-          if (window.boardListeners && window.boardListeners.has(`${arg.monthId}_tasks`)) {
-            const boardUnsubscribe = window.boardListeners.get(`${arg.monthId}_tasks`);
-            boardUnsubscribe();
-            window.boardListeners.delete(`${arg.monthId}_tasks`);
-          }
+          // Clean up listeners using centralized manager
+          const taskListenerKey = `tasks_${arg.monthId}_${arg.role}_${arg.userId || 'all'}`;
+          const boardListenerKey = `board_tasks_${arg.monthId}`;
+          listenerManager.removeListener(taskListenerKey);
+          listenerManager.removeListener(boardListenerKey);
         }
       },
       providesTags: (result, error, arg) => [
@@ -405,11 +406,11 @@ export const tasksApi = createApi({
             const ref = await addDoc(colRef, payload);
             // Read back the saved doc to resolve server timestamps
             const savedSnap = await getDoc(ref);
-            const created = normalizeTask(
-              monthId,
-              ref.id,
-              savedSnap.data() || {}
-            );
+            const created = serializeTimestampsForRedux({ 
+              id: ref.id, 
+              monthId, 
+              ...savedSnap.data() 
+            });
             return created;
           });
 
@@ -425,7 +426,8 @@ export const tasksApi = createApi({
 
           return { data: result };
         } catch (error) {
-          return { error: { message: error.message } };
+          const errorResponse = handleApiError(error, 'Create Task', { showToast: false, logError: true });
+          return { error: errorResponse };
         }
       },
       invalidatesTags: [], // Don't invalidate cache - let real-time subscription handle updates
@@ -474,7 +476,8 @@ export const tasksApi = createApi({
 
           return { data: { id, monthId, success: true } };
         } catch (error) {
-          return { error: { message: error.message } };
+          const errorResponse = handleApiError(error, 'Update Task', { showToast: false, logError: true });
+          return { error: errorResponse };
         }
       },
       invalidatesTags: [], // Don't invalidate cache - let real-time subscription handle updates
@@ -517,97 +520,13 @@ export const tasksApi = createApi({
 
           return { data: { id, monthId } };
         } catch (error) {
-          return { error: { message: error.message } };
+          const errorResponse = handleApiError(error, 'Delete Task', { showToast: false, logError: true });
+          return { error: errorResponse };
         }
       },
       invalidatesTags: [], // Don't invalidate cache - let real-time subscription handle updates 
     }),
 
-    // Generate charts/analytics with permission check
-    generateCharts: builder.mutation({
-      async queryFn({ monthId, chartType = 'overview' }) {
-        try {
-          if (!auth.currentUser) {
-            return { error: { message: "Authentication required" } };
-          }
-
-          // Get current user data and check permissions
-          const userData = await getCurrentUserData();
-          if (!userData) {
-            return { error: { message: "User data not found" } };
-          }
-          
-          // Check if user has permission to generate charts
-          if (!canGenerateCharts(userData)) {
-            return { error: { message: "Permission denied: You don't have permission to generate charts" } };
-          }
-
-          // Check if board exists
-          const monthDocRef = doc(db, "tasks", monthId);
-          const monthDoc = await getDoc(monthDocRef);
-
-          if (!monthDoc.exists()) {
-            return { error: { message: "Month board not found" } };
-          }
-
-          // Fetch all tasks for the month for chart generation
-          const colRef = collection(db, "tasks", monthId, "monthTasks");
-          const query = fsQuery(colRef, orderBy("createdAt", "desc"));
-          const snap = await getDocs(query);
-          const tasks = snap.docs.map((d) => normalizeTask(monthId, d.id, d.data()));
-          
-          // Generate chart data based on chartType
-          let chartData = {};
-          
-          switch (chartType) {
-            case 'overview':
-              chartData = {
-                totalTasks: tasks.length,
-                totalHours: tasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0),
-                totalAIHours: tasks.reduce((sum, task) => sum + (task.timeSpentOnAI || 0), 0),
-                tasksByUser: tasks.reduce((acc, task) => {
-                  const userId = task.userUID || 'unknown';
-                  acc[userId] = (acc[userId] || 0) + 1;
-                  return acc;
-                }, {}),
-                tasksByStatus: tasks.reduce((acc, task) => {
-                  const status = task.status || 'unknown';
-                  acc[status] = (acc[status] || 0) + 1;
-                  return acc;
-                }, {})
-              };
-              break;
-            case 'user_performance':
-              chartData = tasks.reduce((acc, task) => {
-                const userId = task.userUID || 'unknown';
-                if (!acc[userId]) {
-                  acc[userId] = {
-                    tasks: 0,
-                    hours: 0,
-                    aiHours: 0
-                  };
-                }
-                acc[userId].tasks += 1;
-                acc[userId].hours += task.timeInHours || 0;
-                acc[userId].aiHours += task.timeSpentOnAI || 0;
-                return acc;
-              }, {});
-              break;
-            default:
-              return { error: { message: "Invalid chart type" } };
-          }
-
-          logger.log(`Charts generated successfully for ${monthId}, type: ${chartType}`);
-
-          return { data: { chartData, monthId, chartType, generatedAt: new Date().toISOString() } };
-        } catch (error) {
-          return { error: { message: error.message } };
-        }
-      },
-      invalidatesTags: (result, error, { monthId }) => [
-        { type: "Charts", id: monthId }
-      ],
-    }),
 
   }),
 });
@@ -617,5 +536,4 @@ export const {
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
-  useGenerateChartsMutation,
 } = tasksApi;

@@ -6,6 +6,7 @@ import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { TaskForm } from "@/features/tasks";
 
 const TaskTable = ({
@@ -14,6 +15,7 @@ const TaskTable = ({
   monthId,
   isLoading = false,
   error: tasksError = null,
+  reporters = [], // Reporters data for TaskForm
 }) => {
 
   const [rowActionId, setRowActionId] = useState(null);
@@ -26,7 +28,7 @@ const TaskTable = ({
   const taskColumns = getColumns('tasks', monthId);
   // Handle task selection
   const handleTaskSelect = (task) => {
-    showSuccess(`Selected task: ${task.departaments || task.taskNumber}`);
+    showSuccess(`Selected task: ${task.departments || task.taskNumber}`);
   };
 
   // Handle task edit - open modal with TaskForm
@@ -39,7 +41,7 @@ const TaskTable = ({
 
   // Handle task delete
   const handleTaskDelete = async (task) => {
-    if (!window.confirm(`Are you sure you want to delete task: ${task.departaments || task.taskNumber}?`)) {
+    if (!window.confirm(`Are you sure you want to delete task: ${task.departments || task.taskNumber}?`)) {
       return;
     }
 
@@ -75,7 +77,7 @@ const TaskTable = ({
         <div className="rounded-lg  bg-white-dark shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-white-dak">
-              Edit Task: {editingTask.departaments || editingTask.taskNumber}
+              Edit Task: {editingTask.departments || editingTask.taskNumber}
             </h2>
             <DynamicButton
               variant="outline"
@@ -93,6 +95,7 @@ const TaskTable = ({
               mode="edit"
               taskId={editingTask.id}
               initialValues={editingTask}
+              reporters={reporters}
               onSuccess={() => setShowEditModal(false)}
             />
           </div>
@@ -102,30 +105,32 @@ const TaskTable = ({
   };
 
   return (
-    <div className={className}>
-      <DynamicTable
-        data={tasks}
-        columns={taskColumns}
-        tableType="tasks"
-        onSelect={handleTaskSelect}
-        onEdit={handleTaskEdit}
-        onDelete={handleTaskDelete}
-        isLoading={isLoading}
-        error={tasksError}
-        showPagination={true}
-        showFilters={true}
-        showColumnToggle={true}
-        pageSize={25}
-        enableSorting={true}
-        enableFiltering={true}
-        enablePagination={true}
-        enableColumnResizing={true}
-        enableRowSelection={false}
-      />
+    <ErrorBoundary componentName="TaskTable">
+      <div className={className}>
+        <DynamicTable
+          data={tasks}
+          columns={taskColumns}
+          tableType="tasks"
+          onSelect={handleTaskSelect}
+          onEdit={handleTaskEdit}
+          onDelete={handleTaskDelete}
+          isLoading={isLoading}
+          error={tasksError}
+          showPagination={true}
+          showFilters={true}
+          showColumnToggle={true}
+          pageSize={25}
+          enableSorting={true}
+          enableFiltering={true}
+          enablePagination={true}
+          enableColumnResizing={true}
+          enableRowSelection={false}
+        />
 
-      {/* Edit Task Modal */}
-      {renderEditModal()}
-    </div>
+        {/* Edit Task Modal */}
+        {renderEditModal()}
+      </div>
+    </ErrorBoundary>
   );
 };
 

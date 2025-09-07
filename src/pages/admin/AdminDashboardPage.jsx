@@ -26,7 +26,7 @@ const AdminDashboardPage = () => {
   const monthId = useSelector(selectCurrentMonthId);
   const monthName = useSelector(selectCurrentMonthName);
   
-  // Use custom hook for admin data fetching
+  // Use custom hook for admin data fetching (includes reporters API call)
   const { users, reporters, tasks, isLoading, error } = useAdminData();
   
   // Use the currentMonth state as the source of truth

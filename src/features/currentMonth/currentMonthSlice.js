@@ -1,14 +1,12 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import { logger } from '../../utils/logger';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
-import { db, auth } from '../../app/firebase';
+import { logger } from '@/utils/logger';
+import listenerManager from '@/features/utils/firebaseListenerManager';
+// All date utilities centralized in dateUtils.js
+import { getCurrentMonthId, formatMonth, parseMonthId, getStartOfMonth, getEndOfMonth, formatDateWithPattern } from '@/utils/dateUtils';
+import { db, auth } from '@/app/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
-// Helper function to get current month ID using date-fns
-const getCurrentMonthId = () => {
-  const now = new Date();
-  return format(now, 'yyyy-MM'); // Format: 2025-08
-};
+// getCurrentMonthId is now imported from dateUtils
 
 // Helper function to validate month ID format
 const isValidMonthId = (monthId) => {
@@ -17,16 +15,17 @@ const isValidMonthId = (monthId) => {
          /^\d{4}-\d{2}$/.test(monthId);
 };
 
-// Helper function to get month info using date-fns
+// Helper function to get month info using centralized dateUtils
 const getMonthInfo = (date = new Date()) => {
-  const start = startOfMonth(date);
-  const end = endOfMonth(date);
+  const start = getStartOfMonth(date);
+  const end = getEndOfMonth(date);
   
+  const monthId = formatDateWithPattern(date, 'yyyy-MM');
   return {
-    monthId: format(date, 'yyyy-MM'),
+    monthId,
     startDate: start.toISOString(), // Serialize to ISO string
     endDate: end.toISOString(), // Serialize to ISO string
-    monthName: format(date, 'MMMM yyyy'),
+    monthName: formatMonth(monthId),
     daysInMonth: end.getDate()
   };
 };
@@ -140,9 +139,8 @@ export const initializeCurrentMonth = createAsyncThunk(
     if (currentState.currentMonth.monthId === monthInfo.monthId && 
         currentState.currentMonth.monthName && 
         currentState.currentMonth.boardExists !== null &&
-        currentState.currentMonth.lastChecked &&
-        (Date.now() - currentState.currentMonth.lastChecked) < 30000) { // 30 seconds cache
-      logger.log(`[currentMonthSlice] Month ${monthInfo.monthId} already initialized with recent board check, skipping`);
+        currentState.currentMonth.lastChecked) {
+      logger.log(`[currentMonthSlice] Month ${monthInfo.monthId} already initialized with board check, skipping`);
       return currentState.currentMonth;
     }
     
@@ -176,11 +174,10 @@ export const setupBoardListener = createAsyncThunk(
   async (monthId, { dispatch, getState }) => {
     try {
       // Clean up any existing listener for this month before setting up a new one
-      if (window.boardListeners && window.boardListeners.has(monthId)) {
+      const listenerKey = `board_${monthId}`;
+      if (listenerManager.hasListener(listenerKey)) {
         logger.log(`[currentMonthSlice] Cleaning up existing listener for ${monthId}`);
-        const existingUnsubscribe = window.boardListeners.get(monthId);
-        existingUnsubscribe();
-        window.boardListeners.delete(monthId);
+        listenerManager.removeListener(listenerKey);
       }
       
       const monthDocRef = doc(db, "tasks", monthId);
@@ -198,48 +195,44 @@ export const setupBoardListener = createAsyncThunk(
       const currentState = getState();
       const currentBoardExists = currentState.currentMonth.boardExists;
       
-      // Set up real-time listener for board status
-      const unsubscribe = onSnapshot(
-        monthDocRef,
-        (doc) => {
-          const currentExists = doc.exists();
-          
-          // Get current state again to check if we're in the middle of board generation
-          const currentStateSnapshot = getState();
-          const isGenerating = currentStateSnapshot.currentMonth.isGenerating;
-          const currentStateBoardExists = currentStateSnapshot.currentMonth.boardExists;
-          
-          // Skip updates if we're generating a board (prevents duplicate updates)
-          if (isGenerating) {
-            logger.debug(`[currentMonthSlice] Skipping real-time update - board generation in progress`);
-            return;
+      // Set up real-time listener for board status using centralized manager
+      const unsubscribe = listenerManager.addListener(listenerKey, () => {
+        return onSnapshot(
+          monthDocRef,
+          (doc) => {
+            const currentExists = doc.exists();
+            
+            // Get current state again to check if we're in the middle of board generation
+            const currentStateSnapshot = getState();
+            const isGenerating = currentStateSnapshot.currentMonth.isGenerating;
+            const currentStateBoardExists = currentStateSnapshot.currentMonth.boardExists;
+            
+            // Skip updates if we're generating a board (prevents duplicate updates)
+            if (isGenerating) {
+              logger.debug(`[currentMonthSlice] Skipping real-time update - board generation in progress`);
+              return;
+            }
+            
+            // Always dispatch real-time updates to ensure we catch deletions
+            logger.log(`[currentMonthSlice] Real-time board update: ${currentStateBoardExists} -> ${currentExists} for ${monthId}`);
+            logger.log(`[currentMonthSlice] Real-time listener payload:`, { monthId, currentExists, timestamp: Date.now() });
+            
+            // Update the state if it has changed
+            if (currentStateBoardExists !== currentExists) {
+              logger.log(`[currentMonthSlice] Board status changed: ${currentStateBoardExists} -> ${currentExists}, dispatching update`);
+              dispatch(setBoardExists(currentExists));
+            }
+          },
+          (error) => {
+            logger.error(`[currentMonthSlice] Board listener error:`, error);
+            // If there's an error, assume board doesn't exist
+            logger.log(`[currentMonthSlice] Board listener error, setting boardExists to false`);
+            dispatch(setBoardExists(false));
           }
-          
-          // Always dispatch real-time updates to ensure we catch deletions
-          logger.log(`[currentMonthSlice] Real-time board update: ${currentStateBoardExists} -> ${currentExists} for ${monthId}`);
-          logger.log(`[currentMonthSlice] Real-time listener payload:`, { monthId, currentExists, timestamp: Date.now() });
-          
-          // Update the state if it has changed
-          if (currentStateBoardExists !== currentExists) {
-            logger.log(`[currentMonthSlice] Board status changed: ${currentStateBoardExists} -> ${currentExists}, dispatching update`);
-            dispatch(setBoardExists(currentExists));
-          }
-        },
-        (error) => {
-          logger.error(`[currentMonthSlice] Board listener error:`, error);
-          // If there's an error, assume board doesn't exist
-          logger.log(`[currentMonthSlice] Board listener error, setting boardExists to false`);
-          dispatch(setBoardExists(false));
-        }
-      );
+        );
+      });
       
-      logger.log(`[currentMonthSlice] Real-time board listener set up for ${monthId}`);
-      
-      // Store unsubscribe function in a global map for cleanup
-      if (!window.boardListeners) {
-        window.boardListeners = new Map();
-      }
-      window.boardListeners.set(monthId, unsubscribe);
+      logger.log(`[currentMonthSlice] Real-time board listener set up for ${monthId} (Total listeners: ${listenerManager.getListenerCount()})`);
       
       // Return only serializable data
       return { monthId, success: true };
@@ -273,11 +266,6 @@ const currentMonthSlice = createSlice({
       state.error = null;
     },
     
-    // Force refresh board status
-    refreshBoardStatus: (state) => {
-      // state.isChecking = true; // Removed as per edit hint
-      state.error = null;
-    },
     
     // Set board exists (for when admin creates board)
     setBoardExists: (state, action) => {
@@ -374,7 +362,6 @@ export const cleanupBoardListener = (monthId) => {
 
 export const { 
   clearError, 
-  refreshBoardStatus, 
   setBoardExists
 } = currentMonthSlice.actions;
 

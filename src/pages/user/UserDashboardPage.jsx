@@ -10,6 +10,7 @@ import { showSuccess } from "@/utils/toast.js";
 import { DynamicButton, Loader, Modal } from "@/components/ui";
 import { TaskForm, TaskTable } from "@/features/tasks";
 import { useUserData } from "@/hooks";
+import { logger } from "@/utils/logger";
 
 // User Dashboard - Shows user's own data with task creation
 const UserDashboardPage = () => {
@@ -17,16 +18,14 @@ const UserDashboardPage = () => {
   const monthId = useSelector(selectCurrentMonthId);
   const monthName = useSelector(selectCurrentMonthName);
   
-  // Use custom hook for user data fetching
+  // Use custom hook for user data fetching (includes reporters API call)
   const { user, tasks, isLoading, error } = useUserData();
   
   // Debug logging
-  console.log('UserDashboard Debug:', {
+  const userUID = user?.userUID || user?.uid || user?.id;
+  logger.log('UserDashboard Debug:', {
     user,
-    userUID: user?.uid,
-    userID: user?.id,
-    userUserUID: user?.userUID,
-    finalUserUID: user?.uid || user?.id || user?.userUID,
+    userUID,
     tasks,
     tasksLength: tasks?.length,
     monthId,
@@ -128,6 +127,7 @@ const UserDashboardPage = () => {
           monthId={monthId}
           isLoading={isLoading}
           error={error}
+          reporters={reporters}
         />
       </div>
 
@@ -140,8 +140,8 @@ const UserDashboardPage = () => {
       >
         <TaskForm
           mode="create"
+          reporters={reporters}
           onSuccess={() => {
-            showSuccess("Task created successfully!");
             setShowCreateModal(false);
           }}
         />

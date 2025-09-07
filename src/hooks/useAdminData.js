@@ -21,7 +21,7 @@ export const useAdminData = () => {
     error: usersError 
   } = useGetUsersQuery();
   
-  // Fetch all reporters (admin only)
+  // Fetch all reporters (admin only) - this populates the cache
   const { 
     data: reporters = [], 
     isLoading: reportersLoading, 

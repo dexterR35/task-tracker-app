@@ -3,6 +3,7 @@ import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showError, showSuccess, showInfo } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 const UserTable = ({
   className = "",
@@ -35,27 +36,29 @@ const UserTable = ({
   };
 
   return (
-    <div className={className}>
-      <DynamicTable
-        data={users}
-        columns={userColumns}
-        tableType="users"
-        onSelect={handleUserSelect}
-        onEdit={handleUserEdit}
-        onDelete={handleUserDelete}
-        isLoading={isLoading}
-        error={usersError}
-        showPagination={true}
-        showFilters={true}
-        showColumnToggle={true}
-        pageSize={25}
-        enableSorting={true}
-        enableFiltering={true}
-        enablePagination={true}
-        enableColumnResizing={true}
-        enableRowSelection={false}
-      />
-    </div>
+    <ErrorBoundary componentName="UserTable">
+      <div className={className}>
+        <DynamicTable
+          data={users}
+          columns={userColumns}
+          tableType="users"
+          onSelect={handleUserSelect}
+          onEdit={handleUserEdit}
+          onDelete={handleUserDelete}
+          isLoading={isLoading}
+          error={usersError}
+          showPagination={true}
+          showFilters={true}
+          showColumnToggle={true}
+          pageSize={25}
+          enableSorting={true}
+          enableFiltering={true}
+          enablePagination={true}
+          enableColumnResizing={true}
+          enableRowSelection={false}
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 

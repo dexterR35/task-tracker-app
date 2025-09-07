@@ -12,6 +12,5 @@ export {
 export { 
   generateMonthBoard, 
   initializeCurrentMonth,
-  checkMonthBoardExists,
-  refreshBoardStatus
+  checkMonthBoardExists
 } from './currentMonthSlice';

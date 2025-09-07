@@ -9,8 +9,8 @@ import {
 import { lazy, Suspense } from "react";
 import { useAuth } from "@/features/auth";
 
-
 import AppLayout from "@/components/layout/AppLayout";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import Loader from "@/components/ui/Loader/Loader";
 
 // Import static pages directly (no lazy loading needed)
@@ -38,6 +38,7 @@ const DebugPage = lazy(
 );
 const ComingSoonPage = lazy(() => import("@/components/ui/ComingSoon/ComingSoon"));
 const NotFoundPage = lazy(() => import("@/pages/errorPages/NotFoundPage"));
+const UnauthorizedPage = lazy(() => import("@/pages/errorPages/UnauthorizedPage"));
 
 // Simplified loading component for lazy-loaded pages
 const PageLoader = ({ text = "Loading...page loader" }) => (
@@ -50,6 +51,17 @@ const PageLoader = ({ text = "Loading...page loader" }) => (
 const LazyPage = ({ children, loadingText = "Loading...page loader2" }) => (
   <Suspense fallback={<PageLoader text={loadingText} />}>{children}</Suspense>
 );
+
+// Admin Layout component that wraps all admin routes with protection
+const AdminLayout = () => {
+  return (
+    <ProtectedRoute requiredRole="admin">
+      <ErrorBoundary>
+        <Outlet />
+      </ErrorBoundary>
+    </ProtectedRoute>
+  );
+};
 
 // Role-based dashboard component
 const RoleBasedDashboard = () => {
@@ -113,60 +125,16 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
 ProtectedRoute.displayName = "ProtectedRoute";
 
-// Unauthorized page component
-const UnauthorizedPage = () => {
-  const { canAccess } = useAuth();
-  
-  // Direct access check - canAccess is already memoized in useAuth hook
-  const isAdmin = canAccess('admin');
-
-  return (
-    <div className="min-h-screen flex-center bg-primary">
-      <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-        <p className="text-gray-600 mb-6">
-          You don't have permission to access this page.
-        </p>
-        <div className="space-y-2">
-          <Link
-            to="/dashboard"
-            className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
-          >
-            Go to Dashboard
-          </Link>
-          <Link
-            to="/"
-            className="block w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
-          >
-            Go to Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 
-// Root layout that handles initial auth checking and login page redirect
-// All other auth checks and redirects are handled by ProtectedRoute
+// Root layout that handles only login loading state
+// All auth checks and redirects are handled by ProtectedRoute
 const RootLayout = () => {
-  const { user, isAuthChecking, isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
   const location = useLocation();
 
-  // Show loading during auth check
-  if (isAuthChecking) {
-    return (
-      <Loader
-        size="xl"
-        text="Checking authentication..."
-        variant="dots"
-        fullScreen={true}
-      />
-    );
-  }
-
   // Show loading during login process (covers entire screen including nav/layout)
-  const showLoginLoading = authLoading && !isAuthChecking && location.pathname === '/login';
+  const showLoginLoading = authLoading && location.pathname === '/login';
   if (showLoginLoading) {
     return (
       <Loader
@@ -178,9 +146,6 @@ const RootLayout = () => {
     );
   }
 
-  // Let LoginPage handle its own redirect logic to preserve intended destination
-
-  // Let ProtectedRoute handle all other auth checks and redirects
   return <Outlet />;
 };
 
@@ -189,7 +154,12 @@ const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
-      // All routes use the same layout
+      // Unauthorized page at root level (no layout)
+      {
+        path: "unauthorized",
+        element: <UnauthorizedPage />,
+      },
+      // All other routes use the same layout
       {
         element: <AppLayout />,
         children: [
@@ -201,74 +171,62 @@ const router = createBrowserRouter([
             path: "login",
             element: <LoginPage />,
           },
-          {
-            path: "unauthorized",
-            element: <UnauthorizedPage />,
-          },
           
           // User routes (no user ID in path for security)
           {
             path: "dashboard",
             element: (
               <ProtectedRoute requiredRole="user">
-                <RoleBasedDashboard />
+                <ErrorBoundary>
+                  <RoleBasedDashboard />
+                </ErrorBoundary>
               </ProtectedRoute>
             ),
           },
+          
+          // Consolidated admin routes under /admin
           {
-            path: "analytics",
-            element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage loadingText="Loading analytics...">
-                  <AnalyticsPage />
-                </LazyPage>
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "users",
-            element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage loadingText="Loading user management...">
-                  <AdminManagementPage />
-                </LazyPage>
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "tasks",
-            element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage loadingText="Loading task management...">
-                  <AdminTasksPage />
-                </LazyPage>
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "debug",
-            element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage loadingText="Loading debug tools...">
-                  <DebugPage />
-                </LazyPage>
-              </ProtectedRoute>
-            ),
-          },
-
-
-          // Preview routes - admin access required
-          {
-            path: "preview/:monthId",
+            path: "admin",
+            element: <AdminLayout />,
             children: [
               {
-                index: true,
+                path: "analytics",
                 element: (
-                  <ProtectedRoute requiredRole="admin">
-                    <LazyPage loadingText="Loading preview...">
-                      <ComingSoonPage />
-                    </LazyPage>
-                  </ProtectedRoute>
+                  <LazyPage loadingText="Loading analytics...">
+                    <AnalyticsPage />
+                  </LazyPage>
+                ),
+              },
+              {
+                path: "users",
+                element: (
+                  <LazyPage loadingText="Loading user management...">
+                    <AdminManagementPage />
+                  </LazyPage>
+                ),
+              },
+              {
+                path: "tasks",
+                element: (
+                  <LazyPage loadingText="Loading task management...">
+                    <AdminTasksPage />
+                  </LazyPage>
+                ),
+              },
+              {
+                path: "debug",
+                element: (
+                  <LazyPage loadingText="Loading debug tools...">
+                    <DebugPage />
+                  </LazyPage>
+                ),
+              },
+              {
+                path: "preview/:monthId",
+                element: (
+                  <LazyPage loadingText="Loading preview...">
+                    <ComingSoonPage />
+                  </LazyPage>
                 ),
               },
             ],

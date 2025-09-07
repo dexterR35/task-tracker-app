@@ -7,6 +7,7 @@ import { sanitizeText, sanitizeEmail } from "@/components/forms/utils/sanitizati
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
 import { DynamicButton } from "@/components/ui";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 const ReporterForm = ({
   mode = 'create', // 'create' or 'edit'
@@ -135,30 +136,31 @@ const ReporterForm = ({
   };
   
   return (
-    <div className={`card bg-white-dark ${className}`}>
-      {renderFormHeader()}
-      
-      <Formik
-        initialValues={formInitialValues}
-        validationSchema={validationSchema}
-        enableReinitialize={true}
-        onSubmit={handleSubmit}
-      >
-        {(formik) => (
-          <>
-            {fields.map(field => (
-              <div key={field.name} className="field-wrapper">
-                {field.label && (
-                  <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </label>
-                )}
-                
-                <Field name={field.name}>
-                  {({ field: fieldProps, meta }) => (
-                    <>
-                      {field.type === FIELD_TYPES.SELECT ? (
+    <ErrorBoundary componentName="ReporterForm">
+      <div className={`card bg-white-dark ${className}`}>
+        {renderFormHeader()}
+        
+        <Formik
+          initialValues={formInitialValues}
+          validationSchema={validationSchema}
+          enableReinitialize={true}
+          onSubmit={handleSubmit}
+        >
+          {(formik) => (
+            <>
+              {fields.map(field => (
+                <div key={field.name} className="field-wrapper">
+                  {field.label && (
+                    <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                  )}
+                  
+                  <Field name={field.name}>
+                    {({ field: fieldProps, meta }) => (
+                      <>
+                        {field.type === FIELD_TYPES.SELECT ? (
                         <select
                           {...fieldProps}
                           {...field}
@@ -241,7 +243,8 @@ const ReporterForm = ({
           </>
         )}
       </Formik>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
