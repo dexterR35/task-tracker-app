@@ -17,6 +17,7 @@ import { DynamicButton, Loader } from "@/components/ui";
 import { TaskTable } from "@/features/tasks";
 import { useAppData } from "@/hooks"; // Updated to use unified hook
 import { useAuth } from "@/features/auth";
+import DashboardCards from "@/components/admin/DashboardCards";
 
 // Admin Dashboard - Shows all users' data with admin controls
 const AdminDashboardPage = () => {
@@ -135,20 +136,19 @@ const AdminDashboardPage = () => {
         </div>
       </div>
 
-      {/* Admin Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Users</h3>
-          <p className="text-2xl font-bold">{users.length}</p>
-        </div>
-        <div className="bg-gradient-to-r from-green-600 to-green-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Tasks</h3>
-          <p className="text-2xl font-bold">{filteredTasks.length}</p>
-        </div>
-        <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Reporters</h3>
-          <p className="text-2xl font-bold">{reporters.length}</p>
-        </div>
+      {/* Dynamic Dashboard Cards */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-white mb-4">Dashboard Overview</h2>
+        <DashboardCards 
+          tasks={filteredTasks}
+          users={users}
+          reporters={reporters}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Board Status Card */}
+      <div className="mb-6">
         <div className="bg-gradient-to-r from-orange-600 to-orange-800 text-white p-4 rounded-lg">
           <h3 className="text-lg font-semibold">Board Status</h3>
           <p className="text-lg font-bold">{boardExists ? "Active" : "Not Generated"}</p>
