@@ -67,7 +67,7 @@ export const calculateReporterMetrics = (tasks = [], reporters = []) => {
     topReporters,
     totalActiveReporters: Object.keys(reporterTaskCounts).length,
     averageTasksPerReporter: Object.keys(reporterTaskCounts).length > 0 
-      ? Math.round((validTasks.length / Object.keys(reporterTaskCounts).length) * 10) / 10 
+      ? Math.round(validTasks.length / Object.keys(reporterTaskCounts).length) 
       : 0
   };
 };
@@ -106,7 +106,7 @@ export const calculateUserMetrics = (tasks = [], users = []) => {
     topUsers,
     totalActiveUsers: Object.keys(userTaskCounts).length,
     averageTasksPerUser: Object.keys(userTaskCounts).length > 0 
-      ? Math.round((tasks.length / Object.keys(userTaskCounts).length) * 10) / 10 
+      ? Math.round(tasks.length / Object.keys(userTaskCounts).length) 
       : 0
   };
 };

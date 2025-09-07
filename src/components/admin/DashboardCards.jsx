@@ -13,7 +13,19 @@ import {
   generateChartData,
   calculateTrend,
 } from "@/utils/analyticsUtils";
-import { FiUser, FiZap, FiPackage, FiTarget, FiGlobe, FiShoppingBag } from "react-icons/fi";
+import { 
+  FiUser, 
+  FiZap, 
+  FiPackage, 
+  FiTarget, 
+  FiGlobe, 
+  FiShoppingBag, 
+  FiTrendingUp, 
+  FiCheckCircle, 
+  FiClock, 
+  FiVideo, 
+  FiCode 
+} from "react-icons/fi";
 
 /**
  * Dashboard Cards Component
@@ -28,6 +40,16 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
     const validUsers = Array.isArray(users) ? users : [];
     const validReporters = Array.isArray(reporters) ? reporters : [];
     
+    // Debug: Log the data to see what we're working with
+    console.log('Dashboard Data Debug:', {
+      tasksCount: validTasks.length,
+      usersCount: validUsers.length,
+      reportersCount: validReporters.length,
+      sampleTask: validTasks[0],
+      sampleReporter: validReporters[0],
+      sampleUser: validUsers[0]
+    });
+    
     const taskMetrics = calculateTaskMetrics(validTasks);
     const reporterMetrics = calculateReporterMetrics(validTasks, validReporters);
     const userMetrics = calculateUserMetrics(validTasks, validUsers);
@@ -38,19 +60,81 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
     const videoMetrics = calculateVideoMetrics(validTasks, validReporters);
     const devMetrics = calculateDeveloperMetrics(validTasks, validReporters);
     
-    // Generate chart data for last 7 days with error handling
-    let chartData = [];
-    try {
-      chartData = generateChartData(validTasks, 7);
-    } catch (error) {
-      console.warn('Error generating chart data:', error);
-      // Fallback to empty chart data
-      chartData = Array.from({ length: 7 }, (_, i) => ({
-        name: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i],
-        value: 0,
-        date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      }));
-    }
+    // Debug: Log the calculated metrics
+    console.log('Calculated Metrics:', {
+      aiMetrics: aiMetrics,
+      reporterMetrics: reporterMetrics
+    });
+    
+    // Generate meaningful chart data based on actual metrics
+    const generateMetricChartData = (type, metrics) => {
+      switch (type) {
+        case 'total-tasks':
+          return [
+            { name: 'Total Tasks', value: metrics.taskMetrics.totalTasks },
+            { name: 'AI Tasks', value: metrics.aiMetrics.totalAITasks },
+            { name: 'Active Users', value: metrics.userMetrics.totalActiveUsers }
+          ];
+        case 'total-hours':
+          return [
+            { name: 'Total Hours', value: metrics.taskMetrics.totalHours },
+            { name: 'AI Hours', value: metrics.aiMetrics.totalAIHours },
+            { name: 'Avg per Task', value: Math.round(metrics.taskMetrics.averageHoursPerTask * 10) / 10 }
+          ];
+        case 'ai-tasks':
+          return metrics.aiMetrics.topAIModels.slice(0, 5).map(item => ({
+            name: item.model,
+            value: item.count
+          }));
+        case 'design':
+          return [
+            { name: 'Tasks', value: metrics.designMetrics.totalDesignTasks },
+            { name: 'Hours', value: Math.floor(metrics.designMetrics.totalDesignHours) },
+            { name: 'AI Tasks', value: metrics.designMetrics.aiTasks },
+            { name: 'Markets', value: metrics.designMetrics.topMarkets.length }
+          ];
+        case 'video':
+          return [
+            { name: 'Tasks', value: metrics.videoMetrics.totalVideoTasks },
+            { name: 'Hours', value: Math.floor(metrics.videoMetrics.totalVideoHours) },
+            { name: 'AI Tasks', value: metrics.videoMetrics.aiTasks },
+            { name: 'Markets', value: metrics.videoMetrics.topMarkets.length }
+          ];
+        case 'developer':
+          return [
+            { name: 'Tasks', value: metrics.devMetrics.totalDevTasks },
+            { name: 'Hours', value: Math.floor(metrics.devMetrics.totalDevHours) },
+            { name: 'AI Tasks', value: metrics.devMetrics.aiTasks },
+            { name: 'Markets', value: metrics.devMetrics.topMarkets.length }
+          ];
+        case 'reporters':
+          return metrics.reporterMetrics.topReporters.slice(0, 5).map(item => ({
+            name: item.name,
+            value: item.taskCount
+          }));
+        case 'users':
+          return metrics.userMetrics.topUsers.slice(0, 5).map(item => ({
+            name: item.name,
+            value: item.taskCount
+          }));
+        case 'markets':
+          return metrics.marketMetrics.topMarkets.slice(0, 5).map(item => ({
+            name: item.market,
+            value: item.count
+          }));
+        case 'products':
+          return metrics.productMetrics.topProducts.slice(0, 5).map(item => ({
+            name: item.product,
+            value: item.count
+          }));
+        default:
+          return [
+            { name: 'Data 1', value: 10 },
+            { name: 'Data 2', value: 20 },
+            { name: 'Data 3', value: 15 }
+          ];
+      }
+    };
     
     return {
       taskMetrics,
@@ -62,7 +146,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       productMetrics,
       videoMetrics,
       devMetrics,
-      chartData
+      generateMetricChartData
     };
   }, [tasks, users, reporters]);
 
@@ -73,19 +157,29 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       id: "total-tasks",
       type: "total-tasks",
       title: "Total Tasks",
-      subtitle: "Active Tasks",
+      subtitle: "All Active Tasks",
       value: metrics.taskMetrics.totalTasks,
       valueType: "number",
       chartType: "bar",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('total-tasks', metrics),
       additionalData: [
         {
           icon: FiUser,
+          label: "Active Users",
+          value: `${metrics.userMetrics.totalActiveUsers} users`
+        },
+        {
+          icon: FiTarget,
+          label: "Active Reporters",
+          value: `${metrics.reporterMetrics.totalActiveReporters} reporters`
+        },
+        {
+          icon: FiTrendingUp,
           label: "Avg per User",
           value: `${metrics.userMetrics.averageTasksPerUser} tasks`
         },
         {
-          icon: FiTarget,
+          icon: FiCheckCircle,
           label: "Avg per Reporter",
           value: `${metrics.reporterMetrics.averageTasksPerReporter} tasks`
         }
@@ -97,21 +191,31 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       id: "total-hours",
       type: "total-hours",
       title: "Total Hours",
-      subtitle: "Hours Tracked",
+      subtitle: "All Hours Tracked",
       value: metrics.taskMetrics.totalHours,
       valueType: "hours",
       chartType: "line",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('total-hours', metrics),
       additionalData: [
         {
-          icon: FiUser,
+          icon: FiClock,
           label: "Avg per Task",
           value: `${metrics.taskMetrics.averageHoursPerTask} hrs`
         },
         {
-          icon: FiTarget,
+          icon: FiZap,
           label: "AI Hours",
-          value: `${metrics.taskMetrics.totalAIHours} hrs`
+          value: `${metrics.aiMetrics.totalAIHours} hrs`
+        },
+        {
+          icon: FiTrendingUp,
+          label: "AI Usage %",
+          value: `${metrics.aiMetrics.aiUsagePercentage}%`
+        },
+        {
+          icon: FiUser,
+          label: "Avg per Task",
+          value: `${metrics.taskMetrics.averageHoursPerTask} hrs`
         }
       ]
     },
@@ -125,22 +229,27 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.aiMetrics.totalAITasks,
       valueType: "number",
       chartType: "blocks",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('ai-tasks', metrics),
       additionalData: [
         {
           icon: FiZap,
-          label: "AI Hours",
+          label: "Total AI Hours",
           value: `${metrics.aiMetrics.totalAIHours} hrs`
         },
         {
           icon: FiTarget,
-          label: "Usage %",
+          label: "AI Usage %",
           value: `${metrics.aiMetrics.aiUsagePercentage}%`
         },
         {
-          icon: FiUser,
-          label: "Avg per Task",
+          icon: FiTrendingUp,
+          label: "Avg AI Hours",
           value: `${metrics.aiMetrics.averageAIHoursPerTask} hrs`
+        },
+        {
+          icon: FiCheckCircle,
+          label: "AI Models Used",
+          value: `${metrics.aiMetrics.topAIModels.length} models`
         }
       ],
       topItems: metrics.aiMetrics.topAIModels.map(item => ({
@@ -158,12 +267,12 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.designMetrics.totalDesignTasks,
       valueType: "number",
       chartType: "area",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('design', metrics),
       additionalData: [
         {
           icon: FiPackage,
-          label: "Deliverables",
-          value: `${metrics.designMetrics.tasksWithDeliverables} tasks`
+          label: "Total Tasks",
+          value: `${metrics.designMetrics.totalDesignTasks} tasks`
         },
         {
           icon: FiTarget,
@@ -172,8 +281,23 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
         },
         {
           icon: FiZap,
+          label: "AI Tasks",
+          value: `${metrics.designMetrics.aiTasks} tasks`
+        },
+        {
+          icon: FiClock,
           label: "AI Hours",
           value: `${metrics.designMetrics.aiHours} hrs`
+        },
+        {
+          icon: FiTrendingUp,
+          label: "Deliverables",
+          value: `${metrics.designMetrics.tasksWithDeliverables} tasks`
+        },
+        {
+          icon: FiCheckCircle,
+          label: "Avg Hours",
+          value: `${metrics.designMetrics.averageHoursPerDesignTask} hrs`
         }
       ],
       topItems: [
@@ -220,22 +344,37 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.videoMetrics.totalVideoTasks,
       valueType: "number",
       chartType: "bar",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('video', metrics),
       additionalData: [
+        {
+          icon: FiVideo,
+          label: "Total Tasks",
+          value: `${metrics.videoMetrics.totalVideoTasks} tasks`
+        },
         {
           icon: FiTarget,
           label: "Total Hours",
           value: `${metrics.videoMetrics.totalVideoHours} hrs`
         },
         {
-          icon: FiUser,
+          icon: FiZap,
+          label: "AI Tasks",
+          value: `${metrics.videoMetrics.aiTasks} tasks`
+        },
+        {
+          icon: FiClock,
+          label: "AI Hours",
+          value: `${metrics.videoMetrics.aiHours} hrs`
+        },
+        {
+          icon: FiTrendingUp,
           label: "Avg Hours",
           value: `${metrics.videoMetrics.averageHoursPerVideoTask} hrs`
         },
         {
-          icon: FiZap,
-          label: "AI Hours",
-          value: `${metrics.videoMetrics.aiHours} hrs`
+          icon: FiCheckCircle,
+          label: "AI Usage %",
+          value: `${metrics.videoMetrics.totalVideoTasks > 0 ? Math.round((metrics.videoMetrics.aiTasks / metrics.videoMetrics.totalVideoTasks) * 100) : 0}%`
         }
       ],
       topItems: [
@@ -282,22 +421,37 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.devMetrics.totalDevTasks,
       valueType: "number",
       chartType: "line",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('developer', metrics),
       additionalData: [
+        {
+          icon: FiCode,
+          label: "Total Tasks",
+          value: `${metrics.devMetrics.totalDevTasks} tasks`
+        },
         {
           icon: FiTarget,
           label: "Total Hours",
           value: `${metrics.devMetrics.totalDevHours} hrs`
         },
         {
-          icon: FiUser,
+          icon: FiZap,
+          label: "AI Tasks",
+          value: `${metrics.devMetrics.aiTasks} tasks`
+        },
+        {
+          icon: FiClock,
+          label: "AI Hours",
+          value: `${metrics.devMetrics.aiHours} hrs`
+        },
+        {
+          icon: FiTrendingUp,
           label: "Avg Hours",
           value: `${metrics.devMetrics.averageHoursPerDevTask} hrs`
         },
         {
-          icon: FiZap,
-          label: "AI Hours",
-          value: `${metrics.devMetrics.aiHours} hrs`
+          icon: FiCheckCircle,
+          label: "AI Usage %",
+          value: `${metrics.devMetrics.totalDevTasks > 0 ? Math.round((metrics.devMetrics.aiTasks / metrics.devMetrics.totalDevTasks) * 100) : 0}%`
         }
       ],
       topItems: [
@@ -344,12 +498,27 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.reporterMetrics.totalActiveReporters,
       valueType: "number",
       chartType: "blocks",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('reporters', metrics),
       additionalData: [
         {
           icon: FiUser,
+          label: "Total Reporters",
+          value: `${metrics.reporterMetrics.totalActiveReporters} active`
+        },
+        {
+          icon: FiTarget,
           label: "Avg Tasks",
           value: `${metrics.reporterMetrics.averageTasksPerReporter} tasks`
+        },
+        {
+          icon: FiTrendingUp,
+          label: "Top Performer",
+          value: metrics.reporterMetrics.topReporters[0]?.name || "N/A"
+        },
+        {
+          icon: FiCheckCircle,
+          label: "Top Tasks",
+          value: `${metrics.reporterMetrics.topReporters[0]?.taskCount || 0} tasks`
         }
       ],
       topItems: metrics.reporterMetrics.topReporters.map(item => ({
@@ -367,12 +536,27 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.userMetrics.totalActiveUsers,
       valueType: "number",
       chartType: "line",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('users', metrics),
       additionalData: [
         {
           icon: FiUser,
+          label: "Total Users",
+          value: `${metrics.userMetrics.totalActiveUsers} active`
+        },
+        {
+          icon: FiTarget,
           label: "Avg Tasks",
           value: `${metrics.userMetrics.averageTasksPerUser} tasks`
+        },
+        {
+          icon: FiTrendingUp,
+          label: "Top User",
+          value: metrics.userMetrics.topUsers[0]?.name || "N/A"
+        },
+        {
+          icon: FiCheckCircle,
+          label: "Top Tasks",
+          value: `${metrics.userMetrics.topUsers[0]?.taskCount || 0} tasks`
         }
       ],
       topItems: metrics.userMetrics.topUsers.map(item => ({
@@ -390,12 +574,27 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.marketMetrics.totalActiveMarkets,
       valueType: "number",
       chartType: "bar",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('markets', metrics),
       additionalData: [
         {
           icon: FiGlobe,
+          label: "Total Markets",
+          value: `${metrics.marketMetrics.totalActiveMarkets} markets`
+        },
+        {
+          icon: FiTarget,
           label: "Total Entries",
           value: `${metrics.marketMetrics.totalMarketEntries} entries`
+        },
+        {
+          icon: FiTrendingUp,
+          label: "Top Market",
+          value: metrics.marketMetrics.topMarkets[0]?.market || "N/A"
+        },
+        {
+          icon: FiCheckCircle,
+          label: "Top Count",
+          value: `${metrics.marketMetrics.topMarkets[0]?.count || 0} tasks`
         }
       ],
       topItems: metrics.marketMetrics.topMarkets.map(item => ({
@@ -413,12 +612,27 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       value: metrics.productMetrics.totalActiveProducts,
       valueType: "number",
       chartType: "area",
-      chartData: metrics.chartData,
+      chartData: metrics.generateMetricChartData('products', metrics),
       additionalData: [
         {
           icon: FiShoppingBag,
+          label: "Total Products",
+          value: `${metrics.productMetrics.totalActiveProducts} products`
+        },
+        {
+          icon: FiTarget,
           label: "Total Entries",
           value: `${metrics.productMetrics.totalProductEntries} entries`
+        },
+        {
+          icon: FiTrendingUp,
+          label: "Top Product",
+          value: metrics.productMetrics.topProducts[0]?.product || "N/A"
+        },
+        {
+          icon: FiCheckCircle,
+          label: "Top Count",
+          value: `${metrics.productMetrics.topProducts[0]?.count || 0} tasks`
         }
       ],
       topItems: metrics.productMetrics.topProducts.map(item => ({
@@ -442,11 +656,22 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
           ))}
         </div>
 
-        {/* Other Cards Loading Grid */}
+        {/* Middle Cards Loading Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {Array.from({ length: 7 }).map((_, index) => (
+          {Array.from({ length: 5 }).map((_, index) => (
             <DynamicCard
-              key={`other-${index}`}
+              key={`middle-${index}`}
+              cardData={{}}
+              isLoading={true}
+            />
+          ))}
+        </div>
+
+        {/* Total Cards Loading Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <DynamicCard
+              key={`total-${index}`}
               cardData={{}}
               isLoading={true}
             />
@@ -456,12 +681,15 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
     );
   }
 
-  // Separate department cards from other cards
+  // Separate cards into different sections
   const departmentCards = cardConfigs.filter(card => 
     ['design', 'video', 'developer'].includes(card.id)
   );
-  const otherCards = cardConfigs.filter(card => 
-    !['design', 'video', 'developer'].includes(card.id)
+  const middleCards = cardConfigs.filter(card => 
+    !['design', 'video', 'developer', 'total-tasks', 'total-hours'].includes(card.id)
+  );
+  const totalCards = cardConfigs.filter(card => 
+    ['total-tasks', 'total-hours'].includes(card.id)
   );
 
   return (
@@ -477,9 +705,20 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
         ))}
       </div>
 
-      {/* Other Cards Grid */}
+      {/* Middle Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        {otherCards.map((cardConfig) => (
+        {middleCards.map((cardConfig) => (
+          <DynamicCard
+            key={cardConfig.id}
+            cardData={cardConfig}
+            isLoading={false}
+          />
+        ))}
+      </div>
+
+      {/* Total Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {totalCards.map((cardConfig) => (
           <DynamicCard
             key={cardConfig.id}
             cardData={cardConfig}

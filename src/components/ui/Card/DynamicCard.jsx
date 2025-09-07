@@ -28,97 +28,149 @@ import {
 import { getMetricColor } from "@/utils/analyticsUtils";
 
 // Chart components (same as homepage)
-const ModernAreaChart = ({ data, color = "#eb2743" }) => (
-  <ResponsiveContainer width="100%" height={80}>
-    <AreaChart
-      data={data}
-      margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-    >
-      <defs>
-        <linearGradient id={`area-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={color} stopOpacity={0.8} />
-          <stop offset="95%" stopColor={color} stopOpacity={0.1} />
-        </linearGradient>
-      </defs>
-      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-      <Area
-        type="monotone"
-        dataKey="value"
-        fill={`url(#area-${color})`}
-        stroke={color}
-        strokeWidth={3}
-      />
-    </AreaChart>
-  </ResponsiveContainer>
-);
+const ModernAreaChart = ({ data, color = "#eb2743" }) => {
+  // Ensure we have valid data
+  const validData = Array.isArray(data) && data.length > 0 ? data : [];
+  
+  if (validData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-20 text-gray-500 text-sm">
+        No data available
+      </div>
+    );
+  }
+  
+  return (
+    <ResponsiveContainer width="100%" height={80}>
+      <AreaChart
+        data={validData}
+        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+      >
+        <defs>
+          <linearGradient id={`area-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={color} stopOpacity={0.1} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+        <Area
+          type="monotone"
+          dataKey="value"
+          fill={`url(#area-${color.replace('#', '')})`}
+          stroke={color}
+          strokeWidth={3}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
 
-const ModernBarChart = ({ data, color = "#a99952" }) => (
-  <ResponsiveContainer width="100%" height={80}>
-    <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-      <defs>
-        <linearGradient id={`bar-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={1} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.3} />
-        </linearGradient>
-      </defs>
-      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-      <Bar
-        dataKey="value"
-        fill={`url(#bar-${color})`}
-        radius={[2, 2, 0, 0]}
-        barSize={35}
-      />
-    </BarChart>
-  </ResponsiveContainer>
-);
+const ModernBarChart = ({ data, color = "#a99952" }) => {
+  // Ensure we have valid data
+  const validData = Array.isArray(data) && data.length > 0 ? data : [];
+  
+  if (validData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-20 text-gray-500 text-sm">
+        No data available
+      </div>
+    );
+  }
+  
+  return (
+    <ResponsiveContainer width="100%" height={80}>
+      <BarChart data={validData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+        <defs>
+          <linearGradient id={`bar-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={1} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.3} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+        <Bar
+          dataKey="value"
+          fill={`url(#bar-${color.replace('#', '')})`}
+          radius={[2, 2, 0, 0]}
+          barSize={35}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
 
 // Block Chart Component
-const BlockChart = ({ data, color = "#a99952" }) => (
-  <div className="flex items-end justify-between h-16 px-2">
-    {data.map((item, index) => {
-      const maxValue = Math.max(...data.map(d => d.value));
-      const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-      
-      return (
-        <div key={index} className="flex flex-col items-center flex-1">
-          <div 
-            className="w-3 rounded-sm transition-all duration-500 ease-out"
-            style={{ 
-              height: `${height}%`,
-              backgroundColor: color,
-              opacity: 0.8
-            }}
-          ></div>
-        </div>
-      );
-    })}
-  </div>
-);
+const BlockChart = ({ data, color = "#a99952" }) => {
+  // Ensure we have valid data
+  const validData = Array.isArray(data) && data.length > 0 ? data : [];
+  
+  if (validData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-20 text-gray-500 text-sm">
+        No data available
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-end justify-between h-16 px-2">
+      {validData.map((item, index) => {
+        const maxValue = Math.max(...validData.map(d => d.value));
+        const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+        
+        return (
+          <div key={index} className="flex flex-col items-center flex-1">
+            <div 
+              className="w-3 rounded-sm transition-all duration-500 ease-out"
+              style={{ 
+                height: `${height}%`,
+                backgroundColor: color,
+                opacity: 0.8
+              }}
+            ></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 // Line Chart Component
-const LineChart = ({ data, color = "#a99952" }) => (
-  <ResponsiveContainer width="100%" height={80}>
-    <AreaChart
-      data={data}
-      margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-    >
-      <defs>
-        <linearGradient id={`line-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={color} stopOpacity={0.8} />
-          <stop offset="95%" stopColor={color} stopOpacity={0.1} />
-        </linearGradient>
-      </defs>
-      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-      <Area
-        type="monotone"
-        dataKey="value"
-        fill={`url(#line-${color})`}
-        stroke={color}
-        strokeWidth={2}
-      />
-    </AreaChart>
-  </ResponsiveContainer>
-);
+const LineChart = ({ data, color = "#a99952" }) => {
+  // Ensure we have valid data
+  const validData = Array.isArray(data) && data.length > 0 ? data : [];
+  
+  if (validData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-20 text-gray-500 text-sm">
+        No data available
+      </div>
+    );
+  }
+  
+  return (
+    <ResponsiveContainer width="100%" height={80}>
+      <AreaChart
+        data={validData}
+        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+      >
+        <defs>
+          <linearGradient id={`line-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={color} stopOpacity={0.1} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+        <Area
+          type="monotone"
+          dataKey="value"
+          fill={`url(#line-${color.replace('#', '')})`}
+          stroke={color}
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
 
 // Mini Progress Chart
 const MiniProgressChart = ({ value, maxValue = 100, color = "#a99952" }) => {

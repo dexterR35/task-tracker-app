@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { Formik } from "formik";
@@ -8,6 +8,12 @@ import { DynamicButton, Loader, Modal } from "@/components/ui";
 import { TaskTable, TaskForm } from "@/features/tasks";
 import { useAppData } from "@/hooks";
 import { SelectField } from "@/features/tasks/components/TaskForm/components/TaskFormFields";
+import {
+  calculateTaskMetrics,
+  calculateMarketMetrics,
+  calculateProductMetrics,
+} from "@/utils/analyticsUtils";
+import { FiBarChart2, FiGlobe, FiPackage, FiClock, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 
 // Admin Tasks Page - Shows all tasks with creation form and table
 const AdminTasksPage = () => {
@@ -97,6 +103,16 @@ const AdminTasksPage = () => {
           );
         })
       : tasks;
+
+  // Calculate metrics for the filtered tasks
+  const metrics = useMemo(() => {
+    const validTasks = Array.isArray(filteredTasks) ? filteredTasks : [];
+    return {
+      taskMetrics: calculateTaskMetrics(validTasks),
+      marketMetrics: calculateMarketMetrics(validTasks),
+      productMetrics: calculateProductMetrics(validTasks),
+    };
+  }, [filteredTasks]);
 
   // Derive title based on context
   const title = (() => {
@@ -191,32 +207,114 @@ const AdminTasksPage = () => {
         </div>
       </div>
 
-      {/* Task Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Tasks</h3>
-          <p className="text-2xl font-bold">{filteredTasks.length}</p>
+      {/* Task Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {/* Total Tasks Card */}
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-600 rounded-lg">
+              <FiBarChart2 className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white">{metrics.taskMetrics.totalTasks}</p>
+              <p className="text-sm text-gray-400">Total Tasks</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Avg per Task</span>
+              <span className="text-white">{metrics.taskMetrics.averageHoursPerTask} hrs</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Total Hours</span>
+              <span className="text-white">{metrics.taskMetrics.totalHours} hrs</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">AI Hours</span>
+              <span className="text-white">{metrics.taskMetrics.totalAIHours} hrs</span>
+            </div>
+          </div>
         </div>
-        <div className="bg-gradient-to-r from-green-600 to-green-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Completed</h3>
-          <p className="text-2xl font-bold">
-            {filteredTasks.filter((task) => task.status === "completed").length}
-          </p>
+
+        {/* Total Hours Card */}
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-green-600 rounded-lg">
+              <FiClock className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white">{metrics.taskMetrics.totalHours}</p>
+              <p className="text-sm text-gray-400">Total Hours</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Hours Tracked</span>
+              <span className="text-white">{metrics.taskMetrics.totalHours} hrs</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">AI Hours</span>
+              <span className="text-white">{metrics.taskMetrics.totalAIHours} hrs</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Non-AI Hours</span>
+              <span className="text-white">{(metrics.taskMetrics.totalHours - metrics.taskMetrics.totalAIHours).toFixed(1)} hrs</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Avg per Task</span>
+              <span className="text-white">{metrics.taskMetrics.averageHoursPerTask} hrs</span>
+            </div>
+          </div>
         </div>
-        <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">In Progress</h3>
-          <p className="text-2xl font-bold">
-            {
-              filteredTasks.filter((task) => task.status === "in-progress")
-                .length
-            }
-          </p>
+
+        {/* Top 3 Markets Card */}
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-purple-600 rounded-lg">
+              <FiGlobe className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white">{metrics.marketMetrics.totalActiveMarkets}</p>
+              <p className="text-sm text-gray-400">Active Markets</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 mb-2 font-medium">Top 3 Markets:</div>
+            {metrics.marketMetrics.topMarkets.slice(0, 3).map((market, index) => (
+              <div key={index} className="flex justify-between items-center bg-gray-700/20 rounded px-2 py-1">
+                <span className="text-sm text-gray-300">{market.market}</span>
+                <span className="text-sm text-white font-medium">{market.count}</span>
+              </div>
+            ))}
+            {metrics.marketMetrics.topMarkets.length === 0 && (
+              <div className="text-sm text-gray-500">No market data available</div>
+            )}
+          </div>
         </div>
-        <div className="bg-gradient-to-r from-orange-600 to-orange-800 text-white p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Pending</h3>
-          <p className="text-2xl font-bold">
-            {filteredTasks.filter((task) => task.status === "pending").length}
-          </p>
+
+        {/* Top 3 Products Card */}
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-600 rounded-lg">
+              <FiPackage className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white">{metrics.productMetrics.totalActiveProducts}</p>
+              <p className="text-sm text-gray-400">Active Products</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 mb-2 font-medium">Top 3 Products:</div>
+            {metrics.productMetrics.topProducts.slice(0, 3).map((product, index) => (
+              <div key={index} className="flex justify-between items-center bg-gray-700/20 rounded px-2 py-1">
+                <span className="text-sm text-gray-300">{product.product}</span>
+                <span className="text-sm text-white font-medium">{product.count}</span>
+              </div>
+            ))}
+            {metrics.productMetrics.topProducts.length === 0 && (
+              <div className="text-sm text-gray-500">No product data available</div>
+            )}
+          </div>
         </div>
       </div>
 
