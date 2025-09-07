@@ -78,7 +78,6 @@ const ReporterTable = ({
         onSuccess={() => {
           setShowEditModal(false);
           setEditingReporter(null);
-          showSuccess("Reporter updated successfully!");
         }}
       />
     );

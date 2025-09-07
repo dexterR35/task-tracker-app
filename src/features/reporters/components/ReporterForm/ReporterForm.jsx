@@ -1,5 +1,5 @@
 import React from "react";
-import { Formik, Field } from "formik";
+import { Formik, Field, Form, ErrorMessage } from "formik";
 import { useCreateReporterMutation, useUpdateReporterMutation } from "@/features/reporters";
 import { useAuth } from "@/features/auth";
 import { reporterFormSchema, getReporterFormInitialValues, REPORTER_FORM_OPTIONS } from './reporterFormSchema';
@@ -22,7 +22,6 @@ const ReporterForm = ({
   // Get validation schema and initial values
   const validationSchema = reporterFormSchema;
   const formInitialValues = getReporterFormInitialValues(user, initialValues);
-  
   
   // Form submission handler
   const handleSubmit = async (values, { setSubmitting, resetForm, setValues, setTouched, setErrors }) => {
@@ -89,36 +88,6 @@ const ReporterForm = ({
     }
   };
   
-  // Custom field change handler for field-specific logic
-  const handleFieldChange = useCallback((fieldName, event, formikHelpers) => {
-    const fieldConfig = fields.find(f => f.name === fieldName);
-    
-    // Create form object for field-specific logic
-    const form = {
-      setFieldValue: formikHelpers.setFieldValue,
-      getFieldValue: (name) => formikHelpers.values[name],
-      values: formikHelpers.values
-    };
-    
-    // Call field-specific onChange if it exists (no sanitization here)
-    fieldConfig?.onChange?.(event, form);
-  }, [fields]);
-  
-  // Custom field blur handler for field-specific logic
-  const handleFieldBlur = useCallback((fieldName, event, formikHelpers) => {
-    const fieldConfig = fields.find(f => f.name === fieldName);
-    
-    // Create form object for field-specific logic
-    const form = {
-      setFieldValue: formikHelpers.setFieldValue,
-      getFieldValue: (name) => formikHelpers.values[name],
-      values: formikHelpers.values
-    };
-    
-    // Call field-specific onBlur if it exists
-    fieldConfig?.onBlur?.(event, form);
-  }, [fields]);
-  
   
   const renderFormHeader = () => {
     const title = mode === 'edit' ? 'Edit Reporter' : 'Create New Reporter';
@@ -144,103 +113,89 @@ const ReporterForm = ({
           enableReinitialize={true}
           onSubmit={handleSubmit}
         >
-          {(formik) => (
-            <>
-              {fields.map(field => (
-                <div key={field.name} className="field-wrapper">
-                  {field.label && (
-                    <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
-                      {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </label>
-                  )}
-                  
-                  <Field name={field.name}>
-                    {({ field: fieldProps, meta }) => (
-                      <>
-                        {field.type === FIELD_TYPES.SELECT ? (
-                        <select
-                          {...fieldProps}
-                          {...field}
-                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors border-gray-300"
-                          onChange={(e) => {
-                            fieldProps.onChange(e);
-                            handleFieldChange(field.name, e, formik);
-                          }}
-                          onBlur={(e) => {
-                            fieldProps.onBlur(e);
-                            handleFieldBlur(field.name, e, formik);
-                          }}
-                        >
-                          <option value="">{field.placeholder || 'Select an option'}</option>
-                          {field.options?.map((option) => (
-                            <option key={option.value || option} value={option.value || option}>
-                              {option.label || option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : field.type === FIELD_TYPES.CHECKBOX ? (
-                        <div className="flex items-start space-x-3">
-                          <input
-                            {...fieldProps}
-                            {...field}
-                            type="checkbox"
-                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            onChange={(e) => {
-                              fieldProps.onChange(e);
-                              handleFieldChange(field.name, e, formik);
-                            }}
-                            onBlur={(e) => {
-                              fieldProps.onBlur(e);
-                              handleFieldBlur(field.name, e, formik);
-                            }}
-                          />
-                          {field.description && (
-                            <span className="text-sm text-gray-500">{field.description}</span>
-                          )}
-                        </div>
-                      ) : (
-                        <input
-                          {...fieldProps}
-                          {...field}
-                          type={field.type === FIELD_TYPES.EMAIL ? 'email' : 'text'}
-                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors border-gray-300"
-                          onChange={(e) => {
-                            fieldProps.onChange(e);
-                            handleFieldChange(field.name, e, formik);
-                          }}
-                          onBlur={(e) => {
-                            fieldProps.onBlur(e);
-                            handleFieldBlur(field.name, e, formik);
-                          }}
-                        />
-                      )}
-                      {meta.touched && meta.error && <div className="text-red-500 text-sm mt-1">{meta.error}</div>}
-                    </>
-                  )}
-                </Field>
-                
-                {field.helpText && (
-                  <p className="text-sm text-gray-500 mt-1">{field.helpText}</p>
-                )}
+          {({ isSubmitting }) => (
+            <Form className="space-y-6">
+              {/* Name Field */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <Field
+                  name="name"
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter reporter name"
+                />
+                <ErrorMessage name="name" component="div" className="text-red-500 text-sm mt-1" />
               </div>
-            ))}
-            
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <DynamicButton
-                onClick={formik.handleSubmit}
-                disabled={formik.isSubmitting}
-                loading={formik.isSubmitting}
-                variant="primary"
-                size="md"
-                loadingText="Saving..."
-              >
-                {mode === 'edit' ? 'Update Reporter' : 'Create Reporter'}
-              </DynamicButton>
-            </div>
-          </>
-        )}
-      </Formik>
+
+              {/* Email Field */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <Field
+                  name="email"
+                  type="email"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter email address"
+                />
+                <ErrorMessage name="email" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+
+              {/* Role Field - Hidden, always reporter */}
+              <Field name="role" type="hidden" value="reporter" />
+
+              {/* Department Field */}
+              <div>
+                <label htmlFor="departament" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Department <span className="text-red-500">*</span>
+                </label>
+                <Field
+                  name="departament"
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter department"
+                />
+                <ErrorMessage name="departament" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+
+              {/* Occupation Field */}
+              <div>
+                <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Occupation <span className="text-red-500">*</span>
+                </label>
+                <Field
+                  as="select"
+                  name="occupation"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Select occupation</option>
+                  {REPORTER_FORM_OPTIONS.occupations.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Field>
+                <ErrorMessage name="occupation" component="div" className="text-red-500 text-sm mt-1" />
+              </div>
+              
+              {/* Submit Button */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <DynamicButton
+                  type="submit"
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
+                  variant="primary"
+                  size="md"
+                  loadingText="Saving..."
+                >
+                  {mode === 'edit' ? 'Update Reporter' : 'Create Reporter'}
+                </DynamicButton>
+              </div>
+            </Form>
+          )}
+        </Formik>
       </div>
   );
 };

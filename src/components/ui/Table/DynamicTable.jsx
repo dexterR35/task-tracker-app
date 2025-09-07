@@ -10,8 +10,6 @@ import {
 } from '@tanstack/react-table';
 import { DynamicButton } from "@/components";
 import { showError, showSuccess, showInfo } from '@/utils/toast';
-import { logger } from '@/utils/logger';
-import { getColumns } from "@/components/ui/Table/tableColumns";
 import { exportToCSV } from "@/utils/exportData";
 // Column helper for type safety
 const columnHelper = createColumnHelper();

@@ -13,7 +13,7 @@ export const reporterFormSchema = Yup.object().shape({
     .required('Required'),
 
   role: Yup.string()
-    .oneOf(['reporter', 'admin'], 'Invalid role')
+    .oneOf(['reporter'], 'Role must be reporter')
     .required('Required'),
 
   departament: Yup.string()
@@ -29,7 +29,7 @@ export const getReporterFormInitialValues = (user, initialValues = null) => {
     return {
       name: initialValues.name || '',
       email: initialValues.email || '',
-      role: initialValues.role || 'reporter',
+      role: 'reporter', // Always reporter, never admin
       departament: initialValues.departament || '',
       occupation: initialValues.occupation || ''
     };
@@ -38,7 +38,7 @@ export const getReporterFormInitialValues = (user, initialValues = null) => {
   return {
     name: '',
     email: '',
-    role: 'reporter',
+    role: 'reporter', // Always reporter
     departament: '',
     occupation: ''
   };
@@ -47,8 +47,7 @@ export const getReporterFormInitialValues = (user, initialValues = null) => {
 // Reporter form field options
 export const REPORTER_FORM_OPTIONS = {
   roles: [
-    { value: 'reporter', label: 'Reporter' },
-    { value: 'admin', label: 'Admin' }
+    { value: 'reporter', label: 'Reporter' }
   ],
   departments: [
     { value: 'Engineering', label: 'Engineering' },

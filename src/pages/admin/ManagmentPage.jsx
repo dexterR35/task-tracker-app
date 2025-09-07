@@ -149,7 +149,7 @@ const AdminManagementPage = () => {
           onClose={() => setShowCreateModal(false)}
           mode="create"
           onSuccess={() => {
-            showSuccess("Reporter created successfully!");
+            setShowCreateModal(false);
           }}
         />
       )}
