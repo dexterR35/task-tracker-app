@@ -6,7 +6,6 @@ import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { TaskForm } from "@/features/tasks";
 
 const TaskTable = ({
@@ -105,8 +104,7 @@ const TaskTable = ({
   };
 
   return (
-    <ErrorBoundary componentName="TaskTable">
-      <div className={className}>
+    <div className={className}>
         <DynamicTable
           data={tasks}
           columns={taskColumns}
@@ -130,7 +128,6 @@ const TaskTable = ({
         {/* Edit Task Modal */}
         {renderEditModal()}
       </div>
-    </ErrorBoundary>
   );
 };
 

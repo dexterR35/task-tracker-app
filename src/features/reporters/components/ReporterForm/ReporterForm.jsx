@@ -7,7 +7,6 @@ import { sanitizeText, sanitizeEmail } from "@/components/forms/utils/sanitizati
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
 import { DynamicButton } from "@/components/ui";
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 const ReporterForm = ({
   mode = 'create', // 'create' or 'edit'
@@ -136,8 +135,7 @@ const ReporterForm = ({
   };
   
   return (
-    <ErrorBoundary componentName="ReporterForm">
-      <div className={`card bg-white-dark ${className}`}>
+    <div className={`card bg-white-dark ${className}`}>
         {renderFormHeader()}
         
         <Formik
@@ -244,7 +242,6 @@ const ReporterForm = ({
         )}
       </Formik>
       </div>
-    </ErrorBoundary>
   );
 };
 

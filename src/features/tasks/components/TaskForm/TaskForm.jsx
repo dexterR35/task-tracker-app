@@ -6,7 +6,6 @@ import { selectCurrentMonthId } from "@/features/currentMonth";
 import { useAuth } from "@/features/auth";
 import { taskFormSchema, getTaskFormInitialValues, TASK_FORM_OPTIONS, extractTaskNumber, TASK_FORM_CONFIG } from './taskFormSchema';
 import { DynamicButton } from "@/components/ui";
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 // Import form components
 import {
@@ -135,18 +134,9 @@ const TaskForm = ({
   }, []);
   
   
-  const title = mode === 'edit' ? 'Edit Task' : 'Create New Task';
-  const subtitle = mode === 'edit' 
-    ? 'Update task information and save changes'
-    : 'Fill in the details below to create a new task';
   
   return (
-    <ErrorBoundary componentName="TaskForm">
-      <div className="card bg-white-dark">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">{subtitle}</p>
-        </div>
+    <div className="card bg-white-dark">
       
         <Formik
           initialValues={initialValues}
@@ -298,8 +288,7 @@ const TaskForm = ({
             </form>
           )}
         </Formik>
-      </div>
-    </ErrorBoundary>
+    </div>
   );
 };
 

@@ -3,7 +3,6 @@ import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showError, showSuccess, showInfo } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 const UserTable = ({
   className = "",
@@ -36,8 +35,7 @@ const UserTable = ({
   };
 
   return (
-    <ErrorBoundary componentName="UserTable">
-      <div className={className}>
+    <div className={className}>
         <DynamicTable
           data={users}
           columns={userColumns}
@@ -58,7 +56,6 @@ const UserTable = ({
           enableRowSelection={false}
         />
       </div>
-    </ErrorBoundary>
   );
 };
 
