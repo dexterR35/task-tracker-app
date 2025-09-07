@@ -1,260 +1,357 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import { useAuth } from "@/features/auth";
-import { usersApi } from "@/features/users/usersApi";
-import { reportersApi } from "@/features/reporters/reportersApi";
-import { tasksApi } from "@/features/tasks/tasksApi";
-import { useMonthData } from "@/hooks";
-import { Loader } from "@/components/ui";
+import React, { useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Treemap,
+} from "recharts";
+import { useAppData } from "@/hooks";
+import {
+  calculateTaskMetrics,
+  calculateReporterMetrics,
+  calculateUserMetrics,
+  calculateDesignMetrics,
+  calculateAIMetrics,
+  calculateMarketMetrics,
+  calculateProductMetrics,
+  calculateVideoMetrics,
+  calculateDeveloperMetrics,
+  generateChartData,
+} from "@/utils/analyticsUtils";
+
+// Color palette for charts
+const COLORS = [
+  "#67C090", "#33A1E0", "#e31769", "#eb2743", "#8B5CF6",
+  "#F59E0B", "#10B981", "#3B82F6", "#EF4444", "#8B5CF6"
+];
 
 const AnalyticsPage = () => {
-  const { user, canAccess } = useAuth();
-  // Get month data from AppLayout context
-  const { monthId, monthName } = useMonthData();
+  const { tasks = [], users = [], reporters = [], isLoading = false } = useAppData();
 
-  // Get data from RTK Query cache
-  const usersResult = useSelector(usersApi.endpoints.getUsers.select());
-  const reportersResult = useSelector(reportersApi.endpoints.getReporters.select());
-  
-  // Get tasks data
-  const tasksResult = useSelector((state) => {
-    const tasksQuery = Object.values(state.tasksApi.queries).find(query => 
-      query?.endpointName === 'subscribeToMonthTasks' && query?.data?.tasks
-    );
-    return tasksQuery;
-  });
+  // Calculate all metrics
+  const metrics = useMemo(() => {
+    const validTasks = Array.isArray(tasks) ? tasks : [];
+    const validUsers = Array.isArray(users) ? users : [];
+    const validReporters = Array.isArray(reporters) ? reporters : [];
+    
+    const taskMetrics = calculateTaskMetrics(validTasks);
+    const reporterMetrics = calculateReporterMetrics(validTasks, validReporters);
+    const userMetrics = calculateUserMetrics(validTasks, validUsers);
+    const designMetrics = calculateDesignMetrics(validTasks, validReporters);
+    const aiMetrics = calculateAIMetrics(validTasks);
+    const marketMetrics = calculateMarketMetrics(validTasks);
+    const productMetrics = calculateProductMetrics(validTasks);
+    const videoMetrics = calculateVideoMetrics(validTasks, validReporters);
+    const devMetrics = calculateDeveloperMetrics(validTasks, validReporters);
+    
+    let chartData = [];
+    try {
+      chartData = generateChartData(validTasks, 7);
+    } catch (error) {
+      console.warn('Error generating chart data:', error);
+      chartData = Array.from({ length: 7 }, (_, i) => ({
+        name: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i],
+        value: 0,
+        date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      }));
+    }
+    
+    return {
+      taskMetrics,
+      reporterMetrics,
+      userMetrics,
+      designMetrics,
+      aiMetrics,
+      marketMetrics,
+      productMetrics,
+      videoMetrics,
+      devMetrics,
+      chartData
+    };
+  }, [tasks, users, reporters]);
 
-  const users = usersResult?.data || [];
-  const reporters = reportersResult?.data || [];
-  const tasksData = tasksResult?.data || { tasks: [] };
-  const tasks = tasksData.tasks || [];
+  // Prepare data for different chart types
+  const chartData = {
+    // Bar Chart Data - Department Performance
+    departmentBar: [
+      { name: 'Design', tasks: metrics.designMetrics.totalDesignTasks, hours: metrics.designMetrics.totalDesignHours },
+      { name: 'Video', tasks: metrics.videoMetrics.totalVideoTasks, hours: metrics.videoMetrics.totalVideoHours },
+      { name: 'Development', tasks: metrics.devMetrics.totalDevTasks, hours: metrics.devMetrics.totalDevHours },
+    ],
 
-  const isLoading = usersResult?.isLoading || reportersResult?.isLoading || tasksResult?.isLoading || false;
-  const error = usersResult?.error || reportersResult?.error || tasksResult?.error || null;
+    // Line Chart Data - Time Trends
+    timeLine: metrics.chartData,
 
-  // Check if user is admin
-  if (!canAccess('admin')) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="text-center py-8">
-          <h2 className="text-2xl font-bold text-red-400 mb-4">Access Denied</h2>
-          <p className="text-gray-400">You need admin permissions to view analytics.</p>
-        </div>
-      </div>
-    );
-  }
+    // Pie Chart Data - AI Models Distribution
+    aiPie: metrics.aiMetrics.topAIModels.map((item, index) => ({
+      name: item.model,
+      value: item.count,
+      fill: COLORS[index % COLORS.length]
+    })),
 
-  // Show loading state
+    // Scatter Chart Data - User Performance
+    userScatter: metrics.userMetrics.topUsers.map((user, index) => ({
+      x: user.taskCount,
+      y: user.totalHours,
+      name: user.name,
+      fill: COLORS[index % COLORS.length]
+    })),
+
+    // Area Chart Data - Market Distribution
+    marketArea: metrics.marketMetrics.topMarkets.map((market, index) => ({
+      name: market.market,
+      value: market.count,
+      fill: COLORS[index % COLORS.length]
+    })),
+
+    // Radar Chart Data - Department Comparison
+    departmentRadar: [
+      { subject: 'Tasks', Design: metrics.designMetrics.totalDesignTasks, Video: metrics.videoMetrics.totalVideoTasks, Development: metrics.devMetrics.totalDevTasks },
+      { subject: 'Hours', Design: metrics.designMetrics.totalDesignHours, Video: metrics.videoMetrics.totalVideoHours, Development: metrics.devMetrics.totalDevHours },
+      { subject: 'AI Usage', Design: metrics.designMetrics.aiTasks, Video: metrics.videoMetrics.aiTasks, Development: metrics.devMetrics.aiTasks },
+    ],
+
+    // Treemap Data - Product Distribution
+    productTreemap: metrics.productMetrics.topProducts.map((product, index) => ({
+      name: product.product,
+      size: product.count,
+      fill: COLORS[index % COLORS.length]
+    })),
+
+    // Reporter Performance Data
+    reporterData: metrics.reporterMetrics.topReporters.map((reporter, index) => ({
+      name: reporter.name,
+      tasks: reporter.taskCount,
+      hours: reporter.totalHours,
+      fill: COLORS[index % COLORS.length]
+    }))
+  };
+
   if (isLoading) {
     return (
-      <Loader 
-        size="xl" 
-        variant="spinner" 
-        text="Loading analytics..." 
-        fullScreen={true}
-      />
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
       <div className="container mx-auto px-4 py-6">
-        <div className="text-center py-8">
-          <h2 className="text-2xl font-bold text-red-400 mb-4">Error Loading Analytics</h2>
-          <p className="text-gray-400">
-            {error?.message || "Failed to load analytics data. Please try refreshing the page."}
-          </p>
-        </div>
+        <div className="text-center text-white">Loading analytics...</div>
       </div>
     );
   }
-
-  // Calculate analytics
-  const totalUsers = users.length;
-  const totalReporters = reporters.length;
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.status === 'completed').length;
-  const pendingTasks = tasks.filter(task => task.status === 'pending').length;
-  
-  // Tasks by user
-  const tasksByUser = tasks.reduce((acc, task) => {
-    const userId = task.reporterId || task.userId;
-    acc[userId] = (acc[userId] || 0) + 1;
-    return acc;
-  }, {});
-
-  // Tasks by market
-  const tasksByMarket = tasks.reduce((acc, task) => {
-    if (task.markets && Array.isArray(task.markets)) {
-      task.markets.forEach(market => {
-        acc[market] = (acc[market] || 0) + 1;
-      });
-    }
-    return acc;
-  }, {});
-
-  // Tasks by product
-  const tasksByProduct = tasks.reduce((acc, task) => {
-    if (task.product) {
-      acc[task.product] = (acc[task.product] || 0) + 1;
-    }
-    return acc;
-  }, {});
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Analytics Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Analytics Dashboard</h1>
-        <p className="text-gray-400">
-          Analytics for {monthName || 'current month'} ({monthId})
-        </p>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Total Users</p>
-              <p className="text-2xl font-bold text-white">{totalUsers}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">👥</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Total Reporters</p>
-              <p className="text-2xl font-bold text-white">{totalReporters}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">📝</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Total Tasks</p>
-              <p className="text-2xl font-bold text-white">{totalTasks}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">📋</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Completed Tasks</p>
-              <p className="text-2xl font-bold text-white">{completedTasks}</p>
-              <p className="text-xs text-gray-400">
-                {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}% completion rate
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">✅</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detailed Analytics */}
+      <h1 className="text-3xl font-bold text-white mb-8">Analytics Dashboard</h1>
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Tasks by User */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Tasks by User</h3>
-          <div className="space-y-3">
-            {Object.entries(tasksByUser)
-              .sort(([,a], [,b]) => b - a)
-              .slice(0, 10)
-              .map(([userId, count]) => {
-                const user = users.find(u => (u.userUID || u.id) === userId);
-                return (
-                  <div key={userId} className="flex items-center justify-between p-3 bg-gray-700/30 rounded">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-white">
-                          {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-white">
-                          {user?.name || user?.email || userId}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-sm font-bold text-white">{count}</div>
-                  </div>
-                );
-              })}
-          </div>
+        
+        {/* Department Performance Bar Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Department Performance</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData.departmentBar}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+              <Legend />
+              <Bar dataKey="tasks" fill="#67C090" name="Tasks" />
+              <Bar dataKey="hours" fill="#33A1E0" name="Hours" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Tasks by Market */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Tasks by Market</h3>
-          <div className="space-y-3">
-            {Object.entries(tasksByMarket)
-              .sort(([,a], [,b]) => b - a)
-              .map(([market, count]) => (
-                <div key={market} className="flex items-center justify-between p-3 bg-gray-700/30 rounded">
-                  <div className="text-sm font-medium text-white capitalize">{market}</div>
-                  <div className="text-sm font-bold text-white">{count}</div>
-                </div>
-              ))}
-          </div>
+        {/* AI Models Distribution Pie Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">AI Models Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={chartData.aiPie}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {chartData.aiPie.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Tasks by Product */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Tasks by Product</h3>
-          <div className="space-y-3">
-            {Object.entries(tasksByProduct)
-              .sort(([,a], [,b]) => b - a)
-              .map(([product, count]) => (
-                <div key={product} className="flex items-center justify-between p-3 bg-gray-700/30 rounded">
-                  <div className="text-sm font-medium text-white">{product}</div>
-                  <div className="text-sm font-bold text-white">{count}</div>
-                </div>
-              ))}
-          </div>
+        {/* Time Trends Line Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Task Creation Trends (7 Days)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData.timeLine}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+              <Line type="monotone" dataKey="value" stroke="#e31769" strokeWidth={3} dot={{ fill: '#e31769', strokeWidth: 2, r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Task Status Overview */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Task Status Overview</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded">
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                <div className="text-sm font-medium text-white">Completed</div>
-              </div>
-              <div className="text-sm font-bold text-white">{completedTasks}</div>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded">
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                <div className="text-sm font-medium text-white">Pending</div>
-              </div>
-              <div className="text-sm font-bold text-white">{pendingTasks}</div>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded">
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                <div className="text-sm font-medium text-white">In Progress</div>
-              </div>
-              <div className="text-sm font-bold text-white">{totalTasks - completedTasks - pendingTasks}</div>
-            </div>
-          </div>
+        {/* User Performance Scatter Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">User Performance</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <ScatterChart data={chartData.userScatter}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis type="number" dataKey="x" name="Tasks" stroke="#9CA3AF" />
+              <YAxis type="number" dataKey="y" name="Hours" stroke="#9CA3AF" />
+              <Tooltip 
+                cursor={{ strokeDasharray: '3 3' }}
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+              <Scatter dataKey="y" fill="#8B5CF6" />
+            </ScatterChart>
+          </ResponsiveContainer>
         </div>
+
+        {/* Market Distribution Area Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Market Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={chartData.marketArea}>
+              <defs>
+                <linearGradient id="marketGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+              <Area type="monotone" dataKey="value" stroke="#10B981" fillOpacity={1} fill="url(#marketGradient)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Department Comparison Radar Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Department Comparison</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <RadarChart data={chartData.departmentRadar}>
+              <PolarGrid stroke="#374151" />
+              <PolarAngleAxis dataKey="subject" stroke="#9CA3AF" />
+              <PolarRadiusAxis stroke="#9CA3AF" />
+              <Radar name="Design" dataKey="Design" stroke="#eb2743" fill="#eb2743" fillOpacity={0.3} />
+              <Radar name="Video" dataKey="Video" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.3} />
+              <Radar name="Development" dataKey="Development" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.3} />
+              <Legend />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Reporter Performance Bar Chart */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Reporter Performance</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData.reporterData} layout="horizontal">
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis type="number" stroke="#9CA3AF" />
+              <YAxis dataKey="name" type="category" stroke="#9CA3AF" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+              <Bar dataKey="tasks" fill="#3B82F6" name="Tasks" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Product Distribution Treemap */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Product Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <Treemap
+              data={chartData.productTreemap}
+              dataKey="size"
+              aspectRatio={4/3}
+              stroke="#374151"
+              fill="#8884d8"
+            >
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }} 
+              />
+            </Treemap>
+          </ResponsiveContainer>
+        </div>
+
       </div>
     </div>
   );
