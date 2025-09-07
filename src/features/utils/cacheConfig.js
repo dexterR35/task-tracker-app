@@ -5,8 +5,8 @@
 
 // Cache duration constants (in seconds) - moved from constants.js
 export const CACHE_DURATIONS = {
-  SHORT: 60,      // 1 minute
-  MEDIUM: 300,    // 5 minutes
+  SHORT: 300,     // 5 minutes (increased from 1 minute)
+  MEDIUM: 600,    // 10 minutes (increased from 5 minutes)
   LONG: 1800,     // 30 minutes
   VERY_LONG: 3600, // 1 hour
   INFINITE: Infinity
@@ -60,8 +60,13 @@ export const getCacheConfig = (volatility = DATA_VOLATILITY.MEDIUM) => {
  * Predefined cache configurations for common data types
  */
 export const CACHE_CONFIGS = {
-  // Real-time data that changes frequently
-  TASKS: getCacheConfig(DATA_VOLATILITY.HIGH),
+  // Tasks with real-time Firebase listeners - infinite cache since listeners handle updates
+  TASKS: {
+    keepUnusedDataFor: CACHE_DURATIONS.INFINITE, // Infinite - Firebase listeners handle real-time updates
+    refetchOnMountOrArgChange: false, // Don't refetch - listeners handle updates
+    refetchOnFocus: false, // Don't refetch - listeners handle updates
+    refetchOnReconnect: false // Don't refetch - listeners handle updates
+  },
   
   // User data that changes moderately
   USERS: getCacheConfig(DATA_VOLATILITY.MEDIUM),

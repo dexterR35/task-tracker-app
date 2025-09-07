@@ -22,7 +22,7 @@ const safeDisplay = (value, fallback = "-") => {
 const numberFmt = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : 0);
 
 // Tasks Table Columns
-export const getTaskColumns = (monthId = null) => [
+export const getTaskColumns = (monthId = null, reporters = []) => [
   columnHelper.accessor('id', {
     header: '# ID',
     cell: ({ getValue, row }) => {
@@ -106,14 +106,6 @@ export const getTaskColumns = (monthId = null) => [
     },
     size: 120,
   }),
-  columnHelper.accessor('reporter', {
-    header: 'Reporter',
-    cell: ({ getValue }) => {
-      const reporter = getValue();
-      return safeDisplay(reporter) || "-";
-    },
-    size: 120,
-  }),
   columnHelper.accessor('deliverables', {
     id: 'deliverablesCount',
     header: 'Nr Deliverables',
@@ -126,27 +118,40 @@ export const getTaskColumns = (monthId = null) => [
     },
     size: 120,
   }),
-  columnHelper.accessor('createdBy', {
-    header: 'Created By',
-    cell: ({ getValue }) => {
-      const createdBy = getValue();
-      if (Array.isArray(createdBy) && createdBy.length > 0) {
-        const creatorNames = createdBy.map(creator => 
-          typeof creator === 'object' ? creator.name : creator
-        ).filter(Boolean);
-        return safeDisplay(creatorNames);
+  columnHelper.accessor('reporters', {
+    header: 'Reporter',
+    cell: ({ getValue, row }) => {
+      const reporterId = getValue();
+      const taskData = row.original;
+      
+      // Debug logging
+      console.log('Full task data:', taskData);
+      console.log('Reporter ID from task:', reporterId);
+      console.log('Available reporters:', reporters);
+      
+      // If no reporter ID, return dash
+      if (!reporterId) {
+        return "-";
       }
-      return "-";
+      
+      // Find the reporter by ID in the reporters array
+      const reporter = reporters.find(r => r.id === reporterId);
+      console.log('Found reporter:', reporter);
+      
+      // Return the reporter name if found, otherwise return the ID
+      if (reporter) {
+        const name = reporter.name || reporter.email || reporterId;
+        console.log('Returning reporter name:', name);
+        return name;
+      }
+      
+      // Fallback to the ID if reporter not found
+      console.log('Reporter not found, returning ID:', reporterId);
+      return reporterId;
     },
     size: 120,
   }),
-  columnHelper.accessor('createdAt', {
-    header: 'Created',
-    cell: ({ getValue }) => {
-      return formatDate(getValue(), 'MMM d, yyyy');
-    },
-    size: 100,
-  }),
+
   columnHelper.accessor('createdByName', {
     header: 'Created By',
     cell: ({ getValue }) => {
@@ -221,7 +226,6 @@ export const getUserColumns = (monthId = null) => [
     size: 120,
   }),
 ];
-
 // Reporters Table Columns
 export const getReporterColumns = (monthId = null) => [
   columnHelper.accessor('name', {
@@ -280,12 +284,11 @@ export const getReporterColumns = (monthId = null) => [
     size: 120,
   }),
 ];
-
 // Column factory function
-export const getColumns = (tableType, monthId = null) => {
+export const getColumns = (tableType, monthId = null, reporters = []) => {
   switch (tableType) {
     case 'tasks':
-      return getTaskColumns(monthId);
+      return getTaskColumns(monthId, reporters);
     case 'users':
       return getUserColumns(monthId);
     case 'reporters':

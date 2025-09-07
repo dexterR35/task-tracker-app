@@ -10,6 +10,7 @@ import { lazy, Suspense } from "react";
 import { useAuth } from "@/features/auth";
 
 import AppLayout from "@/components/layout/AppLayout";
+import AuthLayout from "@/components/layout/AuthLayout";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import Loader from "@/components/ui/Loader/Loader";
 
@@ -159,7 +160,7 @@ const router = createBrowserRouter([
         path: "unauthorized",
         element: <UnauthorizedPage />,
       },
-      // All other routes use the same layout
+      // Public routes with AppLayout
       {
         element: <AppLayout />,
         children: [
@@ -171,7 +172,16 @@ const router = createBrowserRouter([
             path: "login",
             element: <LoginPage />,
           },
-          
+        ],
+      },
+      // Protected routes with AuthLayout (sidebar navigation)
+      {
+        element: (
+          <ProtectedRoute>
+            <AuthLayout />
+          </ProtectedRoute>
+        ),
+        children: [
           // User routes (no user ID in path for security)
           {
             path: "dashboard",

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import netbetLogo from "@/assets/netbet-logo.png";
+// import netbetLogo from "@/assets/netbet-logo.png";
 import { useEffect, useRef } from "react";
 import { Formik, Field } from "formik";
 import { useAuth } from "@/features/auth";
@@ -8,7 +8,7 @@ import { buildFormValidationSchema } from "@/components/forms/utils/validation";
 import { showError, showSuccess } from "@/utils/toast";
 import { FIELD_TYPES } from "@/components/forms/configs/fieldTypes";
 import { DynamicButton } from "@/components/ui";
-import Loader from "@/components/ui/Loader/Loader";
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -132,7 +132,7 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-auto flex justify-center">
-            <img className="h-12 w-auto" src={netbetLogo} alt="NetBet" />
+            {/* <img className="h-12 w-auto" src={netbetLogo} alt="NetBet" /> */}
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Sign in to your account

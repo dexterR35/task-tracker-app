@@ -23,8 +23,8 @@ const TaskTable = ({
 
   // API hooks for task CRUD
   const [deleteTask] = useDeleteTaskMutation();
-  // Get task columns with monthId for date formatting
-  const taskColumns = getColumns('tasks', monthId);
+  // Get task columns with monthId and reporters data for reporter name lookup
+  const taskColumns = getColumns('tasks', monthId, reporters);
   // Handle task selection
   const handleTaskSelect = (task) => {
     showSuccess(`Selected task: ${task.departments || task.taskNumber}`);
