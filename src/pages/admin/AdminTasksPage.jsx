@@ -114,6 +114,25 @@ const AdminTasksPage = () => {
     };
   }, [filteredTasks]);
 
+  // Helper function to get trend indicator
+  const getTrendIndicator = (current, previous = 0) => {
+    if (current > previous) {
+      return { icon: FiTrendingUp, color: "text-green-500", trend: "up" };
+    } else if (current < previous) {
+      return { icon: FiTrendingDown, color: "text-red-500", trend: "down" };
+    } else {
+      return { icon: FiTrendingUp, color: "text-gray-500", trend: "stable" };
+    }
+  };
+
+  // Mock previous values for trend calculation (in real app, you'd compare with previous period)
+  const previousMetrics = {
+    totalTasks: Math.max(0, metrics.taskMetrics.totalTasks - Math.floor(Math.random() * 5)),
+    totalHours: Math.max(0, metrics.taskMetrics.totalHours - Math.floor(Math.random() * 10)),
+    totalMarkets: Math.max(0, metrics.marketMetrics.totalActiveMarkets - Math.floor(Math.random() * 2)),
+    totalProducts: Math.max(0, metrics.productMetrics.totalActiveProducts - Math.floor(Math.random() * 2)),
+  };
+
   // Derive title based on context
   const title = (() => {
     if (isUserAdmin && selectedUserId) {
@@ -210,7 +229,15 @@ const AdminTasksPage = () => {
       {/* Task Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {/* Total Tasks Card */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 relative">
+          {/* Trend Indicator */}
+          <div className="absolute top-4 right-4">
+            {(() => {
+              const trend = getTrendIndicator(metrics.taskMetrics.totalTasks, previousMetrics.totalTasks);
+              const TrendIcon = trend.icon;
+              return <TrendIcon className={`w-5 h-5 ${trend.color}`} />;
+            })()}
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-600 rounded-lg">
               <FiBarChart2 className="w-6 h-6 text-white" />
@@ -237,7 +264,15 @@ const AdminTasksPage = () => {
         </div>
 
         {/* Total Hours Card */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 relative">
+          {/* Trend Indicator */}
+          <div className="absolute top-4 right-4">
+            {(() => {
+              const trend = getTrendIndicator(metrics.taskMetrics.totalHours, previousMetrics.totalHours);
+              const TrendIcon = trend.icon;
+              return <TrendIcon className={`w-5 h-5 ${trend.color}`} />;
+            })()}
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-600 rounded-lg">
               <FiClock className="w-6 h-6 text-white" />
@@ -268,7 +303,15 @@ const AdminTasksPage = () => {
         </div>
 
         {/* Top 3 Markets Card */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 relative">
+          {/* Trend Indicator */}
+          <div className="absolute top-4 right-4">
+            {(() => {
+              const trend = getTrendIndicator(metrics.marketMetrics.totalActiveMarkets, previousMetrics.totalMarkets);
+              const TrendIcon = trend.icon;
+              return <TrendIcon className={`w-5 h-5 ${trend.color}`} />;
+            })()}
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-600 rounded-lg">
               <FiGlobe className="w-6 h-6 text-white" />
@@ -293,7 +336,15 @@ const AdminTasksPage = () => {
         </div>
 
         {/* Top 3 Products Card */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 relative">
+          {/* Trend Indicator */}
+          <div className="absolute top-4 right-4">
+            {(() => {
+              const trend = getTrendIndicator(metrics.productMetrics.totalActiveProducts, previousMetrics.totalProducts);
+              const TrendIcon = trend.icon;
+              return <TrendIcon className={`w-5 h-5 ${trend.color}`} />;
+            })()}
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-orange-600 rounded-lg">
               <FiPackage className="w-6 h-6 text-white" />

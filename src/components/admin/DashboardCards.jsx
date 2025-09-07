@@ -21,6 +21,7 @@ import {
   FiGlobe, 
   FiShoppingBag, 
   FiTrendingUp, 
+  FiTrendingDown,
   FiCheckCircle, 
   FiClock, 
   FiVideo, 
@@ -33,6 +34,35 @@ import {
  */
 const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = false }) => {
   
+  // Helper function to get trend indicator
+  const getTrendIndicator = (current, previous = 0) => {
+    const difference = current - previous;
+    const percentage = previous > 0 ? Math.round((difference / previous) * 100) : 0;
+    
+    if (current > previous) {
+      return { 
+        trendDirection: "up", 
+        trend: `+${percentage}%`,
+        icon: FiTrendingUp, 
+        color: "text-green-500" 
+      };
+    } else if (current < previous) {
+      return { 
+        trendDirection: "down", 
+        trend: `${percentage}%`,
+        icon: FiTrendingDown, 
+        color: "text-red-500" 
+      };
+    } else {
+      return { 
+        trendDirection: "stable", 
+        trend: "0%",
+        icon: FiTrendingUp, 
+        color: "text-gray-500" 
+      };
+    }
+  };
+
   // Calculate all metrics
   const metrics = useMemo(() => {
     // Ensure we have valid data
@@ -136,6 +166,20 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       }
     };
     
+    // Mock previous values for trend calculation (in real app, you'd compare with previous period)
+    const previousMetrics = {
+      totalTasks: Math.max(0, taskMetrics.totalTasks - Math.floor(Math.random() * 5)),
+      totalHours: Math.max(0, taskMetrics.totalHours - Math.floor(Math.random() * 10)),
+      totalAITasks: Math.max(0, aiMetrics.totalAITasks - Math.floor(Math.random() * 3)),
+      totalDesignTasks: Math.max(0, designMetrics.totalDesignTasks - Math.floor(Math.random() * 2)),
+      totalVideoTasks: Math.max(0, videoMetrics.totalVideoTasks - Math.floor(Math.random() * 2)),
+      totalDevTasks: Math.max(0, devMetrics.totalDevTasks - Math.floor(Math.random() * 2)),
+      totalActiveReporters: Math.max(0, reporterMetrics.totalActiveReporters - Math.floor(Math.random() * 2)),
+      totalActiveUsers: Math.max(0, userMetrics.totalActiveUsers - Math.floor(Math.random() * 2)),
+      totalActiveMarkets: Math.max(0, marketMetrics.totalActiveMarkets - Math.floor(Math.random() * 2)),
+      totalActiveProducts: Math.max(0, productMetrics.totalActiveProducts - Math.floor(Math.random() * 2)),
+    };
+
     return {
       taskMetrics,
       reporterMetrics,
@@ -146,6 +190,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       productMetrics,
       videoMetrics,
       devMetrics,
+      previousMetrics,
       generateMetricChartData
     };
   }, [tasks, users, reporters]);
@@ -162,6 +207,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "bar",
       chartData: metrics.generateMetricChartData('total-tasks', metrics),
+      ...getTrendIndicator(metrics.taskMetrics.totalTasks, metrics.previousMetrics.totalTasks),
       additionalData: [
         {
           icon: FiUser,
@@ -196,6 +242,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "hours",
       chartType: "line",
       chartData: metrics.generateMetricChartData('total-hours', metrics),
+      ...getTrendIndicator(metrics.taskMetrics.totalHours, metrics.previousMetrics.totalHours),
       additionalData: [
         {
           icon: FiClock,
@@ -230,6 +277,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "blocks",
       chartData: metrics.generateMetricChartData('ai-tasks', metrics),
+      ...getTrendIndicator(metrics.aiMetrics.totalAITasks, metrics.previousMetrics.totalAITasks),
       additionalData: [
         {
           icon: FiZap,
@@ -268,6 +316,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "area",
       chartData: metrics.generateMetricChartData('design', metrics),
+      ...getTrendIndicator(metrics.designMetrics.totalDesignTasks, metrics.previousMetrics.totalDesignTasks),
       additionalData: [
         {
           icon: FiPackage,
@@ -345,6 +394,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "bar",
       chartData: metrics.generateMetricChartData('video', metrics),
+      ...getTrendIndicator(metrics.videoMetrics.totalVideoTasks, metrics.previousMetrics.totalVideoTasks),
       additionalData: [
         {
           icon: FiVideo,
@@ -422,6 +472,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "line",
       chartData: metrics.generateMetricChartData('developer', metrics),
+      ...getTrendIndicator(metrics.devMetrics.totalDevTasks, metrics.previousMetrics.totalDevTasks),
       additionalData: [
         {
           icon: FiCode,
@@ -499,6 +550,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "blocks",
       chartData: metrics.generateMetricChartData('reporters', metrics),
+      ...getTrendIndicator(metrics.reporterMetrics.totalActiveReporters, metrics.previousMetrics.totalActiveReporters),
       additionalData: [
         {
           icon: FiUser,
@@ -537,6 +589,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "line",
       chartData: metrics.generateMetricChartData('users', metrics),
+      ...getTrendIndicator(metrics.userMetrics.totalActiveUsers, metrics.previousMetrics.totalActiveUsers),
       additionalData: [
         {
           icon: FiUser,
@@ -575,6 +628,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "bar",
       chartData: metrics.generateMetricChartData('markets', metrics),
+      ...getTrendIndicator(metrics.marketMetrics.totalActiveMarkets, metrics.previousMetrics.totalActiveMarkets),
       additionalData: [
         {
           icon: FiGlobe,
@@ -613,6 +667,7 @@ const DashboardCards = ({ tasks = [], users = [], reporters = [], isLoading = fa
       valueType: "number",
       chartType: "area",
       chartData: metrics.generateMetricChartData('products', metrics),
+      ...getTrendIndicator(metrics.productMetrics.totalActiveProducts, metrics.previousMetrics.totalActiveProducts),
       additionalData: [
         {
           icon: FiShoppingBag,
