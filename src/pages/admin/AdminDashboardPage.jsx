@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { format } from "date-fns";
 import { 
-  selectCurrentMonthId, 
-  selectCurrentMonthName, 
+  selectCurrentMonthId,
+  selectCurrentMonthName,
   selectBoardExists,
   selectCurrentMonthDaysInMonth,
   selectCurrentMonthGenerating,
@@ -15,22 +15,22 @@ import { showSuccess, showError } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
 import { DynamicButton, Loader } from "@/components/ui";
 import { TaskTable } from "@/features/tasks";
-import { useAdminData } from "@/hooks";
+import { useAppData } from "@/hooks"; // Updated to use unified hook
 import { useAuth } from "@/features/auth";
 
 // Admin Dashboard - Shows all users' data with admin controls
 const AdminDashboardPage = () => {
   // AdminDashboardPage is only accessible to admin users (enforced by route protection)
   
-  // Get month data
+  // Get month data from Redux store
   const monthId = useSelector(selectCurrentMonthId);
   const monthName = useSelector(selectCurrentMonthName);
-  
-  // Use custom hook for admin data fetching (includes reporters API call)
-  const { users, reporters, tasks, isLoading, error } = useAdminData();
-  
-  // Use the currentMonth state as the source of truth
   const boardExists = useSelector(selectBoardExists);
+  
+  // Use unified hook for all app data
+  const { users, reporters, tasks, isLoading, error } = useAppData();
+  
+  // boardExists is now provided by Redux selector
   
   const [showTable, setShowTable] = useState(true);
 

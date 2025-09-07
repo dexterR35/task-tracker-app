@@ -9,6 +9,7 @@ import {
   addDoc,
   doc,
   getDoc,
+  updateDoc,
   serverTimestamp,
   onSnapshot,
   limit,
@@ -200,26 +201,9 @@ export const tasksApi = createApi({
           const monthDoc = await getDoc(monthDocRef);
           
           if (!monthDoc.exists()) {
-            logger.log(`[Tasks API] Board ${arg.monthId} does not exist, setting up board listener first`);
-            logger.warn(`[Tasks API] MONTH BOARD MISSING: ${arg.monthId} - This is why no tasks are showing!`);
+            logger.log(`[Tasks API] Board ${arg.monthId} does not exist, no task listener needed`);
+            logger.warn(`[Tasks API] MONTH BOARD MISSING: ${arg.monthId} - Tasks will be empty until board is created`);
             
-            // Set up board listener to restart task subscription when board is created
-            const boardListenerKey = `board_tasks_${arg.monthId}`;
-            const boardUnsubscribe = listenerManager.addListener(boardListenerKey, () => {
-              return onSnapshot(monthDocRef, (doc) => {
-                if (doc.exists()) {
-                  logger.log(`[Tasks API] Board ${arg.monthId} created, restarting task subscription`);
-                  // Board was created, restart the task subscription
-                  if (unsubscribe) {
-                    unsubscribe();
-                  }
-                  // The subscription will be restarted by the component
-                  return;
-                }
-              });
-            });
-            
-            // Return early - no task subscription until board exists
             return;
           }
           
@@ -263,9 +247,7 @@ export const tasksApi = createApi({
             taskLimit,
             filteringLogic: arg.role === 'admin' ? 'ALL_TASKS' : 'USER_SPECIFIC_TASKS'
           });
-          // logger.log(`[Tasks API] About to start onSnapshot listener...`);
 
-          // Debug: Check what tasks exist in the database (without filtering)
           try {
             const debugQuery = fsQuery(colRef, orderBy("createdAt", "desc"), limit(API_CONFIG.REQUEST_LIMITS.DEBUG_TASKS_LIMIT));
             const debugSnap = await getDocs(debugQuery);
@@ -323,14 +305,7 @@ export const tasksApi = createApi({
                 userUID: t.userUID,
                 createdAt: t.createdAt 
               })));
-              // logger.log(`[tasksApi] Filtering info:`, {
-              //   userFilter,
-              //   role: arg.role,
-              //   userId: arg.userId,
-              //   currentUserUID
-              // });
-              
-              // Tasks are ready for Redux
+
               updateCachedData(() => tasks);
 
               },
@@ -397,24 +372,28 @@ export const tasksApi = createApi({
             }
             // Write operation: Create the task
             const colRef = collection(db, "tasks", monthId, "monthTasks");
+            
+            // Get current user info for task creation
+            const currentUserUID = auth.currentUser.uid;
+            const currentUserName = userData.name || userData.email || 'Unknown User';
+            
             const payload = {
               ...task,
               monthId: monthId, // Use the determined monthId
               createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
+              createdByUID: currentUserUID,
+              createdByName: currentUserName
             };
             const ref = await addDoc(colRef, payload);
-            // Read back the saved doc to resolve server timestamps
-            const savedSnap = await getDoc(ref);
-            const created = serializeTimestampsForRedux({ 
+            
+            return { 
               id: ref.id, 
               monthId, 
-              ...savedSnap.data() 
-            });
-            return created;
+              ...payload
+            };
           });
 
-          logger.log("Task created successfully, real-time subscription will update cache automatically");
+       
           logger.log(`[tasksApi] Created task:`, { 
             id: result.id, 
             monthId: result.monthId,
@@ -422,7 +401,7 @@ export const tasksApi = createApi({
             createdAt: result.createdAt,
             updatedAt: result.updatedAt
           });
-          logger.log(`[tasksApi] Task creation completed - real-time listener should detect this change`);
+ 
 
           return { data: result };
         } catch (error) {

@@ -1,9 +1,8 @@
 import React, { useCallback } from "react";
-import { useSelector } from "react-redux";
 import { Formik } from "formik";
 import { useCreateTaskMutation, useUpdateTaskMutation } from "@/features/tasks";
-import { selectCurrentMonthId } from "@/features/currentMonth";
 import { useAuth } from "@/features/auth";
+import { useMonthData } from "@/hooks";
 import { taskFormSchema, getTaskFormInitialValues, TASK_FORM_OPTIONS, extractTaskNumber, TASK_FORM_CONFIG } from './taskFormSchema';
 import { DynamicButton } from "@/components/ui";
 
@@ -30,7 +29,7 @@ const TaskForm = ({
   reporters = [], // Reporters data passed from parent component
 }) => {
   const { user } = useAuth();
-  const monthId = useSelector(selectCurrentMonthId);
+  const { monthId } = useMonthData();
   
   
   const [createTask] = useCreateTaskMutation();
@@ -53,12 +52,11 @@ const TaskForm = ({
         departments: values.departments,
         timeInHours: values.timeInHours,
         deliverables: values.hasDeliverables ? values.deliverables : [],
-        userAI: values.usedAI ? values.userAI : [],
+        aiModels: values.usedAI ? (values.aiModels || []) : [],
+        aiTime: values.usedAI ? (values.aiTime || 0) : 0,
         reporters: values.reporters,
         userUID,
-        monthId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        monthId
       };
 
       if (mode === 'create') {
@@ -77,7 +75,8 @@ const TaskForm = ({
             taskData.departments !== originalData.departments ||
             taskData.timeInHours !== originalData.timeInHours ||
             JSON.stringify(taskData.deliverables) !== JSON.stringify(originalData.deliverables) ||
-            JSON.stringify(taskData.userAI) !== JSON.stringify(originalData.userAI) ||
+            JSON.stringify(taskData.aiModels) !== JSON.stringify(originalData.aiModels) ||
+            taskData.aiTime !== originalData.aiTime ||
             taskData.reporters !== originalData.reporters
           );
 
@@ -124,12 +123,11 @@ const TaskForm = ({
   const handleUsedAIChange = useCallback((e, setFieldValue) => {
     const checked = e.target.checked;
     if (!checked) {
-      setFieldValue('userAI', []);
+      setFieldValue('aiModels', []);
+      setFieldValue('aiTime', 0);
     } else {
-      setFieldValue('userAI', [{
-        timeSpent: TASK_FORM_CONFIG.DEFAULT_VALUES.AI_TIME_SPENT,
-        aiModels: []
-      }]);
+      setFieldValue('aiModels', []);
+      setFieldValue('aiTime', TASK_FORM_CONFIG.DEFAULT_VALUES.AI_TIME_SPENT);
     }
   }, []);
   
@@ -142,6 +140,8 @@ const TaskForm = ({
           initialValues={initialValues}
           validationSchema={taskFormSchema}
           enableReinitialize={true}
+          validateOnChange={true}
+          validateOnBlur={true}
           onSubmit={handleSubmit}
         >
           {(formik) => (
@@ -201,7 +201,7 @@ const TaskForm = ({
                       max={TASK_FORM_CONFIG.TIME_INPUT.MAX_HOURS}
                       placeholder="2.5"
                       required={true}
-                      helpText={`Total time spent (${TASK_FORM_CONFIG.TIME_INPUT.MIN_HOURS} - ${TASK_FORM_CONFIG.TIME_INPUT.MAX_HOURS} hours)`}
+                      helpText={`Total time spent (minimum ${TASK_FORM_CONFIG.TIME_INPUT.MIN_HOURS} hours)`}
                     />
                   </div>
                 </div>
@@ -244,17 +244,17 @@ const TaskForm = ({
                   {formik.values.usedAI && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <NumberField
-                        name="userAI.0.timeSpent"
+                        name="aiTime"
                         label="Time Spent on AI"
                         step={TASK_FORM_CONFIG.TIME_INPUT.STEP_SIZE}
                         min={TASK_FORM_CONFIG.TIME_INPUT.MIN_HOURS}
                         max={TASK_FORM_CONFIG.TIME_INPUT.MAX_HOURS}
                         placeholder="1.0"
                         required={true}
-                        helpText={`AI time (${TASK_FORM_CONFIG.TIME_INPUT.MIN_HOURS} - ${TASK_FORM_CONFIG.TIME_INPUT.MAX_HOURS} hours)`}
+                        helpText={`AI time (minimum ${TASK_FORM_CONFIG.TIME_INPUT.MIN_HOURS} hours)`}
                       />
                       <MultiSelectField
-                        name="userAI.0.aiModels"
+                        name="aiModels"
                         label="AI Models"
                         options={TASK_FORM_OPTIONS.aiModels}
                         placeholder="Select an AI model"
@@ -275,8 +275,8 @@ const TaskForm = ({
               {/* Submit Button */}
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <DynamicButton
-                  onClick={formik.handleSubmit}
-                  disabled={formik.isSubmitting || !user}
+                  type="submit"
+                  disabled={formik.isSubmitting || !user || !formik.isValid}
                   loading={formik.isSubmitting}
                   variant="primary"
                   size="md"

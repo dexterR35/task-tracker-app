@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { format } from "date-fns";
 import { Formik } from "formik";
 import { useAuth } from "@/features/auth";
-import {
-  selectCurrentMonthId,
-  selectCurrentMonthName,
-  selectBoardExists,
-} from "@/features/currentMonth";
+import { useMonthData } from "@/hooks";
 import { DynamicButton, Loader, Modal } from "@/components/ui";
 import { TaskTable, TaskForm } from "@/features/tasks";
-import { useAdminData } from "@/hooks";
+import { useAppData } from "@/hooks";
 import { SelectField } from "@/features/tasks/components/TaskForm/components/TaskFormFields";
 
 // Admin Tasks Page - Shows all tasks with creation form and table
@@ -19,15 +14,11 @@ const AdminTasksPage = () => {
   // Get auth data
   const { user, canAccess } = useAuth();
 
-  // Get month data
-  const monthId = useSelector(selectCurrentMonthId);
-  const monthName = useSelector(selectCurrentMonthName);
+  // Get month data from AppLayout context
+  const { monthId, monthName, boardExists } = useMonthData();
 
-  // Use custom hook for admin data fetching
-  const { users, reporters, tasks, isLoading, error } = useAdminData();
-
-  // Use the currentMonth state as the source of truth
-  const boardExists = useSelector(selectBoardExists);
+  // Use unified hook for all app data
+  const { users, reporters, tasks, isLoading, error } = useAppData();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);

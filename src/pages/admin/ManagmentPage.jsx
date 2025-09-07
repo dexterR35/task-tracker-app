@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
 import { useAuth } from "@/features/auth";
-import { selectCurrentMonthId, selectCurrentMonthName } from "@/features/currentMonth";
+import { useMonthData } from "@/hooks";
 import { UserTable } from "@/features/users";
 import { ReporterTable } from "@/features/reporters";
 import { 
@@ -10,19 +9,19 @@ import {
 } from "@/components/ui";
 import { showSuccess } from "@/utils/toast.js";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
-import { useAdminData } from "@/hooks";
+import { useAppData } from "@/hooks";
 
 const AdminManagementPage = () => {
-  const monthId = useSelector(selectCurrentMonthId);
-  const monthName = useSelector(selectCurrentMonthName);
+  // Get month data from AppLayout context
+  const { monthId, monthName } = useMonthData();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Get current user for permissions
   const { user: currentUser, canAccess } = useAuth();
   
-  // Use custom hook for admin data fetching (now uses cached data)
-  const { users, reporters, isLoading, error } = useAdminData();
+  // Use unified hook for all app data
+  const { users, reporters, isLoading, error } = useAppData();
   
   // Debug logging - only log when data changes
   React.useEffect(() => {

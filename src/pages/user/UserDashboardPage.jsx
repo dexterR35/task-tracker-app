@@ -1,25 +1,18 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
 import { format } from "date-fns";
-import { 
-  selectCurrentMonthId, 
-  selectCurrentMonthName, 
-  selectBoardExists
-} from "@/features/currentMonth";
+import { useMonthData, useAppData } from "@/hooks";
 import { showSuccess } from "@/utils/toast.js";
 import { DynamicButton, Loader, Modal } from "@/components/ui";
 import { TaskForm, TaskTable } from "@/features/tasks";
-import { useUserData } from "@/hooks";
 import { logger } from "@/utils/logger";
 
 // User Dashboard - Shows user's own data with task creation
 const UserDashboardPage = () => {
-  // Get month data
-  const monthId = useSelector(selectCurrentMonthId);
-  const monthName = useSelector(selectCurrentMonthName);
+  // Get month data from global hook
+  const { monthId, monthName, boardExists } = useMonthData();
   
-  // Use custom hook for user data fetching (includes reporters API call)
-  const { user, tasks, isLoading, error } = useUserData();
+  // Use unified hook for all app data (automatically handles user vs admin)
+  const { user, tasks, reporters, isLoading, error } = useAppData();
   
   // Debug logging
   const userUID = user?.userUID || user?.uid || user?.id;
@@ -33,12 +26,11 @@ const UserDashboardPage = () => {
     error
   });
   
-  // Use the currentMonth state as the source of truth
-  const boardExists = useSelector(selectBoardExists);
+  // boardExists is now provided by Redux selector
   
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // For regular users, tasks are already filtered by the API call in useUserData
+  // For regular users, tasks are already filtered by the API call in useAppData
   const userTasks = tasks;
 
   // Title for user dashboard

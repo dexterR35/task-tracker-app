@@ -55,36 +55,37 @@ export const getTaskColumns = (monthId = null) => [
     cell: ({ getValue }) => numberFmt(parseFloat(getValue()) || 0),
     size: 80,
   }),
-  columnHelper.accessor('userAI', {
-    id: 'aiTimeSpent',
+  columnHelper.accessor('aiTime', {
     header: 'AI Hr',
     cell: ({ getValue }) => {
-      const userAI = getValue();
-      if (Array.isArray(userAI) && userAI.length > 0 && userAI[0].timeSpent) {
-        return numberFmt(parseFloat(userAI[0].timeSpent) || 0);
+      const aiTime = getValue();
+      if (typeof aiTime === 'number' && aiTime > 0) {
+        return numberFmt(aiTime);
       }
       return "-";
     },
     size: 80,
   }),
-  columnHelper.accessor('userAI', {
-    id: 'aiModels',
+  columnHelper.accessor('aiModels', {
     header: 'AI Models',
     cell: ({ getValue }) => {
-      const userAI = getValue();
-      if (Array.isArray(userAI) && userAI.length > 0 && userAI[0].aiModels) {
-        return safeDisplay(userAI[0].aiModels);
+      const aiModels = getValue();
+      if (Array.isArray(aiModels) && aiModels.length > 0) {
+        return safeDisplay(aiModels.join(', '));
       }
       return "-";
     },
     size: 120,
   }),
-  columnHelper.accessor('userAI', {
+  columnHelper.accessor('aiModels', {
     id: 'aiUsed',
     header: 'AI?',
     cell: ({ getValue }) => {
-      const userAI = getValue();
-      return (Array.isArray(userAI) && userAI.length > 0) ? "✓" : "-";
+      const aiModels = getValue();
+      if (Array.isArray(aiModels) && aiModels.length > 0) {
+        return "✓";
+      }
+      return "-";
     },
     size: 60,
   }),
@@ -98,24 +99,18 @@ export const getTaskColumns = (monthId = null) => [
     header: 'Deliverables',
     cell: ({ getValue }) => {
       const deliverables = getValue();
-      if (Array.isArray(deliverables) && deliverables.length > 0 && deliverables[0].deliverables) {
-        return safeDisplay(deliverables[0].deliverables);
+      if (Array.isArray(deliverables) && deliverables.length > 0) {
+        return safeDisplay(deliverables.join(', '));
       }
       return "-";
     },
     size: 120,
   }),
-  columnHelper.accessor('reporters', {
-    header: 'Reporters',
+  columnHelper.accessor('reporter', {
+    header: 'Reporter',
     cell: ({ getValue }) => {
-      const reporters = getValue();
-      if (Array.isArray(reporters) && reporters.length > 0) {
-        const reporterNames = reporters.map(reporter => 
-          typeof reporter === 'object' ? reporter.name : reporter
-        ).filter(Boolean);
-        return safeDisplay(reporterNames);
-      }
-      return "-";
+      const reporter = getValue();
+      return safeDisplay(reporter) || "-";
     },
     size: 120,
   }),
@@ -124,8 +119,8 @@ export const getTaskColumns = (monthId = null) => [
     header: 'Nr Deliverables',
     cell: ({ getValue }) => {
       const deliverables = getValue();
-      if (Array.isArray(deliverables) && deliverables.length > 0 && deliverables[0].deliverablesCount) {
-        return Number(deliverables[0].deliverablesCount) || 0;
+      if (Array.isArray(deliverables)) {
+        return deliverables.length;
       }
       return 0;
     },
@@ -147,8 +142,17 @@ export const getTaskColumns = (monthId = null) => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => formatDate(getValue(), 'MMM d, yyyy'),
+    cell: ({ getValue }) => {
+      return formatDate(getValue(), 'MMM d, yyyy');
+    },
     size: 100,
+  }),
+  columnHelper.accessor('createdByName', {
+    header: 'Created By',
+    cell: ({ getValue }) => {
+      return getValue() || '-';
+    },
+    size: 120,
   }),
 ];
 

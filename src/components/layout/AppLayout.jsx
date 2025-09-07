@@ -4,14 +4,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { selectIsAuthChecking } from "@/features/auth";
 import { useAuth } from "@/features/auth";
 import { 
-  selectCurrentMonthId, 
-  selectCurrentMonthName, 
-  selectBoardExists,
+
   initializeCurrentMonth
 } from "@/features/currentMonth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
+
 import {
   ArrowRightOnRectangleIcon,
   UsersIcon,
@@ -19,8 +17,6 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { Icons } from "@/components/icons";
-// import ReduxDataExample from "@/components/debug/ReduxDataExample";
-// import ApiStructureExplanation from "@/components/debug/ApiStructureExplanation";
 
 const AppLayout = () => {
   const dispatch = useDispatch();
@@ -28,10 +24,6 @@ const AppLayout = () => {
   
   // Get auth functions and user data from useAuth
   const { user, logout, clearError, canAccess } = useAuth();
-  
-  // Get month data directly from Redux store using memoized selectors
-  const monthId = useSelector(selectCurrentMonthId);
-  const monthName = useSelector(selectCurrentMonthName);
   
   const isAuthChecking = useSelector(selectIsAuthChecking);
 
@@ -276,9 +268,7 @@ const AppLayout = () => {
 
       {/* Main Content Area */}
       <main className="relative">
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
+        <Outlet />
       </main>
     </div>
   );

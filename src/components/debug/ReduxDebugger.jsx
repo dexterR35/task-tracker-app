@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
-import { selectCurrentMonthId, selectCurrentMonthName, selectBoardExists } from '@/features/currentMonth';
+import { selectBoardExists } from '@/features/currentMonth';
+import { useMonthData } from '@/hooks';
 
 // Memoized selectors for ReduxDebugger - Fixed to access correct RTK Query keys
 const selectUsersForDebug = createSelector(
@@ -106,10 +107,8 @@ const ReduxDebugger = () => {
   const user = useSelector(state => state.auth.user);
   const isAuthChecking = useSelector(state => state.auth.isAuthChecking);
   
-  // Get month data
-  const monthId = useSelector(selectCurrentMonthId);
-  const monthName = useSelector(selectCurrentMonthName);
-  const boardExists = useSelector(selectBoardExists);
+  // Get month data from AppLayout context
+  const { monthId, monthName, boardExists } = useMonthData();
   
   // Get data using memoized selectors
   const users = useSelector(selectUsersForDebug);

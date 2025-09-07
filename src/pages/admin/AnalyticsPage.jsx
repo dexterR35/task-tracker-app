@@ -4,13 +4,13 @@ import { useAuth } from "@/features/auth";
 import { usersApi } from "@/features/users/usersApi";
 import { reportersApi } from "@/features/reporters/reportersApi";
 import { tasksApi } from "@/features/tasks/tasksApi";
-import { selectCurrentMonthId, selectCurrentMonthName } from "@/features/currentMonth";
+import { useMonthData } from "@/hooks";
 import { Loader } from "@/components/ui";
 
 const AnalyticsPage = () => {
   const { user, canAccess } = useAuth();
-  const monthId = useSelector(selectCurrentMonthId);
-  const monthName = useSelector(selectCurrentMonthName);
+  // Get month data from AppLayout context
+  const { monthId, monthName } = useMonthData();
 
   // Get data from RTK Query cache
   const usersResult = useSelector(usersApi.endpoints.getUsers.select());

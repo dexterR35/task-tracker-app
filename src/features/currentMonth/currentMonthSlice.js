@@ -132,8 +132,8 @@ export const initializeCurrentMonth = createAsyncThunk(
     const monthInfo = getMonthInfo();
     const currentState = getState();
     
-    logger.log(`[currentMonthSlice] initializeCurrentMonth called with monthInfo:`, monthInfo);
-    logger.log(`[currentMonthSlice] Current state:`, currentState.currentMonth);
+    logger.log(`[currentMonthSlice] initializeCurrentMonth called with monthInfo:,Current state:`, monthInfo, currentState.currentMonth);
+
     
     // Only skip if we already have valid month data for the current month AND board status is confirmed
     if (currentState.currentMonth.monthId === monthInfo.monthId && 
@@ -221,6 +221,15 @@ export const setupBoardListener = createAsyncThunk(
             if (currentStateBoardExists !== currentExists) {
               logger.log(`[currentMonthSlice] Board status changed: ${currentStateBoardExists} -> ${currentExists}, dispatching update`);
               dispatch(setBoardExists(currentExists));
+              
+              // If board was just created, trigger task refetch
+              if (!currentStateBoardExists && currentExists) {
+                logger.log(`[currentMonthSlice] Board created, triggering task refetch`);
+                // Import the tasks API to invalidate cache
+                import('@/features/tasks/tasksApi').then(({ tasksApi }) => {
+                  dispatch(tasksApi.util.invalidateTags(['Tasks']));
+                });
+              }
             }
           },
           (error) => {
