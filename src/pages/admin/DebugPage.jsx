@@ -208,23 +208,44 @@ const DebugPage = () => {
           </div>
         </div>
 
-        {/* Last Checked Time */}
-        <div className="mt-6 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">⏰ Last Checked</div>
-              <div className="text-lg font-bold text-gray-800 dark:text-white">
-                {new Date().toLocaleTimeString()}
+        {/* Timestamps */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Last Checked Time */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">⏰ Last Checked</div>
+                <div className="text-lg font-bold text-gray-800 dark:text-white">
+                  {currentMonthState.lastChecked 
+                    ? new Date(currentMonthState.lastChecked).toLocaleTimeString()
+                    : 'Never checked'
+                  }
+                </div>
               </div>
             </div>
-            <DynamicButton
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.reload()}
-              iconName="refresh"
-            >
-              Refresh
-            </DynamicButton>
+          </div>
+
+          {/* Last Updated Time */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">🔄 Last Updated</div>
+                <div className="text-lg font-bold text-gray-800 dark:text-white">
+                  {currentMonthState.lastUpdated 
+                    ? new Date(currentMonthState.lastUpdated).toLocaleTimeString()
+                    : 'Never updated'
+                  }
+                </div>
+              </div>
+              <DynamicButton
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                iconName="refresh"
+              >
+                Refresh
+              </DynamicButton>
+            </div>
           </div>
         </div>
 

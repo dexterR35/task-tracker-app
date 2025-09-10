@@ -380,10 +380,11 @@ export const tasksApi = createApi({
             const payload = {
               ...task,
               monthId: monthId, // Use the determined monthId
-              createdAt: serverTimestamp(),
+              createdAt: new Date().toISOString(),
               createdByUID: currentUserUID,
               createdByName: currentUserName
             };
+            
             const ref = await addDoc(colRef, payload);
             
             return { 
@@ -445,7 +446,7 @@ export const tasksApi = createApi({
             const updatesWithMonthId = {
               ...updates,
               monthId: monthId,
-              updatedAt: serverTimestamp(),
+              updatedAt: new Date().toISOString(),
             };
 
             transaction.update(taskRef, updatesWithMonthId);

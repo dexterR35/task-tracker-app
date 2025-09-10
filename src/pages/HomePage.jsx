@@ -1,9 +1,6 @@
 import React from "react";
-import { useSelector } from 'react-redux';
-import { selectUser } from '../features/auth/authSlice';
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { useNavigate } from "react-router-dom";
-
+import netbetLogo from "@/assets/netbet-logo.png";  
 import {
   FiClock,
   FiBarChart2,
@@ -105,9 +102,9 @@ const homepageCards = [
     title: "AI Tasks",
     type: "ai-tasks",
     value: "45",
-    subtitle: "AI Enhanced Tasks",
-    reporterName: "Mike Wilson",
-    bestAI: "ChatGPT",
+    subtitle: "AI Tools",
+    reporterName: "Emma Haarper",
+    bestAI: "Claude",
     deliverables: null,
     bestCategory: "Poker",
     trend: "+20% from last month",
@@ -121,15 +118,16 @@ const homepageCards = [
     title: "Team Performance",
     type: "user-performance",
     value: "92%",
-    subtitle: "Team Performance",
-    reporterName: "Alex Brown",
+    subtitle: "User per month",
+    reporterName: "John Travolta",
     bestAI: null,
     deliverables: null,
     bestCategory: "Design",
-    trend: "+5% from last month",
+    trend: "+5% / week",
     trendDirection: "up",
     icon: FiUsers,
-    hasChart: false,
+    hasChart: true,
+    chartData: ChartData,
   },
 
   {
@@ -138,7 +136,7 @@ const homepageCards = [
     type: "total-hours",
     value: "8.2",
     subtitle: "Hours Tracked",
-    reporterName: "Sarah Johnson",
+    reporterName: "Johnny English",
     bestAI: null,
     deliverables: null,
     bestCategory: "Sports",
@@ -152,15 +150,16 @@ const homepageCards = [
     title: "Total Tasks",
     type: "total-tasks",
     value: "156",
-    subtitle: "Active Tasks",
-    reporterName: "John Smith",
+    subtitle: "Analytical Tasks",
+    reporterName: "Johnny Sins",
     bestAI: null,
     deliverables: null,
     bestCategory: "Casino",
     trend: "-12% from last month",
     trendDirection: "down",
     icon: FiCheckCircle,
-    hasChart: false,
+    hasChart: true, 
+    chartData: ChartData,
   },
   {
     id: "design",
@@ -196,7 +195,7 @@ const HomepageCard = ({ card }) => {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-6 w-full">
+    <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
       <div className="h-auto">
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -211,11 +210,11 @@ const HomepageCard = ({ card }) => {
                   style={{ color: metricColor }}
                 />
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-200">
+              <div className="leading-6">
+                <h3 className="text-sm font-semibold text-gray-200 !mb-0">
                   {card.title}
                 </h3>
-                <p className="text-xs text-gray-400 mt-1">{card.subtitle}</p>
+                <p className="text-xs text-gray-400 mt-0">{card.subtitle}</p>
               </div>
             </div>
 
@@ -323,99 +322,53 @@ const HomepageCard = ({ card }) => {
 };
 
 const HomePage = () => {
-  const navigate = useNavigate();
-  // ✅ Use Redux instead of useFetchData
-  const user = useSelector(selectUser);
-
-  // Show loading state if we're actually checking auth and have a user
-  // This prevents the spinner from showing on the homepage when it's a public route
-
   return (
-    <div className="min-h-[90vh] w-full bg-white-dark flex items-center justify-center flex-col">
-      <div className="max-w-[86%] w-full mx-auto px-4 relative">
+    <div className="min-h-screen w-full bg-white-dark flex items-center justify-center flex-col">
+      <div className="max-w-[90%] w-full mx-auto px-4 relative pt-10">
         {/* Hero Section */}
-
-        <div className="mb-2">
+        <div className="mb-5">
           <h1 className="mb-2 text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
             <span className="text-white-dark">Welcome to</span>
-            <span className=" text-red-error ">SYNC</span>
+            <span className=" text-red-error">SYNC</span>
           </h1>
-          <p className="text-base md:text-lg leading-6 text-gray-300 max-w-xl mx-auto text-center mb-16">
+          <p className="text-base md:text-lg leading-6 text-gray-300 max-w-xl mx-auto text-center mb-10">
             The task management platform designed for teams that
             prioritize{" "}
-            <span className="text-red-error ">calculate monthly reports</span>{" "}
-            and <span className="text-blue-default ">analyze performance</span>
+            <span className="text-red-error">calculate monthly reports</span>{" "}
+            and <span className="text-blue-default">analyze performance</span>
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 ">
-            {!!user ? (
-              // Show "View Dashboard" button when authenticated
-              <DynamicButton
-                to="/dashboard"
-                variant="danger"
-                size="lg"
-                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-105"
-                type="button"
-                iconName="funny"
-              >
-                View Dashboard
-              </DynamicButton>
-            ) : (
-              // Show "Get Started" button when not authenticated
-              <DynamicButton
-                to="/login"
-                variant="primary"
-                size="lg"
-                className="text-lg px-8 py-4  transition-all duration-200 transform hover:scale-105"
-                type="button"
-                iconName="default"
-              >
-                Get Started
-              </DynamicButton>
-            )}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center  ">
+            <DynamicButton
+              to="/login"
+              variant="primary"
+              size="lg"
+              className="text-xl w-1/8"
+              type="button"
+              iconName="default"
+        
+            >
+              Get Started
+            </DynamicButton>
           </div>
         </div>
-
         {/* Metrics Section */}
-        <div className="mb-10 relative">
-       
-          {/* Homepage Cards Grid */}
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 items-start">
+        <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
               {homepageCards.map((card) => (
                 <HomepageCard key={card.id} card={card} />
               ))}
             </div>
-          </div>
         </div>
-
-        {/* Stats Section */}
-        <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 z-10 bg-gray-800 rounded-2xl p-4 mb-16 border border-gray-600/30 w-1/2">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-green-success">40+</div>
-              <div className="text-gray-300">Active Teams</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-blue-500">300+</div>
-              <div className="text-gray-300">Tasks Completed per month</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-red-error">50/50</div>
-              <div className="text-gray-300">whatever</div>
-            </div>
-          </div>
-        </div>
-
         {/* Footer */}
-        {/* <div className="flex items-center justify-center space-x-4 absolute bottom-0 left-1/2 -translate-x-1/2">
-          <p className="font-base italic text-sm text-gray-500">Powered by</p>
+        <div className="flex-center space-x-2 mt-20 mb-10">
+          <p className="font-base italic text-xs text-gray-500">Powered by</p>
           <img
             src={netbetLogo}
             alt="NetBet Logo"
-            className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity duration-300"
+            className="h-auto w-20 object-contain opacity-80"
           />
-        </div> */}
+        </div>
       </div>
     </div>
   );

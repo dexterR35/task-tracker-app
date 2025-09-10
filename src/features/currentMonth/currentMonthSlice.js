@@ -109,7 +109,7 @@ export const generateMonthBoard = createAsyncThunk(
         boardId,
         createdAt: serverTimestamp(),
         createdBy: auth.currentUser?.uid,
-        createdByName: auth.currentUser?.displayName || auth.currentUser?.email,
+        createdByName: auth.currentUser?.email,
         createdByRole: userRole,
         ...meta,
       };
@@ -447,6 +447,13 @@ export const selectCurrentMonthInfo = createSelector(
     error: currentMonth.error
   })
 );
+
+// Helper function to check if month data is stale
+export const isMonthDataStale = (lastChecked, maxAgeMinutes = 5) => {
+  if (!lastChecked) return true;
+  const maxAge = maxAgeMinutes * 60 * 1000; // Convert to milliseconds
+  return (Date.now() - lastChecked) > maxAge;
+};
 
 // Export helper functions for use in other parts of the app
 export { getCurrentMonthId, getMonthInfo, isValidMonthId };

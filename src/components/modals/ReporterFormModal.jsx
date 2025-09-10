@@ -23,8 +23,9 @@ const ReporterFormModal = ({
       size="lg"
     >
       <ReporterForm
+        formType="reporter"
         mode={mode}
-        reporter={reporter}
+        initialValues={reporter}
         onSuccess={() => {
           onSuccess?.();
           onClose();

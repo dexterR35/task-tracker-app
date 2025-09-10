@@ -39,6 +39,19 @@ const DynamicTable = ({
   enableRowSelection = false,
   onRowSelectionChange = null,
 }) => {
+  
+  // Debug logging for DynamicTable
+  console.log('🔍 DynamicTable Debug:', {
+    tableType,
+    dataCount: data?.length || 0,
+    data: data?.slice(0, 2), // Show first 2 items for debugging
+    columnsCount: columns?.length || 0,
+    isLoading,
+    error,
+    showColumnToggle,
+    showFilters,
+    showPagination
+  });
 
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -310,26 +323,50 @@ const DynamicTable = ({
               ))}
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-700">
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`hover:bg-gray-700 ${
-                    row.getIsSelected() ? 'bg-blue-900/20' : ''
-                  }`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-300"
-                      style={{
-                        width: cell.column.getSize(),
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td colSpan={table.getAllColumns().length} className="px-6 py-8 text-center text-gray-400">
+                    {isLoading ? 'Loading...' : 'No data available'}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                table.getRowModel().rows.map((row, index) => {
+                  // Debug logging for first few rows
+                  if (index < 2) {
+                    console.log(`🔍 Row ${index} Debug:`, {
+                      rowId: row.id,
+                      originalData: row.original,
+                      visibleCells: row.getVisibleCells().length,
+                      cells: row.getVisibleCells().map(cell => ({
+                        columnId: cell.column.id,
+                        value: cell.getValue(),
+                        rendered: flexRender(cell.column.columnDef.cell, cell.getContext())
+                      }))
+                    });
+                  }
+                  
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`hover:bg-gray-700 ${
+                        row.getIsSelected() ? 'bg-blue-900/20' : ''
+                      }`}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-300"
+                          style={{
+                            width: cell.column.getSize(),
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

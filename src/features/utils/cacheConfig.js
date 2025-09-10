@@ -68,8 +68,13 @@ export const CACHE_CONFIGS = {
     refetchOnReconnect: false // Don't refetch - listeners handle updates
   },
   
-  // User data that changes moderately
-  USERS: getCacheConfig(DATA_VOLATILITY.MEDIUM),
+  // User data - infinite cache since users don't change frequently
+  USERS: {
+    keepUnusedDataFor: CACHE_DURATIONS.INFINITE, // Infinite - users rarely change
+    refetchOnMountOrArgChange: false, // Don't refetch - users are stable
+    refetchOnFocus: false, // Don't refetch - users are stable
+    refetchOnReconnect: false // Don't refetch - users are stable
+  },
   
   // Static data that rarely changes
   REPORTERS: getCacheConfig(DATA_VOLATILITY.STATIC),

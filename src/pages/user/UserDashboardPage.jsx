@@ -131,8 +131,8 @@ const UserDashboardPage = () => {
         maxWidth="max-w-4xl"
       >
         <TaskForm
+          formType="task"
           mode="create"
-          reporters={reporters}
           onSuccess={() => {
             setShowCreateModal(false);
           }}

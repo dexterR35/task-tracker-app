@@ -1,13 +1,9 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { formatDate } from '@/utils/dateUtils';
+import { useMemo } from 'react';
 
 const columnHelper = createColumnHelper();
 
-// Simple task display formatter
-const formatTaskDisplayName = (taskId, taskNumber) => {
-  if (!taskId) return 'Unknown Task';
-  return taskNumber || taskId;
-};
 
 // Helper function to safely display data
 const safeDisplay = (value, fallback = "-") => {
@@ -18,19 +14,36 @@ const safeDisplay = (value, fallback = "-") => {
   return String(value) || fallback;
 };
 
-// Helper function to format numbers
-const numberFmt = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : 0);
 
-// Tasks Table Columns
-export const getTaskColumns = (monthId = null, reporters = []) => [
+// Tasks Table Columns - Memoized to prevent re-renders
+export const useTaskColumns = (monthId = null, reporters = []) => {
+  return useMemo(() => [
   columnHelper.accessor('id', {
-    header: '# ID',
-    cell: ({ getValue, row }) => {
-      const taskId = getValue();
-      const taskNumber = row.original.taskNumber;
-      return formatTaskDisplayName(taskId, taskNumber);
+    header: 'Document ID',
+    cell: ({ getValue }) => (
+      <div className="text-sm font-mono text-gray-600 dark:text-gray-400">
+        {getValue() || 'N/A'}
+      </div>
+    ),
+    size: 120,
+  }),
+  columnHelper.accessor('jiraLink', {
+    header: 'Jira Link',
+    cell: ({ getValue }) => {
+      const jiraLink = getValue();
+      if (!jiraLink) return 'No Link';
+      return (
+        <a 
+          href={jiraLink} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline text-sm break-all"
+        >
+          {jiraLink}
+        </a>
+      );
     },
-    size: 80,
+    size: 200,
   }),
   columnHelper.accessor('departments', {
     header: 'Department',
@@ -52,7 +65,10 @@ export const getTaskColumns = (monthId = null, reporters = []) => [
   }),
   columnHelper.accessor('timeInHours', {
     header: 'Hours',
-    cell: ({ getValue }) => numberFmt(parseFloat(getValue()) || 0),
+    cell: ({ getValue }) => {
+      const hours = parseFloat(getValue()) || 0;
+      return hours > 0 ? hours.toFixed(1) : 0;
+    },
     size: 80,
   }),
   columnHelper.accessor('aiTime', {
@@ -60,7 +76,7 @@ export const getTaskColumns = (monthId = null, reporters = []) => [
     cell: ({ getValue }) => {
       const aiTime = getValue();
       if (typeof aiTime === 'number' && aiTime > 0) {
-        return numberFmt(aiTime);
+        return aiTime.toFixed(1);
       }
       return "-";
     },
@@ -122,12 +138,6 @@ export const getTaskColumns = (monthId = null, reporters = []) => [
     header: 'Reporter',
     cell: ({ getValue, row }) => {
       const reporterId = getValue();
-      const taskData = row.original;
-      
-      // Debug logging
-      console.log('Full task data:', taskData);
-      console.log('Reporter ID from task:', reporterId);
-      console.log('Available reporters:', reporters);
       
       // If no reporter ID, return dash
       if (!reporterId) {
@@ -136,17 +146,13 @@ export const getTaskColumns = (monthId = null, reporters = []) => [
       
       // Find the reporter by ID in the reporters array
       const reporter = reporters.find(r => r.id === reporterId);
-      console.log('Found reporter:', reporter);
       
       // Return the reporter name if found, otherwise return the ID
       if (reporter) {
-        const name = reporter.name || reporter.email || reporterId;
-        console.log('Returning reporter name:', name);
-        return name;
+        return reporter.name || reporter.email || reporterId;
       }
       
       // Fallback to the ID if reporter not found
-      console.log('Reporter not found, returning ID:', reporterId);
       return reporterId;
     },
     size: 120,
@@ -159,7 +165,8 @@ export const getTaskColumns = (monthId = null, reporters = []) => [
     },
     size: 120,
   }),
-];
+], [monthId, reporters]);
+};
 
 // Users Table Columns
 export const getUserColumns = (monthId = null) => [
@@ -226,6 +233,8 @@ export const getUserColumns = (monthId = null) => [
     size: 120,
   }),
 ];
+
+
 // Reporters Table Columns
 export const getReporterColumns = (monthId = null) => [
   columnHelper.accessor('name', {
@@ -256,27 +265,15 @@ export const getReporterColumns = (monthId = null) => [
     cell: ({ getValue }) => safeDisplay(getValue()),
     size: 200,
   }),
-  columnHelper.accessor('role', {
-    header: 'Role',
-    cell: ({ getValue }) => {
-      const role = getValue() || 'reporter';
-      return (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-          {role}
-        </span>
-      );
-    },
-    size: 120,
-  }),
   columnHelper.accessor('departament', {
     header: 'Department',
     cell: ({ getValue }) => safeDisplay(getValue()),
     size: 150,
   }),
-  columnHelper.accessor('occupation', {
-    header: 'Occupation',
+  columnHelper.accessor('country', {
+    header: 'Country',
     cell: ({ getValue }) => safeDisplay(getValue()),
-    size: 150,
+    size: 100,
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
@@ -288,7 +285,8 @@ export const getReporterColumns = (monthId = null) => [
 export const getColumns = (tableType, monthId = null, reporters = []) => {
   switch (tableType) {
     case 'tasks':
-      return getTaskColumns(monthId, reporters);
+      // Note: For tasks, use useTaskColumns hook directly in components for better performance
+      return [];
     case 'users':
       return getUserColumns(monthId);
     case 'reporters':

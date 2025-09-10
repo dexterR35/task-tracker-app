@@ -135,7 +135,7 @@ export const handleApiError = (error, operation = 'API operation', options = {})
 
 /**
  * Handle form validation errors
- * @param {Object} errors - Formik errors object
+ * @param {Object} errors - Form errors object
  * @param {string} formName - Name of the form (for logging)
  * @returns {Object} - Standardized error response
  */

@@ -15,6 +15,7 @@ import {
   showWelcomeMessage,
   showLogoutSuccess,
   showAuthError,
+  showSuccess,
 } from '../../../utils/toast';
 
 // Refined useAuth hook with simplified API and better consistency
@@ -62,12 +63,22 @@ export const useAuth = () => {
   const login = useCallback(async (credentials) => {
     try {
       const result = await dispatch(loginUser(credentials)).unwrap();
+      
+      // Show welcome message after successful login
+      if (safeUser) {
+        const welcomeMessage = `Welcome, ${safeUser.name || safeUser.email}! 👋`;
+        showSuccess(welcomeMessage, { 
+          autoClose: 3000,
+          position: "top-center"
+        });
+      }
+      
       return result;
     } catch (error) {
       showAuthError(error?.message || error || 'Login failed');
       throw error;
     }
-  }, [dispatch]);
+  }, [dispatch, safeUser]);
 
   const logout = useCallback(async () => {
     try {

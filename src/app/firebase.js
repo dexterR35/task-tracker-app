@@ -3,11 +3,9 @@ import {
   getAuth,
   setPersistence,
   browserSessionPersistence,
-  connectAuthEmulator,
 } from "firebase/auth";
 import { 
-  getFirestore, 
-  connectFirestoreEmulator 
+  getFirestore
 } from "firebase/firestore";
 import { logger } from "@/utils/logger";
 
@@ -44,16 +42,6 @@ try {
 export const auth = getAuth(appInstance);
 export const db = getFirestore(appInstance);
 
-// Connect to emulators in development
-if (import.meta.env.MODE === "development" && import.meta.env.VITE_USE_FIREBASE_EMULATOR === "true") {
-  try {
-    connectAuthEmulator(auth, "http://localhost:9099");
-    connectFirestoreEmulator(db, "localhost", 8080);
-    logger.log("🔥 Connected to Firebase emulators");
-  } catch (error) {
-    logger.warn("Failed to connect to emulators:", error.message);
-  }
-}
 
 // Enable logging in development
 if (import.meta.env.MODE === "development") {

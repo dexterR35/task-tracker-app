@@ -36,31 +36,30 @@ const Sidebar = ({ onToggle, isOpen }) => {
       name: "Dashboard",
       href: "/dashboard",
       icon: HomeIcon,
-      show: true,
     },
     {
       name: "Analytics",
-      href: "/admin/analytics",
+      href: "/analytics",
       icon: ChartBarIcon,
-      show: canAccess("admin"),
+      adminOnly: true,
     },
     {
       name: "Users",
-      href: "/admin/users",
+      href: "/users",
       icon: UsersIcon,
-      show: canAccess("admin"),
+      adminOnly: true,
     },
     {
       name: "Tasks",
-      href: "/admin/tasks",
+      href: "/tasks",
       icon: ClipboardDocumentListIcon,
-      show: canAccess("admin"),
+      adminOnly: true,
     },
     {
       name: "Debug",
-      href: "/admin/debug",
+      href: "/debug",
       icon: BugAntIcon,
-      show: canAccess("admin"),
+      adminOnly: true,
     },
   ];
 
@@ -113,7 +112,8 @@ const Sidebar = ({ onToggle, isOpen }) => {
       {/* Navigation Links */}
       <nav className="flex-1 px-4 py-4 space-y-2">
         {navigationItems.map((item) => {
-          if (!item.show) return null;
+          // Hide admin-only items for non-admin users
+          if (item.adminOnly && !canAccess("admin")) return null;
           
           const Icon = item.icon;
           return (
