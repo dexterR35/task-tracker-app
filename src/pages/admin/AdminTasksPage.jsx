@@ -1,25 +1,36 @@
 import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
-import { DynamicButton, Modal } from "@/components/ui";
+import { DynamicButton, Modal, MarketsCard } from "@/components/ui";
 import { TaskTable, TaskForm } from "@/features/tasks";
 import { useAppData } from "@/hooks";
 
 // Admin Tasks Page - Shows all tasks with creation form and table
 const AdminTasksPage = () => {
   const { user, canAccess } = useAuth();
-  const { users, reporters, tasks, isLoading, error, monthId, monthName, boardExists } = useAppData();
+  const {
+    users,
+    reporters,
+    tasks,
+    isLoading,
+    error,
+    monthId,
+    monthName,
+    boardExists,
+  } = useAppData();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
 
   const isUserAdmin = canAccess("admin");
   const selectedUserId = searchParams.get("user") || "";
-  const userId = isUserAdmin ? selectedUserId : user?.uid;
-  
+
   // Get selected user name for display
-  const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
-  const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
+  const selectedUser = users.find(
+    (u) => (u.userUID || u.id) === selectedUserId
+  );
+  const selectedUserName =
+    selectedUser?.name || selectedUser?.email || "Unknown User";
   // Handle user selection (admin only)
   const handleUserSelect = (userId) => {
     if (!userId) {
@@ -29,19 +40,15 @@ const AdminTasksPage = () => {
     }
   };
 
- 
-
-
   // Filter tasks based on selected user (admin only) - optimized with useMemo
   const filteredTasks = useMemo(() => {
     if (!isUserAdmin || !selectedUserId) return tasks;
-    
-    return tasks.filter((task) => 
-      task.userId === selectedUserId || task.userUID === selectedUserId
+
+    return tasks.filter(
+      (task) =>
+        task.userId === selectedUserId || task.userUID === selectedUserId
     );
   }, [tasks, isUserAdmin, selectedUserId]);
-
-
 
   // Derive title based on context
   const title = (() => {
@@ -54,13 +61,9 @@ const AdminTasksPage = () => {
     return "All Tasks - All Users";
   })();
 
-  // if (isLoading) {
-  //   return <Loader size="xl" text="Loading tasks...admin pages" fullScreen={true} />;
-  // }
-
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-6 text-center text-red-400">
+      <div className=" mx-auto px-4 py-6 text-center text-red-error">
         Error loading tasks: {error.message || "Unknown error"}
       </div>
     );
@@ -68,72 +71,71 @@ const AdminTasksPage = () => {
 
   if (!isUserAdmin) {
     return (
-      <div className="container mx-auto px-4 py-6 text-center text-red-400">
+      <div className=" mx-auto px-4 py-6 text-center text-red-error">
         You do not have permission to view this page.
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+      <div className=" card flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
         <div>
-          <h2 className="text-3xl font-bold ">{title}</h2>
-          <p className="text-gray-400">
-          {monthName}
+          <h2>{title}</h2>
+          <p className="text-gray-300">
+            {monthId} - {monthName}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">   
-            <div className="min-w-[200px]">
-              <div className="field-wrapper">
-                <label htmlFor="selectedUser" >
-                  Filter by User
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    id="selectedUser"
-                    value={selectedUserId}
-                    className="flex-1 px-3 py-2"
-                    onChange={(e) => {
-                      handleUserSelect(e.target.value);
-                    }}
+        <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0 items-center">
+          <div className="min-w-[200px]">
+            <label htmlFor="selectedUser">Filter by User</label>
+            <div className="flex gap-2">
+              <select
+                id="selectedUser"
+                value={selectedUserId}
+                className="flex-1 px-3 py-2"
+                onChange={(e) => {
+                  handleUserSelect(e.target.value);
+                }}
+              >
+                <option value="">All Users</option>
+                {users.map((user) => (
+                  <option
+                    key={user.userUID || user.id}
+                    value={user.userUID || user.id}
                   >
-                    <option value="">All Users</option>
-                    {users.map((user) => (
-                      <option key={user.userUID || user.id} value={user.userUID || user.id}>
-                        {user.name || user.email}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedUserId && (
-                    <DynamicButton
-                      onClick={() => handleUserSelect("")}
-                      variant="outline"
-                      size="sm"
-                      className="px-3 py-2"
-                    >
-                      Clear
-                    </DynamicButton>
-                  )}
-                </div>
-              </div>
+                    {user.name || user.email}
+                  </option>
+                ))}
+              </select>
+              {selectedUserId && (
+                <DynamicButton
+                  onClick={() => handleUserSelect("")}
+                  variant="outline"
+                  size="sm"
+                >
+                  Clear
+                </DynamicButton>
+              )}
             </div>
-        
+          </div>
           <DynamicButton
             onClick={() => setShowCreateModal(true)}
             variant="primary"
             size="md"
-            disabled={!boardExists}
+            iconName="add"
+            iconPosition="left"
+            className="h-fit self-end"
+            disabled={boardExists}
           >
             Create Task
           </DynamicButton>
         </div>
       </div>
 
-
-      {!boardExists && (
+      {boardExists && (
         <div className="card bg-red-error">
           <h3 className="text-lg font-semibold mb-2">
             ⚠️ Month Board Not Available
@@ -145,11 +147,19 @@ const AdminTasksPage = () => {
         </div>
       )}
 
+      {/* Markets Overview Card */}
+      <div className="mb-6">
+        <MarketsCard tasks={filteredTasks} />
+      </div>
+
+
       {/* Tasks Section */}
       <div className="bg-gray-100 dark:bg-secondary card">
         <div className="flex justify-between items-center mb-10">
           <h2 className=" text-gray-800 dark:text-white">
-            {isUserAdmin && selectedUserId ? `${selectedUserName} Tasks` : "All Tasks"}
+            {isUserAdmin && selectedUserId
+              ? `${selectedUserName} Tasks`
+              : "All Tasks"}
             <span className="text-sm font-normal text-gray-600 ml-2">
               ({filteredTasks.length} tasks)
             </span>

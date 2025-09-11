@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { useAuth } from "@/features/auth";
 import { useMonthData } from "@/hooks";
-import { UserTable } from "@/features/users";
-import { ReporterTable } from "@/features/reporters";
 import { 
   DynamicButton, 
-  Loader
+  Loader,
+  CardsGrid
 } from "@/components/ui";
 import { showSuccess } from "@/utils/toast.js";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
@@ -77,7 +76,7 @@ const AdminManagementPage = () => {
       {/* Tab Navigation */}
       <div className="mb-6">
         <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
-          <button
+          <DynamicButton
             onClick={() => setActiveTab('users')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'users'
@@ -86,8 +85,8 @@ const AdminManagementPage = () => {
             }`}
           >
             Users ({users?.length || 0})
-          </button>
-          <button
+          </DynamicButton>
+          <DynamicButton
             onClick={() => setActiveTab('reporters')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'reporters'
@@ -96,14 +95,14 @@ const AdminManagementPage = () => {
             }`}
           >
             Reporters ({reporters?.length || 0})
-          </button>
+          </DynamicButton>
         </div>
       </div>
 
       {/* Action Buttons */}
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold text-white capitalize">
+          <h2 className="capitalize">
             {activeTab} Management
           </h2>
           <p className="text-sm text-gray-400">
@@ -125,22 +124,14 @@ const AdminManagementPage = () => {
         </DynamicButton>
       </div>
 
-      {/* Conditional Table Rendering */}
-      {activeTab === 'users' ? (
-        <UserTable
-          users={users}
-          monthId={monthId}
-          isLoading={isLoading}
-          error={error}
-        />
-      ) : (
-        <ReporterTable
-          reporters={reporters}
-          monthId={monthId}
-          isLoading={isLoading}
-          error={error}
-        />
-      )}
+      {/* Cards Rendering */}
+      <CardsGrid
+        items={activeTab === 'users' ? users : reporters}
+        type={activeTab}
+        monthId={monthId}
+        isLoading={isLoading}
+        error={error}
+      />
 
       {/* Reporter Form Modal - Only show for reporters tab */}
       {activeTab === 'reporters' && (

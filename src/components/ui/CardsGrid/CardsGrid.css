@@ -1,0 +1,186 @@
+/* Grid item styling */
+.cards-grid__item {
+  min-height: 200px;
+}
+
+/* Card styling */
+.cards-grid__card {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  border-radius: 6px;
+  text-align: center;
+  color: #e2e8f0;
+  overflow: hidden;
+  min-width: 300px;
+  min-height: 300px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid #374151;
+  background: linear-gradient(140deg, #4b5563 0%, #1f2937 100%);
+}
+
+.cards-grid__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* User theme (purple) */
+.cards-grid__card--user {
+  border: 2px solid #6b21a8;
+  background: linear-gradient(140deg, #8b5cf6 0%, #4c1d95 100%);
+}
+
+.cards-grid__card--user::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #a78bfa;
+  z-index: 1;
+}
+
+/* Reporter theme (green) */
+.cards-grid__card--reporter {
+  border: 2px solid #0d612e;
+  background: linear-gradient(140deg, #09ab67 0%, #023121 100%);
+}
+
+.cards-grid__card--reporter::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #1dd661;
+  z-index: 1;
+}
+
+.cards-grid__name,
+.cards-grid__symbol {
+  color: #e5e5e5 !important;
+  text-align: center;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+  font-weight: normal;
+  max-width: 90%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Element parts */
+.cards-grid__symbol {
+  font-size: 4em;
+  font-weight: bolder;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.cards-grid__name {
+  font-size: 1.2em;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* Content area for additional elements */
+.cards-grid__content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  backdrop-filter: blur(4px);
+}
+
+/* Status Badge */
+.cards-grid__status {
+  position: relative;
+width: fit-content;
+max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+/* Details section */
+.cards-grid__details {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.cards-grid__email {
+  font-size: 14px;
+  color: #d1d5db;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.cards-grid__occupation {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.cards-grid__country {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.cards-grid__created {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Action buttons */
+.cards-grid__actions {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.cards-grid__action-btn {
+  width: 100%;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cards-grid__item {
+    min-height: 150px;
+  }
+  
+  .cards-grid__card {
+    min-height: 260px;
+  }
+  
+  .cards-grid__actions {
+    flex-direction: row;
+    gap: 6px;
+  }
+  
+  .cards-grid__action-btn {
+    flex: 1;
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+}

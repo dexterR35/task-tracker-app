@@ -11,3 +11,6 @@ export { getColumns } from './Table/tableColumns';
 export { default as DarkModeToggle } from './DarkMode/DarkModeButtons';
 export { default as CacheDebugger } from './Debug/CacheDebugger';
 export { default as ComingSoonPage } from './ComingSoon/ComingSoon';
+export { default as PeriodicElement } from './PeriodicElement';
+export { default as MarketsCard } from './MarketsCard/MarketsCard';
+export { default as CardsGrid } from './CardsGrid/CardsGrid';

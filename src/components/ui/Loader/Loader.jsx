@@ -24,14 +24,14 @@ const Loader = ({
   };
 
   const Spinner = () => (
-    <div className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-default ${sizeClasses[size]} ${className}`} />
+    <div className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 ${sizeClasses[size]} ${className}`} />
   );
 
   const Dots = () => (
     <div className={`flex space-x-1 ${className}`}>
-      <div className="w-3.5 h-3.5 bg-blue-default rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-      <div className="w-3.5 h-3.5 bg-blue-default rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-      <div className="w-3.5 h-3.5 bg-blue-default rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+      <div className="w-3.5 h-3.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+      <div className="w-3.5 h-3.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+      <div className="w-3.5 h-3.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
     </div>
   );
 

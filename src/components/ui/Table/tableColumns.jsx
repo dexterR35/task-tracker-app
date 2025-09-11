@@ -174,18 +174,21 @@ export const getUserColumns = (monthId = null) => [
     header: 'User',
     cell: ({ row }) => {
       const user = row.original;
+      const userName = user.name || 'No Name';
+      const userSymbol = userName.substring(0, 2).toUpperCase();
+      
       return (
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
               <span className="text-sm font-medium text-white">
-                {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+                {userSymbol}
               </span>
             </div>
           </div>
           <div className="ml-4">
             <div className="text-sm font-medium text-white">
-              {user.name || 'No Name'}
+              {userName}
             </div>
           </div>
         </div>
@@ -241,18 +244,21 @@ export const getReporterColumns = (monthId = null) => [
     header: 'Reporter',
     cell: ({ row }) => {
       const reporter = row.original;
+      const reporterName = reporter.name || 'No Name';
+      const reporterSymbol = reporterName.substring(0, 2).toUpperCase();
+      
       return (
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
               <span className="text-sm font-medium text-white">
-                {(reporter.name || 'R').charAt(0).toUpperCase()}
+                {reporterSymbol}
               </span>
             </div>
           </div>
           <div className="ml-4">
             <div className="text-sm font-medium text-white">
-              {reporter.name || 'No Name'}
+              {reporterName}
             </div>
           </div>
         </div>

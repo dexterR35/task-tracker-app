@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { format } from "date-fns";
 import { useMonthData, useAppData } from "@/hooks";
 import { showSuccess } from "@/utils/toast.js";
-import { DynamicButton, Loader, Modal } from "@/components/ui";
+import { DynamicButton, Loader, Modal, MarketsCard } from "@/components/ui";
 import { TaskForm, TaskTable } from "@/features/tasks";
 import { logger } from "@/utils/logger";
 
@@ -110,6 +110,12 @@ const UserDashboardPage = () => {
           </p>
         </div>
       )}
+
+      {/* My Markets Overview Card */}
+      <div className="mb-6">
+        <MarketsCard tasks={userTasks} />
+      </div>
+
 
       {/* User Tasks Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
