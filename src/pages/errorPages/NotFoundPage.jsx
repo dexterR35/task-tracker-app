@@ -1,7 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Icons } from "@/components/icons";
 
 const NotFoundPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Smart navigation based on auth status
+  const goToHome = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/home');
+    }
+  };
+
   return (
     <div className="min-h-screen flex-center bg-primary">
       <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-4">
@@ -19,19 +32,19 @@ const NotFoundPage = () => {
         </p>
         
         <div className="space-y-2">
-          <Link
-            to="/"
+          <button
+            onClick={goToHome}
             className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
           >
-            Go to Homepage
-          </Link>
+            {user ? 'Go to Dashboard' : 'Go to Homepage'}
+          </button>
           
-          <Link
-            to="/dashboard"
+          <button
+            onClick={() => navigate(-1)}
             className="block w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition-colors"
           >
-            Go to Dashboard
-          </Link>
+            Go Back
+          </button>
         </div>
       </div>
     </div>

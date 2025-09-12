@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal } from '@/components/ui';
-import { ReporterForm } from '@/features/reporters';
+import Modal from '@/components/ui/Modal/Modal';
+import UniversalFormRHF from '@/components/forms/UniversalFormRHF';
 
 /**
  * Modal component for creating/editing reporters
@@ -22,7 +22,7 @@ const ReporterFormModal = ({
       title={title}
       size="lg"
     >
-      <ReporterForm
+      <UniversalFormRHF
         formType="reporter"
         mode={mode}
         initialValues={reporter}

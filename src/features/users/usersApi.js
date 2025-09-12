@@ -12,51 +12,13 @@ import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { normalizeForRedux } from "@/utils/dateUtils";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
-// Simple authentication check
-const checkAuth = () => {
-  if (!auth.currentUser) {
-    throw new Error('AUTH_REQUIRED');
-  }
-  return true;
-};
+// Import centralized auth utilities
+import { isUserAuthenticated as checkUserAuth, isAuthLoading } from "@/utils/authUtils";
 
-// Check if user is authenticated (for early returns)
-const isUserAuthenticated = () => {
-  return auth.currentUser !== null;
-};
-
-// Error handling wrapper
-const handleFirestoreError = (error, operation) => {
-  logger.error(`Firestore ${operation} failed:`, error);
-  
-  if (error.code === 'permission-denied') {
-    return { error: { message: 'Access denied', code: 'PERMISSION_DENIED' } };
-  }
-  
-  if (error.code === 'unavailable') {
-    return { error: { message: 'Service temporarily unavailable', code: 'SERVICE_UNAVAILABLE' } };
-  }
-  
-  if (error.code === 'not-found') {
-    return { error: { message: 'Resource not found', code: 'NOT_FOUND' } };
-  }
-  
-  return { error: { message: error?.message || `Failed to ${operation}` } };
-};
-
-// API call logging
-const logApiCall = (endpoint, args, result, error = null) => {
-  if (error) {
-    logger.error(`[${endpoint}] Failed:`, { args, error: error.message });
-  } else {
-    logger.log(`[${endpoint}] Success:`, { 
-      args, 
-      resultCount: Array.isArray(result) ? result.length : 1 
-    });
-  }
-};
+// Import centralized error handling
+import { handleApiError } from "@/features/utils/errorHandling";
 
 
 // Shared function for fetching users from Firestore
@@ -109,20 +71,18 @@ export const usersApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // Check if user is authenticated before proceeding
-            if (!isUserAuthenticated()) {
+            if (!checkUserAuth({ user: auth.currentUser, isAuthChecking: false, isLoading: false })) {
               logger.log('User not authenticated yet, skipping users fetch');
               return { data: [] };
             }
-
-            checkAuth();
             logger.log("Fetching users from database...");
             const users = await fetchUsersFromFirestore();
 
             // Ensure timestamps are serialized before returning
-            const serializedUsers = normalizeForRedux(users);
+            const serializedUsers = serializeTimestampsForRedux(users);
             const result = { data: serializedUsers };
             
-            logApiCall('getUsers', {}, result.data);
+            logger.log('[getUsers] Success:', { resultCount: result.data.length });
             return result;
           } catch (error) {
             // If it's an auth error, return empty array instead of error
@@ -131,9 +91,8 @@ export const usersApi = createApi({
               return { data: [] };
             }
             
-            const errorResult = handleFirestoreError(error, 'fetch users');
-            logApiCall('getUsers', {}, null, error);
-            return errorResult;
+            const errorResult = handleApiError(error, 'fetch users', { showToast: false, logError: true });
+            return { error: errorResult };
           }
         });
       },
@@ -150,12 +109,10 @@ export const usersApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // Check if user is authenticated before proceeding
-            if (!isUserAuthenticated()) {
+            if (!checkUserAuth({ user: auth.currentUser, isAuthChecking: false, isLoading: false })) {
               logger.log('User not authenticated yet, skipping user fetch');
               return { data: null };
             }
-
-            checkAuth();
             logger.log(`Fetching user ${userUID} from database...`);
             const user = await fetchUserByUIDFromFirestore(userUID);
 
@@ -164,10 +121,10 @@ export const usersApi = createApi({
             }
 
             // Ensure timestamps are serialized before returning
-            const serializedUser = normalizeForRedux(user);
+            const serializedUser = serializeTimestampsForRedux(user);
             const result = { data: serializedUser };
             
-            logApiCall('getUserByUID', { userUID }, result.data);
+            logger.log('[getUserByUID] Success:', { userUID, found: !!result.data });
             return result;
           } catch (error) {
             // If it's an auth error, return null instead of error
@@ -176,9 +133,8 @@ export const usersApi = createApi({
               return { data: null };
             }
             
-            const errorResult = handleFirestoreError(error, 'fetch user');
-            logApiCall('getUserByUID', { userUID }, null, error);
-            return errorResult;
+            const errorResult = handleApiError(error, 'fetch user', { showToast: false, logError: true });
+            return { error: errorResult };
           }
         });
       },

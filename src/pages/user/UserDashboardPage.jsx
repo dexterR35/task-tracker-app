@@ -1,22 +1,33 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { useMonthData, useAppData } from "@/hooks";
-import { showSuccess } from "@/utils/toast.js";
-import { DynamicButton, Loader, Modal, MarketsCard } from "@/components/ui";
-import { TaskForm, TaskTable } from "@/features/tasks";
+import { useAppDataContext } from "@/components/layout/AuthLayout";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
+import Loader from "@/components/ui/Loader/Loader";
+import Modal from "@/components/ui/Modal/Modal";
+import UniversalFormRHF from "@/components/forms/UniversalFormRHF";
+import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import { logger } from "@/utils/logger";
+import { getUserUID } from "@/utils/authUtils";
+import { createDebugLogger } from "@/utils/debugUtils";
 
 // User Dashboard - Shows user's own data with task creation
 const UserDashboardPage = () => {
-  // Get month data from global hook
-  const { monthId, monthName, boardExists } = useMonthData();
+  const debug = createDebugLogger('UserDashboard');
   
-  // Use unified hook for all app data (automatically handles user vs admin)
-  const { user, tasks, reporters, isLoading, error } = useAppData();
+  // Get all data from context (pre-fetched data, no API calls!)
+  const { 
+    monthId, 
+    monthName, 
+    boardExists, 
+    user, 
+    tasks, 
+    reporters, 
+    error 
+  } = useAppDataContext();
   
   // Debug logging
-  const userUID = user?.userUID || user?.uid || user?.id;
-  logger.log('UserDashboard Debug:', {
+  const userUID = getUserUID(user);
+  debug('Component State', {
     user,
     userUID,
     tasks,
@@ -36,9 +47,6 @@ const UserDashboardPage = () => {
   // Title for user dashboard
   const title = "My Dashboard";
 
-  if (isLoading) {
-    return <Loader size="xl" text="Loading user dashboard..." fullScreen={true} />;
-  }
 
   if (error) {
     return (
@@ -100,21 +108,8 @@ const UserDashboardPage = () => {
         </div>
       </div>
 
-      {/* Board Warning */}
-      {!boardExists && (
-        <div className="bg-yellow-600 text-white p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold mb-2">⚠️ Month Board Not Available</h3>
-          <p>
-            The month board for {monthName} has not been generated yet. 
-            Task creation is disabled until the board is available.
-          </p>
-        </div>
-      )}
+      {/* Board warning is now handled globally by AuthLayout */}
 
-      {/* My Markets Overview Card */}
-      <div className="mb-6">
-        <MarketsCard tasks={userTasks} />
-      </div>
 
 
       {/* User Tasks Table */}
@@ -136,7 +131,7 @@ const UserDashboardPage = () => {
         title="Create New Task"
         maxWidth="max-w-4xl"
       >
-        <TaskForm
+        <UniversalFormRHF
           formType="task"
           mode="create"
           onSuccess={() => {

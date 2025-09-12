@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { cleanupAuthListener, setupAuthListener } from "@/features/auth";
+import { cleanupAuthListener, setupAuthListener } from "@/features/auth/authSlice";
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();

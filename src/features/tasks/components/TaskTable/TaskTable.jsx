@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 
-import { useDeleteTaskMutation } from "@/features/tasks";
-import { DynamicButton } from "@/components";
+import { useDeleteTaskMutation } from "@/features/tasks/tasksApi";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { useTaskColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import { TaskForm } from "@/features/tasks";
-import { ConfirmationModal } from "@/components/ui";
+import UniversalFormRHF from "@/components/forms/UniversalFormRHF";
+import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 
 const TaskTable = ({
   className = "",
@@ -19,16 +19,7 @@ const TaskTable = ({
   user = null, // User data for TaskForm
 }) => {
   
-  // Debug logging for TaskTable
-  console.log('📊 TaskTable Debug:', {
-    tasksCount: tasks?.length || 0,
-    tasks: tasks?.slice(0, 2), // Show first 2 tasks for debugging
-    monthId,
-    isLoading,
-    error: tasksError,
-    reportersCount: reporters?.length || 0,
-    hasTasks: !!tasks?.length
-  });
+  // TaskTable component rendering
 
   const [rowActionId, setRowActionId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -41,15 +32,7 @@ const TaskTable = ({
   // Get task columns with monthId and reporters data for reporter name lookup
   const taskColumns = useTaskColumns(monthId, reporters);
   
-  // Debug logging for columns
-  console.log('📋 TaskColumns Debug:', {
-    columnsCount: taskColumns?.length || 0,
-    columns: taskColumns?.map(col => ({
-      id: col.id,
-      header: col.header,
-      accessorKey: col.accessorKey
-    }))
-  });
+  // Task columns configured for the table
   // Handle task selection
   const handleTaskSelect = (task) => {
     showSuccess(`Selected task: ${task.jiraLink || task.departments}`);
@@ -80,7 +63,12 @@ const TaskTable = ({
       const taskMonthId = taskToDelete.monthId || monthId;
 
       // Delete task using Redux mutation (automatically updates cache)
-      await deleteTask({ monthId: taskMonthId, id: taskId }).unwrap();
+      await deleteTask({ 
+        monthId: taskMonthId, 
+        boardId: taskToDelete.boardId, // Get boardId from task data
+        taskId: taskId,
+        userData: user // Pass user data for permission checks
+      }).unwrap();
       
       showSuccess("Task deleted successfully!");
     } catch (error) {
@@ -120,7 +108,7 @@ const TaskTable = ({
             />
           </div>
           <div className="p-6">
-            <TaskForm
+            <UniversalFormRHF
               formType="task"
               mode="edit"
               initialValues={editingTask}

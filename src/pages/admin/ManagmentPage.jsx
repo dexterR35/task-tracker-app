@@ -1,49 +1,27 @@
-import React, { useState } from "react";
-import { useAuth } from "@/features/auth";
-import { useMonthData } from "@/hooks";
-import { 
-  DynamicButton, 
-  Loader,
-  CardsGrid
-} from "@/components/ui";
-import { showSuccess } from "@/utils/toast.js";
+import React, { useState,useEffect } from "react";
+import { useAppDataContext } from "@/components/layout/AuthLayout";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
+import Loader from "@/components/ui/Loader/Loader";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
-import { useAppData } from "@/hooks";
+import UserTable from "@/features/users/components/UserTable/UserTable";
+import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
 
 const AdminManagementPage = () => {
-  // Get month data from AppLayout context
-  const { monthId, monthName } = useMonthData();
+  // Get all data from AuthLayout context (pre-fetched data, no API calls!)
+  const { monthId, monthName, users, reporters, error } = useAppDataContext();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // Get current user for permissions
-  const { user: currentUser, canAccess } = useAuth();
-  
-  // Use unified hook for all app data
-  const { users, reporters, isLoading, error } = useAppData();
   
   // Debug logging - only log when data changes
-  React.useEffect(() => {
+ useEffect(() => {
     console.log('[AdminManagementPage] Data from RTK Query hooks:', {
       users: users?.length || 0,
       reporters: reporters?.length || 0,
-      isLoading,
       error: error?.message || null
     });
-  }, [users?.length, reporters?.length, isLoading, error]);
+  }, [users?.length, reporters?.length, error]);
 
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <Loader 
-        size="xl" 
-        variant="spinner" 
-        text="Loading management data..." 
-        fullScreen={true}
-      />
-    );
-  }
 
   // Show error state
   if (error) {
@@ -124,14 +102,22 @@ const AdminManagementPage = () => {
         </DynamicButton>
       </div>
 
-      {/* Cards Rendering */}
-      <CardsGrid
-        items={activeTab === 'users' ? users : reporters}
-        type={activeTab}
-        monthId={monthId}
-        isLoading={isLoading}
-        error={error}
-      />
+      {/* Tables Rendering */}
+      {activeTab === 'users' ? (
+        <UserTable
+          users={users}
+          monthId={monthId}
+          isLoading={isLoading}
+          error={error}
+        />
+      ) : (
+        <ReporterTable
+          reporters={reporters}
+          monthId={monthId}
+          isLoading={isLoading}
+          error={error}
+        />
+      )}
 
       {/* Reporter Form Modal - Only show for reporters tab */}
       {activeTab === 'reporters' && (

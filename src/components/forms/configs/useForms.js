@@ -419,33 +419,19 @@ export const TASK_FORM_CONSTANTS = {
 
 // Task form field options
 export const TASK_FORM_OPTIONS = {
-  markets: [
-    { value: "ro", label: "ro" },
-    { value: "com", label: "com" },
-    { value: "uk", label: "uk" },
-    { value: "ie", label: "ie" },
-    { value: "fi", label: "fi" },
-    { value: "dk", label: "dk" },
-    { value: "de", label: "de" },
-    { value: "at", label: "at" },
-    { value: "it", label: "it" },
-    { value: "gr", label: "gr" },
-    { value: "fr", label: "fr" },
-    { value: "misc", label: "misc" },
-  ],
   products: [
-    { value: "mkt casino", label: "mkt casino" },
-    { value: "mkt sport", label: "mkt sport" },
-    { value: "mkt poker", label: "mkt poker" },
-    { value: "mkt lotto", label: "mkt lotto" },
-    { value: "acq casino", label: "acq casino" },
-    { value: "acq sport", label: "acq sport" },
-    { value: "acq poker", label: "acq poker" },
-    { value: "acq lotto", label: "acq lotto" },
-    { value: "prod casino", label: "prod casino" },
-    { value: "prod sport", label: "prod sport" },
-    { value: "prod poker", label: "prod poker" },
-    { value: "prod lotto", label: "prod lotto" },
+    { value: "marketing casino", label: "marketing casino" },
+    { value: "marketing sport", label: "marketing sport" },
+    { value: "marketing poker", label: "marketing poker" },
+    { value: "marketing lotto", label: "marketing lotto" },
+    { value: "acquisition casino", label: "acquisition casino" },
+    { value: "acquisition sport", label: "acquisition sport" },
+    { value: "acquisition poker", label: "acquisition poker" },
+    { value: "acquisition lotto", label: "acquisition lotto" },
+    { value: "product casino", label: "product casino" },
+    { value: "product sport", label: "product sport" },
+    { value: "product poker", label: "product poker" },
+    { value: "product lotto", label: "product lotto" },
     { value: "misc", label: "misc" },
   ],
   departments: [
@@ -491,8 +477,18 @@ export const prepareTaskFormData = (formData) => {
   // Sanitize all form data using the field definitions
   const sanitizedData = sanitizeFormData(formData, TASK_FORM_FIELDS);
   
-  // Keep the full Jira URL as-is (no extraction)
-  // The sanitize function already trims the URL
+  // Generate taskName from Jira link if not provided
+  if (sanitizedData.jiraLink && !sanitizedData.taskName) {
+    // Extract task ID from Jira URL (e.g., GIMODEAR-124124 from https://gmrd.atlassian.net/browse/GIMODEAR-124124)
+    const jiraMatch = sanitizedData.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
+    if (jiraMatch) {
+      sanitizedData.taskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
+    } else {
+      // Fallback: use the last part of the URL
+      const urlParts = sanitizedData.jiraLink.split('/');
+      sanitizedData.taskName = urlParts[urlParts.length - 1] || 'Unknown Task';
+    }
+  }
   
   return sanitizedData;
 };
@@ -510,15 +506,15 @@ export const TASK_FORM_FIELDS = [
       maxLength: 200
     }
   }),
-  createMultiSelectField('markets', 'Markets', {
-    required: true,
-    helpText: 'Select all markets where this task applies',
+  createTextField('taskName', 'Task Name', {
+    required: false, // Not required since it's auto-generated
+    helpText: 'Task name will be auto-generated from Jira link',
+    placeholder: 'Auto-generated from Jira link',
+    readOnly: true,
+    sanitize: (value) => value?.toString().trim() || '',
     validation: {
-      minItems: 1,
-      maxItems: 50
+      maxLength: 200
     }
-  }, {
-    options: TASK_FORM_OPTIONS.markets
   }),
   createSelectField('products', 'Products', {
     required: true,
@@ -680,7 +676,7 @@ export const TASK_FORM_CONFIG = {
   validationSchema: null, // Will be auto-generated
   initialValues: {
     jiraLink: '',
-    markets: [],
+    taskName: '',
     products: '',
     departments: '',
     timeInHours: 0.5,

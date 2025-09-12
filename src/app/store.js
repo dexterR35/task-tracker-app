@@ -1,17 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { authReducer } from "@/features/auth";
-import { currentMonthReducer } from "@/features/currentMonth";
+import authReducer from "@/features/auth/authSlice";
 
 // Import RTK Query APIs - required for RTK Query to function
-import { tasksApi } from "@/features/tasks";
-import { usersApi } from "@/features/users";
-import { reportersApi } from "@/features/reporters";
+import { tasksApi } from "@/features/tasks/tasksApi";
+import { usersApi } from "@/features/users/usersApi";
+import { reportersApi } from "@/features/reporters/reportersApi";
 
 // Create the store with all required reducers and middleware
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    currentMonth: currentMonthReducer,
     [tasksApi.reducerPath]: tasksApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [reportersApi.reducerPath]: reportersApi.reducer,
@@ -26,6 +24,12 @@ const store = configureStore({
           'persist/PURGE',
           'persist/REGISTER',
           'persist/FLUSH',
+        ],
+        ignoredActionsPaths: [
+          'meta.arg',
+          'payload.timestamp',
+          'payload.createdAt',
+          'payload.updatedAt',
         ],
       },
     }).concat([

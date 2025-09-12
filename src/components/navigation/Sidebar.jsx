@@ -1,16 +1,16 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/features/auth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import {
-  ArrowRightOnRectangleIcon,
-  UsersIcon,
-  HomeIcon,
-  ChartBarIcon,
-  CogIcon,
-  BugAntIcon,
-  ClipboardDocumentListIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+  FiLogOut,
+  FiUsers,
+  FiHome,
+  FiBarChart2,
+  FiSettings,
+  FiCode,
+  FiClipboard,
+  FiX,
+} from "react-icons/fi";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 
@@ -35,30 +35,30 @@ const Sidebar = ({ onToggle, isOpen }) => {
     {
       name: "Dashboard",
       href: "/dashboard",
-      icon: HomeIcon,
+      icon: FiHome,
+    },
+    {
+      name: "Tasks",
+      href: "/tasks",
+      icon: FiClipboard,
+      adminOnly: true,
     },
     {
       name: "Analytics",
       href: "/analytics",
-      icon: ChartBarIcon,
+      icon: FiBarChart2,
       adminOnly: true,
     },
     {
       name: "Users",
       href: "/users",
-      icon: UsersIcon,
-      adminOnly: true,
-    },
-    {
-      name: "Tasks",
-      href: "/tasks",
-      icon: ClipboardDocumentListIcon,
+      icon: FiUsers,
       adminOnly: true,
     },
     {
       name: "Debug",
       href: "/debug",
-      icon: BugAntIcon,
+      icon: FiCode,
       adminOnly: true,
     },
   ];
@@ -79,7 +79,7 @@ const Sidebar = ({ onToggle, isOpen }) => {
           aria-label="Close sidebar"
           title="Close sidebar (Ctrl+B)"
         >
-          <XMarkIcon className="w-5 h-5" />
+          <FiX className="w-5 h-5" />
         </button>
       </div>
 
@@ -145,7 +145,7 @@ const Sidebar = ({ onToggle, isOpen }) => {
           onClick={handleLogout}
           className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200"
         >
-          <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
+          <FiLogOut className="w-5 h-5 mr-3" />
           Logout
         </button>
       </div>

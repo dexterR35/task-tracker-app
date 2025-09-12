@@ -2,9 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useAuth } from "@/features/auth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { showError } from "@/utils/toast";
-import Loader from "@/components/ui/Loader/Loader";
 import { loginSchema } from "@/components/forms/configs/useForms";
 
 const LoginPage = () => {
@@ -20,19 +19,6 @@ const LoginPage = () => {
     mode: 'onChange'
   });
 
-  // Show loading during sign-in process
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex-center bg-primary">
-        <Loader
-          size="xl"
-          text="Signing in..."
-          variant="spinner"
-          fullScreen={true}
-        />
-      </div>
-    );
-  }
 
   // Handle form submission
   const onSubmit = async (data) => {

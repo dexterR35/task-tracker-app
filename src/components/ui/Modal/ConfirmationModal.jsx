@@ -1,5 +1,5 @@
 import React from 'react';
-import { DynamicButton } from '@/components/ui';
+import DynamicButton from '@/components/ui/Button/DynamicButton';
 
 /**
  * Custom confirmation modal to replace window.confirm()

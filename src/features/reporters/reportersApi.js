@@ -14,7 +14,7 @@ import {
 import { logger } from "@/utils/logger";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { normalizeForRedux } from "@/utils/dateUtils";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
 
 // Custom base query for Firestore
@@ -33,7 +33,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             const reporters = querySnapshot.docs.map((doc) => {
             const reporter = { id: doc.id, ...doc.data() };
             // Use standardized timestamp serialization
-            return normalizeForRedux(reporter);
+            return serializeTimestampsForRedux(reporter);
             });
             logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
             return { data: reporters };
@@ -62,7 +62,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             ...reporterData,
           };
           
-          return { data: normalizeForRedux(createdData) };
+          return { data: serializeTimestampsForRedux(createdData) };
         }
         break;
 
@@ -83,7 +83,7 @@ const firestoreBaseQuery = () => async ({ url, method, body }) => {
             ...body,
           };
           
-          return { data: normalizeForRedux(updatedData) };
+          return { data: serializeTimestampsForRedux(updatedData) };
         }
         break;
 

@@ -1,37 +1,51 @@
+import { useMemo, useCallback } from "react";
 import { useGetUsersQuery } from "@/features/users/usersApi";
 import { useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
 import { useGetMonthTasksQuery } from "@/features/tasks/tasksApi";
-import { useAuth } from "@/features/auth";
-import { useMonthData } from "./useMonthData";
-import { logger } from "@/utils/logger";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { 
+  useGetCurrentMonthQuery
+} from "@/features/tasks/tasksApi";
+import { getUserUID, isUserAdmin } from "@/utils/authUtils";
+import { createDebugLogger } from "@/utils/debugUtils";
 
-/**
- * Unified hook for all app data
- * Automatically fetches the right data based on user role
- * - Admin users: get all users, all tasks, all reporters
- * - Regular users: get only their own data and tasks
- */
-export const useAppData = () => {
+// Split into focused hooks for better performance
+export const useCurrentMonth = () => {
+  const { 
+    data: currentMonthData = {}, 
+    isLoading: currentMonthLoading, 
+    error: currentMonthError 
+  } = useGetCurrentMonthQuery();
+  
+  return useMemo(() => {
+    const { 
+      currentMonth = {}, 
+      availableMonths = [], 
+      boardExists = false 
+    } = currentMonthData;
+    
+    const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
+    
+    return {
+      currentMonth,
+      availableMonths,
+      boardExists,
+      monthId,
+      monthName,
+      daysInMonth,
+      startDate,
+      endDate,
+      isLoading: currentMonthLoading,
+      error: currentMonthError
+    };
+  }, [currentMonthData, currentMonthLoading, currentMonthError]);
+};
+
+export const useUserData = () => {
   const { user } = useAuth();
-  const { monthId, boardExists } = useMonthData();
-  
-  // Get the correct userUID
-  const userUID = user?.userUID || user?.uid || user?.id;
-  const isAdmin = user?.role === 'admin';
-  
-  // Debug logging
-  logger.log('useAppData Debug:', {
-    user,
-    userUID,
-    monthId,
-    boardExists,
-    isAdmin,
-    hasUser: !!user,
-    hasUserUID: !!userUID,
-    hasMonthId: !!monthId
-  });
+  const userUID = getUserUID(user);
+  const userIsAdmin = isUserAdmin(user);
   
   // Fetch user data (single user for regular users, all users for admin)
   const { 
@@ -40,7 +54,7 @@ export const useAppData = () => {
     error: userError 
   } = useGetUserByUIDQuery(
     { userUID },
-    { skip: !userUID || isAdmin } // Skip for admin users
+    { skip: !userUID || userIsAdmin } // Skip for admin users
   );
   
   // Fetch all users (admin only)
@@ -50,8 +64,26 @@ export const useAppData = () => {
     error: usersError 
   } = useGetUsersQuery(
     undefined,
-    { skip: !isAdmin } // Only fetch for admin users
+    { skip: !userIsAdmin } // Only fetch for admin users
   );
+  
+  return useMemo(() => ({
+    user,
+    userData,
+    allUsers,
+    userUID,
+    userIsAdmin,
+    isLoading: userLoading || usersLoading,
+    error: userError || usersError
+  }), [user, userData, allUsers, userUID, userIsAdmin, userLoading, usersLoading, userError, usersError]);
+};
+
+export const useAppData = () => {
+  const debug = createDebugLogger('useAppData');
+  
+  // Use focused hooks instead of inline logic
+  const monthData = useCurrentMonth();
+  const userData = useUserData();
   
   // Fetch all reporters (needed for task creation)
   const { 
@@ -60,71 +92,110 @@ export const useAppData = () => {
     error: reportersError 
   } = useGetReportersQuery();
   
-  // Fetch tasks based on user role
+  // Fetch tasks based on user role - only when we have required data
+  const shouldFetchTasks = userData.userUID && monthData.monthId;
+  
   const { 
     data: tasksData = [], 
     isLoading: tasksLoading, 
     error: tasksError 
   } = useGetMonthTasksQuery(
     { 
-      monthId: monthId || '', 
-      userId: userUID || '', 
-      role: isAdmin ? 'admin' : 'user' 
+      monthId: monthData.monthId || '', 
+      userId: userData.userIsAdmin ? undefined : userData.userUID,
+      role: userData.userIsAdmin ? 'admin' : 'user',
+      userData: userData.userIsAdmin ? userData.user : userData.userData
     },
-    { skip: !userUID || !monthId }
+    { skip: !shouldFetchTasks }
   );
 
-  // Debug API call
-  logger.log('useGetMonthTasksQuery Debug:', {
-    monthId,
-    userId: userUID,
-    role: isAdmin ? 'admin' : 'user',
-    skip: !userUID || !monthId,
-    tasksData: tasksData || [],
-    tasksLoading,
-    tasksError
-  });
   
-  const error = userError || usersError || reportersError || tasksError;
+  // Combine errors from all sources
+  const error = userData.error || reportersError || tasksError || monthData.error;
   
-  // Simple loading state - just check if any API calls are loading
-  const isLoading = userLoading || usersLoading || reportersLoading || tasksLoading;
+  // Combined loading state
+  const isLoading = userData.isLoading || reportersLoading || tasksLoading || monthData.isLoading;
   
-  // Final debug log with all data
-  logger.log('useAppData Final State:', {
-    isAdmin,
-    monthId,
+  // Essential debug logging only (memoized)
+  useMemo(() => {
+    if (monthData.monthId && !isLoading && tasksData) {
+      debug('App Data Loaded', { 
+        monthId: monthData.monthId, 
+        isAdmin: userData.userIsAdmin, 
+        tasksCount: tasksData.length 
+      });
+    }
+  }, [monthData.monthId, userData.userIsAdmin, tasksData, isLoading, debug]);
+  
+  // Memoize expensive operations to prevent unnecessary re-renders
+  const memoizedStartDate = useMemo(() => 
+    monthData.startDate ? new Date(monthData.startDate) : null, 
+    [monthData.startDate]
+  );
+  
+  const memoizedEndDate = useMemo(() => 
+    monthData.endDate ? new Date(monthData.endDate) : null, 
+    [monthData.endDate]
+  );
+
+  // Memoize the return object to prevent unnecessary re-renders
+  return useMemo(() => {
+    if (userData.userIsAdmin) {
+      return {
+        // Admin gets everything
+        user: userData.user, // Current user info from auth
+        users: userData.allUsers || [], // All users for management
+        reporters: reporters || [],
+        tasks: tasksData || [],
+        isLoading,
+        error,
+        isAdmin: true,
+        
+        // Month data
+        monthId: monthData.monthId,
+        monthName: monthData.monthName,
+        daysInMonth: monthData.daysInMonth,
+        startDate: memoizedStartDate,
+        endDate: memoizedEndDate,
+        boardExists: monthData.boardExists,
+        availableMonths: monthData.availableMonths || []
+      };
+    } else {
+      return {
+        // Regular user gets only their data
+        user: userData.userData, // Their user data from database
+        users: [], // Empty for regular users
+        reporters: reporters || [],
+        tasks: tasksData || [],
+        isLoading,
+        error,
+        isAdmin: false,
+        
+        // Month data
+        monthId: monthData.monthId,
+        monthName: monthData.monthName,
+        daysInMonth: monthData.daysInMonth,
+        startDate: memoizedStartDate,
+        endDate: memoizedEndDate,
+        boardExists: monthData.boardExists,
+        availableMonths: monthData.availableMonths || []
+      };
+    }
+  }, [
+    userData.userIsAdmin,
+    userData.user,
+    userData.userData,
+    userData.allUsers,
+    reporters,
+    tasksData,
     isLoading,
     error,
-    tasksCount: (tasksData || []).length,
-    usersCount: (allUsers || []).length,
-    reportersCount: (reporters || []).length
-  });
-  
-  // Return data based on user role
-  if (isAdmin) {
-    return {
-      // Admin gets everything
-      user: user, // Current user info from auth
-      users: allUsers || [], // All users for management
-      reporters: reporters || [],
-      tasks: tasksData || [],
-      isLoading,
-      error,
-      monthId,
-      isAdmin: true
-    };
-  } else {
-    return {
-      // Regular user gets only their data
-      user: userData, // Their user data from database
-      users: [], // Empty for regular users
-      reporters: reporters || [],
-      tasks: tasksData || [],
-      isLoading,
-      error,
-      monthId,
-      isAdmin: false
-    };
-  }
+    monthData.monthId,
+    monthData.monthName,
+    monthData.daysInMonth,
+    memoizedStartDate,
+    memoizedEndDate,
+    monthData.boardExists,
+    monthData.availableMonths
+  ]);
 };

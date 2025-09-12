@@ -167,9 +167,9 @@
   p {
     @apply text-gray-800 dark:text-gray-300;
   }
-p  {
+/* p  {
     @apply text-gray-300 dark:text-gray-800;
-  }
+  } */
   /* Headings */
   h1 {
     @apply mt-2 text-7xl font-black tracking-tight flex items-center justify-center gap-4 text-gray-800 dark:text-gray-200;
@@ -242,10 +242,14 @@ p  {
     }
   }
 
-  /* .dark .skeleton {
-    @apply bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800;
-  } */
+  /* periodic table users perfomers */
+  
 
+
+
+  
+
+ 
 
   /* Notification progress */
   @keyframes notification-progress {

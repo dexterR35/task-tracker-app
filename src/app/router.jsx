@@ -3,12 +3,14 @@ import {
   createBrowserRouter,
   Navigate,
   useLocation,
+  useNavigate,
   Link,
   Outlet,
 } from "react-router-dom";
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useAuth } from "@/features/auth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { isUserAuthenticated, isAuthLoading } from "@/utils/authUtils";
 
 import AuthLayout from "@/components/layout/AuthLayout";
 import Loader from "@/components/ui/Loader/Loader";
@@ -33,6 +35,9 @@ const UserDashboardPage = lazy(
 );
 const DebugPage = lazy(
   () => import("@/pages/admin/DebugPage")
+);
+const AnalyticsPage = lazy(
+  () => import("@/pages/admin/AnalyticsPage")
 );
 
 // Import simple components directly (no lazy loading needed)
@@ -64,9 +69,9 @@ const LazyPage = ({ children }) => (
 
 // Role-based dashboard component
 const RoleBasedDashboard = () => {
-  const { user } = useAuth();
+  const { user, canAccess } = useAuth();
   
-  if (user?.role === 'admin') {
+  if (canAccess('admin')) {
     return (
       <LazyPage>
         <AdminDashboardPage />
@@ -81,9 +86,29 @@ const RoleBasedDashboard = () => {
   );
 };
 
+// Public route protection - redirects authenticated users to dashboard
+const PublicRoute = ({ children }) => {
+  const authState = useAuth();
+  const location = useLocation();
+
+  // Show loading during initial auth check
+  if (isAuthLoading(authState)) {
+    return <SimpleLoader />;
+  }
+
+  // If user is authenticated, redirect to dashboard
+  if (isUserAuthenticated(authState)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If user is not authenticated, show the public page
+  return children;
+};
+
 // Route protection component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const { user, isAuthChecking, authError, canAccess } = useAuth();
+  const authState = useAuth();
+  const { canAccess } = authState;
   const location = useLocation();
 
   // Memoize the redirect state to prevent infinite re-renders
@@ -92,21 +117,21 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   }), [location.pathname, location.search, location.hash]);
 
   const errorState = useMemo(() => ({
-    error: authError
-  }), [authError]);
+    error: authState.error
+  }), [authState.error]);
 
   // Show loading state during initial auth check
-  if (isAuthChecking) {
+  if (isAuthLoading(authState)) {
     return <SimpleLoader />;
   }
 
   // Handle authentication errors
-  if (authError) {
+  if (authState.error) {
     return <Navigate to="/login" replace state={errorState} />;
   }
 
   // Check if user is authenticated
-  if (!user) {
+  if (!isUserAuthenticated(authState)) {
     return <Navigate to="/login" replace state={redirectState} />;
   }
 
@@ -134,16 +159,25 @@ const router = createBrowserRouter([
     children: [
       // Public routes (no layout needed)
       {
-        index: true,
-        element: <HomePage />,
-      },
-      {
         path: "login",
-        element: <LoginPage />,
+        element: (
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        ),
       },
       {
         path: "unauthorized",
         element: <UnauthorizedPage />,
+      },
+      // Homepage route (public, but redirects authenticated users)
+      {
+        index: true,
+        element: (
+          <PublicRoute>
+            <HomePage />
+          </PublicRoute>
+        ),
       },
       // Protected routes with AuthLayout (sidebar navigation)
       {
@@ -164,7 +198,9 @@ const router = createBrowserRouter([
             path: "analytics",
             element: (
               <ProtectedRoute requiredRole="admin">
-                <ComingSoonPage />
+                <LazyPage>
+                  <AnalyticsPage />
+                </LazyPage>
               </ProtectedRoute>
             ),
           },

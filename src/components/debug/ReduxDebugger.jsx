@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
-import { selectBoardExists } from '@/features/currentMonth';
-import { useMonthData } from '@/hooks';
+import { useGetCurrentMonthQuery } from '@/features/tasks/tasksApi';
+import MonthBoardDebugger from './MonthBoardDebugger';
+// currentMonthSlice removed - boardExists now comes from tasksApi
+// useMonthData removed - month data now comes from useAppData
 
 // Memoized selectors for ReduxDebugger - Fixed to access correct RTK Query keys
 const selectUsersForDebug = createSelector(
@@ -30,11 +32,11 @@ const selectReportersForDebug = createSelector(
 const selectTasksForDebug = createSelector(
   [(state) => state.tasksApi.queries],
   (queries) => {
-    // Find any subscribeToMonthTasks query
+    // Find any getMonthTasks query
     const tasksQuery = Object.values(queries).find(query => 
-      query?.endpointName === 'subscribeToMonthTasks' && query?.data?.tasks
+      query?.endpointName === 'getMonthTasks' && query?.data
     );
-    return tasksQuery?.data?.tasks || [];
+    return tasksQuery?.data || [];
   }
 );
 
@@ -52,7 +54,7 @@ const selectLoadingStates = createSelector(
       query?.endpointName === 'getReporters'
     );
     const tasksQuery = Object.values(tasksQueries).find(query => 
-      query?.endpointName === 'subscribeToMonthTasks'
+      query?.endpointName === 'getMonthTasks'
     );
     
     return {
@@ -77,7 +79,7 @@ const selectErrorStates = createSelector(
       query?.endpointName === 'getReporters'
     );
     const tasksQuery = Object.values(tasksQueries).find(query => 
-      query?.endpointName === 'subscribeToMonthTasks'
+      query?.endpointName === 'getMonthTasks'
     );
     
     return {
@@ -107,8 +109,10 @@ const ReduxDebugger = () => {
   const user = useSelector(state => state.auth.user);
   const isAuthChecking = useSelector(state => state.auth.isAuthChecking);
   
-  // Get month data from AppLayout context
-  const { monthId, monthName, boardExists } = useMonthData();
+  // Get month data from enhanced getCurrentMonth endpoint
+  const { data: currentMonthData = {} } = useGetCurrentMonthQuery();
+  const { currentMonth = {}, boardExists = false } = currentMonthData;
+  const { monthId, monthName } = currentMonth;
   
   // Get data using memoized selectors
   const users = useSelector(selectUsersForDebug);
@@ -121,7 +125,9 @@ const ReduxDebugger = () => {
   const currentTime = new Date().toLocaleTimeString();
 
   return (
-    <div className="fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-w-sm">
+    <>
+      <MonthBoardDebugger />
+      <div className="fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-w-sm">
       <div 
         className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -198,7 +204,8 @@ const ReduxDebugger = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

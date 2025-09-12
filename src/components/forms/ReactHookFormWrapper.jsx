@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { showSuccess, showError } from '@/utils/toast';
@@ -74,7 +74,36 @@ const ReactHookFormWrapper = ({
   // Watch all form values for conditional field logic
   const watchedValues = watch();
 
-  // Centralized form submission handler
+  // Auto-generate taskName from jiraLink for task forms
+  useEffect(() => {
+    if (entityType === 'task' && watchedValues.jiraLink && !watchedValues.taskName) {
+      const jiraMatch = watchedValues.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
+      if (jiraMatch) {
+        const generatedTaskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
+        setValue('taskName', generatedTaskName);
+        console.log('🔧 Auto-generated taskName:', generatedTaskName);
+      } else {
+        // Fallback: use the last part of the URL
+        const urlParts = watchedValues.jiraLink.split('/');
+        const fallbackTaskName = urlParts[urlParts.length - 1] || 'Unknown Task';
+        setValue('taskName', fallbackTaskName);
+        console.log('🔧 Auto-generated taskName (fallback):', fallbackTaskName);
+      }
+    }
+  }, [watchedValues.jiraLink, watchedValues.taskName, entityType, setValue]);
+
+
+  // Helper function to get input type - memoized
+  const getInputType = useCallback((fieldType) => {
+    const typeMap = {
+      email: 'email',
+      password: 'password',
+      text: 'text'
+    };
+    return typeMap[fieldType] || 'text';
+  }, []);
+
+  // Memoize form submission handler
   const handleFormSubmit = useCallback(async (data) => {
     try {
       // Debug logging for form submission
@@ -100,13 +129,33 @@ const ReactHookFormWrapper = ({
       const sanitizedData = sanitizeFormData(data, fields);
       console.log('🧹 Sanitized Data:', sanitizedData);
       
-      // Prepare data for database
+      // Use task-specific data preparation if this is a task form
+      let processedData = sanitizedData;
+      if (entityType === 'task' && formConfig.prepareTaskFormData) {
+        processedData = formConfig.prepareTaskFormData(sanitizedData);
+        console.log('🔧 Task-specific processed data:', processedData);
+      }
+      
+      // Prepare data for database (exclude user object from contextData)
+      const { user, ...contextDataWithoutUser } = contextData;
       const dataForDatabase = {
-        ...sanitizedData,
-        ...contextData,
-        createdAt: new Date().toISOString(),
+        ...processedData,
+        ...contextDataWithoutUser,
         updatedAt: new Date().toISOString()
       };
+
+      // Only add createdAt for new records (create mode)
+      if (mode === 'create') {
+        dataForDatabase.createdAt = new Date().toISOString();
+      }
+
+      // For update mode, remove protected fields that shouldn't be changed
+      if (mode === 'edit') {
+        const protectedFields = ['createdAt', 'createdByUID', 'createdByName', 'id'];
+        protectedFields.forEach(field => {
+          delete dataForDatabase[field];
+        });
+      }
 
       // Remove id from dataForDatabase if it's null or undefined to let database generate it
       if (dataForDatabase.id === null || dataForDatabase.id === undefined) {
@@ -114,10 +163,14 @@ const ReactHookFormWrapper = ({
       }
 
       console.log('💾 Final Data for Database:', dataForDatabase);
+      console.log('🔍 Mode:', mode, 'Protected fields removed:', mode === 'edit' ? ['createdAt', 'createdByUID', 'createdByName', 'id'] : 'N/A');
 
       let result;
       if (mode === 'edit' && contextData.id) {
         // Update existing record
+        console.log('🔄 Update Mode - Context Data:', contextData);
+        console.log('🔄 Update Mode - Data for Database:', dataForDatabase);
+        
         const updateMutation = apiMutations.update || apiMutations.updateMutation;
         if (!updateMutation) {
           throw new Error(`Update mutation not provided for ${entityType}`);
@@ -125,13 +178,17 @@ const ReactHookFormWrapper = ({
         
         // Handle mutation (works for both direct functions and RTK Query)
         const mutationResult = updateMutation({
-          id: contextData.id,
-          data: dataForDatabase
+          monthId: contextData.monthId,
+          boardId: contextData.boardId,
+          taskId: contextData.taskId || contextData.id, // Use taskId if available, fallback to id
+          updates: dataForDatabase,
+          userData: user // Pass user data for permission checks
         });
         result = typeof mutationResult === 'object' && 'unwrap' in mutationResult 
           ? await mutationResult.unwrap() 
           : await mutationResult;
         
+        console.log('✅ Update Result:', result);
         showSuccess(formConfig.successMessages?.update || `${entityType} updated successfully!`);
       } else {
         // Create new record
@@ -141,7 +198,10 @@ const ReactHookFormWrapper = ({
         }
         
         // Handle mutation (works for both direct functions and RTK Query)
-        const mutationResult = createMutation(dataForDatabase);
+        const mutationResult = createMutation({
+          task: dataForDatabase,
+          userData: user // Pass user data for permission checks
+        });
         result = typeof mutationResult === 'object' && 'unwrap' in mutationResult 
           ? await mutationResult.unwrap() 
           : await mutationResult;
@@ -162,16 +222,6 @@ const ReactHookFormWrapper = ({
       onError?.(error);
     }
   }, [onSubmit, formConfig, apiMutations, contextData, mode, fields, onSuccess, onError, entityType, reset]);
-
-  // Helper function to get input type
-  const getInputType = useCallback((fieldType) => {
-    const typeMap = {
-      email: 'email',
-      password: 'password',
-      text: 'text'
-    };
-    return typeMap[fieldType] || 'text';
-  }, []);
 
   /**
    * Generic field renderer that works with any field configuration

@@ -1,0 +1,114 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for security validation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUserActive() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+    
+    function isAdmin() {
+      return isUserActive() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasPermission(permission) {
+      return isUserActive() && 
+             permission in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions;
+    }
+    
+    // Helper function to check if user has permission OR is admin
+    function hasPermissionOrAdmin(permission) {
+      return isAdmin() || hasPermission(permission);
+    }
+    
+    function isValidMonthId(monthId) {
+      return monthId.matches('^[0-9]{4}-[0-9]{2}$');
+    }
+    
+    function isValidTaskData() {
+      return request.resource.data.keys().hasAll(['taskName', 'userUID', 'monthId', 'boardId', 'createdAt', 'createdByUID']) &&
+             request.resource.data.userUID is string &&
+             request.resource.data.monthId is string &&
+             request.resource.data.boardId is string &&
+             request.resource.data.createdAt is string &&
+             request.resource.data.createdByUID is string &&
+             request.resource.data.taskName is string &&
+             request.resource.data.userUID.size() > 0 &&
+             request.resource.data.monthId.size() > 0 &&
+             request.resource.data.boardId.size() > 0;
+    }
+    
+    function isValidBoardData() {
+      return request.resource.data.keys().hasAll(['monthId', 'boardId', 'createdAt', 'createdBy', 'createdByRole']) &&
+             request.resource.data.monthId is string &&
+             request.resource.data.boardId is string &&
+             request.resource.data.createdAt is timestamp &&
+             request.resource.data.createdBy is string &&
+             request.resource.data.createdByRole is string &&
+             isValidMonthId(request.resource.data.monthId);
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Users can read their own data, admins can read all
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      // Only admins can create/update/delete users
+      allow write: if isAdmin();
+    }
+    
+    // Reporters collection rules
+    match /reporters/{reporterId} {
+      // All authenticated users can read reporters
+      allow read: if isAuthenticated();
+      
+      // Only admins can write reporters
+      allow write: if isAdmin();
+    }
+    
+    // Tasks collection (month boards)
+    match /tasks/{monthId} {
+      // Allow read for authenticated users (with or without monthId validation)
+      allow read: if isAuthenticated();
+      
+      // Only admins can create month boards
+      // For admins, skip strict validation
+      allow create: if isAdmin() && (
+        // Admin can create with basic validation
+        (request.resource.data.createdBy == request.auth.uid) ||
+        // Or with full validation if needed
+        (isValidBoardData() && request.resource.data.createdBy == request.auth.uid)
+      );
+      
+      // Only admins can update/delete month boards
+      allow update, delete: if isAdmin();
+      
+      // Month tasks subcollection - SIMPLIFIED FOR DEBUGGING
+      match /monthTasks/{taskId} {
+        // Allow read for all authenticated users (temporarily permissive)
+        allow read: if isAuthenticated();
+        
+        // Allow write for all authenticated users (temporarily permissive)
+        // This will help us debug the permission issue
+        allow write: if isAuthenticated();
+      }
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

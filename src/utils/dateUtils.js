@@ -56,25 +56,36 @@ export const normalizeTimestamp = (value) => {
 export const toMs = (value) => {
   if (!value) return null;
   try {
-    // Firestore Timestamp
-    if (value?.toDate) {
+    // Firestore Timestamp - check for toDate method
+    if (value && typeof value.toDate === 'function') {
       const d = value.toDate();
       return isValid(d) ? d.getTime() : null;
     }
+    
+    // Firestore Timestamp - check for seconds/nanoseconds structure
+    if (value && typeof value === 'object' && 'seconds' in value) {
+      const milliseconds = value.seconds * 1000 + (value.nanoseconds || 0) / 1000000;
+      return Number.isFinite(milliseconds) ? milliseconds : null;
+    }
+    
     // JS Date
     if (value instanceof Date) {
       return isValid(value) ? value.getTime() : null;
     }
+    
     // Number (assumed ms)
     if (typeof value === 'number') {
       return Number.isFinite(value) ? value : null;
     }
+    
     // ISO or date-like string
     if (typeof value === 'string') {
       const parsed = parseISO(value);
       return isValid(parsed) ? parsed.getTime() : null;
     }
-  } catch (_) {}
+  } catch (error) {
+    console.warn('toMs conversion error:', error, 'for value:', value);
+  }
   return null;
 };
 
@@ -152,12 +163,6 @@ export const getEndOfMonth = (date = new Date()) => {
   return endOfMonth(date);
 };
 
-/**
- * Format date with custom pattern
- */
-export const formatDateWithPattern = (date, pattern = 'yyyy-MM-dd') => {
-  return format(date, pattern);
-};
 
 /**
  * Serialize timestamps for Redux store
@@ -205,31 +210,3 @@ export const useFormat = () => {
 
 export default useFormat;
 
-// ============================================================================
-// DATA NORMALIZATION UTILITIES
-// ============================================================================
-
-
-
-
-/**
- * Normalize and serialize data for Redux store
- * @param {Object|Array} data - Data to normalize and serialize
- * @param {Function} normalizer - Optional normalizer function
- * @returns {Object|Array} - Normalized and serialized data
- */
-export const normalizeForRedux = (data, normalizer = null) => {
-  if (!data) {
-    return data;
-  }
-
-  let normalizedData = data;
-  
-  // Apply custom normalizer if provided
-  if (normalizer && typeof normalizer === 'function') {
-    normalizedData = normalizer(data);
-  }
-
-  // Serialize timestamps for Redux
-  return serializeTimestampsForRedux(normalizedData);
-};

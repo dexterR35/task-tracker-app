@@ -1,12 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
-import { useAppData } from '@/hooks';
+import { useAppData } from '@/hooks/useAppData';
 import { 
   TASK_FORM_CONFIG, 
   REPORTER_FORM_CONFIG
 } from './configs/useForms';
 import ReactHookFormWrapper from './ReactHookFormWrapper';
-import { useCreateTaskMutation, useUpdateTaskMutation } from '@/features/tasks';
-import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters';
+import { useCreateTaskMutation, useUpdateTaskMutation } from '@/features/tasks/tasksApi';
+import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
 import { logger } from '@/utils/logger';
 
 /**
@@ -29,7 +29,7 @@ const UniversalFormRHF = ({
   reporters = [],
   ...additionalProps
 }) => {
-  // Only call useAppData if data not provided by parent
+  // Only call useAppData if data not provided by parent - conditional fetching
   const appData = useAppData();
   const finalUser = user || appData.user;
   const finalMonthId = monthId || appData.monthId;
@@ -84,8 +84,14 @@ const UniversalFormRHF = ({
     switch (formType) {
       case 'task':
         context = {
-          userUID,
-          monthId: finalMonthId
+          monthId: finalMonthId,
+          user: finalUser, // Include full user object for permission checks
+          // Include task ID and boardId for edit mode
+          ...(mode === 'edit' && initialValues?.id && { 
+            id: initialValues.id,
+            taskId: initialValues.id,
+            boardId: initialValues.boardId 
+          })
         };
         break;
       case 'reporter':
@@ -99,7 +105,7 @@ const UniversalFormRHF = ({
     }
     
     return context;
-  }, [formType, finalUser, finalMonthId, customContextData]);
+  }, [formType, finalUser, finalMonthId, customContextData, mode, initialValues]);
 
   // Get initial values
   const formInitialValues = useMemo(() => {
@@ -134,13 +140,18 @@ const UniversalFormRHF = ({
     };
   }, [formType, mode]);
 
-  // Custom error handler for specific form types
+  // Custom error handler for specific form types - memoized
   const handleError = useCallback((error) => {
     if (formType === 'reporter') {
       logger.error('Reporter form submission failed', { error });
     }
     onError?.(error);
   }, [formType, onError]);
+
+  // Memoize form success handler
+  const handleSuccess = useCallback((data) => {
+    onSuccess?.(data);
+  }, [onSuccess]);
 
   // All forms are wrapped in container
   return (
@@ -156,7 +167,7 @@ const UniversalFormRHF = ({
         mode={mode}
         apiMutations={apiMutations}
         contextData={contextData}
-        onSuccess={onSuccess}
+        onSuccess={handleSuccess}
         onError={handleError}
         entityType={formType}
         submitButtonText={submitButtonText}

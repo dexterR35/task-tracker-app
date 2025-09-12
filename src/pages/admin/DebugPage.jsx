@@ -1,20 +1,149 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useAuth } from '@/features/auth';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import CacheDebugger from '@/components/ui/Debug/CacheDebugger';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
-import { DynamicButton } from '@/components/ui';
+import DynamicButton from '@/components/ui/Button/DynamicButton';
 
 const DebugPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('redux');
   
-  // Get Redux state for debugging
-  const authState = useSelector(state => state.auth);
-  const currentMonthState = useSelector(state => state.currentMonth);
-  const tasksApiState = useSelector(state => state.tasksApi);
-  const usersApiState = useSelector(state => state.usersApi);
-  const reportersApiState = useSelector(state => state.reportersApi);
+  // Get Redux state for debugging - memoized selectors
+  const authState = useSelector(state => state.auth) || {};
+  const currentMonthState = useSelector(state => state.currentMonth) || {};
+  const tasksApiState = useSelector(state => state.tasksApi) || {};
+  const usersApiState = useSelector(state => state.usersApi) || {};
+  const reportersApiState = useSelector(state => state.reportersApi) || {};
+
+  // Memoize expensive calculations
+  const dataSummary = useMemo(() => {
+    const usersQuery = Object.values(usersApiState.queries || {}).find(q => q?.endpointName === 'getUsers');
+    const reportersQuery = Object.values(reportersApiState.queries || {}).find(q => q?.endpointName === 'getReporters');
+    const tasksQuery = Object.values(tasksApiState.queries || {}).find(q => q?.endpointName === 'subscribeToMonthTasks' && q?.data?.tasks);
+    
+    return {
+      usersCount: usersQuery?.data?.length || 0,
+      reportersCount: reportersQuery?.data?.length || 0,
+      tasksCount: tasksQuery?.data?.tasks?.length || 0
+    };
+  }, [usersApiState.queries, reportersApiState.queries, tasksApiState.queries]);
+
+  // Memoize cache entries calculation
+  const cacheEntries = useMemo(() => {
+    const entries = [];
+    
+    // Users API cache entries
+    if (usersApiState?.queries) {
+      Object.entries(usersApiState.queries).forEach(([key, value]) => {
+        const isAllUsers = key.includes('getUsers') && !key.includes('getUserByUID');
+        const isCurrentUser = key.includes('getUserByUID');
+        
+        entries.push({
+          type: isAllUsers ? 'Users API (All)' : 'Users API (Current)',
+          key,
+          status: value?.status,
+          timestamp: value?.startedTimeStamp,
+          data: value?.data,
+          role: isAllUsers ? 'Admin Only' : 'User Only',
+          endpointName: value?.endpointName,
+          isLoading: value?.isLoading,
+          error: value?.error
+        });
+      });
+    }
+    
+    // Reporters API cache entries
+    if (reportersApiState?.queries) {
+      Object.entries(reportersApiState.queries).forEach(([key, value]) => {
+        entries.push({
+          type: 'Reporters API',
+          key,
+          status: value?.status,
+          timestamp: value?.startedTimeStamp,
+          data: value?.data,
+          role: 'Both Roles',
+          endpointName: value?.endpointName,
+          isLoading: value?.isLoading,
+          error: value?.error
+        });
+      });
+    }
+    
+    // Tasks API cache entries
+    if (tasksApiState?.queries) {
+      Object.entries(tasksApiState.queries).forEach(([key, value]) => {
+        entries.push({
+          type: 'Tasks API',
+          key,
+          status: value?.status,
+          timestamp: value?.startedTimeStamp,
+          data: value?.data,
+          role: 'Both Roles (Filtered)',
+          endpointName: value?.endpointName,
+          isLoading: value?.isLoading,
+          error: value?.error
+        });
+      });
+    }
+    
+    return entries.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  }, [usersApiState.queries, reportersApiState.queries, tasksApiState.queries]);
+
+  // Memoize performance metrics
+  const performanceMetrics = useMemo(() => {
+    if (!('performance' in window)) {
+      return { error: 'Performance API not available' };
+    }
+
+    try {
+      const navigation = performance.getEntriesByType('navigation')[0];
+      const paint = performance.getEntriesByType('paint');
+      const resources = performance.getEntriesByType('resource');
+      
+      return {
+        // Navigation timing
+        domContentLoaded: navigation?.domContentLoadedEventEnd - navigation?.domContentLoadedEventStart,
+        loadComplete: navigation?.loadEventEnd - navigation?.loadEventStart,
+        totalLoadTime: navigation?.loadEventEnd - navigation?.fetchStart,
+        
+        // Paint timing
+        firstPaint: paint.find(p => p.name === 'first-paint')?.startTime,
+        firstContentfulPaint: paint.find(p => p.name === 'first-contentful-paint')?.startTime,
+        
+        // Resource timing
+        totalResources: resources.length,
+        fontResources: resources.filter(r => 
+          r.name.includes('.woff') || r.name.includes('.woff2') || r.name.includes('.ttf')
+        ).length,
+        
+        // Memory usage (if available)
+        memory: performance.memory ? {
+          used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+          total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+          limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+        } : null,
+        
+        // Font loading
+        fontsLoaded: document.fonts ? document.fonts.ready : false
+      };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }, []); // Only calculate once
+
+  // Memoize utility functions
+  const formatTime = useCallback((ms) => {
+    if (!ms || isNaN(ms)) return 'N/A';
+    return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
+  }, []);
+
+  const getPerformanceGrade = useCallback((fcp) => {
+    if (!fcp || isNaN(fcp)) return 'N/A';
+    if (fcp < 1800) return '🟢 Good';
+    if (fcp < 3000) return '🟡 Needs Improvement';
+    return '🔴 Poor';
+  }, []);
 
   const tabs = [
     { id: 'redux', label: 'Redux State', icon: '🔧' },

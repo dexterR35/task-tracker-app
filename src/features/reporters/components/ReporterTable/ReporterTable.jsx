@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { useDeleteReporterMutation } from "@/features/reporters";
-import { DynamicButton } from "@/components";
+import { useDeleteReporterMutation } from "@/features/reporters/reportersApi";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
-import { ConfirmationModal } from "@/components/ui";
+import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 
 const ReporterTable = ({
   className = "",

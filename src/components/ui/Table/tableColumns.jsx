@@ -53,11 +53,6 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 150,
   }),
-  columnHelper.accessor('markets', {
-    header: 'Markets',
-    cell: ({ getValue }) => safeDisplay(getValue()),
-    size: 120,
-  }),
   columnHelper.accessor('products', {
     header: 'Product',
     cell: ({ getValue }) => safeDisplay(getValue()),

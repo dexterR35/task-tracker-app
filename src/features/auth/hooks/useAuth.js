@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { hasPermission, isAdmin, canAccessRole, canAccessTasks, canAccessCharts } from '@/utils/permissions';
+import { isUserComplete } from '@/utils/authUtils';
 
 import {
   loginUser,
@@ -32,8 +34,8 @@ export const useAuth = () => {
   const safeUser = useMemo(() => {
     if (!user) return null;
     
-    // Check for required fields - if any are missing, return null (not authenticated)
-    if (!user.userUID || !user.email || !user.name || !user.role) {
+    // Use centralized user validation
+    if (!isUserComplete(user)) {
       console.warn('User data incomplete - missing required fields:', {
         userUID: !!user.userUID,
         email: !!user.email,
@@ -95,37 +97,26 @@ export const useAuth = () => {
 
   // Enhanced access control with better consistency
   const canAccess = useCallback((requiredRole) => {
-    if (!user) return false;
-    
-    if (requiredRole === 'admin') {
-      return user.role === 'admin';
-    }
-    if (requiredRole === 'user') {
-      return user.role === 'user' || user.role === 'admin'; // Admins can access user routes
-    }
-    // This explicitly handles a request for any authenticated user
     if (requiredRole === 'authenticated') {
       return !!user; // Check if the user object exists
     }
-    // By default, if the requested role is not recognized, deny access
-    return false;
+    return canAccessRole(user, requiredRole);
   }, [user]);
 
   // Permission-based access control
-  const hasPermission = useCallback((permission) => {
-    if (!safeUser || !safeUser.permissions || !Array.isArray(safeUser.permissions)) return false;
-    return safeUser.permissions.includes(permission);
+  const hasPermissionCallback = useCallback((permission) => {
+    return hasPermission(safeUser, permission);
   }, [safeUser]);
 
   // Check if user can generate charts/analytics
   const canGenerate = useCallback(() => {
-    return hasPermission('generate_charts');
-  }, [hasPermission]);
+    return canAccessCharts(safeUser);
+  }, [safeUser]);
 
   // Check if user can access task operations
-  const canAccessTasks = useCallback(() => {
-    return hasPermission('create_task') || hasPermission('update_task') || hasPermission('delete_task');
-  }, [hasPermission]);
+  const canAccessTasksCallback = useCallback(() => {
+    return canAccessTasks(safeUser);
+  }, [safeUser]);
 
   // Simplified auth status check
   const isReady = useCallback(() => {
@@ -141,9 +132,9 @@ export const useAuth = () => {
     
     // Access control
     canAccess,
-    hasPermission,
+    hasPermission: hasPermissionCallback,
     canGenerate,
-    canAccessTasks,
+    canAccessTasks: canAccessTasksCallback,
     
     // Auth actions
     login,

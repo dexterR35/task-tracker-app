@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { DynamicButton } from "@/components";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { showError, showSuccess, showInfo } from '@/utils/toast';
 import { exportToCSV } from "@/utils/exportData";
 // Column helper for type safety
@@ -40,18 +40,7 @@ const DynamicTable = ({
   onRowSelectionChange = null,
 }) => {
   
-  // Debug logging for DynamicTable
-  console.log('🔍 DynamicTable Debug:', {
-    tableType,
-    dataCount: data?.length || 0,
-    data: data?.slice(0, 2), // Show first 2 items for debugging
-    columnsCount: columns?.length || 0,
-    isLoading,
-    error,
-    showColumnToggle,
-    showFilters,
-    showPagination
-  });
+  // DynamicTable component rendering
 
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -199,8 +188,25 @@ const DynamicTable = ({
   // Show empty state
   if (!data.length) {
     return (
-      <div className="card text-center text-sm text-white-dark">
-        No {tableType} found.
+      <div className="card text-center py-8">
+        <div className="text-gray-400 dark:text-gray-500 mb-2">
+          {isLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+              <span>Loading {tableType}...</span>
+            </div>
+          ) : (
+            <div>
+              <div className="text-lg mb-2">📋</div>
+              <div className="text-sm">No {tableType} found</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {tableType === 'tasks' ? 'Try creating a new task or check a different month' : 
+                 tableType === 'users' ? 'No users available' : 
+                 'No data available'}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -325,25 +331,25 @@ const DynamicTable = ({
             <tbody className="bg-gray-800 divide-y divide-gray-700">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={table.getAllColumns().length} className="px-6 py-8 text-center text-gray-400">
-                    {isLoading ? 'Loading...' : 'No data available'}
+                  <td colSpan={table.getAllColumns().length} className="px-6 py-8 text-center">
+                    <div className="text-gray-400 dark:text-gray-500">
+                      {isLoading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                          <span>Loading...</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-lg mb-2">📋</div>
+                          <div>No data available</div>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row, index) => {
-                  // Debug logging for first few rows
-                  if (index < 2) {
-                    console.log(`🔍 Row ${index} Debug:`, {
-                      rowId: row.id,
-                      originalData: row.original,
-                      visibleCells: row.getVisibleCells().length,
-                      cells: row.getVisibleCells().map(cell => ({
-                        columnId: cell.column.id,
-                        value: cell.getValue(),
-                        rendered: flexRender(cell.column.columnDef.cell, cell.getContext())
-                      }))
-                    });
-                  }
+                  // Render table rows
                   
                   return (
                     <tr

@@ -322,6 +322,7 @@ const HomepageCard = ({ card }) => {
 };
 
 const HomePage = () => {
+  
   return (
     <div className="min-h-screen w-full bg-white-dark flex items-center justify-center flex-col">
       <div className="max-w-[90%] w-full mx-auto px-4 relative pt-10">

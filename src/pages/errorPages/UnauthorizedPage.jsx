@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/features/auth';
-import { ExclamationTriangleIcon, HomeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { FiAlertTriangle, FiHome, FiArrowLeft } from 'react-icons/fi';
 
 const UnauthorizedPage = () => {
   const { canAccess } = useAuth();
@@ -15,7 +15,7 @@ const UnauthorizedPage = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
           {/* Error Icon */}
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900 mb-6">
-            <ExclamationTriangleIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
+            <FiAlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
           </div>
           
           {/* Error Title */}
@@ -37,7 +37,7 @@ const UnauthorizedPage = () => {
               to="/dashboard"
               className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
-              <HomeIcon className="h-4 w-4 mr-2" />
+              <FiHome className="h-4 w-4 mr-2" />
               Go to Dashboard
             </Link>
             
@@ -45,7 +45,7 @@ const UnauthorizedPage = () => {
               to="/"
               className="w-full flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
             >
-              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              <FiArrowLeft className="h-4 w-4 mr-2" />
               Go to Home
             </Link>
           </div>
