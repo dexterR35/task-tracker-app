@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppDataContext } from "@/components/layout/AuthLayout";
+import AdminPageHeader from "@/components/layout/AdminPageHeader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useGetMonthTasksQuery } from "@/features/tasks/tasksApi";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
@@ -154,168 +155,203 @@ const AdminTasksPage = () => {
 
 
 
+  const rightContent = (
+    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+      <div className="text-white text-sm font-medium">Tasks Count</div>
+      <div className="text-green-200 text-2xl font-bold">{filteredTasks.length}</div>
+      {!isCurrentMonth && selectedMonthId && (
+        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-yellow-900/20 border border-yellow-500/30">
+          <span className="text-yellow-400 text-xs font-medium">📅 Historical Data</span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="mx-auto px-4 py-6">
-      {/* Header */}
-      <div className=" card flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-        <div>
-          <h2>{title}</h2>
-          <p className="text-gray-300">
-            {selectedMonthId || currentMonthId} - {selectedMonthName}
-            {!isCurrentMonth && selectedMonthId && (
-              <span className="ml-2 text-yellow-400 text-sm">
-                (Viewing Historical Data)
-              </span>
+    <div className="min-h-screen bg-gray-900">
+      <AdminPageHeader
+        title="Task Management"
+        subtitle={`${title} - ${selectedMonthName}`}
+        icon="✅"
+        gradient="from-green-900 via-emerald-900 to-teal-900"
+        rightContent={rightContent}
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Controls Section */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Month Selector */}
+            <div className="space-y-2">
+              <label htmlFor="selectedMonth" className="block text-sm font-medium text-gray-300">
+                Select Month
+              </label>
+              <div className="flex gap-2">
+                <select
+                  id="selectedMonth"
+                  value={selectedMonthId || currentMonthId || ''}
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => {
+                    handleMonthSelect(e.target.value);
+                  }}
+                >
+                  {sortedMonths.map((month) => (
+                    <option
+                      key={month.monthId}
+                      value={month.monthId}
+                    >
+                      {month.monthName} {month.isCurrent ? '(Current)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {!isCurrentMonth && (
+                  <DynamicButton
+                    onClick={handleResetToCurrentMonth}
+                    variant="outline"
+                    size="sm"
+                    title="Reset to current month"
+                    iconName="refresh"
+                    iconPosition="center"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* User Filter */}
+            <div className="space-y-2">
+              <label htmlFor="selectedUser" className="block text-sm font-medium text-gray-300">
+                Filter by User
+              </label>
+              <div className="flex gap-2">
+                <select
+                  id="selectedUser"
+                  value={selectedUserId}
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => {
+                    handleUserSelect(e.target.value);
+                  }}
+                >
+                  <option value="">All Users</option>
+                  {users.map((user) => (
+                    <option
+                      key={user.userUID || user.id}
+                      value={user.userUID || user.id}
+                    >
+                      {user.name || user.email}
+                    </option>
+                  ))}
+                </select>
+                {selectedUserId && (
+                  <DynamicButton
+                    onClick={() => handleUserSelect("")}
+                    variant="outline"
+                    size="sm"
+                    iconName="x"
+                    iconPosition="center"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Create Task Button */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                Actions
+              </label>
+              <DynamicButton
+                onClick={() => setShowCreateModal(true)}
+                variant="primary"
+                size="md"
+                iconName="add"
+                iconPosition="left"
+                disabled={!canCreateTasks}
+                title={!isCurrentMonth ? "Task creation only available for current month" : !boardExists ? "Month board not available" : ""}
+                className="w-full shadow-lg"
+              >
+                Create Task
+              </DynamicButton>
+            </div>
+          </div>
+        </div>
+
+        {/* Tasks Section */}
+        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          {/* Section Header */}
+          <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {isUserAdmin && selectedUserId
+                    ? `${selectedUserName} Tasks`
+                    : "All Tasks"}
+                </h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  {filteredTasks.length} tasks for {selectedMonthName}
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                {!canCreateTasks && (
+                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg px-3 py-2">
+                    <span className="text-yellow-400 text-sm font-medium">
+                      {!isCurrentMonth ? "Historical data - creation disabled" : "Board not available"}
+                    </span>
+                  </div>
+                )}
+                <DynamicButton
+                  onClick={() => setShowTable(!showTable)}
+                  variant="outline"
+                  size="sm"
+                  iconName={showTable ? "eye-off" : "eye"}
+                  iconPosition="left"
+                >
+                  {showTable ? "Hide Table" : "Show Table"}
+                </DynamicButton>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Content */}
+          <div className="p-6">
+            {showTable && (
+              showMonthLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="text-center">
+                    <Loader size="lg" text="Loading tasks for selected month..." />
+                  </div>
+                </div>
+              ) : (
+                <LazyTaskTable
+                  tasks={filteredTasks}
+                  users={users}
+                  reporters={reporters}
+                  user={user}
+                  monthId={selectedMonthId}
+                  isAdminView={isUserAdmin}
+                />
+              )
             )}
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            Showing {filteredTasks.length} tasks for {selectedMonthName}
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0 items-center">
-          {/* Month Selector */}
-          <div className="min-w-[200px]">
-            <label htmlFor="selectedMonth">Select Month</label>
-            <div className="flex gap-2">
-              <select
-                id="selectedMonth"
-                value={selectedMonthId || currentMonthId || ''}
-                className="flex-1 px-3 py-2"
-                onChange={(e) => {
-                  handleMonthSelect(e.target.value);
-                }}
-              >
-                {sortedMonths.map((month) => (
-                  <option
-                    key={month.monthId}
-                    value={month.monthId}
-                  >
-                    {month.monthName} {month.isCurrent ? '(Current)' : ''}
-                  </option>
-                ))}
-              </select>
-              {!isCurrentMonth && (
-                <DynamicButton
-                  onClick={handleResetToCurrentMonth}
-                  variant="outline"
-                  size="sm"
-                  title="Reset to current month"
-                >
-                  Current
-                </DynamicButton>
-              )}
-            </div>
           </div>
-
-          {/* User Filter */}
-          <div className="min-w-[200px]">
-            <label htmlFor="selectedUser">Filter by User</label>
-            <div className="flex gap-2">
-              <select
-                id="selectedUser"
-                value={selectedUserId}
-                className="flex-1 px-3 py-2"
-                onChange={(e) => {
-                  handleUserSelect(e.target.value);
-                }}
-              >
-                <option value="">All Users</option>
-                {users.map((user) => (
-                  <option
-                    key={user.userUID || user.id}
-                    value={user.userUID || user.id}
-                  >
-                    {user.name || user.email}
-                  </option>
-                ))}
-              </select>
-              {selectedUserId && (
-                <DynamicButton
-                  onClick={() => handleUserSelect("")}
-                  variant="outline"
-                  size="sm"
-                >
-                  Clear
-                </DynamicButton>
-              )}
-            </div>
-          </div>
-
-          {/* Create Task Button - Only enabled for current month */}
-          <DynamicButton
-            onClick={() => setShowCreateModal(true)}
-            variant="primary"
-            size="md"
-            iconName="add"
-            iconPosition="left"
-            className="h-fit self-end"
-            disabled={!canCreateTasks}
-            title={!isCurrentMonth ? "Task creation only available for current month" : !boardExists ? "Month board not available" : ""}
-          >
-            Create Task
-          </DynamicButton>
-        </div>
-      </div>
-
-      {/* Board warning is now handled globally by AuthLayout */}
-
-      {/* Tasks Section */}
-      <div className="bg-gray-100 dark:bg-secondary card">
-        <div className="flex justify-between items-center mb-10">
-          <h2 className=" text-gray-800 dark:text-white">
-            {isUserAdmin && selectedUserId
-              ? `${selectedUserName} Tasks`
-              : "All Tasks"}
-            <span className="text-sm font-normal text-gray-600 ml-2">
-              ({filteredTasks.length} tasks)
-            </span>
-          </h2>
-          <DynamicButton
-            onClick={() => setShowTable(!showTable)}
-            variant="outline"
-            size="sm"
-          >
-            {showTable ? "Hide Table" : "Show Table"}
-          </DynamicButton>
         </div>
 
-        {showTable && (
-          showMonthLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader size="lg" text="Loading tasks for selected month..." />
-            </div>
-          ) : (
-            <LazyTaskTable
-              tasks={filteredTasks}
-              users={users}
-              reporters={reporters}
-              user={user}
-              monthId={selectedMonthId}
-              isAdminView={isUserAdmin}
-            />
-          )
-        )}
+        {/* Create Task Modal */}
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="Create New Task"
+          maxWidth="max-w-4xl"
+        >
+          <LazyUniversalForm
+            formType="task"
+            mode="create"
+            user={user}
+            monthId={selectedMonthId}
+            reporters={reporters}
+            onSuccess={() => {
+              setShowCreateModal(false);
+            }}
+          />
+        </Modal>
       </div>
-
-      {/* Create Task Modal */}
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create New Task"
-        maxWidth="max-w-4xl"
-      >
-        <LazyUniversalForm
-          formType="task"
-          mode="create"
-          user={user}
-          monthId={selectedMonthId}
-          reporters={reporters}
-          onSuccess={() => {
-            setShowCreateModal(false);
-          }}
-        />
-      </Modal>
     </div>
   );
 };

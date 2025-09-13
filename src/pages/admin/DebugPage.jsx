@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import AdminPageHeader from '@/components/layout/AdminPageHeader';
 import CacheDebugger from '@/components/ui/Debug/CacheDebugger';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
@@ -1004,26 +1005,32 @@ const DebugPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-900">
+      <AdminPageHeader
+        title="Debug Tools"
+        subtitle="Comprehensive debugging and monitoring tools for administrators"
+        icon="🛠️"
+        gradient="from-cyan-900 via-teal-900 to-emerald-900"
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Debug Info */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            🛠️ Debug Tools
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Comprehensive debugging and monitoring tools for administrators
-          </p>
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Current User:</strong> {user?.name || 'Unknown'} ({user?.email || 'No email'})
-            </p>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Environment:</strong> {process.env.NODE_ENV}
-            </p>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Last Updated:</strong> {new Date().toLocaleString()}
-            </p>
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-400 font-medium">Current User:</span>
+                <div className="text-white font-semibold">{user?.name || 'Unknown'} ({user?.email || 'No email'})</div>
+              </div>
+              <div>
+                <span className="text-gray-400 font-medium">Environment:</span>
+                <div className="text-white font-semibold">{process.env.NODE_ENV}</div>
+              </div>
+              <div>
+                <span className="text-gray-400 font-medium">Last Updated:</span>
+                <div className="text-white font-semibold">{new Date().toLocaleString()}</div>
+              </div>
+            </div>
           </div>
         </div>
 
