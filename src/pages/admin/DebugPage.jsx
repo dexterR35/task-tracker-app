@@ -1009,7 +1009,7 @@ const DebugPage = () => {
       <AdminPageHeader
         title="Debug Tools"
         subtitle="Comprehensive debugging and monitoring tools for administrators"
-        icon="🛠️"
+        icon="debug"
         gradient="from-cyan-900 via-teal-900 to-emerald-900"
       />
 

@@ -8,7 +8,7 @@ import { logger } from "@/utils/logger";
 import Sidebar from "@/components/navigation/Sidebar";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
-import { FiMenu } from "react-icons/fi";
+import { Icons } from "@/components/icons";
 
 // Create context for app data to avoid multiple useAppData calls
 const AppDataContext = createContext();
@@ -185,7 +185,7 @@ const AuthLayout = () => {
                 aria-label="Show sidebar"
                 title="Show sidebar (Ctrl+B)"
               >
-                <FiMenu className="w-5 h-5" />
+                <Icons.buttons.menu className="w-5 h-5" />
               </button>
             )}
           </div>

@@ -22,7 +22,7 @@ const AdminDashboardPage = () => {
       <AdminPageHeader
         title="Admin Dashboard"
         subtitle="Overview and management controls for all users"
-        icon="🏠"
+        icon="dashboard"
         gradient="from-indigo-900 via-blue-900 to-purple-900"
         rightContent={rightContent}
       />

@@ -75,7 +75,7 @@ const AdminManagementPage = () => {
       <AdminPageHeader
         title="Admin Management"
         subtitle="Manage users and reporters across your organization"
-        icon="⚙️"
+        icon="management"
         gradient="from-blue-900 via-purple-900 to-indigo-900"
         rightContent={rightContent}
       />

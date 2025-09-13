@@ -1,20 +1,7 @@
 import React from "react";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import netbetLogo from "@/assets/netbet-logo.png";  
-import {
-  FiClock,
-  FiBarChart2,
-  FiUsers,
-  FiCheckCircle,
-  FiTrendingUp,
-  FiUser,
-  FiZap,
-  FiPackage,
-  FiTarget,
-  FiArrowUp,
-  FiArrowDown,
-  FiMinus,
-} from "react-icons/fi";
+import { Icons } from "@/components/icons";
 import {
   AreaChart,
   Area,
@@ -109,7 +96,7 @@ const homepageCards = [
     bestCategory: "Poker",
     trend: "+20% from last month",
     trendDirection: "up",
-    icon: FiTrendingUp,
+    icon: Icons.generic.chart,
     hasChart: true,
     chartData: ChartData,
   },
@@ -125,7 +112,7 @@ const homepageCards = [
     bestCategory: "Design",
     trend: "+5% / week",
     trendDirection: "up",
-    icon: FiUsers,
+    icon: Icons.admin.users,
     hasChart: true,
     chartData: ChartData,
   },
@@ -142,7 +129,7 @@ const homepageCards = [
     bestCategory: "Sports",
     trend: "+8% from last month",
     trendDirection: "up",
-    icon: FiClock,
+    icon: Icons.generic.clock,
     hasChart: false,
   },
   {
@@ -157,7 +144,7 @@ const homepageCards = [
     bestCategory: "Casino",
     trend: "-12% from last month",
     trendDirection: "down",
-    icon: FiCheckCircle,
+    icon: Icons.buttons.submit,
     hasChart: true, 
     chartData: ChartData,
   },
@@ -173,7 +160,7 @@ const homepageCards = [
     bestCategory: "Sport",
     trend: "-18% from last month",
     trendDirection: "up",
-    icon: FiBarChart2,
+    icon: Icons.cards.chart,
     hasChart: true,
     chartData: ChartData,
   },
@@ -186,11 +173,11 @@ const HomepageCard = ({ card }) => {
   const getTrendIconComponent = (direction) => {
     switch (direction) {
       case "up":
-        return <FiArrowUp className="w-4 h-4 text-green-success" />;
+        return <Icons.buttons.chevronUp className="w-4 h-4 text-green-success" />;
       case "down":
-        return <FiArrowDown className="w-4 h-4 text-red-error" />;
+        return <Icons.buttons.chevronDown className="w-4 h-4 text-red-error" />;
       default:
-        return <FiMinus className="w-4 h-4 text-gray-400" />;
+        return <Icons.buttons.minus className="w-4 h-4 text-gray-400" />;
     }
   };
 
@@ -252,7 +239,7 @@ const HomepageCard = ({ card }) => {
             <div className="space-y-3 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <FiUser className="w-3 h-3 text-gray-400" />
+                  <Icons.generic.user className="w-3 h-3 text-gray-400" />
                   <span className="text-xs text-gray-400">Reporter</span>
                 </div>
                 <span className="text-sm font-medium text-gray-200">
@@ -263,7 +250,7 @@ const HomepageCard = ({ card }) => {
               {card.bestAI !== null && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <FiZap className="w-3 h-3 text-gray-400" />
+                    <Icons.generic.zap className="w-3 h-3 text-gray-400" />
                     <span className="text-xs text-gray-400">Best AI</span>
                   </div>
                   <span className="text-sm font-medium text-gray-200">
@@ -275,7 +262,7 @@ const HomepageCard = ({ card }) => {
               {card.deliverables !== null && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <FiPackage className="w-3 h-3 text-gray-400" />
+                    <Icons.generic.package className="w-3 h-3 text-gray-400" />
                     <span className="text-xs text-gray-400">Deliverables</span>
                   </div>
                   <span className="text-sm font-medium text-gray-200">
@@ -285,7 +272,7 @@ const HomepageCard = ({ card }) => {
               )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <FiTarget className="w-3 h-3 text-gray-400" />
+                  <Icons.generic.target className="w-3 h-3 text-gray-400" />
                   <span className="text-xs text-gray-400">Best Category</span>
                 </div>
                 <span className="text-sm font-medium text-gray-200">

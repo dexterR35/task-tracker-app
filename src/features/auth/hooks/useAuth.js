@@ -85,6 +85,10 @@ export const useAuth = () => {
   const logout = useCallback(async () => {
     try {
       await dispatch(logoutUser()).unwrap();
+      // Clear the session-based user logging flag
+      if (window._loggedUser) {
+        delete window._loggedUser;
+      }
       showLogoutSuccess();
     } catch (error) {
       showAuthError(error?.message || error || 'Logout failed');

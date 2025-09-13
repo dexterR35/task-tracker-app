@@ -75,7 +75,12 @@ export const getCurrentUserInfo = (authState) => {
     name: auth.currentUser.displayName || auth.currentUser.email
   };
   
-  logger.log('[getCurrentUserInfo] User found:', { uid: userInfo.uid, email: userInfo.email });
+  // Only log once per session by checking if we've already logged this user
+  if (!window._loggedUser || window._loggedUser !== userInfo.uid) {
+    logger.log('[getCurrentUserInfo] User found:', { uid: userInfo.uid, email: userInfo.email });
+    window._loggedUser = userInfo.uid;
+  }
+  
   return userInfo;
 };
 

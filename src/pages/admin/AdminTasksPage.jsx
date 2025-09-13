@@ -172,7 +172,7 @@ const AdminTasksPage = () => {
       <AdminPageHeader
         title="Task Management"
         subtitle={`${title} - ${selectedMonthName}`}
-        icon="✅"
+        icon="tasks"
         gradient="from-green-900 via-emerald-900 to-teal-900"
         rightContent={rightContent}
       />

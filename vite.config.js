@@ -49,7 +49,6 @@ export default defineConfig({
       'react-router-dom',
       '@reduxjs/toolkit',
       'react-redux',
-      '@heroicons/react',
       'formik',
       'yup',
       'firebase/app',

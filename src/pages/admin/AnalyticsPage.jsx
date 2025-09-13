@@ -7,7 +7,7 @@ const AnalyticsPage = () => {
       <AdminPageHeader
         title="Analytics Dashboard"
         subtitle="Data insights and performance metrics for your organization"
-        icon="📈"
+        icon="analytics"
         gradient="from-orange-900 via-red-900 to-pink-900"
       />
 
