@@ -2,7 +2,24 @@ import React, { useCallback, useMemo, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { showSuccess, showError } from '@/utils/toast';
-import { sanitizeFormData, shouldShowField, buildFormValidationSchema } from './configs/useForms';
+import { buildFormValidationSchema, shouldShowField } from './configs/useForms';
+import { 
+  TextField, 
+  SelectField, 
+  CheckboxField, 
+  NumberField, 
+  UrlField, 
+  MultiSelectField 
+} from './components';
+import { 
+  INPUT_TYPE_MAP, 
+  FORM_METADATA 
+} from './utils/formConstants';
+import { 
+  executeMutation, 
+  getMutation, 
+  prepareFormData 
+} from './utils/formUtilities';
 
 /**
  * React Hook Form Wrapper Component
@@ -74,33 +91,32 @@ const ReactHookFormWrapper = ({
   // Watch all form values for conditional field logic
   const watchedValues = watch();
 
-  // Auto-generate taskName from jiraLink for task forms
+  // Auto-generate taskName from jiraLink for task forms (real-time)
   useEffect(() => {
-    if (entityType === 'task' && watchedValues.jiraLink && !watchedValues.taskName) {
+    if (entityType === 'task' && watchedValues.jiraLink) {
       const jiraMatch = watchedValues.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
       if (jiraMatch) {
         const generatedTaskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
         setValue('taskName', generatedTaskName);
         console.log('🔧 Auto-generated taskName:', generatedTaskName);
-      } else {
-        // Fallback: use the last part of the URL
+      } else if (watchedValues.jiraLink.includes('atlassian.net')) {
+        // Fallback: use the last part of the URL for valid Jira URLs
         const urlParts = watchedValues.jiraLink.split('/');
         const fallbackTaskName = urlParts[urlParts.length - 1] || 'Unknown Task';
         setValue('taskName', fallbackTaskName);
         console.log('🔧 Auto-generated taskName (fallback):', fallbackTaskName);
+      } else {
+        // Clear taskName if Jira link is invalid or empty
+        setValue('taskName', '');
+        console.log('🔧 Cleared taskName - invalid Jira link');
       }
     }
-  }, [watchedValues.jiraLink, watchedValues.taskName, entityType, setValue]);
+  }, [watchedValues.jiraLink, entityType, setValue]);
 
 
   // Helper function to get input type - memoized
   const getInputType = useCallback((fieldType) => {
-    const typeMap = {
-      email: 'email',
-      password: 'password',
-      text: 'text'
-    };
-    return typeMap[fieldType] || 'text';
+    return INPUT_TYPE_MAP[fieldType] || 'text';
   }, []);
 
   // Memoize form submission handler
@@ -125,87 +141,34 @@ const ReactHookFormWrapper = ({
         return;
       }
 
-      // Sanitize form data
-      const sanitizedData = sanitizeFormData(data, fields);
-      console.log('🧹 Sanitized Data:', sanitizedData);
-      
-      // Use task-specific data preparation if this is a task form
-      let processedData = sanitizedData;
-      if (entityType === 'task' && formConfig.prepareTaskFormData) {
-        processedData = formConfig.prepareTaskFormData(sanitizedData);
-        console.log('🔧 Task-specific processed data:', processedData);
-      }
-      
-      // Prepare data for database (exclude user object from contextData)
-      const { user, ...contextDataWithoutUser } = contextData;
-      const dataForDatabase = {
-        ...processedData,
-        ...contextDataWithoutUser,
-        updatedAt: new Date().toISOString()
-      };
-
-      // Only add createdAt for new records (create mode)
-      if (mode === 'create') {
-        dataForDatabase.createdAt = new Date().toISOString();
-      }
-
-      // For update mode, remove protected fields that shouldn't be changed
-      if (mode === 'edit') {
-        const protectedFields = ['createdAt', 'createdByUID', 'createdByName', 'id'];
-        protectedFields.forEach(field => {
-          delete dataForDatabase[field];
-        });
-      }
-
-      // Remove id from dataForDatabase if it's null or undefined to let database generate it
-      if (dataForDatabase.id === null || dataForDatabase.id === undefined) {
-        delete dataForDatabase.id;
-      }
-
+      // Prepare form data for database
+      const dataForDatabase = prepareFormData(data, fields, formConfig, entityType, mode, contextData);
       console.log('💾 Final Data for Database:', dataForDatabase);
-      console.log('🔍 Mode:', mode, 'Protected fields removed:', mode === 'edit' ? ['createdAt', 'createdByUID', 'createdByName', 'id'] : 'N/A');
 
       let result;
       if (mode === 'edit' && contextData.id) {
         // Update existing record
-        console.log('🔄 Update Mode - Context Data:', contextData);
-        console.log('🔄 Update Mode - Data for Database:', dataForDatabase);
-        
-        const updateMutation = apiMutations.update || apiMutations.updateMutation;
-        if (!updateMutation) {
-          throw new Error(`Update mutation not provided for ${entityType}`);
-        }
-        
-        // Handle mutation (works for both direct functions and RTK Query)
-        const mutationResult = updateMutation({
+        const updateMutation = getMutation(apiMutations, 'update');
+        const mutationData = {
           monthId: contextData.monthId,
           boardId: contextData.boardId,
-          taskId: contextData.taskId || contextData.id, // Use taskId if available, fallback to id
+          taskId: contextData.taskId || contextData.id,
           updates: dataForDatabase,
-          userData: user // Pass user data for permission checks
-        });
-        result = typeof mutationResult === 'object' && 'unwrap' in mutationResult 
-          ? await mutationResult.unwrap() 
-          : await mutationResult;
+          userData: contextData.user
+        };
         
+        result = await executeMutation(updateMutation, mutationData);
         console.log('✅ Update Result:', result);
         showSuccess(formConfig.successMessages?.update || `${entityType} updated successfully!`);
       } else {
         // Create new record
-        const createMutation = apiMutations.create || apiMutations.createMutation;
-        if (!createMutation) {
-          throw new Error(`Create mutation not provided for ${entityType}`);
-        }
-        
-        // Handle mutation (works for both direct functions and RTK Query)
-        const mutationResult = createMutation({
+        const createMutation = getMutation(apiMutations, 'create');
+        const mutationData = {
           task: dataForDatabase,
-          userData: user // Pass user data for permission checks
-        });
-        result = typeof mutationResult === 'object' && 'unwrap' in mutationResult 
-          ? await mutationResult.unwrap() 
-          : await mutationResult;
+          userData: contextData.user
+        };
         
+        result = await executeMutation(createMutation, mutationData);
         showSuccess(formConfig.successMessages?.create || `${entityType} created successfully!`);
       }
 
@@ -228,119 +191,36 @@ const ReactHookFormWrapper = ({
    * Memoized to prevent unnecessary re-renders
    */
   const renderField = useCallback((field) => {
-    const { sanitize, validation, conditional, ...fieldProps } = field;
-    
     // Check if field should be visible based on conditional logic
     if (!shouldShowField(field, watchedValues)) {
       return null; // Don't render the field
     }
 
-    const fieldError = errors[field.name];
-    const isFieldRequired = field.required;
-    
-    return (
-      <div key={field.name} className="field-wrapper">
-        {field.label && (
-          <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {field.label}
-            {isFieldRequired && <span className="text-red-500 ml-1">*</span>}
-          </label>
-        )}
-        
-        {field.type === 'select' ? (
-          <select
-            {...register(field.name)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          >
-            <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
-            {field.options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : field.type === 'multiSelect' ? (
-          <MultiSelectField
-            field={field}
-            setValue={setValue}
-            watch={watch}
-            errors={errors}
-          />
-        ) : field.type === 'checkbox' ? (
-          <div className="flex items-start space-x-3">
-            <input
-              {...register(field.name)}
-              type="checkbox"
-              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              onChange={(e) => {
-                setValue(field.name, e.target.checked);
-                trigger(field.name);
-                
-                // Handle conditional field logic
-                if (field.name === 'hasDeliverables' && !e.target.checked) {
-                  setValue('deliverables', []);
-                  clearErrors('deliverables');
-                } else if (field.name === 'usedAI' && !e.target.checked) {
-                  setValue('aiModels', []);
-                  setValue('aiTime', 0);
-                  clearErrors('aiModels');
-                  clearErrors('aiTime');
-                }
-              }}
-            />
-            <div>
-              <label htmlFor={field.name} className="text-sm font-medium text-gray-700">
-                {field.label}
-              </label>
-            </div>
-          </div>
-        ) : field.type === 'number' ? (
-          <input
-            {...register(field.name, {
-              valueAsNumber: true,
-              onChange: (e) => {
-                const value = parseFloat(e.target.value) || 0;
-                setValue(field.name, value);
-                trigger(field.name);
-              }
-            })}
-            type="number"
-            step={field.step || 0.5}
-            min={field.min || 0.5}
-            max={field.max || 999}
-            placeholder={field.placeholder}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          />
-        ) : field.type === 'url' ? (
-          <input
-            {...register(field.name)}
-            type="url"
-            placeholder={field.placeholder}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          />
-        ) : (
-          <input
-            {...register(field.name)}
-            type={getInputType(field.type)}
-            placeholder={field.placeholder}
-            autoComplete={field.autoComplete}
-            readOnly={field.readOnly || false}
-            disabled={false}
-            className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${field.readOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''}`}
-          />
-        )}
-        
-        {fieldError && (
-          <div className="text-red-500 text-sm mt-1">
-            {fieldError.message}
-          </div>
-        )}
-        
-        {field.helpText && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{field.helpText}</p>
-        )}
-      </div>
-    );
+    const fieldProps = {
+      field,
+      register,
+      errors,
+      setValue,
+      watch,
+      trigger,
+      clearErrors,
+      getInputType
+    };
+
+    switch (field.type) {
+      case 'select':
+        return <SelectField key={field.name} {...fieldProps} />;
+      case 'multiSelect':
+        return <MultiSelectField key={field.name} {...fieldProps} />;
+      case 'checkbox':
+        return <CheckboxField key={field.name} {...fieldProps} />;
+      case 'number':
+        return <NumberField key={field.name} {...fieldProps} />;
+      case 'url':
+        return <UrlField key={field.name} {...fieldProps} />;
+      default:
+        return <TextField key={field.name} {...fieldProps} />;
+    }
   }, [watchedValues, errors, register, setValue, trigger, clearErrors, getInputType]);
 
   return (
@@ -360,65 +240,6 @@ const ReactHookFormWrapper = ({
   );
 };
 
-/**
- * MultiSelect Field Component for React Hook Form
- */
-const MultiSelectField = ({ field, setValue, watch, errors }) => {
-  const selectedValues = watch(field.name) || [];
-  const availableOptions = field.options?.filter(option => !selectedValues.includes(option.value)) || [];
-
-  const handleAddValue = (value) => {
-    if (value && !selectedValues.includes(value)) {
-      const newValues = [...selectedValues, value];
-      setValue(field.name, newValues, { shouldValidate: true });
-    }
-  };
-
-  const handleRemoveValue = (index) => {
-    const newValues = selectedValues.filter((_, i) => i !== index);
-    setValue(field.name, newValues, { shouldValidate: true });
-  };
-
-  return (
-    <div>
-      <select
-        value=""
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-        onChange={(e) => handleAddValue(e.target.value)}
-      >
-        <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
-        {availableOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      
-      {/* Selected Items Display */}
-      {selectedValues.length > 0 && (
-        <div className="mt-2">
-          <div className="flex flex-wrap gap-2">
-            {selectedValues.map((item, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-              >
-                {field.options?.find(opt => opt.value === item)?.label || item}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveValue(index)}
-                  className="ml-2 hover:opacity-75"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 
 // Memoize the component to prevent unnecessary re-renders

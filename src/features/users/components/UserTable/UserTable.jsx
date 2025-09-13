@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
+import React from "react";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
-import { showError, showSuccess, showInfo } from "@/utils/toast.js";
+import { showError } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
+import GenericTableContainer from "@/components/ui/Table/GenericTableContainer";
 
 const UserTable = ({
   className = "",
@@ -11,8 +11,6 @@ const UserTable = ({
   isLoading = false,
   error: usersError = null,
 }) => {
-  const [rowActionId, setRowActionId] = useState(null);
-
   // Get user columns with monthId for date formatting
   const userColumns = getColumns('users', monthId);
   
@@ -35,27 +33,27 @@ const UserTable = ({
   };
 
   return (
-    <div className={className}>
-        <DynamicTable
-          data={users}
-          columns={userColumns}
-          tableType="users"
-          onSelect={handleUserSelect}
-          onEdit={handleUserEdit}
-          onDelete={handleUserDelete}
-          isLoading={isLoading}
-          error={usersError}
-          showPagination={true}
-          showFilters={true}
-          showColumnToggle={true}
-          pageSize={25}
-          enableSorting={true}
-          enableFiltering={true}
-          enablePagination={true}
-          enableColumnResizing={true}
-          enableRowSelection={false}
-        />
-      </div>
+    <GenericTableContainer
+      className={className}
+      data={users}
+      columns={userColumns}
+      tableType="users"
+      isLoading={isLoading}
+      error={usersError}
+      onSelect={handleUserSelect}
+      onEdit={handleUserEdit}
+      onDelete={handleUserDelete}
+      // No EditModal or deleteMutation - functionality disabled
+      showPagination={true}
+      showFilters={true}
+      showColumnToggle={true}
+      pageSize={25}
+      enableSorting={true}
+      enableFiltering={true}
+      enablePagination={true}
+      enableColumnResizing={true}
+      enableRowSelection={false}
+    />
   );
 };
 

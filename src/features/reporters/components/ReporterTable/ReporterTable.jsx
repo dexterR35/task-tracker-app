@@ -1,12 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { useDeleteReporterMutation } from "@/features/reporters/reportersApi";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
-import DynamicTable from "@/components/ui/Table/DynamicTable.jsx";
 import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
-import { showError, showSuccess } from "@/utils/toast.js";
+import { showError } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
+import GenericTableContainer from "@/components/ui/Table/GenericTableContainer";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
-import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 
 const ReporterTable = ({
   className = "",
@@ -15,12 +13,6 @@ const ReporterTable = ({
   isLoading = false,
   error: reportersError = null,
 }) => {
-  const [rowActionId, setRowActionId] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingReporter, setEditingReporter] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [reporterToDelete, setReporterToDelete] = useState(null);
-
   // API hooks for reporter CRUD
   const [deleteReporter] = useDeleteReporterMutation();
   
@@ -33,97 +25,38 @@ const ReporterTable = ({
     logger.log('Reporter view requested for:', reporter);
   };
 
-  // Handle reporter edit - open modal with ReporterForm
-  const handleReporterEdit = (reporter) => {
-    setEditingReporter(reporter);
-    setShowEditModal(true);
-  };
-
-  // Handle reporter delete
-  const handleReporterDelete = (reporter) => {
-    setReporterToDelete(reporter);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDeleteReporter = async () => {
-    if (!reporterToDelete) return;
-
-    try {
-      setRowActionId(reporterToDelete.id);
-      await deleteReporter(reporterToDelete.id).unwrap();
-      showSuccess("Reporter deleted successfully!");
-    } catch (error) {
-      logger.error("Reporter delete error:", error);
-      showError(`Failed to delete reporter: ${error?.message || "Please try again."}`);
-    } finally {
-      setRowActionId(null);
-      setReporterToDelete(null);
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  // Render edit modal
-  const renderEditModal = () => {
-    if (!showEditModal || !editingReporter) return null;
-    
-    return (
-      <ReporterFormModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingReporter(null);
-        }}
-        mode="edit"
-        reporter={editingReporter}
-        onSuccess={() => {
-          setShowEditModal(false);
-          setEditingReporter(null);
-        }}
-      />
-    );
+  // Custom delete mutation wrapper for reporters
+  const handleReporterDelete = async (deleteData) => {
+    const { id } = deleteData;
+    return await deleteReporter(id);
   };
 
   return (
-    <div className={className}>
-      <DynamicTable
-        data={reporters}
-        columns={reporterColumns}
-        tableType="reporters"
-        onSelect={handleReporterSelect}
-        onEdit={handleReporterEdit}
-        onDelete={handleReporterDelete}
-        isLoading={isLoading}
-        error={reportersError}
-        showPagination={true}
-        showFilters={true}
-        showColumnToggle={true}
-        pageSize={25}
-        enableSorting={true}
-        enableFiltering={true}
-        enablePagination={true}
-        enableColumnResizing={true}
-        enableRowSelection={false}
-      />
-
-      {/* Edit Reporter Modal */}
-      {renderEditModal()}
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setReporterToDelete(null);
-        }}
-        onConfirm={confirmDeleteReporter}
-        title="Delete Reporter"
-        message={`Are you sure you want to delete reporter "${reporterToDelete?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={rowActionId === reporterToDelete?.id}
-      />
-    </div>
+    <GenericTableContainer
+      className={className}
+      data={reporters}
+      columns={reporterColumns}
+      tableType="reporters"
+      isLoading={isLoading}
+      error={reportersError}
+      onSelect={handleReporterSelect}
+      EditModal={ReporterFormModal}
+      editModalProps={{
+        mode: "edit"
+      }}
+      deleteMutation={handleReporterDelete}
+      deleteItemName="reporter"
+      getItemDisplayName={(reporter) => reporter?.name || 'Unknown Reporter'}
+      showPagination={true}
+      showFilters={true}
+      showColumnToggle={true}
+      pageSize={25}
+      enableSorting={true}
+      enableFiltering={true}
+      enablePagination={true}
+      enableColumnResizing={true}
+      enableRowSelection={false}
+    />
   );
 };
 

@@ -8,7 +8,7 @@ import ReporterTable from "@/features/reporters/components/ReporterTable/Reporte
 
 const AdminManagementPage = () => {
   // Get all data from AuthLayout context (pre-fetched data, no API calls!)
-  const { monthId, monthName, users, reporters, error } = useAppDataContext();
+  const { monthId, monthName, users, reporters, error, isLoading } = useAppDataContext();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
   

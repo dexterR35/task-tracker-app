@@ -12,11 +12,15 @@ import { createDebugLogger } from "@/utils/debugUtils";
 
 // Split into focused hooks for better performance
 export const useCurrentMonth = () => {
+  const { user } = useAuth();
+  
   const { 
     data: currentMonthData = {}, 
     isLoading: currentMonthLoading, 
     error: currentMonthError 
-  } = useGetCurrentMonthQuery();
+  } = useGetCurrentMonthQuery(undefined, {
+    skip: !user // Skip query until user is authenticated
+  });
   
   return useMemo(() => {
     const { 

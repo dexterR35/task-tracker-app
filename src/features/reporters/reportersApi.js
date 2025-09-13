@@ -1,134 +1,70 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
+import { createFirestoreApi, fetchCollectionFromFirestore, createDocumentInFirestore, updateDocumentInFirestore, deleteDocumentFromFirestore, serializeTimestampsForRedux } from "@/features/api/baseApi";
 import { db } from "@/app/firebase";
-import {
-  collection,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  query,
-  orderBy,
-  serverTimestamp,
-} from "firebase/firestore";
 import { logger } from "@/utils/logger";
-import { deduplicateRequest } from "@/features/utils/requestDeduplication";
-import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
+/**
+ * Reporters API - Refactored to use base API factory
+ * Eliminates duplicate patterns and standardizes error handling
+ */
 
-// Custom base query for Firestore
-const firestoreBaseQuery = () => async ({ url, method, body }) => {
-  try {
-    switch (method) {
-      case "GET":
-        if (url === "reporters") {
-          const cacheKey = "getReporters";
-          return await deduplicateRequest(cacheKey, async () => {
-            logger.log(`[Reporters API] Starting to fetch reporters...`);
-            const querySnapshot = await getDocs(
-              query(collection(db, "reporters"), orderBy("createdAt", "desc"))
-            );
-            logger.log(`[Reporters API] Query snapshot size: ${querySnapshot.docs.length}`);
-            const reporters = querySnapshot.docs.map((doc) => {
-            const reporter = { id: doc.id, ...doc.data() };
-            // Use standardized timestamp serialization
-            return serializeTimestampsForRedux(reporter);
-            });
-            logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
-            return { data: reporters };
-          });
-        }
-        break;
-
-      case "POST":
-        if (url === "reporters") {
-          // OPTIMIZATION: Single write operation instead of addDoc + updateDoc
-          // Generate a new document ID and create the document in one operation
-          const newDocRef = doc(collection(db, "reporters"));
-          const reporterData = {
-            ...body,
-            reporterUID: newDocRef.id,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          };
-          
-          await setDoc(newDocRef, reporterData);
-          
-          // OPTIMIZATION: Return data we just sent instead of re-fetching
-          // The invalidatesTags will ensure cache consistency
-          const createdData = {
-            id: newDocRef.id,
-            ...reporterData,
-          };
-          
-          return { data: serializeTimestampsForRedux(createdData) };
-        }
-        break;
-
-      case "PUT":
-        if (url.startsWith("reporters/")) {
-          const id = url.split("/")[1];
-          const updateData = {
-            ...body,
-            updatedAt: serverTimestamp(),
-          };
-          
-          await updateDoc(doc(db, "reporters", id), updateData);
-          
-          // OPTIMIZATION: Return data we just sent instead of re-fetching
-          // The invalidatesTags will ensure cache consistency
-          const updatedData = {
-            id,
-            ...body,
-          };
-          
-          return { data: serializeTimestampsForRedux(updatedData) };
-        }
-        break;
-
-      case "DELETE":
-        if (url.startsWith("reporters/")) {
-          const id = url.split("/")[1];
-          await deleteDoc(doc(db, "reporters", id));
-          return { data: { id } };
-        }
-        break;
-
-
-
-      default:
-        throw new Error(`Unsupported method: ${method}`);
-    }
-  } catch (error) {
-    return { error: { status: "CUSTOM_ERROR", error: error.message } };
-  }
-};
-
-export const reportersApi = createApi({
+export const reportersApi = createFirestoreApi({
   reducerPath: "reportersApi",
-  baseQuery: firestoreBaseQuery(),
   tagTypes: ["Reporter"],
-  // Cache optimization settings - using shared configuration
-  ...getCacheConfigByType('REPORTERS'),
+  cacheType: "REPORTERS",
   endpoints: (builder) => ({
     // Get all reporters
     getReporters: builder.query({
-      query: () => ({ url: "reporters", method: "GET" }),
-      providesTags: ["Reporter"],
-      // Use shared cache configuration for reporters
-      ...getCacheConfigByType('REPORTERS')
+      async queryFn() {
+        try {
+          logger.log(`[Reporters API] Starting to fetch reporters...`);
+          const reporters = await fetchCollectionFromFirestore(db, "reporters", {
+            orderBy: "createdAt",
+            orderDirection: "desc"
+          });
+          
+          logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
+          
+          // Serialize timestamps for Redux
+          const serializedReporters = serializeTimestampsForRedux(reporters);
+          return { data: serializedReporters };
+        } catch (error) {
+          logger.error(`[Reporters API] Error fetching reporters:`, error);
+          throw error; // Let base API handle the error
+        }
+      },
+      providesTags: ["Reporter"]
     }),
-
-
 
     // Create reporter
     createReporter: builder.mutation({
-      query: (reporter) => ({
-        url: "reporters",
-        method: "POST",
-        body: reporter,
-      }),
+      async queryFn(reporterData) {
+        try {
+          logger.log(`[Reporters API] Creating reporter:`, reporterData);
+          
+          // Generate reporterUID from the document ID
+          const createdReporter = await createDocumentInFirestore(db, "reporters", {
+            ...reporterData,
+            reporterUID: null // Will be set after creation
+          });
+          
+          // Update with the generated reporterUID
+          const updatedReporter = await updateDocumentInFirestore(
+            db, 
+            "reporters", 
+            createdReporter.id, 
+            { reporterUID: createdReporter.id }
+          );
+          
+          logger.log(`[Reporters API] Reporter created successfully:`, updatedReporter);
+          
+          // Serialize timestamps for Redux
+          const serializedReporter = serializeTimestampsForRedux(updatedReporter);
+          return { data: serializedReporter };
+        } catch (error) {
+          logger.error(`[Reporters API] Error creating reporter:`, error);
+          throw error; // Let base API handle the error
+        }
+      },
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
       onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
@@ -151,16 +87,27 @@ export const reportersApi = createApi({
         } catch {
           patchResult.undo();
         }
-      },
+      }
     }),
 
     // Update reporter
     updateReporter: builder.mutation({
-      query: ({ id, updates }) => ({
-        url: `reporters/${id}`,
-        method: "PUT",
-        body: updates,
-      }),
+      async queryFn({ id, updates }) {
+        try {
+          logger.log(`[Reporters API] Updating reporter ${id}:`, updates);
+          
+          const updatedReporter = await updateDocumentInFirestore(db, "reporters", id, updates);
+          
+          logger.log(`[Reporters API] Reporter updated successfully:`, updatedReporter);
+          
+          // Serialize timestamps for Redux
+          const serializedReporter = serializeTimestampsForRedux(updatedReporter);
+          return { data: serializedReporter };
+        } catch (error) {
+          logger.error(`[Reporters API] Error updating reporter:`, error);
+          throw error; // Let base API handle the error
+        }
+      },
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
       onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
@@ -179,15 +126,24 @@ export const reportersApi = createApi({
         } catch {
           patchResult.undo();
         }
-      },
+      }
     }),
 
     // Delete reporter
     deleteReporter: builder.mutation({
-      query: (id) => ({
-        url: `reporters/${id}`,
-        method: "DELETE",
-      }),
+      async queryFn(id) {
+        try {
+          logger.log(`[Reporters API] Deleting reporter ${id}`);
+          
+          const result = await deleteDocumentFromFirestore(db, "reporters", id);
+          
+          logger.log(`[Reporters API] Reporter deleted successfully:`, result);
+          return { data: result };
+        } catch (error) {
+          logger.error(`[Reporters API] Error deleting reporter:`, error);
+          throw error; // Let base API handle the error
+        }
+      },
       invalidatesTags: ["Reporter"],
       // Optimistic update to remove from cache immediately
       onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
@@ -204,11 +160,9 @@ export const reportersApi = createApi({
         } catch {
           patchResult.undo();
         }
-      },
-    }),
-
-
-  }),
+      }
+    })
+  })
 });
 
 export const {

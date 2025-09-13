@@ -1,68 +1,11 @@
 import * as Yup from 'yup';
-
-// Field type constants (only what you need)
-export const FIELD_TYPES = {
-  TEXT: 'text',
-  EMAIL: 'email',
-  NETBET_EMAIL: 'netbetEmail',
-  URL: 'url',
-  NUMBER: 'number',
-  SELECT: 'select',
-  MULTI_SELECT: 'multiSelect',
-  MULTI_VALUE: 'multiValue',
-  CHECKBOX: 'checkbox',
-  PASSWORD: 'password',
-};
-
-// Validation patterns - centralized for reuse across all forms
-export const VALIDATION_PATTERNS = {
-  // Email validations
-  EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
-  NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@netbet\.ro$/,
-  
-  // URL validations
-  URL: /^https?:\/\/.+/,
-  JIRA_LINK: /^https:\/\/.*\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
-  
-  // Task/Project validations
-  // Only accepts full Jira URLs with GIMODEAR format: "https://gmrd.atlassian.net/browse/GIMODEAR-124124"
-  JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/GIMODEAR-\d+$/,
-  
-  // Contact validations
-  PHONE: /^\+?[\d\s\-\(\)]+$/,
-  
-  // Text validations
-  ALPHANUMERIC: /^[a-zA-Z0-9\s]+$/,
-  ALPHANUMERIC_WITH_DASHES: /^[a-zA-Z0-9\s\-_]+$/,
-  LETTERS_ONLY: /^[a-zA-Z\s]+$/,
-  
-  // Number validations
-  NUMERIC: /^\d+$/,
-  DECIMAL: /^\d+(\.\d+)?$/,
-  POSITIVE_NUMBER: /^[1-9]\d*(\.\d+)?$/,
-  
-  // Common formats
-  SLUG: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-  HEX_COLOR: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
-};
-
-// Validation messages
-export const VALIDATION_MESSAGES = {
-  REQUIRED: 'This field is required',
-  EMAIL: 'Please enter a valid email address',
-  NETBET_EMAIL: 'Please enter a valid NetBet email address (@netbet.ro)',
-  URL: 'Please enter a valid URL',
-  MIN_LENGTH: (min) => `Must be at least ${min} characters`,
-  MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
-  MIN_VALUE: (min) => `Must be at least ${min}`,
-  MAX_VALUE: (max) => `Must be no more than ${max}`,
-  INVALID_FORMAT: 'Invalid format',
-  SELECT_ONE: 'Please select at least one option',
-  SELECT_REQUIRED: 'Please select an option',
-  ARRAY_MIN: (min) => `Please select at least ${min} option${min > 1 ? 's' : ''}`,
-  ARRAY_MAX: (max) => `Please select no more than ${max} option${max > 1 ? 's' : ''}`,
-  CONDITIONAL_REQUIRED: 'This field is required when the condition is met',
-};
+import { 
+  FIELD_TYPES, 
+  VALIDATION_PATTERNS, 
+  VALIDATION_MESSAGES,
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES
+} from '../utils/formConstants';
 
 // Get field validation type
 const getFieldValidationType = (type) => {
@@ -81,7 +24,6 @@ const getFieldValidationType = (type) => {
     case FIELD_TYPES.CHECKBOX:
       return 'boolean';
     case FIELD_TYPES.MULTI_SELECT:
-    case FIELD_TYPES.MULTI_VALUE:
       return 'array';
     default:
       return 'string';
@@ -101,7 +43,7 @@ const createBaseSchema = (type) => {
       return Yup.string().trim().nullable();
     case 'number':
       return Yup.number()
-        .typeError('Must be a valid number')
+        .typeError(VALIDATION_MESSAGES.INVALID_FORMAT)
         .nullable()
         .transform((value, originalValue) => {
           // Handle empty strings and convert to null for RHF
@@ -160,10 +102,9 @@ const applyCommonValidations = (schema, field, validation) => {
   }
   
   // Multi-select specific validations
-  if (field.type === FIELD_TYPES.MULTI_SELECT || field.type === FIELD_TYPES.MULTI_VALUE) {
-    // Note: minItems validation is handled in buildFieldValidation to prevent duplicates
+  if (field.type === FIELD_TYPES.MULTI_SELECT) {
     if (validation.maxItems) {
-      schema = schema.max(validation.maxItems, VALIDATION_MESSAGES.ARRAY_MAX(validation.maxItems));
+      schema = schema.max(validation.maxItems, VALIDATION_MESSAGES.MAX_LENGTH(validation.maxItems));
     }
   }
   
@@ -211,14 +152,19 @@ export const buildFieldValidation = (fieldConfig) => {
       is: conditional.value,
       then: (schema) => {
         if (conditional.required) {
-          schema = schema.required(VALIDATION_MESSAGES.CONDITIONAL_REQUIRED);
+          // For multi-select fields, use minItems validation
+          if (type === FIELD_TYPES.MULTI_SELECT) {
+            schema = schema.min(1, conditional.message || VALIDATION_MESSAGES.CONDITIONAL_REQUIRED);
+          } else {
+            schema = schema.required(conditional.message || VALIDATION_MESSAGES.CONDITIONAL_REQUIRED);
+          }
         }
         return schema;
       },
       otherwise: (schema) => {
         return schema.optional().nullable().transform(() => {
           // Transform to appropriate default values for RHF
-          if (type === FIELD_TYPES.MULTI_SELECT || type === FIELD_TYPES.MULTI_VALUE) {
+          if (type === FIELD_TYPES.MULTI_SELECT) {
             return [];
           }
           if (type === FIELD_TYPES.NUMBER) {
@@ -246,40 +192,21 @@ export const buildFormValidationSchema = (fields) => {
   return Yup.object().shape(schemaObject).strict(false);
 };
 
-// Create a Yup resolver for React Hook Form
-export const createYupResolver = (fields) => {
-  const schema = buildFormValidationSchema(fields);
-  
-  return {
-    schema,
-    resolver: async (values) => {
-      try {
-        const validValues = await schema.validate(values, { 
-          abortEarly: false,
-          stripUnknown: true 
-        });
-        return { values: validValues, errors: {} };
-      } catch (error) {
-        const errors = {};
-        
-        if (error.inner) {
-          error.inner.forEach((err) => {
-            if (err.path) {
-              errors[err.path] = {
-                type: 'validation',
-                message: err.message
-              };
-            }
-          });
-        }
-        
-        return { values: {}, errors };
-      }
-    }
-  };
-};
 
 // ===== FIELD CREATION FUNCTIONS =====
+
+// Common sanitization functions to reduce duplication
+const sanitizeText = (value) => value?.toString().trim() || '';
+const sanitizeEmail = (value) => value?.toString().trim().toLowerCase() || '';
+const sanitizeNumber = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const num = parseFloat(value);
+  return isNaN(num) ? null : num;
+};
+const sanitizeArray = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => item && typeof item === 'string' && item.trim().length > 0);
+};
 
 // Base field creation function to reduce redundancy
 const createBaseField = (name, label, type, options = {}, customProps = {}) => ({
@@ -296,32 +223,32 @@ const createBaseField = (name, label, type, options = {}, customProps = {}) => (
 
 export const createTextField = (name, label, options = {}) => ({
   ...createBaseField(name, label, FIELD_TYPES.TEXT, options),
-  sanitize: (value) => value?.toString().trim() || ''
+  sanitize: sanitizeText
 });
 
 export const createEmailField = (name, label, options = {}) => ({
   ...createBaseField(name, label, FIELD_TYPES.EMAIL, options, { autoComplete: 'email' }),
-  sanitize: (value) => value?.toString().trim().toLowerCase() || ''
+  sanitize: sanitizeEmail
 });
 
 export const createNetBetEmailField = (name, label, options = {}) => ({
   ...createBaseField(name, label, FIELD_TYPES.NETBET_EMAIL, options, { autoComplete: 'email' }),
-  sanitize: (value) => value?.toString().trim().toLowerCase() || ''
+  sanitize: sanitizeEmail
 });
 
 export const createPasswordField = (name, label, options = {}) => ({
   ...createBaseField(name, label, FIELD_TYPES.PASSWORD, options, { autoComplete: 'current-password' }),
-  sanitize: (value) => value?.toString() || ''
+  sanitize: (value) => value?.toString() || '' // Keep as-is for passwords (no trimming)
 });
 
 export const createUrlField = (name, label, options = {}) => ({
   ...createBaseField(name, label, FIELD_TYPES.URL, options, { autoComplete: 'url' }),
-  sanitize: (value) => value?.toString().trim() || ''
+  sanitize: sanitizeText
 });
 
 export const createNumberField = (name, label, options = {}) => ({
   ...createBaseField(name, label, FIELD_TYPES.NUMBER, options, { step: 1 }),
-  sanitize: (value) => parseFloat(value) || 0
+  sanitize: sanitizeNumber
 });
 
 
@@ -336,7 +263,7 @@ export const createSelectField = (name, label, options, selectOptions = {}) => (
     ...selectOptions,
     options: selectOptions.options || []
   }),
-  sanitize: (value) => value?.toString().trim() || ''
+  sanitize: sanitizeText
 });
 
 export const createMultiSelectField = (name, label, options, selectOptions = {}) => ({
@@ -345,15 +272,9 @@ export const createMultiSelectField = (name, label, options, selectOptions = {})
     ...selectOptions,
     options: selectOptions.options || []
   }),
-  sanitize: (value) => Array.isArray(value) ? value : []
+  sanitize: sanitizeArray
 });
 
-export const createMultiValueField = (name, label, options = {}) => ({
-  ...createBaseField(name, label, FIELD_TYPES.MULTI_VALUE, options, {
-    maxValues: 10
-  }),
-  sanitize: (value) => Array.isArray(value) ? value : []
-});
 
 
 // ===== AUTOMATIC SANITIZATION UTILITY =====
@@ -395,27 +316,6 @@ export const shouldShowField = (field, formValues) => {
   return shouldShow;
 };
 
-// Task Form Configuration Constants
-export const TASK_FORM_CONSTANTS = {
-  // Time input constraints
-  TIME_INPUT: {
-    MIN_HOURS: 0.5,
-    MAX_HOURS: 999,
-    STEP_SIZE: 0.5,
-  },
-  // Validation limits
-  VALIDATION: {
-    MAX_STRING_LENGTH: 255,
-    MIN_STRING_LENGTH: 1,
-    MAX_ARRAY_LENGTH: 50,
-  },
-  // Form reset values
-  DEFAULT_VALUES: {
-    TIME_IN_HOURS: 0.5,
-    AI_TIME_SPENT: 0.5,
-    DELIVERABLES_COUNT: 0,
-  },
-};
 
 // Task form field options
 export const TASK_FORM_OPTIONS = {
@@ -433,6 +333,19 @@ export const TASK_FORM_OPTIONS = {
     { value: "product poker", label: "product poker" },
     { value: "product lotto", label: "product lotto" },
     { value: "misc", label: "misc" },
+  ],
+  markets: [
+    { value: 'ro', label: 'ro' },
+    { value: 'com', label: 'com' },
+    { value: 'uk', label: 'uk' },
+    { value: 'ie', label: 'ie' },
+    { value: 'fi', label: 'fi' },
+    { value: 'dk', label: 'dk' },
+    { value: 'de', label: 'de' },
+    { value: 'at', label: 'at' },
+    { value: 'it', label: 'it' },
+    { value: 'gr', label: 'gr' },
+    { value: 'fr', label: 'fr' }
   ],
   departments: [
     { value: "video", label: "Video Production" },
@@ -499,19 +412,19 @@ export const TASK_FORM_FIELDS = [
     required: true,
     helpText: 'Enter full Jira URL (https://gmrd.atlassian.net/browse/GIMODEAR-124124)',
     placeholder: 'https://gmrd.atlassian.net/browse/GIMODEAR-124124',
-    sanitize: (value) => value?.toString().trim() || '', // Keep the full URL as-is
+    sanitize: sanitizeText, // Keep the full URL as-is
     validation: {
       pattern: VALIDATION_PATTERNS.JIRA_URL_ONLY,
-      message: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/GIMODEAR-{number}',
+      message: VALIDATION_MESSAGES.JIRA_URL_FORMAT,
       maxLength: 200
     }
   }),
   createTextField('taskName', 'Task Name', {
     required: false, // Not required since it's auto-generated
-    helpText: 'Task name will be auto-generated from Jira link',
+    helpText: 'Task name will be auto-generated from Jira link in real-time',
     placeholder: 'Auto-generated from Jira link',
     readOnly: true,
-    sanitize: (value) => value?.toString().trim() || '',
+    sanitize: sanitizeText,
     validation: {
       maxLength: 200
     }
@@ -527,6 +440,15 @@ export const TASK_FORM_FIELDS = [
     helpText: 'Select the department responsible for this task'
   }, {
     options: TASK_FORM_OPTIONS.departments
+  }),
+  createMultiSelectField('markets', 'Markets', {
+    required: true,
+    helpText: 'Select all target markets for this task',
+    validation: {
+      minItems: 1
+    }
+  }, {
+    options: TASK_FORM_OPTIONS.markets
   }),
   createNumberField('timeInHours', 'Total Time (Hours)', {
     required: true,
@@ -544,7 +466,8 @@ export const TASK_FORM_FIELDS = [
     conditional: {
       field: 'hasDeliverables',
       value: true,
-      required: true
+      required: true,
+      message: VALIDATION_MESSAGES.DELIVERABLE_REQUIRED
     },
     validation: {
       minItems: 1
@@ -561,7 +484,8 @@ export const TASK_FORM_FIELDS = [
     conditional: {
       field: 'usedAI',
       value: true,
-      required: true
+      required: true,
+      message: VALIDATION_MESSAGES.AI_MODEL_REQUIRED
     },
     validation: {
       minItems: 1
@@ -659,13 +583,13 @@ export const LOGIN_FORM_FIELDS = [
 export const loginSchema = Yup.object().shape({
   email: Yup.string()
     .trim()
-    .email('Please enter a valid email address')
-    .matches(VALIDATION_PATTERNS.NETBET_EMAIL, 'Only @netbet.ro email addresses are accepted')
-    .required('Email is required'),
+    .email(VALIDATION_MESSAGES.EMAIL)
+    .matches(VALIDATION_PATTERNS.NETBET_EMAIL, VALIDATION_MESSAGES.NETBET_EMAIL)
+    .required(VALIDATION_MESSAGES.REQUIRED),
   password: Yup.string()
     .trim()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Password is required')
+    .min(6, VALIDATION_MESSAGES.MIN_LENGTH(6))
+    .required(VALIDATION_MESSAGES.REQUIRED)
 });
 
 // ===== COMPLETE FORM CONFIGURATIONS =====
@@ -679,6 +603,7 @@ export const TASK_FORM_CONFIG = {
     taskName: '',
     products: '',
     departments: '',
+    markets: [],
     timeInHours: 0.5,
     hasDeliverables: false,
     deliverables: [],
@@ -688,11 +613,11 @@ export const TASK_FORM_CONFIG = {
     reporters: ''
   },
   successMessages: {
-    create: 'Task created successfully!',
-    update: 'Task updated successfully!'
+    create: SUCCESS_MESSAGES.TASK_CREATED,
+    update: SUCCESS_MESSAGES.TASK_UPDATED
   },
   errorMessages: {
-    default: 'Failed to save task. Please try again.'
+    default: ERROR_MESSAGES.TASK_SAVE_FAILED
   },
   getInitialValues: (customValues = null) => {
     return customValues || TASK_FORM_CONFIG.initialValues;
@@ -726,11 +651,11 @@ export const REPORTER_FORM_CONFIG = {
     country: ''
   },
   successMessages: {
-    create: 'Reporter created successfully!',
-    update: 'Reporter updated successfully!'
+    create: SUCCESS_MESSAGES.REPORTER_CREATED,
+    update: SUCCESS_MESSAGES.REPORTER_UPDATED
   },
   errorMessages: {
-    default: 'Failed to save reporter. Please try again.'
+    default: ERROR_MESSAGES.REPORTER_SAVE_FAILED
   },
   getInitialValues: (user, customValues = null) => {
     if (customValues) {
@@ -754,11 +679,11 @@ export const LOGIN_FORM_CONFIG = {
     password: ''
   },
   successMessages: {
-    create: 'Login successful!',
-    update: 'Login successful!'
+    create: SUCCESS_MESSAGES.LOGIN_SUCCESS,
+    update: SUCCESS_MESSAGES.LOGIN_SUCCESS
   },
   errorMessages: {
-    default: 'Login failed. Please check your credentials.'
+    default: ERROR_MESSAGES.LOGIN_FAILED
   },
   getInitialValues: () => LOGIN_FORM_CONFIG.initialValues
 };
@@ -779,7 +704,6 @@ export const taskForm = {
   fields: TASK_FORM_FIELDS,
   config: TASK_FORM_CONFIG,
   options: TASK_FORM_OPTIONS,
-  constants: TASK_FORM_CONSTANTS,
   sanitize: (data) => sanitizeFormData(data, TASK_FORM_FIELDS),
   shouldShow: (field, values) => shouldShowField(field, values),
   prepareTaskFormData
@@ -793,41 +717,3 @@ export const reporterForm = {
   sanitize: (data) => sanitizeFormData(data, REPORTER_FORM_FIELDS),
   shouldShow: (field, values) => shouldShowField(field, values)
 };
-
-// ===== REPORTER FORM SCHEMA AND LOGIC =====
-// (Backward compatibility functions removed - use REPORTER_FORM_CONFIG directly)
-
-// ===== GENERIC FORM CREATOR =====
-// (Removed unused generic form creator functions - use UniversalFormRHF instead)
-
-// ===== COMPLETE EXPORT SUMMARY =====
-// Everything you need for forms is exported above:
-// 
-// For Task Forms:
-// - taskForm.schema (Yup schema)
-// - taskForm.fields (field definitions)
-// - taskForm.config (complete config)
-// - taskForm.options (select options)
-// - taskForm.constants (form constants)
-// - taskForm.sanitize(data) (sanitization function)
-// - taskForm.shouldShow(field, values) (conditional logic)
-// - taskForm.prepareTaskFormData(formData) (prepare data before submission)
-//
-// For Reporter Forms:
-// - reporterForm.schema (Yup schema)
-// - reporterForm.fields (field definitions)
-// - reporterForm.config (complete config)
-// - reporterForm.sanitize(data) (sanitization function)
-// - reporterForm.shouldShow(field, values) (conditional logic)
-//
-// For Login Forms:
-// - loginSchema (Yup schema)
-// - LOGIN_FORM_CONFIG (complete config)
-//
-// Core Utilities:
-// - buildFormValidationSchema(fields)
-// - buildFieldValidation(field)
-// - sanitizeFormData(data, fields)
-// - shouldShowField(field, values)
-// - All field creation functions (createTextField, etc.)
-// - All validation patterns and messages

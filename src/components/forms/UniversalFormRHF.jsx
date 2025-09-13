@@ -1,13 +1,15 @@
 import React, { useMemo, useCallback } from 'react';
 import { useAppData } from '@/hooks/useAppData';
-import { 
-  TASK_FORM_CONFIG, 
+import {
+  TASK_FORM_CONFIG,
   REPORTER_FORM_CONFIG
 } from './configs/useForms';
 import ReactHookFormWrapper from './ReactHookFormWrapper';
 import { useCreateTaskMutation, useUpdateTaskMutation } from '@/features/tasks/tasksApi';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
 import { logger } from '@/utils/logger';
+import { FORM_METADATA } from './utils/formConstants';
+import { getUserData, getFormMetadata } from './utils/formUtilities';
 
 /**
  * Universal Form Component using React Hook Form
@@ -30,10 +32,10 @@ const UniversalFormRHF = ({
   ...additionalProps
 }) => {
   // Only call useAppData if data not provided by parent - conditional fetching
-  const appData = useAppData();
-  const finalUser = user || appData.user;
-  const finalMonthId = monthId || appData.monthId;
-  const finalReporters = reporters.length > 0 ? reporters : appData.reporters;
+  const appData = (!user || !monthId || reporters.length === 0) ? useAppData() : null;
+  const finalUser = user || appData?.user;
+  const finalMonthId = monthId || appData?.monthId;
+  const finalReporters = reporters.length > 0 ? reporters : appData?.reporters || [];
   
   // Call RTK Query hooks at the top level
   const [createTask] = useCreateTaskMutation();
@@ -41,70 +43,75 @@ const UniversalFormRHF = ({
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
 
+  // Form configuration mapping
+  const FORM_CONFIGS = {
+    task: TASK_FORM_CONFIG,
+    reporter: REPORTER_FORM_CONFIG
+  };
+
   // Get form configuration based on type
   const formConfig = useMemo(() => {
-    switch (formType) {
-      case 'task':
-        return TASK_FORM_CONFIG;
-      case 'reporter':
-        return REPORTER_FORM_CONFIG;
-      default:
-        throw new Error(`Unknown form type: ${formType}. Use LoginPage for authentication.`);
+    const config = FORM_CONFIGS[formType];
+    if (!config) {
+      throw new Error(`Unknown form type: ${formType}. Use LoginPage for authentication.`);
     }
+    return config;
   }, [formType]);
+
+  // API mutations mapping
+  const API_MUTATIONS = {
+    task: {
+      create: createTask,
+      update: updateTask
+    },
+    reporter: {
+      create: createReporter,
+      update: updateReporter
+    }
+  };
 
   // Get API mutations based on form type
   const apiMutations = useMemo(() => {
     if (customMutations) return customMutations;
     
-    switch (formType) {
-      case 'task':
-        return {
-          create: createTask,
-          update: updateTask
-        };
-      case 'reporter':
-        return {
-          create: createReporter,
-          update: updateReporter
-        };
-      default:
-        throw new Error(`No API mutations available for form type: ${formType}`);
+    const mutations = API_MUTATIONS[formType];
+    if (!mutations) {
+      throw new Error(`No API mutations available for form type: ${formType}`);
     }
+    return mutations;
   }, [formType, customMutations, createTask, updateTask, createReporter, updateReporter]);
 
   // Prepare context data based on form type
   const contextData = useMemo(() => {
     if (customContextData) return customContextData;
     
-    const userUID = user?.userUID || user?.uid || user?.id;
-    const userName = user?.name || user?.email || '';
+    const userData = getUserData(finalUser);
     
-    let context;
-    switch (formType) {
-      case 'task':
-        context = {
-          monthId: finalMonthId,
-          user: finalUser, // Include full user object for permission checks
-          // Include task ID and boardId for edit mode
-          ...(mode === 'edit' && initialValues?.id && { 
-            id: initialValues.id,
-            taskId: initialValues.id,
-            boardId: initialValues.boardId 
-          })
-        };
-        break;
-      case 'reporter':
-        context = {
-          createdBy: userUID || '',
-          createdByName: userName
-        };
-        break;
-      default:
-        context = {};
+    const baseContext = {
+      user: finalUser,
+      ...userData
+    };
+    
+    if (formType === 'task') {
+      return {
+        ...baseContext,
+        monthId: finalMonthId,
+        ...(mode === 'edit' && initialValues?.id && { 
+          id: initialValues.id,
+          taskId: initialValues.id,
+          boardId: initialValues.boardId 
+        })
+      };
     }
     
-    return context;
+    if (formType === 'reporter') {
+      return {
+        createdBy: userData.uid || '',
+        createdByName: userData.name
+      };
+    }
+    
+    return baseContext;
   }, [formType, finalUser, finalMonthId, customContextData, mode, initialValues]);
 
   // Get initial values
@@ -124,27 +131,12 @@ const UniversalFormRHF = ({
 
   // Get form title and submit button text (memoized)
   const { formTitle, submitButtonText } = useMemo(() => {
-    const titles = {
-      task: mode === 'edit' ? 'Edit Task' : 'Create New Task',
-      reporter: mode === 'edit' ? 'Edit Reporter' : 'Create New Reporter'
-    };
-    
-    const buttonTexts = {
-      task: mode === 'edit' ? 'Update Task' : 'Create Task',
-      reporter: mode === 'edit' ? 'Update Reporter' : 'Create Reporter'
-    };
-    
-    return {
-      formTitle: titles[formType] || 'Form',
-      submitButtonText: buttonTexts[formType] || 'Submit'
-    };
+    return getFormMetadata(formType, mode, FORM_METADATA);
   }, [formType, mode]);
 
   // Custom error handler for specific form types - memoized
   const handleError = useCallback((error) => {
-    if (formType === 'reporter') {
-      logger.error('Reporter form submission failed', { error });
-    }
+    logger.error(`${formType} form submission failed`, { error });
     onError?.(error);
   }, [formType, onError]);
 

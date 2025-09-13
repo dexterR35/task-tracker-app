@@ -40,8 +40,8 @@ const AdminTasksPage = () => {
     }
   }, [currentMonthId, selectedMonthId]);
 
-  // Only fetch additional month data if different from current month
-  const shouldFetchAdditionalData = selectedMonthId && selectedMonthId !== currentMonthId;
+  // Always fetch tasks for the selected month (or current month if none selected)
+  const targetMonthId = selectedMonthId || currentMonthId;
   
   const { 
     data: selectedMonthTasks = [], 
@@ -49,12 +49,12 @@ const AdminTasksPage = () => {
     error: selectedMonthTasksError 
   } = useGetMonthTasksQuery(
     { 
-      monthId: selectedMonthId || currentMonthId || '', 
+      monthId: targetMonthId || '', 
       userId: undefined, // Admin gets all tasks
       role: 'admin',
       userData: user
     },
-    { skip: !shouldFetchAdditionalData && !currentMonthId }
+    { skip: !targetMonthId || !user }
   );
 
 
@@ -62,7 +62,7 @@ const AdminTasksPage = () => {
   const selectedUserId = searchParams.get("user") || "";
   
   // Optimized task data logic - reduce hooks
-  const isCurrentMonth = selectedMonthId === currentMonthId;
+  const isCurrentMonth = selectedMonthId === currentMonthId || !selectedMonthId;
   const canCreateTasks = isCurrentMonth && boardExists;
   
   // Use current month tasks from context, or fetched tasks for other months
