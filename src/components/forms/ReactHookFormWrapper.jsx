@@ -437,10 +437,10 @@ const ReactHookFormWrapper = ({
         </h2>
       )}
       
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className={formType === 'task' ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-6"}>
         {finalFields?.map((field) => renderField(field)) || []}
         
-        <div className="flex justify-end">
+        <div className={formType === 'task' ? "col-span-1 lg:col-span-2 flex justify-end" : "flex justify-end"}>
           <button
             type="submit"
             disabled={isSubmitting || formIsSubmitting}

@@ -40,6 +40,9 @@ const TanStackTable = ({
   enableRowSelection = false,
   onRowSelectionChange = null,
   
+  // Column visibility
+  initialColumnVisibility = {},
+  
   // Action handlers
   onEdit = null,
   onDelete = null,
@@ -52,7 +55,7 @@ const TanStackTable = ({
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState([]);
-  const [columnVisibility, setColumnVisibility] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState(initialColumnVisibility);
   const [rowSelection, setRowSelection] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
 
@@ -380,8 +383,9 @@ const TanStackTable = ({
           </div>
           <div className="flex items-center space-x-6 lg:space-x-8">
             <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium text-gray-300">Rows per page</p>
+              <label htmlFor="page-size-select" className="text-sm font-medium text-gray-300">Rows per page</label>
               <select
+                id="page-size-select"
                 value={table.getState().pagination.pageSize}
                 onChange={(e) => {
                   table.setPageSize(Number(e.target.value))

@@ -69,6 +69,9 @@ const ReporterTable = ({
         enablePagination={true}
         enableColumnResizing={true}
         enableRowSelection={false}
+        initialColumnVisibility={{
+          createdAt: false // Hide "Created At" column by default
+        }}
       />
 
       {/* Edit Modal */}
