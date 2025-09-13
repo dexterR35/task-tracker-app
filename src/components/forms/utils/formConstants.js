@@ -70,6 +70,7 @@ export const REQUIRED_INDICATOR = '*';
 // ===== INPUT TYPE MAPPING =====
 export const INPUT_TYPE_MAP = {
   email: 'email',
+  netbetEmail: 'email',
   password: 'password',
   text: 'text'
 };

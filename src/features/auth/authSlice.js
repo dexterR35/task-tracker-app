@@ -11,6 +11,7 @@ import {
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
+import listenerManager from "@/features/utils/firebaseListenerManager";
 
 // --- Configuration & Constants ---
 const VALID_ROLES = ["admin", "user"];
@@ -104,7 +105,9 @@ export const setupAuthListener = (dispatch) => {
           );
         }
       } else {
-        // User signed out - set auth checking to false and clear user
+        // User signed out - clean up listeners and clear user
+        logger.log("User signed out, cleaning up Firebase listeners");
+        listenerManager.removeAllListeners();
         dispatch(authSlice.actions.authStateChanged({ user: null }));
       }
     },
@@ -144,6 +147,8 @@ export const loginUser = createAsyncThunk(
         return rejectWithValue("This account has been disabled.");
       } else if (error.code === "auth/invalid-email") {
         return rejectWithValue("Invalid email address format.");
+      } else if (error.code === "auth/missing-email") {
+        return rejectWithValue("Email address is required.");
       }
 
       return rejectWithValue(
@@ -157,7 +162,11 @@ export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      // Just sign out from Firebase - everything else is automatic!
+      // Clean up all Firebase listeners before logout
+      logger.log("Cleaning up Firebase listeners before logout");
+      listenerManager.removeAllListeners();
+      
+      // Sign out from Firebase
       await signOut(auth);
       logger.log("User signed out successfully");
       return null;

@@ -89,12 +89,14 @@ export const useAppData = () => {
   const monthData = useCurrentMonth();
   const userData = useUserData();
   
-  // Fetch all reporters (needed for task creation)
+  // Fetch all reporters (needed for task creation) - only when user is authenticated
   const { 
     data: reporters = [], 
     isLoading: reportersLoading, 
     error: reportersError 
-  } = useGetReportersQuery();
+  } = useGetReportersQuery(undefined, {
+    skip: !userData.userUID // Skip query until user is authenticated
+  });
   
   // Fetch tasks based on user role - only when we have required data
   const shouldFetchTasks = userData.userUID && monthData.monthId;

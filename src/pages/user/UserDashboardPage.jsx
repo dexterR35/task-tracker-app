@@ -4,7 +4,7 @@ import { useAppDataContext } from "@/components/layout/AuthLayout";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
 import Modal from "@/components/ui/Modal/Modal";
-import UniversalFormRHF from "@/components/forms/UniversalFormRHF";
+import ReactHookFormWrapper from "@/components/forms/ReactHookFormWrapper";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import { logger } from "@/utils/logger";
 import { getUserUID } from "@/utils/authUtils";
@@ -131,7 +131,7 @@ const UserDashboardPage = () => {
         title="Create New Task"
         maxWidth="max-w-4xl"
       >
-        <UniversalFormRHF
+        <ReactHookFormWrapper
           formType="task"
           mode="create"
           onSuccess={() => {

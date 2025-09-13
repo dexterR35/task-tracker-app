@@ -141,6 +141,12 @@ export const fetchCollectionFromFirestore = async (db, collectionName, options =
   } = options;
 
   try {
+    // Check authentication before making the request
+    if (!auth.currentUser) {
+      logger.warn(`[fetchCollectionFromFirestore] No authenticated user, skipping ${collectionName} fetch`);
+      return [];
+    }
+
     const { collection, query, orderBy, limit, where, getDocs } = await import('firebase/firestore');
     
     let q = query(collection(db, collectionName));
@@ -180,6 +186,12 @@ export const createDocumentInFirestore = async (db, collectionName, data, option
   } = options;
 
   try {
+    // Check authentication before making the request
+    if (!auth.currentUser) {
+      logger.warn(`[createDocumentInFirestore] No authenticated user, skipping ${collectionName} creation`);
+      throw new Error('User must be authenticated to create documents');
+    }
+
     const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
     
     const docData = { ...data };
@@ -217,6 +229,12 @@ export const updateDocumentInFirestore = async (db, collectionName, docId, updat
   } = options;
 
   try {
+    // Check authentication before making the request
+    if (!auth.currentUser) {
+      logger.warn(`[updateDocumentInFirestore] No authenticated user, skipping ${collectionName} update`);
+      throw new Error('User must be authenticated to update documents');
+    }
+
     const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
     
     const updateData = { ...updates };
@@ -246,6 +264,12 @@ export const updateDocumentInFirestore = async (db, collectionName, docId, updat
  */
 export const deleteDocumentFromFirestore = async (db, collectionName, docId) => {
   try {
+    // Check authentication before making the request
+    if (!auth.currentUser) {
+      logger.warn(`[deleteDocumentFromFirestore] No authenticated user, skipping ${collectionName} deletion`);
+      throw new Error('User must be authenticated to delete documents');
+    }
+
     const { doc, deleteDoc } = await import('firebase/firestore');
     
     await deleteDoc(doc(db, collectionName, docId));

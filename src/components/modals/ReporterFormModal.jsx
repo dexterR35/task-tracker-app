@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal/Modal';
-import UniversalFormRHF from '@/components/forms/UniversalFormRHF';
+import ReactHookFormWrapper from '@/components/forms/ReactHookFormWrapper';
 
 /**
  * Modal component for creating/editing reporters
@@ -22,7 +22,7 @@ const ReporterFormModal = ({
       title={title}
       size="lg"
     >
-      <UniversalFormRHF
+      <ReactHookFormWrapper
         formType="reporter"
         mode={mode}
         initialValues={reporter}

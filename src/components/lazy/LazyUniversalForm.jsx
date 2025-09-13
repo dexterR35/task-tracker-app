@@ -1,11 +1,11 @@
 import React, { lazy, Suspense } from 'react';
 import Loader from '@/components/ui/Loader/Loader';
 
-// Lazy load the UniversalFormRHF component
-const UniversalFormRHF = lazy(() => import('@/components/forms/UniversalFormRHF'));
+// Lazy load the ReactHookFormWrapper component
+const ReactHookFormWrapper = lazy(() => import('@/components/forms/ReactHookFormWrapper'));
 
 /**
- * Lazy-loaded UniversalFormRHF wrapper
+ * Lazy-loaded ReactHookFormWrapper wrapper
  * Reduces initial bundle size by loading form only when needed
  */
 const LazyUniversalForm = (props) => {
@@ -17,7 +17,7 @@ const LazyUniversalForm = (props) => {
         </div>
       }
     >
-      <UniversalFormRHF {...props} />
+      <ReactHookFormWrapper {...props} />
     </Suspense>
   );
 };

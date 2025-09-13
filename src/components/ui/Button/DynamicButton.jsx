@@ -2,22 +2,32 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Icons from "@/components/icons";
 import { showSuccess, showError } from "@/utils/toast";
+import {
+  BUTTON_BASE_CLASSES,
+  VARIANT_MAP,
+  SIZE_MAP,
+  ICON_POSITION_MAP,
+  BUTTON_STATES,
+  BUTTON_ICON_CLASSES,
+  LOADING_SPINNER_CLASSES,
+  BUTTON_DEFAULTS
+} from "./buttonConstants";
 
 const DynamicButton = ({
   id,
-  variant = "primary",
-  size = "md",
+  variant = BUTTON_DEFAULTS.VARIANT,
+  size = BUTTON_DEFAULTS.SIZE,
   children,
   onClick,
   disabled = false,
   loading = false,
   icon: Icon,
-  iconPosition = "left", // "left" | "right" | "center"
+  iconPosition = BUTTON_DEFAULTS.ICON_POSITION, // "left" | "right" | "center"
   iconName,
-  iconCategory = "buttons",
-  type = "button",
+  iconCategory = BUTTON_DEFAULTS.ICON_CATEGORY,
+  type = BUTTON_DEFAULTS.TYPE,
   className = "",
-  loadingText = "Loading...",
+  loadingText = BUTTON_DEFAULTS.LOADING_TEXT,
   successMessage,
   errorMessage,
   to,
@@ -25,35 +35,15 @@ const DynamicButton = ({
 }) => {
   const [localLoading, setLocalLoading] = useState(false);
 
-  const buttonConfig = {
-    baseClasses:
-      "px-4 py-2 inline-flex  rounded-lg font-medium shadow-sm !focus:outline-none focus:ring-gray-200 focus:ring-1 focus:ring-offset-0",
-    variants: {
-      primary: "bg-btn-primary text-gray-200  hover:bg-blue-700 text-white ",
-      secondary: "bg-gray-200 text-gray-900",
-      success: "bg-green-600 text-gray-200 ",
-      danger: "bg-red-error text-gray-200 ",
-      warning: "bg-yellow-600 text-gray-200  ",
-      outline: "border-2 border-gray-300 text-white-dark",
-      edit: "bg-blue-600 text-gray-200 shadow-sm",
-    },
-    sizes: {
-      xs: "px-2 py-1 text-xs",
-      sm: "px-3 py-1.5 text-sm",
-      md: "px-4 py-2.5 text-sm",
-      lg: "px-6 py-3 text-lg !font-medium",
-      xl: "px-8 py-4 text-lg",
-    },
-  };
-
   const isLoading = loading || localLoading;
   const isDisabled = disabled || isLoading;
 
   const buttonClasses = `
-    ${buttonConfig.baseClasses} 
-    ${buttonConfig.variants?.[variant] || buttonConfig.variants.primary} 
-    ${buttonConfig.sizes?.[size] || "px-4 py-2 text-sm"}
-    ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+    ${BUTTON_BASE_CLASSES} 
+    ${VARIANT_MAP[variant] || VARIANT_MAP[BUTTON_DEFAULTS.VARIANT]} 
+    ${SIZE_MAP[size] || SIZE_MAP[BUTTON_DEFAULTS.SIZE]}
+    ${isDisabled ? BUTTON_STATES.DISABLED : ""}
+    ${isLoading ? BUTTON_STATES.LOADING : ""}
     ${className}
   `.trim();
 
@@ -81,48 +71,50 @@ const DynamicButton = ({
   const renderIcon = () => {
     if (isLoading) {
       return (
-        <div className="w-4 h-4 rounded-full border-2 border-transparent border-t-white animate-spin" />
+        <div className={LOADING_SPINNER_CLASSES} />
       );
     }
     // Backward compatibility: explicit Icon prop wins
     if (Icon) {
-      return <Icon className="w-4 h-4" />;
+      return <Icon className={BUTTON_ICON_CLASSES} />;
     }
     // Resolve from centralized registry if provided
     if (iconName && Icons?.[iconCategory]?.[iconName]) {
       const ResolvedIcon = Icons[iconCategory][iconName];
-      return <ResolvedIcon />;
+      return <ResolvedIcon className={BUTTON_ICON_CLASSES} />;
     }
     return null;
   };
 
   // Build button content based on iconPosition
   const content = (() => {
+    const contentClasses = ICON_POSITION_MAP[iconPosition] || ICON_POSITION_MAP[BUTTON_DEFAULTS.ICON_POSITION];
+    
     switch (iconPosition) {
       case "left":
         return (
-          <div className="flex items-center justify-center gap-2 w-full">
+          <div className={contentClasses}>
             {renderIcon()}
             <span>{isLoading ? loadingText : children}</span>
           </div>
         );
       case "right":
         return (
-          <div className="flex items-center justify-center gap-2 w-full">
+          <div className={contentClasses}>
             <span>{isLoading ? loadingText : children}</span>
             {renderIcon()}
           </div>
         );
       case "center":
         return (
-          <div className="flex flex-col items-center justify-center  w-full">
+          <div className={contentClasses}>
             {renderIcon()}
             <span>{isLoading ? loadingText : children}</span>
           </div>
         );
       default:
         return (
-          <div className="flex items-center justify-center gap-2 w-full">
+          <div className={contentClasses}>
             {renderIcon()}
             <span>{isLoading ? loadingText : children}</span>
           </div>

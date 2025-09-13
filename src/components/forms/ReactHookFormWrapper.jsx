@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { showSuccess, showError } from '@/utils/toast';
-import { buildFormValidationSchema, shouldShowField } from './configs/useForms';
+import { buildFormValidationSchema, shouldShowField, TASK_FORM_CONFIG, REPORTER_FORM_CONFIG, LOGIN_FORM_CONFIG } from './configs/useForms';
 import { 
   TextField, 
   SelectField, 
@@ -18,36 +18,50 @@ import {
 import { 
   executeMutation, 
   getMutation, 
-  prepareFormData 
+  prepareFormData,
+  getUserData,
+  getFormMetadata
 } from './utils/formUtilities';
+import { useAppData } from '@/hooks/useAppData';
+import { useCreateTaskMutation, useUpdateTaskMutation } from '@/features/tasks/tasksApi';
+import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { logger } from '@/utils/logger';
 
 /**
- * React Hook Form Wrapper Component
- * Centralized form component using React Hook Form v7
- * Works with any field configuration from useForms.js
- * Supports any CRUD operations through apiMutations
+ * Universal Form Component using React Hook Form
+ * Single component that handles all forms in the application
+ * Supports CRUD forms (task, reporter) and authentication (login)
  * 
  * @param {Object} props - Component props
- * @param {Array} props.fields - Field configuration array from useForms.js
+ * @param {string} props.formType - Form type ('task', 'reporter', 'login') - if provided, uses built-in config
+ * @param {Array} props.fields - Field configuration array from useForms.js (if not using formType)
  * @param {Function} props.onSubmit - Form submission handler (optional - can use built-in handlers)
  * @param {Object} props.initialValues - Initial form values
  * @param {Object} props.validationSchema - Yup validation schema (optional - auto-generated from fields)
  * @param {string} props.submitButtonText - Text for submit button
  * @param {boolean} props.isSubmitting - Loading state
  * @param {Object} props.additionalProps - Additional props to pass to form
- * @param {Object} props.formConfig - Complete form configuration object
+ * @param {Object} props.formConfig - Complete form configuration object (if not using formType)
  * @param {Function} props.onSuccess - Success callback
  * @param {Function} props.onError - Error callback
  * @param {string} props.mode - Form mode ('create' or 'edit')
- * @param {Object} props.apiMutations - API mutation functions { create, update }
+ * @param {Object} props.apiMutations - API mutation functions { create, update } (if not using formType)
  * @param {Object} props.contextData - Additional context data (user, monthId, etc.)
  * @param {string} props.entityType - Entity type for logging/debugging (optional)
+ * @param {string} props.className - Additional CSS classes
+ * @param {Object} props.customMutations - Override default mutations
+ * @param {Object} props.customContextData - Override default context data
+ * @param {Object} props.user - User data (to avoid duplicate useAppData calls)
+ * @param {string} props.monthId - Month ID (to avoid duplicate useAppData calls)
+ * @param {Array} props.reporters - Reporters data (to avoid duplicate useAppData calls)
  */
 const ReactHookFormWrapper = ({
-  fields,
-  onSubmit,
-  initialValues,
-  validationSchema,
+  formType = null, // New: form type for built-in configs
+  fields = null,
+  onSubmit = null,
+  initialValues = null,
+  validationSchema = null,
   submitButtonText = 'Submit',
   isSubmitting = false,
   additionalProps = {},
@@ -57,17 +71,166 @@ const ReactHookFormWrapper = ({
   mode = 'create',
   apiMutations = {},
   contextData = {},
-  entityType = 'record'
+  entityType = 'record',
+  className = "",
+  customMutations = null,
+  customContextData = null,
+  user = null,
+  monthId = null,
+  reporters = []
 }) => {
+  // Only call useAppData if data not provided by parent - conditional fetching
+  const appData = (!user || !monthId || reporters.length === 0) ? useAppData() : null;
+  const finalUser = user || appData?.user;
+  const finalMonthId = monthId || appData?.monthId;
+  const finalReporters = reporters.length > 0 ? reporters : appData?.reporters || [];
+  
+  // Call RTK Query hooks at the top level
+  const [createTask] = useCreateTaskMutation();
+  const [updateTask] = useUpdateTaskMutation();
+  const [createReporter] = useCreateReporterMutation();
+  const [updateReporter] = useUpdateReporterMutation();
+  
+  // Auth hook for login
+  const { login } = useAuth();
+
+  // Form configuration mapping
+  const FORM_CONFIGS = {
+    task: TASK_FORM_CONFIG,
+    reporter: REPORTER_FORM_CONFIG,
+    login: LOGIN_FORM_CONFIG
+  };
+
+  // Get form configuration based on type
+  const finalFormConfig = useMemo(() => {
+    if (formType) {
+      const config = FORM_CONFIGS[formType];
+      if (!config) {
+        throw new Error(`Unknown form type: ${formType}. Supported types: task, reporter, login`);
+      }
+      return config;
+    }
+    return formConfig;
+  }, [formType, formConfig]);
+
+  // API mutations mapping
+  const API_MUTATIONS = {
+    task: {
+      create: createTask,
+      update: updateTask
+    },
+    reporter: {
+      create: createReporter,
+      update: updateReporter
+    },
+    login: {
+      create: login, // Login is a "create" operation (create session)
+      update: null   // Login doesn't have update
+    }
+  };
+
+  // Get API mutations based on form type
+  const finalApiMutations = useMemo(() => {
+    if (customMutations) return customMutations;
+    if (formType) {
+      const mutations = API_MUTATIONS[formType];
+      if (!mutations) {
+        throw new Error(`No API mutations available for form type: ${formType}`);
+      }
+      return mutations;
+    }
+    return apiMutations;
+  }, [formType, customMutations, apiMutations, createTask, updateTask, createReporter, updateReporter, login]);
+
+  // Prepare context data based on form type
+  const finalContextData = useMemo(() => {
+    if (customContextData) return customContextData;
+    
+    const userData = getUserData(finalUser);
+    
+    const baseContext = {
+      user: finalUser,
+      ...userData
+    };
+    
+    if (formType === 'task') {
+      return {
+        ...baseContext,
+        monthId: finalMonthId,
+        ...(mode === 'edit' && initialValues?.id && { 
+          id: initialValues.id,
+          taskId: initialValues.id,
+          boardId: initialValues.boardId 
+        })
+      };
+    }
+    
+    if (formType === 'reporter') {
+      return {
+        createdBy: userData.uid || '',
+        createdByName: userData.name
+      };
+    }
+    
+    if (formType === 'login') {
+      return {
+        // Login doesn't need context data
+        user: null
+      };
+    }
+    
+    return { ...baseContext, ...contextData };
+  }, [formType, finalUser, finalMonthId, customContextData, mode, initialValues, contextData]);
+
+  // Get initial values
+  const finalInitialValues = useMemo(() => {
+    if (formType === 'reporter') {
+      return finalFormConfig.getInitialValues(finalUser, initialValues);
+    }
+    if (formType === 'login') {
+      return finalFormConfig.getInitialValues();
+    }
+    if (formType === 'task') {
+      return finalFormConfig.getInitialValues(initialValues);
+    }
+    return initialValues;
+  }, [formType, finalFormConfig, finalUser, initialValues]);
+
+  // Get fields with dynamic options
+  const finalFields = useMemo(() => {
+    if (formType === 'task' && finalFormConfig.getFieldsWithOptions) {
+      return finalFormConfig.getFieldsWithOptions(finalReporters);
+    }
+    if (formType) {
+      return finalFormConfig.fields;
+    }
+    return fields;
+  }, [formType, finalFormConfig, finalReporters, fields]);
+
+  // Get form title and submit button text (memoized)
+  const { formTitle, finalSubmitButtonText } = useMemo(() => {
+    if (formType) {
+      const metadata = getFormMetadata(formType, mode, FORM_METADATA);
+      return {
+        formTitle: metadata.formTitle,
+        finalSubmitButtonText: submitButtonText || metadata.submitButtonText
+      };
+    }
+    return {
+      formTitle: null,
+      finalSubmitButtonText: submitButtonText
+    };
+  }, [formType, mode, submitButtonText]);
+
   // Auto-generate validation schema if not provided - optimized for React Hook Form
   const finalValidationSchema = useMemo(() => {
     if (validationSchema) return validationSchema;
-    if (formConfig?.validationSchema) return formConfig.validationSchema;
-    if (fields) {
-      return buildFormValidationSchema(fields);
+    if (finalFormConfig?.validationSchema) return finalFormConfig.validationSchema;
+    if (finalFields) {
+      return buildFormValidationSchema(finalFields);
     }
     return null;
-  }, [validationSchema, formConfig, fields]);
+  }, [validationSchema, finalFormConfig, finalFields]);
 
   // Initialize React Hook Form
   const {
@@ -83,7 +246,7 @@ const ReactHookFormWrapper = ({
     trigger
   } = useForm({
     resolver: finalValidationSchema ? yupResolver(finalValidationSchema) : undefined,
-    defaultValues: initialValues,
+    defaultValues: finalInitialValues,
     mode: 'onChange',
     ...additionalProps
   });
@@ -93,7 +256,7 @@ const ReactHookFormWrapper = ({
 
   // Auto-generate taskName from jiraLink for task forms (real-time)
   useEffect(() => {
-    if (entityType === 'task' && watchedValues.jiraLink) {
+    if ((formType === 'task' || entityType === 'task') && watchedValues.jiraLink) {
       const jiraMatch = watchedValues.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
       if (jiraMatch) {
         const generatedTaskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
@@ -111,7 +274,7 @@ const ReactHookFormWrapper = ({
         console.log('🔧 Cleared taskName - invalid Jira link');
       }
     }
-  }, [watchedValues.jiraLink, entityType, setValue]);
+  }, [watchedValues.jiraLink, formType, entityType, setValue]);
 
 
   // Helper function to get input type - memoized
@@ -136,40 +299,49 @@ const ReactHookFormWrapper = ({
       }
 
       // Built-in form submission logic
-      if (!formConfig || !apiMutations) {
+      if (!finalFormConfig || !finalApiMutations) {
         showError('Form configuration or API mutations not provided');
         return;
       }
 
       // Prepare form data for database
-      const dataForDatabase = prepareFormData(data, fields, formConfig, entityType, mode, contextData);
+      const dataForDatabase = prepareFormData(data, finalFields, finalFormConfig, formType || entityType, mode, finalContextData);
       console.log('💾 Final Data for Database:', dataForDatabase);
 
       let result;
-      if (mode === 'edit' && contextData.id) {
+      if (mode === 'edit' && finalContextData.id) {
         // Update existing record
-        const updateMutation = getMutation(apiMutations, 'update');
+        const updateMutation = getMutation(finalApiMutations, 'update');
         const mutationData = {
-          monthId: contextData.monthId,
-          boardId: contextData.boardId,
-          taskId: contextData.taskId || contextData.id,
+          monthId: finalContextData.monthId,
+          boardId: finalContextData.boardId,
+          taskId: finalContextData.taskId || finalContextData.id,
           updates: dataForDatabase,
-          userData: contextData.user
+          userData: finalContextData.user
         };
         
         result = await executeMutation(updateMutation, mutationData);
         console.log('✅ Update Result:', result);
-        showSuccess(formConfig.successMessages?.update || `${entityType} updated successfully!`);
+        showSuccess(finalFormConfig.successMessages?.update || `${formType || entityType} updated successfully!`);
       } else {
         // Create new record
-        const createMutation = getMutation(apiMutations, 'create');
-        const mutationData = {
-          task: dataForDatabase,
-          userData: contextData.user
-        };
+        const createMutation = getMutation(finalApiMutations, 'create');
         
-        result = await executeMutation(createMutation, mutationData);
-        showSuccess(formConfig.successMessages?.create || `${entityType} created successfully!`);
+        // Special handling for login form
+        if (formType === 'login') {
+          // For login, pass the raw form data directly to the login function
+          console.log('🔐 Login form data:', data);
+          result = await executeMutation(createMutation, data);
+        } else {
+          // For other forms, use the standard data preparation
+          const mutationData = {
+            task: dataForDatabase,
+            userData: finalContextData.user
+          };
+          result = await executeMutation(createMutation, mutationData);
+        }
+        
+        showSuccess(finalFormConfig.successMessages?.create || `${formType || entityType} created successfully!`);
       }
 
       // Reset form
@@ -224,19 +396,27 @@ const ReactHookFormWrapper = ({
   }, [watchedValues, errors, register, setValue, trigger, clearErrors, getInputType]);
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      {fields?.map((field) => renderField(field)) || []}
+    <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg ${className}`}>
+      {formTitle && (
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          {formTitle}
+        </h2>
+      )}
       
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={isSubmitting || formIsSubmitting}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {(isSubmitting || formIsSubmitting) ? 'Submitting...' : submitButtonText}
-        </button>
-      </div>
-    </form>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        {finalFields?.map((field) => renderField(field)) || []}
+        
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSubmitting || formIsSubmitting}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {(isSubmitting || formIsSubmitting) ? 'Submitting...' : finalSubmitButtonText}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

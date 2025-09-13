@@ -3,7 +3,7 @@ import { useDeleteTaskMutation } from "@/features/tasks/tasksApi";
 import { useTaskColumns } from "@/components/ui/Table/tableColumns.jsx";
 import { showSuccess } from "@/utils/toast.js";
 import GenericTableContainer from "@/components/ui/Table/GenericTableContainer";
-import UniversalFormRHF from "@/components/forms/UniversalFormRHF";
+import ReactHookFormWrapper from "@/components/forms/ReactHookFormWrapper";
 
 // Custom Task Edit Modal Component
 const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props }) => {
@@ -24,7 +24,7 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
           </button>
         </div>
         <div className="p-6">
-          <UniversalFormRHF
+          <ReactHookFormWrapper
             formType="task"
             mode="edit"
             initialValues={task}
