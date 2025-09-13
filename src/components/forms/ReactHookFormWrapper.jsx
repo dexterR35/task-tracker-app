@@ -167,8 +167,10 @@ const ReactHookFormWrapper = ({
     
     if (formType === 'reporter') {
       return {
-        createdBy: userData.uid || '',
-        createdByName: userData.name
+        ...baseContext,
+        ...(mode === 'edit' && initialValues?.id && { 
+          id: initialValues.id
+        })
       };
     }
     
@@ -185,7 +187,11 @@ const ReactHookFormWrapper = ({
   // Get initial values
   const finalInitialValues = useMemo(() => {
     if (formType === 'reporter') {
-      return finalFormConfig.getInitialValues(finalUser, initialValues);
+      const values = finalFormConfig.getInitialValues(finalUser, initialValues);
+      logger.log('📝 Reporter initial values:', values, 'from:', initialValues);
+      logger.log('📝 Final user:', finalUser);
+      logger.log('📝 Mode:', mode);
+      return values;
     }
     if (formType === 'login') {
       return finalFormConfig.getInitialValues();
@@ -194,7 +200,7 @@ const ReactHookFormWrapper = ({
       return finalFormConfig.getInitialValues(initialValues);
     }
     return initialValues;
-  }, [formType, finalFormConfig, finalUser, initialValues]);
+  }, [formType, finalFormConfig, finalUser, initialValues, mode]);
 
   // Get fields with dynamic options
   const finalFields = useMemo(() => {
@@ -261,21 +267,30 @@ const ReactHookFormWrapper = ({
       if (jiraMatch) {
         const generatedTaskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
         setValue('taskName', generatedTaskName);
-        console.log('🔧 Auto-generated taskName:', generatedTaskName);
+        logger.log('🔧 Auto-generated taskName:', generatedTaskName);
       } else if (watchedValues.jiraLink.includes('atlassian.net')) {
         // Fallback: use the last part of the URL for valid Jira URLs
         const urlParts = watchedValues.jiraLink.split('/');
         const fallbackTaskName = urlParts[urlParts.length - 1] || 'Unknown Task';
         setValue('taskName', fallbackTaskName);
-        console.log('🔧 Auto-generated taskName (fallback):', fallbackTaskName);
+        logger.log('🔧 Auto-generated taskName (fallback):', fallbackTaskName);
       } else {
         // Clear taskName if Jira link is invalid or empty
         setValue('taskName', '');
-        console.log('🔧 Cleared taskName - invalid Jira link');
+        logger.log('🔧 Cleared taskName - invalid Jira link');
       }
     }
   }, [watchedValues.jiraLink, formType, entityType, setValue]);
 
+  // Reset form when initialValues change (for edit mode)
+  useEffect(() => {
+    if (finalInitialValues && mode === 'edit') {
+      reset(finalInitialValues);
+      logger.log('🔄 Form reset with new initial values:', finalInitialValues);
+      logger.log('🔄 Mode:', mode, 'FormType:', formType);
+      logger.log('🔄 Initial values passed to form:', initialValues);
+    }
+  }, [finalInitialValues, mode, reset, formType, initialValues]);
 
   // Helper function to get input type - memoized
   const getInputType = useCallback((fieldType) => {
@@ -286,7 +301,7 @@ const ReactHookFormWrapper = ({
   const handleFormSubmit = useCallback(async (data) => {
     try {
       // Debug logging for form submission
-      console.log('🚀 Form Submission Started:', {
+      logger.log('🚀 Form Submission Started:', {
         mode,
         rawFormData: data,
         contextData
@@ -306,22 +321,33 @@ const ReactHookFormWrapper = ({
 
       // Prepare form data for database
       const dataForDatabase = prepareFormData(data, finalFields, finalFormConfig, formType || entityType, mode, finalContextData);
-      console.log('💾 Final Data for Database:', dataForDatabase);
+      logger.log('💾 Final Data for Database:', dataForDatabase);
+      logger.log('💾 Form Data (raw):', data);
+      logger.log('💾 Context Data:', finalContextData);
 
       let result;
       if (mode === 'edit' && finalContextData.id) {
         // Update existing record
         const updateMutation = getMutation(finalApiMutations, 'update');
-        const mutationData = {
-          monthId: finalContextData.monthId,
-          boardId: finalContextData.boardId,
-          taskId: finalContextData.taskId || finalContextData.id,
-          updates: dataForDatabase,
-          userData: finalContextData.user
-        };
+        let mutationData;
+        
+        if (formType === 'reporter') {
+          mutationData = {
+            id: finalContextData.id,
+            updates: dataForDatabase
+          };
+        } else {
+          mutationData = {
+            monthId: finalContextData.monthId,
+            boardId: finalContextData.boardId,
+            taskId: finalContextData.taskId || finalContextData.id,
+            updates: dataForDatabase,
+            userData: finalContextData.user
+          };
+        }
         
         result = await executeMutation(updateMutation, mutationData);
-        console.log('✅ Update Result:', result);
+        logger.log('✅ Update Result:', result);
         showSuccess(finalFormConfig.successMessages?.update || `${formType || entityType} updated successfully!`);
       } else {
         // Create new record
@@ -330,14 +356,22 @@ const ReactHookFormWrapper = ({
         // Special handling for login form
         if (formType === 'login') {
           // For login, pass the raw form data directly to the login function
-          console.log('🔐 Login form data:', data);
+          logger.log('🔐 Login form data:', data);
           result = await executeMutation(createMutation, data);
         } else {
           // For other forms, use the standard data preparation
-          const mutationData = {
-            task: dataForDatabase,
-            userData: finalContextData.user
-          };
+          let mutationData;
+          if (formType === 'reporter') {
+            mutationData = {
+              reporter: dataForDatabase,
+              userData: finalContextData.user
+            };
+          } else {
+            mutationData = {
+              task: dataForDatabase,
+              userData: finalContextData.user
+            };
+          }
           result = await executeMutation(createMutation, mutationData);
         }
         
@@ -351,7 +385,7 @@ const ReactHookFormWrapper = ({
       onSuccess?.(result);
 
     } catch (error) {
-      console.error(`${entityType} form submission error:`, error);
+      logger.error(`${entityType} form submission error:`, error);
       const errorMessage = formConfig?.errorMessages?.default || `Failed to save ${entityType}. Please try again.`;
       showError(errorMessage);
       onError?.(error);

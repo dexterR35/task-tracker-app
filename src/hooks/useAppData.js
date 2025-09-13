@@ -8,7 +8,6 @@ import {
   useGetCurrentMonthQuery
 } from "@/features/tasks/tasksApi";
 import { getUserUID, isUserAdmin } from "@/utils/authUtils";
-import { createDebugLogger } from "@/utils/debugUtils";
 
 // Split into focused hooks for better performance
 export const useCurrentMonth = () => {
@@ -83,7 +82,6 @@ export const useUserData = () => {
 };
 
 export const useAppData = () => {
-  const debug = createDebugLogger('useAppData');
   
   // Use focused hooks instead of inline logic
   const monthData = useCurrentMonth();
@@ -122,16 +120,6 @@ export const useAppData = () => {
   // Combined loading state
   const isLoading = userData.isLoading || reportersLoading || tasksLoading || monthData.isLoading;
   
-  // Essential debug logging only (memoized)
-  useMemo(() => {
-    if (monthData.monthId && !isLoading && tasksData) {
-      debug('App Data Loaded', { 
-        monthId: monthData.monthId, 
-        isAdmin: userData.userIsAdmin, 
-        tasksCount: tasksData.length 
-      });
-    }
-  }, [monthData.monthId, userData.userIsAdmin, tasksData, isLoading, debug]);
   
   // Memoize expensive operations to prevent unnecessary re-renders
   const memoizedStartDate = useMemo(() => 

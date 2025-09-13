@@ -37,14 +37,24 @@ export const reportersApi = createFirestoreApi({
 
     // Create reporter
     createReporter: builder.mutation({
-      async queryFn(reporterData) {
+      async queryFn({ reporter, userData }) {
         try {
-          logger.log(`[Reporters API] Creating reporter:`, reporterData);
+          logger.log(`[Reporters API] Creating reporter:`, reporter);
+          logger.log(`[Reporters API] User data:`, userData);
+          
+          // Clean the reporter data - remove any undefined fields
+          const cleanReporterData = Object.fromEntries(
+            Object.entries(reporter).filter(([_, value]) => value !== undefined)
+          );
           
           // Generate reporterUID from the document ID
           const createdReporter = await createDocumentInFirestore(db, "reporters", {
-            ...reporterData,
-            reporterUID: null // Will be set after creation
+            ...cleanReporterData,
+            reporterUID: null, // Will be set after creation
+            createdBy: userData?.userUID || userData?.uid || 'unknown',
+            createdByName: userData?.name || userData?.email || 'Unknown User'
+          }, {
+            addMetadata: false // Don't add updatedAt field
           });
           
           // Update with the generated reporterUID
@@ -52,7 +62,10 @@ export const reportersApi = createFirestoreApi({
             db, 
             "reporters", 
             createdReporter.id, 
-            { reporterUID: createdReporter.id }
+            { reporterUID: createdReporter.id },
+            {
+              addMetadata: false // Don't add updatedAt field
+            }
           );
           
           logger.log(`[Reporters API] Reporter created successfully:`, updatedReporter);
@@ -76,9 +89,10 @@ export const reportersApi = createFirestoreApi({
             draft.unshift({
               id: tempId, // Temporary ID
               reporterUID: tempId, // Same temporary ID
-              ...arg,
+              ...arg.reporter,
+              createdBy: arg.userData?.userUID || arg.userData?.uid || 'unknown',
+              createdByName: arg.userData?.name || arg.userData?.email || 'Unknown User',
               createdAt: now,
-              updatedAt: now,
             });
           })
         );
@@ -96,7 +110,9 @@ export const reportersApi = createFirestoreApi({
         try {
           logger.log(`[Reporters API] Updating reporter ${id}:`, updates);
           
-          const updatedReporter = await updateDocumentInFirestore(db, "reporters", id, updates);
+          const updatedReporter = await updateDocumentInFirestore(db, "reporters", id, updates, {
+            addMetadata: false // Don't add updatedAt field
+          });
           
           logger.log(`[Reporters API] Reporter updated successfully:`, updatedReporter);
           
@@ -115,9 +131,7 @@ export const reportersApi = createFirestoreApi({
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
             const reporter = draft.find(r => r.id === arg.id);
             if (reporter) {
-              Object.assign(reporter, arg.updates, {
-                updatedAt: new Date().toISOString(),
-              });
+              Object.assign(reporter, arg.updates);
             }
           })
         );

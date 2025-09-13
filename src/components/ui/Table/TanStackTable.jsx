@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   createColumnHelper,
   flexRender,
@@ -9,28 +9,29 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { showError, showSuccess, showInfo } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { exportToCSV } from "@/utils/exportData";
+
 // Column helper for type safety
 const columnHelper = createColumnHelper();
 
-// CSV Export utility function
-
-
-const DynamicTable = ({
+/**
+ * Pure TanStack Table Component
+ * Focused on table functionality without business logic
+ */
+const TanStackTable = ({
   data = [],
   columns = [],
-  tableType = 'tasks', // 'tasks', 'users', 'reporters'
-  onEdit = null,
-  onDelete = null,
-  onSelect = null,
+  tableType = 'generic',
   isLoading = false,
   error = null,
   className = '',
+  
+  // Table features
   showPagination = true,
   showFilters = true,
   showColumnToggle = true,
-  showActions = true, 
+  showActions = true,
   pageSize = 25,
   enableSorting = true,
   enableFiltering = true,
@@ -38,10 +39,16 @@ const DynamicTable = ({
   enableColumnResizing = true,
   enableRowSelection = false,
   onRowSelectionChange = null,
-}) => {
   
-  // DynamicTable component rendering
-
+  // Action handlers
+  onEdit = null,
+  onDelete = null,
+  onSelect = null,
+  
+  // Additional props
+  ...additionalProps
+}) => {
+  // Table state management
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState([]);
@@ -65,7 +72,6 @@ const DynamicTable = ({
               type="checkbox"
               checked={table.getIsAllPageRowsSelected()}
               onChange={table.getToggleAllPageRowsSelectedHandler()}
-        
             />
           ),
           cell: ({ row }) => (
@@ -75,7 +81,6 @@ const DynamicTable = ({
               type="checkbox"
               checked={row.getIsSelected()}
               onChange={row.getToggleSelectedHandler()}
-             
             />
           ),
           enableSorting: false,
@@ -139,8 +144,6 @@ const DynamicTable = ({
     return [...baseColumns, ...columns, ...(actionColumn ? [actionColumn] : [])];
   }, [columns, enableRowSelection, onSelect, onEdit, onDelete, rowActionId]);
 
-
-
   // Create table instance
   const table = useReactTable({
     data,
@@ -177,18 +180,10 @@ const DynamicTable = ({
     },
   });
 
-  // Show loading state
-  // if (isLoading) {
-  //   return (
-  //   <Loader size="xs" variant="spinner" text="Loading data..." fullScreen={false} />
-  //   );
-  // }
-
-
   // Show empty state
   if (!data.length) {
     return (
-      <div className="card text-center py-8">
+      <div className={`card text-center py-8 ${className}`}>
         <div className="text-gray-400 dark:text-gray-500 mb-2">
           {isLoading ? (
             <div className="flex items-center justify-center space-x-2">
@@ -349,8 +344,6 @@ const DynamicTable = ({
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row, index) => {
-                  // Render table rows
-                  
                   return (
                     <tr
                       key={row.id}
@@ -431,4 +424,4 @@ const DynamicTable = ({
   );
 };
 
-export default DynamicTable;
+export default TanStackTable;

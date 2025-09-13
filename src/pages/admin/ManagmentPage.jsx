@@ -5,6 +5,7 @@ import Loader from "@/components/ui/Loader/Loader";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
+import { logger } from "@/utils/logger";
 
 const AdminManagementPage = () => {
   // Get all data from AuthLayout context (pre-fetched data, no API calls!)
@@ -14,7 +15,7 @@ const AdminManagementPage = () => {
   
   // Debug logging - only log when data changes
  useEffect(() => {
-    console.log('[AdminManagementPage] Data from RTK Query hooks:', {
+    logger.log('[AdminManagementPage] Data from RTK Query hooks:', {
       users: users?.length || 0,
       reporters: reporters?.length || 0,
       error: error?.message || null

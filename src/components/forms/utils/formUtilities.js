@@ -3,7 +3,6 @@ import { PROTECTED_FIELDS, CONDITIONAL_FIELD_LOGIC } from './formConstants';
 
 // Get user data from user object
 export const getUserData = (user) => ({
-  uid: user?.userUID || user?.uid || user?.id,
   name: user?.name || user?.email || ''
 });
 
@@ -39,8 +38,7 @@ export const prepareFormData = (data, fields, formConfig, entityType, mode, cont
   const { user, ...contextDataWithoutUser } = contextData;
   const dataForDatabase = {
     ...processedData,
-    ...contextDataWithoutUser,
-    updatedAt: new Date().toISOString()
+    ...contextDataWithoutUser
   };
 
   // Only add createdAt for new records (create mode)

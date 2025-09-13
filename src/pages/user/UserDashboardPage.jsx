@@ -8,12 +8,9 @@ import ReactHookFormWrapper from "@/components/forms/ReactHookFormWrapper";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import { logger } from "@/utils/logger";
 import { getUserUID } from "@/utils/authUtils";
-import { createDebugLogger } from "@/utils/debugUtils";
 
 // User Dashboard - Shows user's own data with task creation
 const UserDashboardPage = () => {
-  const debug = createDebugLogger('UserDashboard');
-  
   // Get all data from context (pre-fetched data, no API calls!)
   const { 
     monthId, 
@@ -22,20 +19,9 @@ const UserDashboardPage = () => {
     user, 
     tasks, 
     reporters, 
-    error 
+    error,
+    isLoading
   } = useAppDataContext();
-  
-  // Debug logging
-  const userUID = getUserUID(user);
-  debug('Component State', {
-    user,
-    userUID,
-    tasks,
-    tasksLength: tasks?.length,
-    monthId,
-    isLoading,
-    error
-  });
   
   // boardExists is now provided by Redux selector
   

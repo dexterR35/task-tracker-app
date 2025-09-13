@@ -3,6 +3,7 @@
  * Centralized authentication state checking and user validation
  */
 
+import { logger } from './logger';
 import { isAdmin, canAccessRole, canAccessTasks, canAccessCharts } from './permissions';
 
 /**
@@ -39,7 +40,7 @@ const validateUserData = (userData, options = {}) => {
   
   if (!userData) {
     if (logWarnings) {
-      console.warn("User data not provided");
+      logger.warn("User data not provided");
     }
     return { isValid: false, errors: ["User data not provided"] };
   }
@@ -48,7 +49,7 @@ const validateUserData = (userData, options = {}) => {
   if (requireUID && !userData.userUID && !userData.uid) {
     errors.push("User data missing userUID");
     if (logWarnings) {
-      console.warn("User data missing userUID");
+      logger.warn("User data missing userUID");
     }
   }
 
@@ -56,7 +57,7 @@ const validateUserData = (userData, options = {}) => {
   if (requireEmail && !userData.email) {
     errors.push("User data missing email");
     if (logWarnings) {
-      console.warn("User data missing email");
+      logger.warn("User data missing email");
     }
   }
 
@@ -64,7 +65,7 @@ const validateUserData = (userData, options = {}) => {
   if (requireName && !userData.name) {
     errors.push("User data missing name");
     if (logWarnings) {
-      console.warn("User data missing name");
+      logger.warn("User data missing name");
     }
   }
 
@@ -72,7 +73,7 @@ const validateUserData = (userData, options = {}) => {
   if (requireRole && !userData.role) {
     errors.push("User data missing role");
     if (logWarnings) {
-      console.warn("User data missing role");
+      logger.warn("User data missing role");
     }
   }
 

@@ -197,50 +197,38 @@ const router = createBrowserRouter([
           {
             path: "analytics",
             element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage>
-                  <AnalyticsPage />
-                </LazyPage>
-              </ProtectedRoute>
+              <LazyPage>
+                <AnalyticsPage />
+              </LazyPage>
             ),
           },
           {
             path: "users",
             element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage>
-                  <AdminManagementPage />
-                </LazyPage>
-              </ProtectedRoute>
+              <LazyPage>
+                <AdminManagementPage />
+              </LazyPage>
             ),
           },
           {
             path: "tasks",
             element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage>
-                  <AdminTasksPage />
-                </LazyPage>
-              </ProtectedRoute>
+              <LazyPage>
+                <AdminTasksPage />
+              </LazyPage>
             ),
           },
           {
             path: "debug",
             element: (
-              <ProtectedRoute requiredRole="admin">
-                <LazyPage>
-                  <DebugPage />
-                </LazyPage>
-              </ProtectedRoute>
+              <LazyPage>
+                <DebugPage />
+              </LazyPage>
             ),
           },
           {
             path: "preview/:monthId",
-            element: (
-              <ProtectedRoute requiredRole="admin">
-                <ComingSoonPage />
-              </ProtectedRoute>
-            ),
+            element: <ComingSoonPage />,
           },
         ],
       },
