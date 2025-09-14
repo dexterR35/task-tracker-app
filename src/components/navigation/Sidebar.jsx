@@ -2,8 +2,9 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Icons } from "@/components/icons";
-import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import MidnightCountdown from "@/components/ui/MidnightCountdown/MidnightCountdown";
+import Badge from "@/components/ui/Badge/Badge";
+import Avatar from "@/components/ui/Avatar";
 
 const Sidebar = ({ onToggle, isOpen }) => {
   const { user, logout, clearError, canAccess } = useAuth();
@@ -27,75 +28,56 @@ const Sidebar = ({ onToggle, isOpen }) => {
       name: "Dashboard",
       href: "/dashboard",
       icon: Icons.cards.home,
+      description: "Task management"
     },
     {
       name: "Analytics",
       href: "/analytics",
       icon: Icons.cards.chart,
       adminOnly: true,
+      description: "Data insights"
     },
     {
       name: "Users",
       href: "/users",
       icon: Icons.admin.users,
       adminOnly: true,
+      description: "User management"
     },
     {
       name: "Debug",
       href: "/debug",
       icon: Icons.admin.debug,
       adminOnly: true,
+      description: "System debug"
     },
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-      {/* Logo and Close Button */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
+    <div className="flex flex-col h-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-r border-gray-300/50 dark:border-gray-700/50">
+      {/* Logo Section */}
+      <div className="flex items-center h-20 px-6 border-b border-gray-300/50 dark:border-gray-700/50">
         <Link
           to="/dashboard"
-          className="uppercase text-2xl font-bold text-gray-800 dark:text-white hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          className="flex items-center space-x-3 group"
         >
-          SYNC
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-default to-btn-primary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
+            <span className="text-white font-bold text-lg">S</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              SYNC
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Task Tracker
+            </p>
+          </div>
         </Link>
-        <button
-          onClick={onToggle}
-          className="p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-          aria-label="Close sidebar"
-          title="Close sidebar (Ctrl+B)"
-        >
-          <Icons.buttons.cancel className="w-5 h-5" />
-        </button>
       </div>
 
-      {/* User Info */}
-      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <Icons.generic.user className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 dark:text-white truncate capitalize">
-              {user?.name || user?.email}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {user?.email}
-            </p>
-            <span
-              className={`inline-block px-2 py-1 mt-1 rounded-full text-xs font-semibold capitalize ${
-                canAccess("admin")
-                  ? "bg-gradient-to-r from-red-500 to-pink-500 text-white"
-                  : "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
-              }`}
-            >
-              {user?.role}
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-4 py-4 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2">
         {navigationItems.map((item) => {
           // Hide admin-only items for non-admin users
           if (item.adminOnly && !canAccess("admin")) return null;
@@ -105,36 +87,46 @@ const Sidebar = ({ onToggle, isOpen }) => {
             <Link
               key={item.name}
               to={item.href}
-              className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive(item.href)
-                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-r-2 border-blue-600 dark:border-blue-400"
-                  : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
               }`}
             >
-              <Icon className="w-5 h-5 mr-3" />
-              {item.name}
+              <div className={`p-2 rounded-lg transition-all duration-200 ${
+                isActive(item.href)
+                  ? "bg-blue-100 dark:bg-blue-900/30"
+                  : "bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/20"
+              }`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="font-medium">{item.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {item.description}
+                </p>
+              </div>
             </Link>
           );
         })}
       </nav>
 
       {/* Bottom Section */}
-      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+      <div className="px-4 py-6 border-t border-gray-300/50 dark:border-gray-700/50 space-y-4">
         {/* Midnight Countdown */}
-        <MidnightCountdown />
-        
-        {/* Dark Mode Toggle */}
-        <div className="flex justify-center">
-          <DarkModeToggle />
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+          <MidnightCountdown />
         </div>
 
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200"
+          className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group"
         >
-          <Icons.buttons.logout className="w-5 h-5 mr-3" />
-          Logout
+          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-red-100 dark:group-hover:bg-red-900/20 transition-all duration-200">
+            <Icons.buttons.logout className="w-5 h-5" />
+          </div>
+          <span className="ml-3">Logout</span>
         </button>
       </div>
     </div>

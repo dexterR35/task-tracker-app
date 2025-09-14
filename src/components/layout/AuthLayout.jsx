@@ -6,6 +6,7 @@ import { useGenerateMonthBoardMutation } from "@/features/tasks/tasksApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import Sidebar from "@/components/navigation/Sidebar";
+import FixedHeader from "@/components/layout/FixedHeader";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
 import { Icons } from "@/components/icons";
@@ -110,68 +111,61 @@ const AuthLayout = () => {
   }
 
   return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-          <div className="flex h-screen">
-            {/* Sidebar */}
-            <div className={`${sidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden`}>
-              <Sidebar onToggle={toggleSidebar} isOpen={sidebarOpen} />
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Month Board Warning - Global notification */}
-              {!boardExists && monthId && (
-                <div className="bg-yellow-600 text-white p-4 shadow-lg">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">
-                        ⚠️ Month Board Not Available
-                      </h3>
-                      <p className="text-sm">
-                        The month board for {monthName} has not been generated yet. 
-                        {canAccess("admin") 
-                          ? " Generate it to enable task management features." 
-                          : " Task creation is disabled until the board is available."
-                        }
-                      </p>
-                    </div>
-                    {canAccess("admin") && (
-                      <div className="mt-3 sm:mt-0 sm:ml-4">
-                        <DynamicButton
-                          onClick={handleGenerateBoard}
-                          disabled={isGenerating}
-                          variant="outline"
-                          size="sm"
-                          className="border-white text-white hover:bg-white hover:text-yellow-600"
-                        >
-                          {isGenerating ? "Generating..." : "Generate Board Now"}
-                        </DynamicButton>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                <div className="p-6">
-                  <Outlet />
-                </div>
-              </main>
-            </div>
-
-            {/* Floating Toggle Button - Only show when sidebar is closed */}
-            {!sidebarOpen && (
-              <button
-                onClick={toggleSidebar}
-                className="fixed top-4 left-4 z-50 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
-                aria-label="Show sidebar"
-                title="Show sidebar (Ctrl+B)"
-              >
-                <Icons.buttons.menu className="w-5 h-5" />
-              </button>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      {/* Fixed Header */}
+      <FixedHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
+      
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden`}>
+          <Sidebar onToggle={toggleSidebar} isOpen={sidebarOpen} />
         </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Month Board Warning - Global notification */}
+          {!boardExists && monthId && (
+            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4 shadow-lg">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center">
+                    <Icons.buttons.warning className="w-5 h-5 mr-2" />
+                    Month Board Not Available
+                  </h3>
+                  <p className="text-sm">
+                    The month board for {monthName} has not been generated yet. 
+                    {canAccess("admin") 
+                      ? " Generate it to enable task management features." 
+                      : " Task creation is disabled until the board is available."
+                    }
+                  </p>
+                </div>
+                {canAccess("admin") && (
+                  <div className="mt-3 sm:mt-0 sm:ml-4">
+                    <DynamicButton
+                      onClick={handleGenerateBoard}
+                      disabled={isGenerating}
+                      variant="outline"
+                      size="sm"
+                      className="border-white text-white hover:bg-white hover:text-yellow-600"
+                    >
+                      {isGenerating ? "Generating..." : "Generate Board Now"}
+                    </DynamicButton>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+            <div className="p-6">
+              <Outlet />
+            </div>
+          </main>
+        </div>
+
+      </div>
+    </div>
   );
 };
 

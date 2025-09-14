@@ -548,7 +548,7 @@ const DebugPage = () => {
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {cacheEntries.map((entry, index) => (
-                  <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-300 dark:border-gray-600">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center space-x-2">
                         <span className="text-purple-600 dark:text-purple-400 text-sm font-bold">#{index + 1}</span>
@@ -563,7 +563,7 @@ const DebugPage = () => {
                         entry.status === 'fulfilled' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                         entry.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                         entry.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
                       }`}>
                         {entry.status}
                       </span>
@@ -771,7 +771,7 @@ const DebugPage = () => {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full" 
                         style={{ width: `${(metrics.memory.used / metrics.memory.limit) * 100}%` }}
@@ -1005,65 +1005,80 @@ const DebugPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <AdminPageHeader
-        title="Debug Tools"
-        subtitle="Comprehensive debugging and monitoring tools for administrators"
-        icon="debug"
-        gradient="from-cyan-900 via-teal-900 to-emerald-900"
-      />
-
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Debug Tools
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                Comprehensive debugging and monitoring tools for administrators
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-300 dark:border-gray-700">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Environment</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{process.env.NODE_ENV}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Debug Info */}
         <div className="mb-8">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-300 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
               <div>
-                <span className="text-gray-400 font-medium">Current User:</span>
-                <div className="text-white font-semibold">{user?.name || 'Unknown'} ({user?.email || 'No email'})</div>
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Current User:</span>
+                <div className="text-gray-900 dark:text-white font-semibold">{user?.name || 'Unknown'} ({user?.email || 'No email'})</div>
               </div>
               <div>
-                <span className="text-gray-400 font-medium">Environment:</span>
-                <div className="text-white font-semibold">{process.env.NODE_ENV}</div>
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Environment:</span>
+                <div className="text-gray-900 dark:text-white font-semibold">{process.env.NODE_ENV}</div>
               </div>
               <div>
-                <span className="text-gray-400 font-medium">Last Updated:</span>
-                <div className="text-white font-semibold">{new Date().toLocaleString()}</div>
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Last Updated:</span>
+                <div className="text-gray-900 dark:text-white font-semibold">{new Date().toLocaleString()}</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8">
+        <div className="mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-2 shadow-sm border border-gray-300 dark:border-gray-700">
+            <div className="flex space-x-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  className={`flex-1 px-6 py-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                   }`}
                 >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </div>
                 </button>
               ))}
-            </nav>
+            </div>
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-300 dark:border-gray-700">
           {renderTabContent()}
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-300 dark:border-gray-700 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             🚀 Quick Actions
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1072,6 +1087,8 @@ const DebugPage = () => {
               size="md"
               onClick={() => window.location.reload()}
               iconName="refresh"
+              iconPosition="left"
+              className="px-4"
             >
               Reload Page
             </DynamicButton>
@@ -1084,6 +1101,8 @@ const DebugPage = () => {
                 window.location.reload();
               }}
               iconName="trash"
+              iconPosition="left"
+              className="px-4"
             >
               Clear Storage
             </DynamicButton>
@@ -1101,6 +1120,8 @@ const DebugPage = () => {
                 alert('Redux state logged to console');
               }}
               iconName="code"
+              iconPosition="left"
+              className="px-4"
             >
               Log to Console
             </DynamicButton>

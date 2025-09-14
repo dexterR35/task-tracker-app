@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppData } from "@/hooks/useAppData";
-import AdminPageHeader from "@/components/layout/AdminPageHeader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useMonthSelectionWithTasks } from "@/hooks/useAppData";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
@@ -9,6 +8,12 @@ import Modal from "@/components/ui/Modal/Modal";
 import LazyTaskTable from "@/components/lazy/LazyTaskTable";
 import LazyUniversalForm from "@/components/lazy/LazyUniversalForm";
 import Loader from "@/components/ui/Loader/Loader";
+import DashboardCard from "@/components/ui/Card/DashboardCard";
+import { createCards, CARD_SETS, CARD_TYPES } from "@/components/ui/Card/cardConfig";
+import { useReporterMetrics } from "@/hooks/useReporterMetrics";
+import { useFilterOptions } from "@/hooks/useDataFilter";
+import { Icons } from "@/components/icons";
+
 
 // Universal Dashboard Page - Shows tasks based on user role
 // Admin: All tasks with user filters and full management
@@ -51,33 +56,15 @@ const AdminDashboardPage = () => {
   const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
   
   // Role-based data filtering
-  const displayTasks = useMemo(() => {
-    // Get the correct user UID based on role
-    const currentUserUID = isUserAdmin ? user?.uid : user?.userUID;
-    
-    
-    if (isUserAdmin) {
-      // Admin sees all tasks (with optional user filter)
-      return selectedUserId 
-        ? tasks.filter(task => task.userUID === selectedUserId)
-        : tasks;
-    } else {
-      // Regular users see only their own tasks
-      const userTasks = tasks.filter(task => task.userUID === currentUserUID);
-      return userTasks;
-    }
-  }, [tasks, isUserAdmin, selectedUserId, user]);
-
-  // Get selected user name for display - memoized
-  const selectedUser = useMemo(() => 
-    users.find((u) => (u.userUID || u.id) === selectedUserId),
-    [users, selectedUserId]
-  );
+  const currentUserUID = isUserAdmin ? user?.uid : user?.userUID;
   
-  const selectedUserName = useMemo(() =>
-    selectedUser?.name || selectedUser?.email || "Unknown User",
-    [selectedUser]
-  );
+  const displayTasks = isUserAdmin
+    ? (selectedUserId ? tasks.filter(task => task.userUID === selectedUserId) : tasks)
+    : tasks.filter(task => task.userUID === currentUserUID);
+
+  // Get selected user name for display
+  const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
+  const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
   // Handle user selection (admin only) - memoized with useCallback
   const handleUserSelect = useCallback((userId) => {
     if (!userId) {
@@ -90,17 +77,45 @@ const AdminDashboardPage = () => {
   // Use the role-based filtered tasks
   const filteredTasks = displayTasks;
 
-  // Derive title based on context and role - memoized
-  const title = useMemo(() => {
-    if (isUserAdmin) {
-      if (selectedUserId) {
-        return `All Tasks - ${selectedUserName}`;
-      }
-      return "All Tasks - All Users";
-    } else {
-      return "My Tasks";
-    }
-  }, [isUserAdmin, selectedUserId, selectedUserName]);
+  // Derive title based on context and role
+  const title = isUserAdmin
+    ? (selectedUserId ? `All Tasks - ${selectedUserName}` : "All Tasks - All Users")
+    : "My Tasks";
+
+  // Create filter options from dashboard state
+  const filterOptions = useFilterOptions({
+    selectedUserId,
+    selectedMonthId: selectedMonth?.monthId || currentMonth?.monthId
+  });
+
+  // Calculate reporter metrics using global tasks (reporters card shows all data)
+  const reporterMetrics = useReporterMetrics(tasks, reporters, {});
+
+  // Common data for cards
+  const commonCardData = {
+    tasks: tasks, // ✅ Global tasks - never filtered
+    reporters: reporters,
+    users: users,
+    reporterMetrics: reporterMetrics,
+    periodName: selectedMonth?.monthName || currentMonth?.monthName || 'Loading...',
+    periodId: selectedMonth?.monthId || currentMonth?.monthId || 'unknown',
+    isCurrentMonth: isCurrentMonth,
+    isUserAdmin: isUserAdmin,
+    currentUser: user
+  };
+
+  // Dashboard cards data using dynamic configuration
+  const dashboardCards = selectedUserId
+    ? [
+        ...createCards([CARD_TYPES.TASKS, CARD_TYPES.REPORTERS], commonCardData),
+        ...createCards([CARD_TYPES.SELECTED_USER], {
+          ...commonCardData,
+          filteredTasks: filteredTasks,
+          selectedUserId: selectedUserId,
+          selectedUserName: selectedUserName
+        })
+      ]
+    : createCards(CARD_SETS.DASHBOARD, commonCardData);
 
   if (error || monthError) {
     return (
@@ -115,159 +130,170 @@ const AdminDashboardPage = () => {
 
 
 
-  const rightContent = (
-    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-      <div className="text-white text-sm font-medium">Tasks Count</div>
-      <div className="text-green-200 text-2xl font-bold">{filteredTasks.length}</div>
-      {!isCurrentMonth && selectedMonth && (
-        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-yellow-900/20 border border-yellow-500/30">
-          <span className="text-yellow-400 text-xs font-medium">📅 Historical Data</span>
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-gray-900">
-      <AdminPageHeader
-        title={isUserAdmin ? "Task Management" : "My Dashboard"}
-        subtitle={`${title} - ${selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}`}
-        icon="tasks"
-        gradient="from-green-900 via-emerald-900 to-teal-900"
-        rightContent={rightContent}
-      />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {isUserAdmin ? "Task Management" : "My Dashboard"}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+              {title} • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+            </p>
+          </div>
+        </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Controls Section */}
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-6">
+        {/* Controls Section - First */}
+        <div className="mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Month Selector */}
-            <div className="space-y-2">
-              <label htmlFor="selectedMonth" className="block text-sm font-medium text-gray-300">
-                Select Month
-              </label>
-              <div className="flex gap-2">
+            {/* Month Selection */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-6">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Time Period</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{availableMonths.length} periods available</p>
+              </div>
+              <div className="space-y-3">
                 <select
                   id="selectedMonth"
                   value={selectedMonth?.monthId || currentMonth?.monthId || ''}
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  onChange={(e) => {
-                    selectMonth(e.target.value);
-                  }}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => selectMonth(e.target.value)}
                 >
                   {availableMonths.map((month) => (
-                    <option
-                      key={month.monthId}
-                      value={month.monthId}
-                    >
+                    <option key={month.monthId} value={month.monthId}>
                       {month.monthName} {month.isCurrent ? '(Current)' : ''}
                     </option>
                   ))}
                 </select>
-                {!isCurrentMonth && (
-                  <DynamicButton
-                    onClick={resetToCurrentMonth}
-                    variant="outline"
-                    size="sm"
-                    title="Reset to current month"
-                    iconName="refresh"
-                    iconPosition="center"
-                  />
-                )}
+                <div className="flex items-center justify-between text-xs">
+                  <span className={`px-2 py-1 rounded ${
+                    isCurrentMonth 
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+                  }`}>
+                    {isCurrentMonth ? 'Current Period' : 'Historical Data'}
+                  </span>
+                  {!isCurrentMonth && (
+                    <DynamicButton
+                      onClick={resetToCurrentMonth}
+                      variant="outline"
+                      size="sm"
+                      iconName="refresh"
+                      iconPosition="center"
+                      className="px-2"
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
             {/* User Filter - Admin Only */}
             {isUserAdmin && (
-              <div className="space-y-2">
-                <label htmlFor="selectedUser" className="block text-sm font-medium text-gray-300">
-                  Filter by User
-                </label>
-                <div className="flex gap-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-6">
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">User Filter</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{users.length} users available</p>
+                </div>
+                <div className="space-y-3">
                   <select
                     id="selectedUser"
                     value={selectedUserId}
-                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                    onChange={(e) => {
-                      handleUserSelect(e.target.value);
-                    }}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => handleUserSelect(e.target.value)}
                   >
                     <option value="">All Users</option>
                     {users.map((user) => (
-                      <option
-                        key={user.userUID || user.id}
-                        value={user.userUID || user.id}
-                      >
+                      <option key={user.userUID || user.id} value={user.userUID || user.id}>
                         {user.name || user.email}
                       </option>
                     ))}
                   </select>
-                  {selectedUserId && (
-                    <DynamicButton
-                      onClick={() => handleUserSelect("")}
-                      variant="outline"
-                      size="sm"
-                      iconName="x"
-                      iconPosition="center"
-                    />
-                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {selectedUserId ? `Filtered by: ${selectedUserName}` : 'Showing all users'}
+                    </span>
+                    {selectedUserId && (
+                      <DynamicButton
+                        onClick={() => handleUserSelect("")}
+                        variant="outline"
+                        size="sm"
+                        iconName="x"
+                        iconPosition="center"
+                        className="px-2"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Create Task Button */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
-                Actions
-              </label>
-              <DynamicButton
-                onClick={() => setShowCreateModal(true)}
-                variant="primary"
-                size="md"
-                iconName="add"
-                iconPosition="left"
-                disabled={!canCreateTasks}
-                title={!isCurrentMonth ? "Task creation only available for current month" : !currentMonth.boardExists ? "Month board not available" : ""}
-                className="w-full shadow-lg"
-              >
-                Create Task
-              </DynamicButton>
-            </div>
-          </div>
-        </div>
-
-        {/* Tasks Section */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-          {/* Section Header */}
-          <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  {isUserAdmin && selectedUserId
-                    ? `${selectedUserName} Tasks`
-                    : "All Tasks"}
-                </h2>
-                <p className="text-gray-400 text-sm mt-1">
-                  {filteredTasks.length} tasks for {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+            {/* Actions */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-6">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Actions</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {canCreateTasks ? 'Task creation available' : 'Creation restricted'}
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
-                {!canCreateTasks && (
-                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg px-3 py-2">
-                    <span className="text-yellow-400 text-sm font-medium">
-                      {!isCurrentMonth ? "Historical data - creation disabled" : "Board not available"}
-                    </span>
-                  </div>
-                )}
+              <div className="space-y-3">
+                <DynamicButton
+                  onClick={() => setShowCreateModal(true)}
+                  variant="primary"
+                  size="sm"
+                  iconName="add"
+                  iconPosition="left"
+                  disabled={!canCreateTasks}
+                  className="w-full"
+                >
+                  Create Task
+                </DynamicButton>
                 <DynamicButton
                   onClick={() => setShowTable(!showTable)}
                   variant="outline"
                   size="sm"
                   iconName={showTable ? "eye-off" : "eye"}
                   iconPosition="left"
+                  className="w-full"
                 >
                   {showTable ? "Hide Table" : "Show Table"}
                 </DynamicButton>
+                {!canCreateTasks && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-amber-600 dark:text-amber-400">
+                      {!isCurrentMonth ? 'Historical data - creation disabled' : 'Board not available'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Cards Section */}
+        <div className="mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {dashboardCards.map((card) => (
+              <DashboardCard key={card.id} card={card} />
+            ))}
+          </div>
+        </div>
+
+        {/* Professional Tasks Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
+          {/* Professional Section Header */}
+          <div className="px-6 py-4 border-b border-gray-300 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {isUserAdmin && selectedUserId
+                    ? `${selectedUserName} Tasks`
+                    : "Tasks"}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {filteredTasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+                </p>
               </div>
             </div>
           </div>
@@ -277,9 +303,28 @@ const AdminDashboardPage = () => {
             {showTable && (
               isLoading ? (
                 <div className="flex justify-center items-center py-12">
-                  <div className="text-center">
-                    <Loader size="lg" text="Loading tasks for selected month..." />
-                  </div>
+                  <Loader size="md" text="Loading tasks..." />
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks found</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    {selectedUserId 
+                      ? `${selectedUserName} has no tasks for this period`
+                      : 'No tasks available for the selected criteria'
+                    }
+                  </p>
+                  {canCreateTasks && (
+                    <DynamicButton
+                      onClick={() => setShowCreateModal(true)}
+                      variant="primary"
+                      size="sm"
+                      iconName="add"
+                      iconPosition="left"
+                    >
+                      Create First Task
+                    </DynamicButton>
+                  )}
                 </div>
               ) : (
                 <LazyTaskTable

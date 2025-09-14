@@ -100,7 +100,7 @@ const CardsGrid = ({
     return (
       <div
         key={item.id}
-        className="cards_item card min-w-[220px] !h-[160px] p-0 overflow-hidden relative !rounded-md border border-gray-600/50 !bg-linear-to-br from-[#067acc] to-[#021b2f] "
+        className="cards_item card min-w-[220px] !h-[160px] p-0 overflow-hidden relative !rounded-md border border-gray-600/50 bg-gradient-to-br from-blue-default to-primary"
       >
         {children ? (
           children(item, {

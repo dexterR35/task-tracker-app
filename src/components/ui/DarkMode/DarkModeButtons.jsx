@@ -11,7 +11,7 @@ const DarkModeToggle = () => {
       disabled={isTransitioning}
       className={`
         relative inline-flex items-center justify-center w-10 h-10 rounded-full
-        bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-700
+        bg-gray-300 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-700
         transition-all duration-300 ease-in-out transform hover:scale-105
         focus:outline-none 
         ${isTransitioning ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}

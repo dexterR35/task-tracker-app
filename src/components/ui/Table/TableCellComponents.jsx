@@ -1,5 +1,7 @@
 import React from 'react';
 import { formatDate } from '@/utils/dateUtils';
+import Badge from '@/components/ui/Badge/Badge';
+import Avatar from '@/components/ui/Avatar';
 
 /**
  * Table Cell Components - Eliminates duplication in table column logic
@@ -18,36 +20,20 @@ export const safeDisplay = (value, fallback = "-") => {
 };
 
 /**
- * User Avatar Cell - Reusable for Users and Reporters tables
+ * User Avatar Cell - Reusable for Users and Reporters tables using Avatar component
  */
 export const UserAvatarCell = ({ 
   user, 
   gradient = "from-purple-500 to-purple-600",
   showEmail = false 
 }) => {
-  const userName = user.name || 'No Name';
-  const userSymbol = userName.substring(0, 2).toUpperCase();
-  
   return (
-    <div className="flex items-center">
-      <div className="flex-shrink-0 h-10 w-10">
-        <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-          <span className="text-sm font-medium text-white">
-            {userSymbol}
-          </span>
-        </div>
-      </div>
-      <div className="ml-4">
-        <div className="text-sm font-medium text-white">
-          {userName}
-        </div>
-        {showEmail && user.email && (
-          <div className="text-xs text-gray-400">
-            {user.email}
-          </div>
-        )}
-      </div>
-    </div>
+    <Avatar 
+      user={user}
+      gradient={gradient}
+      showEmail={showEmail}
+      size="md"
+    />
   );
 };
 
@@ -64,27 +50,27 @@ export const DateCell = ({
 };
 
 /**
- * Role Badge Cell - Standardized role display
+ * Role Badge Cell - Standardized role display using Badge component
  */
 export const RoleBadgeCell = ({ role }) => {
-  const getRoleStyle = (role) => {
+  const getRoleVariant = (role) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'red';
       case 'reporter':
-        return 'bg-blue-100 text-blue-800';
+        return 'blue';
       case 'user':
       default:
-        return 'bg-green-100 text-green-800';
+        return 'green';
     }
   };
   
   const displayRole = role || 'user';
   
   return (
-    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleStyle(displayRole)}`}>
+    <Badge variant={getRoleVariant(displayRole)} size="sm">
       {displayRole}
-    </span>
+    </Badge>
   );
 };
 

@@ -55,19 +55,19 @@ const ModernBarChart = ({ data, color = "#a99952" }) => (
   </ResponsiveContainer>
 );
 
-// Get color based on metric type (same as OptimizedSmallCard)
+// Get color based on metric type using new Tailwind colors
 const getMetricColor = (type) => {
   switch (type) {
     case "total-tasks":
-      return "#67C090";
+      return "#2fd181"; // green-success
     case "total-hours":
-      return "#33A1E0";
+      return "#2a9df4"; // blue-default
     case "ai-tasks":
-      return "#e31769";
+      return "#eb2743"; // red-error
     case "design":
-      return "#eb2743";
+      return "#eb2743"; // red-error
     default:
-      return "#3d48c9";
+      return "#3d48c9"; // btn-primary
   }
 };
 
@@ -198,7 +198,7 @@ const HomepageCard = ({ card }) => {
                 />
               </div>
               <div className="leading-6">
-                <h3 className="text-sm font-semibold text-gray-200 !mb-0">
+                <h3 className="text-sm font-semibold text-gray-300 !mb-0">
                   {card.title}
                 </h3>
                 <p className="text-xs text-gray-400 mt-0">{card.subtitle}</p>
@@ -242,7 +242,7 @@ const HomepageCard = ({ card }) => {
                   <Icons.generic.user className="w-3 h-3 text-gray-400" />
                   <span className="text-xs text-gray-400">Reporter</span>
                 </div>
-                <span className="text-sm font-medium text-gray-200">
+                <span className="text-sm font-medium text-gray-300">
                   {card.reporterName}
                 </span>
               </div>
@@ -253,7 +253,7 @@ const HomepageCard = ({ card }) => {
                     <Icons.generic.zap className="w-3 h-3 text-gray-400" />
                     <span className="text-xs text-gray-400">Best AI</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-200">
+                  <span className="text-sm font-medium text-gray-300">
                     {card.bestAI}
                   </span>
                 </div>
@@ -265,7 +265,7 @@ const HomepageCard = ({ card }) => {
                     <Icons.generic.package className="w-3 h-3 text-gray-400" />
                     <span className="text-xs text-gray-400">Deliverables</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-200">
+                  <span className="text-sm font-medium text-gray-300">
                     {card.deliverables}
                   </span>
                 </div>
@@ -275,7 +275,7 @@ const HomepageCard = ({ card }) => {
                   <Icons.generic.target className="w-3 h-3 text-gray-400" />
                   <span className="text-xs text-gray-400">Best Category</span>
                 </div>
-                <span className="text-sm font-medium text-gray-200">
+                <span className="text-sm font-medium text-gray-300">
                   {card.bestCategory}
                 </span>
               </div>

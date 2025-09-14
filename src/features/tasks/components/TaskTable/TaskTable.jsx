@@ -13,7 +13,7 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
   return (
     <div className="fixed bg-gray-600 inset-0 bg-white-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="rounded-lg bg-white-dark shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+        <div className="flex justify-between items-center p-6 border-b border-gray-300">
           <h2 className="text-xl font-semibold text-white-dak">
             Edit Task: {task?.jiraLink || task?.departments || 'Unknown Task'}
           </h2>

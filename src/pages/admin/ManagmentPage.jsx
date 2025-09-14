@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
-import AdminPageHeader from "@/components/layout/AdminPageHeader";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
@@ -14,19 +13,6 @@ const AdminManagementPage = () => {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
   
-  // Debug logging - only log when data changes
-  useEffect(() => {
-    logger.log('[AdminManagementPage] Data from RTK Query hooks:', {
-      users: users?.length || 0,
-      reporters: reporters?.length || 0,
-      error: error?.message || null
-    });
-  }, [
-    // Use stable IDs instead of array length for better performance
-    users?.map(user => user.id).join(','),
-    reporters?.map(reporter => reporter.id).join(','),
-    error
-  ]);
 
   // Show error state
   if (error) {
@@ -65,98 +51,93 @@ const AdminManagementPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <AdminPageHeader 
-        title="Management"
-        subtitle={`${monthName} - User & Reporter Management`}
-        monthId={monthId}
-      />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Management
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+              {monthName} • User & Reporter Management
+            </p>
+          </div>
+        </div>
 
-      <div className="container mx-auto px-4 py-6">
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-12">
-            <Loader size="lg" text="Loading management data..." variant="spinner" />
+            <Loader size="md" text="Loading management data..." variant="spinner" />
           </div>
         )}
 
         {/* Main Content */}
         {!isLoading && (
           <div className="space-y-6">
-            {/* Tab Navigation */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-1">
-              <div className="flex space-x-1">
+            {/* Clean Tab Navigation */}
+            <div className="border-b border-gray-300 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-8">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                       activeTab === tab.id
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center space-x-2">
                       <span>{tab.name}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         activeTab === tab.id
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-600 text-gray-300'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }`}>
                         {tab.count}
                       </span>
                     </div>
                   </button>
                 ))}
-              </div>
+              </nav>
             </div>
 
-            {/* Tab Content Header */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white capitalize">
-                    {activeTab === 'users' ? 'User Management' : 'Reporter Management'}
-                  </h2>
-                  <p className="text-gray-400 mt-1">
-                    {tabs.find(tab => tab.id === activeTab)?.description}
-                  </p>
-                </div>
-                
-                <div className="flex space-x-3">
-                  {/* Create Button - Only show for reporters */}
-                  {activeTab === 'reporters' && (
-                    <DynamicButton
-                      onClick={handleCreate}
-                      variant="primary"
-                      size="md"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Add Reporter
-                    </DynamicButton>
-                  )}
-                  
-                  {/* Export Button */}
-                  <DynamicButton
-                    variant="secondary"
-                    size="md"
-                    className="bg-gray-700 hover:bg-gray-600 text-white"
-                  >
-                    Export Data
-                  </DynamicButton>
-                </div>
+
+            {/* Content Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {activeTab === 'users' ? 'User Management' : 'Reporter Management'}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {tabs.find(tab => tab.id === activeTab)?.description}
+                </p>
               </div>
+              
+              {/* Action Button - Only show for reporters */}
+              {activeTab === 'reporters' && (
+                <DynamicButton
+                  onClick={handleCreate}
+                  variant="primary"
+                  size="sm"
+                  iconName="add"
+                  iconPosition="left"
+                >
+                  Add Reporter
+                </DynamicButton>
+              )}
             </div>
 
             {/* Data Table Section */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
               {activeTab === 'users' ? (
                 <UserTable
                   users={users}
                   monthId={monthId}
                   isLoading={isLoading}
                   error={error}
-                  className="rounded-xl"
+                  className="rounded-lg"
                 />
               ) : (
                 <ReporterTable
@@ -164,7 +145,7 @@ const AdminManagementPage = () => {
                   monthId={monthId}
                   isLoading={isLoading}
                   error={error}
-                  className="rounded-xl"
+                  className="rounded-lg"
                 />
               )}
             </div>

@@ -2,26 +2,26 @@
 // Centralized button styling and configuration
 
 // ===== BASE CLASSES =====
-export const BUTTON_BASE_CLASSES = "px-4 py-2 inline-flex rounded-lg font-medium shadow-sm !focus:outline-none focus:ring-gray-200 focus:ring-1 focus:ring-offset-0";
+export const BUTTON_BASE_CLASSES = "px-3 py-1.5 inline-flex rounded-md font-medium shadow-sm !focus:outline-none focus:ring-focus focus:ring-1 focus:ring-offset-0";
 
 // ===== VARIANT CLASSES =====
 export const BUTTON_VARIANTS = {
-  PRIMARY: "bg-btn-primary text-gray-200 hover:bg-blue-700 text-white",
-  SECONDARY: "bg-gray-200 text-gray-900",
-  SUCCESS: "bg-green-600 text-gray-200",
-  DANGER: "bg-red-error text-gray-200",
-  WARNING: "bg-yellow-600 text-gray-200",
-  OUTLINE: "border-2 border-gray-300 text-white-dark",
-  EDIT: "bg-blue-600 text-gray-200 shadow-sm",
+  PRIMARY: "bg-btn-primary text-white hover:bg-primary",
+  SECONDARY: "bg-secondary text-white hover:bg-gray-600",
+  SUCCESS: "bg-green-success text-white hover:bg-green-400",
+  DANGER: "bg-red-error text-white hover:bg-red-500",
+  WARNING: "bg-warning text-white hover:bg-btn-warning",
+  OUTLINE: "border-2 border-gray-300 text-white-dark hover:bg-gray-100",
+  EDIT: "bg-blue-default text-white shadow-sm hover:bg-btn-info",
 };
 
 // ===== SIZE CLASSES =====
 export const BUTTON_SIZES = {
   XS: "px-2 py-1 text-xs",
-  SM: "px-3 py-1.5 text-sm",
-  MD: "px-4 py-2.5 text-sm",
-  LG: "px-6 py-3 text-lg !font-medium",
-  XL: "px-8 py-4 text-lg",
+  SM: "px-2.5 py-1 text-xs",
+  MD: "px-3 py-1.5 text-sm",
+  LG: "px-4 py-2 text-base",
+  XL: "px-6 py-3 text-lg",
 };
 
 // ===== STATE CLASSES =====
@@ -45,7 +45,7 @@ export const BUTTON_CONTENT_CLASSES = {
 // ===== DEFAULT VALUES =====
 export const BUTTON_DEFAULTS = {
   VARIANT: "primary",
-  SIZE: "md",
+  SIZE: "sm",
   ICON_POSITION: "left",
   ICON_CATEGORY: "buttons",
   TYPE: "button",

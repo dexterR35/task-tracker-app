@@ -17,31 +17,31 @@ const MarketsCard = ({ tasks = [] }) => {
   }));
 
   return (
-    <div className="card">
-      <div className="mb-4">
-        <h3 className="m-0">Markets Overview</h3>
-        <p className="text-sm text-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-300 dark:border-gray-700">
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white m-0">Markets Overview</h3>
+        <p className="text-xs text-gray-600 dark:text-gray-400">
           {tasks.length} total tasks across {markets.length} markets
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-4 justify-start">
+      <div className="flex flex-wrap gap-2 justify-start">
         {markets.map((market, index) => (
-          <p
+          <div
             key={`market-${index}`}
-            className="card m-0  px-3 py-2 rounded-lg flex items-center space-x-2"
+            className="bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md flex items-center space-x-2"
           >
-            <span className="font-bold uppercase">{market.name}</span>
-            <span className="bg-blue-default text-xs px-2 py-1 rounded-md">
-              {market.count} tasks
+            <span className="font-medium text-xs uppercase text-gray-900 dark:text-white">{market.name}</span>
+            <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">
+              {market.count}
             </span>
-          </p>
+          </div>
         ))}
       </div>
 
       {markets.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-300">No markets found</p>
+        <div className="text-center py-4">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No markets found</p>
         </div>
       )}
     </div>

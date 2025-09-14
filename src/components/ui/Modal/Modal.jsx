@@ -24,7 +24,7 @@ const Modal = ({
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className={`bg-white-dark text-white-dark rounded-lg shadow-xl ${maxWidth} w-full max-h-[90vh] overflow-y-auto ${className}`}>
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+        <div className="flex justify-between items-center p-6 border-b border-gray-300">
           <h2 className="text-xl font-semibold">{title}</h2>
           <DynamicButton
             variant="outline"

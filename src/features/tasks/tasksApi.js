@@ -297,7 +297,7 @@ export const tasksApi = createFirestoreApi({
 
     // Create task with transaction for atomic operations
     createTask: builder.mutation({
-      async queryFn({ task, userData }) {
+      async queryFn({ task, userData, reporters = [] }) {
         try {
           console.log('[tasksApi] createTask called with:', { task, userData });
           const currentUser = getCurrentUserInfo();
@@ -362,6 +362,19 @@ export const tasksApi = createFirestoreApi({
             return acc;
           }, {});
 
+          // Auto-add reporter name if we have reporter ID but no name
+          if (cleanTaskData.reporters && !cleanTaskData.reporterName) {
+            // Use the reporters data passed from the API call
+            const selectedReporter = reporters.find(r => r.id === cleanTaskData.reporters);
+            if (selectedReporter) {
+              cleanTaskData.reporterName = selectedReporter.name || selectedReporter.reporterName || 'Unknown Reporter';
+              logger.log(`Auto-added reporter name: ${cleanTaskData.reporterName} for reporter ID: ${cleanTaskData.reporters}`);
+            } else {
+              logger.warn(`Reporter not found for ID: ${cleanTaskData.reporters} in provided reporters list`);
+              cleanTaskData.reporterName = 'Unknown Reporter';
+            }
+          }
+
           // Create final document data directly
           const documentData = {
             data_task: cleanTaskData,  // Clean task data as object
@@ -417,7 +430,7 @@ export const tasksApi = createFirestoreApi({
 
     // Update task - simple Firestore update
     updateTask: builder.mutation({
-      async queryFn({ monthId, taskId, updates }) {
+      async queryFn({ monthId, taskId, updates, reporters = [] }) {
         try {
           const currentUser = getCurrentUserInfo();
           if (!currentUser) {
@@ -435,6 +448,19 @@ export const tasksApi = createFirestoreApi({
             }
             return acc;
           }, {});
+
+          // Auto-add reporter name if we have reporter ID but no name
+          if (cleanUpdates.reporters && !cleanUpdates.reporterName) {
+            // Use the reporters data passed from the API call
+            const selectedReporter = reporters.find(r => r.id === cleanUpdates.reporters);
+            if (selectedReporter) {
+              cleanUpdates.reporterName = selectedReporter.name || selectedReporter.reporterName || 'Unknown Reporter';
+              logger.log(`Auto-added reporter name: ${cleanUpdates.reporterName} for reporter ID: ${cleanUpdates.reporters}`);
+            } else {
+              logger.warn(`Reporter not found for ID: ${cleanUpdates.reporters} in provided reporters list`);
+              cleanUpdates.reporterName = 'Unknown Reporter';
+            }
+          }
           
           const updatesWithTimestamp = {
             ...cleanUpdates,

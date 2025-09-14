@@ -104,16 +104,15 @@ const ReactHookFormWrapper = ({
   };
 
   // Get form configuration based on type
-  const finalFormConfig = useMemo(() => {
-    if (formType) {
-      const config = FORM_CONFIGS[formType];
-      if (!config) {
-        throw new Error(`Unknown form type: ${formType}. Supported types: task, reporter, login`);
-      }
-      return config;
-    }
-    return formConfig;
-  }, [formType, formConfig]);
+  const finalFormConfig = formType
+    ? (() => {
+        const config = FORM_CONFIGS[formType];
+        if (!config) {
+          throw new Error(`Unknown form type: ${formType}. Supported types: task, reporter, login`);
+        }
+        return config;
+      })()
+    : formConfig;
 
   // API mutations mapping
   const API_MUTATIONS = {
@@ -132,20 +131,20 @@ const ReactHookFormWrapper = ({
   };
 
   // Get API mutations based on form type
-  const finalApiMutations = useMemo(() => {
-    if (customMutations) return customMutations;
-    if (formType) {
-      const mutations = API_MUTATIONS[formType];
-      if (!mutations) {
-        throw new Error(`No API mutations available for form type: ${formType}`);
-      }
-      return mutations;
-    }
-    return apiMutations;
-  }, [formType, customMutations, apiMutations, createTask, updateTask, createReporter, updateReporter, login]);
+  const finalApiMutations = customMutations
+    ? customMutations
+    : formType
+      ? (() => {
+          const mutations = API_MUTATIONS[formType];
+          if (!mutations) {
+            throw new Error(`No API mutations available for form type: ${formType}`);
+          }
+          return mutations;
+        })()
+      : apiMutations;
 
   // Prepare context data based on form type
-  const finalContextData = useMemo(() => {
+  const finalContextData = (() => {
     if (customContextData) return customContextData;
     
     const userData = getUserData(finalUser);
@@ -184,10 +183,10 @@ const ReactHookFormWrapper = ({
     }
     
     return { ...baseContext, ...contextData };
-  }, [formType, finalUser, finalMonthId, customContextData, mode, initialValues, contextData]);
+  })();
 
   // Get initial values
-  const finalInitialValues = useMemo(() => {
+  const finalInitialValues = (() => {
     if (formType === 'reporter') {
       const values = finalFormConfig.getInitialValues(finalUser, initialValues);
       logger.log('📝 Reporter initial values:', values, 'from:', initialValues);
@@ -202,10 +201,10 @@ const ReactHookFormWrapper = ({
       return finalFormConfig.getInitialValues(initialValues);
     }
     return initialValues;
-  }, [formType, finalFormConfig, finalUser, initialValues, mode]);
+  })();
 
   // Get fields with dynamic options
-  const finalFields = useMemo(() => {
+  const finalFields = (() => {
     if (formType === 'task' && finalFormConfig.getFieldsWithOptions) {
       return finalFormConfig.getFieldsWithOptions(finalReporters);
     }
@@ -213,10 +212,10 @@ const ReactHookFormWrapper = ({
       return finalFormConfig.fields;
     }
     return fields;
-  }, [formType, finalFormConfig, finalReporters, fields]);
+  })();
 
-  // Get form title and submit button text (memoized)
-  const { formTitle, finalSubmitButtonText } = useMemo(() => {
+  // Get form title and submit button text
+  const { formTitle, finalSubmitButtonText } = (() => {
     if (formType) {
       const metadata = getFormMetadata(formType, mode, FORM_METADATA);
       return {
@@ -228,7 +227,7 @@ const ReactHookFormWrapper = ({
       formTitle: null,
       finalSubmitButtonText: submitButtonText
     };
-  }, [formType, mode, submitButtonText]);
+  })();
 
   // Auto-generate validation schema if not provided - optimized for React Hook Form
   const finalValidationSchema = useMemo(() => {
@@ -323,9 +322,6 @@ const ReactHookFormWrapper = ({
 
       // Prepare form data for database
       const dataForDatabase = prepareFormData(data, finalFields, finalFormConfig, formType || entityType, mode, finalContextData);
-      console.log('💾 Final Data for Database:', dataForDatabase);
-      console.log('💾 Form Data (raw):', data);
-      console.log('💾 Context Data:', finalContextData);
       logger.log('💾 Final Data for Database:', dataForDatabase);
       logger.log('💾 Form Data (raw):', data);
       logger.log('💾 Context Data:', finalContextData);
@@ -345,7 +341,8 @@ const ReactHookFormWrapper = ({
           mutationData = {
             monthId: finalContextData.monthId,
             taskId: finalContextData.taskId || finalContextData.id,
-            updates: dataForDatabase
+            updates: dataForDatabase,
+            reporters: finalReporters
           };
         }
         
@@ -372,7 +369,8 @@ const ReactHookFormWrapper = ({
           } else {
             mutationData = {
               task: dataForDatabase,
-              userData: finalContextData.user
+              userData: finalContextData.user,
+              reporters: finalReporters
             };
           }
           result = await executeMutation(createMutation, mutationData);

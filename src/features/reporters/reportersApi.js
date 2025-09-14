@@ -1,4 +1,11 @@
-import { createFirestoreApi, fetchCollectionFromFirestore, createDocumentInFirestore, updateDocumentInFirestore, deleteDocumentFromFirestore, serializeTimestampsForRedux } from "@/features/api/baseApi";
+import {
+  createFirestoreApi,
+  fetchCollectionFromFirestore,
+  createDocumentInFirestore,
+  updateDocumentInFirestore,
+  deleteDocumentFromFirestore,
+  serializeTimestampsForRedux,
+} from "@/features/api/baseApi";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 
@@ -17,13 +24,20 @@ export const reportersApi = createFirestoreApi({
       async queryFn() {
         try {
           logger.log(`[Reporters API] Starting to fetch reporters...`);
-          const reporters = await fetchCollectionFromFirestore(db, "reporters", {
-            orderBy: "createdAt",
-            orderDirection: "desc"
-          });
-          
-          logger.log(`[Reporters API] Fetched ${reporters.length} reporters:`, reporters.map(r => ({ id: r.id, name: r.name })));
-          
+          const reporters = await fetchCollectionFromFirestore(
+            db,
+            "reporters",
+            {
+              orderBy: "createdAt",
+              orderDirection: "desc",
+            }
+          );
+
+          logger.log(
+            `[Reporters API] Fetched ${reporters.length} reporters:`,
+            reporters.map((r) => ({ id: r.id, name: r.name }))
+          );
+
           // Serialize timestamps for Redux
           const serializedReporters = serializeTimestampsForRedux(reporters);
           return { data: serializedReporters };
@@ -32,7 +46,7 @@ export const reportersApi = createFirestoreApi({
           throw error; // Let base API handle the error
         }
       },
-      providesTags: ["Reporter"]
+      providesTags: ["Reporter"],
     }),
 
     // Create reporter
@@ -41,37 +55,47 @@ export const reportersApi = createFirestoreApi({
         try {
           logger.log(`[Reporters API] Creating reporter:`, reporter);
           logger.log(`[Reporters API] User data:`, userData);
-          
+
           // Clean the reporter data - remove any undefined fields
           const cleanReporterData = Object.fromEntries(
             Object.entries(reporter).filter(([_, value]) => value !== undefined)
           );
-          
+
           // Generate reporterUID from the document ID
-          const createdReporter = await createDocumentInFirestore(db, "reporters", {
-            ...cleanReporterData,
-            reporterUID: null, // Will be set after creation
-            createdBy: userData?.userUID || userData?.uid || 'unknown',
-            createdByName: userData?.name || userData?.email || 'Unknown User'
-          }, {
-            addMetadata: false // Don't add updatedAt field
-          });
-          
-          // Update with the generated reporterUID
-          const updatedReporter = await updateDocumentInFirestore(
-            db, 
-            "reporters", 
-            createdReporter.id, 
-            { reporterUID: createdReporter.id },
+          const createdReporter = await createDocumentInFirestore(
+            db,
+            "reporters",
             {
-              addMetadata: false // Don't add updatedAt field
+              ...cleanReporterData,
+              reporterUID: null, // Will be set after creation
+              createdBy: userData?.userUID || userData?.uid || "unknown",
+              createdByName:
+                userData?.name || userData?.email || "Unknown User",
+            },
+            {
+              addMetadata: false, // Don't add updatedAt field
             }
           );
-          
-          logger.log(`[Reporters API] Reporter created successfully:`, updatedReporter);
-          
+
+          // Update with the generated reporterUID
+          const updatedReporter = await updateDocumentInFirestore(
+            db,
+            "reporters",
+            createdReporter.id,
+            { reporterUID: createdReporter.id },
+            {
+              addMetadata: false, // Don't add updatedAt field
+            }
+          );
+
+          logger.log(
+            `[Reporters API] Reporter created successfully:`,
+            updatedReporter
+          );
+
           // Serialize timestamps for Redux
-          const serializedReporter = serializeTimestampsForRedux(updatedReporter);
+          const serializedReporter =
+            serializeTimestampsForRedux(updatedReporter);
           return { data: serializedReporter };
         } catch (error) {
           logger.error(`[Reporters API] Error creating reporter:`, error);
@@ -90,8 +114,10 @@ export const reportersApi = createFirestoreApi({
               id: tempId, // Temporary ID
               reporterUID: tempId, // Same temporary ID
               ...arg.reporter,
-              createdBy: arg.userData?.userUID || arg.userData?.uid || 'unknown',
-              createdByName: arg.userData?.name || arg.userData?.email || 'Unknown User',
+              createdBy:
+                arg.userData?.userUID || arg.userData?.uid || "unknown",
+              createdByName:
+                arg.userData?.name || arg.userData?.email || "Unknown User",
               createdAt: now,
             });
           })
@@ -101,7 +127,7 @@ export const reportersApi = createFirestoreApi({
         } catch {
           patchResult.undo();
         }
-      }
+      },
     }),
 
     // Update reporter
@@ -109,15 +135,25 @@ export const reportersApi = createFirestoreApi({
       async queryFn({ id, updates }) {
         try {
           logger.log(`[Reporters API] Updating reporter ${id}:`, updates);
-          
-          const updatedReporter = await updateDocumentInFirestore(db, "reporters", id, updates, {
-            addMetadata: false // Don't add updatedAt field
-          });
-          
-          logger.log(`[Reporters API] Reporter updated successfully:`, updatedReporter);
-          
+
+          const updatedReporter = await updateDocumentInFirestore(
+            db,
+            "reporters",
+            id,
+            updates,
+            {
+              addMetadata: false, // Don't add updatedAt field
+            }
+          );
+
+          logger.log(
+            `[Reporters API] Reporter updated successfully:`,
+            updatedReporter
+          );
+
           // Serialize timestamps for Redux
-          const serializedReporter = serializeTimestampsForRedux(updatedReporter);
+          const serializedReporter =
+            serializeTimestampsForRedux(updatedReporter);
           return { data: serializedReporter };
         } catch (error) {
           logger.error(`[Reporters API] Error updating reporter:`, error);
@@ -129,7 +165,7 @@ export const reportersApi = createFirestoreApi({
       onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
         const patchResult = dispatch(
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const reporter = draft.find(r => r.id === arg.id);
+            const reporter = draft.find((r) => r.id === arg.id);
             if (reporter) {
               Object.assign(reporter, arg.updates);
             }
@@ -140,7 +176,7 @@ export const reportersApi = createFirestoreApi({
         } catch {
           patchResult.undo();
         }
-      }
+      },
     }),
 
     // Delete reporter
@@ -148,9 +184,9 @@ export const reportersApi = createFirestoreApi({
       async queryFn(id) {
         try {
           logger.log(`[Reporters API] Deleting reporter ${id}`);
-          
+
           const result = await deleteDocumentFromFirestore(db, "reporters", id);
-          
+
           logger.log(`[Reporters API] Reporter deleted successfully:`, result);
           return { data: result };
         } catch (error) {
@@ -163,7 +199,7 @@ export const reportersApi = createFirestoreApi({
       onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
         const patchResult = dispatch(
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const index = draft.findIndex(reporter => reporter.id === arg);
+            const index = draft.findIndex((reporter) => reporter.id === arg);
             if (index !== -1) {
               draft.splice(index, 1);
             }
@@ -174,9 +210,9 @@ export const reportersApi = createFirestoreApi({
         } catch {
           patchResult.undo();
         }
-      }
-    })
-  })
+      },
+    }),
+  }),
 });
 
 export const {

@@ -7,7 +7,7 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { lazy, Suspense, useMemo, useEffect } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { isUserAuthenticated, isAuthLoading } from "@/utils/authUtils";

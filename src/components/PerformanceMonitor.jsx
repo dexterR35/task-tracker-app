@@ -106,9 +106,9 @@ const PerformanceMonitor = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm z-50">
+    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm z-50">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-300">
           Performance Monitor
         </h3>
         <button
@@ -174,7 +174,7 @@ const PerformanceMonitor = () => {
         </div>
       </div>
       
-      <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-3 pt-2 border-t border-gray-300 dark:border-gray-700">
         <button
           onClick={() => {
             localStorage.setItem('showPerformanceMonitor', 'false');

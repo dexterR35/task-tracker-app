@@ -141,7 +141,7 @@ const ReduxDebugger = () => {
       </div>
       
       {isExpanded && (
-        <div className="px-3 pb-3 border-t border-gray-200 dark:border-gray-600">
+        <div className="px-3 pb-3 border-t border-gray-300 dark:border-gray-600">
           <div className="text-xs space-y-2 text-gray-700 dark:text-gray-300">
             <div>
               <strong>👤 User:</strong> {user?.name || 'Not logged in'}
@@ -156,7 +156,7 @@ const ReduxDebugger = () => {
               <strong>⏰ Last Checked:</strong> {currentTime}
             </div>
             
-            <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+            <div className="border-t border-gray-300 dark:border-gray-600 pt-2">
               <strong>📊 Data Summary:</strong>
             </div>
             <div>
@@ -169,7 +169,7 @@ const ReduxDebugger = () => {
               <strong>✅ Tasks:</strong> {tasks.length} {loading.tasks && '⏳'}
             </div>
             
-            <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+            <div className="border-t border-gray-300 dark:border-gray-600 pt-2">
               <strong>🔧 API Cache:</strong>
             </div>
             <div>
@@ -182,7 +182,7 @@ const ReduxDebugger = () => {
               <strong>Tasks Queries:</strong> {apiCacheInfo.tasksQueries}
             </div>
             
-            <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+            <div className="border-t border-gray-300 dark:border-gray-600 pt-2">
               <strong>🔍 Debug Info:</strong>
             </div>
             <div className="text-xs">

@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { useGetUsersQuery, useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
 import { 
@@ -38,7 +38,7 @@ export const useUserData = () => {
     { skip: !userIsAdmin } // Only fetch for admin users
   );
   
-  return useMemo(() => ({
+  return {
     user,
     userData,
     allUsers,
@@ -46,7 +46,7 @@ export const useUserData = () => {
     userIsAdmin,
     isLoading: userLoading || usersLoading,
     error: userError || usersError
-  }), [user, userData, allUsers, userUID, userIsAdmin, userLoading, usersLoading, userError, usersError]);
+  };
 };
 
 // Hook for components that need month selection with task data fetching
@@ -57,12 +57,12 @@ export const useMonthSelectionWithTasks = () => {
   const userData = useUserData();
   const [selectedMonthId, setSelectedMonthId] = useState(null);
   
-  // Memoize query parameters to prevent unnecessary re-renders
-  const currentMonthQueryParams = useMemo(() => ({
+  // Query parameters for current month
+  const currentMonthQueryParams = {
     userId: userIsAdmin ? undefined : userUID,
     role: userIsAdmin ? 'admin' : 'user',
     userData: user
-  }), [userIsAdmin, userUID, user]);
+  };
   
   // Fetch current month data with tasks
   const { 
@@ -77,30 +77,48 @@ export const useMonthSelectionWithTasks = () => {
   );
   
   // Extract month data
-  const monthData = useMemo(() => {
-    const { 
-      currentMonth = {}, 
-      availableMonths = [], 
-      boardExists = false,
-      currentMonthTasks = []
-    } = currentMonthData;
-    
-    const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
-    
-    return {
-      currentMonth,
-      availableMonths,
-      boardExists,
-      currentMonthTasks,
-      monthId,
-      monthName,
-      daysInMonth,
-      startDate,
-      endDate,
-      isLoading: currentMonthLoading,
-      error: currentMonthError
-    };
-  }, [currentMonthData, currentMonthLoading, currentMonthError]);
+  const { 
+    currentMonth = {}, 
+    availableMonths: rawAvailableMonths = [], 
+    boardExists = false,
+    currentMonthTasks = []
+  } = currentMonthData;
+  
+  const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
+  
+  // Get all available months for dropdown first
+  const months = [...rawAvailableMonths];
+  
+  // Ensure current month is included
+  if (monthId && !months.find(m => m.monthId === monthId)) {
+    months.unshift({
+      monthId: monthId,
+      monthName: monthName,
+      isCurrent: true,
+      boardExists: boardExists
+    });
+  }
+  
+  const availableMonths = months.sort((a, b) => {
+    // Current month first, then by monthId (newest first)
+    if (a.isCurrent) return -1;
+    if (b.isCurrent) return 1;
+    return b.monthId.localeCompare(a.monthId);
+  });
+  
+  const monthData = {
+    currentMonth,
+    availableMonths: rawAvailableMonths,
+    boardExists,
+    currentMonthTasks,
+    monthId,
+    monthName,
+    daysInMonth,
+    startDate,
+    endDate,
+    isLoading: currentMonthLoading,
+    error: currentMonthError
+  };
   
   // Fetch selected month tasks when a different month is selected (on-demand)
   const shouldFetchSelectedMonth = selectedMonthId && 
@@ -126,70 +144,35 @@ export const useMonthSelectionWithTasks = () => {
     { skip: !shouldFetchSelectedMonth }
   );
   
-  // Get all available months for dropdown
-  const availableMonths = useMemo(() => {
-    const months = [...monthData.availableMonths];
-    
-    // Ensure current month is included
-    if (monthData.monthId && !months.find(m => m.monthId === monthData.monthId)) {
-      months.unshift({
-        monthId: monthData.monthId,
-        monthName: monthData.monthName,
-        isCurrent: true,
-        boardExists: monthData.boardExists
-      });
-    }
-    
-    return months.sort((a, b) => {
-      // Current month first, then by monthId (newest first)
-      if (a.isCurrent) return -1;
-      if (b.isCurrent) return 1;
-      return b.monthId.localeCompare(a.monthId);
-    });
-  }, [monthData.availableMonths, monthData.monthId, monthData.monthName, monthData.boardExists]);
   
   // Get tasks for display (current month or selected month)
-  const displayTasks = useMemo(() => {
-    if (selectedMonthId && selectedMonthId !== monthData.monthId) {
-      // Show selected month tasks (on-demand fetch with real-time listener)
-      return selectedMonthTasks;
-    } else {
-      // Show current month tasks (from getCurrentMonth query with real-time listener)
-      return monthData.currentMonthTasks || [];
-    }
-  }, [
-    selectedMonthId, 
-    monthData.monthId, 
-    // Use stable task IDs instead of array length for better performance
-    selectedMonthTasks.map(task => task.id).join(','),
-    (monthData.currentMonthTasks || []).map(task => task.id).join(',')
-  ]);
+  const displayTasks = selectedMonthId && selectedMonthId !== monthData.monthId
+    ? selectedMonthTasks
+    : (monthData.currentMonthTasks || []);
   
   // Removed logging useEffect to prevent unnecessary re-renders
   // The logging was causing frequent re-renders due to array length dependencies
   
   // Get current month info
-  const currentMonthInfo = useMemo(() => ({
+  const currentMonthInfo = {
     monthId: monthData.monthId,
     monthName: monthData.monthName,
     boardExists: monthData.boardExists,
     isCurrent: true
-  }), [monthData]);
+  };
   
   // Get selected month info
-  const selectedMonthInfo = useMemo(() => {
-    if (!selectedMonthId || selectedMonthId === monthData.monthId) {
-      return currentMonthInfo;
-    }
-    
-    const month = availableMonths.find(m => m.monthId === selectedMonthId);
-    return month ? {
-      monthId: month.monthId,
-      monthName: month.monthName,
-      boardExists: month.boardExists,
-      isCurrent: false
-    } : null;
-  }, [selectedMonthId, monthData.monthId, availableMonths, currentMonthInfo]);
+  const selectedMonthInfo = !selectedMonthId || selectedMonthId === monthData.monthId
+    ? currentMonthInfo
+    : (() => {
+        const month = availableMonths.find(m => m.monthId === selectedMonthId);
+        return month ? {
+          monthId: month.monthId,
+          monthName: month.monthName,
+          boardExists: month.boardExists,
+          isCurrent: false
+        } : null;
+      })();
   
   // Helper functions
   const selectMonth = useCallback((monthId) => {
@@ -275,77 +258,48 @@ export const useAppData = () => {
   const isLoading = userData.isLoading || reportersLoading || monthData.isLoading;
   
   
-  // Memoize expensive operations to prevent unnecessary re-renders
-  const memoizedStartDate = useMemo(() => 
-    monthData.startDate ? new Date(monthData.startDate) : null, 
-    [monthData.startDate]
-  );
-  
-  const memoizedEndDate = useMemo(() => 
-    monthData.endDate ? new Date(monthData.endDate) : null, 
-    [monthData.endDate]
-  );
+  // Date objects
+  const memoizedStartDate = monthData.startDate ? new Date(monthData.startDate) : null;
+  const memoizedEndDate = monthData.endDate ? new Date(monthData.endDate) : null;
 
-  // Memoize the return object to prevent unnecessary re-renders
-  return useMemo(() => {
-    const baseData = {
-      // Task mutations - available to all users
-      createTask,
-      updateTask,
-      deleteTask,
-      
-      // Common data
-      reporters: reporters || [],
-      tasks: tasksData || [],
-      isLoading,
-      error,
-      
-      // Month data (from consolidated hook)
-      monthId: monthData.monthId,
-      monthName: monthData.monthName,
-      daysInMonth: monthData.daysInMonth,
-      startDate: memoizedStartDate,
-      endDate: memoizedEndDate,
-      boardExists: monthData.boardExists,
-      availableMonths: monthData.availableMonths || []
-    };
-    
-    if (userData.userIsAdmin) {
-      return {
-        ...baseData,
-        // Admin gets everything
-        user: userData.user, // Current user info from auth
-        users: userData.allUsers || [], // All users for management
-        isAdmin: true
-      };
-    } else {
-      return {
-        ...baseData,
-        // Regular user gets only their data
-        user: userData.userData, // Their user data from database
-        users: [], // Empty for regular users
-        isAdmin: false
-      };
-    }
-  }, [
-    userData.userIsAdmin,
-    userData.user,
-    userData.userData,
-    userData.allUsers,
-    reporters,
-    tasksData,
-    isLoading,
-    error,
-    monthData.monthId,
-    monthData.monthName,
-    monthData.daysInMonth,
-    memoizedStartDate,
-    memoizedEndDate,
-    monthData.boardExists,
-    monthData.availableMonths,
-    // Task mutations are stable references from RTK Query
+  // Return the data object
+  const baseData = {
+    // Task mutations - available to all users
     createTask,
     updateTask,
-    deleteTask
-  ]);
+    deleteTask,
+    
+    // Common data
+    reporters: reporters || [],
+    tasks: tasksData || [],
+    isLoading,
+    error,
+    
+    // Month data (from consolidated hook)
+    monthId: monthData.monthId,
+    monthName: monthData.monthName,
+    daysInMonth: monthData.daysInMonth,
+    startDate: memoizedStartDate,
+    endDate: memoizedEndDate,
+    boardExists: monthData.boardExists,
+    availableMonths: monthData.availableMonths || []
+  };
+  
+  if (userData.userIsAdmin) {
+    return {
+      ...baseData,
+      // Admin gets everything
+      user: userData.user, // Current user info from auth
+      users: userData.allUsers || [], // All users for management
+      isAdmin: true
+    };
+  } else {
+    return {
+      ...baseData,
+      // Regular user gets only their data
+      user: userData.userData, // Their user data from database
+      users: [], // Empty for regular users
+      isAdmin: false
+    };
+  }
 };
