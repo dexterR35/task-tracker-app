@@ -118,6 +118,16 @@ const ReactHookFormWrapper = ({
   const finalApiMutations = customMutations || (finalFormConfig?.getApiMutations 
     ? finalFormConfig.getApiMutations(appData, createReporter, updateReporter, login)
     : apiMutations);
+  
+  // Debug logging
+  console.log('🔍 Form Debug Info:', {
+    formType,
+    finalFormConfig: finalFormConfig ? 'Present' : 'Missing',
+    finalApiMutations,
+    login: login ? 'Present' : 'Missing/Null',
+    createReporter: createReporter ? 'Present' : 'Missing/Null',
+    updateReporter: updateReporter ? 'Present' : 'Missing/Null'
+  });
 
   // Get context data from form config
   const finalContextData = customContextData || (finalFormConfig?.getContextData
@@ -269,15 +279,33 @@ const ReactHookFormWrapper = ({
         logger.log('✅ Update Result:', result);
         showSuccess(finalFormConfig.successMessages?.update || `${formType || entityType} updated successfully!`);
       } else {
-        // Create new record
-        const createMutation = getMutation(finalApiMutations, 'create');
-        const mutationData = formType === 'login' 
-          ? data // Login uses raw form data
-          : formType === 'reporter' 
+        // Handle different form types
+        if (formType === 'login') {
+          // Login uses the login function directly
+          const loginFunction = finalApiMutations.create;
+          console.log('🔐 Login Debug:', {
+            loginFunction: loginFunction ? 'Present' : 'Missing/Null',
+            loginData: data
+          });
+          result = await executeMutation(loginFunction, data);
+        } else {
+          // Create new record for other forms
+          const createMutation = getMutation(finalApiMutations, 'create');
+          const mutationData = formType === 'reporter' 
             ? { reporter: dataForDatabase, userData: finalContextData.user }
             : { task: dataForDatabase, userData: finalContextData.user, reporters: finalReporters };
+          
+          // Debug logging for form submission
+          console.log('🚀 Form Submission Debug:', {
+            formType,
+            createMutation: createMutation ? 'Present' : 'Missing/Null',
+            mutationData,
+            finalApiMutations
+          });
+          
+          result = await executeMutation(createMutation, mutationData);
+        }
         
-        result = await executeMutation(createMutation, mutationData);
         showSuccess(finalFormConfig.successMessages?.create || `${formType || entityType} created successfully!`);
       }
 

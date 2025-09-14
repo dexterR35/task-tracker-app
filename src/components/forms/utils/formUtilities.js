@@ -23,10 +23,10 @@ export const prepareFormData = (data, fields, formConfig, entityType, mode, cont
   // Apply business logic processing (React Hook Form + Yup handle validation/sanitization)
   const processedData = entityType === 'task' && formConfig.prepareTaskFormData
     ? formConfig.prepareTaskFormData(data)
-    : data;
+    : data || {};
   
   // Prepare data for database (exclude user object from contextData)
-  const { user, ...contextDataWithoutUser } = contextData;
+  const { user, ...contextDataWithoutUser } = contextData || {};
   const dataForDatabase = {
     ...processedData,
     ...contextDataWithoutUser

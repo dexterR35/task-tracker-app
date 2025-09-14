@@ -226,10 +226,8 @@ export const prepareTaskFormData = (formData) => {
   }
   
   if (!formData._usedAIEnabled) {
-    formData.usedAI = {
-      aiModels: [],
-      aiTime: null
-    };
+    formData.aiModels = [];
+    formData.aiTime = null;
   }
   
   // Remove UI-only fields after processing
@@ -535,7 +533,7 @@ export const REPORTER_FORM_CONFIG = {
     }
     return REPORTER_FORM_CONFIG.initialValues;
   },
-  getApiMutations: (appData, createReporter, updateReporter) => ({
+  getApiMutations: (appData, createReporter, updateReporter, login) => ({
     create: createReporter,
     update: updateReporter
   }),
@@ -571,7 +569,7 @@ export const LOGIN_FORM_CONFIG = {
     default: ERROR_MESSAGES.LOGIN_FAILED
   },
   getInitialValues: () => LOGIN_FORM_CONFIG.initialValues,
-  getApiMutations: (appData, login) => ({
+  getApiMutations: (appData, createReporter, updateReporter, login) => ({
     create: login,
     update: null
   }),
