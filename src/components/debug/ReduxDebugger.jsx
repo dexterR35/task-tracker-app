@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
-import { useGetCurrentMonthQuery } from '@/features/tasks/tasksApi';
+import { useAppData } from '@/hooks/useAppData';
 import MonthBoardDebugger from './MonthBoardDebugger';
 // currentMonthSlice removed - boardExists now comes from tasksApi
 // useMonthData removed - month data now comes from useAppData
@@ -109,10 +109,8 @@ const ReduxDebugger = () => {
   const user = useSelector(state => state.auth.user);
   const isAuthChecking = useSelector(state => state.auth.isAuthChecking);
   
-  // Get month data from enhanced getCurrentMonth endpoint
-  const { data: currentMonthData = {} } = useGetCurrentMonthQuery();
-  const { currentMonth = {}, boardExists = false } = currentMonthData;
-  const { monthId, monthName } = currentMonth;
+  // Get month data from useAppData (no duplicate API call)
+  const { monthId, monthName, boardExists } = useAppData();
   
   // Get data using memoized selectors
   const users = useSelector(selectUsersForDebug);

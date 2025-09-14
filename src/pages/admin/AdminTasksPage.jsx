@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppDataContext } from "@/components/layout/AuthLayout";
 import AdminPageHeader from "@/components/layout/AdminPageHeader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useGetMonthTasksQuery } from "@/features/tasks/tasksApi";
+import { useMonthSelectionWithTasks } from "@/hooks/useAppData";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Modal from "@/components/ui/Modal/Modal";
 import LazyTaskTable from "@/components/lazy/LazyTaskTable";
@@ -17,58 +17,36 @@ const AdminTasksPage = () => {
     user,
     users,
     reporters,
-    tasks, // Get tasks from context
-    error,
-    monthId: currentMonthId,
-    monthName: currentMonthName,
-    boardExists,
-    availableMonths
+    error
   } = useAppDataContext();
   
   // Get auth functions separately
   const { canAccess } = useAuth();
   
-  // State for month selection - always default to current month
-  const [selectedMonthId, setSelectedMonthId] = useState('');
+  // Use smart month selection with task fetching
+  const {
+    tasks,                    // Current display tasks (current or selected month)
+    currentMonthTasks,       // Current month tasks
+    availableMonths,         // For dropdown options
+    currentMonth,            // Current month info
+    selectedMonth,           // Selected month info
+    isCurrentMonth,          // Boolean check
+    isLoading,               // Loading state for selected month
+    error: monthError,       // Error state
+    selectMonth,             // Function to select month
+    resetToCurrentMonth      // Function to reset
+  } = useMonthSelectionWithTasks();
+  
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
-
-  // Auto-select current month when data becomes available
-  useEffect(() => {
-    if (currentMonthId && !selectedMonthId) {
-      setSelectedMonthId(currentMonthId);
-    }
-  }, [currentMonthId, selectedMonthId]);
-
-  // Always fetch tasks for the selected month (or current month if none selected)
-  const targetMonthId = selectedMonthId || currentMonthId;
-  
-  const { 
-    data: selectedMonthTasks = [], 
-    isLoading: isLoadingSelectedTasks, 
-    error: selectedMonthTasksError 
-  } = useGetMonthTasksQuery(
-    { 
-      monthId: targetMonthId || '', 
-      userId: undefined, // Admin gets all tasks
-      role: 'admin',
-      userData: user
-    },
-    { skip: !targetMonthId || !user }
-  );
 
 
   const isUserAdmin = canAccess("admin");
   const selectedUserId = searchParams.get("user") || "";
   
-  // Optimized task data logic - reduce hooks
-  const isCurrentMonth = selectedMonthId === currentMonthId || !selectedMonthId;
-  const canCreateTasks = isCurrentMonth && boardExists;
-  
-  // Use current month tasks from context, or fetched tasks for other months
-  const displayTasks = isCurrentMonth ? tasks : selectedMonthTasks;
-  const showMonthLoading = isLoadingSelectedTasks && !isCurrentMonth;
+  // Task creation is only allowed for current month
+  const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
 
   // Get selected user name for display - memoized
   const selectedUser = useMemo(() => 
@@ -89,45 +67,18 @@ const AdminTasksPage = () => {
     }
   }, [setSearchParams]);
 
-  // Handle month selection - memoized with useCallback
-  const handleMonthSelect = useCallback((monthId) => {
-    setSelectedMonthId(monthId);
-  }, []);
-
-  // Reset to current month - memoized with useCallback
-  const handleResetToCurrentMonth = useCallback(() => {
-    setSelectedMonthId(currentMonthId);
-  }, [currentMonthId]);
-
-  // Get display name for selected month
-  const selectedMonthName = isCurrentMonth 
-    ? currentMonthName 
-    : availableMonths.find(m => m.monthId === selectedMonthId)?.monthName || currentMonthName;
-
-  // Memoize sorted months for better performance
-  const sortedMonths = useMemo(() => {
-    return [...availableMonths].sort((a, b) => {
-      // Current month first, then by monthId (newest first)
-      if (a.isCurrent) return -1;
-      if (b.isCurrent) return 1;
-      return b.monthId.localeCompare(a.monthId);
-    });
-  }, [availableMonths]);
-  
-  // Data source: useAppData for current month, empty array for other months
-
   // Filter tasks based on selected user (admin only) - optimized with useMemo
   const filteredTasks = useMemo(() => {
-    if (!isUserAdmin || !selectedUserId) return displayTasks;
+    if (!isUserAdmin || !selectedUserId) return tasks;
 
-    const filtered = displayTasks.filter(
+    const filtered = tasks.filter(
       (task) =>
         task.userUID === selectedUserId ||
         task.createdByUID === selectedUserId // Fallback for old tasks
     );
     
     return filtered;
-  }, [displayTasks, isUserAdmin, selectedUserId]);
+  }, [tasks, isUserAdmin, selectedUserId]);
 
   // Derive title based on context - memoized
   const title = useMemo(() => {
@@ -137,10 +88,10 @@ const AdminTasksPage = () => {
     return "All Tasks - All Users";
   }, [isUserAdmin, selectedUserId, selectedUserName]);
 
-  if (error || selectedMonthTasksError) {
+  if (error || monthError) {
     return (
       <div className=" mx-auto px-4 py-6 text-center text-red-error">
-        Error loading tasks: {(error || selectedMonthTasksError)?.message || "Unknown error"}
+        Error loading tasks: {(error || monthError)?.message || "Unknown error"}
       </div>
     );
   }
@@ -159,7 +110,7 @@ const AdminTasksPage = () => {
     <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
       <div className="text-white text-sm font-medium">Tasks Count</div>
       <div className="text-green-200 text-2xl font-bold">{filteredTasks.length}</div>
-      {!isCurrentMonth && selectedMonthId && (
+      {!isCurrentMonth && selectedMonth && (
         <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-yellow-900/20 border border-yellow-500/30">
           <span className="text-yellow-400 text-xs font-medium">📅 Historical Data</span>
         </div>
@@ -171,7 +122,7 @@ const AdminTasksPage = () => {
     <div className="min-h-screen bg-gray-900">
       <AdminPageHeader
         title="Task Management"
-        subtitle={`${title} - ${selectedMonthName}`}
+        subtitle={`${title} - ${selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}`}
         icon="tasks"
         gradient="from-green-900 via-emerald-900 to-teal-900"
         rightContent={rightContent}
@@ -189,13 +140,13 @@ const AdminTasksPage = () => {
               <div className="flex gap-2">
                 <select
                   id="selectedMonth"
-                  value={selectedMonthId || currentMonthId || ''}
+                  value={selectedMonth?.monthId || currentMonth?.monthId || ''}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   onChange={(e) => {
-                    handleMonthSelect(e.target.value);
+                    selectMonth(e.target.value);
                   }}
                 >
-                  {sortedMonths.map((month) => (
+                  {availableMonths.map((month) => (
                     <option
                       key={month.monthId}
                       value={month.monthId}
@@ -206,7 +157,7 @@ const AdminTasksPage = () => {
                 </select>
                 {!isCurrentMonth && (
                   <DynamicButton
-                    onClick={handleResetToCurrentMonth}
+                    onClick={resetToCurrentMonth}
                     variant="outline"
                     size="sm"
                     title="Reset to current month"
@@ -265,7 +216,7 @@ const AdminTasksPage = () => {
                 iconName="add"
                 iconPosition="left"
                 disabled={!canCreateTasks}
-                title={!isCurrentMonth ? "Task creation only available for current month" : !boardExists ? "Month board not available" : ""}
+                title={!isCurrentMonth ? "Task creation only available for current month" : !currentMonth.boardExists ? "Month board not available" : ""}
                 className="w-full shadow-lg"
               >
                 Create Task
@@ -286,7 +237,7 @@ const AdminTasksPage = () => {
                     : "All Tasks"}
                 </h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  {filteredTasks.length} tasks for {selectedMonthName}
+                  {filteredTasks.length} tasks for {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
               </div>
               <div className="flex items-center space-x-3">
@@ -313,7 +264,7 @@ const AdminTasksPage = () => {
           {/* Table Content */}
           <div className="p-6">
             {showTable && (
-              showMonthLoading ? (
+              isLoading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="text-center">
                     <Loader size="lg" text="Loading tasks for selected month..." />
@@ -325,7 +276,7 @@ const AdminTasksPage = () => {
                   users={users}
                   reporters={reporters}
                   user={user}
-                  monthId={selectedMonthId}
+                  monthId={selectedMonth?.monthId || currentMonth?.monthId}
                   isAdminView={isUserAdmin}
                 />
               )
@@ -344,7 +295,7 @@ const AdminTasksPage = () => {
             formType="task"
             mode="create"
             user={user}
-            monthId={selectedMonthId}
+            monthId={selectedMonth?.monthId || currentMonth?.monthId}
             reporters={reporters}
             onSuccess={() => {
               setShowCreateModal(false);
