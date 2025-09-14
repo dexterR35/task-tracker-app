@@ -20,13 +20,20 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
     chunkSizeWarningLimit: 5000,
     minify: 'esbuild',
     sourcemap: false,
     rollupOptions: {
       output: {
-        // Temporarily disable manual chunking to isolate React error
-        // manualChunks: undefined,
+        // Ensure proper chunking for better loading
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          redux: ['@reduxjs/toolkit', 'react-redux'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+        },
         
         // Optimize font loading
         assetFileNames: (assetInfo) => {
@@ -35,6 +42,10 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
+        
+        // Ensure proper JS file naming
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
       },
     },
     // Optimize CSS
