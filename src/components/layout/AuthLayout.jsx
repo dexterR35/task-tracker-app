@@ -30,14 +30,8 @@ const AuthLayout = () => {
   // Get all data from useAppData hook (includes month data + app data)
   const appData = useAppData();
   
-  // Define admin-only routes
-  const adminRoutes = ['/analytics', '/users', '/tasks', '/debug', '/preview'];
-  const isAdminRoute = adminRoutes.some(route => location.pathname.startsWith(route));
-  
-  // Check if user has admin access for admin routes
-  if (isAdminRoute && !canAccess('admin')) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+  // Admin route protection is handled by router level
+  // No need to check admin access here since router already handles it
   
   // Extract what we need for AuthLayout UI and month board generation
   const { monthId, monthName, boardExists, startDate, endDate, daysInMonth, isLoading } = appData;

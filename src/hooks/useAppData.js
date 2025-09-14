@@ -1,6 +1,5 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { useGetUsersQuery } from "@/features/users/usersApi";
-import { useGetUserByUIDQuery } from "@/features/users/usersApi";
+import { useGetUsersQuery, useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
 import { useGetMonthTasksQuery, useGetCurrentMonthQuery } from "@/features/tasks/tasksApi";
 import { useAuth } from "@/features/auth/hooks/useAuth";
@@ -52,17 +51,20 @@ export const useMonthSelectionWithTasks = () => {
   const userData = useUserData();
   const [selectedMonthId, setSelectedMonthId] = useState(null);
   
+  // Memoize query parameters to prevent unnecessary re-renders
+  const currentMonthQueryParams = useMemo(() => ({
+    userId: userIsAdmin ? undefined : userUID,
+    role: userIsAdmin ? 'admin' : 'user',
+    userData: user
+  }), [userIsAdmin, userUID, user]);
+  
   // Fetch current month data with tasks
   const { 
     data: currentMonthData = {}, 
     isLoading: currentMonthLoading, 
     error: currentMonthError 
   } = useGetCurrentMonthQuery(
-    {
-      userId: userIsAdmin ? undefined : userUID,
-      role: userIsAdmin ? 'admin' : 'user',
-      userData: user
-    },
+    currentMonthQueryParams,
     {
       skip: !user // Skip query until user is authenticated
     }
@@ -144,15 +146,24 @@ export const useMonthSelectionWithTasks = () => {
   const displayTasks = useMemo(() => {
     if (selectedMonthId && selectedMonthId !== monthData.monthId) {
       // Show selected month tasks (on-demand fetch with real-time listener)
-      logger.log(`[useMonthSelectionWithTasks] Using selected month data: ${selectedMonthTasks.length} tasks for ${selectedMonthId}`);
       return selectedMonthTasks;
     } else {
       // Show current month tasks (from getCurrentMonth query with real-time listener)
-      const currentTasks = monthData.currentMonthTasks || [];
-      logger.log(`[useMonthSelectionWithTasks] Using current month data: ${currentTasks.length} tasks for ${monthData.monthId}`);
-      return currentTasks;
+      return monthData.currentMonthTasks || [];
     }
   }, [selectedMonthId, monthData.monthId, selectedMonthTasks, monthData.currentMonthTasks]);
+  
+  // Log task data changes (outside of useMemo to prevent excessive logging)
+  useEffect(() => {
+    if (monthData.monthId) { // Only log when monthId is defined
+      if (selectedMonthId && selectedMonthId !== monthData.monthId) {
+        logger.log(`[useMonthSelectionWithTasks] Using selected month data: ${selectedMonthTasks.length} tasks for ${selectedMonthId}`);
+      } else {
+        const currentTasks = monthData.currentMonthTasks || [];
+        logger.log(`[useMonthSelectionWithTasks] Using current month data: ${currentTasks.length} tasks for ${monthData.monthId}`);
+      }
+    }
+  }, [selectedMonthId, monthData.monthId, selectedMonthTasks.length, monthData.currentMonthTasks?.length]);
   
   // Get current month info
   const currentMonthInfo = useMemo(() => ({

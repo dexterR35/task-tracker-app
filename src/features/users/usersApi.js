@@ -25,6 +25,7 @@ const fetchUserByUIDFromFirestore = async (userUID) => {
     try {
       const users = await fetchCollectionFromFirestore(db, "users", {
         where: { field: "userUID", operator: "==", value: userUID },
+        orderBy: null, // No ordering needed for single user lookup
         limit: 1
       });
       

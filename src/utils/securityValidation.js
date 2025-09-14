@@ -1,5 +1,6 @@
 import { logger } from "@/utils/logger";
 import { isAdmin, hasPermission, canAccessTasks, isUserActive } from "@/utils/permissions";
+import { getCurrentMonthId } from "@/utils/dateUtils";
 import { validateUserForAPI } from "@/utils/authUtils";
 
 
@@ -33,10 +34,7 @@ export const validateClientSide = {
    * Validate user permissions for specific operations
    */
   validatePermissions: (userData, operation) => {
-    if (!isUserActive(userData)) {
-      throw new Error("Account is deactivated");
-    }
-    
+    // User activity is already checked in validateOperation - no need to check again
     if (!hasPermission(userData, operation)) {
       throw new Error(`Permission denied: You don't have permission to ${operation}`);
     }
@@ -48,6 +46,7 @@ export const validateClientSide = {
    * Validate task access permissions
    */
   validateTaskAccess: (userData) => {
+    // User activity is already checked in validateOperation - no need to check again
     if (!canAccessTasks(userData)) {
       throw new Error("No task access permissions");
     }
@@ -118,6 +117,19 @@ export const validateClientSide = {
     
     if (!monthId.match(/^[0-9]{4}-[0-9]{2}$/)) {
       throw new Error("Invalid month ID format. Expected format: YYYY-MM");
+    }
+    
+    return true;
+  },
+
+  /**
+   * Validate that monthId is the current month (for task creation)
+   */
+  validateCurrentMonth: (monthId) => {
+    const currentMonthId = getCurrentMonthId();
+    
+    if (monthId !== currentMonthId) {
+      throw new Error(`Task creation is only allowed for the current month (${currentMonthId}). You attempted to create a task for ${monthId}.`);
     }
     
     return true;
@@ -201,29 +213,31 @@ function isValidBoardData() {
   }
 };
 
-// Comprehensive validation wrapper
+// Simplified validation wrapper - reduced nested calls
 export const validateOperation = async (operation, userData, additionalData = {}) => {
   try {
-    // Step 1: Authentication validation
-    validateClientSide.validateAuthentication(userData);
-    
-    // Step 2: User activity validation
+    // Step 1: Single user activity check (consolidated)
     if (!isUserActive(userData)) {
       throw new Error("Account is deactivated");
     }
     
-    // Step 3: Operation-specific validation
+    // Step 2: Operation-specific validation (simplified)
     switch (operation) {
       case 'create_task':
-        validateClientSide.validatePermissions(userData, 'create_task');
-        validateClientSide.validateTaskAccess(userData);
+        // Combined permission and task access check
+        if (!hasPermission(userData, 'create_task') || !canAccessTasks(userData)) {
+          throw new Error("Permission denied: You don't have permission to create tasks");
+        }
         validateClientSide.validateTaskData(additionalData.taskData, 'create');
         validateClientSide.validateMonthId(additionalData.monthId);
+        validateClientSide.validateCurrentMonth(additionalData.monthId);
         break;
         
       case 'update_task':
-        validateClientSide.validatePermissions(userData, 'update_task');
-        validateClientSide.validateTaskAccess(userData);
+        // Combined permission and task access check
+        if (!hasPermission(userData, 'update_task') || !canAccessTasks(userData)) {
+          throw new Error("Permission denied: You don't have permission to update tasks");
+        }
         validateClientSide.validateTaskData(additionalData.taskData, 'update');
         validateClientSide.validateTaskOwnership(
           additionalData.taskUserUID, 
@@ -233,8 +247,10 @@ export const validateOperation = async (operation, userData, additionalData = {}
         break;
         
       case 'delete_task':
-        validateClientSide.validatePermissions(userData, 'delete_task');
-        validateClientSide.validateTaskAccess(userData);
+        // Combined permission and task access check
+        if (!hasPermission(userData, 'delete_task') || !canAccessTasks(userData)) {
+          throw new Error("Permission denied: You don't have permission to delete tasks");
+        }
         validateClientSide.validateTaskOwnership(
           additionalData.taskUserUID, 
           additionalData.currentUserUID, 
@@ -243,12 +259,16 @@ export const validateOperation = async (operation, userData, additionalData = {}
         break;
         
       case 'generate_month_board':
-        validateClientSide.validateAdminPermissions(userData);
+        if (!isAdmin(userData)) {
+          throw new Error("Admin permissions required");
+        }
         validateClientSide.validateMonthId(additionalData.monthId);
         break;
         
       case 'read_tasks':
-        validateClientSide.validateTaskAccess(userData);
+        if (!canAccessTasks(userData)) {
+          throw new Error("No task access permissions");
+        }
         validateClientSide.validateMonthId(additionalData.monthId);
         break;
         

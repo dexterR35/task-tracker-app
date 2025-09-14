@@ -27,9 +27,6 @@ const AdminManagementPage = lazy(
 const AdminDashboardPage = lazy(
   () => import("@/pages/admin/AdminDashboardPage")
 );
-const AdminTasksPage = lazy(
-  () => import("@/pages/admin/AdminTasksPage")
-);
 const UserDashboardPage = lazy(
   () => import("@/pages/user/UserDashboardPage")
 );
@@ -207,14 +204,6 @@ const router = createBrowserRouter([
             element: (
               <LazyPage>
                 <AdminManagementPage />
-              </LazyPage>
-            ),
-          },
-          {
-            path: "tasks",
-            element: (
-              <LazyPage>
-                <AdminTasksPage />
               </LazyPage>
             ),
           },

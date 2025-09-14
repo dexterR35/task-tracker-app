@@ -1,18 +1,12 @@
 import React from 'react';
-import { 
-  FIELD_LABEL_CLASSES, 
-  ERROR_MESSAGE_CLASSES, 
-  HELP_TEXT_CLASSES, 
-  REQUIRED_INDICATOR 
-} from '../utils/formConstants';
 import { handleConditionalLogic } from '../utils/formUtilities';
+import BaseField from './BaseField';
 
 const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors }) => {
   const fieldError = errors[field.name];
-  const isFieldRequired = field.required;
   
   return (
-    <div className="field-wrapper">
+    <BaseField field={field} error={fieldError} className="field-wrapper">
       <div className="flex items-start space-x-3">
         <input
           {...register(field.name)}
@@ -27,23 +21,13 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
           }}
         />
         <div>
-          <label htmlFor={field.name} className={FIELD_LABEL_CLASSES}>
+          <label htmlFor={field.name} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {field.label}
-            {isFieldRequired && ` ${REQUIRED_INDICATOR}`}
+            {field.required && ` *`}
           </label>
         </div>
       </div>
-      
-      {fieldError && (
-        <div className={ERROR_MESSAGE_CLASSES}>
-          {fieldError.message}
-        </div>
-      )}
-      
-      {field.helpText && (
-        <p className={HELP_TEXT_CLASSES}>{field.helpText}</p>
-      )}
-    </div>
+    </BaseField>
   );
 };
 

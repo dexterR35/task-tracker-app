@@ -1,18 +1,22 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { formatDate } from '@/utils/dateUtils';
 import { useMemo } from 'react';
+import {
+  safeDisplay,
+  UserAvatarCell,
+  DateCell,
+  RoleBadgeCell,
+  JiraLinkCell,
+  HoursCell,
+  AIModelsCell,
+  AITimeCell,
+  AIUsedCell,
+  DeliverablesCell,
+  DeliverablesCountCell,
+  ReporterCell,
+  CheckboxCell
+} from './TableCellComponents';
 
 const columnHelper = createColumnHelper();
-
-
-// Helper function to safely display data
-const safeDisplay = (value, fallback = "-") => {
-  if (!value) return fallback;
-  if (Array.isArray(value)) {
-    return value.join(", ") || fallback;
-  }
-  return String(value) || fallback;
-};
 
 
 // Tasks Table Columns - Memoized to prevent re-renders
@@ -27,25 +31,12 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     ),
     size: 120,
   }),
-  columnHelper.accessor('jiraLink', {
+  columnHelper.accessor('data_task.taskName', {
     header: 'Jira Link',
-    cell: ({ getValue }) => {
-      const jiraLink = getValue();
-      if (!jiraLink) return 'No Link';
-      return (
-        <a 
-          href={jiraLink} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline text-sm break-all"
-        >
-          {jiraLink}
-        </a>
-      );
-    },
+    cell: ({ getValue }) => <JiraLinkCell taskName={getValue()} />,
     size: 200,
   }),
-  columnHelper.accessor('departments', {
+  columnHelper.accessor('data_task.departments', {
     header: 'Department',
     cell: ({ getValue }) => {
       const departments = getValue();
@@ -53,103 +44,64 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 150,
   }),
-  columnHelper.accessor('products', {
+  columnHelper.accessor('data_task.products', {
     header: 'Product',
     cell: ({ getValue }) => safeDisplay(getValue()),
     size: 120,
   }),
-  columnHelper.accessor('timeInHours', {
+  columnHelper.accessor('data_task.timeInHours', {
     header: 'Hours',
-    cell: ({ getValue }) => {
-      const hours = parseFloat(getValue()) || 0;
-      return hours > 0 ? hours.toFixed(1) : 0;
-    },
+    cell: ({ getValue }) => <HoursCell value={getValue()} />,
     size: 80,
   }),
-  columnHelper.accessor('aiTime', {
+  columnHelper.accessor('data_task.usedAI.aiTime', {
     header: 'AI Hr',
-    cell: ({ getValue }) => {
-      const aiTime = getValue();
-      if (typeof aiTime === 'number' && aiTime > 0) {
-        return aiTime.toFixed(1);
-      }
-      return "-";
+    cell: ({ getValue, row }) => {
+      const dataTask = row.original.data_task;
+      const aiTime = dataTask?.usedAI?.aiTime;
+      return <AITimeCell aiTime={aiTime} />;
     },
     size: 80,
   }),
-  columnHelper.accessor('aiModels', {
+  columnHelper.accessor('data_task.usedAI.aiModels', {
     header: 'AI Models',
-    cell: ({ getValue }) => {
-      const aiModels = getValue();
-      if (Array.isArray(aiModels) && aiModels.length > 0) {
-        return safeDisplay(aiModels.join(', '));
-      }
-      return "-";
+    cell: ({ getValue, row }) => {
+      const dataTask = row.original.data_task;
+      const aiModels = dataTask?.usedAI?.aiModels;
+      return <AIModelsCell aiModels={aiModels} />;
     },
     size: 120,
   }),
-  columnHelper.accessor('aiModels', {
+  columnHelper.accessor('data_task.usedAI.aiModels', {
     id: 'aiUsed',
     header: 'AI?',
-    cell: ({ getValue }) => {
-      const aiModels = getValue();
-      if (Array.isArray(aiModels) && aiModels.length > 0) {
-        return "✓";
-      }
-      return "-";
+    cell: ({ getValue, row }) => {
+      const dataTask = row.original.data_task;
+      const aiModels = dataTask?.usedAI?.aiModels;
+      return <AIUsedCell aiModels={aiModels} />;
     },
     size: 60,
   }),
   columnHelper.accessor('reworked', {
     header: 'Reworked?',
-    cell: ({ getValue }) => getValue() ? "✓" : "-",
+    cell: ({ getValue }) => <CheckboxCell value={getValue()} />,
     size: 100,
   }),
   columnHelper.accessor('deliverables', {
     id: 'deliverablesList',
     header: 'Deliverables',
-    cell: ({ getValue }) => {
-      const deliverables = getValue();
-      if (Array.isArray(deliverables) && deliverables.length > 0) {
-        return safeDisplay(deliverables.join(', '));
-      }
-      return "-";
-    },
+    cell: ({ getValue }) => <DeliverablesCell deliverables={getValue()} />,
     size: 120,
   }),
   columnHelper.accessor('deliverables', {
     id: 'deliverablesCount',
     header: 'Nr Deliverables',
-    cell: ({ getValue }) => {
-      const deliverables = getValue();
-      if (Array.isArray(deliverables)) {
-        return deliverables.length;
-      }
-      return 0;
-    },
+    cell: ({ getValue }) => <DeliverablesCountCell deliverables={getValue()} />,
     size: 120,
   }),
   columnHelper.accessor('reporters', {
     header: 'Reporter',
-    cell: ({ getValue, row }) => {
-      const reporterId = getValue();
-      
-      // If no reporter ID, return dash
-      if (!reporterId) {
-        return "-";
-      }
-      
-      // Find the reporter by ID in the reporters array
-      const reporter = reporters.find(r => r.id === reporterId);
-      
-      // Return the reporter name if found, otherwise return the ID
-      if (reporter) {
-        return reporter.name || reporter.email || reporterId;
-      }
-      
-      // Fallback to the ID if reporter not found
-      return reporterId;
-    },
+    cell: ({ getValue }) => <ReporterCell reporterId={getValue()} reporters={reporters} />,
     size: 120,
   }),
 
@@ -160,6 +112,31 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
+  columnHelper.accessor('dataInfo', {
+    header: 'Data Info',
+    cell: ({ getValue }) => {
+      const dataInfo = getValue();
+      if (!Array.isArray(dataInfo) || dataInfo.length === 0) {
+        return <span className="text-gray-400">No data</span>;
+      }
+      
+      const latestEntry = dataInfo[dataInfo.length - 1];
+      return (
+        <div className="text-xs">
+          <div className="font-medium text-gray-900 dark:text-white">
+            {latestEntry.name || 'Unknown'}
+          </div>
+          <div className="text-gray-500 dark:text-gray-400">
+            by {latestEntry.createdbyname || 'Unknown'}
+          </div>
+          <div className="text-gray-400">
+            {dataInfo.length} entry{dataInfo.length !== 1 ? 'ies' : ''}
+          </div>
+        </div>
+      );
+    },
+    size: 150,
+  }),
 ], [monthId, reporters]);
 };
 
@@ -167,28 +144,7 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
 export const getUserColumns = (monthId = null) => [
   columnHelper.accessor('name', {
     header: 'User',
-    cell: ({ row }) => {
-      const user = row.original;
-      const userName = user.name || 'No Name';
-      const userSymbol = userName.substring(0, 2).toUpperCase();
-      
-      return (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-              <span className="text-sm font-medium text-white">
-                {userSymbol}
-              </span>
-            </div>
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-white">
-              {userName}
-            </div>
-          </div>
-        </div>
-      );
-    },
+    cell: ({ row }) => <UserAvatarCell user={row.original} />,
     size: 200,
   }),
   columnHelper.accessor('email', {
@@ -198,26 +154,7 @@ export const getUserColumns = (monthId = null) => [
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    cell: ({ getValue }) => {
-      const role = getValue() || 'user';
-      const getRoleStyle = (role) => {
-        switch (role) {
-          case 'admin':
-            return 'bg-red-100 text-red-800';
-          case 'reporter':
-            return 'bg-blue-100 text-blue-800';
-          case 'user':
-          default:
-            return 'bg-green-100 text-green-800';
-        }
-      };
-      
-      return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleStyle(role)}`}>
-          {role}
-        </span>
-      );
-    },
+    cell: ({ getValue }) => <RoleBadgeCell role={getValue()} />,
     size: 100,
   }),
   columnHelper.accessor('occupation', {
@@ -227,7 +164,7 @@ export const getUserColumns = (monthId = null) => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => formatDate(getValue(), 'MMM d, yyyy'),
+    cell: ({ getValue }) => <DateCell value={getValue()} />,
     size: 120,
   }),
 ];
@@ -237,28 +174,7 @@ export const getUserColumns = (monthId = null) => [
 export const getReporterColumns = (monthId = null) => [
   columnHelper.accessor('name', {
     header: 'Reporter',
-    cell: ({ row }) => {
-      const reporter = row.original;
-      const reporterName = reporter.name || 'No Name';
-      const reporterSymbol = reporterName.substring(0, 2).toUpperCase();
-      
-      return (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-              <span className="text-sm font-medium text-white">
-                {reporterSymbol}
-              </span>
-            </div>
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-white">
-              {reporterName}
-            </div>
-          </div>
-        </div>
-      );
-    },
+    cell: ({ row }) => <UserAvatarCell user={row.original} gradient="from-green-500 to-green-600" />,
     size: 200,
   }),
   columnHelper.accessor('email', {
@@ -278,7 +194,7 @@ export const getReporterColumns = (monthId = null) => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => formatDate(getValue(), 'MMM d, yyyy'),
+    cell: ({ getValue }) => <DateCell value={getValue()} />,
     size: 120,
   }),
 ];

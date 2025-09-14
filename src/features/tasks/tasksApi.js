@@ -11,8 +11,9 @@ import {
   serverTimestamp,
   onSnapshot,
   limit,
-  runTransaction,
   setDoc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
@@ -97,41 +98,6 @@ const validateBoardIdConsistency = (providedBoardId, expectedBoardId, currentTas
   }
 };
 
-// Enhanced transaction wrapper with retry logic and error handling
-const executeTransaction = async (transactionFn, operationName, maxRetries = 3) => {
-  let lastError;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      logger.log(`[Transaction] Starting ${operationName} (attempt ${attempt}/${maxRetries})`);
-      
-      const result = await runTransaction(db, transactionFn);
-      
-      logger.log(`[Transaction] ${operationName} completed successfully on attempt ${attempt}`);
-      return result;
-    } catch (error) {
-      lastError = error;
-      logger.warn(`[Transaction] ${operationName} failed on attempt ${attempt}:`, error.message);
-      
-      if (error.code === 'permission-denied' || 
-          error.code === 'not-found' || 
-          error.message.includes('not found') ||
-          error.message.includes('permission denied')) {
-        logger.error(`[Transaction] ${operationName} failed with non-retryable error:`, error);
-        throw error;
-      }
-      
-      if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000;
-        logger.log(`[Transaction] Waiting ${delay}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-  
-  logger.error(`[Transaction] ${operationName} failed after ${maxRetries} attempts:`, lastError);
-  throw lastError;
-};
 
 export const tasksApi = createFirestoreApi({
   reducerPath: "tasksApi",
@@ -333,75 +299,106 @@ export const tasksApi = createFirestoreApi({
     createTask: builder.mutation({
       async queryFn({ task, userData }) {
         try {
+          console.log('[tasksApi] createTask called with:', { task, userData });
           const currentUser = getCurrentUserInfo();
+          const monthId = task.monthId;
+          
           if (!currentUser) {
             return { error: { message: "Authentication required" } };
           }
           
-          const validation = await validateOperation('create_task', userData, {
+          // Simplified validation - only check business logic, not user auth
+          const validation = await validateOperation('create_task', {
+            userUID: currentUser.uid,
+            email: currentUser.email,
+            name: currentUser.name,
+            role: userData?.role || 'user', // Fallback to user role
+            permissions: userData?.permissions || [], // Include permissions array
+            isActive: userData?.isActive !== false // Include active status
+          }, {
             taskData: task,
-            monthId: task.monthId
+            monthId: task.monthId,
+            currentUserUID: currentUser.uid
           });
           
           if (!validation.isValid) {
             return { error: { message: validation.errors.join(', ') } };
           }
           
-          const monthId = task.monthId;
-          
           if (!monthId) {
             return { error: { message: "Month ID is required" } };
           }
           
-          const result = await executeTransaction(async (transaction) => {
-            const monthDocRef = doc(db, "tasks", monthId);
-            const monthDoc = await transaction.get(monthDocRef);
+          // Get month document to retrieve boardId
+          const monthDocRef = doc(db, "tasks", monthId);
+          const monthDoc = await getDoc(monthDocRef);
 
-            if (!monthDoc.exists()) {
-              throw new Error("Month board not available. Please contact an administrator to generate the month board for this period, or try selecting a different month.");
+          if (!monthDoc.exists()) {
+            throw new Error("Month board not available. Please contact an administrator to generate the month board for this period, or try selecting a different month.");
+          }
+          
+          const boardData = monthDoc.data();
+          const boardId = boardData?.boardId;
+          
+          if (!boardId) {
+            throw new Error("Month board is missing boardId. Please contact an administrator to regenerate the month board.");
+          }
+          
+          const colRef = collection(db, "tasks", monthId, "monthTasks");
+          
+          const currentUserUID = currentUser.uid;
+          const currentUserName = userData.name || userData.email || currentUser.name || "Unknown User";
+          
+          const createdAt = new Date().toISOString();
+          const updatedAt = createdAt; // For new tasks, updatedAt equals createdAt
+          
+          // Filter out UI-only fields and system fields from task data
+          const cleanTaskData = Object.keys(task).reduce((acc, key) => {
+            // Skip UI-only fields (prefixed with _) and system fields
+            if (!key.startsWith('_') && 
+                !['createdAt', 'updatedAt', 'monthId', 'userUID', 'boardId', 'createbyUID', 'createdByName'].includes(key)) {
+              acc[key] = task[key];
             }
-            
-            const boardData = monthDoc.data();
-            const boardId = boardData?.boardId;
-            
-            if (!boardId) {
-              throw new Error("Month board is missing boardId. Please contact an administrator to regenerate the month board.");
-            }
-            
-            const colRef = collection(db, "tasks", monthId, "monthTasks");
-            
-            const currentUserUID = currentUser.uid;
-            const currentUserName = userData.name || userData.email || currentUser.name || "Unknown User";
-            
-            const payload = {
-              ...task,
-              monthId: monthId,
-              boardId: boardId,
-              createdAt: new Date().toISOString(),
-              createdByUID: currentUserUID,
-              createdByName: currentUserName,
-              userUID: currentUserUID,
-            };
-            
-            if (!payload.userUID || !payload.monthId || !payload.boardId) {
-              throw new Error("Invalid task data: missing required fields (userUID, monthId, or boardId)");
-            }
-            
-            const ref = await addDoc(colRef, payload);
-            
-            return { 
-              id: ref.id, 
-              monthId, 
-              ...payload,
-            };
-          }, "Create Task");
-       
-          logger.log(`[tasksApi] Created task:`, { 
-            id: result.id, 
-            monthId: result.monthId,
-            createdAt: result.createdAt,
-            updatedAt: result.updatedAt,
+            return acc;
+          }, {});
+
+          // Create final document data directly
+          const documentData = {
+            data_task: cleanTaskData,  // Clean task data as object
+            userUID: currentUserUID,
+            monthId: monthId,
+            boardId: boardId,
+            createbyUID: currentUserUID,
+            createdByName: currentUserName,
+            updatedAt: updatedAt,
+            createdAt: createdAt,
+          };
+          
+          if (!documentData.userUID || !documentData.monthId) {
+            throw new Error("Invalid task data: missing required fields (userUID or monthId)");
+          }
+          
+          // Sanitize document data to ensure all values are serializable
+          const sanitizedData = JSON.parse(JSON.stringify(documentData));
+          
+          const ref = await addDoc(colRef, sanitizedData);
+          
+          // Debug logging to verify document data
+          console.log(`[tasksApi] Task document before saving:`, {
+            hasDataTask: !!sanitizedData.data_task,
+            dataTaskContent: sanitizedData.data_task,
+            fullDocument: sanitizedData
           });
+          logger.log(`[tasksApi] Task document before saving:`, {
+            hasDataTask: !!sanitizedData.data_task,
+            dataTaskContent: sanitizedData.data_task
+          });
+          
+          const result = { 
+            id: ref.id, 
+            monthId, 
+            ...sanitizedData,
+          };
 
           return { data: result };
         } catch (error) {
@@ -423,7 +420,15 @@ export const tasksApi = createFirestoreApi({
             return { error: { message: "Authentication required" } };
           }
 
-          const validation = await validateOperation('update_task', userData, {
+          // Simplified validation - only check business logic, not user auth
+          const validation = await validateOperation('update_task', {
+            userUID: currentUser.uid,
+            email: currentUser.email,
+            name: currentUser.name,
+            role: userData?.role || 'user', // Fallback to user role
+            permissions: userData?.permissions || [], // Include permissions array
+            isActive: userData?.isActive !== false // Include active status
+          }, {
             taskData: updates,
             monthId: monthId,
             currentUserUID: currentUser.uid
@@ -433,48 +438,61 @@ export const tasksApi = createFirestoreApi({
             return { error: { message: validation.errors.join(', ') } };
           }
 
-          await executeTransaction(async (transaction) => {
-            const monthDocRef = doc(db, "tasks", monthId);
-            const monthDoc = await transaction.get(monthDocRef);
-            
-            if (!monthDoc.exists()) {
-              throw new Error("Month board not found");
+          // Get month document to validate boardId
+          const monthDocRef = doc(db, "tasks", monthId);
+          const monthDoc = await getDoc(monthDocRef);
+          
+          if (!monthDoc.exists()) {
+            throw new Error("Month board not found");
+          }
+
+          const taskRef = doc(db, "tasks", monthId, "monthTasks", taskId);
+          const taskDoc = await getDoc(taskRef);
+
+          if (!taskDoc.exists()) {
+            throw new Error("Task not found");
+          }
+
+          const currentTaskData = taskDoc.data();
+          const monthBoardData = monthDoc.data();
+          const expectedBoardId = monthBoardData?.boardId;
+          
+          validateBoardIdConsistency(boardId, expectedBoardId, currentTaskData.boardId);
+
+          const currentUserUID = currentUser.uid;
+          if (currentTaskData.userUID !== currentUserUID && !isAdmin({ role: userData.role })) {
+            throw new Error("Permission denied: You can only update your own tasks");
+          }
+
+          const updatedAt = new Date().toISOString();
+          const currentUserName = userData.name || userData.email || currentUser.name || "Unknown User";
+          
+          // Filter out UI-only fields and system fields from updates
+          const cleanUpdates = Object.keys(updates).reduce((acc, key) => {
+            if (!key.startsWith('_') && 
+                !['createdAt', 'updatedAt', 'monthId', 'userUID', 'boardId', 'createbyUID', 'createdByName'].includes(key)) {
+              acc[key] = updates[key];
             }
+            return acc;
+          }, {});
+          
+          const updatesWithSystemFields = {
+            data_task: {
+              ...currentTaskData.data_task,
+              ...cleanUpdates
+            },
+            updatedAt: updatedAt,
+            ...(updates.userUID === undefined && { userUID: currentUserUID }),
+          };
 
-            const taskRef = doc(db, "tasks", monthId, "monthTasks", taskId);
-            const taskDoc = await transaction.get(taskRef);
-
-            if (!taskDoc.exists()) {
-              throw new Error("Task not found");
+          const forbiddenFields = ['createdAt', 'createbyUID', 'createdByName'];
+          for (const field of forbiddenFields) {
+            if (updatesWithSystemFields[field] !== undefined) {
+              throw new Error(`Cannot update protected field: ${field}`);
             }
+          }
 
-            const currentTaskData = taskDoc.data();
-            const monthBoardData = monthDoc.data();
-            const expectedBoardId = monthBoardData?.boardId;
-            
-            validateBoardIdConsistency(boardId, expectedBoardId, currentTaskData.boardId);
-
-            const currentUserUID = currentUser.uid;
-            if (currentTaskData.userUID !== currentUserUID && !isAdmin({ role: userData.role })) {
-              throw new Error("Permission denied: You can only update your own tasks");
-            }
-
-            const updatesWithMonthId = {
-              ...updates,
-              monthId: monthId,
-              updatedAt: new Date().toISOString(),
-              ...(updates.userUID === undefined && { userUID: currentUserUID }),
-            };
-
-            const forbiddenFields = ['createdAt', 'createdByUID', 'createdByName'];
-            for (const field of forbiddenFields) {
-              if (updatesWithMonthId[field] !== undefined) {
-                throw new Error(`Cannot update protected field: ${field}`);
-              }
-            }
-
-            transaction.update(taskRef, updatesWithMonthId);
-          }, "Update Task");
+          await updateDoc(taskRef, updatesWithSystemFields);
           
           logger.log("Task updated successfully, real-time subscription will update cache automatically");
 
@@ -498,7 +516,15 @@ export const tasksApi = createFirestoreApi({
             return { error: { message: "Authentication required" } };
           }
 
-          const validation = await validateOperation('delete_task', userData, {
+          // Simplified validation - only check business logic, not user auth
+          const validation = await validateOperation('delete_task', {
+            userUID: currentUser.uid,
+            email: currentUser.email,
+            name: currentUser.name,
+            role: userData?.role || 'user', // Fallback to user role
+            permissions: userData?.permissions || [], // Include permissions array
+            isActive: userData?.isActive !== false // Include active status
+          }, {
             monthId: monthId,
             currentUserUID: currentUser.uid
           });
@@ -507,34 +533,33 @@ export const tasksApi = createFirestoreApi({
             return { error: { message: validation.errors.join(', ') } };
           }
 
-          await executeTransaction(async (transaction) => {
-            const monthDocRef = doc(db, "tasks", monthId);
-            const monthDoc = await transaction.get(monthDocRef);
-            
-            if (!monthDoc.exists()) {
-              throw new Error("Month board not found");
-            }
-            
-            const taskRef = doc(db, "tasks", monthId, "monthTasks", taskId);
-            const taskDoc = await transaction.get(taskRef);
+          // Get month document to validate boardId
+          const monthDocRef = doc(db, "tasks", monthId);
+          const monthDoc = await getDoc(monthDocRef);
+          
+          if (!monthDoc.exists()) {
+            throw new Error("Month board not found");
+          }
+          
+          const taskRef = doc(db, "tasks", monthId, "monthTasks", taskId);
+          const taskDoc = await getDoc(taskRef);
 
-            if (!taskDoc.exists()) {
-              throw new Error("Task not found");
-            }
+          if (!taskDoc.exists()) {
+            throw new Error("Task not found");
+          }
 
-            const currentTaskData = taskDoc.data();
-            const monthBoardData = monthDoc.data();
-            const expectedBoardId = monthBoardData?.boardId;
-            
-            validateBoardIdConsistency(boardId, expectedBoardId, currentTaskData.boardId);
+          const currentTaskData = taskDoc.data();
+          const monthBoardData = monthDoc.data();
+          const expectedBoardId = monthBoardData?.boardId;
+          
+          validateBoardIdConsistency(boardId, expectedBoardId, currentTaskData.boardId);
 
-            const currentUserUID = currentUser.uid;
-            if (currentTaskData.userUID !== currentUserUID && !isAdmin({ role: userData.role })) {
-              throw new Error("Permission denied: You can only delete your own tasks");
-            }
+          const currentUserUID = currentUser.uid;
+          if (currentTaskData.userUID !== currentUserUID && !isAdmin({ role: userData.role })) {
+            throw new Error("Permission denied: You can only delete your own tasks");
+          }
 
-            transaction.delete(taskRef);
-          }, "Delete Task");
+          await deleteDoc(taskRef);
 
           logger.log("Task deleted successfully, real-time subscription will update cache automatically");
 

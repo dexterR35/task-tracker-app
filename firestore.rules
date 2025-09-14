@@ -14,6 +14,11 @@ service cloud.firestore {
              (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive != false);
     }
     
+    // Simplified version for when we're already reading the user document
+    function isUserActiveFromData(userData) {
+      return isAuthenticated() && userData.isActive != false;
+    }
+    
     // Fallback function for users without isActive field
     function isUserValid() {
       return isAuthenticated() && 
@@ -44,16 +49,15 @@ service cloud.firestore {
     }
     
     function isValidTaskData() {
-      return request.resource.data.keys().hasAll(['taskName', 'userUID', 'monthId', 'boardId', 'createdAt', 'createdByUID']) &&
+      return request.resource.data.keys().hasAll(['taskName', 'userUID', 'monthId', 'createdAt', 'createbyUID']) &&
              request.resource.data.userUID is string &&
              request.resource.data.monthId is string &&
-             request.resource.data.boardId is string &&
              request.resource.data.createdAt is string &&
-             request.resource.data.createdByUID is string &&
+             request.resource.data.createbyUID is string &&
              request.resource.data.taskName is string &&
              request.resource.data.userUID.size() > 0 &&
              request.resource.data.monthId.size() > 0 &&
-             request.resource.data.boardId.size() > 0;
+             request.resource.data.dataInfo is map;
     }
     
     function isValidBoardData() {
@@ -69,7 +73,8 @@ service cloud.firestore {
     // Users collection rules
     match /users/{userId} {
       // Users can read their own data, admins can read all
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      // TEMPORARILY PERMISSIVE FOR DEBUGGING - Allow all authenticated users to read
+      allow read: if isAuthenticated();
       
       // Allow write for authenticated users (temporarily permissive for debugging)
       allow write: if isAuthenticated();
@@ -84,25 +89,15 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
     
-    // Tasks collection (month boards)
+    // Tasks collection (month boards) - TEMPORARILY VERY PERMISSIVE FOR DEBUGGING
     match /tasks/{monthId} {
-      // Allow read for authenticated users (with or without monthId validation)
-      allow read: if isAuthenticated();
+      // Allow all operations for authenticated users (temporarily permissive)
+      allow read, write: if isAuthenticated();
       
-      // Allow authenticated users to create month boards (temporarily permissive)
-      allow create: if isAuthenticated();
-      
-      // Only admins can update/delete month boards
-      allow update, delete: if isAdmin();
-      
-      // Month tasks subcollection - SIMPLIFIED FOR DEBUGGING
+      // Month tasks subcollection - TEMPORARILY VERY PERMISSIVE FOR DEBUGGING
       match /monthTasks/{taskId} {
-        // Allow read for all authenticated users (temporarily permissive)
-        allow read: if isAuthenticated();
-        
-        // Allow write for all authenticated users (temporarily permissive)
-        // This will help us debug the permission issue
-        allow write: if isAuthenticated();
+        // Allow all operations for authenticated users (temporarily permissive)
+        allow read, write: if isAuthenticated();
       }
     }
     

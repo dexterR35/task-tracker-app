@@ -3,6 +3,7 @@ import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { handleApiError } from "@/features/utils/errorHandling";
 import { logger } from "@/utils/logger";
 import { auth } from "@/app/firebase";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 
 /**
  * Base API Factory for Firestore APIs
@@ -160,7 +161,7 @@ export const fetchCollectionFromFirestore = async (db, collectionName, options =
       q = query(q, where(whereClause.field, whereClause.operator, whereClause.value));
     }
     
-    if (orderByField) {
+    if (orderByField && orderByField !== null) {
       q = query(q, orderBy(orderByField, orderDirection));
     }
     
@@ -286,32 +287,9 @@ export const deleteDocumentFromFirestore = async (db, collectionName, docId) => 
   }
 };
 
-/**
- * Common timestamp serialization for Redux
- * @param {any} data - Data to serialize
- * @returns {any} - Serialized data
- */
-export const serializeTimestampsForRedux = (data) => {
-  if (!data || typeof data !== 'object') {
-    return data;
-  }
-  
-  const serialized = Array.isArray(data) ? [] : {};
-  
-  for (const [key, value] of Object.entries(data)) {
-    if (value && typeof value === 'object') {
-      serialized[key] = serializeTimestampsForRedux(value);
-    } else if (value && typeof value.toDate === 'function') {
-      serialized[key] = value.toDate().toISOString();
-    } else if (value instanceof Date) {
-      serialized[key] = value.toISOString();
-    } else {
-      serialized[key] = value;
-    }
-  }
-  
-  return serialized;
-};
+
+// Re-export serializeTimestampsForRedux for backward compatibility
+export { serializeTimestampsForRedux };
 
 export default {
   createFirestoreApi,
@@ -320,6 +298,5 @@ export default {
   fetchCollectionFromFirestore,
   createDocumentInFirestore,
   updateDocumentInFirestore,
-  deleteDocumentFromFirestore,
-  serializeTimestampsForRedux
+  deleteDocumentFromFirestore
 };

@@ -30,6 +30,14 @@ const store = configureStore({
           'payload.timestamp',
           'payload.createdAt',
           'payload.updatedAt',
+          'payload.error',
+          'payload.error.details',
+          'payload.error.details.originalError',
+        ],
+        ignoredPaths: [
+          'usersApi.queries.*.error.details.originalError',
+          'tasksApi.queries.*.error.details.originalError',
+          'reportersApi.queries.*.error.details.originalError',
         ],
       },
     }).concat([

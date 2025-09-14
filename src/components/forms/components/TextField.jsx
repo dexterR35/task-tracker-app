@@ -1,27 +1,15 @@
 import React from 'react';
 import { 
   INPUT_CLASSES, 
-  READONLY_CLASSES, 
-  FIELD_LABEL_CLASSES, 
-  ERROR_MESSAGE_CLASSES, 
-  HELP_TEXT_CLASSES, 
-  REQUIRED_INDICATOR, 
-  INPUT_TYPE_MAP 
+  READONLY_CLASSES
 } from '../utils/formConstants';
+import BaseField from './BaseField';
 
 const TextField = ({ field, register, errors, getInputType }) => {
   const fieldError = errors[field.name];
-  const isFieldRequired = field.required;
   
   return (
-    <div className="field-wrapper">
-      {field.label && (
-        <label htmlFor={field.name} className={FIELD_LABEL_CLASSES}>
-          {field.label}
-          {isFieldRequired && ` ${REQUIRED_INDICATOR}`}
-        </label>
-      )}
-      
+    <BaseField field={field} error={fieldError}>
       <input
         {...register(field.name)}
         type={getInputType(field.type)}
@@ -31,17 +19,7 @@ const TextField = ({ field, register, errors, getInputType }) => {
         disabled={false}
         className={field.readOnly ? `${INPUT_CLASSES} ${READONLY_CLASSES}` : INPUT_CLASSES}
       />
-      
-      {fieldError && (
-        <div className={ERROR_MESSAGE_CLASSES}>
-          {fieldError.message}
-        </div>
-      )}
-      
-      {field.helpText && (
-        <p className={HELP_TEXT_CLASSES}>{field.helpText}</p>
-      )}
-    </div>
+    </BaseField>
   );
 };
 

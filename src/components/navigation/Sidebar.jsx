@@ -28,12 +28,6 @@ const Sidebar = ({ onToggle, isOpen }) => {
       icon: Icons.cards.home,
     },
     {
-      name: "Tasks",
-      href: "/tasks",
-      icon: Icons.cards.task,
-      adminOnly: true,
-    },
-    {
       name: "Analytics",
       href: "/analytics",
       icon: Icons.cards.chart,

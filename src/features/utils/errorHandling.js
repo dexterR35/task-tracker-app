@@ -30,16 +30,29 @@ export const ERROR_SEVERITY = {
 };
 
 /**
- * Standard error response structure
+ * Standard error response structure - ensures all values are serializable
  */
-export const createErrorResponse = (type, message, details = null, severity = ERROR_SEVERITY.MEDIUM) => ({
-  type,
-  message,
-  details,
-  severity,
-  timestamp: new Date().toISOString(),
-  id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-});
+export const createErrorResponse = (type, message, details = null, severity = ERROR_SEVERITY.MEDIUM) => {
+  // Ensure details is serializable (no functions, classes, or complex objects)
+  let serializableDetails = null;
+  if (details) {
+    if (typeof details === 'object' && details !== null) {
+      // Only include primitive values and plain objects
+      serializableDetails = JSON.parse(JSON.stringify(details));
+    } else if (typeof details === 'string' || typeof details === 'number' || typeof details === 'boolean') {
+      serializableDetails = details;
+    }
+  }
+
+  return {
+    type,
+    message,
+    details: serializableDetails,
+    severity,
+    timestamp: new Date().toISOString(),
+    id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  };
+};
 
 /**
  * Parse Firebase/Firestore errors into standardized format
@@ -90,6 +103,13 @@ export const parseFirebaseError = (error) => {
       default:
         return createErrorResponse(ERROR_TYPES.SERVER, errorMessage, { code: errorCode }, ERROR_SEVERITY.MEDIUM);
     }
+  }
+
+  // Handle generic permission errors (including "Missing or insufficient permissions")
+  if (errorMessage?.includes('Missing or insufficient permissions') || 
+      errorMessage?.includes('permission') || 
+      errorCode === 'permission-denied') {
+    return createErrorResponse(ERROR_TYPES.AUTHORIZATION, 'You do not have permission to perform this action.', { code: errorCode }, ERROR_SEVERITY.HIGH);
   }
 
   // Network errors

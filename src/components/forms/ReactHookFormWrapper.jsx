@@ -321,6 +321,9 @@ const ReactHookFormWrapper = ({
 
       // Prepare form data for database
       const dataForDatabase = prepareFormData(data, finalFields, finalFormConfig, formType || entityType, mode, finalContextData);
+      console.log('💾 Final Data for Database:', dataForDatabase);
+      console.log('💾 Form Data (raw):', data);
+      console.log('💾 Context Data:', finalContextData);
       logger.log('💾 Final Data for Database:', dataForDatabase);
       logger.log('💾 Form Data (raw):', data);
       logger.log('💾 Context Data:', finalContextData);
