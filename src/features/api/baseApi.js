@@ -4,6 +4,19 @@ import { handleApiError } from "@/features/utils/errorHandling";
 import { logger } from "@/utils/logger";
 import { auth } from "@/app/firebase";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  limit, 
+  where, 
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
+} from "firebase/firestore";
 
 /**
  * Base API Factory for Firestore APIs
@@ -153,7 +166,7 @@ export const fetchCollectionFromFirestore = async (db, collectionName, options =
       return [];
     }
 
-    const { collection, query, orderBy, limit, where, getDocs } = await import('firebase/firestore');
+    // Using static imports instead of dynamic imports
     
     let q = query(collection(db, collectionName));
     
@@ -198,7 +211,7 @@ export const createDocumentInFirestore = async (db, collectionName, data, option
       throw new Error('User must be authenticated to create documents');
     }
 
-    const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+    // Using static imports instead of dynamic imports
     
     const docData = { ...data };
     
@@ -241,7 +254,7 @@ export const updateDocumentInFirestore = async (db, collectionName, docId, updat
       throw new Error('User must be authenticated to update documents');
     }
 
-    const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+    // Using static imports instead of dynamic imports
     
     const updateData = { ...updates };
     
@@ -276,7 +289,7 @@ export const deleteDocumentFromFirestore = async (db, collectionName, docId) => 
       throw new Error('User must be authenticated to delete documents');
     }
 
-    const { doc, deleteDoc } = await import('firebase/firestore');
+    // Using static imports instead of dynamic imports
     
     await deleteDoc(doc(db, collectionName, docId));
     
