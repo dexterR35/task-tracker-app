@@ -1,7 +1,13 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
 import { useGetUsersQuery, useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
-import { useGetMonthTasksQuery, useGetCurrentMonthQuery } from "@/features/tasks/tasksApi";
+import { 
+  useGetMonthTasksQuery, 
+  useGetCurrentMonthQuery,
+  useCreateTaskMutation,
+  useUpdateTaskMutation,
+  useDeleteTaskMutation
+} from "@/features/tasks/tasksApi";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getUserUID, isUserAdmin } from "@/utils/authUtils";
 import { logger } from "@/utils/logger";
@@ -151,19 +157,16 @@ export const useMonthSelectionWithTasks = () => {
       // Show current month tasks (from getCurrentMonth query with real-time listener)
       return monthData.currentMonthTasks || [];
     }
-  }, [selectedMonthId, monthData.monthId, selectedMonthTasks, monthData.currentMonthTasks]);
+  }, [
+    selectedMonthId, 
+    monthData.monthId, 
+    // Use stable task IDs instead of array length for better performance
+    selectedMonthTasks.map(task => task.id).join(','),
+    (monthData.currentMonthTasks || []).map(task => task.id).join(',')
+  ]);
   
-  // Log task data changes (outside of useMemo to prevent excessive logging)
-  useEffect(() => {
-    if (monthData.monthId) { // Only log when monthId is defined
-      if (selectedMonthId && selectedMonthId !== monthData.monthId) {
-        logger.log(`[useMonthSelectionWithTasks] Using selected month data: ${selectedMonthTasks.length} tasks for ${selectedMonthId}`);
-      } else {
-        const currentTasks = monthData.currentMonthTasks || [];
-        logger.log(`[useMonthSelectionWithTasks] Using current month data: ${currentTasks.length} tasks for ${monthData.monthId}`);
-      }
-    }
-  }, [selectedMonthId, monthData.monthId, selectedMonthTasks.length, monthData.currentMonthTasks?.length]);
+  // Removed logging useEffect to prevent unnecessary re-renders
+  // The logging was causing frequent re-renders due to array length dependencies
   
   // Get current month info
   const currentMonthInfo = useMemo(() => ({
@@ -242,6 +245,11 @@ export const useAppData = () => {
     skip: !userData.userUID // Skip query until user is authenticated
   });
   
+  // Task mutations - available to all components
+  const [createTask] = useCreateTaskMutation();
+  const [updateTask] = useUpdateTaskMutation();
+  const [deleteTask] = useDeleteTaskMutation();
+  
   // Extract month data from the consolidated hook
   const monthData = {
     monthId: monthSelectionData.currentMonth.monthId,
@@ -280,45 +288,43 @@ export const useAppData = () => {
 
   // Memoize the return object to prevent unnecessary re-renders
   return useMemo(() => {
+    const baseData = {
+      // Task mutations - available to all users
+      createTask,
+      updateTask,
+      deleteTask,
+      
+      // Common data
+      reporters: reporters || [],
+      tasks: tasksData || [],
+      isLoading,
+      error,
+      
+      // Month data (from consolidated hook)
+      monthId: monthData.monthId,
+      monthName: monthData.monthName,
+      daysInMonth: monthData.daysInMonth,
+      startDate: memoizedStartDate,
+      endDate: memoizedEndDate,
+      boardExists: monthData.boardExists,
+      availableMonths: monthData.availableMonths || []
+    };
+    
     if (userData.userIsAdmin) {
       return {
+        ...baseData,
         // Admin gets everything
         user: userData.user, // Current user info from auth
         users: userData.allUsers || [], // All users for management
-        reporters: reporters || [],
-        tasks: tasksData || [],
-        isLoading,
-        error,
-        isAdmin: true,
-        
-        // Month data (from consolidated hook)
-        monthId: monthData.monthId,
-        monthName: monthData.monthName,
-        daysInMonth: monthData.daysInMonth,
-        startDate: memoizedStartDate,
-        endDate: memoizedEndDate,
-        boardExists: monthData.boardExists,
-        availableMonths: monthData.availableMonths || []
+        isAdmin: true
       };
     } else {
       return {
+        ...baseData,
         // Regular user gets only their data
         user: userData.userData, // Their user data from database
         users: [], // Empty for regular users
-        reporters: reporters || [],
-        tasks: tasksData || [],
-        isLoading,
-        error,
-        isAdmin: false,
-        
-        // Month data (from consolidated hook)
-        monthId: monthData.monthId,
-        monthName: monthData.monthName,
-        daysInMonth: monthData.daysInMonth,
-        startDate: memoizedStartDate,
-        endDate: memoizedEndDate,
-        boardExists: monthData.boardExists,
-        availableMonths: monthData.availableMonths || []
+        isAdmin: false
       };
     }
   }, [
@@ -336,6 +342,10 @@ export const useAppData = () => {
     memoizedStartDate,
     memoizedEndDate,
     monthData.boardExists,
-    monthData.availableMonths
+    monthData.availableMonths,
+    // Task mutations are stable references from RTK Query
+    createTask,
+    updateTask,
+    deleteTask
   ]);
 };

@@ -85,9 +85,11 @@ const ReactHookFormWrapper = ({
   const finalMonthId = monthId || appData?.monthId;
   const finalReporters = reporters.length > 0 ? reporters : appData?.reporters || [];
   
+  // Get task mutations from useAppData or fallback to direct hooks
+  const createTask = appData?.createTask || useCreateTaskMutation()[0];
+  const updateTask = appData?.updateTask || useUpdateTaskMutation()[0];
+  
   // Call RTK Query hooks at the top level
-  const [createTask] = useCreateTaskMutation();
-  const [updateTask] = useUpdateTaskMutation();
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
   
@@ -342,10 +344,8 @@ const ReactHookFormWrapper = ({
         } else {
           mutationData = {
             monthId: finalContextData.monthId,
-            boardId: finalContextData.boardId,
             taskId: finalContextData.taskId || finalContextData.id,
-            updates: dataForDatabase,
-            userData: finalContextData.user
+            updates: dataForDatabase
           };
         }
         

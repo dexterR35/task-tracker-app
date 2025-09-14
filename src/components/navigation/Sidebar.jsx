@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
+import MidnightCountdown from "@/components/ui/MidnightCountdown/MidnightCountdown";
 
 const Sidebar = ({ onToggle, isOpen }) => {
   const { user, logout, clearError, canAccess } = useAuth();
@@ -119,6 +120,9 @@ const Sidebar = ({ onToggle, isOpen }) => {
 
       {/* Bottom Section */}
       <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+        {/* Midnight Countdown */}
+        <MidnightCountdown />
+        
         {/* Dark Mode Toggle */}
         <div className="flex justify-center">
           <DarkModeToggle />

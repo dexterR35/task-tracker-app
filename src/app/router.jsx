@@ -27,9 +27,6 @@ const AdminManagementPage = lazy(
 const AdminDashboardPage = lazy(
   () => import("@/pages/admin/AdminDashboardPage")
 );
-const UserDashboardPage = lazy(
-  () => import("@/pages/user/UserDashboardPage")
-);
 const DebugPage = lazy(
   () => import("@/pages/admin/DebugPage")
 );
@@ -64,21 +61,11 @@ const LazyPage = ({ children }) => (
 );
 
 
-// Role-based dashboard component
+// Universal dashboard component - same page for both admin and user roles
 const RoleBasedDashboard = () => {
-  const { user, canAccess } = useAuth();
-  
-  if (canAccess('admin')) {
-    return (
-      <LazyPage>
-        <AdminDashboardPage />
-      </LazyPage>
-    );
-  }
-  
   return (
     <LazyPage>
-      <UserDashboardPage />
+      <AdminDashboardPage />
     </LazyPage>
   );
 };
@@ -194,25 +181,31 @@ const router = createBrowserRouter([
           {
             path: "analytics",
             element: (
-              <LazyPage>
-                <AnalyticsPage />
-              </LazyPage>
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage>
+                  <AnalyticsPage />
+                </LazyPage>
+              </ProtectedRoute>
             ),
           },
           {
             path: "users",
             element: (
-              <LazyPage>
-                <AdminManagementPage />
-              </LazyPage>
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage>
+                  <AdminManagementPage />
+                </LazyPage>
+              </ProtectedRoute>
             ),
           },
           {
             path: "debug",
             element: (
-              <LazyPage>
-                <DebugPage />
-              </LazyPage>
+              <ProtectedRoute requiredRole="admin">
+                <LazyPage>
+                  <DebugPage />
+                </LazyPage>
+              </ProtectedRoute>
             ),
           },
           {

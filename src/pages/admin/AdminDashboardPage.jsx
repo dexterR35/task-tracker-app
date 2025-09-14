@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAppDataContext } from "@/components/layout/AuthLayout";
+import { useAppData } from "@/hooks/useAppData";
 import AdminPageHeader from "@/components/layout/AdminPageHeader";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useMonthSelectionWithTasks } from "@/hooks/useAppData";
@@ -14,13 +14,13 @@ import Loader from "@/components/ui/Loader/Loader";
 // Admin: All tasks with user filters and full management
 // User: Only their own tasks with month selection
 const AdminDashboardPage = () => {
-  // Get all data from context (pre-fetched data, no API calls!)
+  // Get all data directly from useAppData hook (RTK Query handles caching)
   const {
     user,
     users,
     reporters,
     error
-  } = useAppDataContext();
+  } = useAppData();
   
   // Get auth functions separately
   const { canAccess } = useAuth();
@@ -49,6 +49,24 @@ const AdminDashboardPage = () => {
   
   // Task creation is only allowed for current month
   const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
+  
+  // Role-based data filtering
+  const displayTasks = useMemo(() => {
+    // Get the correct user UID based on role
+    const currentUserUID = isUserAdmin ? user?.uid : user?.userUID;
+    
+    
+    if (isUserAdmin) {
+      // Admin sees all tasks (with optional user filter)
+      return selectedUserId 
+        ? tasks.filter(task => task.userUID === selectedUserId)
+        : tasks;
+    } else {
+      // Regular users see only their own tasks
+      const userTasks = tasks.filter(task => task.userUID === currentUserUID);
+      return userTasks;
+    }
+  }, [tasks, isUserAdmin, selectedUserId, user]);
 
   // Get selected user name for display - memoized
   const selectedUser = useMemo(() => 
@@ -69,25 +87,19 @@ const AdminDashboardPage = () => {
     }
   }, [setSearchParams]);
 
-  // Filter tasks based on selected user (admin only) - optimized with useMemo
-  const filteredTasks = useMemo(() => {
-    if (!isUserAdmin || !selectedUserId) return tasks;
+  // Use the role-based filtered tasks
+  const filteredTasks = displayTasks;
 
-    const filtered = tasks.filter(
-      (task) =>
-        task.userUID === selectedUserId ||
-        task.createdByUID === selectedUserId // Fallback for old tasks
-    );
-    
-    return filtered;
-  }, [tasks, isUserAdmin, selectedUserId]);
-
-  // Derive title based on context - memoized
+  // Derive title based on context and role - memoized
   const title = useMemo(() => {
-    if (isUserAdmin && selectedUserId) {
-      return `All Tasks - ${selectedUserName}`;
+    if (isUserAdmin) {
+      if (selectedUserId) {
+        return `All Tasks - ${selectedUserName}`;
+      }
+      return "All Tasks - All Users";
+    } else {
+      return "My Tasks";
     }
-    return "All Tasks - All Users";
   }, [isUserAdmin, selectedUserId, selectedUserName]);
 
   if (error || monthError) {
@@ -118,7 +130,7 @@ const AdminDashboardPage = () => {
   return (
     <div className="min-h-screen bg-gray-900">
       <AdminPageHeader
-        title="Task Management"
+        title={isUserAdmin ? "Task Management" : "My Dashboard"}
         subtitle={`${title} - ${selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}`}
         icon="tasks"
         gradient="from-green-900 via-emerald-900 to-teal-900"
@@ -165,41 +177,43 @@ const AdminDashboardPage = () => {
               </div>
             </div>
 
-            {/* User Filter */}
-            <div className="space-y-2">
-              <label htmlFor="selectedUser" className="block text-sm font-medium text-gray-300">
-                Filter by User
-              </label>
-              <div className="flex gap-2">
-                <select
-                  id="selectedUser"
-                  value={selectedUserId}
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  onChange={(e) => {
-                    handleUserSelect(e.target.value);
-                  }}
-                >
-                  <option value="">All Users</option>
-                  {users.map((user) => (
-                    <option
-                      key={user.userUID || user.id}
-                      value={user.userUID || user.id}
-                    >
-                      {user.name || user.email}
-                    </option>
-                  ))}
-                </select>
-                {selectedUserId && (
-                  <DynamicButton
-                    onClick={() => handleUserSelect("")}
-                    variant="outline"
-                    size="sm"
-                    iconName="x"
-                    iconPosition="center"
-                  />
-                )}
+            {/* User Filter - Admin Only */}
+            {isUserAdmin && (
+              <div className="space-y-2">
+                <label htmlFor="selectedUser" className="block text-sm font-medium text-gray-300">
+                  Filter by User
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    id="selectedUser"
+                    value={selectedUserId}
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onChange={(e) => {
+                      handleUserSelect(e.target.value);
+                    }}
+                  >
+                    <option value="">All Users</option>
+                    {users.map((user) => (
+                      <option
+                        key={user.userUID || user.id}
+                        value={user.userUID || user.id}
+                      >
+                        {user.name || user.email}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedUserId && (
+                    <DynamicButton
+                      onClick={() => handleUserSelect("")}
+                      variant="outline"
+                      size="sm"
+                      iconName="x"
+                      iconPosition="center"
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Create Task Button */}
             <div className="space-y-2">

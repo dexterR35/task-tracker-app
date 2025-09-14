@@ -1,7 +1,6 @@
 import React from "react";
-import { useDeleteTaskMutation } from "@/features/tasks/tasksApi";
+import { useAppData } from "@/hooks/useAppData";
 import { useTaskColumns } from "@/components/ui/Table/tableColumns.jsx";
-import { showSuccess } from "@/utils/toast.js";
 import TanStackTable from "@/components/ui/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import ReactHookFormWrapper from "@/components/forms/ReactHookFormWrapper";
@@ -48,21 +47,23 @@ const TaskTable = ({
   reporters = [], // Reporters data for TaskForm
   user = null, // User data for TaskForm
 }) => {
-  // API hooks for task CRUD
-  const [deleteTask] = useDeleteTaskMutation();
+  // Get delete mutation from useAppData
+  const { deleteTask } = useAppData();
   
   // Get task columns with monthId and reporters data for reporter name lookup
   const taskColumns = useTaskColumns(monthId, reporters);
   
-  // Custom delete mutation wrapper for tasks
+  // Simple delete wrapper - always use task's monthId
   const handleTaskDeleteMutation = async (task) => {
-    const deleteData = {
-      id: task.id,
-      monthId: task.monthId || monthId,
-      boardId: task.boardId,
-      userData: user
-    };
-    return await deleteTask(deleteData);
+    if (!deleteTask) {
+      console.error('deleteTask mutation not available');
+      throw new Error('Delete task mutation not available');
+    }
+    
+    return await deleteTask({ 
+      monthId: task.monthId,  // Always use task's own monthId
+      taskId: task.id 
+    });
   };
 
   // Use table actions hook

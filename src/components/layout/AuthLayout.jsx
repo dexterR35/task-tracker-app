@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, createContext, useContext } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Outlet, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useAppData } from "@/hooks/useAppData";
@@ -9,17 +9,6 @@ import Sidebar from "@/components/navigation/Sidebar";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
 import { Icons } from "@/components/icons";
-
-// Create context for app data to avoid multiple useAppData calls
-const AppDataContext = createContext();
-
-export const useAppDataContext = () => {
-  const context = useContext(AppDataContext);
-  if (!context) {
-    throw new Error('useAppDataContext must be used within AuthLayout');
-  }
-  return context;
-};
 
 
 const AuthLayout = () => {
@@ -121,7 +110,6 @@ const AuthLayout = () => {
   }
 
   return (
-      <AppDataContext.Provider value={appData}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
           <div className="flex h-screen">
             {/* Sidebar */}
@@ -184,7 +172,6 @@ const AuthLayout = () => {
             )}
           </div>
         </div>
-      </AppDataContext.Provider>
   );
 };
 

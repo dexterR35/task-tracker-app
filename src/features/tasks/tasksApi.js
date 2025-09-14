@@ -409,65 +409,25 @@ export const tasksApi = createFirestoreApi({
           return { error: errorResponse };
         }
       },
+      invalidatesTags: (result, error, { task }) => [
+        { type: "CurrentMonth", id: "ENHANCED" },
+        { type: "Tasks", id: "LIST" }
+      ],
     }),
 
-    // Update task with transaction using boardId
+    // Update task - simple Firestore update
     updateTask: builder.mutation({
-      async queryFn({ monthId, boardId, taskId, updates, userData }) {
+      async queryFn({ monthId, taskId, updates }) {
         try {
           const currentUser = getCurrentUserInfo();
           if (!currentUser) {
             return { error: { message: "Authentication required" } };
           }
 
-          // Simplified validation - only check business logic, not user auth
-          const validation = await validateOperation('update_task', {
-            userUID: currentUser.uid,
-            email: currentUser.email,
-            name: currentUser.name,
-            role: userData?.role || 'user', // Fallback to user role
-            permissions: userData?.permissions || [], // Include permissions array
-            isActive: userData?.isActive !== false // Include active status
-          }, {
-            taskData: updates,
-            monthId: monthId,
-            currentUserUID: currentUser.uid
-          });
-          
-          if (!validation.isValid) {
-            return { error: { message: validation.errors.join(', ') } };
-          }
-
-          // Get month document to validate boardId
-          const monthDocRef = doc(db, "tasks", monthId);
-          const monthDoc = await getDoc(monthDocRef);
-          
-          if (!monthDoc.exists()) {
-            throw new Error("Month board not found");
-          }
-
+          // Simple update - just update the document
           const taskRef = doc(db, "tasks", monthId, "monthTasks", taskId);
-          const taskDoc = await getDoc(taskRef);
-
-          if (!taskDoc.exists()) {
-            throw new Error("Task not found");
-          }
-
-          const currentTaskData = taskDoc.data();
-          const monthBoardData = monthDoc.data();
-          const expectedBoardId = monthBoardData?.boardId;
           
-          validateBoardIdConsistency(boardId, expectedBoardId, currentTaskData.boardId);
-
-          const currentUserUID = currentUser.uid;
-          if (currentTaskData.userUID !== currentUserUID && !isAdmin({ role: userData.role })) {
-            throw new Error("Permission denied: You can only update your own tasks");
-          }
-
-          const updatedAt = new Date().toISOString();
-          const currentUserName = userData.name || userData.email || currentUser.name || "Unknown User";
-          
-          // Filter out UI-only fields and system fields from updates
+          // Filter out protected fields
           const cleanUpdates = Object.keys(updates).reduce((acc, key) => {
             if (!key.startsWith('_') && 
                 !['createdAt', 'updatedAt', 'monthId', 'userUID', 'boardId', 'createbyUID', 'createdByName'].includes(key)) {
@@ -476,27 +436,16 @@ export const tasksApi = createFirestoreApi({
             return acc;
           }, {});
           
-          const updatesWithSystemFields = {
-            data_task: {
-              ...currentTaskData.data_task,
-              ...cleanUpdates
-            },
-            updatedAt: updatedAt,
-            ...(updates.userUID === undefined && { userUID: currentUserUID }),
+          const updatesWithTimestamp = {
+            ...cleanUpdates,
+            updatedAt: new Date().toISOString()
           };
 
-          const forbiddenFields = ['createdAt', 'createbyUID', 'createdByName'];
-          for (const field of forbiddenFields) {
-            if (updatesWithSystemFields[field] !== undefined) {
-              throw new Error(`Cannot update protected field: ${field}`);
-            }
-          }
-
-          await updateDoc(taskRef, updatesWithSystemFields);
+          await updateDoc(taskRef, updatesWithTimestamp);
           
           logger.log("Task updated successfully, real-time subscription will update cache automatically");
 
-          return { data: { id: taskId, monthId, boardId, success: true } };
+          return { data: { id: taskId, monthId, success: true } };
         } catch (error) {
           const errorResponse = handleApiError(error, "Update Task", {
             showToast: false,
@@ -505,65 +454,28 @@ export const tasksApi = createFirestoreApi({
           return { error: errorResponse };
         }
       },
+      invalidatesTags: (result, error, { monthId }) => [
+        { type: "CurrentMonth", id: "ENHANCED" },
+        { type: "Tasks", id: "LIST" }
+      ],
     }),
 
-    // Delete task with transaction using boardId
+    // Delete task - simple Firestore delete
     deleteTask: builder.mutation({
-      async queryFn({ monthId, boardId, taskId, userData }) {
+      async queryFn({ monthId, taskId }) {
         try {
           const currentUser = getCurrentUserInfo();
           if (!currentUser) {
             return { error: { message: "Authentication required" } };
           }
 
-          // Simplified validation - only check business logic, not user auth
-          const validation = await validateOperation('delete_task', {
-            userUID: currentUser.uid,
-            email: currentUser.email,
-            name: currentUser.name,
-            role: userData?.role || 'user', // Fallback to user role
-            permissions: userData?.permissions || [], // Include permissions array
-            isActive: userData?.isActive !== false // Include active status
-          }, {
-            monthId: monthId,
-            currentUserUID: currentUser.uid
-          });
-          
-          if (!validation.isValid) {
-            return { error: { message: validation.errors.join(', ') } };
-          }
-
-          // Get month document to validate boardId
-          const monthDocRef = doc(db, "tasks", monthId);
-          const monthDoc = await getDoc(monthDocRef);
-          
-          if (!monthDoc.exists()) {
-            throw new Error("Month board not found");
-          }
-          
+          // Simple delete - just delete the document
           const taskRef = doc(db, "tasks", monthId, "monthTasks", taskId);
-          const taskDoc = await getDoc(taskRef);
-
-          if (!taskDoc.exists()) {
-            throw new Error("Task not found");
-          }
-
-          const currentTaskData = taskDoc.data();
-          const monthBoardData = monthDoc.data();
-          const expectedBoardId = monthBoardData?.boardId;
-          
-          validateBoardIdConsistency(boardId, expectedBoardId, currentTaskData.boardId);
-
-          const currentUserUID = currentUser.uid;
-          if (currentTaskData.userUID !== currentUserUID && !isAdmin({ role: userData.role })) {
-            throw new Error("Permission denied: You can only delete your own tasks");
-          }
-
           await deleteDoc(taskRef);
 
           logger.log("Task deleted successfully, real-time subscription will update cache automatically");
 
-          return { data: { id: taskId, monthId, boardId } };
+          return { data: { id: taskId, monthId } };
         } catch (error) {
           const errorResponse = handleApiError(error, "Delete Task", {
             showToast: false,
@@ -572,6 +484,10 @@ export const tasksApi = createFirestoreApi({
           return { error: errorResponse };
         }
       },
+      invalidatesTags: (result, error, { monthId }) => [
+        { type: "CurrentMonth", id: "ENHANCED" },
+        { type: "Tasks", id: "LIST" }
+      ],
     }),
 
     // Generate month board (admin only)
@@ -702,12 +618,19 @@ export const tasksApi = createFirestoreApi({
             }
           }
           
+          // Calculate initial msUntilMidnight
+          const now = new Date();
+          const midnight = new Date();
+          midnight.setHours(24, 0, 0, 0);
+          const initialMsUntilMidnight = midnight.getTime() - now.getTime();
+
           return { 
             data: {
               currentMonth: monthInfo,
               availableMonths,
               boardExists,
               currentMonthTasks,
+              msUntilMidnight: initialMsUntilMidnight,
               lastUpdated: Date.now()
             }
           };
@@ -864,7 +787,11 @@ export const tasksApi = createFirestoreApi({
               });
             },
             (msUntilMidnight) => {
-              logger.log(`[getCurrentMonth] Next midnight check scheduled in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
+              logger.log(`[getCurrentMonth] Next midnight check scheduled in ${Math.round(msUntilMidnight / 1000 / 60 / 60)} hours`);
+              // Store the msUntilMidnight value in cached data for real-time countdown
+              updateCachedData((draft) => {
+                draft.msUntilMidnight = msUntilMidnight;
+              });
             },
             {
               showAlert: true,

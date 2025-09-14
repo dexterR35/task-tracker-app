@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAppDataContext } from "@/components/layout/AuthLayout";
+import { useAppData } from "@/hooks/useAppData";
 import AdminPageHeader from "@/components/layout/AdminPageHeader";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
@@ -9,8 +9,8 @@ import ReporterTable from "@/features/reporters/components/ReporterTable/Reporte
 import { logger } from "@/utils/logger";
 
 const AdminManagementPage = () => {
-  // Get all data from AuthLayout context (pre-fetched data, no API calls!)
-  const { monthId, monthName, users, reporters, error, isLoading } = useAppDataContext();
+  // Get all data directly from useAppData hook (RTK Query handles caching)
+  const { monthId, monthName, users, reporters, error, isLoading } = useAppData();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
   
@@ -21,7 +21,12 @@ const AdminManagementPage = () => {
       reporters: reporters?.length || 0,
       error: error?.message || null
     });
-  }, [users?.length, reporters?.length, error]);
+  }, [
+    // Use stable IDs instead of array length for better performance
+    users?.map(user => user.id).join(','),
+    reporters?.map(reporter => reporter.id).join(','),
+    error
+  ]);
 
   // Show error state
   if (error) {
