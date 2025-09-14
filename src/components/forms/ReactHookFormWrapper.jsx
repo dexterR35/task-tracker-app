@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { showSuccess, showError } from '@/utils/toast';
-import { buildFormValidationSchema, shouldShowField, TASK_FORM_CONFIG, REPORTER_FORM_CONFIG, LOGIN_FORM_CONFIG } from './configs/useForms';
+import { shouldShowField, TASK_FORM_CONFIG, REPORTER_FORM_CONFIG, LOGIN_FORM_CONFIG } from './configs/useForms';
 import { 
   TextField, 
   SelectField, 
@@ -19,11 +19,9 @@ import {
   executeMutation, 
   getMutation, 
   prepareFormData,
-  getUserData,
   getFormMetadata
 } from './utils/formUtilities';
 import { useAppData } from '@/hooks/useAppData';
-import { useCreateTaskMutation, useUpdateTaskMutation } from '@/features/tasks/tasksApi';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { logger } from '@/utils/logger';
@@ -79,15 +77,17 @@ const ReactHookFormWrapper = ({
   monthId = null,
   reporters = []
 }) => {
-  // Only call useAppData if data not provided by parent - conditional fetching
-  const appData = (!user || !monthId || reporters.length === 0) ? useAppData() : null;
+  // Always call useAppData to maintain consistent hook order
+  const appData = useAppData();
+  
+  // Use provided data if available, otherwise fallback to appData
   const finalUser = user || appData?.user;
   const finalMonthId = monthId || appData?.monthId;
   const finalReporters = reporters.length > 0 ? reporters : appData?.reporters || [];
   
-  // Get task mutations from useAppData or fallback to direct hooks
-  const createTask = appData?.createTask || useCreateTaskMutation()[0];
-  const updateTask = appData?.updateTask || useUpdateTaskMutation()[0];
+  // Get task mutations from useAppData
+  const createTask = appData?.createTask;
+  const updateTask = appData?.updateTask;
   
   // Call RTK Query hooks at the top level
   const [createReporter] = useCreateReporterMutation();
@@ -114,130 +114,49 @@ const ReactHookFormWrapper = ({
       })()
     : formConfig;
 
-  // API mutations mapping
-  const API_MUTATIONS = {
-    task: {
-      create: createTask,
-      update: updateTask
-    },
-    reporter: {
-      create: createReporter,
-      update: updateReporter
-    },
-    login: {
-      create: login, // Login is a "create" operation (create session)
-      update: null   // Login doesn't have update
-    }
-  };
+  // Get API mutations from form config
+  const finalApiMutations = customMutations || (finalFormConfig?.getApiMutations 
+    ? finalFormConfig.getApiMutations(appData, createReporter, updateReporter, login)
+    : apiMutations);
 
-  // Get API mutations based on form type
-  const finalApiMutations = customMutations
-    ? customMutations
-    : formType
-      ? (() => {
-          const mutations = API_MUTATIONS[formType];
-          if (!mutations) {
-            throw new Error(`No API mutations available for form type: ${formType}`);
-          }
-          return mutations;
-        })()
-      : apiMutations;
+  // Get context data from form config
+  const finalContextData = customContextData || (finalFormConfig?.getContextData
+    ? finalFormConfig.getContextData(finalUser, finalMonthId, initialValues, mode)
+    : contextData);
 
-  // Prepare context data based on form type
-  const finalContextData = (() => {
-    if (customContextData) return customContextData;
-    
-    const userData = getUserData(finalUser);
-    
-    const baseContext = {
-      user: finalUser,
-      ...userData
-    };
-    
-    if (formType === 'task') {
-      return {
-        ...baseContext,
-        monthId: finalMonthId,
-        ...(mode === 'edit' && initialValues?.id && { 
-          id: initialValues.id,
-          taskId: initialValues.id,
-          boardId: initialValues.boardId 
-        })
-      };
-    }
-    
-    if (formType === 'reporter') {
-      return {
-        ...baseContext,
-        ...(mode === 'edit' && initialValues?.id && { 
-          id: initialValues.id
-        })
-      };
-    }
-    
-    if (formType === 'login') {
-      return {
-        // Login doesn't need context data
-        user: null
-      };
-    }
-    
-    return { ...baseContext, ...contextData };
-  })();
+  // Get initial values from form config
+  const finalInitialValues = finalFormConfig?.getInitialValues
+    ? finalFormConfig.getInitialValues(finalUser, initialValues)
+    : initialValues;
 
-  // Get initial values
-  const finalInitialValues = (() => {
-    if (formType === 'reporter') {
-      const values = finalFormConfig.getInitialValues(finalUser, initialValues);
-      logger.log('📝 Reporter initial values:', values, 'from:', initialValues);
-      logger.log('📝 Final user:', finalUser);
-      logger.log('📝 Mode:', mode);
-      return values;
-    }
-    if (formType === 'login') {
-      return finalFormConfig.getInitialValues();
-    }
-    if (formType === 'task') {
-      return finalFormConfig.getInitialValues(initialValues);
-    }
-    return initialValues;
-  })();
-
-  // Get fields with dynamic options
-  const finalFields = (() => {
-    if (formType === 'task' && finalFormConfig.getFieldsWithOptions) {
-      return finalFormConfig.getFieldsWithOptions(finalReporters);
-    }
-    if (formType) {
-      return finalFormConfig.fields;
-    }
-    return fields;
-  })();
+  // Get fields from form config
+  const finalFields = finalFormConfig?.getFieldsWithOptions
+    ? finalFormConfig.getFieldsWithOptions(finalReporters)
+    : finalFormConfig?.fields || fields;
 
   // Get form title and submit button text
-  const { formTitle, finalSubmitButtonText } = (() => {
-    if (formType) {
-      const metadata = getFormMetadata(formType, mode, FORM_METADATA);
-      return {
-        formTitle: metadata.formTitle,
-        finalSubmitButtonText: submitButtonText || metadata.submitButtonText
+  const { formTitle, finalSubmitButtonText } = formType
+    ? (() => {
+        const metadata = getFormMetadata(formType, mode, FORM_METADATA);
+        return {
+          formTitle: metadata.formTitle,
+          finalSubmitButtonText: submitButtonText || metadata.submitButtonText
+        };
+      })()
+    : {
+        formTitle: null,
+        finalSubmitButtonText: submitButtonText
       };
-    }
-    return {
-      formTitle: null,
-      finalSubmitButtonText: submitButtonText
-    };
-  })();
 
-  // Auto-generate validation schema if not provided - optimized for React Hook Form
-  const finalValidationSchema = useMemo(() => {
-    if (validationSchema) return validationSchema;
-    if (finalFormConfig?.validationSchema) return finalFormConfig.validationSchema;
-    if (finalFields) {
-      return buildFormValidationSchema(finalFields);
-    }
-    return null;
-  }, [validationSchema, finalFormConfig, finalFields]);
+  // Get validation schema - use explicit schema from form config
+  const finalValidationSchema = validationSchema || finalFormConfig?.validationSchema;
+  
+  // Debug validation schema
+  if (finalValidationSchema) {
+    logger.log('✅ Validation schema created:', finalValidationSchema);
+  } else {
+    logger.error('❌ No validation schema found!');
+  }
 
   // Initialize React Hook Form
   const {
@@ -254,34 +173,15 @@ const ReactHookFormWrapper = ({
   } = useForm({
     resolver: finalValidationSchema ? yupResolver(finalValidationSchema) : undefined,
     defaultValues: finalInitialValues,
-    mode: 'onChange',
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    shouldFocusError: true,
     ...additionalProps
   });
 
   // Watch all form values for conditional field logic
   const watchedValues = watch();
 
-  // Auto-generate taskName from jiraLink for task forms (real-time)
-  useEffect(() => {
-    if ((formType === 'task' || entityType === 'task') && watchedValues.jiraLink) {
-      const jiraMatch = watchedValues.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
-      if (jiraMatch) {
-        const generatedTaskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
-        setValue('taskName', generatedTaskName);
-        logger.log('🔧 Auto-generated taskName:', generatedTaskName);
-      } else if (watchedValues.jiraLink.includes('atlassian.net')) {
-        // Fallback: use the last part of the URL for valid Jira URLs
-        const urlParts = watchedValues.jiraLink.split('/');
-        const fallbackTaskName = urlParts[urlParts.length - 1] || 'Unknown Task';
-        setValue('taskName', fallbackTaskName);
-        logger.log('🔧 Auto-generated taskName (fallback):', fallbackTaskName);
-      } else {
-        // Clear taskName if Jira link is invalid or empty
-        setValue('taskName', '');
-        logger.log('🔧 Cleared taskName - invalid Jira link');
-      }
-    }
-  }, [watchedValues.jiraLink, formType, entityType, setValue]);
 
   // Reset form when initialValues change (for edit mode)
   useEffect(() => {
@@ -305,8 +205,27 @@ const ReactHookFormWrapper = ({
       logger.log('🚀 Form Submission Started:', {
         mode,
         rawFormData: data,
-        contextData
+        contextData,
+        validationSchema: finalValidationSchema ? 'Present' : 'Missing',
+        fields: finalFields?.length || 0,
+        formErrors: errors
       });
+      
+      console.log('🚀 Form submission data:', data);
+      console.log('🚀 Form errors:', errors);
+
+      // Check if validation schema exists
+      if (!finalValidationSchema) {
+        logger.error('❌ No validation schema found!');
+        showError('Form validation is not configured properly');
+        return;
+      }
+
+      // Log the actual data being submitted
+      logger.log('📝 Form data being submitted:', data);
+
+      // Note: React Hook Form with Yup validation handles all validation automatically
+      // No need for manual validation checks here
 
       // Use custom onSubmit if provided, otherwise use built-in logic
       if (onSubmit) {
@@ -321,30 +240,30 @@ const ReactHookFormWrapper = ({
       }
 
       // Prepare form data for database
-      const dataForDatabase = prepareFormData(data, finalFields, finalFormConfig, formType || entityType, mode, finalContextData);
-      logger.log('💾 Final Data for Database:', dataForDatabase);
-      logger.log('💾 Form Data (raw):', data);
-      logger.log('💾 Context Data:', finalContextData);
+      let dataForDatabase;
+      try {
+        dataForDatabase = prepareFormData(data, finalFields, finalFormConfig, formType || entityType, mode, finalContextData);
+        logger.log('💾 Final Data for Database:', dataForDatabase);
+        logger.log('💾 Form Data (raw):', data);
+        logger.log('💾 Context Data:', finalContextData);
+      } catch (error) {
+        logger.error('💾 Data preparation error:', error);
+        showError(error.message);
+        return;
+      }
 
       let result;
       if (mode === 'edit' && finalContextData.id) {
         // Update existing record
         const updateMutation = getMutation(finalApiMutations, 'update');
-        let mutationData;
-        
-        if (formType === 'reporter') {
-          mutationData = {
-            id: finalContextData.id,
-            updates: dataForDatabase
-          };
-        } else {
-          mutationData = {
-            monthId: finalContextData.monthId,
-            taskId: finalContextData.taskId || finalContextData.id,
-            updates: dataForDatabase,
-            reporters: finalReporters
-          };
-        }
+        const mutationData = formType === 'reporter' 
+          ? { id: finalContextData.id, updates: dataForDatabase }
+          : { 
+              monthId: finalContextData.monthId, 
+              taskId: finalContextData.taskId || finalContextData.id, 
+              updates: dataForDatabase, 
+              reporters: finalReporters 
+            };
         
         result = await executeMutation(updateMutation, mutationData);
         logger.log('✅ Update Result:', result);
@@ -352,30 +271,13 @@ const ReactHookFormWrapper = ({
       } else {
         // Create new record
         const createMutation = getMutation(finalApiMutations, 'create');
+        const mutationData = formType === 'login' 
+          ? data // Login uses raw form data
+          : formType === 'reporter' 
+            ? { reporter: dataForDatabase, userData: finalContextData.user }
+            : { task: dataForDatabase, userData: finalContextData.user, reporters: finalReporters };
         
-        // Special handling for login form
-        if (formType === 'login') {
-          // For login, pass the raw form data directly to the login function
-          logger.log('🔐 Login form data:', data);
-          result = await executeMutation(createMutation, data);
-        } else {
-          // For other forms, use the standard data preparation
-          let mutationData;
-          if (formType === 'reporter') {
-            mutationData = {
-              reporter: dataForDatabase,
-              userData: finalContextData.user
-            };
-          } else {
-            mutationData = {
-              task: dataForDatabase,
-              userData: finalContextData.user,
-              reporters: finalReporters
-            };
-          }
-          result = await executeMutation(createMutation, mutationData);
-        }
-        
+        result = await executeMutation(createMutation, mutationData);
         showSuccess(finalFormConfig.successMessages?.create || `${formType || entityType} created successfully!`);
       }
 
@@ -387,21 +289,18 @@ const ReactHookFormWrapper = ({
 
     } catch (error) {
       logger.error(`${entityType} form submission error:`, error);
-      const errorMessage = formConfig?.errorMessages?.default || `Failed to save ${entityType}. Please try again.`;
+      const errorMessage = finalFormConfig?.errorMessages?.default || `Failed to save ${entityType}. Please try again.`;
       showError(errorMessage);
       onError?.(error);
     }
-  }, [onSubmit, formConfig, apiMutations, contextData, mode, fields, onSuccess, onError, entityType, reset]);
+  }, [onSubmit, finalFormConfig, finalApiMutations, finalContextData, mode, finalFields, onSuccess, onError, entityType, reset, formType, finalReporters, finalValidationSchema]);
 
   /**
    * Generic field renderer that works with any field configuration
    * Memoized to prevent unnecessary re-renders
    */
   const renderField = useCallback((field) => {
-    // Check if field should be visible based on conditional logic
-    if (!shouldShowField(field, watchedValues)) {
-      return null; // Don't render the field
-    }
+    // All fields are now visible - conditional logic only affects required state
 
     const fieldProps = {
       field,
@@ -411,7 +310,8 @@ const ReactHookFormWrapper = ({
       watch,
       trigger,
       clearErrors,
-      getInputType
+      getInputType,
+      formValues: watchedValues
     };
 
     switch (field.type) {
@@ -438,8 +338,15 @@ const ReactHookFormWrapper = ({
         </h2>
       )}
       
-      <form onSubmit={handleSubmit(handleFormSubmit)} className={formType === 'task' ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-6"}>
-        {finalFields?.map((field) => renderField(field)) || []}
+      <form onSubmit={handleSubmit(handleFormSubmit, (errors) => {
+        console.log('❌ Form validation errors:', errors);
+        logger.error('❌ Form validation failed:', errors);
+        showError('Please fix the validation errors before submitting');
+      })} className={formType === 'task' ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-6"}>
+        {finalFields?.map((field) => {
+          logger.log('🔍 Rendering field:', field.name, 'type:', field.type, 'required:', field.required);
+          return renderField(field);
+        }) || []}
         
         <div className={formType === 'task' ? "col-span-1 lg:col-span-2 flex justify-end" : "flex justify-end"}>
           <button

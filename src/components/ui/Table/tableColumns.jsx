@@ -33,25 +33,38 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
   }),
   columnHelper.accessor('data_task.taskName', {
     header: 'Jira Link',
-    cell: ({ getValue }) => <JiraLinkCell taskName={getValue()} />,
+    cell: ({ getValue, row }) => {
+      // Safely access the nested property with fallback
+      const taskName = getValue() || row.original?.data_task?.taskName || null;
+      return <JiraLinkCell taskName={taskName} />;
+    },
     size: 200,
   }),
   columnHelper.accessor('data_task.departments', {
     header: 'Department',
-    cell: ({ getValue }) => {
-      const departments = getValue();
+    cell: ({ getValue, row }) => {
+      // Safely access the nested property with fallback
+      const departments = getValue() || row.original?.data_task?.departments || null;
       return departments || 'Unnamed Task';
     },
     size: 150,
   }),
   columnHelper.accessor('data_task.products', {
     header: 'Product',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue, row }) => {
+      // Safely access the nested property with fallback
+      const products = getValue() || row.original?.data_task?.products || null;
+      return safeDisplay(products);
+    },
     size: 120,
   }),
   columnHelper.accessor('data_task.timeInHours', {
     header: 'Hours',
-    cell: ({ getValue }) => <HoursCell value={getValue()} />,
+    cell: ({ getValue, row }) => {
+      // Safely access the nested property with fallback
+      const timeInHours = getValue() || row.original?.data_task?.timeInHours || null;
+      return <HoursCell value={timeInHours} />;
+    },
     size: 80,
   }),
   columnHelper.accessor('data_task.usedAI.aiTime', {

@@ -1,12 +1,12 @@
 import React from 'react';
-import { handleConditionalLogic } from '../utils/formUtilities';
+import { FIELD_LABEL_CLASSES, REQUIRED_INDICATOR } from '../utils/formConstants';
 import BaseField from './BaseField';
 
-const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors }) => {
+const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} className="field-wrapper">
+    <BaseField field={field} error={fieldError} hideLabel={true} formValues={formValues}>
       <div className="flex items-start space-x-3">
         <input
           {...register(field.name)}
@@ -16,14 +16,14 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
             setValue(field.name, e.target.checked);
             trigger(field.name);
             
-            // Handle conditional field logic
-            handleConditionalLogic(field.name, e.target.checked, setValue, clearErrors);
+            // Conditional field logic is now handled by Yup .when() validation
+            // The form data processing in prepareTaskFormData handles setting defaults
           }}
         />
         <div>
-          <label htmlFor={field.name} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor={field.name} className={FIELD_LABEL_CLASSES}>
             {field.label}
-            {field.required && ` *`}
+            {field.required && ` ${REQUIRED_INDICATOR}`}
           </label>
         </div>
       </div>

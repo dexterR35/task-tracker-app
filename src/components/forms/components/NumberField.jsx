@@ -1,12 +1,12 @@
 import React from 'react';
-import { INPUT_CLASSES } from '../utils/formConstants';
+import { INPUT_CLASSES, INPUT_ERROR_CLASSES, READONLY_CLASSES } from '../utils/formConstants';
 import BaseField from './BaseField';
 
-const NumberField = ({ field, register, errors, setValue, trigger }) => {
+const NumberField = ({ field, register, errors, setValue, trigger, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError}>
+    <BaseField field={field} error={fieldError} formValues={formValues}>
       <input
         {...register(field.name, {
           valueAsNumber: true,
@@ -18,10 +18,12 @@ const NumberField = ({ field, register, errors, setValue, trigger }) => {
         })}
         type="number"
         step={field.step || 0.5}
-        min={field.min || 0.5}
-        max={field.max || 999}
         placeholder={field.placeholder}
-        className={INPUT_CLASSES}
+        readOnly={field.readOnly || false}
+        disabled={field.disabled || false}
+        className={field.readOnly 
+          ? `${fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES} ${READONLY_CLASSES}` 
+          : fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES}
       />
     </BaseField>
   );

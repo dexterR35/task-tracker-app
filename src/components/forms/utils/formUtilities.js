@@ -1,10 +1,5 @@
 // Form utility functions
-import { PROTECTED_FIELDS, CONDITIONAL_FIELD_LOGIC } from './formConstants';
-
-// Get user data from user object
-export const getUserData = (user) => ({
-  name: user?.name || user?.email || ''
-});
+import { PROTECTED_FIELDS } from './formConstants';
 
 // Execute mutation (handles both direct functions and RTK Query)
 export const executeMutation = async (mutation, data) => {
@@ -25,14 +20,10 @@ export const getMutation = (apiMutations, type) => {
 
 // Prepare form data for database submission
 export const prepareFormData = (data, fields, formConfig, entityType, mode, contextData) => {
-  // Sanitize form data
-  const sanitizedData = sanitizeFormData(data, fields);
-  
-  // Use task-specific data preparation if this is a task form
-  let processedData = sanitizedData;
-  if (entityType === 'task' && formConfig.prepareTaskFormData) {
-    processedData = formConfig.prepareTaskFormData(sanitizedData);
-  }
+  // Apply business logic processing (React Hook Form + Yup handle validation/sanitization)
+  const processedData = entityType === 'task' && formConfig.prepareTaskFormData
+    ? formConfig.prepareTaskFormData(data)
+    : data;
   
   // Prepare data for database (exclude user object from contextData)
   const { user, ...contextDataWithoutUser } = contextData;
@@ -61,34 +52,7 @@ export const prepareFormData = (data, fields, formConfig, entityType, mode, cont
   return dataForDatabase;
 };
 
-// Handle conditional field logic
-export const handleConditionalLogic = (fieldName, checked, setValue, clearErrors) => {
-  const logic = CONDITIONAL_FIELD_LOGIC[fieldName];
-  if (!logic) return;
-
-  if (!checked) {
-    // Clear fields
-    if (logic.clearFields) {
-      logic.clearFields.forEach(field => {
-        setValue(field, []);
-      });
-    }
-
-    // Clear errors
-    if (logic.clearErrors) {
-      logic.clearErrors.forEach(field => {
-        clearErrors(field);
-      });
-    }
-
-    // Set specific values
-    if (logic.setValues) {
-      Object.entries(logic.setValues).forEach(([field, value]) => {
-        setValue(field, value);
-      });
-    }
-  }
-};
+// Note: Removed handleConditionalLogic - using Yup .when() for conditional validation instead
 
 // Get form metadata (title and button text)
 export const getFormMetadata = (formType, mode, FORM_METADATA) => {
@@ -99,5 +63,4 @@ export const getFormMetadata = (formType, mode, FORM_METADATA) => {
   };
 };
 
-// Import sanitizeFormData from useForms
-import { sanitizeFormData } from '../configs/useForms';
+// Note: All validation logic moved to explicit Yup schemas in useForms.js

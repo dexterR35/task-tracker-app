@@ -1,15 +1,15 @@
 import React from 'react';
-import { INPUT_CLASSES } from '../utils/formConstants';
+import { INPUT_CLASSES, INPUT_ERROR_CLASSES } from '../utils/formConstants';
 import BaseField from './BaseField';
 
-const SelectField = ({ field, register, errors }) => {
+const SelectField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError}>
+    <BaseField field={field} error={fieldError} formValues={formValues}>
       <select
         {...register(field.name)}
-        className={INPUT_CLASSES}
+        className={fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES}
       >
         <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
         {field.options?.map((option) => (

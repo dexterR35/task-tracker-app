@@ -24,14 +24,18 @@ const AuthLayout = () => {
   // No need to check admin access here since router already handles it
   
   // Extract what we need for AuthLayout UI and month board generation
-  const { monthId, monthName, boardExists, startDate, endDate, daysInMonth, isLoading } = appData;
+  const { monthId, monthName, boardExists, startDate, endDate, daysInMonth, isLoading } = appData || {};
   
   // Month board operations from tasksApi
   const [generateMonthBoard, { isLoading: isGenerating }] = useGenerateMonthBoardMutation();
 
-  // Month data is now automatically loaded by useAppData hook from tasksApi
-  // No manual initialization needed - RTK Query handles everything
+  // Define functions that will be used in useEffect hooks
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC OR EARLY RETURNS
+  
   // Keyboard shortcut for toggling sidebar (Ctrl/Cmd + B)
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -62,9 +66,17 @@ const AuthLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  // Month data is now automatically loaded by useAppData hook from tasksApi
+  // No manual initialization needed - RTK Query handles everything
+  
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader size="xl" text="Loading app data..." fullScreen={true} />
+      </div>
+    );
+  }
 
   // Month board generation handler (admin only)
   const handleGenerateBoard = async () => {
@@ -124,12 +136,12 @@ const AuthLayout = () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Month Board Warning - Global notification */}
-          {!boardExists && monthId && (
+          {!boardExists && monthId && monthName && (
             <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4 shadow-lg">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <Icons.buttons.warning className="w-5 h-5 mr-2" />
+                    <Icons.buttons.alert className="w-5 h-5 mr-2" />
                     Month Board Not Available
                   </h3>
                   <p className="text-sm">

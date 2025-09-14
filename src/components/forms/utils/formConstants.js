@@ -16,7 +16,7 @@ export const VALIDATION_PATTERNS = {
   EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
   NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@netbet\.ro$/,
   URL: /^https?:\/\/.+/,
-  JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/GIMODEAR-\d+$/,
+  JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
 };
 
 // ===== VALIDATION MESSAGES =====
@@ -32,10 +32,26 @@ export const VALIDATION_MESSAGES = {
   INVALID_FORMAT: 'Invalid format',
   SELECT_ONE: 'Please select at least one option',
   SELECT_REQUIRED: 'Please select an option',
-  CONDITIONAL_REQUIRED: 'This field is required when the condition is met',
-  JIRA_URL_FORMAT: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/GIMODEAR-{number}',
+  JIRA_URL_FORMAT: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}',
   DELIVERABLE_REQUIRED: 'Please select at least one deliverable when "Has Deliverables" is checked',
   AI_MODEL_REQUIRED: 'Please select at least one AI model when "AI Tools Used" is checked',
+  
+  // Additional validation messages for better UX
+  WHOLE_NUMBER: 'Please enter a whole number',
+  DECIMAL_PLACES: (places) => `Please enter a number with no more than ${places} decimal places`,
+  FUTURE_DATE: 'Please select a future date',
+  PAST_DATE: 'Please select a past date',
+  UNIQUE_VALUE: 'This value is already taken',
+  PASSWORD_STRENGTH: 'Password must contain at least 8 characters, including uppercase, lowercase, and numbers',
+  CONFIRM_PASSWORD: 'Passwords do not match',
+  FILE_SIZE: (maxSize) => `File size must be less than ${maxSize}MB`,
+  FILE_TYPE: (allowedTypes) => `Only ${allowedTypes.join(', ')} files are allowed`,
+  NETWORK_ERROR: 'Network error. Please check your connection and try again.',
+  SERVER_ERROR: 'Server error. Please try again later.',
+  UNAUTHORIZED: 'You are not authorized to perform this action',
+  NOT_FOUND: 'The requested resource was not found',
+  VALIDATION_FAILED: 'Please check your input and try again',
+  SUBMISSION_FAILED: 'Failed to submit form. Please try again.',
 };
 
 // ===== SUCCESS MESSAGES =====
@@ -56,6 +72,8 @@ export const ERROR_MESSAGES = {
 
 // ===== CSS CLASSES =====
 export const INPUT_CLASSES = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white";
+
+export const INPUT_ERROR_CLASSES = "w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white";
 
 export const READONLY_CLASSES = "bg-gray-100 dark:bg-gray-600 cursor-not-allowed";
 
@@ -90,15 +108,4 @@ export const FORM_METADATA = {
 // ===== PROTECTED FIELDS =====
 export const PROTECTED_FIELDS = ['createdAt', 'createdByUID', 'createdByName', 'id'];
 
-// ===== CONDITIONAL FIELD LOGIC CONFIGURATION =====
-export const CONDITIONAL_FIELD_LOGIC = {
-  hasDeliverables: {
-    clearFields: ['deliverables'],
-    clearErrors: ['deliverables']
-  },
-  usedAI: {
-    clearFields: ['aiModels', 'aiTime'],
-    clearErrors: ['aiModels', 'aiTime'],
-    setValues: { aiTime: 0 }
-  }
-};
+// Note: Removed CONDITIONAL_FIELD_LOGIC - using Yup .when() for conditional validation instead

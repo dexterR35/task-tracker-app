@@ -275,13 +275,13 @@ export const useAppData = () => {
     isLoading,
     error,
     
-    // Month data (from consolidated hook)
-    monthId: monthData.monthId,
-    monthName: monthData.monthName,
-    daysInMonth: monthData.daysInMonth,
+    // Month data (from consolidated hook) - with safety checks
+    monthId: monthData.monthId || null,
+    monthName: monthData.monthName || null,
+    daysInMonth: monthData.daysInMonth || null,
     startDate: memoizedStartDate,
     endDate: memoizedEndDate,
-    boardExists: monthData.boardExists,
+    boardExists: monthData.boardExists || false,
     availableMonths: monthData.availableMonths || []
   };
   
