@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   setPersistence,
-  browserSessionPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
 import { 
   getFirestore
@@ -54,8 +54,8 @@ if (import.meta.env.MODE === "development") {
 const setupPersistence = async (retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
-      await setPersistence(auth, browserSessionPersistence);
-      logger.log("Firebase auth persistence set to session (incognito compatible)");
+      await setPersistence(auth, browserLocalPersistence);
+      logger.log("Firebase auth persistence set to local (persists across tabs)");
       return;
     } catch (error) {
       if (i === retries - 1) {
