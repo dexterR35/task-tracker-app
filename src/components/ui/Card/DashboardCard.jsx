@@ -198,23 +198,34 @@ const DashboardCard = ({ card }) => {
                                 </span>
                               </div>
                               {item.subValue && (
-                                <div className="ml-4 mt-1 flex items-center gap-2">
-                                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                                    markets
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {item.subValue.split(' ').map((market, index) => (
-                                      <Badge 
-                                        key={index} 
-                                        variant="default"
-                                        size="xs"
-                                        className="text-white text-[10px]"
-                                        style={{ backgroundColor: cardColors.colorValue }}
-                                      >
-                                        {market}
-                                      </Badge>
-                                    ))}
-                                  </div>
+                                <div className="ml-4 mt-1">
+                                  {/* Check if subValue contains market data (short codes like "com uk de") or other data (like "105h total") */}
+                                  {item.subValue.includes('h total') || item.subValue.includes('h AI') ? (
+                                    // Display as plain text for hours data
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {item.subValue}
+                                    </div>
+                                  ) : (
+                                    // Display as market badges for market data
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                                        markets
+                                      </div>
+                                      <div className="flex flex-wrap gap-1">
+                                        {item.subValue.split(' ').map((market, index) => (
+                                          <Badge 
+                                            key={index} 
+                                            variant="default"
+                                            size="xs"
+                                            className="text-white text-[10px]"
+                                            style={{ backgroundColor: cardColors.colorValue }}
+                                          >
+                                            {market}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
