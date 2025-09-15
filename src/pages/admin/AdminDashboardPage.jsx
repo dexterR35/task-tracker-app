@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAppData } from "@/hooks/useAppData";
+import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useMonthSelectionWithTasks } from "@/hooks/useAppData";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Modal from "@/components/ui/Modal/Modal";
 import LazyTaskTable from "@/components/lazy/LazyTaskTable";
@@ -12,25 +11,34 @@ import DashboardCard from "@/components/ui/Card/DashboardCard";
 import { createCards, CARD_SETS, CARD_TYPES } from "@/components/ui/Card/cardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useFilterOptions } from "@/hooks/useDataFilter";
-import { Icons } from "@/components/icons";
+
 
 
 // Universal Dashboard Page - Shows tasks based on user role
 // Admin: All tasks with user filters and full management
 // User: Only their own tasks with month selection
 const AdminDashboardPage = () => {
-  // Get all data directly from useAppData hook (RTK Query handles caching)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showTable, setShowTable] = useState(true);
+
+  // Get auth functions separately
+  const { canAccess } = useAuth();
+  const isUserAdmin = canAccess("admin");
+  const selectedUserId = searchParams.get("user") || "";
+
+  // Get basic data from useAppData hook
   const {
     user,
     users,
     reporters,
+    createTask,
+    updateTask,
+    deleteTask,
     error
-  } = useAppData();
+  } = useAppData(selectedUserId);
   
-  // Get auth functions separately
-  const { canAccess } = useAuth();
-  
-  // Use smart month selection with task fetching
+  // Use month selection hook for month-specific functionality
   const {
     tasks,                    // Current display tasks (current or selected month)
     currentMonthTasks,       // Current month tasks
@@ -42,29 +50,15 @@ const AdminDashboardPage = () => {
     error: monthError,       // Error state
     selectMonth,             // Function to select month
     resetToCurrentMonth      // Function to reset
-  } = useMonthSelectionWithTasks();
-  
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showTable, setShowTable] = useState(true);
-
-
-  const isUserAdmin = canAccess("admin");
-  const selectedUserId = searchParams.get("user") || "";
+  } = useMonthSelection(selectedUserId);
   
   // Task creation is only allowed for current month
   const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
   
-  // Role-based data filtering
-  const currentUserUID = isUserAdmin ? user?.uid : user?.userUID;
-  
-  const displayTasks = isUserAdmin
-    ? (selectedUserId ? tasks.filter(task => task.userUID === selectedUserId) : tasks)
-    : tasks.filter(task => task.userUID === currentUserUID);
-
   // Get selected user name for display
   const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
   const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
+  
   // Handle user selection (admin only) - memoized with useCallback
   const handleUserSelect = useCallback((userId) => {
     if (!userId) {
@@ -73,9 +67,6 @@ const AdminDashboardPage = () => {
       setSearchParams({ user: userId }, { replace: true });
     }
   }, [setSearchParams]);
-
-  // Use the role-based filtered tasks
-  const filteredTasks = displayTasks;
 
   // Derive title based on context and role
   const title = isUserAdmin
@@ -110,7 +101,7 @@ const AdminDashboardPage = () => {
         ...createCards([CARD_TYPES.TASKS, CARD_TYPES.REPORTERS], commonCardData),
         ...createCards([CARD_TYPES.SELECTED_USER], {
           ...commonCardData,
-          filteredTasks: filteredTasks,
+          filteredTasks: tasks,
           selectedUserId: selectedUserId,
           selectedUserName: selectedUserName
         })
@@ -293,7 +284,7 @@ const AdminDashboardPage = () => {
                     : "Tasks"}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {filteredTasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+                  {tasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
               </div>
             </div>
@@ -306,7 +297,7 @@ const AdminDashboardPage = () => {
                 <div className="flex justify-center items-center py-12">
                   <Loader size="md" text="Loading tasks..." />
                 </div>
-              ) : filteredTasks.length === 0 ? (
+              ) : tasks.length === 0 ? (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks found</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
@@ -329,7 +320,7 @@ const AdminDashboardPage = () => {
                 </div>
               ) : (
                 <LazyTaskTable
-                  tasks={filteredTasks}
+                  tasks={tasks}
                   users={users}
                   reporters={reporters}
                   user={user}

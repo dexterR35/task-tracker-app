@@ -210,7 +210,7 @@ export const prepareTaskFormData = (formData) => {
     return formData;
   }
 
-  console.log('🔍 Raw form data before processing:', formData);
+  logger.log('🔍 Raw form data before processing:', formData);
 
   // Business logic: Extract task name from Jira URL
   if (formData.jiraLink) {
@@ -241,7 +241,7 @@ export const prepareTaskFormData = (formData) => {
   delete formData._hasDeliverables;
   delete formData._usedAIEnabled;
   
-  console.log('🔍 Final processed data for database:', formData);
+  logger.log('🔍 Final processed data for database:', formData);
   
   return formData;
 };

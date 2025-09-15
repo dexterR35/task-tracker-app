@@ -11,7 +11,7 @@ const isConditionallyRequired = (field, formValues) => {
   // Always required fields (based on Yup schema)
   const alwaysRequiredFields = [
     'jiraLink', 'products', 'departments', 'markets', 'timeInHours', 'reporters',
-    'name', 'email', 'departament', 'country'
+    'name', 'email', 'departament', 'country', 'startDate', 'endDate'
   ];
   
   if (alwaysRequiredFields.includes(field.name)) {

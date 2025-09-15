@@ -4,6 +4,7 @@ import { useGetReportersQuery } from "@/features/reporters/reportersApi";
 import { 
   useGetMonthTasksQuery, 
   useGetCurrentMonthQuery,
+  useGetAvailableMonthsQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation
@@ -49,8 +50,8 @@ export const useUserData = () => {
   };
 };
 
-// Hook for components that need month selection with task data fetching
-export const useMonthSelectionWithTasks = () => {
+// Simplified hook for month selection - uses APIs directly
+export const useMonthSelection = (selectedUserId = null) => {
   const { user } = useAuth();
   const userUID = getUserUID(user);
   const userIsAdmin = isUserAdmin(user);
@@ -64,7 +65,7 @@ export const useMonthSelectionWithTasks = () => {
     userData: user
   };
   
-  // Fetch current month data with tasks
+  // Fetch current month data
   const { 
     data: currentMonthData = {}, 
     isLoading: currentMonthLoading, 
@@ -76,137 +77,131 @@ export const useMonthSelectionWithTasks = () => {
     }
   );
   
-  // Extract month data
+  // Extract current month data
   const { 
     currentMonth = {}, 
-    availableMonths: rawAvailableMonths = [], 
+    currentMonthBoard = null,
     boardExists = false,
     currentMonthTasks = []
   } = currentMonthData;
-  
-  const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
-  
 
-  // Get all available months for dropdown first
-  const months = [...rawAvailableMonths];
-  
-  // Ensure current month is included
-  if (monthId && !months.find(m => m.monthId === monthId)) {
-    months.unshift({
-      monthId: monthId,
-      monthName: monthName,
-      isCurrent: true,
-      boardExists: boardExists
-    });
-  }
-  
-  const availableMonths = months.sort((a, b) => {
-    // Current month first, then by monthId (newest first)
-    if (a.isCurrent) return -1;
-    if (b.isCurrent) return 1;
-    return b.monthId.localeCompare(a.monthId);
+  const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
+
+  // Fetch available months only when needed
+  const { 
+    data: availableMonths = [], 
+    isLoading: availableMonthsLoading,
+    refetch: fetchAvailableMonths
+  } = useGetAvailableMonthsQuery(undefined, {
+    skip: true // Don't fetch by default, only when user selects a different month
   });
+
+  // Create dropdown options with current month always available
+  const dropdownOptions = useMemo(() => {
+    const options = [];
+    
+    // Always include current month first
+    if (monthId) {
+      options.push({
+        monthId: monthId,
+        monthName: monthName,
+        isCurrent: true,
+        boardExists: boardExists
+      });
+    }
+    
+    // Add other available months (only if fetched)
+    if (availableMonths.length > 0) {
+      const otherMonths = availableMonths
+        .filter(m => m.monthId !== monthId) // Exclude current month to avoid duplicates
+        .sort((a, b) => b.monthId.localeCompare(a.monthId)); // Sort by newest first
+      
+      options.push(...otherMonths);
+    }
+    
+    return options;
+  }, [availableMonths, monthId, monthName, boardExists]);
   
-  const monthData = {
-    currentMonth,
-    availableMonths: rawAvailableMonths,
-    boardExists,
-    currentMonthTasks,
-    monthId,
-    monthName,
-    daysInMonth,
-    startDate,
-    endDate,
-    isLoading: currentMonthLoading,
-    error: currentMonthError
-  };
+  // Determine which month to fetch data for
+  const targetMonthId = selectedMonthId || monthId;
+  const isFetchingSelectedMonth = selectedMonthId && selectedMonthId !== monthId;
   
-  // Fetch selected month tasks when a different month is selected (on-demand)
-  const shouldFetchSelectedMonth = selectedMonthId && 
-    selectedMonthId !== monthData.monthId && 
-    userData.userUID;
+  // Determine user filtering
+  const targetUserId = userIsAdmin 
+    ? (selectedUserId || undefined)  // Admin: use selectedUserId or all users
+    : userUID;                       // Regular user: only their data
   
-  if (shouldFetchSelectedMonth) {
-    logger.log(`[useMonthSelectionWithTasks] Fetching selected month data for: ${selectedMonthId}`);
-  }
-  
+  // Fetch tasks for the target month with proper user filtering
+  const shouldFetchTasks = targetMonthId && userData.userUID;
   
   const { 
-    data: selectedMonthTasks = [], 
-    isLoading: selectedMonthLoading, 
-    error: selectedMonthError 
+    data: monthTasks = [], 
+    isLoading: monthTasksLoading, 
+    error: monthTasksError 
   } = useGetMonthTasksQuery(
     { 
-      monthId: selectedMonthId || '', 
-      userId: userData.userIsAdmin ? undefined : userData.userUID,
-      role: userData.userIsAdmin ? 'admin' : 'user',
-      userData: userData.userIsAdmin ? userData.user : userData.userData
+      monthId: targetMonthId, 
+      userId: targetUserId,
+      role: userIsAdmin ? 'admin' : 'user',
+      userData: userIsAdmin ? userData.user : userData.userData
     },
-    { skip: !shouldFetchSelectedMonth }
+    { skip: !shouldFetchTasks }
   );
   
-  
-  // Get tasks for display (current month or selected month)
-  const displayTasks = selectedMonthId && selectedMonthId !== monthData.monthId
-    ? selectedMonthTasks
-    : (monthData.currentMonthTasks || []);
-  
-  // Removed logging useEffect to prevent unnecessary re-renders
-  // The logging was causing frequent re-renders due to array length dependencies
-  
-  // Get current month info
-  const currentMonthInfo = {
-    monthId: monthData.monthId,
-    monthName: monthData.monthName,
-    boardExists: monthData.boardExists,
-    isCurrent: true
-  };
-  
-  // Get selected month info
-  const selectedMonthInfo = !selectedMonthId || selectedMonthId === monthData.monthId
-    ? currentMonthInfo
-    : (() => {
-        const month = availableMonths.find(m => m.monthId === selectedMonthId);
-        return month ? {
-          monthId: month.monthId,
-          monthName: month.monthName,
-          boardExists: month.boardExists,
-          isCurrent: false
-        } : null;
-      })();
+  // Get tasks for display
+  const displayTasks = isFetchingSelectedMonth 
+    ? monthTasks  // Selected month data
+    : (currentMonthTasks || []); // Current month data
   
   // Helper functions
   const selectMonth = useCallback((monthId) => {
     setSelectedMonthId(monthId);
     logger.log(`📅 Selected month: ${monthId}`);
-  }, []);
+    
+    // If selecting a different month and we haven't fetched available months yet, fetch them
+    if (monthId !== currentMonth.monthId && availableMonths.length === 0) {
+      fetchAvailableMonths();
+    }
+  }, [currentMonth.monthId, availableMonths.length, fetchAvailableMonths]);
   
   const resetToCurrentMonth = useCallback(() => {
     setSelectedMonthId(null);
     logger.log(`📅 Reset to current month: ${monthId}`);
   }, [monthId]);
   
-  const isCurrentMonth = !selectedMonthId || selectedMonthId === monthData.monthId;
+  const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
   return {
     // Month data
-    currentMonth: currentMonthInfo,
-    selectedMonth: selectedMonthInfo,
-    availableMonths,
+    currentMonth: {
+      monthId,
+      monthName,
+      daysInMonth,
+      startDate,
+      endDate,
+      boardExists,
+      isCurrent: true
+    },
+    selectedMonth: isCurrentMonth ? null : {
+      monthId: selectedMonthId,
+      monthName: dropdownOptions.find(m => m.monthId === selectedMonthId)?.monthName,
+      isCurrent: false
+    },
+    availableMonths: dropdownOptions,
     isCurrentMonth,
     
     // Task data
     tasks: displayTasks,
-    currentMonthTasks: monthData.currentMonthTasks || [],
-    selectedMonthTasks,
+    currentMonthTasks,
     
     // Status
-    isLoading: selectedMonthId ? selectedMonthLoading : monthData.isLoading,
-    error: selectedMonthId ? selectedMonthError : monthData.error,
+    isLoading: isFetchingSelectedMonth ? monthTasksLoading : currentMonthLoading,
+    error: isFetchingSelectedMonth ? monthTasksError : currentMonthError,
     
     // Helper functions
     selectMonth,
     resetToCurrentMonth,
+    fetchAvailableMonths,
     
     // User data
     user: userData.user,
@@ -215,9 +210,9 @@ export const useMonthSelectionWithTasks = () => {
   };
 };
 
-export const useAppData = () => {
-  // Use the consolidated hook that handles both current month and month selection
-  const monthSelectionData = useMonthSelectionWithTasks();
+export const useAppData = (selectedUserId = null) => {
+  // Use the simplified month selection hook
+  const monthSelectionData = useMonthSelection(selectedUserId);
   const userData = useUserData();
   
   // Fetch all reporters (needed for task creation) - only when user is authenticated

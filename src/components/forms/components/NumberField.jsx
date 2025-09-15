@@ -8,12 +8,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
     <BaseField field={field} error={fieldError} formValues={formValues}>
       <input
         {...register(field.name, {
-          valueAsNumber: true,
-          onChange: (e) => {
-            const value = parseFloat(e.target.value) || 0;
-            setValue(field.name, value);
-            trigger(field.name);
-          }
+          valueAsNumber: true
         })}
         type="number"
         step={field.step || 0.5}

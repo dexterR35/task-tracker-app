@@ -2,6 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Global collections (users, reporters)
+    match /users/{userId} {
+      allow read, write, create, update, delete: if true;
+    }
+    
+    match /reporters/{reporterId} {
+      allow read, write, create, update, delete: if true;
+    }
+    
+    // Department-based tasks structure
+    match /departments/{departmentId}/{yearId}/{monthId} {
+      allow read, write, create, update, delete: if true;
+      
+      match /taskdata/{taskId} {
+        allow read, write, create, update, delete: if true;
+      }
+    }
+    
+    // Fallback for any other documents
     match /{document=**} {
       allow read, write, create, update, delete: if true;
     }

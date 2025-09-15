@@ -2,10 +2,7 @@ import React from 'react';
 import { useAppData } from '@/hooks/useAppData';
 import BaseField from './BaseField';
 
-/**
- * Simple Date Field Component using HTML5 date input
- * Restricts dates to the selected month boundaries
- */
+
 const SimpleDateField = ({ 
   field, 
   register, 
@@ -16,46 +13,32 @@ const SimpleDateField = ({
   clearErrors,
   formValues 
 }) => {
-  const { currentMonth, selectedMonth } = useAppData();
+  const { monthId, monthName } = useAppData();
   
   const fieldName = field.name;
-  const fieldValue = watch(fieldName);
   const error = errors[fieldName];
 
-  // Get month boundaries for date restrictions
+  // Get month boundaries for date restrictions - ALWAYS restrict to current month only
   const getMonthBoundaries = () => {
-    // Use selected month or current month
-    const activeMonth = selectedMonth || currentMonth;
-    
-    if (activeMonth?.monthId) {
-      const [year, month] = activeMonth.monthId.split('-');
-      return {
-        min: `${year}-${String(parseInt(month)).padStart(2, '0')}-01`,
-        max: `${year}-${String(parseInt(month)).padStart(2, '0')}-${new Date(parseInt(year), parseInt(month), 0).getDate()}`
-      };
-    }
-    
-    // Fallback to current month
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const lastDay = new Date(year, month, 0).getDate();
+    // Use current month from monthId (e.g., "2025-01")
+    const [year, month] = monthId.split('-');
+    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
     
     return {
-      min: `${year}-${String(month).padStart(2, '0')}-01`,
-      max: `${year}-${String(month).padStart(2, '0')}-${lastDay}`
+      min: `${year}-${String(parseInt(month)).padStart(2, '0')}-01`,
+      max: `${year}-${String(parseInt(month)).padStart(2, '0')}-${lastDay}`
     };
   };
 
   const monthBoundaries = getMonthBoundaries();
-  const activeMonth = selectedMonth || currentMonth;
+  const currentMonthName = monthName;
 
   return (
-    <BaseField field={field} error={error}>
+    <BaseField field={field} error={error} formValues={formValues}>
       <div className="simple-date-field-container">
         <div className="mb-2">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Select a date within {activeMonth?.monthName || 'the current month'}
+            Select a day within {currentMonthName} (month and year are fixed)
           </p>
         </div>
         
@@ -64,12 +47,7 @@ const SimpleDateField = ({
           {...register(fieldName)}
           min={monthBoundaries.min}
           max={monthBoundaries.max}
-          className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          onChange={(e) => {
-            setValue(fieldName, e.target.value);
-            trigger(fieldName);
-            clearErrors(fieldName);
-          }}
+          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'error' : ''}`}
         />
         
         {/* Month Boundaries Info */}

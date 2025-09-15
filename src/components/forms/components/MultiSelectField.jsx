@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import BaseField from './BaseField';
+import { logger } from '@/utils/logger';
 
 const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, formValues }) => {
   const watchedValue = watch(field.name);
@@ -25,19 +26,13 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
     trigger(field.name); // Trigger validation
   };
 
-  // Initialize field with empty array if it's not already an array
+  // Defensive check: Fix non-array values (shouldn't happen with proper form initialization)
   useEffect(() => {
-    const currentValue = watch(field.name);
-    if (!Array.isArray(currentValue)) {
-      console.log(`MultiSelectField: Initializing ${field.name} with empty array. Current value:`, currentValue);
+    if (watchedValue !== undefined && !Array.isArray(watchedValue)) {
+      logger.warn(`MultiSelectField: Unexpected non-array value for ${field.name}:`, watchedValue, 'Fixing to empty array');
       setValue(field.name, [], { shouldValidate: false });
     }
-  }, [field.name, watch, setValue]);
-
-  // Update the registered value when selectedValues change
-  useEffect(() => {
-    onChange({ target: { value: selectedValues } });
-  }, [selectedValues, onChange]);
+  }, [watchedValue, field.name, setValue]);
 
   return (
     <BaseField field={field} error={fieldError} formValues={formValues}>
