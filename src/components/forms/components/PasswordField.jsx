@@ -1,24 +1,23 @@
 import React from 'react';
-import { INPUT_CLASSES, INPUT_ERROR_CLASSES, READONLY_CLASSES } from '../utils/formConstants';
 import BaseField from './BaseField';
 
-const UrlField = ({ field, register, errors, formValues }) => {
+const PasswordField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
     <BaseField field={field} error={fieldError} formValues={formValues}>
       <input
         {...register(field.name)}
-        type="url"
+        type="password"
         placeholder={field.placeholder}
+        autoComplete={field.autoComplete || 'current-password'}
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
-        className={field.readOnly 
-          ? `${fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES} ${READONLY_CLASSES}` 
-          : fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES}
+        className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
       />
     </BaseField>
   );
 };
 
-export default UrlField;
+export default PasswordField;
+

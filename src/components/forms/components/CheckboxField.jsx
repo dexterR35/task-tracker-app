@@ -1,5 +1,5 @@
 import React from 'react';
-import { FIELD_LABEL_CLASSES, REQUIRED_INDICATOR } from '../utils/formConstants';
+import { REQUIRED_INDICATOR } from '../configs/sharedFormUtils';
 import BaseField from './BaseField';
 
 const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors, formValues }) => {
@@ -7,11 +7,11 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
   
   return (
     <BaseField field={field} error={fieldError} hideLabel={true} formValues={formValues}>
-      <div className="flex items-start space-x-3">
+      <div className="checkbox-container">
         <input
           {...register(field.name)}
           type="checkbox"
-          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          className="checkbox-input"
           onChange={(e) => {
             setValue(field.name, e.target.checked);
             trigger(field.name);
@@ -21,7 +21,7 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
           }}
         />
         <div>
-          <label htmlFor={field.name} className={FIELD_LABEL_CLASSES}>
+          <label htmlFor={field.name} className="field-label">
             {field.label}
             {field.required && ` ${REQUIRED_INDICATOR}`}
           </label>

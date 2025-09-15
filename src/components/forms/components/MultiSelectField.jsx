@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { INPUT_CLASSES, INPUT_ERROR_CLASSES } from '../utils/formConstants';
 import BaseField from './BaseField';
 
 const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, formValues }) => {
@@ -51,7 +50,7 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
       
       <select
         value=""
-        className={INPUT_CLASSES}
+        className="form-input"
         onChange={(e) => handleAddValue(e.target.value)}
       >
         <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
@@ -64,12 +63,12 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
       
       {/* Selected Items Display */}
       {selectedValues.length > 0 && (
-        <div className="mt-2">
-          <div className="flex flex-wrap gap-2">
+        <div className="selected-items-container">
+          <div className="selected-items-list">
             {selectedValues.map((item, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                className="selected-item"
               >
                 {field.options?.find(opt => opt.value === item)?.label || item}
                 <button

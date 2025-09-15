@@ -5,6 +5,7 @@ import { Icons } from "@/components/icons";
 import MidnightCountdown from "@/components/ui/MidnightCountdown/MidnightCountdown";
 import Badge from "@/components/ui/Badge/Badge";
 import Avatar from "@/components/ui/Avatar";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const Sidebar = ({ onToggle, isOpen }) => {
   const { user, logout, clearError, canAccess } = useAuth();
@@ -119,15 +120,16 @@ const Sidebar = ({ onToggle, isOpen }) => {
         </div>
 
         {/* Logout Button */}
-        <button
+        <DynamicButton
           onClick={handleLogout}
-          className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group"
+          variant="outline"
+          size="md"
+          iconName="logout"
+          iconPosition="left"
+          className="w-full justify-start text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 border-gray-300 dark:border-gray-600"
         >
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-red-100 dark:group-hover:bg-red-900/20 transition-all duration-200">
-            <Icons.buttons.logout className="w-5 h-5" />
-          </div>
-          <span className="ml-3">Logout</span>
-        </button>
+          Logout
+        </DynamicButton>
       </div>
     </div>
   );

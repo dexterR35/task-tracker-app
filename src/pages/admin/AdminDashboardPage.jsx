@@ -6,7 +6,7 @@ import { useMonthSelectionWithTasks } from "@/hooks/useAppData";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Modal from "@/components/ui/Modal/Modal";
 import LazyTaskTable from "@/components/lazy/LazyTaskTable";
-import LazyUniversalForm from "@/components/lazy/LazyUniversalForm";
+import { TaskForm } from "@/components/forms";
 import Loader from "@/components/ui/Loader/Loader";
 import DashboardCard from "@/components/ui/Card/DashboardCard";
 import { createCards, CARD_SETS, CARD_TYPES } from "@/components/ui/Card/cardConfig";
@@ -262,7 +262,8 @@ const AdminDashboardPage = () => {
                 {!canCreateTasks && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     <span className="text-amber-600 dark:text-amber-400">
-                      {!isCurrentMonth ? 'Historical data - creation disabled' : 'Board not available'}
+                      {!isCurrentMonth ? 'Historical data - creation disabled' : 
+                       !currentMonth?.boardExists ? 'Current month board not created yet' : 'Creation not available'}
                     </span>
                   </div>
                 )}
@@ -347,12 +348,8 @@ const AdminDashboardPage = () => {
           title="Create New Task"
           maxWidth="max-w-4xl"
         >
-          <LazyUniversalForm
-            formType="task"
+          <TaskForm
             mode="create"
-            user={user}
-            monthId={selectedMonth?.monthId || currentMonth?.monthId}
-            reporters={reporters}
             onSuccess={() => {
               setShowCreateModal(false);
             }}

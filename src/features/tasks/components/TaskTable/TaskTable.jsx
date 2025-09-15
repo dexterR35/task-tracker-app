@@ -3,8 +3,9 @@ import { useAppData } from "@/hooks/useAppData";
 import { useTaskColumns } from "@/components/ui/Table/tableColumns.jsx";
 import TanStackTable from "@/components/ui/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
-import ReactHookFormWrapper from "@/components/forms/ReactHookFormWrapper";
+import { TaskForm } from "@/components/forms";
 import { useTableActions } from "@/hooks/useTableActions";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 // Custom Task Edit Modal Component
 const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props }) => {
@@ -17,18 +18,19 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
           <h2 className="text-xl font-semibold text-white-dak">
             Edit Task: {task?.jiraLink || task?.departments || 'Unknown Task'}
           </h2>
-          <button
+          <DynamicButton
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
+            variant="outline"
+            size="sm"
+            iconName="cancel"
+            iconPosition="center"
+            className="text-gray-400 hover:text-white border-gray-400 hover:border-white"
+          />
         </div>
         <div className="p-6">
-          <ReactHookFormWrapper
-            formType="task"
+          <TaskForm
             mode="edit"
-            initialValues={task}
+            initialData={task}
             onSuccess={onSuccess}
             {...props}
           />

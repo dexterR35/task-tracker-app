@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal/Modal';
-import ReactHookFormWrapper from '@/components/forms/ReactHookFormWrapper';
+import { ReporterForm } from '@/components/forms';
 
 /**
  * Modal component for creating/editing reporters
@@ -22,10 +22,9 @@ const ReporterFormModal = ({
       title={title}
       size="lg"
     >
-      <ReactHookFormWrapper
-        formType="reporter"
+      <ReporterForm
         mode={mode}
-        initialValues={reporter}
+        initialData={reporter}
         onSuccess={() => {
           onSuccess?.();
           onClose();

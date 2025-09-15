@@ -1,20 +1,8 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
-import {
-  safeDisplay,
-  UserAvatarCell,
-  DateCell,
-  RoleBadgeCell,
-  JiraLinkCell,
-  HoursCell,
-  AIModelsCell,
-  AITimeCell,
-  AIUsedCell,
-  DeliverablesCell,
-  DeliverablesCountCell,
-  ReporterCell,
-  CheckboxCell
-} from './TableCellComponents';
+import Badge from '@/components/ui/Badge/Badge';
+import Avatar from '@/components/ui/Avatar';
+import { formatDate } from '@/utils/dateUtils';
 
 const columnHelper = createColumnHelper();
 
@@ -22,133 +10,99 @@ const columnHelper = createColumnHelper();
 // Tasks Table Columns - Memoized to prevent re-renders
 export const useTaskColumns = (monthId = null, reporters = []) => {
   return useMemo(() => [
-  columnHelper.accessor('id', {
-    header: 'Document ID',
-    cell: ({ getValue }) => (
-      <div className="text-sm font-mono text-gray-600 dark:text-gray-400">
-        {getValue() || 'N/A'}
-      </div>
-    ),
-    size: 120,
-  }),
   columnHelper.accessor('data_task.taskName', {
     header: 'Jira Link',
     cell: ({ getValue, row }) => {
-      // Safely access the nested property with fallback
       const taskName = getValue() || row.original?.data_task?.taskName || null;
-      return <JiraLinkCell taskName={taskName} />;
+      if (!taskName) return 'No Link';
+      
+      const jiraUrl = `https://gmrd.atlassian.net/browse/${taskName}`;
+      
+      return (
+        <a 
+          href={jiraUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          {taskName}
+        </a>
+      );
     },
     size: 200,
   }),
   columnHelper.accessor('data_task.departments', {
     header: 'Department',
-    cell: ({ getValue, row }) => {
-      // Safely access the nested property with fallback
-      const departments = getValue() || row.original?.data_task?.departments || null;
-      return departments || 'Unnamed Task';
+    cell: ({ getValue }) => {
+      return getValue();
     },
     size: 150,
   }),
   columnHelper.accessor('data_task.products', {
     header: 'Product',
-    cell: ({ getValue, row }) => {
-      // Safely access the nested property with fallback
-      const products = getValue() || row.original?.data_task?.products || null;
-      return safeDisplay(products);
+    cell: ({ getValue }) => {
+      return getValue();
     },
     size: 120,
   }),
   columnHelper.accessor('data_task.timeInHours', {
     header: 'Hours',
-    cell: ({ getValue, row }) => {
-      // Safely access the nested property with fallback
-      const timeInHours = getValue() || row.original?.data_task?.timeInHours || null;
-      return <HoursCell value={timeInHours} />;
+    cell: ({ getValue }) => {
+      return getValue();
     },
     size: 80,
   }),
-  columnHelper.accessor('data_task.usedAI.aiTime', {
+  columnHelper.accessor('data_task.aiTime', {
     header: 'AI Hr',
-    cell: ({ getValue, row }) => {
-      const dataTask = row.original.data_task;
-      const aiTime = dataTask?.usedAI?.aiTime;
-      return <AITimeCell aiTime={aiTime} />;
+    cell: ({ getValue }) => {
+      return getValue();
     },
     size: 80,
   }),
-  columnHelper.accessor('data_task.usedAI.aiModels', {
+  columnHelper.accessor('data_task.aiModels', {
     header: 'AI Models',
-    cell: ({ getValue, row }) => {
-      const dataTask = row.original.data_task;
-      const aiModels = dataTask?.usedAI?.aiModels;
-      return <AIModelsCell aiModels={aiModels} />;
+    cell: ({ getValue }) => {
+      return getValue();
     },
     size: 120,
-  }),
-  columnHelper.accessor('data_task.usedAI.aiModels', {
-    id: 'aiUsed',
-    header: 'AI?',
-    cell: ({ getValue, row }) => {
-      const dataTask = row.original.data_task;
-      const aiModels = dataTask?.usedAI?.aiModels;
-      return <AIUsedCell aiModels={aiModels} />;
-    },
-    size: 60,
   }),
   columnHelper.accessor('reworked', {
     header: 'Reworked?',
-    cell: ({ getValue }) => <CheckboxCell value={getValue()} />,
+    cell: ({ getValue }) => {
+      return getValue() ? "✓" : "-";
+    },
     size: 100,
   }),
-  columnHelper.accessor('deliverables', {
-    id: 'deliverablesList',
+  columnHelper.accessor('data_task.deliverables', {
     header: 'Deliverables',
-    cell: ({ getValue }) => <DeliverablesCell deliverables={getValue()} />,
+    cell: ({ getValue }) => {
+      return getValue();
+    },
     size: 120,
   }),
-  columnHelper.accessor('deliverables', {
-    id: 'deliverablesCount',
-    header: 'Nr Deliverables',
-    cell: ({ getValue }) => <DeliverablesCountCell deliverables={getValue()} />,
-    size: 120,
-  }),
-  columnHelper.accessor('reporters', {
+  columnHelper.accessor('data_task.reporters', {
     header: 'Reporter',
-    cell: ({ getValue }) => <ReporterCell reporterId={getValue()} reporters={reporters} />,
+    cell: ({ getValue }) => {
+      const reporterId = getValue();
+      const reporter = reporters.find(r => r.id === reporterId);
+      return reporter?.name || reporterId;
+    },
     size: 120,
   }),
 
   columnHelper.accessor('createdByName', {
     header: 'Created By',
     cell: ({ getValue }) => {
-      return getValue() || '-';
+      return getValue();
     },
     size: 120,
   }),
-  columnHelper.accessor('dataInfo', {
-    header: 'Data Info',
+  columnHelper.accessor('createdByDate', {
+    header: 'Created By Date',
     cell: ({ getValue }) => {
-      const dataInfo = getValue();
-      if (!Array.isArray(dataInfo) || dataInfo.length === 0) {
-        return <span className="text-gray-400">No data</span>;
-      }
-      
-      const latestEntry = dataInfo[dataInfo.length - 1];
-      return (
-        <div className="text-xs">
-          <div className="font-medium text-gray-900 dark:text-white">
-            {latestEntry.name || 'Unknown'}
-          </div>
-          <div className="text-gray-500 dark:text-gray-400">
-            by {latestEntry.createdbyname || 'Unknown'}
-          </div>
-          <div className="text-gray-400">
-            {dataInfo.length} entry{dataInfo.length !== 1 ? 'ies' : ''}
-          </div>
-        </div>
-      );
+      return getValue();
     },
-    size: 150,
+    size: 120,
   }),
 ], [monthId, reporters]);
 };
@@ -157,27 +111,63 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
 export const getUserColumns = (monthId = null) => [
   columnHelper.accessor('name', {
     header: 'User',
-    cell: ({ row }) => <UserAvatarCell user={row.original} />,
+    cell: ({ row }) => (
+      <Avatar 
+        user={row.original}
+        gradient="from-purple-500 to-purple-600"
+        showEmail={false}
+        size="md"
+      />
+    ),
     size: 200,
   }),
   columnHelper.accessor('email', {
     header: 'Email',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      return getValue();
+    },
     size: 200,
   }),
   columnHelper.accessor('role', {
     header: 'Role',
-    cell: ({ getValue }) => <RoleBadgeCell role={getValue()} />,
+    cell: ({ getValue }) => {
+      const role = getValue();
+      const getRoleVariant = (role) => {
+        switch (role) {
+          case 'admin':
+            return 'red';
+          case 'reporter':
+            return 'blue';
+          case 'user':
+          default:
+            return 'green';
+        }
+      };
+      
+      const displayRole = role || 'user';
+      
+      return (
+        <Badge variant={getRoleVariant(displayRole)} size="sm">
+          {displayRole}
+        </Badge>
+      );
+    },
     size: 100,
   }),
   columnHelper.accessor('occupation', {
     header: 'Occupation',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      return getValue();
+    },
     size: 150,
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => <DateCell value={getValue()} />,
+    cell: ({ getValue }) => {
+      const value = getValue();
+      if (!value) return "-";
+      return formatDate(value, 'MMM d, yyyy');
+    },
     size: 120,
   }),
 ];
@@ -187,27 +177,44 @@ export const getUserColumns = (monthId = null) => [
 export const getReporterColumns = (monthId = null) => [
   columnHelper.accessor('name', {
     header: 'Reporter',
-    cell: ({ row }) => <UserAvatarCell user={row.original} gradient="from-green-500 to-green-600" />,
+    cell: ({ row }) => (
+      <Avatar 
+        user={row.original}
+        gradient="from-green-500 to-green-600"
+        showEmail={false}
+        size="md"
+      />
+    ),
     size: 200,
   }),
   columnHelper.accessor('email', {
     header: 'Email',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      return getValue();
+    },
     size: 200,
   }),
   columnHelper.accessor('departament', {
     header: 'Department',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      return getValue();
+    },
     size: 150,
   }),
   columnHelper.accessor('country', {
     header: 'Country',
-    cell: ({ getValue }) => safeDisplay(getValue()),
+    cell: ({ getValue }) => {
+      return getValue();
+    },
     size: 100,
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => <DateCell value={getValue()} />,
+    cell: ({ getValue }) => {
+      const value = getValue();
+      if (!value) return "-";
+      return formatDate(value, 'MMM d, yyyy');
+    },
     size: 120,
   }),
 ];

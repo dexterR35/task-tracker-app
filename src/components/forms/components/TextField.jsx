@@ -1,9 +1,4 @@
 import React from 'react';
-import { 
-  INPUT_CLASSES, 
-  INPUT_ERROR_CLASSES,
-  READONLY_CLASSES
-} from '../utils/formConstants';
 import BaseField from './BaseField';
 import { showSuccess } from '@/utils/toast';
 
@@ -34,9 +29,7 @@ const TextField = ({ field, register, errors, getInputType, formValues }) => {
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
         onBlur={handleBlur}
-        className={field.readOnly 
-          ? `${fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES} ${READONLY_CLASSES}` 
-          : fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES}
+        className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
       />
     </BaseField>
   );

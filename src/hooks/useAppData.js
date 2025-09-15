@@ -86,6 +86,7 @@ export const useMonthSelectionWithTasks = () => {
   
   const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
   
+
   // Get all available months for dropdown first
   const months = [...rawAvailableMonths];
   
@@ -182,8 +183,8 @@ export const useMonthSelectionWithTasks = () => {
   
   const resetToCurrentMonth = useCallback(() => {
     setSelectedMonthId(null);
-    logger.log(`📅 Reset to current month: ${monthData.monthId}`);
-  }, [monthData.monthId]);
+    logger.log(`📅 Reset to current month: ${monthId}`);
+  }, [monthId]);
   
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthData.monthId;
   

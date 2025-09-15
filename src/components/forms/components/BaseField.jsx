@@ -1,18 +1,10 @@
 import React from 'react';
 import { 
-  FIELD_LABEL_CLASSES, 
-  ERROR_MESSAGE_CLASSES, 
-  HELP_TEXT_CLASSES, 
   REQUIRED_INDICATOR 
-} from '../utils/formConstants';
-import { shouldShowField } from '../configs/useForms';
+} from '../configs/sharedFormUtils';
+import { shouldShowField } from '../configs/sharedFormUtils';
 
-// Helper function to get nested values (e.g., 'usedAI.enabled')
-const getNestedValue = (obj, path) => {
-  return path.split('.').reduce((current, key) => {
-    return current && current[key] !== undefined ? current[key] : undefined;
-  }, obj);
-};
+
 
 // Helper function to check if field should be conditionally required
 const isConditionallyRequired = (field, formValues) => {
@@ -56,7 +48,7 @@ const BaseField = ({
     <div className={className}>
       {/* Label with required indicator - skip for checkbox fields */}
       {field.label && !hideLabel && (
-        <label htmlFor={field.name} className={FIELD_LABEL_CLASSES}>
+        <label htmlFor={field.name} className="field-label">
           {field.label}
           {isFieldRequired && ` ${REQUIRED_INDICATOR}`}
         </label>
@@ -67,14 +59,14 @@ const BaseField = ({
       
       {/* Error message */}
       {error && (
-        <div className={ERROR_MESSAGE_CLASSES}>
+        <div className="error-message">
           {error.message}
         </div>
       )}
       
       {/* Help text */}
       {field.helpText && (
-        <p className={HELP_TEXT_CLASSES}>{field.helpText}</p>
+        <p className="help-text">{field.helpText}</p>
       )}
     </div>
   );

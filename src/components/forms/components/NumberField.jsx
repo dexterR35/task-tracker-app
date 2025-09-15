@@ -1,5 +1,4 @@
 import React from 'react';
-import { INPUT_CLASSES, INPUT_ERROR_CLASSES, READONLY_CLASSES } from '../utils/formConstants';
 import BaseField from './BaseField';
 
 const NumberField = ({ field, register, errors, setValue, trigger, formValues }) => {
@@ -21,9 +20,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
         placeholder={field.placeholder}
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
-        className={field.readOnly 
-          ? `${fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES} ${READONLY_CLASSES}` 
-          : fieldError ? INPUT_ERROR_CLASSES : INPUT_CLASSES}
+        className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
       />
     </BaseField>
   );
