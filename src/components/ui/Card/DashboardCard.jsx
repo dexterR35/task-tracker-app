@@ -140,55 +140,90 @@ const DashboardCard = ({ card }) => {
               </div>
             )}
 
-            {/* Additional Data */}
+            {/* Additional Data - Organized by Sections */}
             {card.details && (
-              <div className="space-y-2 mb-6">
-                {card.details.map((detail, index) => (
-                  <div key={index}>
-                    {detail.isHeader ? (
-                      <div className="mb-2">
-                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-300">
-                          {detail.label}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="bg-gray-50/50 dark:bg-gray-700/20 rounded-md p-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center space-x-2">
-                            {/* Show circle for all entries except headers */}
-                            <div className={`w-2 h-2 rounded-full ${cardColors.primary}`}></div>
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                              {detail.label}
-                            </span>
-                          </div>
-                          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                            {detail.value}
+              <div className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {(() => {
+                    // Group details by sections
+                    const sections = [];
+                    let currentSection = null;
+                    
+                    card.details.forEach((detail, index) => {
+                      if (detail.isHeader) {
+                        // Start new section
+                        if (currentSection) {
+                          sections.push(currentSection);
+                        }
+                        currentSection = {
+                          header: detail,
+                          items: []
+                        };
+                      } else if (currentSection) {
+                        // Add item to current section
+                        currentSection.items.push(detail);
+                      }
+                    });
+                    
+                    // Add the last section
+                    if (currentSection) {
+                      sections.push(currentSection);
+                    }
+                    
+                    return sections.map((section, sectionIndex) => (
+                      <div key={sectionIndex} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white/50 dark:bg-gray-800/50 space-y-3">
+                        {/* Section Header */}
+                        <div className="border-b border-gray-200 dark:border-gray-600 pb-2">
+                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-300 flex items-center gap-2">
+                            {section.header.icon && (
+                              <section.header.icon className="w-4 h-4" />
+                            )}
+                            {section.header.label}
                           </span>
                         </div>
-                        {detail.subValue && (
-                          <div className="ml-4 mt-1 flex items-center gap-2">
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              markets
+                        
+                        {/* Section Items */}
+                        <div className="space-y-2">
+                          {section.items.map((item, itemIndex) => (
+                            <div key={itemIndex} className="bg-gray-50/50 dark:bg-gray-700/20 rounded-md p-2 border border-gray-100 dark:border-gray-700">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center space-x-2">
+                                  <div className={`w-2 h-2 rounded-full ${cardColors.primary}`}></div>
+                                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    {item.label}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                                  {item.value}
+                                </span>
+                              </div>
+                              {item.subValue && (
+                                <div className="ml-4 mt-1 flex items-center gap-2">
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    markets
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {item.subValue.split(' ').map((market, index) => (
+                                      <Badge 
+                                        key={index} 
+                                        variant="default"
+                                        size="xs"
+                                        className="text-white text-[10px]"
+                                        style={{ backgroundColor: cardColors.colorValue }}
+                                      >
+                                        {market}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex flex-wrap gap-1">
-                              {detail.subValue.split(' ').map((market, index) => (
-                                <Badge 
-                                  key={index} 
-                                  variant="default"
-                                  size="xs"
-                                  className="text-white text-[10px]"
-                                  style={{ backgroundColor: cardColors.colorValue }}
-                                >
-                                  {market}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+                    ));
+                  })()}
+                </div>
               </div>
             )}
 

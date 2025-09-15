@@ -151,6 +151,54 @@ export const CARD_CONFIGS = {
           subValue: ""
         }));
       
+      // Calculate total hours from all tasks
+      const totalHours = tasks.reduce((sum, task) => sum + (task.timeInHours || task.data_task?.timeInHours || 0), 0);
+      const totalAIHours = tasks.reduce((sum, task) => sum + (task.aiTime || task.data_task?.aiTime || 0), 0);
+      
+      // Calculate AI models usage
+      const aiModelCounts = {};
+      tasks.forEach(task => {
+        const aiModels = task.aiModels || task.data_task?.aiModels || [];
+        if (Array.isArray(aiModels)) {
+          aiModels.forEach(model => {
+            if (model) {
+              aiModelCounts[model] = (aiModelCounts[model] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      // Get top 3 AI models by usage
+      const top3AIModels = Object.entries(aiModelCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([model, count]) => ({
+          icon: Icons.generic.ai,
+          label: model,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+      
+      // Calculate products usage
+      const productCounts = {};
+      tasks.forEach(task => {
+        const product = task.products || task.data_task?.products;
+        if (product) {
+          productCounts[product] = (productCounts[product] || 0) + 1;
+        }
+      });
+      
+      // Get top 3 products by usage
+      const top3Products = Object.entries(productCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([product, count]) => ({
+          icon: Icons.buttons.submit,
+          label: product,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+      
       // Top 3 Users section - only users who have tasks
       const top3UsersHeader = createTop3Header("Top 3 Users");
       
@@ -215,7 +263,34 @@ export const CARD_CONFIGS = {
           };
         });
       
-      return [top3MarketsHeader, ...top3Markets, ...top3Users];
+      return [
+        // Total Hours Section
+        createTop3Header("Total Hours"),
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: `${totalHours}h`,
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.ai,
+          label: "Total AI Hours", 
+          value: `${totalAIHours}h`,
+          subValue: ""
+        },
+        
+        // Top AI Models Section
+        createTop3Header("Top AI Models"),
+        ...top3AIModels,
+        
+        // Top 3 Products Section
+        createTop3Header("Top 3 Products"),
+        ...top3Products,
+        
+        // Top 3 Markets Section
+        top3MarketsHeader, 
+        ...top3Markets
+      ];
     }
   },
 
@@ -492,8 +567,56 @@ export const CARD_CONFIGS = {
         task.userUID === selectedUserId || task.createbyUID === selectedUserId
       );
       
-      // User's Markets section
-      const userMarketsHeader = createTop3Header("User's Markets");
+      // Calculate total hours for selected user
+      const totalHours = userTasks.reduce((sum, task) => sum + (task.timeInHours || task.data_task?.timeInHours || 0), 0);
+      const totalAIHours = userTasks.reduce((sum, task) => sum + (task.aiTime || task.data_task?.aiTime || 0), 0);
+      
+      // Calculate AI models usage for selected user
+      const aiModelCounts = {};
+      userTasks.forEach(task => {
+        const aiModels = task.aiModels || task.data_task?.aiModels || [];
+        if (Array.isArray(aiModels)) {
+          aiModels.forEach(model => {
+            if (model) {
+              aiModelCounts[model] = (aiModelCounts[model] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      // Get top 3 AI models by usage for selected user
+      const top3AIModels = Object.entries(aiModelCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([model, count]) => ({
+          icon: Icons.generic.ai,
+          label: model,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+      
+      // Calculate products usage for selected user
+      const productCounts = {};
+      userTasks.forEach(task => {
+        const product = task.products || task.data_task?.products;
+        if (product) {
+          productCounts[product] = (productCounts[product] || 0) + 1;
+        }
+      });
+      
+      // Get top 3 products by usage for selected user
+      const top3Products = Object.entries(productCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([product, count]) => ({
+          icon: Icons.buttons.submit,
+          label: product,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+      
+      // Top 3 Markets section
+      const userMarketsHeader = createTop3Header("Top 3 Markets");
       
       // Count markets for this user
       const userMarketCounts = {};
@@ -519,8 +642,8 @@ export const CARD_CONFIGS = {
           subValue: "" // No badges, just clean display
         }));
       
-      // User's Reporters section - only reporters that exist in user's tasks
-      const userReportersHeader = createTop3Header("User's Reporters");
+      // Top 3 Reporters section - only reporters that exist in user's tasks
+      const userReportersHeader = createTop3Header("Top 3 Reporters");
       
       // Get only reporters that are assigned to this user's tasks
       const userReporterIds = new Set();
@@ -593,7 +716,44 @@ export const CARD_CONFIGS = {
           };
         });
       
-      return [userMarketsHeader, ...userMarkets, ...top3UserReporters];
+      return [
+        // Total Hours Section
+        createTop3Header("Total Hours"),
+        {
+          icon: Icons.generic.user,
+          label: "Total Tasks",
+          value: userTasks.length.toString(),
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.ai,
+          label: "Total AI Hours",
+          value: `${totalAIHours}h`,
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: `${totalHours}h`,
+          subValue: ""
+        },
+        
+        // Top AI Models Section
+        createTop3Header("Top AI Models"),
+        ...top3AIModels,
+        
+        // Top 3 Products Section
+        createTop3Header("Top 3 Products"),
+        ...top3Products,
+        
+        // Top 3 Markets Section
+        userMarketsHeader, 
+        ...userMarkets, 
+        
+        // Top 3 Reporters Section
+        userReportersHeader,
+        ...top3UserReporters
+      ];
     }
   },
 
@@ -632,8 +792,8 @@ export const CARD_CONFIGS = {
 
       // Department stats
       const totalTasks = videoTasks.length;
-      const totalAIHours = videoTasks.reduce((sum, task) => sum + (task.aiTime || 0), 0);
-      const totalHours = videoTasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0);
+      const totalAIHours = videoTasks.reduce((sum, task) => sum + (task.aiTime || task.data_task?.aiTime || 0), 0);
+      const totalHours = videoTasks.reduce((sum, task) => sum + (task.timeInHours || task.data_task?.timeInHours || 0), 0);
 
       // Top 3 users in video department - only users who have video tasks
       const videoUsersHeader = createTop3Header("Top 3 Video Users");
@@ -723,6 +883,26 @@ export const CARD_CONFIGS = {
           subValue: ""
         }));
 
+      // Calculate products usage in video department
+      const productCounts = {};
+      videoTasks.forEach(task => {
+        const product = task.products || task.data_task?.products;
+        if (product) {
+          productCounts[product] = (productCounts[product] || 0) + 1;
+        }
+      });
+      
+      // Get top 3 products by usage in video department
+      const top3Products = Object.entries(productCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([product, count]) => ({
+          icon: Icons.buttons.submit,
+          label: product,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
       // Top 3 markets in video department
       const marketsHeader = createTop3Header("Top 3 Video Markets");
       const marketCounts = {};
@@ -748,6 +928,8 @@ export const CARD_CONFIGS = {
         }));
 
       const details = [
+        // Total Hours Section
+        createTop3Header("Total Hours"),
         {
           icon: Icons.generic.video,
           label: "Total Tasks",
@@ -766,8 +948,21 @@ export const CARD_CONFIGS = {
           value: `${totalHours}h`,
           subValue: ""
         },
+        
+        // Top 3 Users Section
+        videoUsersHeader,
         ...top3VideoUsers,
+        
+        // Top AI Models Section
+        aiModelsHeader,
         ...top3AIModels,
+        
+        // Top 3 Products Section
+        createTop3Header("Top 3 Products"),
+        ...top3Products,
+        
+        // Top 3 Markets Section
+        marketsHeader,
         ...top3Markets
       ];
 
@@ -809,8 +1004,8 @@ export const CARD_CONFIGS = {
 
       // Department stats
       const totalTasks = designTasks.length;
-      const totalAIHours = designTasks.reduce((sum, task) => sum + (task.aiTime || 0), 0);
-      const totalHours = designTasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0);
+      const totalAIHours = designTasks.reduce((sum, task) => sum + (task.aiTime || task.data_task?.aiTime || 0), 0);
+      const totalHours = designTasks.reduce((sum, task) => sum + (task.timeInHours || task.data_task?.timeInHours || 0), 0);
 
       // Top 3 users in design department - only users who have design tasks
       const designUsersHeader = createTop3Header("Top 3 Design Users");
@@ -900,6 +1095,26 @@ export const CARD_CONFIGS = {
           subValue: ""
         }));
 
+      // Calculate products usage in design department
+      const productCounts = {};
+      designTasks.forEach(task => {
+        const product = task.products || task.data_task?.products;
+        if (product) {
+          productCounts[product] = (productCounts[product] || 0) + 1;
+        }
+      });
+      
+      // Get top 3 products by usage in design department
+      const top3Products = Object.entries(productCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([product, count]) => ({
+          icon: Icons.buttons.submit,
+          label: product,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
       // Top 3 markets in design department
       const marketsHeader = createTop3Header("Top 3 Design Markets");
       const marketCounts = {};
@@ -925,6 +1140,8 @@ export const CARD_CONFIGS = {
         }));
 
       return [
+        // Total Hours Section
+        createTop3Header("Total Hours"),
         {
           icon: Icons.generic.design,
           label: "Total Tasks",
@@ -943,8 +1160,21 @@ export const CARD_CONFIGS = {
           value: `${totalHours}h`,
           subValue: ""
         },
+        
+        // Top 3 Users Section
+        designUsersHeader,
         ...top3DesignUsers,
+        
+        // Top AI Models Section
+        aiModelsHeader,
         ...top3AIModels,
+        
+        // Top 3 Products Section
+        createTop3Header("Top 3 Products"),
+        ...top3Products,
+        
+        // Top 3 Markets Section
+        marketsHeader,
         ...top3Markets
       ];
     }
@@ -984,8 +1214,8 @@ export const CARD_CONFIGS = {
 
       // Department stats
       const totalTasks = devTasks.length;
-      const totalAIHours = devTasks.reduce((sum, task) => sum + (task.aiTime || 0), 0);
-      const totalHours = devTasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0);
+      const totalAIHours = devTasks.reduce((sum, task) => sum + (task.aiTime || task.data_task?.aiTime || 0), 0);
+      const totalHours = devTasks.reduce((sum, task) => sum + (task.timeInHours || task.data_task?.timeInHours || 0), 0);
 
       // Top 3 users in dev department - only users who have dev tasks
       const devUsersHeader = createTop3Header("Top 3 Dev Users");
@@ -1075,6 +1305,26 @@ export const CARD_CONFIGS = {
           subValue: ""
         }));
 
+      // Calculate products usage in dev department
+      const productCounts = {};
+      devTasks.forEach(task => {
+        const product = task.products || task.data_task?.products;
+        if (product) {
+          productCounts[product] = (productCounts[product] || 0) + 1;
+        }
+      });
+      
+      // Get top 3 products by usage in dev department
+      const top3Products = Object.entries(productCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([product, count]) => ({
+          icon: Icons.buttons.submit,
+          label: product,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
       // Top 3 markets in dev department
       const marketsHeader = createTop3Header("Top 3 Dev Markets");
       const marketCounts = {};
@@ -1100,6 +1350,8 @@ export const CARD_CONFIGS = {
         }));
 
       return [
+        // Total Hours Section
+        createTop3Header("Total Hours"),
         {
           icon: Icons.generic.code,
           label: "Total Tasks",
@@ -1118,8 +1370,21 @@ export const CARD_CONFIGS = {
           value: `${totalHours}h`,
           subValue: ""
         },
+        
+        // Top 3 Users Section
+        devUsersHeader,
         ...top3DevUsers,
+        
+        // Top AI Models Section
+        aiModelsHeader,
         ...top3AIModels,
+        
+        // Top 3 Products Section
+        createTop3Header("Top 3 Products"),
+        ...top3Products,
+        
+        // Top 3 Markets Section
+        marketsHeader,
         ...top3Markets
       ];
     }
@@ -1216,19 +1481,19 @@ export const createCards = (cardConfigs, data) => {
 export const CARD_SETS = {
   DASHBOARD: [
     CARD_TYPES.TASKS,
-    CARD_TYPES.REPORTERS,
     CARD_TYPES.DEPARTMENT_VIDEO,
     CARD_TYPES.DEPARTMENT_DESIGN,
-    CARD_TYPES.DEPARTMENT_DEV
+    CARD_TYPES.DEPARTMENT_DEV,
+    CARD_TYPES.REPORTERS
   ],
 
   DASHBOARD_WITH_USER: [
+    CARD_TYPES.SELECTED_USER, // Show when user is selected - FIRST
     CARD_TYPES.TASKS,
-    CARD_TYPES.REPORTERS,
-    CARD_TYPES.SELECTED_USER, // Show when user is selected
     CARD_TYPES.DEPARTMENT_VIDEO,
     CARD_TYPES.DEPARTMENT_DESIGN,
-    CARD_TYPES.DEPARTMENT_DEV
+    CARD_TYPES.DEPARTMENT_DEV,
+    CARD_TYPES.REPORTERS // LAST
   ],
 
   MANAGEMENT: [

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
@@ -27,6 +27,7 @@ const AdminDashboardPage = () => {
   const { canAccess } = useAuth();
   const isUserAdmin = canAccess("admin");
   const selectedUserId = searchParams.get("user") || "";
+  const selectedReporterId = searchParams.get("reporter") || "";
 
   // Get basic data from useAppData hook
   const {
@@ -37,9 +38,10 @@ const AdminDashboardPage = () => {
     updateTask,
     deleteTask,
     error
-  } = useAppData(selectedUserId);
+  } = useAppData(); // Remove selectedUserId since we handle filtering in component
   
   // Use month selection hook for month-specific functionality
+  // Always get ALL tasks (no user filtering at API level for admin)
   const {
     tasks,                    // Current display tasks (current or selected month)
     currentMonthTasks,       // Current month tasks
@@ -51,7 +53,7 @@ const AdminDashboardPage = () => {
     error: monthError,       // Error state
     selectMonth,             // Function to select month
     resetToCurrentMonth      // Function to reset
-  } = useMonthSelection(selectedUserId);
+  } = useMonthSelection(); // Remove selectedUserId to get ALL tasks
   
   // Task creation is only allowed for current month
   const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
@@ -60,18 +62,45 @@ const AdminDashboardPage = () => {
   const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
   const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
   
+  // Get selected reporter name for display
+  const selectedReporter = reporters.find((r) => (r.id || r.uid) === selectedReporterId);
+  const selectedReporterName = selectedReporter?.name || selectedReporter?.reporterName || "Unknown Reporter";
+  
   // Handle user selection (admin only) - memoized with useCallback
   const handleUserSelect = useCallback((userId) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
     if (!userId) {
-      setSearchParams({}, { replace: true });
+      delete currentParams.user;
     } else {
-      setSearchParams({ user: userId }, { replace: true });
+      currentParams.user = userId;
     }
-  }, [setSearchParams]);
+    setSearchParams(currentParams, { replace: true });
+  }, [setSearchParams, searchParams]);
+  
+  // Handle reporter selection (admin only) - memoized with useCallback
+  const handleReporterSelect = useCallback((reporterId) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    if (!reporterId) {
+      delete currentParams.reporter;
+    } else {
+      currentParams.reporter = reporterId;
+    }
+    setSearchParams(currentParams, { replace: true });
+  }, [setSearchParams, searchParams]);
 
   // Derive title based on context and role
   const title = isUserAdmin
-    ? (selectedUserId ? `All Tasks - ${selectedUserName}` : "All Tasks - All Users")
+    ? (() => {
+        if (selectedUserId && selectedReporterId) {
+          return `Tasks - ${selectedUserName} & ${selectedReporterName}`;
+        } else if (selectedUserId) {
+          return `Tasks - ${selectedUserName}`;
+        } else if (selectedReporterId) {
+          return `Tasks - ${selectedReporterName}`;
+        } else {
+          return "All Tasks - All Users";
+        }
+      })()
     : "My Tasks";
 
   // Create filter options from dashboard state
@@ -79,6 +108,42 @@ const AdminDashboardPage = () => {
     selectedUserId,
     selectedMonthId: selectedMonth?.monthId || currentMonth?.monthId
   });
+
+  // Filter tasks by user and/or reporter
+  const filteredTasks = useMemo(() => {
+    let result = [...tasks];
+    
+    console.log('🔍 Filtering tasks:', {
+      totalTasks: tasks.length,
+      selectedUserId,
+      selectedReporterId,
+      selectedUserName,
+      selectedReporterName
+    });
+    
+    // Filter by user if selected
+    if (selectedUserId) {
+      const beforeUserFilter = result.length;
+      result = result.filter(task => {
+        const taskUserId = task.userUID || task.createbyUID;
+        return taskUserId === selectedUserId;
+      });
+      console.log(`👤 User filter (${selectedUserName}): ${beforeUserFilter} → ${result.length} tasks`);
+    }
+    
+    // Filter by reporter if selected
+    if (selectedReporterId) {
+      const beforeReporterFilter = result.length;
+      result = result.filter(task => {
+        const taskReporterId = task.reporters || task.data_task?.reporters;
+        return taskReporterId === selectedReporterId;
+      });
+      console.log(`📝 Reporter filter (${selectedReporterName}): ${beforeReporterFilter} → ${result.length} tasks`);
+    }
+    
+    console.log('✅ Final filtered tasks:', result.length);
+    return result;
+  }, [tasks, selectedUserId, selectedReporterId, selectedUserName, selectedReporterName]);
 
   // Calculate reporter metrics using global tasks (reporters card shows all data)
   const reporterMetrics = useReporterMetrics(tasks, reporters, {});
@@ -101,14 +166,18 @@ const AdminDashboardPage = () => {
   // Dashboard cards data using dynamic configuration
   const dashboardCards = selectedUserId
     ? [
-        ...createCards([CARD_TYPES.TASKS, CARD_TYPES.REPORTERS], commonCardData),
+        // Selected User comes FIRST
         ...createCards([CARD_TYPES.SELECTED_USER], {
           ...commonCardData,
           filteredTasks: tasks,
           selectedUserId: selectedUserId,
           selectedUserName: selectedUserName
         }),
-        ...createCards([CARD_TYPES.DEPARTMENT_VIDEO, CARD_TYPES.DEPARTMENT_DESIGN, CARD_TYPES.DEPARTMENT_DEV], commonCardData)
+        // Then other cards
+        ...createCards([CARD_TYPES.TASKS], commonCardData),
+        ...createCards([CARD_TYPES.DEPARTMENT_VIDEO, CARD_TYPES.DEPARTMENT_DESIGN, CARD_TYPES.DEPARTMENT_DEV], commonCardData),
+        // Reporters comes LAST
+        ...createCards([CARD_TYPES.REPORTERS], commonCardData)
       ]
     : createCards(CARD_SETS.DASHBOARD, commonCardData);
 
@@ -143,7 +212,7 @@ const AdminDashboardPage = () => {
 
         {/* Controls Section - First */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Month Selection */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-6">
               <div className="mb-4">
@@ -225,6 +294,46 @@ const AdminDashboardPage = () => {
               </div>
             )}
 
+            {/* Reporter Filter - Admin Only */}
+            {isUserAdmin && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-6">
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Reporter Filter</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{reporters.length} reporters available</p>
+                </div>
+                <div className="space-y-3">
+                  <select
+                    id="selectedReporter"
+                    value={selectedReporterId}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => handleReporterSelect(e.target.value)}
+                  >
+                    <option value="">All Reporters</option>
+                    {reporters.map((reporter) => (
+                      <option key={reporter.id || reporter.uid} value={reporter.id || reporter.uid}>
+                        {reporter.name || reporter.reporterName}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {selectedReporterId ? `Filtered by: ${selectedReporterName}` : 'Showing all reporters'}
+                    </span>
+                    {selectedReporterId && (
+                      <DynamicButton
+                        onClick={() => handleReporterSelect("")}
+                        variant="outline"
+                        size="sm"
+                        iconName="x"
+                        iconPosition="center"
+                        className="px-2"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-6">
               <div className="mb-4">
@@ -286,7 +395,7 @@ const AdminDashboardPage = () => {
           {/* Dashboard Cards Content */}
           {showMetrics && (
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 {dashboardCards.map((card) => (
                   <DashboardCard key={card.id} card={card} />
                 ))}
@@ -302,12 +411,20 @@ const AdminDashboardPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {isUserAdmin && selectedUserId
-                    ? `${selectedUserName} Tasks`
-                    : "Tasks"}
+                  {(() => {
+                    if (selectedUserId && selectedReporterId) {
+                      return `${selectedUserName} & ${selectedReporterName} Tasks`;
+                    } else if (selectedUserId) {
+                      return `${selectedUserName} Tasks`;
+                    } else if (selectedReporterId) {
+                      return `${selectedReporterName} Tasks`;
+                    } else {
+                      return "Tasks";
+                    }
+                  })()}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {tasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+                  {filteredTasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
               </div>
               <DynamicButton
@@ -329,14 +446,21 @@ const AdminDashboardPage = () => {
                 <div className="flex justify-center items-center py-12">
                   <Loader size="md" text="Loading tasks..." />
                 </div>
-              ) : tasks.length === 0 ? (
+              ) : filteredTasks.length === 0 ? (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks found</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    {selectedUserId 
-                      ? `${selectedUserName} has no tasks for this period`
-                      : 'No tasks available for the selected criteria'
-                    }
+                    {(() => {
+                      if (selectedUserId && selectedReporterId) {
+                        return `${selectedUserName} has no tasks assigned to ${selectedReporterName} for this period`;
+                      } else if (selectedUserId) {
+                        return `${selectedUserName} has no tasks for this period`;
+                      } else if (selectedReporterId) {
+                        return `${selectedReporterName} has no tasks for this period`;
+                      } else {
+                        return 'No tasks available for the selected criteria';
+                      }
+                    })()}
                   </p>
                   {canCreateTasks && (
                     <DynamicButton
@@ -352,7 +476,7 @@ const AdminDashboardPage = () => {
                 </div>
               ) : (
                 <LazyTaskTable
-                  tasks={tasks}
+                  tasks={filteredTasks}
                   users={users}
                   reporters={reporters}
                   user={user}
