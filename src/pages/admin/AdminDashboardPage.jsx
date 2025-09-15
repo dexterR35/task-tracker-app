@@ -8,20 +8,16 @@ import LazyTaskTable from "@/components/lazy/LazyTaskTable";
 import { TaskForm } from "@/components/forms";
 import Loader from "@/components/ui/Loader/Loader";
 import DashboardCard from "@/components/ui/Card/DashboardCard";
-import { createCards, CARD_SETS, CARD_TYPES } from "@/components/ui/Card/cardConfig";
+import { createDashboardCards } from "@/components/ui/Card/cardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
-import { useFilterOptions } from "@/hooks/useDataFilter";
+import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 
 
-
-// Universal Dashboard Page - Shows tasks based on user role
-// Admin: All tasks with user filters and full management
-// User: Only their own tasks with month selection
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
-  const [showMetrics, setShowMetrics] = useState(true);
+  const [showCards, setShowCards] = useState(true);
 
   // Get auth functions separately
   const { canAccess } = useAuth();
@@ -34,9 +30,6 @@ const AdminDashboardPage = () => {
     user,
     users,
     reporters,
-    createTask,
-    updateTask,
-    deleteTask,
     error
   } = useAppData(); // Remove selectedUserId since we handle filtering in component
   
@@ -44,7 +37,6 @@ const AdminDashboardPage = () => {
   // Always get ALL tasks (no user filtering at API level for admin)
   const {
     tasks,                    // Current display tasks (current or selected month)
-    currentMonthTasks,       // Current month tasks
     availableMonths,         // For dropdown options
     currentMonth,            // Current month info
     selectedMonth,           // Selected month info
@@ -103,47 +95,17 @@ const AdminDashboardPage = () => {
       })()
     : "My Tasks";
 
-  // Create filter options from dashboard state
-  const filterOptions = useFilterOptions({
-    selectedUserId,
-    selectedMonthId: selectedMonth?.monthId || currentMonth?.monthId
-  });
+  // Get current month ID for filtering
+  const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
-  // Filter tasks by user and/or reporter
-  const filteredTasks = useMemo(() => {
-    let result = [...tasks];
-    
-    console.log('🔍 Filtering tasks:', {
-      totalTasks: tasks.length,
-      selectedUserId,
-      selectedReporterId,
-      selectedUserName,
-      selectedReporterName
-    });
-    
-    // Filter by user if selected
-    if (selectedUserId) {
-      const beforeUserFilter = result.length;
-      result = result.filter(task => {
-        const taskUserId = task.userUID || task.createbyUID;
-        return taskUserId === selectedUserId;
-      });
-      console.log(`👤 User filter (${selectedUserName}): ${beforeUserFilter} → ${result.length} tasks`);
-    }
-    
-    // Filter by reporter if selected
-    if (selectedReporterId) {
-      const beforeReporterFilter = result.length;
-      result = result.filter(task => {
-        const taskReporterId = task.reporters || task.data_task?.reporters;
-        return taskReporterId === selectedReporterId;
-      });
-      console.log(`📝 Reporter filter (${selectedReporterName}): ${beforeReporterFilter} → ${result.length} tasks`);
-    }
-    
-    console.log('✅ Final filtered tasks:', result.length);
-    return result;
-  }, [tasks, selectedUserId, selectedReporterId, selectedUserName, selectedReporterName]);
+  console.log('🔍 Filtering tasks:', {
+    totalTasks: tasks.length,
+    selectedUserId,
+    selectedReporterId,
+    selectedUserName,
+    selectedReporterName,
+    currentMonthId
+  });
 
   // Calculate reporter metrics using global tasks (reporters card shows all data)
   const reporterMetrics = useReporterMetrics(tasks, reporters, {});
@@ -163,23 +125,87 @@ const AdminDashboardPage = () => {
 
 
 
-  // Dashboard cards data using dynamic configuration
-  const dashboardCards = selectedUserId
-    ? [
-        // Selected User comes FIRST
-        ...createCards([CARD_TYPES.SELECTED_USER], {
-          ...commonCardData,
-          filteredTasks: tasks,
-          selectedUserId: selectedUserId,
-          selectedUserName: selectedUserName
-        }),
-        // Then other cards
-        ...createCards([CARD_TYPES.TASKS], commonCardData),
-        ...createCards([CARD_TYPES.DEPARTMENT_VIDEO, CARD_TYPES.DEPARTMENT_DESIGN, CARD_TYPES.DEPARTMENT_DEV], commonCardData),
-        // Reporters comes LAST
-        ...createCards([CARD_TYPES.REPORTERS], commonCardData)
-      ]
-    : createCards(CARD_SETS.DASHBOARD, commonCardData);
+  // Use the enhanced hook to calculate top 3 metrics for different scenarios
+  // All filtering is now handled by useTop3Calculations internally
+  
+  // General metrics (month-filtered only, no user/reporter filtering)
+  const top3Metrics = useTop3Calculations(commonCardData, {
+    selectedUserId: null,
+    selectedReporterId: null,
+    selectedMonthId: currentMonthId,
+    department: null,
+    limit: 3
+  });
+
+  // Reporters metrics (month-filtered only, no user filtering)
+  const reportersMetrics = useTop3Calculations(commonCardData, {
+    selectedUserId: null,
+    selectedReporterId: null,
+    selectedMonthId: currentMonthId,
+    department: null,
+    limit: 3
+  });
+
+  // Department-specific metrics (month-filtered only)
+  const videoMetrics = useTop3Calculations(commonCardData, {
+    selectedUserId: null,
+    selectedReporterId: null,
+    selectedMonthId: currentMonthId,
+    department: 'video',
+    limit: 3
+  });
+
+  const designMetrics = useTop3Calculations(commonCardData, {
+    selectedUserId: null,
+    selectedReporterId: null,
+    selectedMonthId: currentMonthId,
+    department: 'design',
+    limit: 3
+  });
+
+  const devMetrics = useTop3Calculations(commonCardData, {
+    selectedUserId: null,
+    selectedReporterId: null,
+    selectedMonthId: currentMonthId,
+    department: 'developer',
+    limit: 3
+  });
+
+  // Selected user metrics (user + month + reporter filtered, include all data)
+  const selectedUserMetrics = useTop3Calculations(commonCardData, {
+    selectedUserId,
+    selectedReporterId,
+    selectedMonthId: currentMonthId,
+    department: null,
+    limit: 3,
+    includeAllData: true // Include all products/markets for selected user card
+  });
+
+  // Create dashboard cards with hook-based metrics
+  const dashboardCards = useMemo(() => {
+    // Create a custom card data object that includes all calculated metrics
+    const cardDataWithMetrics = {
+      ...commonCardData,
+      top3Metrics: top3Metrics,
+      reportersMetrics: reportersMetrics,
+      videoMetrics: videoMetrics,
+      designMetrics: designMetrics,
+      devMetrics: devMetrics,
+      selectedUserMetrics: selectedUserMetrics, // For selected user card metrics
+      currentMonthId: currentMonthId // Pass month ID for any remaining filtering needs
+    };
+
+    
+    const cards = createDashboardCards(
+      cardDataWithMetrics, 
+      selectedUserId, 
+      selectedUserName,
+      selectedReporterId
+    );
+    
+    console.log('Generated dashboard cards:', cards);
+    return cards;
+  }, [commonCardData, selectedUserId, selectedUserName, selectedReporterId, top3Metrics, reportersMetrics, videoMetrics, designMetrics, devMetrics, selectedUserMetrics, currentMonthId]);
 
 
   if (error || monthError) {
@@ -196,8 +222,8 @@ const AdminDashboardPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Page Header */}
         <div className="mb-8">
           <div className="mb-6">
@@ -367,33 +393,33 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Metrics Section */}
+        {/* Dashboard Cards */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden mb-8">
-          {/* Metrics Section Header */}
+          {/* Cards Section Header */}
           <div className="px-6 py-4 border-b border-gray-300 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Metrics
+                  Dashboard Cards
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {dashboardCards.length} metrics • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+                  {dashboardCards.length} cards • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
               </div>
               <DynamicButton
-                onClick={() => setShowMetrics(!showMetrics)}
+                onClick={() => setShowCards(!showCards)}
                 variant="outline"
                 size="sm"
-                iconName={showMetrics ? "eye-off" : "eye"}
+                iconName={showCards ? "eye-off" : "eye"}
                 iconPosition="left"
               >
-                {showMetrics ? "Hide" : "Show"}
+                {showCards ? "Hide" : "Show"}
               </DynamicButton>
             </div>
           </div>
 
           {/* Dashboard Cards Content */}
-          {showMetrics && (
+          {showCards && (
             <div className="p-6">
               <div className="grid grid-cols-1 gap-6">
                 {dashboardCards.map((card) => (
@@ -424,7 +450,29 @@ const AdminDashboardPage = () => {
                   })()}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {filteredTasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+                  {(() => {
+                    // Count filtered tasks for the table
+                    const filteredTasks = tasks.filter(task => {
+                      if (currentMonthId && task.monthId !== currentMonthId) return false;
+                      
+                      if (selectedUserId && selectedReporterId) {
+                        const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+                        const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+                        return matchesUser && matchesReporter;
+                      }
+                      
+                      if (selectedUserId && !selectedReporterId) {
+                        return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+                      }
+                      
+                      if (selectedReporterId && !selectedUserId) {
+                        return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+                      }
+                      
+                      return true;
+                    });
+                    return `${filteredTasks.length} tasks`;
+                  })()} • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
               </div>
               <DynamicButton
@@ -446,7 +494,29 @@ const AdminDashboardPage = () => {
                 <div className="flex justify-center items-center py-12">
                   <Loader size="md" text="Loading tasks..." />
                 </div>
-              ) : filteredTasks.length === 0 ? (
+              ) : (() => {
+                // Check if there are any filtered tasks for the table
+                const filteredTasks = tasks.filter(task => {
+                  if (currentMonthId && task.monthId !== currentMonthId) return false;
+                  
+                  if (selectedUserId && selectedReporterId) {
+                    const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+                    const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+                    return matchesUser && matchesReporter;
+                  }
+                  
+                  if (selectedUserId && !selectedReporterId) {
+                    return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+                  }
+                  
+                  if (selectedReporterId && !selectedUserId) {
+                    return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+                  }
+                  
+                  return true;
+                });
+                return filteredTasks.length === 0;
+              })() ? (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks found</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
@@ -476,7 +546,32 @@ const AdminDashboardPage = () => {
                 </div>
               ) : (
                 <LazyTaskTable
-                  tasks={filteredTasks}
+                  tasks={tasks.filter(task => {
+                    // Apply filtering logic based on selections
+                    
+                    // Always filter by month first
+                    if (currentMonthId && task.monthId !== currentMonthId) return false;
+                    
+                    // If both user and reporter are selected, show tasks that match BOTH
+                    if (selectedUserId && selectedReporterId) {
+                      const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+                      const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+                      return matchesUser && matchesReporter;
+                    }
+                    
+                    // If only user is selected, show tasks for that user
+                    if (selectedUserId && !selectedReporterId) {
+                      return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+                    }
+                    
+                    // If only reporter is selected, show tasks for that reporter
+                    if (selectedReporterId && !selectedUserId) {
+                      return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+                    }
+                    
+                    // If neither user nor reporter is selected, show all tasks (month-filtered)
+                    return true;
+                  })}
                   users={users}
                   reporters={reporters}
                   user={user}
@@ -503,7 +598,7 @@ const AdminDashboardPage = () => {
           />
         </Modal>
       </div>
-    </div>
+ 
   );
 };
 

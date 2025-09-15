@@ -6,6 +6,7 @@ import { useMemo } from 'react';
  * @param {Object} filterOptions - Filter configuration
  * @param {string} filterOptions.userId - Filter by user ID
  * @param {string} filterOptions.monthId - Filter by month ID
+ * @param {string} filterOptions.reporterId - Filter by reporter ID
  * @returns {Array} Filtered data
  */
 export const useDataFilter = (data = [], filterOptions = {}) => {
@@ -29,6 +30,14 @@ export const useDataFilter = (data = [], filterOptions = {}) => {
       );
     }
 
+    // Filter by reporter ID
+    if (filterOptions.reporterId) {
+      result = result.filter(item => 
+        item.reporters === filterOptions.reporterId || 
+        item.data_task?.reporters === filterOptions.reporterId
+      );
+    }
+
     return result;
   }, [data, filterOptions]);
 
@@ -40,6 +49,7 @@ export const useDataFilter = (data = [], filterOptions = {}) => {
  * @param {Object} dashboardState - Current dashboard state
  * @param {string} dashboardState.selectedUserId - Selected user ID
  * @param {string} dashboardState.selectedMonthId - Selected month ID
+ * @param {string} dashboardState.selectedReporterId - Selected reporter ID
  * @returns {Object} Filter options
  */
 export const useFilterOptions = (dashboardState = {}) => {
@@ -54,8 +64,12 @@ export const useFilterOptions = (dashboardState = {}) => {
       options.monthId = dashboardState.selectedMonthId;
     }
 
+    if (dashboardState.selectedReporterId) {
+      options.reporterId = dashboardState.selectedReporterId;
+    }
+
     return options;
-  }, [dashboardState.selectedUserId, dashboardState.selectedMonthId]);
+  }, [dashboardState.selectedUserId, dashboardState.selectedMonthId, dashboardState.selectedReporterId]);
 
   return filterOptions;
 };

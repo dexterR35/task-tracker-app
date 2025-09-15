@@ -197,16 +197,17 @@ const DashboardCard = ({ card }) => {
                                   {item.value}
                                 </span>
                               </div>
-                              {item.subValue && (
-                                <div className="ml-4 mt-1">
-                                  {/* Check if subValue contains market data (short codes like "com uk de") or other data (like "105h total") */}
-                                  {item.subValue.includes('h total') || item.subValue.includes('h AI') ? (
-                                    // Display as plain text for hours data
+                              {(item.subValue || item.hoursValue) && (
+                                <div className="ml-4 mt-1 space-y-1">
+                                  {/* Display hours data if available */}
+                                  {item.hoursValue && (
                                     <div className="text-xs text-gray-600 dark:text-gray-400">
-                                      {item.subValue}
+                                      {item.hoursValue}
                                     </div>
-                                  ) : (
-                                    // Display as market badges for market data
+                                  )}
+                                  
+                                  {/* Display market badges if available */}
+                                  {item.subValue && !item.subValue.includes('h total') && !item.subValue.includes('h AI') && (
                                     <div className="flex items-center gap-2">
                                       <div className="text-xs text-gray-600 dark:text-gray-400">
                                         markets
@@ -226,6 +227,13 @@ const DashboardCard = ({ card }) => {
                                       </div>
                                     </div>
                                   )}
+                                  
+                                  {/* Fallback for old format with hours and markets combined */}
+                                  {item.subValue && (item.subValue.includes('h total') || item.subValue.includes('h AI')) && (
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {item.subValue}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -238,36 +246,7 @@ const DashboardCard = ({ card }) => {
               </div>
             )}
 
-            {/* Progress Bar */}
-            {card.progress !== undefined && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs ">Status</span>
-                  <span className="text-xs ">{card.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-700/50 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full"
-                    style={{
-                      width: `${card.progress}%`,
-                      backgroundColor: cardColors.primary,
-                    }}
-                  ></div>
-                </div>
-              </div>
-            )}
 
-            {/* Action Button */}
-            {card.action && (
-              <div className="mt-4">
-                <button
-                  onClick={card.action.onClick}
-                  className="w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-md transition-colors duration-200"
-                >
-                  {card.action.label}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
