@@ -21,6 +21,7 @@ const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTable, setShowTable] = useState(true);
+  const [showMetrics, setShowMetrics] = useState(true);
 
   // Get auth functions separately
   const { canAccess } = useAuth();
@@ -240,16 +241,6 @@ const AdminDashboardPage = () => {
                 >
                   Create Task
                 </DynamicButton>
-                <DynamicButton
-                  onClick={() => setShowTable(!showTable)}
-                  variant="outline"
-                  size="sm"
-                  iconName={showTable ? "eye-off" : "eye"}
-                  iconPosition="left"
-                  className="w-full"
-                >
-                  {showTable ? "Hide Table" : "Show Table"}
-                </DynamicButton>
                 {!canCreateTasks && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     <span className="text-amber-600 dark:text-amber-400">
@@ -263,13 +254,41 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Dashboard Cards Section */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {dashboardCards.map((card) => (
-              <DashboardCard key={card.id} card={card} />
-            ))}
+        {/* Metrics Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden mb-8">
+          {/* Metrics Section Header */}
+          <div className="px-6 py-4 border-b border-gray-300 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Metrics
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {dashboardCards.length} metrics • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
+                </p>
+              </div>
+              <DynamicButton
+                onClick={() => setShowMetrics(!showMetrics)}
+                variant="outline"
+                size="sm"
+                iconName={showMetrics ? "eye-off" : "eye"}
+                iconPosition="left"
+              >
+                {showMetrics ? "Hide" : "Show"}
+              </DynamicButton>
+            </div>
           </div>
+
+          {/* Dashboard Cards Content */}
+          {showMetrics && (
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {dashboardCards.map((card) => (
+                  <DashboardCard key={card.id} card={card} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Professional Tasks Section */}
@@ -287,6 +306,15 @@ const AdminDashboardPage = () => {
                   {tasks.length} tasks • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
               </div>
+              <DynamicButton
+                onClick={() => setShowTable(!showTable)}
+                variant="outline"
+                size="sm"
+                iconName={showTable ? "eye-off" : "eye"}
+                iconPosition="left"
+              >
+                {showTable ? "Hide" : "Show"}
+              </DynamicButton>
             </div>
           </div>
 
