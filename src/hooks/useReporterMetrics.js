@@ -1,5 +1,19 @@
 import { useMemo } from 'react';
-import { useDataFilter, useDataProcessor } from './useDataFilter';
+
+/**
+ * Helper function to get task field value (same as in useTop3Calculations)
+ */
+const getTaskField = (task, field) => {
+  return task[field] || task.data_task?.[field] || '';
+};
+
+/**
+ * Helper function to get task array field value (same as in useTop3Calculations)
+ */
+const getTaskArrayField = (task, field) => {
+  const value = task[field] || task.data_task?.[field] || [];
+  return Array.isArray(value) ? value : [];
+};
 
 /**
  * Hook to calculate reporter task counts with markets
@@ -9,8 +23,33 @@ import { useDataFilter, useDataProcessor } from './useDataFilter';
  * @returns {Array} Array of reporter names with task counts and markets
  */
 export const useReportersTaskCount = (tasks = [], reporters = [], filterOptions = {}) => {
-  // Use existing filter hook
-  const filteredTasks = useDataFilter(tasks, filterOptions);
+  // Apply filtering logic (same as useTop3Calculations)
+  const filteredTasks = useMemo(() => {
+    if (!tasks || tasks.length === 0) return [];
+    
+    let result = [...tasks];
+    
+    // Filter by month ID
+    if (filterOptions.monthId) {
+      result = result.filter(task => task.monthId === filterOptions.monthId);
+    }
+    
+    // Filter by user ID
+    if (filterOptions.userId) {
+      result = result.filter(task => 
+        task.userUID === filterOptions.userId || task.createbyUID === filterOptions.userId
+      );
+    }
+    
+    // Filter by reporter ID
+    if (filterOptions.reporterId) {
+      result = result.filter(task => 
+        task.reporters === filterOptions.reporterId || task.data_task?.reporters === filterOptions.reporterId
+      );
+    }
+    
+    return result;
+  }, [tasks, filterOptions.monthId, filterOptions.userId, filterOptions.reporterId]);
 
   // Calculate reporter task counts with markets
   const reporterTaskCounts = useMemo(() => {
@@ -28,58 +67,56 @@ export const useReportersTaskCount = (tasks = [], reporters = [], filterOptions 
     // Count tasks for each reporter and collect market counts
     filteredTasks.forEach(task => {
       // Check both root level and data_task level for reporter ID
-      const reporterId = task.reporters || task.data_task?.reporters;
+      const reporterId = getTaskField(task, 'reporters');
       
       if (reporterId && counts[reporterId]) {
         counts[reporterId].taskCount++;
         
-        // Count markets from task
-        const taskMarkets = task.markets || task.data_task?.markets || [];
-        if (Array.isArray(taskMarkets)) {
-          taskMarkets.forEach(market => {
-            if (market) {
-              counts[reporterId].marketCounts[market] = 
-                (counts[reporterId].marketCounts[market] || 0) + 1;
-            }
-          });
-        }
+        // Count markets from task using helper function
+        const taskMarkets = getTaskArrayField(task, 'markets');
+        taskMarkets.forEach(market => {
+          if (market) {
+            counts[reporterId].marketCounts[market] = 
+              (counts[reporterId].marketCounts[market] || 0) + 1;
+          }
+        });
       }
     });
 
     return Object.values(counts);
   }, [filteredTasks, reporters]);
 
-  // Use existing processor hook
-  return useDataProcessor(reporterTaskCounts, {
-    filterFn: (reporter) => reporter.taskCount > 0,
-    sortBy: 'taskCount',
-    sortOrder: 'desc',
-    mapFn: (reporter) => {
-      // Format market counts with flexible design for different card types
-      const marketEntries = Object.entries(reporter.marketCounts)
-        .sort(([,a], [,b]) => b - a) // Sort by count descending
-        .map(([market, count]) => {
-          // Format as "count x market"
-          if (count === 1) {
-            return market; // Just show market name if count is 1
-          } else {
-            return `${count}x${market}`; // Format as "2x DK" (withno space)
-          }
-        })
-        .join(' ');
-      
-      return {
-        reporterName: reporter.reporterName,
-        taskCount: reporter.taskCount,
-        marketCounts: reporter.marketCounts,
-        displayText: `${reporter.reporterName} - ${reporter.taskCount} task${reporter.taskCount !== 1 ? 's' : ''}`,
-        marketsText: marketEntries || 'No markets',
-        // Additional data for flexible card usage
-        totalMarkets: Object.keys(reporter.marketCounts).length,
-        totalMarketOccurrences: Object.values(reporter.marketCounts).reduce((sum, count) => sum + count, 0)
-      };
-    }
-  });
+  // Process and return reporter data
+  return useMemo(() => {
+    return reporterTaskCounts
+      .filter(reporter => reporter.taskCount > 0)
+      .sort((a, b) => b.taskCount - a.taskCount)
+      .map(reporter => {
+        // Format market counts with flexible design for different card types
+        const marketEntries = Object.entries(reporter.marketCounts)
+          .sort(([,a], [,b]) => b - a) // Sort by count descending
+          .map(([market, count]) => {
+            // Format as "count x market"
+            if (count === 1) {
+              return market; // Just show market name if count is 1
+            } else {
+              return `${count}x${market}`; // Format as "2x DK" (withno space)
+            }
+          })
+          .join(' ');
+        
+        return {
+          reporterName: reporter.reporterName,
+          taskCount: reporter.taskCount,
+          marketCounts: reporter.marketCounts,
+          displayText: `${reporter.reporterName} - ${reporter.taskCount} task${reporter.taskCount !== 1 ? 's' : ''}`,
+          marketsText: marketEntries || 'No markets',
+          // Additional data for flexible card usage
+          totalMarkets: Object.keys(reporter.marketCounts).length,
+          totalMarketOccurrences: Object.values(reporter.marketCounts).reduce((sum, count) => sum + count, 0)
+        };
+      });
+  }, [reporterTaskCounts]);
 };
 
 /**
@@ -90,8 +127,33 @@ export const useReportersTaskCount = (tasks = [], reporters = [], filterOptions 
  * @returns {Object} Reporter metrics
  */
 export const useReporterMetrics = (tasks = [], reporters = [], filterOptions = {}) => {
-  // Use existing filter hook
-  const filteredTasks = useDataFilter(tasks, filterOptions);
+  // Apply filtering logic (same as useTop3Calculations)
+  const filteredTasks = useMemo(() => {
+    if (!tasks || tasks.length === 0) return [];
+    
+    let result = [...tasks];
+    
+    // Filter by month ID
+    if (filterOptions.monthId) {
+      result = result.filter(task => task.monthId === filterOptions.monthId);
+    }
+    
+    // Filter by user ID
+    if (filterOptions.userId) {
+      result = result.filter(task => 
+        task.userUID === filterOptions.userId || task.createbyUID === filterOptions.userId
+      );
+    }
+    
+    // Filter by reporter ID
+    if (filterOptions.reporterId) {
+      result = result.filter(task => 
+        task.reporters === filterOptions.reporterId || task.data_task?.reporters === filterOptions.reporterId
+      );
+    }
+    
+    return result;
+  }, [tasks, filterOptions.monthId, filterOptions.userId, filterOptions.reporterId]);
   
   // Use the new hook for reporter task counts
   const allReporterTasks = useReportersTaskCount(tasks, reporters, filterOptions);
@@ -100,7 +162,7 @@ export const useReporterMetrics = (tasks = [], reporters = [], filterOptions = {
     const top3Reporters = allReporterTasks.slice(0, 3); // Get top 3 reporters
     
     const tasksWithReporters = filteredTasks.filter(task => 
-      task.reporters || task.data_task?.reporters
+      getTaskField(task, 'reporters')
     );
     
     const assignmentRate = filteredTasks.length > 0

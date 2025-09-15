@@ -98,14 +98,34 @@ const AdminDashboardPage = () => {
   // Get current month ID for filtering
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
-  console.log('🔍 Filtering tasks:', {
-    totalTasks: tasks.length,
-    selectedUserId,
-    selectedReporterId,
-    selectedUserName,
-    selectedReporterName,
-    currentMonthId
-  });
+  // Create a reusable filtering function to avoid duplication
+  const getFilteredTasks = useCallback((tasks, selectedUserId, selectedReporterId, currentMonthId) => {
+    return tasks.filter(task => {
+      // Always filter by month first
+      if (currentMonthId && task.monthId !== currentMonthId) return false;
+      
+      // If both user and reporter are selected, show tasks that match BOTH
+      if (selectedUserId && selectedReporterId) {
+        const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+        const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+        return matchesUser && matchesReporter;
+      }
+      
+      // If only user is selected, show tasks for that user
+      if (selectedUserId && !selectedReporterId) {
+        return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+      }
+      
+      // If only reporter is selected, show tasks for that reporter
+      if (selectedReporterId && !selectedUserId) {
+        return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
+      }
+      
+      // If neither user nor reporter is selected, show all tasks (month-filtered)
+      return true;
+    });
+  }, []);
+
 
   // Calculate reporter metrics using global tasks (reporters card shows all data)
   const reporterMetrics = useReporterMetrics(tasks, reporters, {});
@@ -203,7 +223,6 @@ const AdminDashboardPage = () => {
       selectedReporterId
     );
     
-    console.log('Generated dashboard cards:', cards);
     return cards;
   }, [commonCardData, selectedUserId, selectedUserName, selectedReporterId, top3Metrics, reportersMetrics, videoMetrics, designMetrics, devMetrics, selectedUserMetrics, currentMonthId]);
 
@@ -451,26 +470,7 @@ const AdminDashboardPage = () => {
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {(() => {
-                    // Count filtered tasks for the table
-                    const filteredTasks = tasks.filter(task => {
-                      if (currentMonthId && task.monthId !== currentMonthId) return false;
-                      
-                      if (selectedUserId && selectedReporterId) {
-                        const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-                        const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
-                        return matchesUser && matchesReporter;
-                      }
-                      
-                      if (selectedUserId && !selectedReporterId) {
-                        return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-                      }
-                      
-                      if (selectedReporterId && !selectedUserId) {
-                        return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
-                      }
-                      
-                      return true;
-                    });
+                    const filteredTasks = getFilteredTasks(tasks, selectedUserId, selectedReporterId, currentMonthId);
                     return `${filteredTasks.length} tasks`;
                   })()} • {selectedMonth?.monthName || currentMonth?.monthName || 'Loading...'}
                 </p>
@@ -495,26 +495,7 @@ const AdminDashboardPage = () => {
                   <Loader size="md" text="Loading tasks..." />
                 </div>
               ) : (() => {
-                // Check if there are any filtered tasks for the table
-                const filteredTasks = tasks.filter(task => {
-                  if (currentMonthId && task.monthId !== currentMonthId) return false;
-                  
-                  if (selectedUserId && selectedReporterId) {
-                    const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-                    const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
-                    return matchesUser && matchesReporter;
-                  }
-                  
-                  if (selectedUserId && !selectedReporterId) {
-                    return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-                  }
-                  
-                  if (selectedReporterId && !selectedUserId) {
-                    return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
-                  }
-                  
-                  return true;
-                });
+                const filteredTasks = getFilteredTasks(tasks, selectedUserId, selectedReporterId, currentMonthId);
                 return filteredTasks.length === 0;
               })() ? (
                 <div className="text-center py-12">
@@ -546,32 +527,7 @@ const AdminDashboardPage = () => {
                 </div>
               ) : (
                 <LazyTaskTable
-                  tasks={tasks.filter(task => {
-                    // Apply filtering logic based on selections
-                    
-                    // Always filter by month first
-                    if (currentMonthId && task.monthId !== currentMonthId) return false;
-                    
-                    // If both user and reporter are selected, show tasks that match BOTH
-                    if (selectedUserId && selectedReporterId) {
-                      const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-                      const matchesReporter = task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
-                      return matchesUser && matchesReporter;
-                    }
-                    
-                    // If only user is selected, show tasks for that user
-                    if (selectedUserId && !selectedReporterId) {
-                      return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-                    }
-                    
-                    // If only reporter is selected, show tasks for that reporter
-                    if (selectedReporterId && !selectedUserId) {
-                      return task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId;
-                    }
-                    
-                    // If neither user nor reporter is selected, show all tasks (month-filtered)
-                    return true;
-                  })}
+                  tasks={getFilteredTasks(tasks, selectedUserId, selectedReporterId, currentMonthId)}
                   users={users}
                   reporters={reporters}
                   user={user}

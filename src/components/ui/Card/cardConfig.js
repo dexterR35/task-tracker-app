@@ -133,7 +133,6 @@ export const CARD_CONFIGS = {
     getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.buttons.submit, (data) => {
       // Use the hook-based calculation utility
       const metrics = getTop3MetricsForCards(data);
-      console.log('Tasks card metrics:', metrics);
       
       return [
         // Total Hours Section
