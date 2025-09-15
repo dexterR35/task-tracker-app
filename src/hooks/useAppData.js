@@ -153,21 +153,20 @@ export const useMonthSelection = (selectedUserId = null) => {
     ? monthTasks  // Selected month data
     : (currentMonthTasks || []); // Current month data
   
+  
   // Helper functions
   const selectMonth = useCallback((monthId) => {
     setSelectedMonthId(monthId);
-    logger.log(`📅 Selected month: ${monthId}`);
     
     // If selecting a different month and we haven't fetched available months yet, fetch them
     if (monthId !== currentMonth.monthId && availableMonths.length === 0) {
       fetchAvailableMonths();
     }
-  }, [currentMonth.monthId, availableMonths.length, fetchAvailableMonths]);
+  }, [currentMonth.monthId, availableMonths.length]);
   
   const resetToCurrentMonth = useCallback(() => {
     setSelectedMonthId(null);
-    logger.log(`📅 Reset to current month: ${monthId}`);
-  }, [monthId]);
+  }, []);
   
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
