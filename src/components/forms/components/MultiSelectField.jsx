@@ -36,48 +36,51 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
 
   return (
     <BaseField field={field} error={fieldError} formValues={formValues}>
-      {/* Hidden input for React Hook Form validation */}
-      <input
-        {...registerProps}
-        type="hidden"
-        value={JSON.stringify(selectedValues)}
-      />
-      
-      <select
-        value=""
-        className="form-input"
-        onChange={(e) => handleAddValue(e.target.value)}
-      >
-        <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
-        {availableOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      
-      {/* Selected Items Display */}
-      {selectedValues.length > 0 && (
-        <div className="selected-items-container">
-          <div className="selected-items-list">
-            {selectedValues.map((item, index) => (
-              <span
-                key={index}
-                className="selected-item"
-              >
-                {field.options?.find(opt => opt.value === item)?.label || item}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveValue(index)}
-                  className="ml-2 hover:opacity-75"
+      <div className="multi-select-container">
+        {/* Hidden input for React Hook Form validation */}
+        <input
+          {...registerProps}
+          type="hidden"
+          value={JSON.stringify(selectedValues)}
+        />
+        
+        <select
+          value=""
+          id={field.name}
+          className="form-input"
+          onChange={(e) => handleAddValue(e.target.value)}
+        >
+          <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
+          {availableOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        
+        {/* Selected Items Display */}
+        {selectedValues.length > 0 && (
+          <div className="selected-items-container">
+            <div className="selected-items-list">
+              {selectedValues.map((item, index) => (
+                <span
+                  key={index}
+                  className="selected-item"
                 >
-                  ×
-                </button>
-              </span>
-            ))}
+                  {field.options?.find(opt => opt.value === item)?.label || item}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveValue(index)}
+                    className="ml-2 hover:opacity-75"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </BaseField>
   );
 };

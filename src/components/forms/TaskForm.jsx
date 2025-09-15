@@ -156,6 +156,27 @@ const TaskForm = ({
   const formTitle = mode === 'edit' ? 'Edit Task' : 'Create New Task';
   const submitButtonText = mode === 'edit' ? 'Update Task' : 'Create Task';
 
+  // Helper function to render fields based on type
+  const renderField = (field, fieldProps) => {
+    if (field.type === 'select') {
+      return <SelectField key={field.name} {...fieldProps} />;
+    }
+    if (field.type === 'multiSelect') {
+      return <MultiSelectField key={field.name} {...fieldProps} />;
+    }
+    if (field.type === 'checkbox') {
+      return <CheckboxField key={field.name} {...fieldProps} />;
+    }
+    if (field.type === 'number') {
+      return <NumberField key={field.name} {...fieldProps} />;
+    }
+    if (field.type === 'date') {
+      return <SimpleDateField key={field.name} {...fieldProps} />;
+    }
+    // Default to TextField
+    return <TextField key={field.name} {...fieldProps} />;
+  };
+
   // Get fields with dynamic options (reporters)
   const fieldsWithOptions = TASK_FORM_FIELDS.map(field => {
     if (field.name === 'reporters') {
@@ -173,51 +194,254 @@ const TaskForm = ({
   });
 
   return (
-    <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg ${className}`}>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        {formTitle}
-      </h2>
-      
-      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {fieldsWithOptions.map((field) => {
-          // Check if field should be visible based on conditional logic
-          if (!shouldShowField(field, watchedValues)) {
-            return null;
-          }
+    <div className={`bg-gray-700 p-2 px-8 ${className}`}>
+   
+      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className=" space-y-0 ">
+        {/* 1. Jira Link - Full Width */}
+        {fieldsWithOptions
+          .filter(field => field.name === 'jiraLink')
+          .map((field) => {
+            const fieldProps = {
+              field,
+              register,
+              errors,
+              getInputType,
+              setValue,
+              watch,
+              trigger,
+              clearErrors,
+              formValues: watchedValues
+            };
+            return renderField(field, fieldProps);
+          })}
 
-          const fieldProps = {
-            field,
-            register,
-            errors,
-            getInputType,
-            setValue,
-            watch,
-            trigger,
-            clearErrors,
-            formValues: watchedValues
-          };
+        {/* 2. Department + Product - 2 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {fieldsWithOptions
+            .filter(field => field.name === 'departments')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })}
+          
+          {fieldsWithOptions
+            .filter(field => field.name === 'products')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })}
+        </div>
 
-          // Direct component rendering based on field type
-          if (field.type === 'select') {
-            return <SelectField key={field.name} {...fieldProps} />;
-          }
-          if (field.type === 'multiSelect') {
-            return <MultiSelectField key={field.name} {...fieldProps} />;
-          }
-          if (field.type === 'checkbox') {
-            return <CheckboxField key={field.name} {...fieldProps} />;
-          }
-          if (field.type === 'number') {
-            return <NumberField key={field.name} {...fieldProps} />;
-          }
-          if (field.type === 'date') {
-            return <SimpleDateField key={field.name} {...fieldProps} />;
-          }
-          // Default to TextField
-          return <TextField key={field.name} {...fieldProps} />;
-        })}
+        {/* 3. Markets + Total Time Hours - 2 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {fieldsWithOptions
+            .filter(field => field.name === 'markets')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })}
+          
+          {fieldsWithOptions
+            .filter(field => field.name === 'timeInHours')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })}
+        </div>
+        {/* 4. Start Date + End Date - 2 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {fieldsWithOptions
+            .filter(field => field.name === 'startDate')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })}
+          
+          {fieldsWithOptions
+            .filter(field => field.name === 'endDate')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })}
+        </div>
+
+        {/* 5. Reporter - Full Width */}
+        {fieldsWithOptions
+          .filter(field => field.name === 'reporters')
+          .map((field) => {
+            const fieldProps = {
+              field,
+              register,
+              errors,
+              getInputType,
+              setValue,
+              watch,
+              trigger,
+              clearErrors,
+              formValues: watchedValues
+            };
+            return renderField(field, fieldProps);
+          })}
+
+  
+        {/* 6. AI Used - Full Width */}
+        {fieldsWithOptions
+          .filter(field => field.name === '_usedAIEnabled')
+          .map((field) => {
+            const fieldProps = {
+              field,
+              register,
+              errors,
+              getInputType,
+              setValue,
+              watch,
+              trigger,
+              clearErrors,
+              formValues: watchedValues
+            };
+            return renderField(field, fieldProps);
+          })}
+
+        {/* 7. AI Models + AI Time - 2 columns (conditional) */}
+        {watchedValues._usedAIEnabled && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {fieldsWithOptions
+              .filter(field => field.name === 'aiModels')
+              .map((field) => {
+                const fieldProps = {
+                  field,
+                  register,
+                  errors,
+                  getInputType,
+                  setValue,
+                  watch,
+                  trigger,
+                  clearErrors,
+                  formValues: watchedValues
+                };
+                return renderField(field, fieldProps);
+              })}
+            
+            {fieldsWithOptions
+              .filter(field => field.name === 'aiTime')
+              .map((field) => {
+                const fieldProps = {
+                  field,
+                  register,
+                  errors,
+                  getInputType,
+                  setValue,
+                  watch,
+                  trigger,
+                  clearErrors,
+                  formValues: watchedValues
+                };
+                return renderField(field, fieldProps);
+              })}
+          </div>
+        )}
+
+        {/* 8. Has Deliverables - Full Width */}
+        {fieldsWithOptions
+          .filter(field => field.name === '_hasDeliverables')
+          .map((field) => {
+            const fieldProps = {
+              field,
+              register,
+              errors,
+              getInputType,
+              setValue,
+              watch,
+              trigger,
+              clearErrors,
+              formValues: watchedValues
+            };
+            return renderField(field, fieldProps);
+          })}
+
+        {/* 9. Deliverables - Full Width (conditional) */}
+        {watchedValues._hasDeliverables && (
+          fieldsWithOptions
+            .filter(field => field.name === 'deliverables')
+            .map((field) => {
+              const fieldProps = {
+                field,
+                register,
+                errors,
+                getInputType,
+                setValue,
+                watch,
+                trigger,
+                clearErrors,
+                formValues: watchedValues
+              };
+              return renderField(field, fieldProps);
+            })
+        )}
+
         
-        <div className="col-span-1 lg:col-span-2 flex justify-end">
+        {/* Submit Button */}
+        <div className="form-actions">
           <DynamicButton
             type="submit"
             variant="primary"
@@ -227,7 +451,7 @@ const TaskForm = ({
             iconName={mode === 'create' ? 'add' : 'edit'}
             iconPosition="left"
             loadingText="Saving..."
-            className="min-w-[140px]"
+            className="submit-button"
           >
             {submitButtonText}
           </DynamicButton>

@@ -11,76 +11,108 @@
 
 /* Font loading optimization */
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('@fontsource/roboto/files/roboto-latin-400-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-400-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('@fontsource/roboto/files/roboto-latin-500-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-500-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 /* Non-critical fonts with font-display: fallback for better performance */
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 300;
   font-display: fallback;
-  src: url('@fontsource/roboto/files/roboto-latin-300-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-300-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 700;
   font-display: fallback;
-  src: url('@fontsource/roboto/files/roboto-latin-700-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-700-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 800;
   font-display: fallback;
-  src: url('@fontsource/roboto/files/roboto-latin-800-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-800-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 900;
   font-display: fallback;
-  src: url('@fontsource/roboto/files/roboto-latin-900-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-900-normal.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: italic;
   font-weight: 300;
   font-display: fallback;
-  src: url('@fontsource/roboto/files/roboto-latin-300-italic.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-300-italic.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: italic;
   font-weight: 400;
   font-display: fallback;
-  src: url('@fontsource/roboto/files/roboto-latin-400-italic.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url("@fontsource/roboto/files/roboto-latin-400-italic.woff2")
+    format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
 }
 
 @theme {
@@ -91,10 +123,10 @@
   --color-hover: #c10f29;
   --color-title: #0f3cd9;
   --color-focus: #aebfff;
-  
+
   /* ===== SPACING SCALE ===== */
   --spacing: 0.25rem; /* 4px base unit */
-  
+
   /* ===== TYPOGRAPHY SCALE ===== */
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -104,18 +136,18 @@
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
-  
+
   /* ===== LINE HEIGHTS ===== */
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
-  
+
   /* ===== BORDER RADIUS ===== */
   --radius-sm: 0.125rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
-  
+
   /* ===== GRAY SCALE ===== */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
@@ -127,7 +159,7 @@
   --color-gray-700: #374151;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
-  
+
   /* ===== STATUS COLORS ===== */
   --color-red-error: #eb2743;
   --color-red-500: #c10f29;
@@ -136,7 +168,7 @@
   --color-warning: #eb2743;
   --color-blue-default: #2a9df4;
   --color-blue-dark: #1d2a4b;
-  
+
   /* ===== CARD COLORS ===== */
   --color-card-green: #2fd181;
   --color-card-blue: #2a9df4;
@@ -145,7 +177,7 @@
   --color-card-yellow: #eb2743;
   --color-card-pink: #c10f29;
   --color-card-gray: #727e90;
-  
+
   /* ===== BUTTON COLORS ===== */
   --color-btn-primary: #3d48c9;
   --color-btn-secondary: #c10f29;
@@ -155,7 +187,7 @@
   --color-btn-info: #538cff;
   --color-btn-light: #dce6f0;
   --color-btn-dark: #0a1225;
-  
+
   /* ===== BADGE COLORS (same as cards) ===== */
   --color-badge-green: #2fd181;
   --color-badge-blue: #2a9df4;
@@ -164,7 +196,7 @@
   --color-badge-yellow: #eb2743;
   --color-badge-pink: #c10f29;
   --color-badge-gray: #727e90;
-  
+
   /* ===== AVATAR BACKGROUNDS ===== */
   --color-avatar-primary: #3d48c9;
   --color-avatar-success: #2fd181;
@@ -172,7 +204,7 @@
   --color-avatar-error: #eb2743;
   --color-avatar-info: #2a9df4;
   --color-avatar-secondary: #727e90;
-  
+
   /* ===== ICON COLORS ===== */
   --color-icon-primary: #3d48c9;
   --color-icon-success: #2fd181;
@@ -181,27 +213,27 @@
   --color-icon-info: #2a9df4;
   --color-icon-muted: #a8b2c0;
   --color-icon-dark: #374151;
-  
+
   /* ===== TEXT COLORS ===== */
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
   --color-text-muted: #9ca3af;
   --color-text-white: #ffffff;
   --color-text-dark: #1f2937;
-  
+
   /* ===== BACKGROUND COLORS ===== */
   --color-bg-white: #ffffff;
   --color-bg-light: #f9fafb;
   --color-bg-dark: #111827;
   --color-bg-card: #ffffff;
   --color-bg-card-dark: #1f2937;
-  
+
   /* ===== BORDER COLORS ===== */
   --color-border-light: #e5e7eb;
   --color-border-medium: #d1d5db;
   --color-border-dark: #9ca3af;
   --color-border-focus: #aebfff;
-  
+
   /* ===== GRADIENTS ===== */
   --color-gradient-start: #0a1225;
   --color-gradient-end: #010718;
@@ -241,10 +273,6 @@
     @apply cursor-pointer;
   }
 
-  main {
-    @apply  transition-colors duration-300;
-  }
-
   /* Form element defaults */
   form select option {
     @apply uppercase;
@@ -254,189 +282,95 @@
     @apply uppercase;
   }
 
-  /* Inputs */
-  input,
-  select {
-    @apply p-2 text-sm text-gray-800 dark:text-gray-300 rounded-md border border-focus;
-  }
-  select {
-    @apply bg-white dark:bg-primary;
-  }
-  input:focus {
-    @apply outline-none !ring-1 !ring-focus !border-transparent;
-  }
-  input:focus-visible {
-    @apply bg-white dark:bg-inherit;
-  }
-  /* Labels */
-  label {
-    @apply block text-xs font-medium text-gray-800 dark:!text-gray-300 mb-1;
-  }
-  ::placeholder {
-    @apply text-gray-500;
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    @apply w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400;
   }
 
-  input[type="checkbox"] {
-    @apply w-4 h-4;
+  input:not([type="radio"]).error,
+  select.error,
+  textarea.error {
+    @apply border-red-error dark:border-red-error bg-red-50 dark:bg-red-900/20;
+  }
+    /* Select Fields */
+    select {
+      @apply cursor-pointer;
+    }
+
+    /* Date Fields */
+    input[type="date"] {
+      @apply cursor-pointer;
+    }
+
+    /* Number Fields */
+    input[type="number"] {
+      @apply text-right;
+    }
+
+    /* Disabled States */
+    input:not([type="checkbox"]):not([type="radio"]):disabled,
+    select:disabled,
+    textarea:disabled {
+      @apply opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800;
+    }
+    /* Enhanced Global Label Styling */
+    label {
+      @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ml-1;
+    }
+    ::placeholder {
+      @apply text-gray-500;
+    }
+
+    input[type="checkbox"] {
+      @apply w-4 h-4 focus:ring-blue-default dark:focus:ring-blue-default;
+    }
+    /* Headings with theme colors */
+    h1 {
+      @apply mt-1 text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
+    }
+   
+    h3 {
+      @apply text-base font-semibold tracking-tight text-text-primary dark:text-text-white mb-2;
+    }
+
+    tbody tr td {
+      @apply px-3 py-4 text-text-primary dark:text-text-white font-medium;
+    }
+    thead tr th {
+      @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-400/20 text-left;
+    }
+    .max-w-6xl {
+      @apply !max-w-[95%] mx-auto;
+    }
+    h2 {
+      @apply text-2xl font-bold tracking-tight text-text-primary dark:text-text-white mb-1;
+    }
+  
+ 
+  /* Global Error Message Styling */
+  .error-message {
+    @apply text-sm text-red-error dark:text-red-error mt-1 flex items-center gap-2;
+  }
+
+  .error-message::before {
+    content: "⚠";
+  }
+
+  /* Global Help Text Styling */
+  .help-text {
+    @apply text-xs text-gray-800 dark:text-gray-300 mt-1 mb-2;
+  }
+
+  /* Global Required Indicator */
+  .required-indicator {
+    @apply text-red-500 font-bold;
   }
 
   p {
     @apply text-text-primary dark:text-text-white;
   }
-/* p  {
-    @apply text-gray-300 dark:text-gray-800;
-  } */
-  /* ===== FONT UTILITIES ===== */
-  .font-roboto {
-    font-family: 'Roboto', sans-serif;
-  }
-
-  .font-light {
-    font-weight: 300;
-  }
-
-  .font-normal {
-    font-weight: 400;
-  }
-
-  .font-medium {
-    font-weight: 500;
-  }
-
-  .font-semibold {
-    font-weight: 600;
-  }
-
-  .font-bold {
-    font-weight: 700;
-  }
-
-  .font-extrabold {
-    font-weight: 800;
-  }
-
-  .font-black {
-    font-weight: 900;
-  }
-
-  /* ===== TEXT SIZES ===== */
-  .text-xs {
-    font-size: var(--font-size-xs);
-    line-height: var(--line-height-tight);
-  }
-
-  .text-sm {
-    font-size: var(--font-size-sm);
-    line-height: var(--line-height-tight);
-  }
-
-  .text-base {
-    font-size: var(--font-size-base);
-    line-height: var(--line-height-normal);
-  }
-
-  .text-lg {
-    font-size: var(--font-size-lg);
-    line-height: var(--line-height-relaxed);
-  }
-
-  .text-xl {
-    font-size: var(--font-size-xl);
-    line-height: var(--line-height-relaxed);
-  }
-
-  .text-2xl {
-    font-size: var(--font-size-2xl);
-    line-height: var(--line-height-tight);
-  }
-
-  .text-3xl {
-    font-size: var(--font-size-3xl);
-    line-height: var(--line-height-tight);
-  }
-
-  .text-4xl {
-    font-size: var(--font-size-4xl);
-    line-height: var(--line-height-tight);
-  }
-
-  /* Headings with theme colors */
-  h1 {
-    @apply mt-1 text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
-  }
-  h2 {
-    @apply text-lg font-bold tracking-tight text-text-primary dark:text-text-white mb-1;
-  }
-  h3 {
-    @apply text-base font-semibold tracking-tight text-text-primary dark:text-text-white mb-2;
-  }
-
-  tbody tr td {
-    @apply px-3 py-4 text-text-primary dark:text-text-white font-medium;
-  }
-  thead tr th {
-    @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-400/20 text-left;
-  }
-  .max-w-6xl {
-    @apply !max-w-[95%] mx-auto;
-  }
 }
 
-
-/* ---------------- Utilities layer ---------------- */
-
 @layer utilities {
-  /* Modern CSS utilities using color-mix() and logical properties */
-  
-  /* Opacity utilities using color-mix() */
-  .bg-primary\/50 {
-    background-color: color-mix(in oklab, var(--color-primary) 50%, transparent);
-  }
-  
-  .bg-primary\/25 {
-    background-color: color-mix(in oklab, var(--color-primary) 25%, transparent);
-  }
-  
-  .bg-primary\/75 {
-    background-color: color-mix(in oklab, var(--color-primary) 75%, transparent);
-  }
-  
-  /* Logical property utilities */
-  .mx-6 {
-    margin-inline: calc(var(--spacing) * 6);
-  }
-  
-  .px-4 {
-    padding-inline: calc(var(--spacing) * 4);
-  }
-  
-  .py-2 {
-    padding-block: calc(var(--spacing) * 2);
-  }
-  
-  /* Modern border utilities */
-  .border-inline {
-    border-inline: 1px solid var(--color-border-light);
-  }
-  
-  .border-block {
-    border-block: 1px solid var(--color-border-light);
-  }
-  
-  /* Container query utilities */
-  .container-query {
-    container-type: inline-size;
-  }
-  
-  @container (min-width: 300px) {
-    .container-query .responsive-text {
-      font-size: 1.125rem;
-    }
-  }
-  
-  @container (min-width: 600px) {
-    .container-query .responsive-text {
-      font-size: 1.25rem;
-    }
-  }
 }

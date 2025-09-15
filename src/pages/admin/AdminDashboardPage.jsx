@@ -291,7 +291,7 @@ const AdminDashboardPage = () => {
           </div>
 
           {/* Table Content */}
-          <div className="p-6">
+          <div className="p-6 bg-red-500">
             {showTable && (
               isLoading ? (
                 <div className="flex justify-center items-center py-12">

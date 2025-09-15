@@ -10,6 +10,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
         {...register(field.name, {
           valueAsNumber: true
         })}
+        id={field.name}
         type="number"
         step={field.step || 0.5}
         placeholder={field.placeholder}

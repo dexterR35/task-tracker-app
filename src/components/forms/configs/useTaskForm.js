@@ -118,23 +118,41 @@ export const TASK_FORM_FIELDS = [
   createCheckboxField('_hasDeliverables', 'Has Deliverables', {
     helpText: 'Check if this task produces deliverables'
   }),
-  createMultiSelectField('deliverables', 'Deliverables', {
-    helpText: 'Select all deliverables produced by this task'
-  }, {
-    options: TASK_FORM_OPTIONS.deliverables
-  }),
+  {
+    ...createMultiSelectField('deliverables', 'Deliverables', {
+      helpText: 'Select all deliverables produced by this task'
+    }, {
+      options: TASK_FORM_OPTIONS.deliverables
+    }),
+    conditional: {
+      field: '_hasDeliverables',
+      value: true
+    }
+  },
   createCheckboxField('_usedAIEnabled', 'AI Tools Used', {
     helpText: 'Check if AI tools were used in this task'
   }),
-  createMultiSelectField('aiModels', 'AI Models Used', {
-    helpText: 'Select all AI models used in this task'
-  }, {
-    options: TASK_FORM_OPTIONS.aiModels
-  }),
-  createNumberField('aiTime', 'Time Spent on AI (Hours)', {
-    step: 0.5,
-    helpText: 'Hours spent specifically using AI tools'
-  }),
+  {
+    ...createMultiSelectField('aiModels', 'AI Models Used', {
+      helpText: 'Select all AI models used in this task'
+    }, {
+      options: TASK_FORM_OPTIONS.aiModels
+    }),
+    conditional: {
+      field: '_usedAIEnabled',
+      value: true
+    }
+  },
+  {
+    ...createNumberField('aiTime', 'Time Spent on AI (Hours)', {
+      step: 0.5,
+      helpText: 'Hours spent specifically using AI tools'
+    }),
+    conditional: {
+      field: '_usedAIEnabled',
+      value: true
+    }
+  },
   createSelectField('reporters', 'Reporter', {
     helpText: 'Select the person responsible for this task'
   }, {

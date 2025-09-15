@@ -8,6 +8,7 @@ const SelectField = ({ field, register, errors, formValues }) => {
     <BaseField field={field} error={fieldError} formValues={formValues}>
       <select
         {...register(field.name)}
+        id={field.name}
         className={`form-input ${fieldError ? 'error' : ''}`}
       >
         <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>

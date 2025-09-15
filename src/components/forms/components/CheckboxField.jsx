@@ -7,11 +7,11 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
   
   return (
     <BaseField field={field} error={fieldError} hideLabel={true} formValues={formValues}>
-      <div className="checkbox-container">
+      <div className="checkbox-field">
         <input
           {...register(field.name)}
+          id={field.name}
           type="checkbox"
-          className="checkbox-input"
           onChange={(e) => {
             setValue(field.name, e.target.checked);
             trigger(field.name);
@@ -20,12 +20,10 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
             // The form data processing in prepareTaskFormData handles setting defaults
           }}
         />
-        <div>
-          <label htmlFor={field.name} className="field-label">
-            {field.label}
-            {field.required && ` ${REQUIRED_INDICATOR}`}
-          </label>
-        </div>
+        <label htmlFor={field.name}>
+          {field.label}
+          {field.required && <span className="required-indicator">{REQUIRED_INDICATOR}</span>}
+        </label>
       </div>
     </BaseField>
   );

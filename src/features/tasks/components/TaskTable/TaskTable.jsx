@@ -27,7 +27,7 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
             className="text-gray-400 hover:text-white border-gray-400 hover:border-white"
           />
         </div>
-        <div className="p-6">
+        <div className="p-6 !bg-red-500">
           <TaskForm
             mode="edit"
             initialData={task}

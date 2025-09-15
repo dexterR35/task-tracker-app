@@ -50,7 +50,7 @@ const BaseField = ({
       {field.label && !hideLabel && (
         <label htmlFor={field.name} className="field-label">
           {field.label}
-          {isFieldRequired && ` ${REQUIRED_INDICATOR}`}
+          {isFieldRequired && <span className="required-indicator">{REQUIRED_INDICATOR}</span>}
         </label>
       )}
       

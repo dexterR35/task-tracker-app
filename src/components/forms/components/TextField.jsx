@@ -23,6 +23,7 @@ const TextField = ({ field, register, errors, getInputType, formValues }) => {
     <BaseField field={field} error={fieldError} formValues={formValues}>
       <input
         {...register(field.name)}
+        id={field.name}
         type={getInputType(field.type)}
         placeholder={field.placeholder}
         autoComplete={field.autoComplete}
