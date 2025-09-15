@@ -38,6 +38,10 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiMenu,
+  FiVideo,
+  FiMonitor,
+  FiCode,
+  FiCpu,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
 import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
@@ -117,6 +121,10 @@ export const Icons = {
     zap: withSize(FiZap),
     package: withSize(FiPackage),
     target: withSize(FiTarget),
+    video: withSize(FiVideo),
+    design: withSize(FiMonitor),
+    code: withSize(FiCode),
+    ai: withSize(FiCpu),
   },
   
   profile: {

@@ -96,6 +96,8 @@ const AdminDashboardPage = () => {
     currentUser: user
   };
 
+
+
   // Dashboard cards data using dynamic configuration
   const dashboardCards = selectedUserId
     ? [
@@ -105,9 +107,11 @@ const AdminDashboardPage = () => {
           filteredTasks: tasks,
           selectedUserId: selectedUserId,
           selectedUserName: selectedUserName
-        })
+        }),
+        ...createCards([CARD_TYPES.DEPARTMENT_VIDEO, CARD_TYPES.DEPARTMENT_DESIGN, CARD_TYPES.DEPARTMENT_DEV], commonCardData)
       ]
     : createCards(CARD_SETS.DASHBOARD, commonCardData);
+
 
   if (error || monthError) {
     return (

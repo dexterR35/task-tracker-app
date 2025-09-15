@@ -56,7 +56,7 @@ const TaskForm = ({
       deliverables: [],
       _usedAIEnabled: false,
       aiModels: [],
-      aiTime: '',
+      aiTime: 0,
       reporters: ''
     },
     mode: 'onSubmit',
@@ -65,6 +65,24 @@ const TaskForm = ({
 
   // Watch all form values for conditional field logic
   const watchedValues = watch();
+
+  // Watch checkbox values to clear errors when unchecked
+  const hasDeliverables = watch('_hasDeliverables');
+  const usedAIEnabled = watch('_usedAIEnabled');
+
+  // Clear validation errors when checkboxes are unchecked
+  useEffect(() => {
+    if (!hasDeliverables) {
+      clearErrors('deliverables');
+    }
+  }, [hasDeliverables, clearErrors]);
+
+  useEffect(() => {
+    if (!usedAIEnabled) {
+      clearErrors('aiModels');
+      clearErrors('aiTime');
+    }
+  }, [usedAIEnabled, clearErrors]);
 
   // Reset form when initialData changes (for edit mode)
   useEffect(() => {
@@ -81,7 +99,7 @@ const TaskForm = ({
         deliverables: initialData.deliverables || [],
         _usedAIEnabled: initialData._usedAIEnabled || false,
         aiModels: initialData.aiModels || [],
-        aiTime: initialData.aiTime || '',
+        aiTime: initialData.aiTime || 0,
         reporters: initialData.reporters || ''
       });
       logger.log('🔄 Task form reset with initial data:', initialData);
@@ -91,6 +109,23 @@ const TaskForm = ({
   const onSubmit = async (data) => {
     try {
       logger.log('📋 Task form submission started:', { mode, data });
+      
+      // Additional validation for conditional fields
+      if (data._hasDeliverables && (!data.deliverables || data.deliverables.length === 0)) {
+        showError('Please select at least one deliverable when "Has Deliverables" is checked');
+        return;
+      }
+      
+      if (data._usedAIEnabled) {
+        if (!data.aiModels || data.aiModels.length === 0) {
+          showError('Please select at least one AI model when "AI Tools Used" is checked');
+          return;
+        }
+        if (!data.aiTime || data.aiTime <= 0) {
+          showError('Please enter a valid AI time when "AI Tools Used" is checked');
+          return;
+        }
+      }
       
       // Prepare form data for database
       const processedData = prepareTaskFormData(data);

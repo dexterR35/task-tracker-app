@@ -101,7 +101,10 @@ export const CARD_TYPES = {
   CURRENT_USER: 'current-user',
   SELECTED_USER: 'selected-user',
   ANALYTICS: 'analytics',
-  MANAGEMENT: 'management'
+  MANAGEMENT: 'management',
+  DEPARTMENT_VIDEO: 'department-video',
+  DEPARTMENT_DESIGN: 'department-design',
+  DEPARTMENT_DEV: 'department-dev'
 };
 
 // Card configuration templates
@@ -148,10 +151,71 @@ export const CARD_CONFIGS = {
           subValue: ""
         }));
       
-      // Top 3 Users section (always show all users - global data only)
-      const top3UsersSection = createTop3Section(tasks, users, 'userUID', 'name', "Top 3 Users");
+      // Top 3 Users section - only users who have tasks
+      const top3UsersHeader = createTop3Header("Top 3 Users");
       
-      return [top3MarketsHeader, ...top3Markets, ...top3UsersSection];
+      // Get unique user IDs from tasks
+      const taskUserIds = [...new Set(tasks.map(task => task.userUID || task.createbyUID).filter(Boolean))];
+      
+      // Filter users to only those who have tasks
+      const usersWithTasks = users.filter(user => taskUserIds.includes(user.id || user.uid));
+      
+      // Calculate top 3 users with task counts
+      const userTaskCounts = {};
+      tasks.forEach(task => {
+        const userId = task.userUID || task.createbyUID;
+        if (userId) {
+          if (!userTaskCounts[userId]) {
+            userTaskCounts[userId] = {
+              userId,
+              taskCount: 0,
+              marketCounts: {}
+            };
+          }
+          userTaskCounts[userId].taskCount++;
+          
+          // Count markets for this user
+          const taskMarkets = task.markets || task.data_task?.markets || [];
+          if (Array.isArray(taskMarkets)) {
+            taskMarkets.forEach(market => {
+              if (market) {
+                userTaskCounts[userId].marketCounts[market] = 
+                  (userTaskCounts[userId].marketCounts[market] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+      
+      // Get top 3 users by task count
+      const top3Users = Object.values(userTaskCounts)
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3)
+        .map(userData => {
+          const user = usersWithTasks.find(u => u.id === userData.userId || u.uid === userData.userId);
+          const userName = user?.name || user?.email || `User ${userData.userId}`;
+          
+          // Format market counts
+          const marketEntries = Object.entries(userData.marketCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([market, count]) => {
+              if (count === 1) {
+                return market;
+              } else {
+                return `${count}x${market}`;
+              }
+            })
+            .join(' ');
+          
+          return {
+            icon: Icons.generic.user,
+            label: userName,
+            value: `${userData.taskCount} task${userData.taskCount !== 1 ? 's' : ''}`,
+            subValue: marketEntries || 'No markets'
+          };
+        });
+      
+      return [top3MarketsHeader, ...top3Markets, ...top3Users];
     }
   },
 
@@ -170,8 +234,71 @@ export const CARD_CONFIGS = {
       const tasks = data.tasks || [];
       const reporters = data.reporters || [];
       
-      // Top 3 Reporters section (always show all reporters - global data only)
-      return createTop3Section(tasks, reporters, 'reporters', 'name', "Top 3 Reporters");
+      // Top 3 Reporters section - only reporters who have tasks
+      const top3ReportersHeader = createTop3Header("Top 3 Reporters");
+      
+      // Get unique reporter IDs from tasks
+      const taskReporterIds = [...new Set(tasks.map(task => task.reporters || task.data_task?.reporters).filter(Boolean))];
+      
+      // Filter reporters to only those who have tasks
+      const reportersWithTasks = reporters.filter(reporter => taskReporterIds.includes(reporter.id || reporter.uid));
+      
+      // Calculate top 3 reporters with task counts
+      const reporterTaskCounts = {};
+      tasks.forEach(task => {
+        const reporterId = task.reporters || task.data_task?.reporters;
+        if (reporterId) {
+          if (!reporterTaskCounts[reporterId]) {
+            reporterTaskCounts[reporterId] = {
+              reporterId,
+              taskCount: 0,
+              marketCounts: {}
+            };
+          }
+          reporterTaskCounts[reporterId].taskCount++;
+          
+          // Count markets for this reporter
+          const taskMarkets = task.markets || task.data_task?.markets || [];
+          if (Array.isArray(taskMarkets)) {
+            taskMarkets.forEach(market => {
+              if (market) {
+                reporterTaskCounts[reporterId].marketCounts[market] = 
+                  (reporterTaskCounts[reporterId].marketCounts[market] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+      
+      // Get top 3 reporters by task count
+      const top3Reporters = Object.values(reporterTaskCounts)
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3)
+        .map(reporterData => {
+          const reporter = reportersWithTasks.find(r => r.id === reporterData.reporterId || r.uid === reporterData.reporterId);
+          const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${reporterData.reporterId}`;
+          
+          // Format market counts
+          const marketEntries = Object.entries(reporterData.marketCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([market, count]) => {
+              if (count === 1) {
+                return market;
+              } else {
+                return `${count}x${market}`;
+              }
+            })
+            .join(' ');
+          
+          return {
+            icon: Icons.generic.user,
+            label: reporterName,
+            value: `${reporterData.taskCount} task${reporterData.taskCount !== 1 ? 's' : ''}`,
+            subValue: marketEntries || 'No markets'
+          };
+        });
+      
+      return [top3ReportersHeader, ...top3Reporters];
     }
   },
 
@@ -409,10 +536,592 @@ export const CARD_CONFIGS = {
         userReporterIds.has(reporter.id || reporter.uid)
       );
       
-      // Calculate top 3 reporters for this user
-      const userReportersSection = createTop3Section(userTasks, userReporters, 'reporters', 'name', "User's Reporters");
+      // Calculate top 3 reporters for this user - only reporters who have tasks assigned to this user
       
-      return [userMarketsHeader, ...userMarkets, ...userReportersSection];
+      // Calculate reporter task counts for this specific user
+      const userReporterTaskCounts = {};
+      userTasks.forEach(task => {
+        const reporterId = task.reporters || task.data_task?.reporters;
+        if (reporterId) {
+          if (!userReporterTaskCounts[reporterId]) {
+            userReporterTaskCounts[reporterId] = {
+              reporterId,
+              taskCount: 0,
+              marketCounts: {}
+            };
+          }
+          userReporterTaskCounts[reporterId].taskCount++;
+          
+          // Count markets for this reporter
+          const taskMarkets = task.markets || task.data_task?.markets || [];
+          if (Array.isArray(taskMarkets)) {
+            taskMarkets.forEach(market => {
+              if (market) {
+                userReporterTaskCounts[reporterId].marketCounts[market] = 
+                  (userReporterTaskCounts[reporterId].marketCounts[market] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+      
+      // Get top 3 reporters by task count for this user
+      const top3UserReporters = Object.values(userReporterTaskCounts)
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3)
+        .map(reporterData => {
+          const reporter = userReporters.find(r => r.id === reporterData.reporterId || r.uid === reporterData.reporterId);
+          const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${reporterData.reporterId}`;
+          
+          // Format market counts
+          const marketEntries = Object.entries(reporterData.marketCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([market, count]) => {
+              if (count === 1) {
+                return market;
+              } else {
+                return `${count}x${market}`;
+              }
+            })
+            .join(' ');
+          
+          return {
+            icon: Icons.generic.user,
+            label: reporterName,
+            value: `${reporterData.taskCount} task${reporterData.taskCount !== 1 ? 's' : ''}`,
+            subValue: marketEntries || 'No markets'
+          };
+        });
+      
+      return [userMarketsHeader, ...userMarkets, ...top3UserReporters];
+    }
+  },
+
+  [CARD_TYPES.DEPARTMENT_VIDEO]: {
+    title: "Video Department",
+    subtitle: "Video Team Metrics",
+    description: "Video department task breakdown and analytics",
+    icon: Icons.generic.video,
+    type: "department",
+    color: "red",
+    getValue: (data) => {
+      const tasks = data.tasks || [];
+      const videoTasks = tasks.filter(task => 
+        task.departments === 'video' || task.data_task?.departments === 'video'
+      );
+      return videoTasks.length.toString();
+    },
+    getStatus: (data) => "Active",
+    getSubtitle: (data) => "View all",
+    getDetails: (data) => {
+      const tasks = data.tasks || [];
+      const users = data.users || [];
+      const videoTasks = tasks.filter(task => 
+        task.departments === 'video' || task.data_task?.departments === 'video'
+      );
+      
+      
+      if (videoTasks.length === 0) {
+        return [{
+          icon: Icons.generic.video,
+          label: "No video tasks",
+          value: "No tasks found for Video department",
+          subValue: ""
+        }];
+      }
+
+      // Department stats
+      const totalTasks = videoTasks.length;
+      const totalAIHours = videoTasks.reduce((sum, task) => sum + (task.aiTime || 0), 0);
+      const totalHours = videoTasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0);
+
+      // Top 3 users in video department - only users who have video tasks
+      const videoUsersHeader = createTop3Header("Top 3 Video Users");
+      
+      // Get unique user IDs from video tasks
+      const videoUserIds = [...new Set(videoTasks.map(task => task.userUID || task.createbyUID).filter(Boolean))];
+      
+      // Filter users to only those who have video tasks
+      const videoUsers = users.filter(user => videoUserIds.includes(user.id || user.uid));
+      
+      // Calculate top 3 video users with task counts
+      const videoUserTaskCounts = {};
+      videoTasks.forEach(task => {
+        const userId = task.userUID || task.createbyUID;
+        if (userId) {
+          if (!videoUserTaskCounts[userId]) {
+            videoUserTaskCounts[userId] = {
+              userId,
+              taskCount: 0,
+              marketCounts: {}
+            };
+          }
+          videoUserTaskCounts[userId].taskCount++;
+          
+          // Count markets for this user
+          const taskMarkets = task.markets || task.data_task?.markets || [];
+          if (Array.isArray(taskMarkets)) {
+            taskMarkets.forEach(market => {
+              if (market) {
+                videoUserTaskCounts[userId].marketCounts[market] = 
+                  (videoUserTaskCounts[userId].marketCounts[market] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+      
+      // Get top 3 video users by task count
+      const top3VideoUsers = Object.values(videoUserTaskCounts)
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3)
+        .map(userData => {
+          const user = videoUsers.find(u => u.id === userData.userId || u.uid === userData.userId);
+          const userName = user?.name || user?.email || `User ${userData.userId}`;
+          
+          // Format market counts
+          const marketEntries = Object.entries(userData.marketCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([market, count]) => {
+              if (count === 1) {
+                return market;
+              } else {
+                return `${count}x${market}`;
+              }
+            })
+            .join(' ');
+          
+          return {
+            icon: Icons.generic.user,
+            label: userName,
+            value: `${userData.taskCount} task${userData.taskCount !== 1 ? 's' : ''}`,
+            subValue: marketEntries || 'No markets'
+          };
+        });
+
+      // Top 3 AI models used in video
+      const aiModelsHeader = createTop3Header("Top 3 AI Models");
+      const aiModelCounts = {};
+      videoTasks.forEach(task => {
+        const aiModels = task.aiModels || task.data_task?.aiModels || [];
+        if (Array.isArray(aiModels)) {
+          aiModels.forEach(model => {
+            if (model) {
+              aiModelCounts[model] = (aiModelCounts[model] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      const top3AIModels = Object.entries(aiModelCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([model, count]) => ({
+          icon: Icons.generic.ai,
+          label: model,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
+      // Top 3 markets in video department
+      const marketsHeader = createTop3Header("Top 3 Video Markets");
+      const marketCounts = {};
+      videoTasks.forEach(task => {
+        const taskMarkets = task.markets || task.data_task?.markets || [];
+        if (Array.isArray(taskMarkets)) {
+          taskMarkets.forEach(market => {
+            if (market) {
+              marketCounts[market] = (marketCounts[market] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      const top3Markets = Object.entries(marketCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([market, count]) => ({
+          icon: Icons.buttons.submit,
+          label: market,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
+      const details = [
+        {
+          icon: Icons.generic.video,
+          label: "Total Tasks",
+          value: totalTasks.toString(),
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.ai,
+          label: "Total AI Hours",
+          value: `${totalAIHours}h`,
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: `${totalHours}h`,
+          subValue: ""
+        },
+        ...top3VideoUsers,
+        ...top3AIModels,
+        ...top3Markets
+      ];
+
+      return details;
+    }
+  },
+
+  [CARD_TYPES.DEPARTMENT_DESIGN]: {
+    title: "Design Department",
+    subtitle: "Design Team Metrics",
+    description: "Design department task breakdown and analytics",
+    icon: Icons.generic.design,
+    type: "department",
+    color: "purple",
+    getValue: (data) => {
+      const tasks = data.tasks || [];
+      const designTasks = tasks.filter(task => 
+        task.departments === 'design' || task.data_task?.departments === 'design'
+      );
+      return designTasks.length.toString();
+    },
+    getStatus: (data) => "Active",
+    getSubtitle: (data) => "View all",
+    getDetails: (data) => {
+      const tasks = data.tasks || [];
+      const users = data.users || [];
+      const designTasks = tasks.filter(task => 
+        task.departments === 'design' || task.data_task?.departments === 'design'
+      );
+      
+      if (designTasks.length === 0) {
+        return [{
+          icon: Icons.generic.design,
+          label: "No design tasks",
+          value: "No tasks found for Design department",
+          subValue: ""
+        }];
+      }
+
+      // Department stats
+      const totalTasks = designTasks.length;
+      const totalAIHours = designTasks.reduce((sum, task) => sum + (task.aiTime || 0), 0);
+      const totalHours = designTasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0);
+
+      // Top 3 users in design department - only users who have design tasks
+      const designUsersHeader = createTop3Header("Top 3 Design Users");
+      
+      // Get unique user IDs from design tasks
+      const designUserIds = [...new Set(designTasks.map(task => task.userUID || task.createbyUID).filter(Boolean))];
+      
+      // Filter users to only those who have design tasks
+      const designUsers = users.filter(user => designUserIds.includes(user.id || user.uid));
+      
+      // Calculate top 3 design users with task counts
+      const designUserTaskCounts = {};
+      designTasks.forEach(task => {
+        const userId = task.userUID || task.createbyUID;
+        if (userId) {
+          if (!designUserTaskCounts[userId]) {
+            designUserTaskCounts[userId] = {
+              userId,
+              taskCount: 0,
+              marketCounts: {}
+            };
+          }
+          designUserTaskCounts[userId].taskCount++;
+          
+          // Count markets for this user
+          const taskMarkets = task.markets || task.data_task?.markets || [];
+          if (Array.isArray(taskMarkets)) {
+            taskMarkets.forEach(market => {
+              if (market) {
+                designUserTaskCounts[userId].marketCounts[market] = 
+                  (designUserTaskCounts[userId].marketCounts[market] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+      
+      // Get top 3 design users by task count
+      const top3DesignUsers = Object.values(designUserTaskCounts)
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3)
+        .map(userData => {
+          const user = designUsers.find(u => u.id === userData.userId || u.uid === userData.userId);
+          const userName = user?.name || user?.email || `User ${userData.userId}`;
+          
+          // Format market counts
+          const marketEntries = Object.entries(userData.marketCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([market, count]) => {
+              if (count === 1) {
+                return market;
+              } else {
+                return `${count}x${market}`;
+              }
+            })
+            .join(' ');
+          
+          return {
+            icon: Icons.generic.user,
+            label: userName,
+            value: `${userData.taskCount} task${userData.taskCount !== 1 ? 's' : ''}`,
+            subValue: marketEntries || 'No markets'
+          };
+        });
+
+      // Top 3 AI models used in design
+      const aiModelsHeader = createTop3Header("Top 3 AI Models");
+      const aiModelCounts = {};
+      designTasks.forEach(task => {
+        const aiModels = task.aiModels || task.data_task?.aiModels || [];
+        if (Array.isArray(aiModels)) {
+          aiModels.forEach(model => {
+            if (model) {
+              aiModelCounts[model] = (aiModelCounts[model] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      const top3AIModels = Object.entries(aiModelCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([model, count]) => ({
+          icon: Icons.generic.ai,
+          label: model,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
+      // Top 3 markets in design department
+      const marketsHeader = createTop3Header("Top 3 Design Markets");
+      const marketCounts = {};
+      designTasks.forEach(task => {
+        const taskMarkets = task.markets || task.data_task?.markets || [];
+        if (Array.isArray(taskMarkets)) {
+          taskMarkets.forEach(market => {
+            if (market) {
+              marketCounts[market] = (marketCounts[market] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      const top3Markets = Object.entries(marketCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([market, count]) => ({
+          icon: Icons.buttons.submit,
+          label: market,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
+      return [
+        {
+          icon: Icons.generic.design,
+          label: "Total Tasks",
+          value: totalTasks.toString(),
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.ai,
+          label: "Total AI Hours",
+          value: `${totalAIHours}h`,
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: `${totalHours}h`,
+          subValue: ""
+        },
+        ...top3DesignUsers,
+        ...top3AIModels,
+        ...top3Markets
+      ];
+    }
+  },
+
+  [CARD_TYPES.DEPARTMENT_DEV]: {
+    title: "Development Department",
+    subtitle: "Dev Team Metrics",
+    description: "Development department task breakdown and analytics",
+    icon: Icons.generic.code,
+    type: "department",
+    color: "blue",
+    getValue: (data) => {
+      const tasks = data.tasks || [];
+      const devTasks = tasks.filter(task => 
+        task.departments === 'developer' || task.data_task?.departments === 'developer'
+      );
+      return devTasks.length.toString();
+    },
+    getStatus: (data) => "Active",
+    getSubtitle: (data) => "View all",
+    getDetails: (data) => {
+      const tasks = data.tasks || [];
+      const users = data.users || [];
+      const devTasks = tasks.filter(task => 
+        task.departments === 'developer' || task.data_task?.departments === 'developer'
+      );
+      
+      if (devTasks.length === 0) {
+        return [{
+          icon: Icons.generic.code,
+          label: "No dev tasks",
+          value: "No tasks found for Development department",
+          subValue: ""
+        }];
+      }
+
+      // Department stats
+      const totalTasks = devTasks.length;
+      const totalAIHours = devTasks.reduce((sum, task) => sum + (task.aiTime || 0), 0);
+      const totalHours = devTasks.reduce((sum, task) => sum + (task.timeInHours || 0), 0);
+
+      // Top 3 users in dev department - only users who have dev tasks
+      const devUsersHeader = createTop3Header("Top 3 Dev Users");
+      
+      // Get unique user IDs from dev tasks
+      const devUserIds = [...new Set(devTasks.map(task => task.userUID || task.createbyUID).filter(Boolean))];
+      
+      // Filter users to only those who have dev tasks
+      const devUsers = users.filter(user => devUserIds.includes(user.id || user.uid));
+      
+      // Calculate top 3 dev users with task counts
+      const devUserTaskCounts = {};
+      devTasks.forEach(task => {
+        const userId = task.userUID || task.createbyUID;
+        if (userId) {
+          if (!devUserTaskCounts[userId]) {
+            devUserTaskCounts[userId] = {
+              userId,
+              taskCount: 0,
+              marketCounts: {}
+            };
+          }
+          devUserTaskCounts[userId].taskCount++;
+          
+          // Count markets for this user
+          const taskMarkets = task.markets || task.data_task?.markets || [];
+          if (Array.isArray(taskMarkets)) {
+            taskMarkets.forEach(market => {
+              if (market) {
+                devUserTaskCounts[userId].marketCounts[market] = 
+                  (devUserTaskCounts[userId].marketCounts[market] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+      
+      // Get top 3 dev users by task count
+      const top3DevUsers = Object.values(devUserTaskCounts)
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3)
+        .map(userData => {
+          const user = devUsers.find(u => u.id === userData.userId || u.uid === userData.userId);
+          const userName = user?.name || user?.email || `User ${userData.userId}`;
+          
+          // Format market counts
+          const marketEntries = Object.entries(userData.marketCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([market, count]) => {
+              if (count === 1) {
+                return market;
+              } else {
+                return `${count}x${market}`;
+              }
+            })
+            .join(' ');
+          
+          return {
+            icon: Icons.generic.user,
+            label: userName,
+            value: `${userData.taskCount} task${userData.taskCount !== 1 ? 's' : ''}`,
+            subValue: marketEntries || 'No markets'
+          };
+        });
+
+      // Top 3 AI models used in dev
+      const aiModelsHeader = createTop3Header("Top 3 AI Models");
+      const aiModelCounts = {};
+      devTasks.forEach(task => {
+        const aiModels = task.aiModels || task.data_task?.aiModels || [];
+        if (Array.isArray(aiModels)) {
+          aiModels.forEach(model => {
+            if (model) {
+              aiModelCounts[model] = (aiModelCounts[model] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      const top3AIModels = Object.entries(aiModelCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([model, count]) => ({
+          icon: Icons.generic.ai,
+          label: model,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
+      // Top 3 markets in dev department
+      const marketsHeader = createTop3Header("Top 3 Dev Markets");
+      const marketCounts = {};
+      devTasks.forEach(task => {
+        const taskMarkets = task.markets || task.data_task?.markets || [];
+        if (Array.isArray(taskMarkets)) {
+          taskMarkets.forEach(market => {
+            if (market) {
+              marketCounts[market] = (marketCounts[market] || 0) + 1;
+            }
+          });
+        }
+      });
+      
+      const top3Markets = Object.entries(marketCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([market, count]) => ({
+          icon: Icons.buttons.submit,
+          label: market,
+          value: `${count} task${count !== 1 ? 's' : ''}`,
+          subValue: ""
+        }));
+
+      return [
+        {
+          icon: Icons.generic.code,
+          label: "Total Tasks",
+          value: totalTasks.toString(),
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.ai,
+          label: "Total AI Hours",
+          value: `${totalAIHours}h`,
+          subValue: ""
+        },
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: `${totalHours}h`,
+          subValue: ""
+        },
+        ...top3DevUsers,
+        ...top3AIModels,
+        ...top3Markets
+      ];
     }
   }
 };
@@ -424,6 +1133,8 @@ export const createCard = (cardType, data, customConfig = {}) => {
     console.warn(`Card type ${cardType} not found`);
     return null;
   }
+
+  try {
 
   // Generate dynamic ID based on card type and data
   const generateId = () => {
@@ -442,30 +1153,49 @@ export const createCard = (cardType, data, customConfig = {}) => {
         return `user-filter-${data.selectedUserId || 'all'}-${data.filteredTasks?.length || 0}-${new Date().getTime()}`;
       case CARD_TYPES.CURRENT_USER:
         return `current-user-${data.currentUser?.id || 'unknown'}-${data.currentUser?.role || 'user'}-${new Date().getTime()}`;
+      case CARD_TYPES.DEPARTMENT_VIDEO:
+        const videoTasks = data.tasks?.filter(task => 
+          task.departments === 'video' || task.data_task?.departments === 'video'
+        )?.length || 0;
+        return `department-video-${videoTasks}-${new Date().getTime()}`;
+      case CARD_TYPES.DEPARTMENT_DESIGN:
+        const designTasks = data.tasks?.filter(task => 
+          task.departments === 'design' || task.data_task?.departments === 'design'
+        )?.length || 0;
+        return `department-design-${designTasks}-${new Date().getTime()}`;
+      case CARD_TYPES.DEPARTMENT_DEV:
+        const devTasks = data.tasks?.filter(task => 
+          task.departments === 'developer' || task.data_task?.departments === 'developer'
+        )?.length || 0;
+        return `department-dev-${devTasks}-${new Date().getTime()}`;
       default:
         return `${cardType}-${new Date().getTime()}`;
     }
   };
 
-  return {
-    id: generateId(),
-    title: customConfig.title || config.title,
-    subtitle: customConfig.subtitle || (config.getSubtitle ? config.getSubtitle(data) : config.subtitle),
-    description: customConfig.description || config.description,
-    icon: customConfig.icon || config.icon,
-    type: customConfig.type || config.type,
-    color: customConfig.color || config.color || 'default',
-    value: config.getValue(data),
-    status: config.getStatus(data),
-    details: config.getDetails(data),
-    // Only include action if explicitly provided in customConfig
-    ...(customConfig.action && { action: customConfig.action }),
-    // Only include progress if explicitly provided in customConfig
-    ...(customConfig.progress !== undefined && { progress: customConfig.progress }),
-    hasChart: customConfig.hasChart || false,
-    chartData: customConfig.chartData,
-    chartType: customConfig.chartType
-  };
+    return {
+      id: generateId(),
+      title: customConfig.title || config.title,
+      subtitle: customConfig.subtitle || (config.getSubtitle ? config.getSubtitle(data) : config.subtitle),
+      description: customConfig.description || config.description,
+      icon: customConfig.icon || config.icon,
+      type: customConfig.type || config.type,
+      color: customConfig.color || config.color || 'default',
+      value: config.getValue(data),
+      status: config.getStatus(data),
+      details: config.getDetails(data),
+      // Only include action if explicitly provided in customConfig
+      ...(customConfig.action && { action: customConfig.action }),
+      // Only include progress if explicitly provided in customConfig
+      ...(customConfig.progress !== undefined && { progress: customConfig.progress }),
+      hasChart: customConfig.hasChart || false,
+      chartData: customConfig.chartData,
+      chartType: customConfig.chartType
+    };
+  } catch (error) {
+    console.error(`Error creating card ${cardType}:`, error);
+    return null;
+  }
 };
 
 // Helper function to create multiple cards from configuration
@@ -486,13 +1216,19 @@ export const createCards = (cardConfigs, data) => {
 export const CARD_SETS = {
   DASHBOARD: [
     CARD_TYPES.TASKS,
-    CARD_TYPES.REPORTERS
+    CARD_TYPES.REPORTERS,
+    CARD_TYPES.DEPARTMENT_VIDEO,
+    CARD_TYPES.DEPARTMENT_DESIGN,
+    CARD_TYPES.DEPARTMENT_DEV
   ],
 
   DASHBOARD_WITH_USER: [
     CARD_TYPES.TASKS,
     CARD_TYPES.REPORTERS,
-    CARD_TYPES.SELECTED_USER // Show when user is selected
+    CARD_TYPES.SELECTED_USER, // Show when user is selected
+    CARD_TYPES.DEPARTMENT_VIDEO,
+    CARD_TYPES.DEPARTMENT_DESIGN,
+    CARD_TYPES.DEPARTMENT_DEV
   ],
 
   MANAGEMENT: [

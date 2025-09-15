@@ -1,4 +1,6 @@
 import * as Yup from 'yup';
+import { logger } from '@/utils/logger';
+import { serializeTimestampsForRedux } from '@/utils/dateUtils';
 import { 
   createTextField,
   createSelectField,
@@ -196,26 +198,26 @@ export const taskFormSchema = Yup.object().shape({
   
   deliverables: Yup.array().when('_hasDeliverables', {
     is: true,
-    then: (schema) => schema.min(1, VALIDATION_MESSAGES.DELIVERABLE_REQUIRED),
-    otherwise: (schema) => schema
+    then: (schema) => schema.min(1, 'Please select at least one deliverable when "Has Deliverables" is checked'),
+    otherwise: (schema) => schema.notRequired().default([])
   }),
   
   _usedAIEnabled: Yup.boolean(),
   
   aiModels: Yup.array().when('_usedAIEnabled', {
     is: true,
-    then: (schema) => schema.min(1, VALIDATION_MESSAGES.AI_MODEL_REQUIRED),
-    otherwise: (schema) => schema
+    then: (schema) => schema.min(1, 'Please select at least one AI model when "AI Tools Used" is checked'),
+    otherwise: (schema) => schema.notRequired().default([])
   }),
   
   aiTime: Yup.number().when('_usedAIEnabled', {
     is: true,
     then: (schema) => schema
       .typeError('Please enter a valid number')
-      .required(VALIDATION_MESSAGES.REQUIRED)
-      .min(0.5, VALIDATION_MESSAGES.MIN_VALUE(0.5))
-      .max(999, VALIDATION_MESSAGES.MAX_VALUE(999)),
-    otherwise: (schema) => schema.nullable()
+      .required('AI time is required when "AI Tools Used" is checked')
+      .min(0.5, 'AI time must be at least 0.5 hours')
+      .max(999, 'AI time cannot exceed 999 hours'),
+    otherwise: (schema) => schema.notRequired().default(0)
   }),
   
   reporters: Yup.string()
@@ -245,21 +247,29 @@ export const prepareTaskFormData = (formData) => {
     throw new Error('Jira link is required');
   }
   
-  // Handle conditional fields - set proper defaults when checkboxes are unchecked
+  // Handle conditional fields based on checkbox state
+  // When checkboxes are NOT checked: set empty arrays/zero values
+  // When checkboxes ARE checked: keep the user's input (validation should have ensured they're filled)
+  
   if (!formData._hasDeliverables) {
-    formData.deliverables = [];
+    formData.deliverables = []; // Empty array when checkbox is not checked
   }
+  // If checkbox is checked, keep the deliverables array as-is (validation ensures it's not empty)
   
   if (!formData._usedAIEnabled) {
-    delete formData.aiModels; // Remove aiModels field entirely when AI is not used
-    formData.aiTime = 0; // Set to 0 instead of null for consistency
+    formData.aiModels = []; // Empty array when checkbox is not checked
+    formData.aiTime = 0; // Zero when checkbox is not checked
   }
+  // If checkbox is checked, keep aiModels and aiTime as-is (validation ensures they're filled)
   
   // Remove UI-only fields after processing (these should never be saved to DB)
   delete formData._hasDeliverables;
   delete formData._usedAIEnabled;
   
-  logger.log('🔍 Final processed data for database:', formData);
+  // Serialize any Date objects to ISO strings for Redux compatibility
+  const serializedData = serializeTimestampsForRedux(formData);
   
-  return formData;
+  logger.log('🔍 Final processed data for database:', serializedData);
+  
+  return serializedData;
 };
