@@ -409,7 +409,7 @@ const TanStackTable = ({
                 size="sm"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                iconName="chevron-left"
+                iconName="chevronLeft"
                 iconPosition="center"
               />
               <DynamicButton
@@ -417,7 +417,7 @@ const TanStackTable = ({
                 size="sm"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                iconName="chevron-right"
+                iconName="chevronRight"
                 iconPosition="center"
               />
             </div>

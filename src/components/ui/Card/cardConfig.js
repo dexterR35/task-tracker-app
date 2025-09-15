@@ -1,13 +1,5 @@
 import { Icons } from "@/components/icons";
 
-// Helper function to create top 3 header
-const createTop3Header = (label) => ({
-  icon: Icons.buttons.submit,
-  label,
-  value: "",
-  subValue: "",
-  isHeader: true
-});
 
 // Helper function to create "No data" entry
 const createNoDataEntry = (icon, label) => ({
@@ -124,13 +116,13 @@ export const CARD_CONFIGS = {
     title: "Tasks",
     subtitle: "Current Period",
     description: "Tasks in current period",
-    icon: Icons.buttons.submit,
+    icon: Icons.generic.task,
     type: "tasks",
     color: "green",
     getValue: (data) => getValueWithNoTasksCheck(data, (data) => data.tasks?.length?.toString() || "0"),
     getStatus: (data) => data.isCurrentMonth ? "Current" : "Historical",
     getSubtitle: (data) => "View all",
-    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.buttons.submit, (data) => {
+    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.task, (data) => {
       // Use the hook-based calculation utility
       const metrics = getTop3MetricsForCards(data);
       
@@ -239,7 +231,13 @@ export const CARD_CONFIGS = {
 
       return [
         // Total Hours Section
-        createTop3Header(`Total Hours${reporterInfo}`),
+        {
+          icon: Icons.generic.clock,
+          label: `Total Hours${reporterInfo}`,
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         {
           icon: Icons.generic.user,
           label: "Total Tasks",
@@ -263,15 +261,33 @@ export const CARD_CONFIGS = {
         ...metrics.sections.top3AIModels,
         
         // Section 1: All Products (from pre-calculated metrics)
-        createTop3Header(selectedReporterId ? "Products (User + Reporter)" : "Products (User)"),
+        {
+          icon: Icons.generic.package,
+          label: selectedReporterId ? "Products (User + Reporter)" : "Products (User)",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Products,
         
         // Section 2: All Markets (from pre-calculated metrics)
-        createTop3Header(selectedReporterId ? "Markets (User + Reporter)" : "Markets (User)"),
+        {
+          icon: Icons.generic.trendingUp,
+          label: selectedReporterId ? "Markets (User + Reporter)" : "Markets (User)",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Markets,
         
         // Section 3: Product-Market Combinations (from pre-calculated metrics)
-        createTop3Header(selectedReporterId ? "Product-Market Combinations (User + Reporter)" : "Product-Market Combinations (User)"),
+        {
+          icon: Icons.generic.target,
+          label: selectedReporterId ? "Product-Market Combinations (User + Reporter)" : "Product-Market Combinations (User)",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...Object.entries(metrics.productMarketCombinations || {}).map(([product, data]) => {
           // Format market counts as badges (same format as top 3 reporters)
           const marketEntries = Object.entries(data.markets)
@@ -286,7 +302,7 @@ export const CARD_CONFIGS = {
             .join(' ');
 
           return {
-            icon: Icons.buttons.submit,
+            icon: Icons.generic.package,
             label: product,
             value: `${data.totalTasks} task${data.totalTasks !== 1 ? 's' : ''}`,
             subValue: marketEntries || 'No markets'
@@ -326,7 +342,13 @@ export const CARD_CONFIGS = {
         ...metrics.sections.departmentStats,
         
         // Top 3 Users Section
-        createTop3Header("Top 3 Video Users"),
+        {
+          icon: Icons.generic.user,
+          label: "Top 3 Video Users",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Users,
         
         // Top AI Models Section
@@ -336,7 +358,13 @@ export const CARD_CONFIGS = {
         ...metrics.sections.top3Products,
         
         // Top 3 Markets Section
-        createTop3Header("Top 3 Video Markets"),
+        {
+          icon: Icons.generic.trendingUp,
+          label: "Top 3 Video Markets",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Markets
       ];
     })
@@ -372,7 +400,13 @@ export const CARD_CONFIGS = {
         ...metrics.sections.departmentStats,
         
         // Top 3 Users Section
-        createTop3Header("Top 3 Design Users"),
+        {
+          icon: Icons.generic.user,
+          label: "Top 3 Design Users",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Users,
         
         // Top AI Models Section
@@ -382,7 +416,13 @@ export const CARD_CONFIGS = {
         ...metrics.sections.top3Products,
         
         // Top 3 Markets Section
-        createTop3Header("Top 3 Design Markets"),
+        {
+          icon: Icons.generic.trendingUp,
+          label: "Top 3 Design Markets",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Markets
       ];
     })
@@ -418,7 +458,13 @@ export const CARD_CONFIGS = {
         ...metrics.sections.departmentStats,
         
         // Top 3 Users Section
-        createTop3Header("Top 3 Dev Users"),
+        {
+          icon: Icons.generic.user,
+          label: "Top 3 Dev Users",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Users,
         
         // Top AI Models Section
@@ -428,7 +474,13 @@ export const CARD_CONFIGS = {
         ...metrics.sections.top3Products,
         
         // Top 3 Markets Section
-        createTop3Header("Top 3 Dev Markets"),
+        {
+          icon: Icons.generic.trendingUp,
+          label: "Top 3 Dev Markets",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...metrics.top3Markets
       ];
     })

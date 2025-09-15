@@ -11,7 +11,7 @@ export const BUTTON_VARIANTS = {
   SUCCESS: "bg-green-success text-white hover:bg-green-400",
   DANGER: "bg-red-error text-white hover:bg-red-500",
   WARNING: "bg-warning text-white hover:bg-btn-warning",
-  OUTLINE: "border-2 border-gray-300 text-white-dark hover:bg-gray-100",
+  OUTLINE: "border border-gray-200 text-gray-800 dark:text-white bg-white dark:bg-primary",
   EDIT: "bg-blue-default text-white shadow-sm hover:bg-btn-info",
 };
 

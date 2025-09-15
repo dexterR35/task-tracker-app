@@ -120,6 +120,7 @@
   --color-primary: #131b30;
   --color-primary-80: #0a2470;
   --color-secondary: #727e90;
+  --color-secondary-dark: #4949492b;
   --color-hover: #c10f29;
   --color-title: #0f3cd9;
   --color-focus: #aebfff;
@@ -285,7 +286,7 @@
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400;
+    @apply w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
 
   input:not([type="radio"]).error,
@@ -295,7 +296,7 @@
   }
     /* Select Fields */
     select {
-      @apply cursor-pointer;
+      @apply cursor-pointer ;
     }
 
     /* Date Fields */
@@ -327,11 +328,18 @@
     }
     /* Headings with theme colors */
     h1 {
-      @apply mt-1 text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
+      @apply text-3xl font-bold tracking-tight text-text-primary dark:text-text-white;
     }
-   
+
+    h2 {
+      @apply  text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
+    }
+    
     h3 {
-      @apply text-base font-semibold tracking-tight text-text-primary dark:text-text-white mb-2;
+      @apply font-semibold text-gray-900 dark:text-white mb-1 text-xl;
+    }
+    h4 {
+      @apply font-semibold text-gray-900 dark:text-white mb-1 text-sm;
     }
 
     tbody tr td {
@@ -343,9 +351,7 @@
     .max-w-6xl {
       @apply !max-w-[95%] mx-auto;
     }
-    h2 {
-      @apply text-2xl font-bold tracking-tight text-text-primary dark:text-text-white mb-1;
-    }
+
   
  
   /* Global Error Message Styling */
@@ -369,6 +375,20 @@
 
   p {
     @apply text-text-primary dark:text-text-white;
+  }
+
+  .text-small {
+    @apply text-text-primary dark:text-text-white text-sm;
+  }
+  .card-small {
+    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-4;
+
+  }
+  .card-large {
+    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-2;
+  }
+  .text-exsmall {
+    @apply text-text-primary dark:text-gray-300 text-xs ;
   }
 }
 

@@ -144,7 +144,7 @@ const homepageCards = [
     bestCategory: "Casino",
     trend: "-12% from last month",
     trendDirection: "down",
-    icon: Icons.buttons.submit,
+    icon: Icons.generic.task,
     hasChart: true, 
     chartData: ChartData,
   },

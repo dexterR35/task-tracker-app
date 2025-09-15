@@ -12,10 +12,10 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
   if (!isOpen || !task) return null;
   
   return (
-    <div className="fixed bg-gray-600 inset-0 bg-white-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="rounded-lg bg-white-dark shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b border-gray-300">
-          <h2 className="text-xl font-semibold text-white-dak">
+          <h2 className="text-xl font-semibold text-white-dark">
             Edit Task: {task?.jiraLink || task?.departments || 'Unknown Task'}
           </h2>
           <DynamicButton
@@ -27,7 +27,7 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
             className="text-gray-400 hover:text-white border-gray-400 hover:border-white"
           />
         </div>
-        <div className="p-6 !bg-red-500">
+        <div className="p-6">
           <TaskForm
             mode="edit"
             initialData={task}

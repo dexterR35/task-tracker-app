@@ -1,14 +1,6 @@
 import { useMemo } from 'react';
 import { Icons } from "@/components/icons";
 
-// Helper function to create top 3 header
-const createTop3Header = (label) => ({
-  icon: Icons.buttons.submit,
-  label,
-  value: "",
-  subValue: "",
-  isHeader: true
-});
 
 // Helper function to create "No data" entry
 const createNoDataEntry = (icon, label) => ({
@@ -125,7 +117,13 @@ const calculateTop3Entities = (tasks = [], entities = [], entityIdField, entityN
 
 // Helper function to create top 3 section with header and entities
 const createTop3Section = (tasks, entities, entityIdField, entityNameField, headerLabel) => {
-  const header = createTop3Header(headerLabel);
+  const header = {
+    icon: Icons.generic.user,
+    label: headerLabel,
+    value: "",
+    subValue: "",
+    isHeader: true
+  };
   const top3Entities = calculateTop3Entities(tasks, entities, entityIdField, entityNameField);
   return [header, ...top3Entities];
 };
@@ -205,7 +203,7 @@ export const useTop3Calculations = (data, options = {}) => {
       .sort(([,a], [,b]) => b - a)
       .slice(0, includeAllData ? Object.keys(marketTaskCounts).length : limit)
       .map(([market, taskCount]) => ({
-        icon: Icons.buttons.submit,
+        icon: Icons.generic.trendingUp,
         label: market,
         value: `${taskCount} task${taskCount !== 1 ? 's' : ''}`,
         subValue: ""
@@ -224,7 +222,7 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3AIModels = calculateTop3WithNoData(
       aiModelCounts, 
-      Icons.generic.ai, 
+      Icons.generic.cpu, 
       "No AI models used",
       limit
     );
@@ -240,7 +238,7 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Products = calculateTop3WithNoData(
       productCounts, 
-      Icons.buttons.submit, 
+      Icons.generic.package, 
       "No products worked on",
       includeAllData ? Object.keys(productCounts).length : limit
     );
@@ -356,7 +354,7 @@ export const useTop3Calculations = (data, options = {}) => {
           .join(' ');
         
         return {
-          icon: Icons.generic.user,
+          icon: Icons.admin.reporters,
           label: reporterName,
           value: `${reporterData.taskCount} task${reporterData.taskCount !== 1 ? 's' : ''}`,
           subValue: marketEntries || 'No markets'
@@ -397,7 +395,13 @@ export const useTop3Calculations = (data, options = {}) => {
     // Create formatted sections for easy use in cards
     const sections = {
       totalHours: [
-        createTop3Header("Total Hours"),
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         {
           icon: Icons.generic.clock,
           label: "Total Hours",
@@ -412,27 +416,63 @@ export const useTop3Calculations = (data, options = {}) => {
         }
       ],
       top3Markets: [
-        createTop3Header("Top 3 Markets"),
+        {
+          icon: Icons.generic.trendingUp,
+          label: "Top 3 Markets",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...top3Markets
       ],
       top3AIModels: [
-        createTop3Header("Top AI Models"),
+        {
+          icon: Icons.generic.ai,
+          label: "Top AI Models",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...top3AIModels
       ],
       top3Products: [
-        createTop3Header("Top 3 Products"),
+        {
+          icon: Icons.generic.package,
+          label: "Top 3 Products",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...top3Products
       ],
       top3Users: [
-        createTop3Header("Top 3 Users"),
+        {
+          icon: Icons.generic.user,
+          label: "Top 3 Users",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...top3Users
       ],
       top3Reporters: [
-        createTop3Header("Top 3 Reporters"),
+        {
+          icon: Icons.admin.reporters,
+          label: "Top 3 Reporters",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...top3Reporters
       ],
       allUsers: [
-        createTop3Header("All Users"),
+        {
+          icon: Icons.generic.user,
+          label: "All Users",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
         ...top3Users
       ]
     };
@@ -440,9 +480,15 @@ export const useTop3Calculations = (data, options = {}) => {
     // Add department-specific sections if applicable
     if (department) {
       sections.departmentStats = [
-        createTop3Header("Total Hours"),
         {
-          icon: Icons.generic[department] || Icons.buttons.submit,
+          icon: Icons.generic.clock,
+          label: "Total Hours",
+          value: "",
+          subValue: "",
+          isHeader: true
+        },
+        {
+          icon: Icons.generic[department] || Icons.generic.task,
           label: "Total Tasks",
           value: departmentMetrics.totalTasks.toString(),
           subValue: ""
@@ -478,7 +524,6 @@ export const useTop3Calculations = (data, options = {}) => {
       sections,
       
       // Helper functions for custom combinations
-      createTop3Header,
       createNoDataEntry,
       calculateTop3WithNoData,
       createTop3Section

@@ -2,71 +2,29 @@ import React from "react";
 import { Icons } from "@/components/icons";
 import Badge from "@/components/ui/Badge/Badge";
 
-// Get color based on card color configuration using new Tailwind colors
+// Get primary color for cards
 const getCardColor = (color) => {
   switch (color) {
     case "green":
-      return {
-        primary: "bg-green-success",
-        light: "bg-green-success/20",
-        dark: "bg-green-400",
-        text: "text-green-success",
-        colorValue: "#2fd181" // Actual color value for badges
-      };
+      return "bg-green-success";
     case "blue":
-      return {
-        primary: "bg-blue-default",
-        light: "bg-blue-default/20",
-        dark: "bg-btn-info",
-        text: "text-blue-default",
-        colorValue: "#2a9df4"
-      };
+      return "bg-blue-default";
     case "purple":
-      return {
-        primary: "bg-btn-primary",
-        light: "bg-btn-primary/20",
-        dark: "bg-primary-80",
-        text: "text-btn-primary",
-        colorValue: "#3d48c9"
-      };
+      return "bg-btn-primary";
     case "red":
-      return {
-        primary: "bg-red-error",
-        light: "bg-red-error/20",
-        dark: "bg-red-500",
-        text: "text-red-error",
-        colorValue: "#eb2743"
-      };
+      return "bg-red-error";
     case "yellow":
-      return {
-        primary: "bg-warning",
-        light: "bg-warning/20",
-        dark: "bg-btn-warning",
-        text: "text-warning",
-        colorValue: "#eb2743"
-      };
+      return "bg-warning";
     case "pink":
-      return {
-        primary: "bg-btn-secondary",
-        light: "bg-btn-secondary/20",
-        dark: "bg-hover",
-        text: "text-btn-secondary",
-        colorValue: "#c10f29"
-      };
+      return "bg-btn-secondary";
     default:
-      return {
-        primary: "bg-secondary",
-        light: "bg-secondary/20",
-        dark: "bg-gray-600",
-        text: "text-secondary",
-        colorValue: "#727e90"
-      };
+      return "bg-secondary";
   }
 };
 
 // Dashboard Card Component (based on homepage design)
 const DashboardCard = ({ card }) => {
-  const cardColors = getCardColor(card.color);
+  const cardColor = getCardColor(card.color);
 
   const getTrendIconComponent = (direction) => {
     switch (direction) {
@@ -86,7 +44,7 @@ const DashboardCard = ({ card }) => {
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className={`p-3 rounded-xl flex items-center justify-center ${cardColors.primary}`}>
+              <div className={`p-3 rounded-xl flex items-center justify-center ${cardColor}`}>
                 <card.icon className="w-6 h-6 text-white" />
               </div>
               <div className="leading-6">
@@ -99,7 +57,7 @@ const DashboardCard = ({ card }) => {
 
             {/* Status/Trend Indicator */}
             {card.status && (
-              <div className={`flex items-center space-x-1 px-2 py-1 rounded ${cardColors.primary}`}>
+              <div className={`flex items-center space-x-1 px-2 py-1 rounded ${cardColor}`}>
                 <span className="text-xs font-medium text-white">
                   {card.status}
                 </span>
@@ -108,7 +66,7 @@ const DashboardCard = ({ card }) => {
             {card.trend && (
               <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
                 {getTrendIconComponent(card.trendDirection)}
-                <span className={`text-xs font-medium ${cardColors.text}`}>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                   {card.trend}
                 </span>
               </div>
@@ -188,7 +146,7 @@ const DashboardCard = ({ card }) => {
                             <div key={itemIndex} className="bg-gray-50/50 dark:bg-gray-700/20 rounded-md p-2 border border-gray-100 dark:border-gray-700">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center space-x-2">
-                                  <div className={`w-2 h-2 rounded-full ${cardColors.primary}`}></div>
+                                  <div className={`w-2 h-2 rounded-full ${cardColor}`}></div>
                                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                                     {item.label}
                                   </span>
@@ -218,8 +176,7 @@ const DashboardCard = ({ card }) => {
                                             key={index} 
                                             variant="default"
                                             size="xs"
-                                            className="text-white text-[10px]"
-                                            style={{ backgroundColor: cardColors.colorValue }}
+                                            className="text-white text-[10px] bg-gray-600"
                                           >
                                             {market}
                                           </Badge>
