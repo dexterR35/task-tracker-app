@@ -23,7 +23,6 @@ const TanStackTable = ({
   data = [],
   columns = [],
   tableType = 'generic',
-  isLoading = false,
   error = null,
   className = '',
   
@@ -188,22 +187,15 @@ const TanStackTable = ({
     return (
       <div className={`card text-center py-8 ${className}`}>
         <div className="text-gray-400 dark:text-gray-500 mb-2">
-          {isLoading ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-              <span>Loading {tableType}...</span>
+          <div>
+            <div className="text-lg mb-2">📋</div>
+            <div className="text-sm">No {tableType} found</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {tableType === 'tasks' ? 'Try creating a new task or check a different month' : 
+               tableType === 'users' ? 'No users available' : 
+               'No data available'}
             </div>
-          ) : (
-            <div>
-              <div className="text-lg mb-2">📋</div>
-              <div className="text-sm">No {tableType} found</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {tableType === 'tasks' ? 'Try creating a new task or check a different month' : 
-                 tableType === 'users' ? 'No users available' : 
-                 'No data available'}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -212,36 +204,22 @@ const TanStackTable = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Table Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        {/* Global Filter */}
-        {showFilters && (
-          <div className="flex-1 max-w-sm">
-            <input
-              name={`${tableType}-search`}
-              id={`${tableType}-search`}
-              type="text"
-              value={globalFilter ?? ''}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder={`Search ${tableType}...`}
-              className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        )}
-
+      <div className="flex flex-col sm:flex-row gap-4 justify-end items-center sm:items-center">
         {/* Table Controls */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 ">
           {/* Column Visibility Toggle */}
           {showColumnToggle && (
             <div className="relative group">
               <DynamicButton
                 variant="outline"
                 size="sm"
-                iconName="settings"
+                iconName="default"
                 iconPosition="left"
               >
                 Columns
               </DynamicButton>
-              <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+              {/* checkbox inside columns toggle */}
+              <div className="absolute right-0 mt-2 w-48 bg-primary rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                 <div className="py-1">
                   {table.getAllLeafColumns()
                     .filter(column => column.getCanHide())
@@ -253,7 +231,7 @@ const TanStackTable = ({
                           type="checkbox"
                           checked={column.getIsVisible()}
                           onChange={column.getToggleVisibilityHandler()}
-                          className="mr-2 rounded border-gray-500 bg-gray-600"
+                          className="mr-2 rounded border-gray-500 "
                         />
                         {column.columnDef.header || column.id}
                       </label>
@@ -287,17 +265,58 @@ const TanStackTable = ({
         </div>
       </div>
 
+      {/* Search and Rows per page - Separate row above table */}
+      <div className="flex justify-between items-center">
+        {/* Global Filter */}
+        {showFilters && (
+          <div className="flex-1 max-w-sm">
+            <input
+              name={`${tableType}-search`}
+              id={`${tableType}-search`}
+              type="text"
+              value={globalFilter ?? ''}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder={`Search ${tableType}...`}
+              className="  "
+            />
+          </div>
+        )}
+        
+        {/* Rows per page selector */}
+        {showPagination && enablePagination && (
+          <div className="flex items-end space-x-2">
+            <label htmlFor="page-size-select" className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Rows per page
+            </label>
+            <select
+              id="page-size-select"
+              value={table.getState().pagination.pageSize}
+              onChange={(e) => {
+                table.setPageSize(Number(e.target.value))
+              }}
+              className="h-8 w-[70px] px-4  "
+            >
+              {[10, 20, 30, 40, 50].map((pageSize) => (
+                <option key={pageSize} value={pageSize}>
+                  {pageSize}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Table */}
-      <div className="bg-gray-800 rounded-lg overflow-hidden">
+      <div className=" rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-700">
+            <thead >
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider ${
+                      className={`px-3 py-3 text-start font-bold text-xs  text-red-300 capitalize  ${
                         header.column.getCanSort() ? 'cursor-pointer select-none' : ''
                       }`}
                       onClick={header.column.getToggleSortingHandler()}
@@ -313,7 +332,7 @@ const TanStackTable = ({
                           )}
                         </span>
                         {header.column.getCanSort() && (
-                          <span className="text-gray-400">
+                          <span className="text-gray-300">
                             {{
                               asc: '↑',
                               desc: '↓',
@@ -326,22 +345,14 @@ const TanStackTable = ({
                 </tr>
               ))}
             </thead>
-            <tbody className="bg-gray-800 divide-y divide-gray-700">
+            <tbody className="bg-gray-100 dark:bg-primary divide-y divide-gray-700">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td colSpan={table.getAllColumns().length} className="px-6 py-8 text-center">
-                    <div className="text-gray-400 dark:text-gray-500">
-                      {isLoading ? (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                          <span>Loading...</span>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="text-lg mb-2">📋</div>
-                          <div>No data available</div>
-                        </div>
-                      )}
+                    <div className="text-gray-200 dark:text-gray-500">
+                      <div>
+                        <div>No data available</div>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -350,14 +361,14 @@ const TanStackTable = ({
                   return (
                     <tr
                       key={row.id}
-                      className={`hover:bg-gray-700 ${
+                      className={`hover:bg-gray-700/40 cursor-pointer ${
                         row.getIsSelected() ? 'bg-blue-900/20' : ''
                       }`}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-300"
+                          className="px-6 py-4 whitespace-nowrap text-sm "
                           style={{
                             width: cell.column.getSize(),
                           }}
@@ -377,29 +388,12 @@ const TanStackTable = ({
       {/* TanStack Table Pagination */}
       {showPagination && enablePagination && (
         <div className="flex items-center justify-between space-x-2 py-4">
-          <div className="flex-1 text-sm text-gray-400">
+          <div className="flex-1 text-sm text-gray-600 dark:text-gray-400">
             {Object.keys(rowSelection).length} of{' '}
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
           <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex items-center space-x-2">
-              <label htmlFor="page-size-select" className="text-sm font-medium text-gray-300">Rows per page</label>
-              <select
-                id="page-size-select"
-                value={table.getState().pagination.pageSize}
-                onChange={(e) => {
-                  table.setPageSize(Number(e.target.value))
-                }}
-                className="h-8 w-[70px] rounded border border-gray-600 bg-gray-700 text-white text-sm"
-              >
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <option key={pageSize} value={pageSize}>
-                    {pageSize}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium text-gray-300">
+            <div className="flex w-[100px] items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
               Page {table.getState().pagination.pageIndex + 1} of{' '}
               {table.getPageCount()}
             </div>

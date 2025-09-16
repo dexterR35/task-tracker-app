@@ -266,6 +266,23 @@ export const prepareTaskFormData = (formData) => {
   delete formData._hasDeliverables;
   delete formData._usedAIEnabled;
   
+  // Convert Date objects to ISO strings for proper storage
+  if (formData.startDate instanceof Date) {
+    formData.startDate = formData.startDate.toISOString();
+    logger.log('🔍 Converted startDate Date object to ISO:', formData.startDate);
+  }
+  if (formData.endDate instanceof Date) {
+    formData.endDate = formData.endDate.toISOString();
+    logger.log('🔍 Converted endDate Date object to ISO:', formData.endDate);
+  }
+  
+  logger.log('🔍 Date fields after processing:', { 
+    startDate: formData.startDate, 
+    endDate: formData.endDate,
+    startDateType: typeof formData.startDate,
+    endDateType: typeof formData.endDate
+  });
+  
   // Serialize any Date objects to ISO strings for Redux compatibility
   const serializedData = serializeTimestampsForRedux(formData);
   

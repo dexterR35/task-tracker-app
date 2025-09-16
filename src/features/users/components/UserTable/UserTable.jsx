@@ -9,7 +9,6 @@ const UserTable = ({
   className = "",
   users = [],
   monthId,
-  isLoading = false,
   error: usersError = null,
 }) => {
   // Get user columns with monthId for date formatting
@@ -42,7 +41,6 @@ const UserTable = ({
       data={users}
       columns={userColumns}
       tableType="users"
-      isLoading={isLoading}
       error={usersError}
       onSelect={handleSelect}
       onEdit={handleEdit}

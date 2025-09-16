@@ -286,7 +286,7 @@
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full px-3 py-2 bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
 
   input:not([type="radio"]).error,
@@ -343,10 +343,10 @@
     }
 
     tbody tr td {
-      @apply px-3 py-4 text-text-primary dark:text-text-white font-medium;
+      @apply px-3 py-4  text-gray-800 dark:text-gray-300;
     }
     thead tr th {
-      @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-400/20 text-left;
+      @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-700/40 text-left;
     }
     .max-w-6xl {
       @apply !max-w-[95%] mx-auto;

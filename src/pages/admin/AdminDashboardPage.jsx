@@ -4,9 +4,8 @@ import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Modal from "@/components/ui/Modal/Modal";
-import LazyTaskTable from "@/components/lazy/LazyTaskTable";
+import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import { TaskForm } from "@/components/forms";
-import Loader from "@/components/ui/Loader/Loader";
 import DashboardCard from "@/components/Card/DashboardCard";
 import { createDashboardCards } from "@/components/Card/cardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
@@ -540,62 +539,33 @@ const AdminDashboardPage = () => {
 
         {/* Table Content */}
         <div className="py-4 ">
-          {showTable &&
-            (isLoading ? (
-              <div className="flex justify-center items-center py-2">
-                <Loader size="md" text="Loading tasks..." />
-              </div>
-            ) : (() => {
-                const filteredTasks = getFilteredTasks(
-                  tasks,
-                  selectedUserId,
-                  selectedReporterId,
-                  currentMonthId
-                );
-                return filteredTasks.length === 0;
-              })() ? (
-              <div className="text-center py-12">
-                <h3>No tasks found</h3>
-                <p className="text-exsmall text-gray-300 mb-2 ">
-                  {(() => {
-                    if (selectedUserId && selectedReporterId) {
-                      return `${selectedUserName} has no tasks assigned to ${selectedReporterName} for this period`;
-                    } else if (selectedUserId) {
-                      return `${selectedUserName} has no tasks for this period`;
-                    } else if (selectedReporterId) {
-                      return `${selectedReporterName} has no tasks for this period`;
-                    } else {
-                      return "No tasks available for the selected criteria";
-                    }
-                  })()}
-                </p>
-                {canCreateTasks && (
-                  <DynamicButton
-                    onClick={handleCreateTask}
-                    variant="primary"
-                    size="md"
-                    iconName="add"
-                    iconPosition="left"
-                  >
-                    Create First Task
-                  </DynamicButton>
-                )}
-              </div>
-            ) : (
-              <LazyTaskTable
-                tasks={getFilteredTasks(
-                  tasks,
-                  selectedUserId,
-                  selectedReporterId,
-                  currentMonthId
-                )}
-                users={users}
-                reporters={reporters}
-                user={user}
-                monthId={selectedMonth?.monthId || currentMonth?.monthId}
-                isAdminView={isUserAdmin}
-              />
-            ))}
+          {showTable && (
+            <>
+              {/* Show loading when data is being fetched */}
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span>Loading tasks...</span>
+                  </div>
+                </div>
+              ) : (
+                <TaskTable
+                  tasks={getFilteredTasks(
+                    tasks,
+                    selectedUserId,
+                    selectedReporterId,
+                    currentMonthId
+                  )}
+                  users={users}
+                  reporters={reporters}
+                  user={user}
+                  monthId={selectedMonth?.monthId || currentMonth?.monthId}
+                  isAdminView={isUserAdmin}
+                />
+              )}
+            </>
+          )}
         </div>
       </div>
 

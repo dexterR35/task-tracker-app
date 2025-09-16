@@ -55,7 +55,7 @@ const AuthLayout = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Fixed Header */}
       <FixedHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
       
@@ -74,7 +74,7 @@ const AuthLayout = () => {
 
           {/* Page Content - Scrollable */}
           <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-            <div className="p-12">
+            <div className="px-18 py-12">
               <Outlet />
             </div>
           </main>

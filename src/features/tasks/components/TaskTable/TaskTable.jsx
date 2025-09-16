@@ -12,6 +12,7 @@ import { showError, showAuthError } from "@/utils/toast";
 const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props }) => {
   if (!isOpen || !task) return null;
   
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="rounded-lg bg-white-dark shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -45,7 +46,6 @@ const TaskTable = ({
   className = "",
   tasks = [],
   monthId,
-  isLoading = false,
   error: tasksError = null,
   reporters = [], // Reporters data for TaskForm
   user = null, // User data for TaskForm
@@ -77,6 +77,7 @@ const TaskTable = ({
       throw error;
     }
   };
+
 
   // Always allow button clicks - permission checking happens at form submission
   const handleEditWithPermission = (task) => {
@@ -112,7 +113,6 @@ const TaskTable = ({
         data={tasks}
         columns={taskColumns}
         tableType="tasks"
-        isLoading={isLoading}
         error={tasksError}
         onSelect={handleSelect}
         onEdit={handleEditWithPermission}

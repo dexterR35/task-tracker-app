@@ -12,7 +12,6 @@ const ReporterTable = ({
   className = "",
   reporters = [],
   monthId,
-  isLoading = false,
   error: reportersError = null,
   user = null, // User data for permission validation
 }) => {
@@ -65,7 +64,6 @@ const ReporterTable = ({
         data={reporters}
         columns={reporterColumns}
         tableType="reporters"
-        isLoading={isLoading}
         error={reportersError}
         onSelect={handleSelect}
         onEdit={handleEdit}

@@ -88,22 +88,75 @@ const TaskForm = ({
   // Reset form when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData && mode === 'edit') {
+      // Handle nested data_task structure from database
+      const taskData = initialData.data_task || initialData;
+      
+      // Reconstruct jiraLink from taskName for editing
+      const jiraLink = taskData.taskName ? 
+        `https://gmrd.atlassian.net/browse/${taskData.taskName}` : 
+        (taskData.jiraLink || '');
+      
+      // Handle various date formats for form display
+      const formatDate = (dateValue) => {
+        if (!dateValue) return '';
+        
+        // If it's already a string in YYYY-MM-DD format, return as-is
+        if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          return dateValue;
+        }
+        
+        // If it's an ISO string, convert to YYYY-MM-DD
+        if (typeof dateValue === 'string' && dateValue.includes('T')) {
+          return new Date(dateValue).toISOString().split('T')[0];
+        }
+        
+        // If it's a Firestore Timestamp object
+        if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+          return dateValue.toDate().toISOString().split('T')[0];
+        }
+        
+        // If it's a Firestore Timestamp-like object with seconds
+        if (dateValue.seconds) {
+          return new Date(dateValue.seconds * 1000).toISOString().split('T')[0];
+        }
+        
+        // If it's a Date object
+        if (dateValue instanceof Date) {
+          return dateValue.toISOString().split('T')[0];
+        }
+        
+        return '';
+      };
+      
+      const formattedStartDate = formatDate(taskData.startDate);
+      const formattedEndDate = formatDate(taskData.endDate);
+      
       reset({
-        jiraLink: initialData.jiraLink || '',
-        products: initialData.products || '',
-        departments: initialData.departments || '',
-        markets: initialData.markets || [],
-        timeInHours: initialData.timeInHours || '',
-        startDate: initialData.startDate || '',
-        endDate: initialData.endDate || '',
-        _hasDeliverables: initialData._hasDeliverables || false,
-        deliverables: initialData.deliverables || [],
-        _usedAIEnabled: initialData._usedAIEnabled || false,
-        aiModels: initialData.aiModels || [],
-        aiTime: initialData.aiTime || 0,
-        reporters: initialData.reporters || ''
+        jiraLink: jiraLink,
+        products: taskData.products || '',
+        departments: taskData.departments || '',
+        markets: taskData.markets || [],
+        timeInHours: taskData.timeInHours || '',
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+        _hasDeliverables: (taskData.deliverables && taskData.deliverables.length > 0) || false,
+        deliverables: taskData.deliverables || [],
+        _usedAIEnabled: (taskData.aiModels && taskData.aiModels.length > 0) || false,
+        aiModels: taskData.aiModels || [],
+        aiTime: taskData.aiTime || 0,
+        reporters: taskData.reporters || ''
       });
-      logger.log('🔄 Task form reset with initial data:', initialData);
+      
+      logger.log('🔄 Task form reset with initial data:', { 
+        initialData, 
+        taskData,
+        dateConversion: {
+          originalStartDate: taskData.startDate,
+          formattedStartDate: formattedStartDate,
+          originalEndDate: taskData.endDate,
+          formattedEndDate: formattedEndDate
+        }
+      });
     }
   }, [initialData, mode, reset]);
 
