@@ -45,14 +45,14 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const PageIcon = getPageIcon();
 
   return (
-    <header className="relative z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-300/50 dark:border-gray-700/50">
+    <header className="relative z-40 backdrop-blur-md border-b border-gray-300/50 dark:border-gray-700/50">
       <div className="flex items-center justify-between h-12 px-3 lg:px-4">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
           {/* Sidebar Toggle */}
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+            className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800  "
             aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
             <Icons.buttons.menu className="w-4 h-4" />
@@ -100,7 +100,7 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
           <div className="sm:hidden">
             <button 
               onClick={onToggleSidebar}
-              className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+              className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 "
               aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
               <Icons.buttons.menu className="w-4 h-4" />

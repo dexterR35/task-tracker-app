@@ -27,7 +27,7 @@ const AdminDashboardPage = () => {
   const selectedReporterId = searchParams.get("reporter") || "";
 
   // Get basic data from useAppData hook
-  const { user, users, reporters, error } = useAppData(); // Remove selectedUserId since we handle filtering in component
+  const { user, users, reporters, error, isLoading: appDataLoading } = useAppData(); // Remove selectedUserId since we handle filtering in component
 
   // Check user permissions (only for UI display, not security)
   const userCanAccessCharts = canAccessCharts(user);
@@ -41,6 +41,8 @@ const AdminDashboardPage = () => {
     selectedMonth, // Selected month info
     isCurrentMonth, // Boolean check
     isLoading, // Loading state for selected month
+    isInitialLoading, // Loading state for initial month data
+    isMonthDataReady, // Flag indicating month data is ready
     error: monthError, // Error state
     selectMonth, // Function to select month
     resetToCurrentMonth, // Function to reset
@@ -308,12 +310,19 @@ const AdminDashboardPage = () => {
                 id="selectedMonth"
                 value={selectedMonth?.monthId || currentMonth?.monthId || ""}
                 onChange={(e) => selectMonth(e.target.value)}
+                disabled={isInitialLoading}
               >
-                {availableMonths.map((month) => (
-                  <option key={month.monthId} value={month.monthId}>
-                    {month.monthName} {month.isCurrent ? "(Current)" : ""}
-                  </option>
-                ))}
+                {isInitialLoading ? (
+                  <option value="">Loading months...</option>
+                ) : availableMonths.length > 0 ? (
+                  availableMonths.map((month) => (
+                    <option key={month.monthId} value={month.monthId}>
+                      {month.monthName} {month.isCurrent ? "(Current)" : ""}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No months available</option>
+                )}
               </select>
               <div className="flex items-start justify-between">
                 <Badge variant="primary" size="sm">
@@ -338,31 +347,42 @@ const AdminDashboardPage = () => {
               <div className="card-small">
                 <div className="mb-4">
                   <h4>User Filter</h4>
-                  <p className="text-exsmall">{users.length} users available</p>
+                  <p className="text-exsmall">
+                    {appDataLoading ? "Loading..." : `${users.length} users available`}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <select
                     id="selectedUser"
                     value={selectedUserId}
                     onChange={(e) => handleUserSelect(e.target.value)}
+                    disabled={appDataLoading}
                   >
-                    <option value="">All Users</option>
-                    {users.map((user) => (
-                      <option
-                        key={user.userUID || user.id}
-                        value={user.userUID || user.id}
-                      >
-                        {user.name || user.email}
-                      </option>
-                    ))}
+                    {appDataLoading ? (
+                      <option value="">Loading users...</option>
+                    ) : (
+                      <>
+                        <option value="">All Users</option>
+                        {users.map((user) => (
+                          <option
+                            key={user.userUID || user.id}
+                            value={user.userUID || user.id}
+                          >
+                            {user.name || user.email}
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
                   <div className="flex items-start justify-between ">
                     <span className="text-exsmall">
-                      {selectedUserId
-                        ? `Filtered by: ${selectedUserName}`
-                        : "Showing all users"}
+                      {appDataLoading 
+                        ? "Loading..."
+                        : selectedUserId
+                          ? `Filtered by: ${selectedUserName}`
+                          : "Showing all users"}
                     </span>
-                    {selectedUserId && (
+                    {!appDataLoading && selectedUserId && (
                       <DynamicButton
                         onClick={() => handleUserSelect("")}
                         variant="outline"
@@ -379,7 +399,7 @@ const AdminDashboardPage = () => {
                 <div className="mb-4">
                   <h4>Reporter Filter</h4>
                   <p className="text-exsmall">
-                    {reporters.length} reporters available
+                    {appDataLoading ? "Loading..." : `${reporters.length} reporters available`}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -387,24 +407,33 @@ const AdminDashboardPage = () => {
                     id="selectedReporter"
                     value={selectedReporterId}
                     onChange={(e) => handleReporterSelect(e.target.value)}
+                    disabled={appDataLoading}
                   >
-                    <option value="">All Reporters</option>
-                    {reporters.map((reporter) => (
-                      <option
-                        key={reporter.id || reporter.uid}
-                        value={reporter.id || reporter.uid}
-                      >
-                        {reporter.name || reporter.reporterName}
-                      </option>
-                    ))}
+                    {appDataLoading ? (
+                      <option value="">Loading reporters...</option>
+                    ) : (
+                      <>
+                        <option value="">All Reporters</option>
+                        {reporters.map((reporter) => (
+                          <option
+                            key={reporter.id || reporter.uid}
+                            value={reporter.id || reporter.uid}
+                          >
+                            {reporter.name || reporter.reporterName}
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
                   <div className="flex items-start justify-between ">
                     <span className="text-exsmall">
-                      {selectedReporterId
-                        ? `Filtered by: ${selectedReporterName}`
-                        : "Showing all reporters"}
+                      {appDataLoading 
+                        ? "Loading..."
+                        : selectedReporterId
+                          ? `Filtered by: ${selectedReporterName}`
+                          : "Showing all reporters"}
                     </span>
-                    {selectedReporterId && (
+                    {!appDataLoading && selectedReporterId && (
                       <DynamicButton
                         onClick={() => handleReporterSelect("")}
                         variant="outline"
@@ -424,9 +453,11 @@ const AdminDashboardPage = () => {
             <div className="mb-4">
               <h4>Actions</h4>
               <p className="text-exsmall">
-                {canCreateTasks
-                  ? "Create task available"
-                  : "Create restricted"}
+                {isInitialLoading 
+                  ? "Loading..."
+                  : canCreateTasks
+                    ? "Create task available"
+                    : "Create restricted"}
               </p>
             </div>
             <div className="space-y-2">
@@ -437,10 +468,11 @@ const AdminDashboardPage = () => {
                 iconName="add"
                 iconPosition="left"
                 className="w-full"
+                disabled={isInitialLoading}
               >
-                Create Task
+                {isInitialLoading ? "Loading..." : "Create Task"}
               </DynamicButton>
-              {!canCreateTasks && (
+              {!isInitialLoading && !canCreateTasks && (
                 <span className="text-exsmall text-red-error dark:text-amber-400">
                   {!isCurrentMonth
                     ? "History data - create disabled"

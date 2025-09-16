@@ -1,10 +1,6 @@
 import React from 'react';
 import { Icons } from '@/components/icons';
 
-/**
- * Unified Avatar Component
- * Handles both user avatars (with initials) and icon avatars
- */
 const Avatar = ({ 
   // User avatar props
   user = null,

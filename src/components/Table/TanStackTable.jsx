@@ -15,10 +15,7 @@ import { exportToCSV } from "@/utils/exportData";
 // Column helper for type safety
 const columnHelper = createColumnHelper();
 
-/**
- * Pure TanStack Table Component
- * Focused on table functionality without business logic
- */
+
 const TanStackTable = ({
   data = [],
   columns = [],

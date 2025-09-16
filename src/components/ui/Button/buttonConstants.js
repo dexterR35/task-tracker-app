@@ -1,5 +1,3 @@
-// ===== BUTTON CONSTANTS =====
-// Centralized button styling and configuration
 
 // ===== BASE CLASSES =====
 export const BUTTON_BASE_CLASSES = "px-3 py-1.5 inline-flex rounded-md font-medium shadow-sm !focus:outline-none focus:ring-focus focus:ring-1 focus:ring-offset-0";

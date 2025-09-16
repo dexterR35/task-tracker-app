@@ -101,8 +101,8 @@ export const useMonthSelection = (selectedUserId = null) => {
   const dropdownOptions = useMemo(() => {
     const options = [];
     
-    // Always include current month first
-    if (monthId) {
+    // Always include current month first (only if we have the data)
+    if (monthId && monthName) {
       options.push({
         monthId: monthId,
         monthName: monthName,
@@ -171,6 +171,10 @@ export const useMonthSelection = (selectedUserId = null) => {
   
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
+  // Determine if we're still loading initial month data
+  const isInitialLoading = currentMonthLoading && !monthId;
+  const isMonthDataReady = monthId && monthName;
+  
   return {
     // Month data
     currentMonth: {
@@ -180,7 +184,8 @@ export const useMonthSelection = (selectedUserId = null) => {
       startDate,
       endDate,
       boardExists,
-      isCurrent: true
+      isCurrent: true,
+      isReady: isMonthDataReady
     },
     selectedMonth: isCurrentMonth ? null : {
       monthId: selectedMonthId,
@@ -196,6 +201,8 @@ export const useMonthSelection = (selectedUserId = null) => {
     
     // Status
     isLoading: isFetchingSelectedMonth ? monthTasksLoading : currentMonthLoading,
+    isInitialLoading, // New: specific flag for initial month loading
+    isMonthDataReady, // New: flag indicating month data is available
     error: isFetchingSelectedMonth ? monthTasksError : currentMonthError,
     
     // Helper functions

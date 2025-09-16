@@ -13,10 +13,13 @@ const MonthBoardBanner = () => {
   const [generateMonthBoard, { isLoading: isGenerating }] = useGenerateMonthBoardMutation();
 
   // Extract month data
-  const { monthId, monthName, boardExists, startDate, endDate, daysInMonth } = appData || {};
+  const { monthId, monthName, boardExists, startDate, endDate, daysInMonth, isInitialLoading, isMonthDataReady } = appData || {};
 
-  // Don't show banner if board exists or data is not available
-  if (boardExists || !monthId || !monthName) {
+  // Don't show banner if:
+  // - Still loading initial month data
+  // - Board exists
+  // - Month data is not ready
+  if (isInitialLoading || boardExists || !isMonthDataReady || !monthId || !monthName) {
     return null;
   }
 

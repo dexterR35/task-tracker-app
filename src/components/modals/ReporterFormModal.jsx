@@ -2,10 +2,6 @@ import React from 'react';
 import Modal from '@/components/ui/Modal/Modal';
 import { ReporterForm } from '@/components/forms';
 
-/**
- * Modal component for creating/editing reporters
- * Extracted from AdminManagementPage for better separation of concerns
- */
 const ReporterFormModal = ({
   isOpen,
   onClose,

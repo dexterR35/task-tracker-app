@@ -7,7 +7,7 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { lazy, Suspense, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { isUserAuthenticated, isAuthLoading } from "@/utils/authUtils";
@@ -20,19 +20,11 @@ import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 
 
-// Lazy load only heavy pages that need data
-const AdminManagementPage = lazy(
-  () => import("@/pages/admin/ManagmentPage")
-);
-const AdminDashboardPage = lazy(
-  () => import("@/pages/admin/AdminDashboardPage")
-);
-const DebugPage = lazy(
-  () => import("@/pages/admin/DebugPage")
-);
-const AnalyticsPage = lazy(
-  () => import("@/pages/admin/AnalyticsPage")
-);
+// Import all pages directly
+import AdminManagementPage from "@/pages/admin/ManagmentPage";
+import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import DebugPage from "@/pages/admin/DebugPage";
+import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -42,43 +34,29 @@ import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 // Simple loading component
 const SimpleLoader = () => (
   <div className="min-h-screen flex-center ">
-    <Loader size="lg" text="Loading... Please wait" variant="spinner" />
+    <Loader size="lg" text="Loading... Please wait2" variant="spinner" />
   </div>
 );
 
-// Simple lazy page wrapper with motion
-const LazyPage = ({ children }) => (
-  <Suspense fallback={<SimpleLoader />}>
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
-      {children}
-    </motion.div>
-  </Suspense>
+// Simple page wrapper with motion
+const PageWrapper = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3, ease: "easeOut" }}
+  >
+    {children}
+  </motion.div>
 );
 
 
-// Universal dashboard component - same page for both admin and user roles
-const RoleBasedDashboard = () => {
-  return (
-    <LazyPage>
-      <AdminDashboardPage />
-    </LazyPage>
-  );
-};
 
 // Public route protection - redirects authenticated users to dashboard
 const PublicRoute = ({ children }) => {
   const authState = useAuth();
   const location = useLocation();
 
-  // Show loading during initial auth check
-  if (isAuthLoading(authState)) {
-    return <SimpleLoader />;
-  }
 
   // If user is authenticated, redirect to dashboard
   if (isUserAuthenticated(authState)) {
@@ -104,10 +82,6 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     error: authState.error
   }), [authState.error]);
 
-  // Show loading state during initial auth check
-  if (isAuthLoading(authState)) {
-    return <SimpleLoader />;
-  }
 
   // Handle authentication errors
   if (authState.error) {
@@ -131,8 +105,16 @@ ProtectedRoute.displayName = "ProtectedRoute";
 
 
 
-// Root layout
+
+// Root layout with global auth loading state
 const RootLayout = () => {
+  const authState = useAuth();
+  
+  // Show loading during initial auth check to prevent flash
+  if (isAuthLoading(authState)) {
+    return <SimpleLoader />;
+  }
+  
   return <Outlet />;
 };
 
@@ -174,7 +156,11 @@ const router = createBrowserRouter([
           // Dashboard route
           {
             path: "dashboard",
-            element: <RoleBasedDashboard />,
+            element: (
+              <PageWrapper>
+                <AdminDashboardPage />
+              </PageWrapper>
+            ),
           },
           
           // Admin-only routes (no /admin prefix)
@@ -182,9 +168,9 @@ const router = createBrowserRouter([
             path: "analytics",
             element: (
               <ProtectedRoute requiredRole="admin">
-                <LazyPage>
+                <PageWrapper>
                   <AnalyticsPage />
-                </LazyPage>
+                </PageWrapper>
               </ProtectedRoute>
             ),
           },
@@ -192,9 +178,9 @@ const router = createBrowserRouter([
             path: "users",
             element: (
               <ProtectedRoute requiredRole="admin">
-                <LazyPage>
+                <PageWrapper>
                   <AdminManagementPage />
-                </LazyPage>
+                </PageWrapper>
               </ProtectedRoute>
             ),
           },
@@ -202,9 +188,9 @@ const router = createBrowserRouter([
             path: "debug",
             element: (
               <ProtectedRoute requiredRole="admin">
-                <LazyPage>
+                <PageWrapper>
                   <DebugPage />
-                </LazyPage>
+                </PageWrapper>
               </ProtectedRoute>
             ),
           },
