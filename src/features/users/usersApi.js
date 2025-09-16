@@ -1,24 +1,74 @@
-import { createFirestoreApi, fetchCollectionFromFirestore, serializeTimestampsForRedux } from "@/features/api/baseApi";
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getCacheConfigByType } from "@/features/utils/cacheConfig";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { isUserAuthenticated as checkUserAuth } from "@/utils/authUtils";
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  limit, 
+  where, 
+  getDocs 
+} from "firebase/firestore";
 
 /**
  * Users API - Refactored to use base API factory
  * Eliminates duplicate patterns and standardizes error handling
  */
 
-// Shared function for fetching users from Firestore
-const fetchUsersFromFirestore = async () => {
-  return await fetchCollectionFromFirestore(db, "users", {
-    orderBy: "createdAt",
-    orderDirection: "desc"
-  });
+/**
+ * Fetch collection from Firestore with options
+ * @param {Object} db - Firestore database instance
+ * @param {string} collectionName - Name of the collection
+ * @param {Object} options - Query options
+ * @returns {Promise<Array>} - Array of documents
+ */
+const fetchCollectionFromFirestore = async (db, collectionName, options = {}) => {
+  const { 
+    orderBy: orderByField = 'createdAt', 
+    orderDirection = 'desc',
+    where: whereClause = null,
+    limit: limitCount = null
+  } = options;
+
+  try {
+    // Check authentication before making the request
+    if (!auth.currentUser) {
+      logger.warn(`[fetchCollectionFromFirestore] No authenticated user, skipping ${collectionName} fetch`);
+      return [];
+    }
+
+    let q = query(collection(db, collectionName));
+    
+    if (whereClause) {
+      q = query(q, where(whereClause.field, whereClause.operator, whereClause.value));
+    }
+    
+    if (orderByField) {
+      q = query(q, orderBy(orderByField, orderDirection));
+    }
+    
+    if (limitCount) {
+      q = query(q, limit(limitCount));
+    }
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    logger.error(`Error fetching collection ${collectionName}:`, error);
+    throw error;
+  }
 };
 
-// Shared function for fetching a single user by UID - OPTIMIZED
-const fetchUserByUIDFromFirestore = async (userUID) => {
+/**
+ * Fetch a single user by UID from Firestore with caching
+ * @param {string} userUID - The user UID to fetch
+ * @returns {Promise<Object|null>} - User data or null if not found
+ */
+export const fetchUserByUIDFromFirestore = async (userUID) => {
   const cacheKey = `getUserByUID_${userUID}`;
   
   return await deduplicateRequest(cacheKey, async () => {
@@ -43,10 +93,11 @@ const fetchUserByUIDFromFirestore = async (userUID) => {
   });
 };
 
-export const usersApi = createFirestoreApi({
+export const usersApi = createApi({
   reducerPath: "usersApi",
+  baseQuery: fakeBaseQuery(),
   tagTypes: ["Users"],
-  cacheType: "USERS",
+  ...getCacheConfigByType("USERS"),
   endpoints: (builder) => ({
     getUsers: builder.query({
       async queryFn() {
@@ -61,7 +112,10 @@ export const usersApi = createFirestoreApi({
             }
             
             logger.log("Fetching users from database...");
-            const users = await fetchUsersFromFirestore();
+            const users = await fetchCollectionFromFirestore(db, "users", {
+              orderBy: "createdAt",
+              orderDirection: "desc"
+            });
 
             // Ensure timestamps are serialized before returning
             const serializedUsers = serializeTimestampsForRedux(users);

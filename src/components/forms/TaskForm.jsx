@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppData } from '@/hooks/useAppData';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { 
   taskFormSchema, 
   TASK_FORM_FIELDS, 
@@ -20,6 +20,7 @@ import {
 import { getInputType } from './configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
+// Permission validation now happens at API level
 
 /**
  * Dedicated Task Form Component
@@ -110,6 +111,8 @@ const TaskForm = ({
     try {
       logger.log('📋 Task form submission started:', { mode, data });
       
+      // Permission validation now happens at API level
+      
       // Additional validation for conditional fields
       if (data._hasDeliverables && (!data.deliverables || data.deliverables.length === 0)) {
         showError('Please select at least one deliverable when "Has Deliverables" is checked');
@@ -139,7 +142,8 @@ const TaskForm = ({
           monthId: initialData.monthId,
           taskId: initialData.id,
           updates: processedData,
-          reporters
+          reporters,
+          userData: user  // Pass user data for permission validation
         });
         
         logger.log('✅ Task updated successfully:', result);
@@ -154,7 +158,7 @@ const TaskForm = ({
         
         logger.log('📅 Creating task with monthId:', monthId);
         logger.log('📋 Task data with monthId:', taskWithMonthId);
-        logger.log('👤 User data being passed:', user);
+        // User data passed for validation
         
         result = await createTask({
           task: taskWithMonthId,
@@ -164,6 +168,7 @@ const TaskForm = ({
         
         // Check if the result contains an error
         if (result?.error) {
+          logger.error('❌ Task creation failed:', result.error);
           throw new Error(result.error.message || 'Failed to create task');
         }
         
@@ -179,7 +184,14 @@ const TaskForm = ({
       
     } catch (error) {
       logger.error('❌ Task form submission failed:', error);
-      showError(error.message || 'Failed to save task. Please try again.');
+      
+      // Handle permission errors specifically
+      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
+        const action = mode === 'create' ? 'create' : 'update';
+        showAuthError(`You do not have permission to ${action} tasks`);
+      } else {
+        showError(error.message || 'Failed to save task. Please try again.');
+      }
     }
   };
 

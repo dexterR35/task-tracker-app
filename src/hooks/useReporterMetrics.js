@@ -58,7 +58,7 @@ export const useReportersTaskCount = (tasks = [], reporters = [], filterOptions 
     // Initialize all reporters with 0 tasks
     reporters.forEach(reporter => {
       counts[reporter.id] = {
-        reporterName: reporter.name || reporter.reporterName || 'Unknown Reporter',
+        reporterName: reporter.name || reporter.reporterName,
         taskCount: 0,
         marketCounts: {} // Count occurrences of each market
       };

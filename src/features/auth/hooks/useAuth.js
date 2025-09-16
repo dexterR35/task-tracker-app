@@ -1,6 +1,20 @@
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { hasPermission, isAdmin, canAccessRole, canAccessTasks, canAccessCharts } from '@/utils/permissions';
+import { 
+  hasPermission, 
+  canAccessRole, 
+  canAccessTasks, 
+  canAccessCharts,
+  canCreateTask,
+  canUpdateTask,
+  canDeleteTask,
+  canViewTasks,
+  canCreateBoard,
+  canSubmitForms,
+  canPerformTaskCRUD,
+  hasAdminPermissions,
+  getUserPermissionSummary
+} from '@/utils/permissions';
 import { isUserComplete } from '@/utils/authUtils';
 
 import {
@@ -11,14 +25,13 @@ import {
   selectIsLoading,
   selectIsAuthChecking,
   selectAuthError,
-} from '../authSlice';
+} from '@/features/auth/authSlice';
 
 import {
-  showWelcomeMessage,
   showLogoutSuccess,
   showAuthError,
   showSuccess,
-} from '../../../utils/toast';
+} from '@/utils/toast';
 
 // Refined useAuth hook with simplified API and better consistency
 export const useAuth = () => {
@@ -122,6 +135,43 @@ export const useAuth = () => {
     return canAccessTasks(safeUser);
   }, [safeUser]);
 
+  // Comprehensive permission checking functions
+  const canCreateTaskCallback = useCallback(() => {
+    return canCreateTask(safeUser);
+  }, [safeUser]);
+
+  const canUpdateTaskCallback = useCallback(() => {
+    return canUpdateTask(safeUser);
+  }, [safeUser]);
+
+  const canDeleteTaskCallback = useCallback(() => {
+    return canDeleteTask(safeUser);
+  }, [safeUser]);
+
+  const canViewTasksCallback = useCallback(() => {
+    return canViewTasks(safeUser);
+  }, [safeUser]);
+
+  const canCreateBoardCallback = useCallback(() => {
+    return canCreateBoard(safeUser);
+  }, [safeUser]);
+
+  const canSubmitFormsCallback = useCallback(() => {
+    return canSubmitForms(safeUser);
+  }, [safeUser]);
+
+  const canPerformTaskCRUDCallback = useCallback(() => {
+    return canPerformTaskCRUD(safeUser);
+  }, [safeUser]);
+
+  const hasAdminPermissionsCallback = useCallback(() => {
+    return hasAdminPermissions(safeUser);
+  }, [safeUser]);
+
+  const getUserPermissionSummaryCallback = useCallback(() => {
+    return getUserPermissionSummary(safeUser);
+  }, [safeUser]);
+
   // Simplified auth status check
   const isReady = useCallback(() => {
     return !isAuthChecking && !isLoading;
@@ -139,6 +189,17 @@ export const useAuth = () => {
     hasPermission: hasPermissionCallback,
     canGenerate,
     canAccessTasks: canAccessTasksCallback,
+    
+    // Detailed permission checking
+    canCreateTask: canCreateTaskCallback,
+    canUpdateTask: canUpdateTaskCallback,
+    canDeleteTask: canDeleteTaskCallback,
+    canViewTasks: canViewTasksCallback,
+    canCreateBoard: canCreateBoardCallback,
+    canSubmitForms: canSubmitFormsCallback,
+    canPerformTaskCRUD: canPerformTaskCRUDCallback,
+    hasAdminPermissions: hasAdminPermissionsCallback,
+    getUserPermissionSummary: getUserPermissionSummaryCallback,
     
     // Auth actions
     login,

@@ -5,6 +5,8 @@
 
 import { logger } from './logger';
 import { isAdmin, canAccessRole, canAccessTasks, canAccessCharts } from './permissions';
+import { validateUserPermissions } from '@/utils/permissions';
+import { validateUserForAPI } from '@/features/auth/authSlice';
 
 /**
  * Get user UID from user object (handles different property names)
@@ -26,169 +28,22 @@ export const isUserComplete = (user) => {
   return !!(user.userUID || user.uid) && !!user.email && !!user.name && !!user.role;
 };
 
-// Internal validation functions (used only by validateUserForAPI)
-const validateUserData = (userData, options = {}) => {
-  const { 
-    requireUID = true, 
-    requireEmail = true, 
-    requireName = true, 
-    requireRole = true,
-    logWarnings = true 
-  } = options;
+// REMOVED: Internal validation functions (were only used by duplicate validateUserForAPI)
 
-  const errors = [];
-  
-  if (!userData) {
-    if (logWarnings) {
-      logger.warn("User data not provided");
-    }
-    return { isValid: false, errors: ["User data not provided"] };
-  }
+// REMOVED: Duplicate validateUserPermissions function
+// Use validateUserPermissions from @/features/api/baseApi.js instead
 
-  // Check for UID (either userUID or uid)
-  if (requireUID && !userData.userUID && !userData.uid) {
-    errors.push("User data missing userUID");
-    if (logWarnings) {
-      logger.warn("User data missing userUID");
-    }
-  }
+// REMOVED: Duplicate validateUserForAPI function
+// Use validateUserForAPI from @/features/api/baseApi.js instead
 
-  // Check for email
-  if (requireEmail && !userData.email) {
-    errors.push("User data missing email");
-    if (logWarnings) {
-      logger.warn("User data missing email");
-    }
-  }
-
-  // Check for name
-  if (requireName && !userData.name) {
-    errors.push("User data missing name");
-    if (logWarnings) {
-      logger.warn("User data missing name");
-    }
-  }
-
-  // Check for role
-  if (requireRole && !userData.role) {
-    errors.push("User data missing role");
-    if (logWarnings) {
-      logger.warn("User data missing role");
-    }
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-};
-
-const validateUserRole = (user, validRoles = ["admin", "user"]) => {
-  if (!user) {
-    return { isValid: false, error: "User not provided" };
-  }
-
-  if (!user.role) {
-    return { isValid: false, error: "User role not defined" };
-  }
-
-  if (!validRoles.includes(user.role)) {
-    return { isValid: false, error: `Invalid user role: ${user.role}` };
-  }
-
-  return { isValid: true, error: null };
-};
-
-const validateUserPermissions = (user, requiredPermissions = []) => {
-  if (!user) {
-    return { isValid: false, error: "User not provided" };
-  }
-
-  if (!Array.isArray(user.permissions)) {
-    return { isValid: false, error: "User permissions not defined" };
-  }
-
-  const missingPermissions = requiredPermissions.filter(
-    permission => !user.permissions.includes(permission)
-  );
-
-  if (missingPermissions.length > 0) {
-    return { 
-      isValid: false, 
-      error: `Missing permissions: ${missingPermissions.join(", ")}` 
-    };
-  }
-
-  return { isValid: true, error: null };
-};
-
-/**
- * Comprehensive user validation for API operations
- * @param {Object} userData - User data object
- * @param {Object} options - Validation options
- * @returns {Object} - Comprehensive validation result
- */
-export const validateUserForAPI = (userData, options = {}) => {
-  const {
-    requireUID = true,
-    requireEmail = true,
-    requireName = true,
-    requireRole = true,
-    validRoles = ["admin", "user"],
-    requiredPermissions = [],
-    logWarnings = true
-  } = options;
-
-  // Basic user data validation
-  const basicValidation = validateUserData(userData, {
-    requireUID,
-    requireEmail,
-    requireName,
-    requireRole,
-    logWarnings
-  });
-
-  if (!basicValidation.isValid) {
-    return {
-      isValid: false,
-      errors: basicValidation.errors,
-      type: "basic_validation"
-    };
-  }
-
-  // Role validation
-  const roleValidation = validateUserRole(userData, validRoles);
-  if (!roleValidation.isValid) {
-    return {
-      isValid: false,
-      errors: [roleValidation.error],
-      type: "role_validation"
-    };
-  }
-
-  // Permission validation (if required)
-  if (requiredPermissions.length > 0) {
-    const permissionValidation = validateUserPermissions(userData, requiredPermissions);
-    if (!permissionValidation.isValid) {
-      return {
-        isValid: false,
-        errors: [permissionValidation.error],
-        type: "permission_validation"
-      };
-    }
-  }
-
-  return {
-    isValid: true,
-    errors: [],
-    type: "success"
-  };
-};
-
-// Internal function for getAuthStatus
+// Internal function for getAuthStatus - strict validation
 const getUserDisplayName = (user) => {
   if (!user) return 'Unknown User';
-  return user.name || user.email || 'Unknown User';
+  // Require both name and email - if missing, user is not properly authenticated
+  if (!user.name || !user.email) {
+    return 'Incomplete User Data';
+  }
+  return user.name;
 };
 
 /**

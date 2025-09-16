@@ -12,6 +12,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import listenerManager from "@/features/utils/firebaseListenerManager";
+import { fetchUserByUIDFromFirestore } from "@/features/users/usersApi";
 
 // --- Configuration & Constants ---
 const VALID_ROLES = ["admin", "user"];
@@ -19,13 +20,83 @@ const VALID_ROLES = ["admin", "user"];
 // --- Internal Utilities ---
 let authUnsubscribe = null;
 
-const fetchUserFromFirestore = async (uid) => {
-  const userRef = doc(db, "users", uid);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    throw new Error("User not found in Firestore");
+// REMOVED: fetchUserFromFirestore moved to usersApi.js
+// Use fetchUserByUIDFromFirestore from @/features/users/usersApi instead
+
+/**
+ * Get current user info from Firebase Auth (basic info only)
+ * @param {Object} authState - Authentication state (optional)
+ * @returns {Object} - Current user info or null
+ */
+export const getCurrentUserInfo = (authState) => {
+  // Check if user is authenticated
+  if (!auth.currentUser) {
+    logger.warn('[getCurrentUserInfo] No current user found');
+    return null;
   }
-  return userSnap.data();
+  
+  const userInfo = {
+    uid: auth.currentUser.uid,
+    email: auth.currentUser.email,
+    name: auth.currentUser.displayName || auth.currentUser.email
+  };
+  
+  // Only log once per session by checking if we've already logged this user
+  if (!window._loggedUser || window._loggedUser !== userInfo.uid) {
+    logger.log('[getCurrentUserInfo] User found:', { uid: userInfo.uid, email: userInfo.email });
+    window._loggedUser = userInfo.uid;
+  }
+  
+  return userInfo;
+};
+
+// REMOVED: getCompleteUserData - not needed
+// Just use fetchUserByUIDFromFirestore directly - it has all the data we need
+
+/**
+ * Common user validation function
+ * @param {Object} userData - User data to validate
+ * @param {Object} options - Validation options
+ * @returns {Object} - Validation result
+ */
+export const validateUserForAPI = (userData, options = {}) => {
+  const { 
+    requireUID = true, 
+    requireEmail = false, 
+    requireName = false, 
+    requireRole = false,
+    logWarnings = true 
+  } = options;
+
+  if (!userData) {
+    if (logWarnings) {
+      logger.warn("User data not provided");
+    }
+    return { isValid: false, errors: ["User data not provided"] };
+  }
+
+  const errors = [];
+  
+  if (requireUID && !userData.userUID && !userData.uid) {
+    errors.push("User data missing userUID");
+  }
+  
+  if (requireEmail && !userData.email) {
+    errors.push("User data missing email");
+  }
+  
+  if (requireName && !userData.name) {
+    errors.push("User data missing name");
+  }
+  
+  if (requireRole && !userData.role) {
+    errors.push("User data missing role");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 };
 
 const normalizeUser = (firebaseUser, firestoreData) => {
@@ -79,8 +150,12 @@ export const setupAuthListener = (dispatch) => {
     async (user) => {
       if (user) {
         try {
-          // Fetch user data from Firestore
-          const firestoreData = await fetchUserFromFirestore(user.uid);
+          // Get user data from Firestore (has all the data we need)
+          const firestoreData = await fetchUserByUIDFromFirestore(user.uid);
+          
+          if (!firestoreData) {
+            throw new Error("Failed to fetch user data from Firestore");
+          }
 
           // Check if user is active
           if (firestoreData.isActive === false) {

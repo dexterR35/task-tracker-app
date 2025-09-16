@@ -3,8 +3,8 @@ import AdminPageHeader from "@/components/layout/AdminPageHeader";
 
 const AnalyticsPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4">
+
+      <div>
         {/* Page Header */}
         <div className="mb-4">
           <div className="flex items-center justify-between">
@@ -62,7 +62,7 @@ const AnalyticsPage = () => {
           </div>
         </div>
       </div>
-    </div>
+   
   );
 };
 

@@ -7,11 +7,13 @@ import Modal from "@/components/ui/Modal/Modal";
 import LazyTaskTable from "@/components/lazy/LazyTaskTable";
 import { TaskForm } from "@/components/forms";
 import Loader from "@/components/ui/Loader/Loader";
-import DashboardCard from "@/components/ui/Card/DashboardCard";
-import { createDashboardCards } from "@/components/ui/Card/cardConfig";
+import DashboardCard from "@/components/Card/DashboardCard";
+import { createDashboardCards } from "@/components/Card/cardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 import Badge from "@/components/ui/Badge/Badge";
+import { canAccessCharts } from "@/utils/permissions";
+import { showError, showAuthError } from "@/utils/toast";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,6 +30,9 @@ const AdminDashboardPage = () => {
   // Get basic data from useAppData hook
   const { user, users, reporters, error } = useAppData(); // Remove selectedUserId since we handle filtering in component
 
+  // Check user permissions (only for UI display, not security)
+  const userCanAccessCharts = canAccessCharts(user);
+
   // Use month selection hook for month-specific functionality
   // Always get ALL tasks (no user filtering at API level for admin)
   const {
@@ -42,8 +47,18 @@ const AdminDashboardPage = () => {
     resetToCurrentMonth, // Function to reset
   } = useMonthSelection(); // Remove selectedUserId to get ALL tasks
 
-  // Task creation is only allowed for current month
+  // Task creation is only allowed for current month with existing board
+  // Permission validation happens at API level
   const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
+
+  // Always allow button click - permission checking happens at form submission
+  const handleCreateTask = () => {
+    if (!canCreateTasks) {
+      showError("Create Task is not available for this month");
+      return;
+    }
+    setShowCreateModal(true);
+  };
 
   // Get selected user name for display
   const selectedUser = users.find(
@@ -57,9 +72,7 @@ const AdminDashboardPage = () => {
     (r) => (r.id || r.uid) === selectedReporterId
   );
   const selectedReporterName =
-    selectedReporter?.name ||
-    selectedReporter?.reporterName ||
-    "Unknown Reporter";
+    selectedReporter?.name || selectedReporter?.reporterName;
 
   // Handle user selection (admin only) - memoized with useCallback
   const handleUserSelect = useCallback(
@@ -413,26 +426,25 @@ const AdminDashboardPage = () => {
               <h4>Actions</h4>
               <p className="text-exsmall">
                 {canCreateTasks
-                  ? "Task creation available"
-                  : "Creation restricted"}
+                  ? "Create task available"
+                  : "Create restricted"}
               </p>
             </div>
             <div className="space-y-2">
               <DynamicButton
-                onClick={() => setShowCreateModal(true)}
+                onClick={handleCreateTask}
                 variant="primary"
                 size="md"
                 iconName="add"
                 iconPosition="left"
-                disabled={!canCreateTasks}
                 className="w-full"
               >
                 Create Task
               </DynamicButton>
-              {canCreateTasks && (
+              {!canCreateTasks && (
                 <span className="text-exsmall text-red-error dark:text-amber-400">
                   {!isCurrentMonth
-                    ? "Historical data - creation disabled"
+                    ? "History data - create disabled"
                     : !currentMonth?.boardExists
                       ? "Current month board not created yet"
                       : "Creation not available"}
@@ -559,7 +571,7 @@ const AdminDashboardPage = () => {
                 </p>
                 {canCreateTasks && (
                   <DynamicButton
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={handleCreateTask}
                     variant="primary"
                     size="md"
                     iconName="add"
@@ -598,6 +610,15 @@ const AdminDashboardPage = () => {
           mode="create"
           onSuccess={() => {
             setShowCreateModal(false);
+          }}
+          onError={(error) => {
+            // Handle permission errors
+            if (
+              error?.message?.includes("permission") ||
+              error?.message?.includes("User lacks required")
+            ) {
+              showAuthError("You do not have permission to create tasks");
+            }
           }}
         />
       </Modal>

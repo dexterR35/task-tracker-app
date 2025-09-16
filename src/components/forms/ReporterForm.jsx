@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
-import { showSuccess, showError } from '@/utils/toast';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { reporterFormSchema, REPORTER_FORM_FIELDS } from './configs/useReporterForm';
 import { TextField, SelectField } from './components';
 import { getInputType } from './configs/sharedFormUtils';
@@ -19,6 +20,7 @@ const ReporterForm = ({
   onSuccess, 
   className = "" 
 }) => {
+  const { user } = useAuth();
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
   
@@ -62,7 +64,8 @@ const ReporterForm = ({
         // Update existing reporter
         result = await updateReporter({
           id: initialData.id,
-          updates: data
+          updates: data,
+          userData: user
         }).unwrap();
         
         logger.log('✅ Reporter updated successfully:', result);
@@ -71,7 +74,8 @@ const ReporterForm = ({
       } else {
         // Create new reporter
         result = await createReporter({
-          reporter: data
+          reporter: data,
+          userData: user
         }).unwrap();
         
         logger.log('✅ Reporter created successfully:', result);
@@ -86,7 +90,14 @@ const ReporterForm = ({
       
     } catch (error) {
       logger.error('❌ Reporter form submission failed:', error);
-      showError(error.message || 'Failed to save reporter. Please try again.');
+      
+      // Handle permission errors specifically
+      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
+        const action = mode === 'create' ? 'create' : 'update';
+        showAuthError(`You do not have permission to ${action} reporters`);
+      } else {
+        showError(error.message || 'Failed to save reporter. Please try again.');
+      }
     }
   };
 

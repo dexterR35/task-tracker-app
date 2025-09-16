@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
@@ -10,6 +11,7 @@ import { logger } from "@/utils/logger";
 const AdminManagementPage = () => {
   // Get all data directly from useAppData hook (RTK Query handles caching)
   const { monthId, monthName, users, reporters, error, isLoading } = useAppData();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
   
@@ -17,7 +19,7 @@ const AdminManagementPage = () => {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className=" bg-gray-900 flex items-center justify-center">
         <div className="text-center py-8 max-w-md mx-auto">
           <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
             <div className="text-red-400 text-4xl mb-4">⚠️</div>
@@ -51,8 +53,8 @@ const AdminManagementPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  
+      <div >
         {/* Page Header */}
         <div className="mb-8">
           <div className="mb-6">
@@ -145,6 +147,7 @@ const AdminManagementPage = () => {
                   monthId={monthId}
                   isLoading={isLoading}
                   error={error}
+                  user={user}
                   className="rounded-lg"
                 />
               )}
@@ -164,7 +167,7 @@ const AdminManagementPage = () => {
           />
         )}
       </div>
-    </div>
+   
   );
 };
 

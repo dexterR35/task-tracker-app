@@ -9,6 +9,9 @@ const columnHelper = createColumnHelper();
 
 // Tasks Table Columns - Memoized to prevent re-renders
 export const useTaskColumns = (monthId = null, reporters = []) => {
+  // Ensure reporters is always an array to prevent hooks issues
+  const stableReporters = Array.isArray(reporters) ? reporters : [];
+  
   return useMemo(() => [
   columnHelper.accessor('data_task.taskName', {
     header: 'Jira Link',
@@ -33,36 +36,46 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
   }),
   columnHelper.accessor('data_task.departments', {
     header: 'Department',
-    cell: ({ getValue }) => {
-      return getValue();
+    cell: ({ getValue, row }) => {
+      // Check if data_task exists
+      if (!row.original?.data_task) {
+        return <span className="text-red-500 text-xs">❌ No data_task</span>;
+      }
+      
+      const value = getValue();
+      return value || <span className="text-red-500 text-xs">❌ Missing</span>;
     },
     size: 150,
   }),
   columnHelper.accessor('data_task.products', {
     header: 'Product',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 120,
   }),
   columnHelper.accessor('data_task.timeInHours', {
     header: 'Hours',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 80,
   }),
   columnHelper.accessor('data_task.aiTime', {
     header: 'AI Hr',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 80,
   }),
   columnHelper.accessor('data_task.aiModels', {
     header: 'AI Models',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 120,
   }),
@@ -76,7 +89,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
   columnHelper.accessor('data_task.deliverables', {
     header: 'Deliverables',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 120,
   }),
@@ -84,7 +98,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     header: 'Reporter',
     cell: ({ getValue }) => {
       const reporterId = getValue();
-      const reporter = reporters.find(r => r.id === reporterId);
+      if (!reporterId) return '-';
+      const reporter = stableReporters.find(r => r.id === reporterId);
       return reporter?.name || reporterId;
     },
     size: 120,
@@ -93,18 +108,20 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
   columnHelper.accessor('createdByName', {
     header: 'Created By',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 120,
   }),
   columnHelper.accessor('createdByDate', {
     header: 'Created By Date',
     cell: ({ getValue }) => {
-      return getValue();
+      const value = getValue();
+      return value || '-';
     },
     size: 120,
   }),
-], [monthId, reporters]);
+], [monthId, stableReporters]);
 };
 
 // Users Table Columns

@@ -1,11 +1,12 @@
 import React from "react";
 import { useAppData } from "@/hooks/useAppData";
-import { useTaskColumns } from "@/components/ui/Table/tableColumns.jsx";
-import TanStackTable from "@/components/ui/Table/TanStackTable";
+import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
+import TanStackTable from "@/components/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import { TaskForm } from "@/components/forms";
 import { useTableActions } from "@/hooks/useTableActions";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { showError, showAuthError } from "@/utils/toast";
 
 // Custom Task Edit Modal Component
 const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props }) => {
@@ -55,17 +56,35 @@ const TaskTable = ({
   // Get task columns with monthId and reporters data for reporter name lookup
   const taskColumns = useTaskColumns(monthId, reporters);
   
-  // Simple delete wrapper - always use task's monthId
+  // Delete wrapper with error handling for permission issues
   const handleTaskDeleteMutation = async (task) => {
     if (!deleteTask) {
       console.error('deleteTask mutation not available');
       throw new Error('Delete task mutation not available');
     }
     
-    return await deleteTask({ 
-      monthId: task.monthId,  // Always use task's own monthId
-      taskId: task.id 
-    });
+    try {
+      return await deleteTask({ 
+        monthId: task.monthId,  // Always use task's own monthId
+        taskId: task.id,
+        userData: user  // Pass user data for permission validation
+      });
+    } catch (error) {
+      // Show permission error toast if it's a permission issue
+      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
+        showAuthError('You do not have permission to delete tasks');
+      }
+      throw error;
+    }
+  };
+
+  // Always allow button clicks - permission checking happens at form submission
+  const handleEditWithPermission = (task) => {
+    handleEdit(task);
+  };
+
+  const handleDeleteWithPermission = (task) => {
+    handleDelete(task);
   };
 
   // Use table actions hook
@@ -96,8 +115,8 @@ const TaskTable = ({
         isLoading={isLoading}
         error={tasksError}
         onSelect={handleSelect}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={handleEditWithPermission}
+        onDelete={handleDeleteWithPermission}
         showPagination={true}
         showFilters={true}
         showColumnToggle={true}

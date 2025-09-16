@@ -87,14 +87,15 @@ export const useMonthSelection = (selectedUserId = null) => {
 
   const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
 
-  // Fetch available months only when needed
+  // Fetch available months by default so they show in the dropdown
   const { 
     data: availableMonths = [], 
     isLoading: availableMonthsLoading,
     refetch: fetchAvailableMonths
   } = useGetAvailableMonthsQuery(undefined, {
-    skip: true // Don't fetch by default, only when user selects a different month
+    skip: !user // Only skip if user is not authenticated
   });
+
 
   // Create dropdown options with current month always available
   const dropdownOptions = useMemo(() => {

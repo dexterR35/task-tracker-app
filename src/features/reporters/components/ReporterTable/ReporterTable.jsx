@@ -1,9 +1,9 @@
 import React from "react";
 import { useDeleteReporterMutation } from "@/features/reporters/reportersApi";
-import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
+import { getColumns } from "@/components/Table/tableColumns.jsx";
 import { showError } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import TanStackTable from "@/components/ui/Table/TanStackTable";
+import TanStackTable from "@/components/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import ReporterFormModal from "@/components/modals/ReporterFormModal";
 import { useTableActions } from "@/hooks/useTableActions";
@@ -14,6 +14,7 @@ const ReporterTable = ({
   monthId,
   isLoading = false,
   error: reportersError = null,
+  user = null, // User data for permission validation
 }) => {
   // API hooks for reporter CRUD
   const [deleteReporter] = useDeleteReporterMutation();
@@ -21,9 +22,18 @@ const ReporterTable = ({
   // Get reporter columns with monthId for date formatting
   const reporterColumns = getColumns('reporters', monthId);
   
-  // Custom delete mutation wrapper for reporters
+  // Custom delete mutation wrapper for reporters with permission error handling
   const handleReporterDeleteMutation = async (reporter) => {
-    return await deleteReporter(reporter.id);
+    try {
+      return await deleteReporter({ id: reporter.id, userData: user });
+    } catch (error) {
+      // Show permission error toast if it's a permission issue
+      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
+        const { showAuthError } = await import('@/utils/toast');
+        showAuthError('You do not have permission to delete reporters');
+      }
+      throw error;
+    }
   };
 
   // Use table actions hook
@@ -41,7 +51,7 @@ const ReporterTable = ({
     closeDeleteModal,
     handleEditSuccess,
   } = useTableActions('reporter', {
-    getItemDisplayName: (reporter) => reporter?.name || 'Unknown Reporter',
+    getItemDisplayName: (reporter) => reporter?.name,
     deleteMutation: handleReporterDeleteMutation,
     onSelectSuccess: (reporter) => {
       showError('You don\'t have superpower for that!');
@@ -91,7 +101,7 @@ const ReporterTable = ({
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}
         title="Delete Reporter"
-        message={`Are you sure you want to delete reporter "${itemToDelete?.name || 'Unknown Reporter'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete reporter "${itemToDelete?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"

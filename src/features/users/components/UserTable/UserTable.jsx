@@ -1,8 +1,8 @@
 import React from "react";
-import { getColumns } from "@/components/ui/Table/tableColumns.jsx";
+import { getColumns } from "@/components/Table/tableColumns.jsx";
 import { showError } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
-import TanStackTable from "@/components/ui/Table/TanStackTable";
+import TanStackTable from "@/components/Table/TanStackTable";
 import { useTableActions } from "@/hooks/useTableActions";
 
 const UserTable = ({

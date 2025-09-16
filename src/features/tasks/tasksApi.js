@@ -1,4 +1,7 @@
-import { createFirestoreApi, getCurrentUserInfo, validateUserForAPI, serializeTimestampsForRedux } from "@/features/api/baseApi";
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getCacheConfigByType } from "@/features/utils/cacheConfig";
+import { serializeTimestampsForRedux } from "@/utils/dateUtils";
+import { getCurrentUserInfo } from "@/features/auth/authSlice";
 import {
   collection,
   query as fsQuery,
@@ -14,7 +17,6 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  increment,
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
@@ -28,9 +30,7 @@ import {
   getEndOfMonth,
   formatDate,
 } from "@/utils/dateUtils";
-import {  isAdmin, canAccessTasks, isUserActive } from "@/utils/permissions";
-import { validateOperation } from "@/utils/securityValidation";
-
+import { isAdmin, canAccessTasks, isUserActive } from "@/utils/permissions";
 
 // Helper function to get month info using centralized dateUtils
 const getMonthInfo = (date = new Date()) => {
@@ -53,17 +53,13 @@ const getCurrentYear = () => {
   return new Date().getFullYear().toString(); // Always use current year
 };
 
-// Helper function to extract year from monthId (e.g., "2025-09" -> "2025")
-const getYearFromMonthId = (monthId) => {
-  // Always use current year for data fetching
-  return getCurrentYear();
-};
+// REMOVED: getYearFromMonthId - not used anywhere
 
 // Helper functions for Firestore references - always use current year
 const getTaskRef = (monthId, taskId = null) => {
   const yearId = getCurrentYear();
   const basePath = ["departments", "design", yearId, monthId, "taskdata"];
-  
+
   if (taskId) {
     return doc(db, ...basePath, taskId); // Individual task
   } else {
@@ -72,13 +68,16 @@ const getTaskRef = (monthId, taskId = null) => {
 };
 
 const getMonthRef = (monthId) => {
-  const yearId = getCurrentYear();
+  // Based on the actual database structure: /departments/design/2025/2025-09/
+  const yearId = monthId.split('-')[0]; // Extract year from monthId (e.g., "2025" from "2025-09")
   return doc(db, "departments", "design", yearId, monthId); // Month document
 };
 
-const getMonthsRef = () => {
-  const yearId = getCurrentYear();
-  return collection(db, "departments", "design", yearId); // Months collection
+const getMonthsRef = (yearId = null) => {
+  // Based on the actual database structure: /departments/design/{year}/
+  // If yearId is provided, return collection for that year, otherwise return current year
+  const targetYear = yearId || getCurrentYear();
+  return collection(db, "departments", "design", targetYear); // Year collection under design department
 };
 
 // API Configuration
@@ -89,42 +88,11 @@ const API_CONFIG = {
   },
 };
 
-
-
-// Helper function to validate user data for tasks API
-const validateUserDataForTasks = (userData) => {
-  const validation = validateUserForAPI(userData, {
-    requireUID: true,
-    requireEmail: false,
-    requireName: false,
-    requireRole: false,
-    logWarnings: true
-  });
-  
-  if (!validation.isValid) {
-    logger.warn("User data validation failed:", validation.errors);
-    return false;
-  }
-  
-  return true;
-};
-
-// Helper function to validate boardId consistency
-const validateBoardIdConsistency = (providedBoardId, expectedBoardId, currentTaskBoardId) => {
-  if (providedBoardId && expectedBoardId && providedBoardId !== expectedBoardId) {
-    throw new Error("Provided boardId does not match the month board's boardId");
-  }
-  
-  if (currentTaskBoardId && expectedBoardId && currentTaskBoardId !== expectedBoardId) {
-    throw new Error("Task boardId mismatch - task may have been moved to a different board");
-  }
-};
-
-
-export const tasksApi = createFirestoreApi({
+export const tasksApi = createApi({
   reducerPath: "tasksApi",
+  baseQuery: fakeBaseQuery(),
   tagTypes: ["MonthTasks", "Tasks", "Analytics", "CurrentMonth"],
-  cacheType: "TASKS",
+  ...getCacheConfigByType("TASKS"),
   endpoints: (builder) => ({
     // Real-time fetch for tasks - optimized for month changes and CRUD operations
     getMonthTasks: builder.query({
@@ -133,6 +101,8 @@ export const tasksApi = createFirestoreApi({
           if (!monthId) {
             return { data: [] };
           }
+
+          // Permission validation handled by UI components
 
           const yearId = getCurrentYear();
           // Check if month board exists
@@ -148,20 +118,24 @@ export const tasksApi = createFirestoreApi({
           let tasksQuery = fsQuery(tasksRef);
 
           // Apply user filtering based on role
-          tasksQuery = role === 'user' && userId 
-            ? fsQuery(tasksRef, where("userUID", "==", userId))
-            : fsQuery(tasksRef);
+          tasksQuery =
+            role === "user" && userId
+              ? fsQuery(tasksRef, where("userUID", "==", userId))
+              : fsQuery(tasksRef);
 
           const tasksSnapshot = await getDocs(tasksQuery);
-          const tasks = tasksSnapshot.docs.map(doc => ({
+          const tasks = tasksSnapshot.docs.map((doc) => ({
             id: doc.id,
             monthId: monthId,
-            ...serializeTimestampsForRedux(doc.data())
+            ...serializeTimestampsForRedux(doc.data()),
           }));
 
           return { data: tasks };
         } catch (error) {
-          logger.error(`[getMonthTasks] Error fetching tasks for ${monthId}:`, error);
+          logger.error(
+            `[getMonthTasks] Error fetching tasks for ${monthId}:`,
+            error
+          );
           return { error: { message: error.message } };
         }
       },
@@ -173,13 +147,17 @@ export const tasksApi = createFirestoreApi({
 
         try {
           await cacheDataLoaded;
-          
+
           if (!arg.monthId) {
             return;
           }
 
           // Validate user access
-          if (!arg.userData || !isUserActive(arg.userData) || !canAccessTasks(arg.userData)) {
+          if (
+            !arg.userData ||
+            !isUserActive(arg.userData) ||
+            !canAccessTasks(arg.userData)
+          ) {
             return;
           }
 
@@ -190,44 +168,47 @@ export const tasksApi = createFirestoreApi({
 
           const currentUserUID = currentUser.uid;
           const isValidRole = ["admin", "user"].includes(arg.role);
-          const canAccessThisUser = isAdmin({ role: arg.role }) || (arg.userId && arg.userId === currentUserUID);
-          
-          if (!isValidRole || (!isAdmin({ role: arg.role }) && !arg.userId) || !canAccessThisUser) {
+          const canAccessThisUser =
+            isAdmin({ role: arg.role }) ||
+            (arg.userId && arg.userId === currentUserUID);
+
+          if (
+            !isValidRole ||
+            (!isAdmin({ role: arg.role }) && !arg.userId) ||
+            !canAccessThisUser
+          ) {
             return;
           }
-          
-          const yearId = getCurrentYear();
+
+          // const yearId = getCurrentYear();
           const monthDocRef = getMonthRef(arg.monthId);
-          
           const monthDoc = await getDoc(monthDocRef);
-          
           if (!monthDoc.exists()) {
             return;
           }
-          
+
           const colRef = getTaskRef(arg.monthId);
-          
-          
-          const taskLimit = arg.limitCount || API_CONFIG.REQUEST_LIMITS.TASKS_PER_MONTH;
-
+          const taskLimit =
+            arg.limitCount || API_CONFIG.REQUEST_LIMITS.TASKS_PER_MONTH;
           // Build query based on user role
-          const userFilter = isAdmin({ role: arg.role }) ? null : arg.userId || currentUserUID;
-          const query = userFilter && userFilter.trim() !== "" 
-            ? fsQuery(colRef, where("userUID", "==", userFilter), limit(taskLimit))
-            : fsQuery(colRef, limit(taskLimit));
-          
-
+          const userFilter = isAdmin({ role: arg.role })
+            ? null
+            : arg.userId || currentUserUID;
+          const query =
+            userFilter && userFilter.trim() !== ""
+              ? fsQuery(
+                  colRef,
+                  where("userUID", "==", userFilter),
+                  limit(taskLimit)
+                )
+              : fsQuery(colRef, limit(taskLimit));
           const taskListenerKey = `tasks_${arg.monthId}_${arg.role}_${arg.userId || "all"}`;
-          
-          
           unsubscribe = listenerManager.addListener(taskListenerKey, () => {
             listenerManager.updateActivity();
-            
-          
-          return onSnapshot(
-            query,
-            (snapshot) => {
-                
+
+            return onSnapshot(
+              query,
+              (snapshot) => {
                 if (!snapshot || !snapshot.docs || snapshot.empty) {
                   updateCachedData(() => []);
                   return;
@@ -238,13 +219,13 @@ export const tasksApi = createFirestoreApi({
                 );
 
                 const tasks = validDocs
-                    .map((d) =>
-                      serializeTimestampsForRedux({
-                        id: d.id,
-                        monthId: arg.monthId,
-                        ...d.data(),
-                      })
-                    )
+                  .map((d) =>
+                    serializeTimestampsForRedux({
+                      id: d.id,
+                      monthId: arg.monthId,
+                      ...d.data(),
+                    })
+                  )
                   .filter((task) => task !== null);
 
                 listenerManager.updateActivity();
@@ -280,82 +261,72 @@ export const tasksApi = createFirestoreApi({
     createTask: builder.mutation({
       async queryFn({ task, userData, reporters = [] }) {
         try {
-          const currentUser = getCurrentUserInfo();
           const monthId = task.monthId;
-          
-          if (!currentUser) {
-            return { error: { message: "Authentication required" } };
+
+          // SECURITY: Validate user permissions at API level
+          if (!userData) {
+            return { error: { message: "User data is required" } };
           }
-          
-          // Simplified validation - only check business logic, not user auth
-          const validation = await validateOperation('create_task', {
-            userUID: currentUser.uid,
-            email: currentUser.email,
-            name: currentUser.name,
-            role: userData?.role || 'user', // Fallback to user role
-            permissions: userData?.permissions || [], // Include permissions array
-            isActive: userData?.isActive !== false // Include active status
-          }, {
-            taskData: task,
-            monthId: task.monthId,
-            currentUserUID: currentUser.uid
+
+          // Check if user can create tasks
+          const { validateUserPermissions } = await import('@/utils/permissions');
+          const permissionValidation = validateUserPermissions(userData, 'create_task', {
+            operation: 'createTask',
+            logWarnings: true,
+            requireActive: true
           });
-          
-          if (!validation.isValid) {
-            return { error: { message: validation.errors.join(', ') } };
+
+          if (!permissionValidation.isValid) {
+            return { error: { message: permissionValidation.errors.join(', ') } };
           }
-          
+
+          const currentUser = getCurrentUserInfo();
+
+          // Business logic validation - check month ID
+
           if (!monthId) {
             return { error: { message: "Month ID is required" } };
           }
-          
           // Get month document to retrieve boardId
           const monthDocRef = getMonthRef(monthId);
           const monthDoc = await getDoc(monthDocRef);
-
           if (!monthDoc.exists()) {
-            throw new Error("Month board not available. Please contact an administrator to generate the month board for this period, or try selecting a different month.");
+            throw new Error(
+              "Month board not available. Please contact an administrator to generate the month board for this period, or try selecting a different month."
+            );
           }
-          
+
           const boardData = monthDoc.data();
           const boardId = boardData?.boardId;
-          
+
           if (!boardId) {
-            throw new Error("Month board is missing boardId. Please contact an administrator to regenerate the month board.");
+            throw new Error(
+              "Month board is missing boardId. Please contact an administrator to regenerate the month board."
+            );
           }
-          
+
           const colRef = getTaskRef(monthId);
-          
           const currentUserUID = currentUser.uid;
-          const currentUserName = userData.name || userData.email || currentUser.name || "Unknown User";
-          
-          const createdAt = new Date().toISOString();
+          const currentUserName = userData.name;
+          const createdAt = serverTimestamp();
           const updatedAt = createdAt; // For new tasks, updatedAt equals createdAt
-          
-          // Filter out UI-only fields and system fields from task data
-          const cleanTaskData = Object.keys(task).reduce((acc, key) => {
-            // Skip UI-only fields (prefixed with _) and system fields
-            if (!key.startsWith('_') && 
-                !['createdAt', 'updatedAt', 'monthId', 'userUID', 'boardId', 'createbyUID', 'createdByName'].includes(key)) {
-              acc[key] = task[key];
-            }
-            return acc;
-          }, {});
 
           // Auto-add reporter name if we have reporter ID but no name
-          if (cleanTaskData.reporters && !cleanTaskData.reporterName) {
+          if (task.reporters && !task.reporterName) {
             // Use the reporters data passed from the API call
-            const selectedReporter = reporters.find(r => r.id === cleanTaskData.reporters);
+            const selectedReporter = reporters.find(
+              (r) => r.id === task.reporters
+            );
             if (selectedReporter) {
-              cleanTaskData.reporterName = selectedReporter.name || selectedReporter.reporterName || 'Unknown Reporter';
+              task.reporterName = selectedReporter.name || selectedReporter.reporterName;
             } else {
-              cleanTaskData.reporterName = 'Unknown Reporter';
+              throw new Error("Reporter not found for the selected reporter ID");
             }
           }
 
           // Create final document data directly
           const documentData = {
-            data_task: cleanTaskData,  // Clean task data as object
+            data_task: task, // Use task data directly
             userUID: currentUserUID,
             monthId: monthId,
             boardId: boardId,
@@ -364,22 +335,22 @@ export const tasksApi = createFirestoreApi({
             updatedAt: updatedAt,
             createdAt: createdAt,
           };
-          
+
           if (!documentData.userUID || !documentData.monthId) {
-            throw new Error("Invalid task data: missing required fields (userUID or monthId)");
+            throw new Error(
+              "Invalid task data: missing required fields (userUID or monthId)"
+            );
           }
-          
           const ref = await addDoc(colRef, documentData);
           
-          
-          
-          const result = { 
-            id: ref.id, 
-            monthId, 
+          // Create result with serialized timestamps for Redux
+          const result = {
+            id: ref.id,
+            monthId,
             ...documentData,
           };
 
-          return { data: result };
+          return { data: serializeTimestampsForRedux(result) };
         } catch (error) {
           const errorResponse = handleApiError(error, "Create Task", {
             showToast: false,
@@ -390,53 +361,54 @@ export const tasksApi = createFirestoreApi({
       },
       invalidatesTags: (result, error, { task }) => [
         { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "Tasks", id: "LIST" }
+        { type: "Tasks", id: "LIST" },
       ],
     }),
-
     // Update task - simple Firestore update
     updateTask: builder.mutation({
-      async queryFn({ monthId, taskId, updates, reporters = [] }) {
+      async queryFn({ monthId, taskId, updates, reporters = [], userData }) {
         try {
-          const currentUser = getCurrentUserInfo();
-          if (!currentUser) {
-            return { error: { message: "Authentication required" } };
+          // SECURITY: Validate user permissions at API level
+          if (!userData) {
+            return { error: { message: "User data is required" } };
+          }
+
+          // Check if user can update tasks
+          const { validateUserPermissions } = await import('@/utils/permissions');
+          const permissionValidation = validateUserPermissions(userData, 'update_task', {
+            operation: 'updateTask',
+            logWarnings: true,
+            requireActive: true
+          });
+
+          if (!permissionValidation.isValid) {
+            return { error: { message: permissionValidation.errors.join(', ') } };
           }
 
           // Simple update - just update the document
           const taskRef = getTaskRef(monthId, taskId);
-          
-          // Filter out protected fields
-          const cleanUpdates = Object.keys(updates).reduce((acc, key) => {
-            if (!key.startsWith('_') && 
-                !['createdAt', 'updatedAt', 'monthId', 'userUID', 'boardId', 'createbyUID', 'createdByName'].includes(key)) {
-              acc[key] = updates[key];
-            }
-            return acc;
-          }, {});
-
           // Auto-add reporter name if we have reporter ID but no name
-          if (cleanUpdates.reporters && !cleanUpdates.reporterName) {
+          if (updates.reporters && !updates.reporterName) {
             // Use the reporters data passed from the API call
-            const selectedReporter = reporters.find(r => r.id === cleanUpdates.reporters);
+            const selectedReporter = reporters.find(
+              (r) => r.id === updates.reporters
+            );
             if (selectedReporter) {
-              cleanUpdates.reporterName = selectedReporter.name || selectedReporter.reporterName || 'Unknown Reporter';
+              updates.reporterName = selectedReporter.name || selectedReporter.reporterName;
             } else {
-              logger.warn(`Reporter not found for ID: ${cleanUpdates.reporters} in provided reporters list`);
-              cleanUpdates.reporterName = 'Unknown Reporter';
+              throw new Error("Reporter not found for the selected reporter ID");
             }
           }
-          
           const updatesWithTimestamp = {
-            ...cleanUpdates,
-            updatedAt: new Date().toISOString()
+            ...updates,
+            updatedAt: serverTimestamp(),
           };
 
           await updateDoc(taskRef, updatesWithTimestamp);
           
-          
-
-          return { data: { id: taskId, monthId, success: true } };
+          // Return serialized result for Redux
+          const result = { id: taskId, monthId, success: true };
+          return { data: serializeTimestampsForRedux(result) };
         } catch (error) {
           const errorResponse = handleApiError(error, "Update Task", {
             showToast: false,
@@ -447,23 +419,34 @@ export const tasksApi = createFirestoreApi({
       },
       invalidatesTags: (result, error, { monthId }) => [
         { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "Tasks", id: "LIST" }
+        { type: "Tasks", id: "LIST" },
       ],
     }),
 
     // Delete task - simple Firestore delete
     deleteTask: builder.mutation({
-      async queryFn({ monthId, taskId }) {
+      async queryFn({ monthId, taskId, userData }) {
         try {
-          const currentUser = getCurrentUserInfo();
-          if (!currentUser) {
-            return { error: { message: "Authentication required" } };
+          // SECURITY: Validate user permissions at API level
+          if (!userData) {
+            return { error: { message: "User data is required" } };
+          }
+
+          // Check if user can delete tasks
+          const { validateUserPermissions } = await import('@/utils/permissions');
+          const permissionValidation = validateUserPermissions(userData, 'delete_task', {
+            operation: 'deleteTask',
+            logWarnings: true,
+            requireActive: true
+          });
+
+          if (!permissionValidation.isValid) {
+            return { error: { message: permissionValidation.errors.join(', ') } };
           }
 
           // Delete the task document
           const taskRef = getTaskRef(monthId, taskId);
           await deleteDoc(taskRef);
-
 
           return { data: { id: taskId, monthId } };
         } catch (error) {
@@ -476,7 +459,7 @@ export const tasksApi = createFirestoreApi({
       },
       invalidatesTags: (result, error, { monthId }) => [
         { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "Tasks", id: "LIST" }
+        { type: "Tasks", id: "LIST" },
       ],
     }),
 
@@ -484,27 +467,29 @@ export const tasksApi = createFirestoreApi({
     generateMonthBoard: builder.mutation({
       async queryFn({ monthId, meta = {}, userData }) {
         try {
+          // SECURITY: Validate user permissions at API level
+          if (!userData) {
+            return { error: { message: "User data is required" } };
+          }
+
+          // Check if user can create boards (admin only)
+          const { validateUserPermissions } = await import('@/utils/permissions');
+          const permissionValidation = validateUserPermissions(userData, 'create_board', {
+            operation: 'generateMonthBoard',
+            logWarnings: true,
+            requireActive: true
+          });
+
+          if (!permissionValidation.isValid) {
+            return { error: { message: permissionValidation.errors.join(', ') } };
+          }
+
           const currentUser = getCurrentUserInfo();
-          if (!currentUser) {
-            return { error: { message: "Authentication required" } };
-          }
-
-          if (!validateUserDataForTasks(userData)) {
-            return { error: { message: "User data not provided or invalid" } };
-          }
-          
-          if (!isAdmin(userData)) {
-            return { error: { message: "Admin permissions required to generate month boards" } };
-          }
-
-
           const boardRef = getMonthRef(monthId);
           const boardDoc = await getDoc(boardRef);
-
           if (boardDoc.exists()) {
             return { error: { message: "Month board already exists" } };
           }
-
           const yearId = getCurrentYear();
           const boardId = `${monthId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const monthMetadata = {
@@ -512,12 +497,12 @@ export const tasksApi = createFirestoreApi({
             boardId,
             yearId,
             department: "design",
-            month: parseInt(monthId.split('-')[1]),
+            month: parseInt(monthId.split("-")[1]),
             year: parseInt(yearId),
             monthName: formatMonth(monthId),
             createdAt: serverTimestamp(),
             createdBy: currentUser?.uid,
-            createdByName: userData.name || userData.email || currentUser?.email,
+            createdByName: userData.name,
             createdByRole: userData.role,
             status: "active",
             description: `Month ${monthId} board for Design department`,
@@ -525,21 +510,22 @@ export const tasksApi = createFirestoreApi({
           };
 
           await setDoc(boardRef, monthMetadata);
-
-
           const serializedBoardData = {
             monthId,
             boardId,
             exists: true,
-            createdAt: new Date().toISOString(),
+            createdAt: serverTimestamp(),
             createdBy: currentUser?.uid,
-            createdByName: userData.name || userData.email || currentUser?.email,
+            createdByName: userData.name,
             createdByRole: userData.role,
           };
 
-          return { data: serializedBoardData };
+          return { data: serializeTimestampsForRedux(serializedBoardData) };
         } catch (error) {
-          logger.error(`[tasksApi] Failed to generate board for ${monthId}:`, error);
+          logger.error(
+            `[tasksApi] Failed to generate board for ${monthId}:`,
+            error
+          );
           return { error: { message: error.message } };
         }
       },
@@ -550,56 +536,96 @@ export const tasksApi = createFirestoreApi({
     getCurrentMonth: builder.query({
       async queryFn({ userId, role, userData }) {
         try {
-          const monthInfo = getMonthInfo();
-          // Check if current month board exists
-          const monthDocRef = getMonthRef(monthInfo.monthId);
-          const monthDoc = await getDoc(monthDocRef);
-          
-          const boardExists = monthDoc.exists();
+          let currentMonthInfo = getMonthInfo(); // Default to actual current month
+          let boardExists = false;
           let currentMonthBoard = null;
-          
-          if (boardExists) {
+
+          // Get available months from the current year (2025) under departments/design
+          // Based on your structure: departments/design/2025/{monthId}/
+          const yearId = getCurrentYear(); // This will be "2025"
+          const monthsRef = collection(db, "departments", "design", yearId);
+          const monthsSnapshot = await getDocs(monthsRef);
+          const availableMonths = [];
+
+          monthsSnapshot.docs.forEach((monthDoc) => {
+            if (monthDoc && monthDoc.exists() && monthDoc.data() && monthDoc.id) {
+              const monthData = {
+                monthId: monthDoc.id, // Use document ID as the source of truth
+                ...monthDoc.data()
+              };
+              // Override the monthId from data with the document ID (correct one)
+              monthData.monthId = monthDoc.id;
+              availableMonths.push(monthData);
+            }
+          });
+
+          if (availableMonths.length > 0) {
+            // Sort by monthId (newest first) and use the most recent month
+            availableMonths.sort((a, b) => b.monthId.localeCompare(a.monthId));
+            const mostRecentMonth = availableMonths[0];
+            currentMonthInfo = getMonthInfo(new Date(mostRecentMonth.monthId + '-01'));
+            boardExists = true;
             currentMonthBoard = {
-              monthId: monthInfo.monthId,
-              monthName: monthInfo.monthName,
+              monthId: mostRecentMonth.monthId,
+              monthName: formatMonth(mostRecentMonth.monthId),
               isCurrent: true,
               boardExists: true,
-              ...serializeTimestampsForRedux(monthDoc.data())
+              ...serializeTimestampsForRedux(mostRecentMonth),
             };
+          } else {
+            // Fall back to actual current month if no months found
+            const monthDocRef = getMonthRef(currentMonthInfo.monthId);
+            const monthDoc = await getDoc(monthDocRef);
+            boardExists = monthDoc.exists();
+            
+            if (boardExists) {
+              currentMonthBoard = {
+                monthId: currentMonthInfo.monthId,
+                monthName: currentMonthInfo.monthName,
+                isCurrent: true,
+                boardExists: true,
+                ...serializeTimestampsForRedux(monthDoc.data()),
+              };
+            }
           }
-          
+
           // Fetch current month tasks if board exists and user is authenticated
           let currentMonthTasks = [];
-          
+
           if (boardExists && userData) {
             try {
               const currentUser = getCurrentUserInfo();
               if (currentUser) {
-                const tasksRef = getTaskRef(monthInfo.monthId);
+                const tasksRef = getTaskRef(currentMonthInfo.monthId);
                 let tasksQuery = fsQuery(tasksRef);
-                
+
                 // Apply user filtering based on role
-                if (role === 'user' && userId) {
-                  tasksQuery = fsQuery(tasksRef, where("userUID", "==", userId));
+                if (role === "user" && userId) {
+                  tasksQuery = fsQuery(
+                    tasksRef,
+                    where("userUID", "==", userId)
+                  );
                 }
                 // For admin users, fetch all tasks (no filtering)
-                
+
                 // Order by creation date
                 tasksQuery = fsQuery(tasksQuery, orderBy("createdAt", "desc"));
-                
+
                 const tasksSnapshot = await getDocs(tasksQuery);
-                currentMonthTasks = tasksSnapshot.docs.map(doc => ({
+                currentMonthTasks = tasksSnapshot.docs.map((doc) => ({
                   id: doc.id,
-                  ...serializeTimestampsForRedux(doc.data())
+                  ...serializeTimestampsForRedux(doc.data()),
                 }));
-                
               }
             } catch (taskError) {
-              logger.error(`[tasksApi] Error fetching current month tasks:`, taskError);
+              logger.error(
+                `[tasksApi] Error fetching current month tasks:`,
+                taskError
+              );
               // Don't fail the entire query if tasks fail to load
             }
           }
-          
+
           // Calculate initial msUntilMidnight
           const now = new Date();
           const midnight = new Date();
@@ -608,15 +634,15 @@ export const tasksApi = createFirestoreApi({
 
           const finalBoardExists = boardExists;
 
-          return { 
+          return {
             data: {
-              currentMonth: monthInfo,
+              currentMonth: currentMonthInfo,
               currentMonthBoard,
               boardExists: finalBoardExists, // Use task-based boardExists
               currentMonthTasks,
               msUntilMidnight: initialMsUntilMidnight,
-              lastUpdated: Date.now()
-            }
+              lastUpdated: Date.now(),
+            },
           };
         } catch (error) {
           logger.error(`[tasksApi] Failed to get current month data:`, error);
@@ -635,12 +661,14 @@ export const tasksApi = createFirestoreApi({
           const currentUser = getCurrentUserInfo();
 
           if (!currentUser) {
-            logger.warn(`[Tasks API] Cannot set up current month listener: User not authenticated`);
+            logger.warn(
+              `[Tasks API] Cannot set up current month listener: User not authenticated`
+            );
             return;
           }
-          
+
           const currentMonthInfo = getMonthInfo();
-          
+
           // Note: Current month tasks are handled by the getMonthTasks query
           // No need for a separate listener here as it would be redundant
 
@@ -648,38 +676,40 @@ export const tasksApi = createFirestoreApi({
           if (arg.userData && currentUser && !unsubscribeCurrentMonthBoard) {
             const monthDocRef = getMonthRef(currentMonthInfo.monthId);
             const currentMonthBoardListenerKey = `current_month_board_${currentMonthInfo.monthId}`;
-            
-            unsubscribeCurrentMonthBoard = listenerManager.addListener(currentMonthBoardListenerKey, () => {
-              listenerManager.updateActivity();
-              
-              return onSnapshot(
-                monthDocRef,
-                (snapshot) => {
-                  
-                  const boardExists = snapshot.exists();
-                  let currentMonthBoard = null;
-                  
-                  if (boardExists) {
-                    currentMonthBoard = {
-                      monthId: currentMonthInfo.monthId,
-                      monthName: currentMonthInfo.monthName,
-                      isCurrent: true,
-                      boardExists: true,
-                      ...serializeTimestampsForRedux(snapshot.data())
-                    };
+
+            unsubscribeCurrentMonthBoard = listenerManager.addListener(
+              currentMonthBoardListenerKey,
+              () => {
+                listenerManager.updateActivity();
+
+                return onSnapshot(
+                  monthDocRef,
+                  (snapshot) => {
+                    const boardExists = snapshot.exists();
+                    let currentMonthBoard = null;
+
+                    if (boardExists) {
+                      currentMonthBoard = {
+                        monthId: currentMonthInfo.monthId,
+                        monthName: currentMonthInfo.monthName,
+                        isCurrent: true,
+                        boardExists: true,
+                        ...serializeTimestampsForRedux(snapshot.data()),
+                      };
+                    }
+
+                    updateCachedData((draft) => {
+                      draft.boardExists = boardExists;
+                      draft.currentMonthBoard = currentMonthBoard;
+                      draft.lastUpdated = Date.now();
+                    });
+                  },
+                  (error) => {
+                    logger.error("Current month board listener error:", error);
                   }
-                  
-                  updateCachedData((draft) => {
-                    draft.boardExists = boardExists;
-                    draft.currentMonthBoard = currentMonthBoard;
-                    draft.lastUpdated = Date.now();
-                  });
-                },
-                (error) => {
-                  logger.error("Current month board listener error:", error);
-                }
-              );
-            });
+                );
+              }
+            );
           }
 
           // Set up midnight-based month rollover scheduler with alerts
@@ -691,7 +721,7 @@ export const tasksApi = createFirestoreApi({
                 if (draft.currentMonth.monthId !== currentMonthInfo.monthId) {
                   draft.currentMonth = currentMonthInfo;
                   draft.lastUpdated = Date.now();
-                  
+
                   // Trigger data refresh for new month
                   // This will cause components to re-fetch data for the new month
                 }
@@ -705,10 +735,11 @@ export const tasksApi = createFirestoreApi({
             },
             {
               showAlert: true,
-              alertMessage: "🌙 Midnight Alert! New day has begun. Your task tracker is updating..."
+              alertMessage:
+                "🌙 Midnight Alert! New day has begun. Your task tracker is updating...",
             }
           );
-          
+
           midnightScheduler.start();
 
           await cacheEntryRemoved;
@@ -721,9 +752,9 @@ export const tasksApi = createFirestoreApi({
           if (midnightScheduler) {
             midnightScheduler.stop();
           }
-          
+
           // Note: Current month tasks listener cleanup not needed as we don't create it
-          
+
           // Clean up current month board listener
           if (unsubscribeCurrentMonthBoard) {
             const currentMonthInfo = getMonthInfo();
@@ -742,34 +773,40 @@ export const tasksApi = createFirestoreApi({
     getAvailableMonths: builder.query({
       async queryFn() {
         try {
-
-          // Fetch month boards metadata
-          const monthsRef = getMonthsRef();
-          const monthsSnapshot = await getDocs(monthsRef);
-          
           const currentMonthInfo = getMonthInfo();
-          
-          const availableMonths = monthsSnapshot.docs
-            .filter((doc) => doc && doc.exists() && doc.data() && doc.id)
-            .map((doc) => {
+          const availableMonths = [];
+
+          // Get months from the current year under departments/design
+          // Based on your structure: departments/design/2025/{monthId}/
+          const yearId = getCurrentYear(); // This will be "2025"
+          const monthsRef = collection(db, "departments", "design", yearId);
+          const monthsSnapshot = await getDocs(monthsRef);
+
+          monthsSnapshot.docs.forEach((monthDoc) => {
+            if (monthDoc && monthDoc.exists() && monthDoc.data() && monthDoc.id) {
               const monthData = serializeTimestampsForRedux({
-                monthId: doc.id,
-                ...doc.data(),
+                monthId: monthDoc.id, // Use document ID as the source of truth
+                ...monthDoc.data(),
               });
+              
+              // Override the monthId from data with the document ID (correct one)
+              monthData.monthId = monthDoc.id;
+              
               if (monthData && monthData.monthId) {
                 monthData.monthName = formatMonth(monthData.monthId);
                 monthData.isCurrent = monthData.monthId === currentMonthInfo.monthId;
+                monthData.boardExists = true; // If we found the document, the board exists
+                availableMonths.push(monthData);
               }
-              
-              return monthData;
-            })
-            .filter((month) => month !== null)
-            .sort((a, b) => {
-              // Current month first, then by monthId (newest first)
-              if (a.isCurrent) return -1;
-              if (b.isCurrent) return 1;
-              return b.monthId.localeCompare(a.monthId);
-            });
+            }
+          });
+
+          // Sort by monthId (newest first)
+          availableMonths.sort((a, b) => {
+            if (a.isCurrent) return -1;
+            if (b.isCurrent) return 1;
+            return b.monthId.localeCompare(a.monthId);
+          });
 
           return { data: availableMonths };
         } catch (error) {
@@ -779,7 +816,7 @@ export const tasksApi = createFirestoreApi({
       },
       providesTags: [{ type: "MonthTasks", id: "AVAILABLE_MONTHS" }],
     }),
-  })
+  }),
 });
 
 export const {
