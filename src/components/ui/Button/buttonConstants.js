@@ -4,7 +4,7 @@ export const BUTTON_BASE_CLASSES = "px-3 py-1.5 inline-flex rounded-md font-medi
 
 // ===== VARIANT CLASSES =====
 export const BUTTON_VARIANTS = {
-  PRIMARY: "bg-btn-primary text-white hover:bg-primary",
+  PRIMARY: "bg-btn-primary text-gray-200 hover:bg-primary",
   SECONDARY: "bg-secondary text-white hover:bg-gray-600",
   SUCCESS: "bg-green-success text-white hover:bg-green-400",
   DANGER: "bg-red-error text-white hover:bg-red-500",

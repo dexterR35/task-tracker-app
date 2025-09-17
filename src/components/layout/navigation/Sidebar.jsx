@@ -53,7 +53,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full border-r border-gray-300/50 dark:border-gray-700/50">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-300/50 dark:border-gray-700/50">
       {/* Logo Section */}
       <div className="flex items-center h-20 px-6 border-b border-gray-300/50 dark:border-gray-700/50">
         <Link to="/dashboard" className="flex items-center space-x-3 group">
@@ -72,7 +72,7 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {navigationItems.map((item) => {
           if (item.adminOnly && !canAccess("admin")) return null;
 

@@ -1,5 +1,34 @@
 import { Icons } from "@/components/icons";
+import { 
+  calculateDailyHours, 
+  calculateDailyTasks, 
+  calculateDailyAIHours,
+  calculateDailyDepartmentMetrics,
+  calculateDailyReporterMetrics,
+  calculateDailyTasksByReporter,
+  getChartColor,
+  getChartType
+} from "@/utils/chartUtils";
 
+// Convert card color to hex for charts, icons, badges
+export const getCardColorHex = (color) => {
+  switch (color) {
+    case "green":
+      return "#10b981"; // green-success
+    case "blue":
+      return "#3b82f6"; // blue-default
+    case "purple":
+      return "#8b5cf6"; // btn-primary
+    case "red":
+      return "#ef4444"; // red-error
+    case "yellow":
+      return "#f59e0b"; // warning
+    case "pink":
+      return "#ec4899"; // btn-secondary
+    default:
+      return "#6b7280"; // secondary
+  }
+};
 
 // Helper function to create "No data" entry
 const createNoDataEntry = (icon, label) => ({
@@ -119,9 +148,32 @@ export const CARD_CONFIGS = {
     icon: Icons.generic.task,
     type: "tasks",
     color: "green",
+    hasChart: true,
+    chartType: "bar",
     getValue: (data) => getValueWithNoTasksCheck(data, (data) => data.tasks?.length?.toString() || "0"),
     getStatus: (data) => data.isCurrentMonth ? "Current" : "Historical",
     getSubtitle: (data) => "View all",
+    getChartData: (data) => {
+      try {
+        const monthId = data.periodId || data.currentMonthId;
+        const chartData = calculateDailyTasks(data.tasks || [], monthId);
+        return chartData;
+      } catch (error) {
+        console.error('Error calculating tasks chart data:', error);
+        return [];
+      }
+    },
+    getChartColor: (data) => getCardColorHex("green"),
+    getBadges: (data) => {
+      const badges = [];
+      if (data.isCurrentMonth) {
+        badges.push({ label: "Current", color: getCardColorHex("green") });
+      }
+      if (data.tasks && data.tasks.length > 0) {
+        badges.push({ label: "Active", color: getCardColorHex("green") });
+      }
+      return badges;
+    },
     getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.task, (data) => {
       // Use the hook-based calculation utility
       const metrics = getTop3MetricsForCards(data);
@@ -149,9 +201,32 @@ export const CARD_CONFIGS = {
     icon: Icons.generic.user,
     type: "reporters",
     color: "purple",
+    hasChart: true,
+    chartType: "bar",
     getValue: (data) => getValueWithNoTasksCheck(data, (data) => data.reporterMetrics?.totalReporters?.toString() || "0"),
     getStatus: (data) => data.reporterMetrics?.isFiltered ? "Filtered" : "All Tasks",
     getSubtitle: (data) => "View all",
+    getChartData: (data) => {
+      try {
+        const monthId = data.periodId || data.currentMonthId;
+        const chartData = calculateDailyTasksByReporter(data.tasks || [], monthId);
+        return chartData;
+      } catch (error) {
+        console.error('Error calculating reporters chart data:', error);
+        return [];
+      }
+    },
+    getChartColor: (data) => getCardColorHex("purple"),
+    getBadges: (data) => {
+      const badges = [];
+      if (data.isCurrentMonth) {
+        badges.push({ label: "Current", color: getCardColorHex("green") });
+      }
+      if (data.reporters && data.reporters.length > 0) {
+        badges.push({ label: "Active", color: getCardColorHex("purple") });
+      }
+      return badges;
+    },
     getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.user, (data) => {
       // Use the hook-based calculation utility with cardType for reporters
       const metrics = getTop3MetricsForCards(data, { cardType: 'reporters' });
@@ -170,6 +245,8 @@ export const CARD_CONFIGS = {
     icon: Icons.generic.user,
     type: "users",
     color: "blue",
+    hasChart: true,
+    chartType: "bar",
     getValue: (data) => {
       const selectedReporterId = data.selectedReporterId;
       const selectedUserName = data.selectedUserName || "No User Selected";
@@ -188,6 +265,27 @@ export const CARD_CONFIGS = {
       return selectedReporterId ? "User + Reporter" : "User Only";
     },
     getSubtitle: (data) => "View all",
+    getChartData: (data) => {
+      const monthId = data.periodId || data.currentMonthId;
+      const selectedUserId = data.selectedUserId;
+      const selectedReporterId = data.selectedReporterId;
+      
+      if (!selectedUserId) {
+        return [];
+      }
+      
+      // Filter tasks for selected user and reporter
+      const filteredTasks = (data.tasks || []).filter(task => {
+        const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+        const matchesReporter = !selectedReporterId || 
+          task.reporters === selectedReporterId || 
+          task.data_task?.reporters === selectedReporterId;
+        return matchesUser && matchesReporter;
+      });
+      
+      return calculateDailyHours(filteredTasks, monthId);
+    },
+    getChartColor: (data) => getChartColor("users", "blue"),
     getDetails: (data) => {
       const selectedUserId = data.selectedUserId;
       const selectedReporterId = data.selectedReporterId;
@@ -319,6 +417,8 @@ export const CARD_CONFIGS = {
     icon: Icons.generic.video,
     type: "department",
     color: "red",
+    hasChart: true,
+    chartType: "area",
     getValue: (data) => getValueWithNoTasksCheck(data, (data) => {
       // Use the pre-calculated metrics from useTop3Calculations
       const metrics = getTop3MetricsForCards(data, { department: 'video' });
@@ -326,6 +426,22 @@ export const CARD_CONFIGS = {
     }),
     getStatus: (data) => "Active",
     getSubtitle: (data) => "View all",
+    getChartData: (data) => {
+      const monthId = data.periodId || data.currentMonthId;
+      return calculateDailyDepartmentMetrics(data.tasks || [], monthId, 'video');
+    },
+    getChartColor: (data) => getCardColorHex("red"),
+    getBadges: (data) => {
+      const badges = [];
+      if (data.isCurrentMonth) {
+        badges.push({ label: "Current", color: getCardColorHex("green") });
+      }
+      const metrics = getTop3MetricsForCards(data, { department: 'video' });
+      if (metrics.departmentMetrics?.totalTasks > 0) {
+        badges.push({ label: "Active", color: getCardColorHex("red") });
+      }
+      return badges;
+    },
     getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.video, (data) => {
       // Use the hook-based calculation utility with video department filter
       const metrics = getTop3MetricsForCards(data, { department: 'video' });
@@ -377,6 +493,8 @@ export const CARD_CONFIGS = {
     icon: Icons.generic.design,
     type: "department",
     color: "purple",
+    hasChart: true,
+    chartType: "area",
     getValue: (data) => getValueWithNoTasksCheck(data, (data) => {
       // Use the pre-calculated metrics from useTop3Calculations
       const metrics = getTop3MetricsForCards(data, { department: 'design' });
@@ -384,6 +502,22 @@ export const CARD_CONFIGS = {
     }),
     getStatus: (data) => "Active",
     getSubtitle: (data) => "View all",
+    getChartData: (data) => {
+      const monthId = data.periodId || data.currentMonthId;
+      return calculateDailyDepartmentMetrics(data.tasks || [], monthId, 'design');
+    },
+    getChartColor: (data) => getCardColorHex("purple"),
+    getBadges: (data) => {
+      const badges = [];
+      if (data.isCurrentMonth) {
+        badges.push({ label: "Current", color: getCardColorHex("green") });
+      }
+      const metrics = getTop3MetricsForCards(data, { department: 'design' });
+      if (metrics.departmentMetrics?.totalTasks > 0) {
+        badges.push({ label: "Active", color: getCardColorHex("purple") });
+      }
+      return badges;
+    },
     getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.design, (data) => {
       // Use the hook-based calculation utility with design department filter
       const metrics = getTop3MetricsForCards(data, { department: 'design' });
@@ -435,6 +569,8 @@ export const CARD_CONFIGS = {
     icon: Icons.generic.code,
     type: "department",
     color: "blue",
+    hasChart: true,
+    chartType: "area",
     getValue: (data) => getValueWithNoTasksCheck(data, (data) => {
       // Use the pre-calculated metrics from useTop3Calculations
       const metrics = getTop3MetricsForCards(data, { department: 'developer' });
@@ -442,6 +578,28 @@ export const CARD_CONFIGS = {
     }),
     getStatus: (data) => "Active",
     getSubtitle: (data) => "View all",
+    getChartData: (data) => {
+      try {
+        const monthId = data.periodId || data.currentMonthId;
+        const chartData = calculateDailyDepartmentMetrics(data.tasks || [], monthId, 'developer');
+        return chartData;
+      } catch (error) {
+        console.error('Error calculating dev department chart data:', error);
+        return [];
+      }
+    },
+    getChartColor: (data) => getCardColorHex("blue"),
+    getBadges: (data) => {
+      const badges = [];
+      if (data.isCurrentMonth) {
+        badges.push({ label: "Current", color: getCardColorHex("green") });
+      }
+      const metrics = getTop3MetricsForCards(data, { department: 'developer' });
+      if (metrics.departmentMetrics?.totalTasks > 0) {
+        badges.push({ label: "Active", color: getCardColorHex("blue") });
+      }
+      return badges;
+    },
     getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.code, (data) => {
       // Use the hook-based calculation utility with developer department filter
       const metrics = getTop3MetricsForCards(data, { department: 'developer' });
@@ -518,7 +676,7 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
     }
 
     try {
-      return {
+      const card = {
         id: generateId(cardType, data),
         title: config.title,
         subtitle: config.getSubtitle ? config.getSubtitle(data) : config.subtitle,
@@ -528,8 +686,16 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
         color: config.color || 'default',
         value: config.getValue(data),
         status: config.getStatus(data),
-        details: config.getDetails(data)
+        details: config.getDetails(data),
+        hasChart: config.hasChart || false,
+        chartType: config.chartType || 'area',
+        chartData: config.getChartData ? config.getChartData(data) : [],
+        chartColor: config.getChartColor ? config.getChartColor(data) : '#6b7280',
+        badges: config.getBadges ? config.getBadges(data) : []
       };
+      
+      
+      return card;
     } catch (error) {
       console.error(`Error creating card ${cardType}:`, error);
       return null;
@@ -559,7 +725,11 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
           color: config.color || 'default',
           value: config.getValue(cardData),
           status: config.getStatus(cardData),
-          details: config.getDetails(cardData)
+          details: config.getDetails(cardData),
+          hasChart: config.hasChart || false,
+          chartType: config.chartType || 'area',
+          chartData: config.getChartData ? config.getChartData(cardData) : [],
+          chartColor: config.getChartColor ? config.getChartColor(cardData) : '#6b7280'
         };
         
         // Add selected user card at the beginning

@@ -169,12 +169,12 @@ export const tasksApi = createApi({
           const currentUserUID = currentUser.uid;
           const isValidRole = ["admin", "user"].includes(arg.role);
           const canAccessThisUser =
-            isAdmin({ role: arg.role }) ||
+            isUserAdmin(arg.userData) ||
             (arg.userId && arg.userId === currentUserUID);
 
           if (
             !isValidRole ||
-            (!isAdmin({ role: arg.role }) && !arg.userId) ||
+            (!isUserAdmin(arg.userData) && !arg.userId) ||
             !canAccessThisUser
           ) {
             return;
@@ -191,7 +191,7 @@ export const tasksApi = createApi({
           const taskLimit =
             arg.limitCount || API_CONFIG.REQUEST_LIMITS.TASKS_PER_MONTH;
           // Build query based on user role
-          const userFilter = isAdmin({ role: arg.role })
+          const userFilter = isUserAdmin(arg.userData)
             ? null
             : arg.userId || currentUserUID;
           const query =

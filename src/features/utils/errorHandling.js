@@ -37,8 +37,26 @@ export const createErrorResponse = (type, message, details = null, severity = ER
   let serializableDetails = null;
   if (details) {
     if (typeof details === 'object' && details !== null) {
-      // Only include primitive values and plain objects
-      serializableDetails = JSON.parse(JSON.stringify(details));
+      try {
+        // Only include primitive values and plain objects, handle circular references
+        serializableDetails = JSON.parse(JSON.stringify(details, (key, value) => {
+          // Skip HTML elements and other non-serializable objects
+          if (value instanceof HTMLElement || 
+              value instanceof Node || 
+              typeof value === 'function' ||
+              (typeof value === 'object' && value.constructor && value.constructor.name === 'FiberNode')) {
+            return '[Circular Reference]';
+          }
+          return value;
+        }));
+      } catch (error) {
+        // If serialization still fails, create a safe representation
+        serializableDetails = {
+          error: 'Failed to serialize details',
+          type: typeof details,
+          constructor: details.constructor?.name || 'Unknown'
+        };
+      }
     } else if (typeof details === 'string' || typeof details === 'number' || typeof details === 'boolean') {
       serializableDetails = details;
     }
@@ -161,7 +179,16 @@ export const handleApiError = (error, operation = 'API operation', options = {})
  */
 export const handleValidationError = (errors, formName = 'form') => {
   const errorFields = Object.keys(errors);
-  const errorMessages = Object.values(errors);
+  
+  // Safely extract error messages, avoiding circular references
+  const errorMessages = errorFields.map(field => {
+    const error = errors[field];
+    if (error && typeof error === 'object') {
+      // Extract only the message property, avoiding HTML elements
+      return error.message || error.type || 'Validation error';
+    }
+    return error || 'Validation error';
+  });
   
   const errorResponse = createErrorResponse(
     ERROR_TYPES.VALIDATION,

@@ -11,9 +11,10 @@ import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 import Badge from "@/components/ui/Badge/Badge";
 import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton";
-import { canAccessCharts } from "@/features/utils/authUtils";
 import { showError, showAuthError } from "@/utils/toast";
 import { Icons } from "@/components/icons";
+import MonthProgressBar from "@/components/ui/MonthProgressBar";
+
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -283,7 +284,21 @@ const AdminDashboardPage = () => {
       {/* Page Header */}
 
       <div className="mb-6">
-        <h1>{isUserAdmin ? "Task Management" : "My Dashboard"}</h1>
+        <div className="flex items-center justify-between">
+          <h1>{isUserAdmin ? "Task Management" : "My Dashboard"}</h1>
+          {isUserAdmin && (
+            <DynamicButton
+              onClick={handleCreateTask}
+              variant="primary"
+              size="md"
+              iconName="add"
+              iconPosition="left"
+              className="px-6 py-3 text-gray-200"
+            >
+              Create Task
+            </DynamicButton>
+          )}
+        </div>
         <p className="text-small">
           {title} •{" "}
           {isInitialLoading ? (
@@ -292,6 +307,18 @@ const AdminDashboardPage = () => {
             selectedMonth?.monthName || currentMonth?.monthName || "No month selected"
           )}
         </p>
+        
+        {/* Month Progress Bar */}
+        <div className="mt-4">
+          <MonthProgressBar 
+            monthId={selectedMonth?.monthId || currentMonth?.monthId}
+            monthName={selectedMonth?.monthName || currentMonth?.monthName}
+            isCurrentMonth={isCurrentMonth}
+            startDate={selectedMonth?.startDate || currentMonth?.startDate}
+            endDate={selectedMonth?.endDate || currentMonth?.endDate}
+            daysInMonth={selectedMonth?.daysInMonth || currentMonth?.daysInMonth}
+          />
+        </div>
       </div>
 
       {/* Controls Section - First */}
@@ -303,37 +330,43 @@ const AdminDashboardPage = () => {
           ) : (
             <div className="card-small relative">
               <div className="absolute top-3 right-3">
-                <Badge 
-                  variant={isCurrentMonth ? (currentMonth?.boardExists ? "success" : "error") : "error"} 
-                  size="xs"
-                >
-                  {isCurrentMonth ? (currentMonth?.boardExists ? "Active" : "Missing") : "Inactive"}
-                </Badge>
+                <div className={`p-1.5 rounded-full ${isCurrentMonth ? (currentMonth?.boardExists ? "bg-green-success" : "bg-red-error") : "bg-red-error"} flex items-center justify-center`}>
+                  <Icons.generic.dashboard className="w-3 h-3 text-white" />
+                </div>
               </div>
+              
+              {/* Header */}
               <div className="mb-3">
                 <h4 className="text-sm font-semibold">Current Board</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {selectedMonth?.monthName || currentMonth?.monthName || "No month"}
                 </p>
               </div>
+              
+              {/* Content - one per row */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600 dark:text-gray-300">Year</span>
-                  <span className="text-xs font-medium text-gray-900 dark:text-white">
-                    {(selectedMonth?.monthId || currentMonth?.monthId) ? (selectedMonth?.monthId || currentMonth?.monthId).split('-')[0] : "N/A"}
-                  </span>
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-default"></div>
+                      <span className="text-gray-600 dark:text-gray-300">Year</span>
+                    </div>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {(selectedMonth?.monthId || currentMonth?.monthId) ? (selectedMonth?.monthId || currentMonth?.monthId).split('-')[0] : "N/A"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600 dark:text-gray-300">Total Tasks</span>
-                  <span className="text-xs font-medium text-gray-900 dark:text-white">
-                    {tasks?.length || 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600 dark:text-gray-300">Month ID</span>
-                  <span className="text-xs font-medium text-gray-900 dark:text-white">
-                    {selectedMonth?.monthId || currentMonth?.monthId || "N/A"}
-                  </span>
+                
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
+                      <span className="text-gray-600 dark:text-gray-300">Tasks</span>
+                    </div>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {tasks?.length || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -345,19 +378,26 @@ const AdminDashboardPage = () => {
           ) : (
             <div className="card-small relative">
               <div className="absolute top-3 right-3">
-                <Icons.generic.clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <div className="p-1.5 rounded-full bg-green-success flex items-center justify-center">
+                  <Icons.generic.clock className="w-3 h-3 text-white" />
+                </div>
               </div>
+              
+              {/* Header */}
               <div className="mb-3">
-                <h4 className="text-sm font-semibold">Time Period</h4>
+                <h4 className="text-sm font-semibold">Month Period</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {availableMonths.length} periods
                 </p>
               </div>
+              
+              {/* Compact content */}
               <div className="space-y-2">
                 <select
                   id="selectedMonth"
                   value={selectedMonth?.monthId || currentMonth?.monthId || ""}
                   onChange={(e) => selectMonth(e.target.value)}
+                  className="w-full text-xs"
                 >
                   {availableMonths.length > 0 ? (
                     availableMonths.map((month) => (
@@ -369,20 +409,29 @@ const AdminDashboardPage = () => {
                     <option value="">No months available</option>
                   )}
                 </select>
-                <div className="flex items-center justify-between">
-                  <Badge variant="primary" size="xs">
-                    {isCurrentMonth ? "Current" : "Historical"}
-                  </Badge>
-                  {!isCurrentMonth && (
-                    <DynamicButton
-                      onClick={resetToCurrentMonth}
-                      variant="outline"
-                      size="xs"
-                      iconName="refresh"
-                      iconPosition="center"
-                      className="!p-1 !min-w-0 !h-6"
-                    />
-                  )}
+                
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-btn-primary"></div>
+                      <span className="text-gray-600 dark:text-gray-300">Status</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="primary" size="xs">
+                        {isCurrentMonth ? "Current" : "History"}
+                      </Badge>
+                      {!isCurrentMonth && (
+                        <DynamicButton
+                          onClick={resetToCurrentMonth}
+                          variant="outline"
+                          size="xs"
+                          iconName="refresh"
+                          iconPosition="center"
+                          className="!p-1 !min-w-0 !h-5"
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -396,51 +445,66 @@ const AdminDashboardPage = () => {
               ) : (
                 <div className="card-small relative">
                   <div className="absolute top-3 right-3">
-                    <Icons.generic.user className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    <div className="p-1.5 rounded-full bg-btn-primary flex items-center justify-center">
+                      <Icons.generic.user className="w-3 h-3 text-white" />
+                    </div>
                   </div>
+                  
+                  {/* Header */}
                   <div className="mb-3">
                     <h4 className="text-sm font-semibold">User Filter</h4>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {users.length} users
                     </p>
                   </div>
+                  
+                  {/* Content - one per row */}
                   <div className="space-y-2">
-                    <select
-                      id="selectedUser"
-                      value={selectedUserId}
-                      onChange={(e) => handleUserSelect(e.target.value)}
-                    >
-                      <option value="">All Users</option>
-                      {users.map((user) => (
-                        <option
-                          key={user.userUID || user.id}
-                          value={user.userUID || user.id}
-                        >
-                          {user.name || user.email}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {selectedUserId ? "Filtered" : "All users"}
-                        </span>
-                        {selectedUserId && (
-                          <Badge variant="primary" size="xs">
-                            {selectedUserName}
-                          </Badge>
-                        )}
+                    <div className="flex items-center justify-end text-xs">
+                      <select
+                        id="selectedUser"
+                        value={selectedUserId}
+                        onChange={(e) => handleUserSelect(e.target.value)}
+                        className="text-xs"
+                      >
+                        <option value="">All Users</option>
+                        {users.map((user) => (
+                          <option
+                            key={user.userUID || user.id}
+                            value={user.userUID || user.id}
+                          >
+                            {user.name || user.email}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
+                          <span className="text-gray-600 dark:text-gray-300">Status</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedUserId ? (
+                            <Badge variant="primary" size="xs">
+                              {selectedUserName}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-500 dark:text-gray-400">All users</span>
+                          )}
+                          {selectedUserId && (
+                            <DynamicButton
+                              onClick={() => handleUserSelect("")}
+                              variant="outline"
+                              size="xs"
+                              iconName="cancel"
+                              iconPosition="center"
+                              className="!p-1 !min-w-0 !h-5"
+                            />
+                          )}
+                        </div>
                       </div>
-                      {selectedUserId && (
-                        <DynamicButton
-                          onClick={() => handleUserSelect("")}
-                          variant="outline"
-                          size="xs"
-                          iconName="cancel"
-                          iconPosition="center"
-                          className="!p-1 !min-w-0 !h-6"
-                        />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -451,51 +515,66 @@ const AdminDashboardPage = () => {
               ) : (
                 <div className="card-small relative">
                   <div className="absolute top-3 right-3">
-                    <Icons.admin.reporters className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    <div className="p-1.5 rounded-full bg-red-error flex items-center justify-center">
+                      <Icons.admin.reporters className="w-3 h-3 text-white" />
+                    </div>
                   </div>
+                  
+                  {/* Header */}
                   <div className="mb-3">
                     <h4 className="text-sm font-semibold">Reporter Filter</h4>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {reporters.length} reporters
                     </p>
                   </div>
+                  
+                  {/* Content - one per row */}
                   <div className="space-y-2">
-                    <select
-                      id="selectedReporter"
-                      value={selectedReporterId}
-                      onChange={(e) => handleReporterSelect(e.target.value)}
-                    >
-                      <option value="">All Reporters</option>
-                      {reporters.map((reporter) => (
-                        <option
-                          key={reporter.id || reporter.uid}
-                          value={reporter.id || reporter.uid}
-                        >
-                          {reporter.name || reporter.reporterName}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {selectedReporterId ? "Filtered" : "All reporters"}
-                        </span>
-                        {selectedReporterId && (
-                          <Badge variant="error" size="xs">
-                            {selectedReporterName}
-                          </Badge>
-                        )}
+                    <div className="flex items-center justify-end text-xs">
+                      <select
+                        id="selectedReporter"
+                        value={selectedReporterId}
+                        onChange={(e) => handleReporterSelect(e.target.value)}
+                        className="text-xs"
+                      >
+                        <option value="">All Reporters</option>
+                        {reporters.map((reporter) => (
+                          <option
+                            key={reporter.id || reporter.uid}
+                            value={reporter.id || reporter.uid}
+                          >
+                            {reporter.name || reporter.reporterName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
+                          <span className="text-gray-600 dark:text-gray-300">Status</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedReporterId ? (
+                            <Badge variant="error" size="xs">
+                              {selectedReporterName}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-500 dark:text-gray-400">All reporters</span>
+                          )}
+                          {selectedReporterId && (
+                            <DynamicButton
+                              onClick={() => handleReporterSelect("")}
+                              variant="outline"
+                              size="xs"
+                              iconName="cancel"
+                              iconPosition="center"
+                              className="!p-1 !min-w-0 !h-5"
+                            />
+                          )}
+                        </div>
                       </div>
-                      {selectedReporterId && (
-                        <DynamicButton
-                          onClick={() => handleReporterSelect("")}
-                          variant="outline"
-                          size="xs"
-                          iconName="cancel"
-                          iconPosition="center"
-                          className="!p-1 !min-w-0 !h-6"
-                        />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -509,8 +588,12 @@ const AdminDashboardPage = () => {
           ) : (
             <div className="card-small relative">
               <div className="absolute top-3 right-3">
-                <Icons.buttons.add className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <div className="p-1.5 rounded-full bg-warning flex items-center justify-center">
+                  <Icons.buttons.add className="w-3 h-3 text-white" />
+                </div>
               </div>
+              
+              {/* Header */}
               <div className="mb-3">
                 <h4 className="text-sm font-semibold">Actions</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -519,26 +602,23 @@ const AdminDashboardPage = () => {
                     : "Create restricted"}
                 </p>
               </div>
+              
+              {/* Content - one per row */}
               <div className="space-y-2">
-                <DynamicButton
-                  onClick={handleCreateTask}
-                  variant="primary"
-                  size="sm"
-                  iconName="add"
-                  iconPosition="left"
-                  className="w-full"
-                >
-                  Create Task
-                </DynamicButton>
-                {!canCreateTasks && (
-                  <span className="text-xs text-red-error dark:text-amber-400">
-                    {!isCurrentMonth
-                      ? "History - disabled"
-                      : !currentMonth?.boardExists
-                        ? "Board not created"
-                        : "Not available"}
-                  </span>
-                )}
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
+                      <span className="text-gray-600 dark:text-gray-300">Status</span>
+                    </div>
+                    <Badge 
+                      variant={canCreateTasks ? "success" : "error"} 
+                      size="xs"
+                    >
+                      {canCreateTasks ? "Active" : "Disabled"}
+                    </Badge>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -574,9 +654,9 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Dashboard Cards Content */}
-        {!showCards && (
+        {showCards && (
           <div className="pt-4">
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {dashboardCards.map((card) => (
                 <DashboardCard key={card.id} card={card} />
               ))}
@@ -608,21 +688,15 @@ const AdminDashboardPage = () => {
                 {isInitialLoading || isLoading ? (
                   <span className="inline-block w-40 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
                 ) : (
-                  <>
-                    {(() => {
-                      const filteredTasks = getFilteredTasks(
-                        tasks,
-                        selectedUserId,
-                        selectedReporterId,
-                        currentMonthId
-                      );
-                      return `${filteredTasks.length} tasks`;
-                    })()}{" "}
-                    •{" "}
-                    {selectedMonth?.monthName ||
-                      currentMonth?.monthName ||
-                      "No month selected"}
-                  </>
+                  (() => {
+                    const filteredTasks = getFilteredTasks(
+                      tasks,
+                      selectedUserId,
+                      selectedReporterId,
+                      currentMonthId
+                    );
+                    return `${filteredTasks.length} tasks`;
+                  })()
                 )}
               </p>
             </div>

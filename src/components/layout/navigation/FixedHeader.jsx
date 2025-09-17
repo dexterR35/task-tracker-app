@@ -45,8 +45,7 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const PageIcon = getPageIcon();
 
   return (
-    <header className="relative z-40 backdrop-blur-md border-b border-gray-300/50 dark:border-gray-700/50">
-      <div className="flex items-center justify-between h-12 px-3 lg:px-4">
+    <div className="flex items-center justify-between h-12 px-3 lg:px-4">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
           {/* Sidebar Toggle */}
@@ -107,8 +106,7 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
             </button>
           </div>
         </div>
-      </div>
-    </header>
+    </div>
   );
 };
 
