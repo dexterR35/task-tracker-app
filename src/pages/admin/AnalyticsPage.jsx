@@ -1,5 +1,4 @@
 import React from "react";
-import AdminPageHeader from "@/components/layout/AdminPageHeader";
 
 const AnalyticsPage = () => {
   return (

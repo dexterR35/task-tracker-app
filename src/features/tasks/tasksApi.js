@@ -30,7 +30,7 @@ import {
   getEndOfMonth,
   formatDate,
 } from "@/utils/dateUtils";
-import { isAdmin, canAccessTasks, isUserActive } from "@/utils/permissions";
+import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
 
 // Helper function to get month info using centralized dateUtils
 const getMonthInfo = (date = new Date()) => {
@@ -269,7 +269,7 @@ export const tasksApi = createApi({
           }
 
           // Check if user can create tasks
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'create_task', {
             operation: 'createTask',
             logWarnings: true,
@@ -374,7 +374,7 @@ export const tasksApi = createApi({
           }
 
           // Check if user can update tasks
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'update_task', {
             operation: 'updateTask',
             logWarnings: true,
@@ -433,7 +433,7 @@ export const tasksApi = createApi({
           }
 
           // Check if user can delete tasks
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'delete_task', {
             operation: 'deleteTask',
             logWarnings: true,
@@ -473,7 +473,7 @@ export const tasksApi = createApi({
           }
 
           // Check if user can create boards (admin only)
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'create_board', {
             operation: 'generateMonthBoard',
             logWarnings: true,

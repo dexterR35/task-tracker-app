@@ -1,10 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
-  hasPermission, 
+  isUserComplete, 
   canAccessRole, 
   canAccessTasks, 
   canAccessCharts,
+  hasPermission,
   canCreateTask,
   canUpdateTask,
   canDeleteTask,
@@ -14,8 +15,7 @@ import {
   canPerformTaskCRUD,
   hasAdminPermissions,
   getUserPermissionSummary
-} from '@/utils/permissions';
-import { isUserComplete } from '@/utils/authUtils';
+} from '@/features/utils/authUtils';
 
 import {
   loginUser,

@@ -3,7 +3,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
 import TanStackTable from "@/components/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
-import { TaskForm } from "@/components/forms";
+import TaskForm from "@/features/tasks/components/TaskForm/TaskForm";
 import { useTableActions } from "@/hooks/useTableActions";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { showError, showAuthError } from "@/utils/toast";

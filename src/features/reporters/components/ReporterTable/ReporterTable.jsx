@@ -5,7 +5,7 @@ import { showError } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
 import TanStackTable from "@/components/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
-import ReporterFormModal from "@/components/modals/ReporterFormModal";
+import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
 import { useTableActions } from "@/hooks/useTableActions";
 
 const ReporterTable = ({

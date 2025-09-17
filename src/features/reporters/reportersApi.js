@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
+import { parseFirebaseError } from "@/features/utils/errorHandling";
 
 /**
  * Reporters API - Refactored to use base API factory
@@ -51,8 +52,9 @@ const createDocumentInFirestore = async (db, collectionName, data, options = {})
     
     return { id: docRef.id, ...docData };
   } catch (error) {
-    logger.error(`Error creating document in ${collectionName}:`, error);
-    throw error;
+    const errorResponse = parseFirebaseError(error);
+    logger.error(`Error creating document in ${collectionName}:`, errorResponse);
+    throw errorResponse;
   }
 };
 
@@ -87,8 +89,9 @@ const updateDocumentInFirestore = async (db, collectionName, docId, updates, opt
     
     return { id: docId, ...updateData };
   } catch (error) {
-    logger.error(`Error updating document ${docId} in ${collectionName}:`, error);
-    throw error;
+    const errorResponse = parseFirebaseError(error);
+    logger.error(`Error updating document ${docId} in ${collectionName}:`, errorResponse);
+    throw errorResponse;
   }
 };
 
@@ -110,8 +113,9 @@ const deleteDocumentFromFirestore = async (db, collectionName, docId) => {
     
     return { id: docId, deleted: true };
   } catch (error) {
-    logger.error(`Error deleting document ${docId} from ${collectionName}:`, error);
-    throw error;
+    const errorResponse = parseFirebaseError(error);
+    logger.error(`Error deleting document ${docId} from ${collectionName}:`, errorResponse);
+    throw errorResponse;
   }
 };
 
@@ -138,8 +142,9 @@ const fetchCollectionFromFirestore = async (db, collectionName, options = {}) =>
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
-    logger.error(`Error fetching collection ${collectionName}:`, error);
-    throw error;
+    const errorResponse = parseFirebaseError(error);
+    logger.error(`Error fetching collection ${collectionName}:`, errorResponse);
+    throw errorResponse;
   }
 };
 
@@ -192,7 +197,7 @@ export const reportersApi = createApi({
           }
 
           // Check if user can create reporters (admin only)
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'create_board', {
             operation: 'createReporter',
             logWarnings: true,
@@ -291,7 +296,7 @@ export const reportersApi = createApi({
           }
 
           // Check if user can update reporters (admin only)
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'create_board', {
             operation: 'updateReporter',
             logWarnings: true,
@@ -357,7 +362,7 @@ export const reportersApi = createApi({
           }
 
           // Check if user can delete reporters (admin only)
-          const { validateUserPermissions } = await import('@/utils/permissions');
+          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'create_board', {
             operation: 'deleteReporter',
             logWarnings: true,

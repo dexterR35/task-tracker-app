@@ -10,7 +10,7 @@ import {
   createUrlField,
   VALIDATION_PATTERNS,
   VALIDATION_MESSAGES
-} from './sharedFormUtils';
+} from '../../../components/forms/configs/sharedFormUtils';
 
 // ===== TASK FORM OPTIONS =====
 export const TASK_FORM_OPTIONS = {

@@ -4,9 +4,10 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { reporterFormSchema, REPORTER_FORM_FIELDS } from './configs/useReporterForm';
-import { TextField, SelectField } from './components';
-import { getInputType } from './configs/sharedFormUtils';
+import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
+import { reporterFormSchema, REPORTER_FORM_FIELDS } from '../../config/useReporterForm';
+import { TextField, SelectField } from '../../../../components/forms/components';
+import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 
@@ -62,24 +63,36 @@ const ReporterForm = ({
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing reporter
-        result = await updateReporter({
+        const updateReporterWithErrorHandling = withMutationErrorHandling(updateReporter, {
+          operation: 'Update Reporter',
+          showToast: false,
+          logError: true
+        });
+        
+        result = await updateReporterWithErrorHandling({
           id: initialData.id,
           updates: data,
           userData: user
-        }).unwrap();
+        });
         
         logger.log('✅ Reporter updated successfully:', result);
-        showSuccess('Reporter updated successfully!');
+        handleSuccess('Reporter updated successfully!', result, 'Update Reporter');
         
       } else {
         // Create new reporter
-        result = await createReporter({
+        const createReporterWithErrorHandling = withMutationErrorHandling(createReporter, {
+          operation: 'Create Reporter',
+          showToast: false,
+          logError: true
+        });
+        
+        result = await createReporterWithErrorHandling({
           reporter: data,
           userData: user
-        }).unwrap();
+        });
         
         logger.log('✅ Reporter created successfully:', result);
-        showSuccess('Reporter created successfully!');
+        handleSuccess('Reporter created successfully!', result, 'Create Reporter');
       }
       
       // Reset form
@@ -102,8 +115,7 @@ const ReporterForm = ({
   };
 
   const handleFormError = (errors) => {
-    logger.error('❌ Reporter form validation errors:', errors);
-    showError('Please fix the validation errors before submitting');
+    handleValidationError(errors, 'Reporter Form');
   };
 
   const formTitle = mode === 'edit' ? 'Edit Reporter' : 'Create New Reporter';

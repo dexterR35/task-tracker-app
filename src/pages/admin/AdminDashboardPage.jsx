@@ -3,15 +3,15 @@ import { useSearchParams } from "react-router-dom";
 import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import Modal from "@/components/ui/Modal/Modal";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
-import { TaskForm } from "@/components/forms";
+import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import DashboardCard from "@/components/Card/DashboardCard";
 import { createDashboardCards } from "@/components/Card/cardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 import Badge from "@/components/ui/Badge/Badge";
-import { canAccessCharts } from "@/utils/permissions";
+import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton";
+import { canAccessCharts } from "@/features/utils/authUtils";
 import { showError, showAuthError } from "@/utils/toast";
 
 const AdminDashboardPage = () => {
@@ -29,11 +29,6 @@ const AdminDashboardPage = () => {
   // Get basic data from useAppData hook
   const { user, users, reporters, error, isLoading: appDataLoading } = useAppData(); // Remove selectedUserId since we handle filtering in component
 
-  // Check user permissions (only for UI display, not security)
-  const userCanAccessCharts = canAccessCharts(user);
-
-  // Use month selection hook for month-specific functionality
-  // Always get ALL tasks (no user filtering at API level for admin)
   const {
     tasks, // Current display tasks (current or selected month)
     availableMonths, // For dropdown options
@@ -290,7 +285,11 @@ const AdminDashboardPage = () => {
         <h1>{isUserAdmin ? "Task Management" : "My Dashboard"}</h1>
         <p className="text-small">
           {title} •{" "}
-          {selectedMonth?.monthName || currentMonth?.monthName || "Loading..."}
+          {isInitialLoading ? (
+            <span className="inline-block w-24 h-4 bg-gray-200 dark:bg-gray-700 rounded "></span>
+          ) : (
+            selectedMonth?.monthName || currentMonth?.monthName || "No month selected"
+          )}
         </p>
       </div>
 
@@ -298,191 +297,183 @@ const AdminDashboardPage = () => {
       <div className="mb-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Month Selection */}
-          <div className="card-small">
-            <div className="mb-4">
-              <h4>Time Period</h4>
-              <p className="text-exsmall">
-                {availableMonths.length} periods available
-              </p>
-            </div>
-            <div className="space-y-2">
-              <select
-                id="selectedMonth"
-                value={selectedMonth?.monthId || currentMonth?.monthId || ""}
-                onChange={(e) => selectMonth(e.target.value)}
-                disabled={isInitialLoading}
-              >
-                {isInitialLoading ? (
-                  <option value="">Loading months...</option>
-                ) : availableMonths.length > 0 ? (
-                  availableMonths.map((month) => (
-                    <option key={month.monthId} value={month.monthId}>
-                      {month.monthName} {month.isCurrent ? "(Current)" : ""}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No months available</option>
-                )}
-              </select>
-              <div className="flex items-start justify-between">
-                <Badge variant="primary" size="sm">
-                  {isCurrentMonth ? "Current Period" : "Historical Data"}
-                </Badge>
-                {!isCurrentMonth && (
-                  <DynamicButton
-                    onClick={resetToCurrentMonth}
-                    variant="outline"
-                    size="sm"
-                    iconName="refresh"
-                    iconPosition="center"
-                  />
-                )}
+          {isInitialLoading ? (
+            <SkeletonCard />
+          ) : (
+            <div className="card-small">
+              <div className="mb-4">
+                <h4>Time Period</h4>
+                <p className="text-exsmall">
+                  {availableMonths.length} periods available
+                </p>
+              </div>
+              <div className="space-y-2">
+                <select
+                  id="selectedMonth"
+                  value={selectedMonth?.monthId || currentMonth?.monthId || ""}
+                  onChange={(e) => selectMonth(e.target.value)}
+                >
+                  {availableMonths.length > 0 ? (
+                    availableMonths.map((month) => (
+                      <option key={month.monthId} value={month.monthId}>
+                        {month.monthName} {month.isCurrent ? "(Current)" : ""}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No months available</option>
+                  )}
+                </select>
+                <div className="flex items-start justify-between">
+                  <Badge variant="primary" size="sm">
+                    {isCurrentMonth ? "Current Period" : "Historical Data"}
+                  </Badge>
+                  {!isCurrentMonth && (
+                    <DynamicButton
+                      onClick={resetToCurrentMonth}
+                      variant="outline"
+                      size="sm"
+                      iconName="refresh"
+                      iconPosition="center"
+                    />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* User Filter - Admin Only */}
           {isUserAdmin && (
             <>
-              <div className="card-small">
-                <div className="mb-4">
-                  <h4>User Filter</h4>
-                  <p className="text-exsmall">
-                    {appDataLoading ? "Loading..." : `${users.length} users available`}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <select
-                    id="selectedUser"
-                    value={selectedUserId}
-                    onChange={(e) => handleUserSelect(e.target.value)}
-                    disabled={appDataLoading}
-                  >
-                    {appDataLoading ? (
-                      <option value="">Loading users...</option>
-                    ) : (
-                      <>
-                        <option value="">All Users</option>
-                        {users.map((user) => (
-                          <option
-                            key={user.userUID || user.id}
-                            value={user.userUID || user.id}
-                          >
-                            {user.name || user.email}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                  <div className="flex items-start justify-between ">
-                    <span className="text-exsmall">
-                      {appDataLoading 
-                        ? "Loading..."
-                        : selectedUserId
+              {appDataLoading ? (
+                <SkeletonCard />
+              ) : (
+                <div className="card-small">
+                  <div className="mb-4">
+                    <h4>User Filter</h4>
+                    <p className="text-exsmall">
+                      {users.length} users available
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <select
+                      id="selectedUser"
+                      value={selectedUserId}
+                      onChange={(e) => handleUserSelect(e.target.value)}
+                    >
+                      <option value="">All Users</option>
+                      {users.map((user) => (
+                        <option
+                          key={user.userUID || user.id}
+                          value={user.userUID || user.id}
+                        >
+                          {user.name || user.email}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-start justify-between ">
+                      <span className="text-exsmall">
+                        {selectedUserId
                           ? `Filtered by: ${selectedUserName}`
                           : "Showing all users"}
-                    </span>
-                    {!appDataLoading && selectedUserId && (
-                      <DynamicButton
-                        onClick={() => handleUserSelect("")}
-                        variant="outline"
-                        size="sm"
-                        iconName="cancel"
-                        iconPosition="center"
-                      />
-                    )}
+                      </span>
+                      {selectedUserId && (
+                        <DynamicButton
+                          onClick={() => handleUserSelect("")}
+                          variant="outline"
+                          size="sm"
+                          iconName="cancel"
+                          iconPosition="center"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="card-small">
-                <div className="mb-4">
-                  <h4>Reporter Filter</h4>
-                  <p className="text-exsmall">
-                    {appDataLoading ? "Loading..." : `${reporters.length} reporters available`}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <select
-                    id="selectedReporter"
-                    value={selectedReporterId}
-                    onChange={(e) => handleReporterSelect(e.target.value)}
-                    disabled={appDataLoading}
-                  >
-                    {appDataLoading ? (
-                      <option value="">Loading reporters...</option>
-                    ) : (
-                      <>
-                        <option value="">All Reporters</option>
-                        {reporters.map((reporter) => (
-                          <option
-                            key={reporter.id || reporter.uid}
-                            value={reporter.id || reporter.uid}
-                          >
-                            {reporter.name || reporter.reporterName}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                  <div className="flex items-start justify-between ">
-                    <span className="text-exsmall">
-                      {appDataLoading 
-                        ? "Loading..."
-                        : selectedReporterId
+              {appDataLoading ? (
+                <SkeletonCard />
+              ) : (
+                <div className="card-small">
+                  <div className="mb-4">
+                    <h4>Reporter Filter</h4>
+                    <p className="text-exsmall">
+                      {reporters.length} reporters available
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <select
+                      id="selectedReporter"
+                      value={selectedReporterId}
+                      onChange={(e) => handleReporterSelect(e.target.value)}
+                    >
+                      <option value="">All Reporters</option>
+                      {reporters.map((reporter) => (
+                        <option
+                          key={reporter.id || reporter.uid}
+                          value={reporter.id || reporter.uid}
+                        >
+                          {reporter.name || reporter.reporterName}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-start justify-between ">
+                      <span className="text-exsmall">
+                        {selectedReporterId
                           ? `Filtered by: ${selectedReporterName}`
                           : "Showing all reporters"}
-                    </span>
-                    {!appDataLoading && selectedReporterId && (
-                      <DynamicButton
-                        onClick={() => handleReporterSelect("")}
-                        variant="outline"
-                        size="sm"
-                        iconName="cancel"
-                        iconPosition="center"
-                      />
-                    )}
+                      </span>
+                      {selectedReporterId && (
+                        <DynamicButton
+                          onClick={() => handleReporterSelect("")}
+                          variant="outline"
+                          size="sm"
+                          iconName="cancel"
+                          iconPosition="center"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
 
           {/* Actions */}
-          <div className="card-small">
-            <div className="mb-4">
-              <h4>Actions</h4>
-              <p className="text-exsmall">
-                {isInitialLoading 
-                  ? "Loading..."
-                  : canCreateTasks
+          {isInitialLoading ? (
+            <SkeletonCard />
+          ) : (
+            <div className="card-small">
+              <div className="mb-4">
+                <h4>Actions</h4>
+                <p className="text-exsmall">
+                  {canCreateTasks
                     ? "Create task available"
                     : "Create restricted"}
-              </p>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <DynamicButton
+                  onClick={handleCreateTask}
+                  variant="primary"
+                  size="md"
+                  iconName="add"
+                  iconPosition="left"
+                  className="w-full"
+                >
+                  Create Task
+                </DynamicButton>
+                {!canCreateTasks && (
+                  <span className="text-exsmall text-red-error dark:text-amber-400">
+                    {!isCurrentMonth
+                      ? "History data - create disabled"
+                      : !currentMonth?.boardExists
+                        ? "Current month board not created yet"
+                        : "Creation not available"}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <DynamicButton
-                onClick={handleCreateTask}
-                variant="primary"
-                size="md"
-                iconName="add"
-                iconPosition="left"
-                className="w-full"
-                disabled={isInitialLoading}
-              >
-                {isInitialLoading ? "Loading..." : "Create Task"}
-              </DynamicButton>
-              {!isInitialLoading && !canCreateTasks && (
-                <span className="text-exsmall text-red-error dark:text-amber-400">
-                  {!isCurrentMonth
-                    ? "History data - create disabled"
-                    : !currentMonth?.boardExists
-                      ? "Current month board not created yet"
-                      : "Creation not available"}
-                </span>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -494,8 +485,14 @@ const AdminDashboardPage = () => {
             <div>
               <h3>Dashboard Cards</h3>
               <p className="text-exsmall">
-                {dashboardCards.length} cards •{" "}
-                {selectedMonth?.monthName || currentMonth?.monthName}
+                {isInitialLoading ? (
+                  <span className="inline-block w-32 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
+                ) : (
+                  <>
+                    {dashboardCards.length} cards •{" "}
+                    {selectedMonth?.monthName || currentMonth?.monthName}
+                  </>
+                )}
               </p>
             </div>
             <DynamicButton
@@ -504,6 +501,7 @@ const AdminDashboardPage = () => {
               size="md"
               iconName={showCards ? "hide" : "show"}
               iconPosition="left"
+              disabled={isInitialLoading}
             >
               {showCards ? "Hide" : "Show"}
             </DynamicButton>
@@ -542,19 +540,25 @@ const AdminDashboardPage = () => {
                 })()}
               </h3>
               <p className="text-exsmall">
-                {(() => {
-                  const filteredTasks = getFilteredTasks(
-                    tasks,
-                    selectedUserId,
-                    selectedReporterId,
-                    currentMonthId
-                  );
-                  return `${filteredTasks.length} tasks`;
-                })()}{" "}
-                •{" "}
-                {selectedMonth?.monthName ||
-                  currentMonth?.monthName ||
-                  "Loading..."}
+                {isInitialLoading || isLoading ? (
+                  <span className="inline-block w-40 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
+                ) : (
+                  <>
+                    {(() => {
+                      const filteredTasks = getFilteredTasks(
+                        tasks,
+                        selectedUserId,
+                        selectedReporterId,
+                        currentMonthId
+                      );
+                      return `${filteredTasks.length} tasks`;
+                    })()}{" "}
+                    •{" "}
+                    {selectedMonth?.monthName ||
+                      currentMonth?.monthName ||
+                      "No month selected"}
+                  </>
+                )}
               </p>
             </div>
             <DynamicButton
@@ -563,6 +567,7 @@ const AdminDashboardPage = () => {
               size="md"
               iconName={showTable ? "hide" : "show"}
               iconPosition="left"
+              disabled={isInitialLoading}
             >
               {showTable ? "Hide" : "Show"}
             </DynamicButton>
@@ -575,12 +580,7 @@ const AdminDashboardPage = () => {
             <>
               {/* Show loading when data is being fetched */}
               {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                    <span>Loading tasks...</span>
-                  </div>
-                </div>
+                <SkeletonTable rows={3} />
               ) : (
                 <TaskTable
                   tasks={getFilteredTasks(
@@ -602,28 +602,23 @@ const AdminDashboardPage = () => {
       </div>
 
       {/* Create Task Modal */}
-      <Modal
+      <TaskFormModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Create New Task"
-        maxWidth="max-w-4xl"
-      >
-        <TaskForm
-          mode="create"
-          onSuccess={() => {
-            setShowCreateModal(false);
-          }}
-          onError={(error) => {
-            // Handle permission errors
-            if (
-              error?.message?.includes("permission") ||
-              error?.message?.includes("User lacks required")
-            ) {
-              showAuthError("You do not have permission to create tasks");
-            }
-          }}
-        />
-      </Modal>
+        mode="create"
+        onSuccess={() => {
+          setShowCreateModal(false);
+        }}
+        onError={(error) => {
+          // Handle permission errors
+          if (
+            error?.message?.includes("permission") ||
+            error?.message?.includes("User lacks required")
+          ) {
+            showAuthError("You do not have permission to create tasks");
+          }
+        }}
+      />
     </div>
   );
 };

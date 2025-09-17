@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import ReporterFormModal from "@/components/modals/ReporterFormModal";
+import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
 

@@ -10,7 +10,7 @@ import {
   useDeleteTaskMutation
 } from "@/features/tasks/tasksApi";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { getUserUID, isUserAdmin } from "@/utils/authUtils";
+import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
 import { logger } from "@/utils/logger";
 
 

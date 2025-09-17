@@ -3,12 +3,13 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppData } from '@/hooks/useAppData';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
+import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
 import { 
   taskFormSchema, 
   TASK_FORM_FIELDS, 
   prepareTaskFormData
-} from './configs/useTaskForm';
-import { shouldShowField } from './configs/sharedFormUtils';
+} from '../../config/useTaskForm';
+import { shouldShowField } from '../../../../components/forms/configs/sharedFormUtils';
 import { 
   TextField, 
   SelectField, 
@@ -16,8 +17,8 @@ import {
   NumberField, 
   CheckboxField,
   SimpleDateField 
-} from './components';
-import { getInputType } from './configs/sharedFormUtils';
+} from '../../../../components/forms/components';
+import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 // Permission validation now happens at API level
@@ -191,7 +192,13 @@ const TaskForm = ({
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task
-        result = await updateTask({
+        const updateTaskWithErrorHandling = withMutationErrorHandling(updateTask, {
+          operation: 'Update Task',
+          showToast: false,
+          logError: true
+        });
+        
+        result = await updateTaskWithErrorHandling({
           monthId: initialData.monthId,
           taskId: initialData.id,
           updates: processedData,
@@ -200,7 +207,7 @@ const TaskForm = ({
         });
         
         logger.log('✅ Task updated successfully:', result);
-        showSuccess('Task updated successfully!');
+        handleSuccess('Task updated successfully!', result, 'Update Task');
         
       } else {
         // Create new task - include monthId in task data
@@ -213,7 +220,13 @@ const TaskForm = ({
         logger.log('📋 Task data with monthId:', taskWithMonthId);
         // User data passed for validation
         
-        result = await createTask({
+        const createTaskWithErrorHandling = withMutationErrorHandling(createTask, {
+          operation: 'Create Task',
+          showToast: false,
+          logError: true
+        });
+        
+        result = await createTaskWithErrorHandling({
           task: taskWithMonthId,
           userData: user,
           reporters
@@ -226,7 +239,7 @@ const TaskForm = ({
         }
         
         logger.log('✅ Task created successfully:', result);
-        showSuccess('Task created successfully!');
+        handleSuccess('Task created successfully!', result, 'Create Task');
       }
       
       // Reset form
@@ -249,8 +262,7 @@ const TaskForm = ({
   };
 
   const handleFormError = (errors) => {
-    logger.error('❌ Task form validation errors:', errors);
-    showError('Please fix the validation errors before submitting');
+    handleValidationError(errors, 'Task Form');
   };
 
   const formTitle = mode === 'edit' ? 'Edit Task' : 'Create New Task';

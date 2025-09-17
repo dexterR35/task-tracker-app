@@ -1,5 +1,6 @@
 import React from 'react';
 import { logger } from '@/utils/logger';
+import { getErrorBoundaryInfo } from '@/features/utils/errorHandling';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -21,13 +22,16 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     const errorId = this.state.errorId;
+    const componentName = this.props.componentName || 'Unknown';
     
-    // Log error details
+    // Use standardized error boundary info
+    const errorBoundaryInfo = getErrorBoundaryInfo(error, componentName);
+    
+    // Log error details with standardized format
     logger.error('ErrorBoundary caught an error:', {
-      error: error.toString(),
-      errorInfo: errorInfo.componentStack,
+      ...errorBoundaryInfo,
       errorId,
-      componentName: this.props.componentName || 'Unknown',
+      errorInfo: errorInfo.componentStack,
       timestamp: new Date().toISOString()
     });
 
@@ -39,7 +43,12 @@ class ErrorBoundary extends React.Component {
     // Report to error tracking service in production
     if (import.meta.env.MODE === 'production') {
       // You can integrate with services like Sentry, LogRocket, etc.
-      console.error('Production error:', { error, errorInfo, errorId });
+      console.error('Production error:', { 
+        ...errorBoundaryInfo, 
+        error, 
+        errorInfo, 
+        errorId 
+      });
     }
   }
 

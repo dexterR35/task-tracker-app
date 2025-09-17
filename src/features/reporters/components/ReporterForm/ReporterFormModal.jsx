@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal/Modal';
-import { ReporterForm } from '@/components/forms';
+import ReporterForm from './ReporterForm';
 
 const ReporterFormModal = ({
   isOpen,

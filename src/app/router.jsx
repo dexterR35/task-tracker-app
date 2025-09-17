@@ -10,7 +10,7 @@ import {
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { isUserAuthenticated, isAuthLoading } from "@/utils/authUtils";
+import { isUserAuthenticated, isAuthLoading } from "@/features/utils/authUtils";
 
 import AuthLayout from "@/components/layout/AuthLayout";
 import Loader from "@/components/ui/Loader/Loader";

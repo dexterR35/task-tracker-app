@@ -3,8 +3,9 @@ import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
+import { parseFirebaseError, withErrorHandling } from "@/features/utils/errorHandling";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
-import { isUserAuthenticated as checkUserAuth } from "@/utils/authUtils";
+import { isUserAuthenticated as checkUserAuth } from "@/features/utils/authUtils";
 import { 
   collection, 
   query, 
@@ -14,10 +15,6 @@ import {
   getDocs 
 } from "firebase/firestore";
 
-/**
- * Users API - Refactored to use base API factory
- * Eliminates duplicate patterns and standardizes error handling
- */
 
 /**
  * Fetch collection from Firestore with options
@@ -58,8 +55,9 @@ const fetchCollectionFromFirestore = async (db, collectionName, options = {}) =>
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
-    logger.error(`Error fetching collection ${collectionName}:`, error);
-    throw error;
+    const errorResponse = parseFirebaseError(error);
+    logger.error(`Error fetching collection ${collectionName}:`, errorResponse);
+    throw errorResponse;
   }
 };
 
@@ -87,8 +85,9 @@ export const fetchUserByUIDFromFirestore = async (userUID) => {
       logger.log(`[Users API] Found user by UID: ${userUID}`);
       return users[0];
     } catch (error) {
-      logger.error(`[Users API] Error fetching user by UID ${userUID}:`, error);
-      throw error;
+      const errorResponse = parseFirebaseError(error);
+      logger.error(`[Users API] Error fetching user by UID ${userUID}:`, errorResponse);
+      throw errorResponse;
     }
   });
 };

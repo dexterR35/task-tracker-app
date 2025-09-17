@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError } from '@/utils/toast';
+import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { loginSchema, LOGIN_FORM_FIELDS } from './configs/useLoginForm';
 import { TextField, PasswordField } from './components';
 import { getInputType } from './configs/sharedFormUtils';
@@ -36,7 +37,7 @@ const LoginForm = ({ onSuccess, className = "" }) => {
       logger.log('🔐 Login attempt started:', { email: data.email });
       const result = await login(data);
       logger.log('✅ Login successful:', result);
-      showSuccess('Login successful!');
+      handleSuccess('Login successful!', result, 'User Login');
       // Reset form
       reset();
       // Call success callback if provided
@@ -48,8 +49,7 @@ const LoginForm = ({ onSuccess, className = "" }) => {
   };
 
   const handleFormError = (errors) => {
-    logger.error('❌ Login form validation errors:', errors);
-    showError('Please fix the validation errors before submitting');
+    handleValidationError(errors, 'Login Form');
   };
 
   return (
