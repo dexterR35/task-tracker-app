@@ -13,6 +13,7 @@ import Badge from "@/components/ui/Badge/Badge";
 import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton";
 import { canAccessCharts } from "@/features/utils/authUtils";
 import { showError, showAuthError } from "@/utils/toast";
+import { Icons } from "@/components/icons";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -295,16 +296,61 @@ const AdminDashboardPage = () => {
 
       {/* Controls Section - First */}
       <div className="mb-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Current Month Board Info */}
+          {isInitialLoading ? (
+            <SkeletonCard />
+          ) : (
+            <div className="card-small relative">
+              <div className="absolute top-3 right-3">
+                <Badge 
+                  variant={isCurrentMonth ? (currentMonth?.boardExists ? "success" : "error") : "error"} 
+                  size="xs"
+                >
+                  {isCurrentMonth ? (currentMonth?.boardExists ? "Active" : "Missing") : "Inactive"}
+                </Badge>
+              </div>
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold">Current Board</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {selectedMonth?.monthName || currentMonth?.monthName || "No month"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 dark:text-gray-300">Year</span>
+                  <span className="text-xs font-medium text-gray-900 dark:text-white">
+                    {(selectedMonth?.monthId || currentMonth?.monthId) ? (selectedMonth?.monthId || currentMonth?.monthId).split('-')[0] : "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 dark:text-gray-300">Total Tasks</span>
+                  <span className="text-xs font-medium text-gray-900 dark:text-white">
+                    {tasks?.length || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 dark:text-gray-300">Month ID</span>
+                  <span className="text-xs font-medium text-gray-900 dark:text-white">
+                    {selectedMonth?.monthId || currentMonth?.monthId || "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Month Selection */}
           {isInitialLoading ? (
             <SkeletonCard />
           ) : (
-            <div className="card-small">
-              <div className="mb-4">
-                <h4>Time Period</h4>
-                <p className="text-exsmall">
-                  {availableMonths.length} periods available
+            <div className="card-small relative">
+              <div className="absolute top-3 right-3">
+                <Icons.generic.clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold">Time Period</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {availableMonths.length} periods
                 </p>
               </div>
               <div className="space-y-2">
@@ -323,17 +369,18 @@ const AdminDashboardPage = () => {
                     <option value="">No months available</option>
                   )}
                 </select>
-                <div className="flex items-start justify-between">
-                  <Badge variant="primary" size="sm">
-                    {isCurrentMonth ? "Current Period" : "Historical Data"}
+                <div className="flex items-center justify-between">
+                  <Badge variant="primary" size="xs">
+                    {isCurrentMonth ? "Current" : "Historical"}
                   </Badge>
                   {!isCurrentMonth && (
                     <DynamicButton
                       onClick={resetToCurrentMonth}
                       variant="outline"
-                      size="sm"
+                      size="xs"
                       iconName="refresh"
                       iconPosition="center"
+                      className="!p-1 !min-w-0 !h-6"
                     />
                   )}
                 </div>
@@ -347,11 +394,14 @@ const AdminDashboardPage = () => {
               {appDataLoading ? (
                 <SkeletonCard />
               ) : (
-                <div className="card-small">
-                  <div className="mb-4">
-                    <h4>User Filter</h4>
-                    <p className="text-exsmall">
-                      {users.length} users available
+                <div className="card-small relative">
+                  <div className="absolute top-3 right-3">
+                    <Icons.generic.user className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold">User Filter</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {users.length} users
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -370,19 +420,25 @@ const AdminDashboardPage = () => {
                         </option>
                       ))}
                     </select>
-                    <div className="flex items-start justify-between ">
-                      <span className="text-exsmall">
-                        {selectedUserId
-                          ? `Filtered by: ${selectedUserName}`
-                          : "Showing all users"}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {selectedUserId ? "Filtered" : "All users"}
+                        </span>
+                        {selectedUserId && (
+                          <Badge variant="primary" size="xs">
+                            {selectedUserName}
+                          </Badge>
+                        )}
+                      </div>
                       {selectedUserId && (
                         <DynamicButton
                           onClick={() => handleUserSelect("")}
                           variant="outline"
-                          size="sm"
+                          size="xs"
                           iconName="cancel"
                           iconPosition="center"
+                          className="!p-1 !min-w-0 !h-6"
                         />
                       )}
                     </div>
@@ -393,11 +449,14 @@ const AdminDashboardPage = () => {
               {appDataLoading ? (
                 <SkeletonCard />
               ) : (
-                <div className="card-small">
-                  <div className="mb-4">
-                    <h4>Reporter Filter</h4>
-                    <p className="text-exsmall">
-                      {reporters.length} reporters available
+                <div className="card-small relative">
+                  <div className="absolute top-3 right-3">
+                    <Icons.admin.reporters className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold">Reporter Filter</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {reporters.length} reporters
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -416,19 +475,25 @@ const AdminDashboardPage = () => {
                         </option>
                       ))}
                     </select>
-                    <div className="flex items-start justify-between ">
-                      <span className="text-exsmall">
-                        {selectedReporterId
-                          ? `Filtered by: ${selectedReporterName}`
-                          : "Showing all reporters"}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {selectedReporterId ? "Filtered" : "All reporters"}
+                        </span>
+                        {selectedReporterId && (
+                          <Badge variant="error" size="xs">
+                            {selectedReporterName}
+                          </Badge>
+                        )}
+                      </div>
                       {selectedReporterId && (
                         <DynamicButton
                           onClick={() => handleReporterSelect("")}
                           variant="outline"
-                          size="sm"
+                          size="xs"
                           iconName="cancel"
                           iconPosition="center"
+                          className="!p-1 !min-w-0 !h-6"
                         />
                       )}
                     </div>
@@ -442,12 +507,15 @@ const AdminDashboardPage = () => {
           {isInitialLoading ? (
             <SkeletonCard />
           ) : (
-            <div className="card-small">
-              <div className="mb-4">
-                <h4>Actions</h4>
-                <p className="text-exsmall">
+            <div className="card-small relative">
+              <div className="absolute top-3 right-3">
+                <Icons.buttons.add className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold">Actions</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {canCreateTasks
-                    ? "Create task available"
+                    ? "Create available"
                     : "Create restricted"}
                 </p>
               </div>
@@ -455,7 +523,7 @@ const AdminDashboardPage = () => {
                 <DynamicButton
                   onClick={handleCreateTask}
                   variant="primary"
-                  size="md"
+                  size="sm"
                   iconName="add"
                   iconPosition="left"
                   className="w-full"
@@ -463,12 +531,12 @@ const AdminDashboardPage = () => {
                   Create Task
                 </DynamicButton>
                 {!canCreateTasks && (
-                  <span className="text-exsmall text-red-error dark:text-amber-400">
+                  <span className="text-xs text-red-error dark:text-amber-400">
                     {!isCurrentMonth
-                      ? "History data - create disabled"
+                      ? "History - disabled"
                       : !currentMonth?.boardExists
-                        ? "Current month board not created yet"
-                        : "Creation not available"}
+                        ? "Board not created"
+                        : "Not available"}
                   </span>
                 )}
               </div>
@@ -488,10 +556,7 @@ const AdminDashboardPage = () => {
                 {isInitialLoading ? (
                   <span className="inline-block w-32 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
                 ) : (
-                  <>
-                    {dashboardCards.length} cards •{" "}
-                    {selectedMonth?.monthName || currentMonth?.monthName}
-                  </>
+                  `${dashboardCards.length} cards`
                 )}
               </p>
             </div>
