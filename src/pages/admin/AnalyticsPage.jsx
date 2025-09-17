@@ -1,67 +1,77 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useAppData } from "@/hooks/useAppData";
+import CategoryBreakdownCard from "@/components/Cards/CategoryBreakdownCard";
+import ProductBreakdownCard from "@/components/Cards/ProductBreakdownCard";
 
 const AnalyticsPage = () => {
+  const { tasks = [], isLoading } = useAppData();
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  // Get unique months from tasks
+  const availableMonths = useMemo(() => {
+    const months = new Set();
+    tasks.forEach(task => {
+      if (task.createdAt) {
+        const date = new Date(task.createdAt);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        months.add(monthKey);
+      }
+    });
+    return Array.from(months).sort().reverse();
+  }, [tasks]);
+
+  // Set default month to most recent
+  useEffect(() => {
+    if (availableMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(availableMonths[0]);
+    }
+  }, [availableMonths, selectedMonth]);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500 dark:text-gray-400">Loading analytics...</div>
+      </div>
+    );
+  }
+
   return (
-
-      <div>
-        {/* Page Header */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Analytics Dashboard
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Data insights and performance metrics for your organization
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-300 dark:border-gray-700">
-                <div className="text-xs text-gray-500 dark:text-gray-400">Coming Soon</div>
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">🚀</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Coming Soon Section */}
-        <div className="space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-300 dark:border-gray-700 text-center">
-            <div className="text-4xl mb-4">🚀</div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-              Analytics Dashboard Coming Soon
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 max-w-2xl mx-auto">
-              We're working on a comprehensive analytics dashboard that will provide insights into task completion, user productivity, and organizational performance.
+    <div>
+      {/* Page Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Analytics Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
+              Task breakdown by acquisition, product, and marketing
             </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-300 dark:border-gray-600">
-                <div className="text-3xl mb-3">📊</div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Task Analytics</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">
-                  Track task completion rates, time spent, and productivity metrics
-                </p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-300 dark:border-gray-600">
-                <div className="text-3xl mb-3">👥</div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">User Insights</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">
-                  Analyze user activity, performance, and engagement patterns
-                </p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-300 dark:border-gray-600">
-                <div className="text-3xl mb-3">📈</div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Performance Reports</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">
-                  Generate detailed reports and visualizations for stakeholders
-                </p>
-              </div>
-            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+            >
+              <option value="">All Time</option>
+              {availableMonths.map(month => (
+                <option key={month} value={month}>
+                  {new Date(month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
-   
+
+      {/* Analytics Cards */}
+      <div className="space-y-6">
+        <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} />
+        <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} />
+      </div>
+    </div>
   );
 };
 

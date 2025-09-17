@@ -1,7 +1,3 @@
-/**
- * Shared cache configuration for RTK Query APIs
- * Provides consistent cache policies across the application
- */
 
 // Cache duration constants (in seconds) - moved from constants.js
 export const CACHE_DURATIONS = {
