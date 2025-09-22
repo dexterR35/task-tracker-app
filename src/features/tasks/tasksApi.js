@@ -362,6 +362,8 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, { task }) => [
         { type: "CurrentMonth", id: "ENHANCED" },
         { type: "Tasks", id: "LIST" },
+        { type: "MonthTasks", id: task.monthId },
+        { type: "Analytics", id: "LIST" },
       ],
     }),
     // Update task - simple Firestore update
@@ -420,6 +422,8 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, { monthId }) => [
         { type: "CurrentMonth", id: "ENHANCED" },
         { type: "Tasks", id: "LIST" },
+        { type: "MonthTasks", id: monthId },
+        { type: "Analytics", id: "LIST" },
       ],
     }),
 
@@ -460,6 +464,8 @@ export const tasksApi = createApi({
       invalidatesTags: (result, error, { monthId }) => [
         { type: "CurrentMonth", id: "ENHANCED" },
         { type: "Tasks", id: "LIST" },
+        { type: "MonthTasks", id: monthId },
+        { type: "Analytics", id: "LIST" },
       ],
     }),
 
