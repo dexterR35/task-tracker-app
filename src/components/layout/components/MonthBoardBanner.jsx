@@ -14,13 +14,24 @@ const MonthBoardBanner = () => {
 
   // Extract month data
   const { monthId, monthName, boardExists, startDate, endDate, daysInMonth, isInitialLoading, isMonthDataReady } = appData || {};
+  
+  // Convert Date objects back to ISO strings if needed
+  const startDateStr = startDate instanceof Date ? startDate.toISOString() : startDate;
+  const endDateStr = endDate instanceof Date ? endDate.toISOString() : endDate;
+
 
   // Don't show banner if:
-  // - Still loading initial month data
-  // - Board exists
-  // - Month data is not ready
-  if (isInitialLoading || boardExists || !isMonthDataReady || !monthId || !monthName) {
+  // - Board exists (main condition)
+  // - Missing required month data
+  // - Still loading AND we don't have month data yet
+  if (boardExists || !monthId || !monthName || (isInitialLoading && !monthId)) {
     return null;
+  }
+
+  // Additional check: ensure we have the required data for board generation
+  // If we don't have the date data, we can still show the banner and let the API handle defaults
+  if (!startDateStr || !endDateStr || !daysInMonth) {
+    // Don't return null - let the banner show and handle missing data in the API call
   }
 
   const handleGenerateBoard = async () => {
@@ -29,20 +40,18 @@ const MonthBoardBanner = () => {
       return;
     }
 
-    logger.log("Generating month board", { monthId, monthName });
 
     try {
       const result = await generateMonthBoard({
         monthId,
-        startDate: startDate,
-        endDate: endDate,
-        daysInMonth: daysInMonth,
+        startDate: startDateStr || undefined, // Let API handle defaults if missing
+        endDate: endDateStr || undefined,
+        daysInMonth: daysInMonth || undefined,
         userData: appData.user,
       });
 
       if (result.data) {
         showSuccess("Month board generated successfully!");
-        logger.log("Month board generated successfully", { monthId });
       } else {
         const errorMessage = result.error?.message || result.error?.data?.message || "Failed to generate month board. Please try again.";
         showError(errorMessage);
@@ -53,6 +62,7 @@ const MonthBoardBanner = () => {
       logger.error("Month board generation error", { monthId, error: error.message });
     }
   };
+
 
   return (
     <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4 shadow-lg">

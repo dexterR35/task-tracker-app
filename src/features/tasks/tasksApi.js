@@ -465,7 +465,7 @@ export const tasksApi = createApi({
 
     // Generate month board (admin only)
     generateMonthBoard: builder.mutation({
-      async queryFn({ monthId, meta = {}, userData }) {
+      async queryFn({ monthId, startDate, endDate, daysInMonth, meta = {}, userData }) {
         try {
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -488,7 +488,18 @@ export const tasksApi = createApi({
           const boardRef = getMonthRef(monthId);
           const boardDoc = await getDoc(boardRef);
           if (boardDoc.exists()) {
-            return { error: { message: "Month board already exists" } };
+            // Board already exists, return success with existing data
+            return { 
+              data: serializeTimestampsForRedux({
+                monthId,
+                boardId: boardDoc.data().boardId,
+                exists: true,
+                createdAt: boardDoc.data().createdAt,
+                createdBy: boardDoc.data().createdBy,
+                createdByName: boardDoc.data().createdByName,
+                createdByRole: boardDoc.data().createdByRole,
+              })
+            };
           }
           const yearId = getCurrentYear();
           const boardId = `${monthId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -500,6 +511,9 @@ export const tasksApi = createApi({
             month: parseInt(monthId.split("-")[1]),
             year: parseInt(yearId),
             monthName: formatMonth(monthId),
+            startDate: startDate || getMonthInfo().startDate,
+            endDate: endDate || getMonthInfo().endDate,
+            daysInMonth: daysInMonth || getMonthInfo().daysInMonth,
             createdAt: serverTimestamp(),
             createdBy: currentUser?.uid,
             createdByName: userData.name,
@@ -559,34 +573,30 @@ export const tasksApi = createApi({
             }
           });
 
-          if (availableMonths.length > 0) {
-            // Sort by monthId (newest first) and use the most recent month
-            availableMonths.sort((a, b) => b.monthId.localeCompare(a.monthId));
-            const mostRecentMonth = availableMonths[0];
-            currentMonthInfo = getMonthInfo(new Date(mostRecentMonth.monthId + '-01'));
-            boardExists = true;
+          // Always check if the actual current month board exists
+          const monthDocRef = getMonthRef(currentMonthInfo.monthId);
+          const monthDoc = await getDoc(monthDocRef);
+          boardExists = monthDoc.exists();
+          
+          if (boardExists) {
             currentMonthBoard = {
-              monthId: mostRecentMonth.monthId,
-              monthName: formatMonth(mostRecentMonth.monthId),
+              monthId: currentMonthInfo.monthId,
+              monthName: currentMonthInfo.monthName,
               isCurrent: true,
               boardExists: true,
-              ...serializeTimestampsForRedux(mostRecentMonth),
+              ...serializeTimestampsForRedux(monthDoc.data()),
             };
           } else {
-            // Fall back to actual current month if no months found
-            const monthDocRef = getMonthRef(currentMonthInfo.monthId);
-            const monthDoc = await getDoc(monthDocRef);
-            boardExists = monthDoc.exists();
-            
-            if (boardExists) {
-              currentMonthBoard = {
-                monthId: currentMonthInfo.monthId,
-                monthName: currentMonthInfo.monthName,
-                isCurrent: true,
-                boardExists: true,
-                ...serializeTimestampsForRedux(monthDoc.data()),
-              };
-            }
+            // Even if board doesn't exist, provide the current month info
+            currentMonthBoard = {
+              monthId: currentMonthInfo.monthId,
+              monthName: currentMonthInfo.monthName,
+              isCurrent: true,
+              boardExists: false,
+              startDate: currentMonthInfo.startDate,
+              endDate: currentMonthInfo.endDate,
+              daysInMonth: currentMonthInfo.daysInMonth,
+            };
           }
 
           // Fetch current month tasks if board exists and user is authenticated
