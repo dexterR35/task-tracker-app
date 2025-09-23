@@ -100,7 +100,7 @@ const AcquisitionAnalyticsCard = ({ tasks, selectedMonth, isLoading = false }) =
       tableColumns={tableColumns}
       chartData={chartData}
       chartTitle="Acquisition Tasks by Product"
-      colors={["#10b981", "#059669", "#047857", "#065f46"]}
+      colors={["#3b82f6", "#10b981", "#f59e0b", "#ef4444"]}
       isLoading={isLoading}
     />
   );

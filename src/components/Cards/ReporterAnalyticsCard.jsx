@@ -22,21 +22,14 @@ const ReporterAnalyticsCard = ({ tasks, selectedMonth, reporters = [], isLoading
     );
   }
 
-  // Calculate reporter analytics data
+  // Calculate reporter analytics data with specific format
   const analyticsData = useMemo(() => {
     const reporterData = {};
-    const productTotals = {};
-    const marketTotals = {};
-    const categoryTotals = {};
+    const marketingTotals = { casino: 0, poker: 0, sport: 0 };
+    const marketTotals = { COM: 0, DE: 0, FI: 0, FR: 0, IE: 0, IT: 0, RO: 0, UK: 0 };
 
-    // Initialize data structures
-    const allProducts = new Set();
-    const allMarkets = new Set();
-    const allCategories = new Set();
-
-    // First pass: collect all products, markets, and categories
+    // Process each task
     filteredTasks.forEach(task => {
-      // Safely extract and ensure arrays
       const products = Array.isArray(task.data_task?.products) ? task.data_task.products : 
                      Array.isArray(task.products) ? task.products : 
                      typeof task.data_task?.products === 'string' ? [task.data_task.products] :
@@ -58,53 +51,36 @@ const ReporterAnalyticsCard = ({ tasks, selectedMonth, reporters = [], isLoading
             name: reporterName || `Reporter ${reporterId}`,
             id: reporterId,
             totalTasks: 0,
-            products: {},
-            markets: {},
-            categories: {}
+            marketing: { casino: 0, poker: 0, sport: 0 },
+            markets: { COM: 0, DE: 0, FI: 0, FR: 0, IE: 0, IT: 0, RO: 0, UK: 0 }
           };
         }
 
         reporterData[reporterKey].totalTasks++;
         
-        // Process products
+        // Process marketing categories
         products.forEach(product => {
           if (product && typeof product === 'string') {
-            allProducts.add(product);
-            if (!reporterData[reporterKey].products[product]) {
-              reporterData[reporterKey].products[product] = 0;
+            if (product.includes('marketing') && product.includes('casino')) {
+              reporterData[reporterKey].marketing.casino++;
+              marketingTotals.casino++;
+            } else if (product.includes('marketing') && product.includes('poker')) {
+              reporterData[reporterKey].marketing.poker++;
+              marketingTotals.poker++;
+            } else if (product.includes('marketing') && product.includes('sport')) {
+              reporterData[reporterKey].marketing.sport++;
+              marketingTotals.sport++;
             }
-            reporterData[reporterKey].products[product]++;
-            productTotals[product] = (productTotals[product] || 0) + 1;
           }
         });
 
         // Process markets
         markets.forEach(market => {
           if (market && typeof market === 'string') {
-            allMarkets.add(market);
-            if (!reporterData[reporterKey].markets[market]) {
-              reporterData[reporterKey].markets[market] = 0;
-            }
-            reporterData[reporterKey].markets[market]++;
-            marketTotals[market] = (marketTotals[market] || 0) + 1;
-          }
-        });
-
-        // Process categories (extract from products) - exclude marketing
-        products.forEach(product => {
-          if (product && typeof product === 'string') {
-            let category = '';
-            if (product.includes('acquisition')) category = 'Acquisition';
-            else if (product.includes('product')) category = 'Product';
-            // Removed marketing category
-            
-            if (category) {
-              allCategories.add(category);
-              if (!reporterData[reporterKey].categories[category]) {
-                reporterData[reporterKey].categories[category] = 0;
-              }
-              reporterData[reporterKey].categories[category]++;
-              categoryTotals[category] = (categoryTotals[category] || 0) + 1;
+            const marketUpper = market.toUpperCase();
+            if (reporterData[reporterKey].markets.hasOwnProperty(marketUpper)) {
+              reporterData[reporterKey].markets[marketUpper]++;
+              marketTotals[marketUpper]++;
             }
           }
         });
@@ -113,27 +89,21 @@ const ReporterAnalyticsCard = ({ tasks, selectedMonth, reporters = [], isLoading
 
     // Create table data
     const tableData = Object.values(reporterData).map(reporter => {
-      const row = {
+      return {
         reporter: reporter.name,
-        total: reporter.totalTasks
+        total: reporter.totalTasks,
+        'Marketing casino': reporter.marketing.casino,
+        'Marketing poker': reporter.marketing.poker,
+        'Marketing sport': reporter.marketing.sport,
+        COM: reporter.markets.COM,
+        DE: reporter.markets.DE,
+        FI: reporter.markets.FI,
+        FR: reporter.markets.FR,
+        IE: reporter.markets.IE,
+        IT: reporter.markets.IT,
+        RO: reporter.markets.RO,
+        UK: reporter.markets.UK
       };
-
-      // Add product columns
-      allProducts.forEach(product => {
-        row[product] = reporter.products[product] || 0;
-      });
-
-      // Add market columns
-      allMarkets.forEach(market => {
-        row[market] = reporter.markets[market] || 0;
-      });
-
-      // Add category columns
-      allCategories.forEach(category => {
-        row[category] = reporter.categories[category] || 0;
-      });
-
-      return row;
     });
 
     // Sort by total tasks (descending)
@@ -143,67 +113,65 @@ const ReporterAnalyticsCard = ({ tasks, selectedMonth, reporters = [], isLoading
     const grandTotalRow = {
       reporter: "Grand Total",
       total: Object.values(reporterData).reduce((sum, reporter) => sum + reporter.totalTasks, 0),
+      'Marketing casino': marketingTotals.casino,
+      'Marketing poker': marketingTotals.poker,
+      'Marketing sport': marketingTotals.sport,
+      COM: marketTotals.COM,
+      DE: marketTotals.DE,
+      FI: marketTotals.FI,
+      FR: marketTotals.FR,
+      IE: marketTotals.IE,
+      IT: marketTotals.IT,
+      RO: marketTotals.RO,
+      UK: marketTotals.UK,
       bold: true,
       highlight: true
     };
-
-    // Add totals for each product
-    allProducts.forEach(product => {
-      grandTotalRow[product] = productTotals[product] || 0;
-    });
-
-    // Add totals for each market
-    allMarkets.forEach(market => {
-      grandTotalRow[market] = marketTotals[market] || 0;
-    });
-
-    // Add totals for each category
-    allCategories.forEach(category => {
-      grandTotalRow[category] = categoryTotals[category] || 0;
-    });
 
     tableData.push(grandTotalRow);
 
     return {
       tableData,
-      productTotals,
-      marketTotals,
-      categoryTotals,
-      allProducts: Array.from(allProducts).sort(),
-      allMarkets: Array.from(allMarkets).sort(),
-      allCategories: Array.from(allCategories).sort()
+      marketingTotals,
+      marketTotals
     };
   }, [filteredTasks, reporters]);
 
-  // Create table columns
+  // Create table columns with exact format
   const tableColumns = [
     { key: "reporter", header: "Reporter", align: "left" },
     { key: "total", header: "Total Tasks", align: "center", highlight: true },
-    ...analyticsData.allProducts.map(product => ({
-      key: product,
-      header: product.charAt(0).toUpperCase() + product.slice(1),
-      align: "center"
-    })),
-    ...analyticsData.allMarkets.map(market => ({
-      key: market,
-      header: market.toUpperCase(),
-      align: "center"
-    })),
-    ...analyticsData.allCategories.map(category => ({
-      key: category,
-      header: category,
-      align: "center"
-    }))
+    { key: "Marketing casino", header: "Marketing casino", align: "center" },
+    { key: "Marketing poker", header: "Marketing poker", align: "center" },
+    { key: "Marketing sport", header: "Marketing sport", align: "center" },
+    { key: "COM", header: "COM", align: "center" },
+    { key: "DE", header: "DE", align: "center" },
+    { key: "FI", header: "FI", align: "center" },
+    { key: "FR", header: "FR", align: "center" },
+    { key: "IE", header: "IE", align: "center" },
+    { key: "IT", header: "IT", align: "center" },
+    { key: "RO", header: "RO", align: "center" },
+    { key: "UK", header: "UK", align: "center" }
   ];
 
-  // Create chart data for reporter distribution
+  // Create chart data for reporter distribution with specific markets
   const chartData = Object.values(analyticsData.tableData)
     .filter(row => !row.bold) // Exclude grand total row
     .slice(0, 10) // Show top 10 reporters
-    .map(row => ({
-      name: row.reporter.length > 15 ? row.reporter.substring(0, 15) + '...' : row.reporter,
-      value: row.total
-    }));
+    .map(row => {
+      return {
+        name: row.reporter.length > 15 ? row.reporter.substring(0, 15) + '...' : row.reporter,
+        tasks: row.total,
+        COM: row.COM || 0,
+        DE: row.DE || 0,
+        FI: row.FI || 0,
+        FR: row.FR || 0,
+        IE: row.IE || 0,
+        IT: row.IT || 0,
+        RO: row.RO || 0,
+        UK: row.UK || 0
+      };
+    });
 
   // Generate colors for reporters
   const reporterColors = [
@@ -227,8 +195,10 @@ const ReporterAnalyticsCard = ({ tasks, selectedMonth, reporters = [], isLoading
       tableData={analyticsData.tableData}
       tableColumns={tableColumns}
       chartData={chartData}
-      chartTitle="Top Reporters by Task Count"
+      chartTitle="Reporter Task Distribution"
       colors={colors}
+      chartType="column"
+      multiBar={true}
       isLoading={isLoading}
     />
   );

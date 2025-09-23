@@ -1,6 +1,7 @@
 import React from "react";
 import AnalyticsTable from "../Table/AnalyticsTable";
 import SimplePieChart from "../Charts/SimplePieChart";
+import SimpleColumnChart from "../Charts/SimpleColumnChart";
 import { SkeletonAnalyticsCard } from "../ui/Skeleton/Skeleton";
 
 const AnalyticsCard = ({ 
@@ -10,6 +11,8 @@ const AnalyticsCard = ({
   chartData,
   chartTitle,
   colors,
+  chartType = "pie",
+  multiBar = false,
   className = "",
   isLoading = false
 }) => {
@@ -33,11 +36,20 @@ const AnalyticsCard = ({
         
         {/* Chart */}
         <div>
-          <SimplePieChart
-            data={chartData}
-            title={chartTitle}
-            colors={colors}
-          />
+          {chartType === "column" ? (
+            <SimpleColumnChart
+              data={chartData}
+              title={chartTitle}
+              colors={colors}
+              multiBar={multiBar}
+            />
+          ) : (
+            <SimplePieChart
+              data={chartData}
+              title={chartTitle}
+              colors={colors}
+            />
+          )}
         </div>
       </div>
     </div>

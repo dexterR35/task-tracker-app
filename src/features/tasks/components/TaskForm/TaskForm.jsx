@@ -44,7 +44,8 @@ const TaskForm = ({
     watch,
     setValue,
     trigger,
-    clearErrors
+    clearErrors,
+    setError
   } = useForm({
     resolver: yupResolver(taskFormSchema),
     defaultValues: {

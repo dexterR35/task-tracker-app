@@ -100,7 +100,7 @@ const ProductAnalyticsCard = ({ tasks, selectedMonth, isLoading = false }) => {
       tableColumns={tableColumns}
       chartData={chartData}
       chartTitle="Product Tasks by Product"
-      colors={["#3b82f6", "#2563eb", "#1d4ed8", "#1e40af"]}
+      colors={["#ec4899", "#14b8a6", "#f59e0b", "#6366f1"]}
       isLoading={isLoading}
     />
   );
