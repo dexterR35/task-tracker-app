@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppData } from '@/hooks/useAppData';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
+import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/utils/errorUtils';
+import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { 
   taskFormSchema, 
   TASK_FORM_FIELDS, 
@@ -161,34 +162,26 @@ const TaskForm = ({
     }
   }, [initialData, mode, reset]);
 
-  const onSubmit = async (data) => {
-    try {
-      logger.log('📋 Task form submission started:', { mode, data });
-      
-      // Permission validation now happens at API level
-      
+  // Create standardized form submission handler
+  const handleFormSubmit = createFormSubmissionHandler(
+    async (data) => {
       // Additional validation for conditional fields
       if (data._hasDeliverables && (!data.deliverables || data.deliverables.length === 0)) {
-        showError('Please select at least one deliverable when "Has Deliverables" is checked');
-        return;
+        throw new Error('Please select at least one deliverable when "Has Deliverables" is checked');
       }
       
       if (data._usedAIEnabled) {
         if (!data.aiModels || data.aiModels.length === 0) {
-          showError('Please select at least one AI model when "AI Tools Used" is checked');
-          return;
+          throw new Error('Please select at least one AI model when "AI Tools Used" is checked');
         }
         if (!data.aiTime || data.aiTime <= 0) {
-          showError('Please enter a valid AI time when "AI Tools Used" is checked');
-          return;
+          throw new Error('Please enter a valid AI time when "AI Tools Used" is checked');
         }
       }
       
       // Prepare form data for database
       const processedData = prepareTaskFormData(data);
       logger.log('💾 Processed task data:', processedData);
-      
-      let result;
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task
@@ -198,27 +191,19 @@ const TaskForm = ({
           logError: true
         });
         
-        result = await updateTaskWithErrorHandling({
+        return await updateTaskWithErrorHandling({
           monthId: initialData.monthId,
           taskId: initialData.id,
           updates: processedData,
           reporters,
-          userData: user  // Pass user data for permission validation
+          userData: user
         });
-        
-        logger.log('✅ Task updated successfully:', result);
-        handleSuccess('Task updated successfully!', result, 'Update Task');
-        
       } else {
-        // Create new task - include monthId in task data
+        // Create new task
         const taskWithMonthId = {
           ...processedData,
           monthId: monthId
         };
-        
-        logger.log('📅 Creating task with monthId:', monthId);
-        logger.log('📋 Task data with monthId:', taskWithMonthId);
-        // User data passed for validation
         
         const createTaskWithErrorHandling = withMutationErrorHandling(createTask, {
           operation: 'Create Task',
@@ -226,43 +211,29 @@ const TaskForm = ({
           logError: true
         });
         
-        result = await createTaskWithErrorHandling({
+        return await createTaskWithErrorHandling({
           task: taskWithMonthId,
           userData: user,
           reporters
         });
-        
-        // Check if the result contains an error
-        if (result?.error) {
-          logger.error('❌ Task creation failed:', result.error);
-          throw new Error(result.error.message || 'Failed to create task');
-        }
-        
-        logger.log('✅ Task created successfully:', result);
-        handleSuccess('Task created successfully!', result, 'Create Task');
       }
-      
-      // Reset form
-      reset();
-      
-      // Call success callback if provided
-      onSuccess?.(result);
-      
-    } catch (error) {
-      logger.error('❌ Task form submission failed:', error);
-      
-      // Handle permission errors specifically
-      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
-        const action = mode === 'create' ? 'create' : 'update';
-        showAuthError(`You do not have permission to ${action} tasks`);
-      } else {
-        showError(error.message || 'Failed to save task. Please try again.');
+    },
+    {
+      operation: mode === 'edit' ? 'update' : 'create',
+      resource: 'task',
+      onSuccess: (result) => {
+        reset();
+        onSuccess?.(result);
       }
     }
+  );
+
+  const onSubmit = async (data) => {
+    await handleFormSubmit(data, { reset, setError, clearErrors });
   };
 
   const handleFormError = (errors) => {
-    handleValidationError(errors, 'Task Form');
+    handleFormValidation(errors, 'Task Form');
   };
 
   const formTitle = mode === 'edit' ? 'Edit Task' : 'Create New Task';

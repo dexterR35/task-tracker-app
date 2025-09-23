@@ -281,26 +281,6 @@ const HomepageCard = ({ card }) => {
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-400">Progress</span>
-                <span className="text-xs text-gray-400">
-                  {card.type === "ai-tasks" ? "85%" : 
-                   card.type === "design" ? "70%" : "75%"}
-                </span>
-              </div>
-              <div className="w-full bg-gray-700/50 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full"
-                  style={{
-                    width: card.type === "ai-tasks" ? "85%" : 
-                           card.type === "design" ? "70%" : "75%",
-                    backgroundColor: metricColor,
-                  }}
-                ></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

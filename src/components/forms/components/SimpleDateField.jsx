@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppData } from '@/hooks/useAppData';
+import { getMonthBoundaries } from '@/utils/monthUtils';
 import BaseField from './BaseField';
 
 
@@ -19,18 +20,11 @@ const SimpleDateField = ({
   const error = errors[fieldName];
 
   // Get month boundaries for date restrictions - ALWAYS restrict to current month only
-  const getMonthBoundaries = () => {
-    // Use current month from monthId (e.g., "2025-01")
-    const [year, month] = monthId.split('-');
-    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-    
-    return {
-      min: `${year}-${String(parseInt(month)).padStart(2, '0')}-01`,
-      max: `${year}-${String(parseInt(month)).padStart(2, '0')}-${lastDay}`
-    };
+  const getMonthBoundariesLocal = () => {
+    return getMonthBoundaries(monthId);
   };
 
-  const monthBoundaries = getMonthBoundaries();
+  const monthBoundaries = getMonthBoundariesLocal();
   const currentMonthName = monthName;
 
   return (

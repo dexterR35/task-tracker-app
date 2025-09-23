@@ -3,7 +3,11 @@ import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import CategoryBreakdownCard from "@/components/Cards/CategoryBreakdownCard";
 import ProductBreakdownCard from "@/components/Cards/ProductBreakdownCard";
 import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
+import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
+import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
 import MonthProgressBar from "@/components/ui/MonthProgressBar";
+import CSVExportButton from "@/components/ui/CSVExportButton";
+import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection (same as AdminDashboardPage)
@@ -29,8 +33,32 @@ const AnalyticsPage = () => {
 
   if (isLoading || isInitialLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500 dark:text-gray-400">Loading analytics...</div>
+      <div>
+        {/* Page Header Skeleton */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Month Progress Bar Skeleton */}
+          <div className="mt-4">
+            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Analytics Cards Skeleton */}
+        <div className="space-y-6">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <SkeletonAnalyticsCard key={index} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -59,6 +87,13 @@ const AnalyticsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
+            {/* CSV Export Button */}
+            <CSVExportButton 
+              tasks={tasks}
+              filename={`analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}`}
+              className="relative"
+            />
+            
             {/* Month Selector */}
             <select
               value={selectedMonth?.monthId || currentMonth?.monthId || ""}
@@ -89,9 +124,11 @@ const AnalyticsPage = () => {
 
       {/* Analytics Cards */}
       <div className="space-y-6">
-        <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} />
-        <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} />
-        <MarketUserBreakdownCard tasks={tasks} selectedMonth={selectedMonth} users={users} />
+        <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
+        <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
+        <MarketUserBreakdownCard tasks={tasks} selectedMonth={selectedMonth} users={users} isLoading={isLoading} />
+        <ReporterAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} reporters={reporters} isLoading={isLoading} />
+        <UserAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} users={users} isLoading={isLoading} />
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
 import { logger } from "@/utils/logger";
+import { getCurrentMonthInfo, getMonthDateRange } from "@/utils/monthUtils";
 
 
 export const useUserData = () => {
@@ -86,6 +87,14 @@ export const useMonthSelection = (selectedUserId = null) => {
   } = currentMonthData;
 
   const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
+  
+  // Use centralized month utilities for consistent month handling
+  const currentMonthInfo = useMemo(() => {
+    if (monthId) {
+      return getMonthDateRange(monthId);
+    }
+    return getCurrentMonthInfo();
+  }, [monthId]);
 
   // Fetch available months by default so they show in the dropdown
   const { 
@@ -149,12 +158,14 @@ export const useMonthSelection = (selectedUserId = null) => {
     { skip: !shouldFetchTasks }
   );
   
-  // Get tasks for display with proper filtering
-  const rawTasks = isFetchingSelectedMonth 
-    ? monthTasks  // Selected month data
-    : (currentMonthTasks || []); // Current month data
+  // Get tasks for display with proper filtering - memoized for performance
+  const rawTasks = useMemo(() => {
+    return isFetchingSelectedMonth 
+      ? monthTasks  // Selected month data
+      : (currentMonthTasks || []); // Current month data
+  }, [isFetchingSelectedMonth, monthTasks, currentMonthTasks]);
   
-  // Apply user-based filtering in the UI
+  // Apply user-based filtering in the UI - optimized memoization
   const displayTasks = useMemo(() => {
     if (!rawTasks || rawTasks.length === 0) return [];
     

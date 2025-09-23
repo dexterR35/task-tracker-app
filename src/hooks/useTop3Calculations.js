@@ -149,6 +149,30 @@ export const useTop3Calculations = (data, options = {}) => {
     const users = data.users || [];
     const reporters = data.reporters || [];
 
+    // Early return if no data
+    if (!tasks.length && !users.length && !reporters.length) {
+      return {
+        totalHours: 0,
+        totalAIHours: 0,
+        top3Markets: [],
+        top3AIModels: [],
+        top3Products: [],
+        top3Users: [],
+        top3Reporters: [],
+        departmentMetrics: {},
+        productMarketCombinations: {},
+        sections: {
+          totalHours: [],
+          top3Markets: [],
+          top3AIModels: [],
+          top3Products: [],
+          top3Users: [],
+          top3Reporters: [],
+          allUsers: []
+        }
+      };
+    }
+
     // Filter tasks based on options - consolidated filtering logic
     let filteredTasks = tasks;
     

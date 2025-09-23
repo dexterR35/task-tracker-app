@@ -1,152 +1,21 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { 
-  collection, 
-  query, 
-  orderBy, 
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp
-} from "firebase/firestore";
-import { db } from "@/app/firebase";
+  createDocumentInFirestore,
+  updateDocumentInFirestore,
+  deleteDocumentFromFirestore,
+  fetchCollectionFromFirestore,
+  validateUserPermissions,
+  createOptimisticUpdate
+} from "@/utils/apiUtils";
 import { logger } from "@/utils/logger";
-import { parseFirebaseError } from "@/features/utils/errorHandling";
 
 /**
  * Reporters API - Refactored to use base API factory
  * Eliminates duplicate patterns and standardizes error handling
  */
 
-/**
- * Create document in Firestore
- * @param {Object} db - Firestore database instance
- * @param {string} collectionName - Name of the collection
- * @param {Object} data - Document data
- * @param {Object} options - Creation options
- * @returns {Promise<Object>} - Created document
- */
-const createDocumentInFirestore = async (db, collectionName, data, options = {}) => {
-  const { 
-    addMetadata = true,
-    useServerTimestamp = true
-  } = options;
-
-  try {
-    if (!auth.currentUser) {
-      logger.warn(`[createDocumentInFirestore] No authenticated user, skipping ${collectionName} creation`);
-      throw new Error('User must be authenticated to create documents');
-    }
-
-    const docData = { ...data };
-    
-    if (addMetadata) {
-      docData.createdAt = useServerTimestamp ? serverTimestamp() : new Date().toISOString();
-      docData.updatedAt = useServerTimestamp ? serverTimestamp() : new Date().toISOString();
-    }
-    
-    const docRef = await addDoc(collection(db, collectionName), docData);
-    
-    return { id: docRef.id, ...docData };
-  } catch (error) {
-    const errorResponse = parseFirebaseError(error);
-    logger.error(`Error creating document in ${collectionName}:`, errorResponse);
-    throw errorResponse;
-  }
-};
-
-/**
- * Update document in Firestore
- * @param {Object} db - Firestore database instance
- * @param {string} collectionName - Name of the collection
- * @param {string} docId - Document ID
- * @param {Object} updates - Update data
- * @param {Object} options - Update options
- * @returns {Promise<Object>} - Updated document
- */
-const updateDocumentInFirestore = async (db, collectionName, docId, updates, options = {}) => {
-  const { 
-    addMetadata = true,
-    useServerTimestamp = true
-  } = options;
-
-  try {
-    if (!auth.currentUser) {
-      logger.warn(`[updateDocumentInFirestore] No authenticated user, skipping ${collectionName} update`);
-      throw new Error('User must be authenticated to update documents');
-    }
-
-    const updateData = { ...updates };
-    
-    if (addMetadata) {
-      updateData.updatedAt = useServerTimestamp ? serverTimestamp() : new Date().toISOString();
-    }
-    
-    await updateDoc(doc(db, collectionName, docId), updateData);
-    
-    return { id: docId, ...updateData };
-  } catch (error) {
-    const errorResponse = parseFirebaseError(error);
-    logger.error(`Error updating document ${docId} in ${collectionName}:`, errorResponse);
-    throw errorResponse;
-  }
-};
-
-/**
- * Delete document from Firestore
- * @param {Object} db - Firestore database instance
- * @param {string} collectionName - Name of the collection
- * @param {string} docId - Document ID
- * @returns {Promise<Object>} - Deletion result
- */
-const deleteDocumentFromFirestore = async (db, collectionName, docId) => {
-  try {
-    if (!auth.currentUser) {
-      logger.warn(`[deleteDocumentFromFirestore] No authenticated user, skipping ${collectionName} deletion`);
-      throw new Error('User must be authenticated to delete documents');
-    }
-    
-    await deleteDoc(doc(db, collectionName, docId));
-    
-    return { id: docId, deleted: true };
-  } catch (error) {
-    const errorResponse = parseFirebaseError(error);
-    logger.error(`Error deleting document ${docId} from ${collectionName}:`, errorResponse);
-    throw errorResponse;
-  }
-};
-
-/**
- * Fetch collection from Firestore with options
- * @param {Object} db - Firestore database instance
- * @param {string} collectionName - Name of the collection
- * @param {Object} options - Query options
- * @returns {Promise<Array>} - Array of documents
- */
-const fetchCollectionFromFirestore = async (db, collectionName, options = {}) => {
-  const { 
-    orderBy: orderByField = 'createdAt', 
-    orderDirection = 'desc'
-  } = options;
-
-  try {
-    let q = query(collection(db, collectionName));
-    
-    if (orderByField) {
-      q = query(q, orderBy(orderByField, orderDirection));
-    }
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    const errorResponse = parseFirebaseError(error);
-    logger.error(`Error fetching collection ${collectionName}:`, errorResponse);
-    throw errorResponse;
-  }
-};
+// Centralized API utilities are now imported from @/utils/apiUtils
 
 export const reportersApi = createApi({
   reducerPath: "reportersApi",
@@ -160,7 +29,6 @@ export const reportersApi = createApi({
         try {
           logger.log(`[Reporters API] Starting to fetch reporters...`);
           const reporters = await fetchCollectionFromFirestore(
-            db,
             "reporters",
             {
               orderBy: "createdAt",
@@ -173,9 +41,7 @@ export const reportersApi = createApi({
             reporters.map((r) => ({ id: r.id, name: r.name }))
           );
 
-          // Serialize timestamps for Redux
-          const serializedReporters = serializeTimestampsForRedux(reporters);
-          return { data: serializedReporters };
+          return { data: reporters };
         } catch (error) {
           logger.error(`[Reporters API] Error fetching reporters:`, error);
           throw error; // Let base API handle the error
@@ -197,7 +63,6 @@ export const reportersApi = createApi({
           }
 
           // Check if user can create reporters (admin only)
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
           const permissionValidation = validateUserPermissions(userData, 'create_board', {
             operation: 'createReporter',
             logWarnings: true,
@@ -220,7 +85,6 @@ export const reportersApi = createApi({
 
           // Generate reporterUID from the document ID
           const createdReporter = await createDocumentInFirestore(
-            db,
             "reporters",
             {
               ...cleanReporterData,
@@ -235,7 +99,6 @@ export const reportersApi = createApi({
 
           // Update with the generated reporterUID
           const updatedReporter = await updateDocumentInFirestore(
-            db,
             "reporters",
             createdReporter.id,
             { reporterUID: createdReporter.id },
@@ -249,10 +112,7 @@ export const reportersApi = createApi({
             updatedReporter
           );
 
-          // Serialize timestamps for Redux
-          const serializedReporter =
-            serializeTimestampsForRedux(updatedReporter);
-          return { data: serializedReporter };
+          return { data: updatedReporter };
         } catch (error) {
           logger.error(`[Reporters API] Error creating reporter:`, error);
           throw error; // Let base API handle the error
@@ -308,7 +168,6 @@ export const reportersApi = createApi({
           }
 
           const updatedReporter = await updateDocumentInFirestore(
-            db,
             "reporters",
             id,
             updates,
@@ -322,10 +181,7 @@ export const reportersApi = createApi({
             updatedReporter
           );
 
-          // Serialize timestamps for Redux
-          const serializedReporter =
-            serializeTimestampsForRedux(updatedReporter);
-          return { data: serializedReporter };
+          return { data: updatedReporter };
         } catch (error) {
           logger.error(`[Reporters API] Error updating reporter:`, error);
           throw error; // Let base API handle the error
@@ -373,7 +229,7 @@ export const reportersApi = createApi({
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
 
-          const result = await deleteDocumentFromFirestore(db, "reporters", id);
+          const result = await deleteDocumentFromFirestore("reporters", id);
 
           logger.log(`[Reporters API] Reporter deleted successfully:`, result);
           return { data: result };

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import DataTable from "./DataTable";
-import PieChart from "./PieChart";
+import SimplePieChart from "../Charts/SimplePieChart";
 import { processTasksForTable, processTasksForChart, generateSummaryData } from "./dataProcessor";
 
 const AnalyticsChart = ({ 
@@ -76,32 +76,17 @@ const AnalyticsChart = ({
           />
         )}
 
-        {/* 3D Pie Chart */}
+        {/* Pie Chart with Leader Lines */}
         {showChart && (
-          <PieChart
+          <SimplePieChart
             data={analyticsData.chartData}
             title="Task Distribution Chart"
-            options={{
-              title: "Task Distribution",
-              pieHole: 0.4,
-              is3D: true,
-              pieStartAngle: 100,
-              sliceVisibilityThreshold: 0.02,
-              legend: {
-                position: "bottom",
-                alignment: "center",
-                textStyle: {
-                  color: "#ffffff",
-                  fontSize: 14,
-                },
-              },
-              titleTextStyle: {
-                color: "#ffffff",
-                fontSize: 18,
-              },
-              colors: ["#8AD1C2", "#9F8AD1", "#D18A99", "#BCD18A"],
-              backgroundColor: "transparent",
-            }}
+            colors={["#8AD1C2", "#9F8AD1", "#D18A99", "#BCD18A", "#D1C28A", "#C28AD1"]}
+            showLeaderLines={true}
+            leaderLineLength={30}
+            leaderLineStyle="solid"
+            showPercentages={true}
+            minPercentageThreshold={2}
           />
         )}
       </div>

@@ -188,13 +188,13 @@ const AdminDashboardPage = () => {
     limit: 3,
   });
 
-  // Reporters metrics (month-filtered only, no user filtering)
+  // Reporters metrics (month-filtered only, no user filtering) - Show all reporters
   const reportersMetrics = useTop3Calculations(commonCardData, {
     selectedUserId: null,
     selectedReporterId: null,
     selectedMonthId: currentMonthId,
     department: null,
-    limit: 3,
+    limit: 999, // Show all reporters instead of just top 3
   });
 
   // Department-specific metrics (month-filtered only)
@@ -324,50 +324,78 @@ const AdminDashboardPage = () => {
       </div>
 
       {/* Controls Section - First */}
-      <div className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Current Month Board Info */}
           {isInitialLoading ? (
             <SkeletonCard />
           ) : (
-            <div className="card-small relative">
-              <div className="absolute top-3 right-3">
-                <div className={`p-1.5 rounded-full ${isCurrentMonth ? (currentMonth?.boardExists ? "bg-green-success" : "bg-red-error") : "bg-red-error"} flex items-center justify-center`}>
-                  <Icons.generic.dashboard className="w-3 h-3 text-white" />
-                </div>
-              </div>
-              
-              {/* Header */}
-              <div className="mb-3">
-                <h4 className="text-sm font-semibold">Current Board</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {selectedMonth?.monthName || currentMonth?.monthName || "No month"}
-                </p>
-              </div>
-              
-              {/* Content - one per row */}
-              <div className="space-y-2">
-                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-default"></div>
-                      <span className="text-gray-600 dark:text-gray-300">Year</span>
+            <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
+              <div className="h-auto">
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className="p-3 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: `${isCurrentMonth ? (currentMonth?.boardExists ? "#2fd181" : "#ef4444") : "#ef4444"}20` }}
+                      >
+                        <Icons.generic.dashboard
+                          className="w-6 h-6"
+                          style={{ color: isCurrentMonth ? (currentMonth?.boardExists ? "#2fd181" : "#ef4444") : "#ef4444" }}
+                        />
+                      </div>
+                      <div className="leading-6">
+                        <h3 className="text-sm font-semibold text-gray-300 !mb-0">
+                          Current Board
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-0">
+                          {selectedMonth?.monthName || currentMonth?.monthName || "No month"}
+                        </p>
+                      </div>
                     </div>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {(selectedMonth?.monthId || currentMonth?.monthId) ? (selectedMonth?.monthId || currentMonth?.monthId).split('-')[0] : "N/A"}
-                    </span>
+
+                    {/* Status Indicator */}
+                    <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
+                      <div className={`w-2 h-2 rounded-full ${isCurrentMonth ? (currentMonth?.boardExists ? "bg-green-success" : "bg-red-error") : "bg-red-error"}`}></div>
+                      <span className="text-xs font-medium text-green-success">
+                        {isCurrentMonth ? (currentMonth?.boardExists ? "Active" : "Inactive") : "Inactive"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
-                      <span className="text-gray-600 dark:text-gray-300">Tasks</span>
+
+                  {/* Main Content */}
+                  <div className="flex-1">
+                    {/* Main Value */}
+                    <div className="mb-6">
+                      <div className="text-3xl font-bold text-gray-100 mb-2">
+                        {tasks?.length || 0}
+                      </div>
+                      <div className="text-sm text-gray-400 mb-1">Tasks</div>
                     </div>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {tasks?.length || 0}
-                    </span>
+
+                    {/* Enhanced Data */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icons.generic.clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">Year</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {(selectedMonth?.monthId || currentMonth?.monthId) ? (selectedMonth?.monthId || currentMonth?.monthId).split('-')[0] : "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icons.generic.task className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">Status</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {isCurrentMonth ? (currentMonth?.boardExists ? "Active" : "Inactive") : "Inactive"}
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -378,61 +406,92 @@ const AdminDashboardPage = () => {
           {isInitialLoading ? (
             <SkeletonCard />
           ) : (
-            <div className="card-small relative">
-              <div className="absolute top-3 right-3">
-                <div className="p-1.5 rounded-full bg-green-success flex items-center justify-center">
-                  <Icons.generic.clock className="w-3 h-3 text-white" />
-                </div>
-              </div>
-              
-              {/* Header */}
-              <div className="mb-3">
-                <h4 className="text-sm font-semibold">Month Period</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {availableMonths.length} periods
-                </p>
-              </div>
-              
-              {/* Compact content */}
-              <div className="space-y-2">
-                <select
-                  id="selectedMonth"
-                  value={selectedMonth?.monthId || currentMonth?.monthId || ""}
-                  onChange={(e) => selectMonth(e.target.value)}
-                  className="w-full text-xs"
-                >
-                  {availableMonths.length > 0 ? (
-                    availableMonths.map((month) => (
-                      <option key={month.monthId} value={month.monthId}>
-                        {month.monthName} {month.isCurrent ? "(Current)" : ""}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">No months available</option>
-                  )}
-                </select>
-                
-                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-btn-primary"></div>
-                      <span className="text-gray-600 dark:text-gray-300">Status</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="primary" size="xs">
-                        {isCurrentMonth ? "Current" : "History"}
-                      </Badge>
-                      {!isCurrentMonth && (
-                        <DynamicButton
-                          onClick={resetToCurrentMonth}
-                          variant="outline"
-                          size="xs"
-                          iconName="refresh"
-                          iconPosition="center"
-                          className="!p-1 !min-w-0 !h-5"
+            <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
+              <div className="h-auto">
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className="p-3 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: "#2a9df420" }}
+                      >
+                        <Icons.generic.clock
+                          className="w-6 h-6"
+                          style={{ color: "#2a9df4" }}
                         />
-                      )}
+                      </div>
+                      <div className="leading-6">
+                        <h3 className="text-sm font-semibold text-gray-300 !mb-0">
+                          Month Period
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-0">
+                          {availableMonths.length} periods
+                        </p>
+                      </div>
                     </div>
+
+                    {/* Status Indicator */}
+                    <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
+                      <div className={`w-2 h-2 rounded-full ${isCurrentMonth ? "bg-green-success" : "bg-blue-default"}`}></div>
+                      <span className="text-xs font-medium text-green-success">
+                        {isCurrentMonth ? "Current" : "History"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Main Content */}
+                  <div className="flex-1">
+                    {/* Main Value */}
+                    <div className="mb-6">
+                      <div className="text-3xl font-bold text-gray-100 mb-2">
+                        {availableMonths.length}
+                      </div>
+                      <div className="text-sm text-gray-400 mb-1">Periods</div>
+                    </div>
+
+                    {/* Month Selector */}
+                    <div className="mb-6">
+                      <select
+                        id="selectedMonth"
+                        value={selectedMonth?.monthId || currentMonth?.monthId || ""}
+                        onChange={(e) => selectMonth(e.target.value)}
+                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {availableMonths.length > 0 ? (
+                          availableMonths.map((month) => (
+                            <option key={month.monthId} value={month.monthId}>
+                              {month.monthName} {month.isCurrent ? "(Current)" : ""}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No months available</option>
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Enhanced Data */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icons.generic.clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">Current</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {isCurrentMonth ? "Yes" : "No"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icons.generic.clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">Status</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {isCurrentMonth ? "Current" : "Historical"}
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -445,67 +504,92 @@ const AdminDashboardPage = () => {
               {appDataLoading ? (
                 <SkeletonCard />
               ) : (
-                <div className="card-small relative">
-                  <div className="absolute top-3 right-3">
-                    <div className="p-1.5 rounded-full bg-btn-primary flex items-center justify-center">
-                      <Icons.generic.user className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                  
-                  {/* Header */}
-                  <div className="mb-3">
-                    <h4 className="text-sm font-semibold">User Filter</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {users.length} users
-                    </p>
-                  </div>
-                  
-                  {/* Content - one per row */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-end text-xs">
-                      <select
-                        id="selectedUser"
-                        value={selectedUserId}
-                        onChange={(e) => handleUserSelect(e.target.value)}
-                        className="text-xs"
-                      >
-                        <option value="">All Users</option>
-                        {users.map((user) => (
-                          <option
-                            key={user.userUID || user.id}
-                            value={user.userUID || user.id}
+                <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
+                  <div className="h-auto">
+                    <div className="flex flex-col h-full">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="p-3 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: "#3d48c920" }}
                           >
-                            {user.name || user.email}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
-                          <span className="text-gray-600 dark:text-gray-300">Status</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {selectedUserId ? (
-                            <Badge variant="primary" size="xs">
-                              {selectedUserName}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-500 dark:text-gray-400">All users</span>
-                          )}
-                          {selectedUserId && (
-                            <DynamicButton
-                              onClick={() => handleUserSelect("")}
-                              variant="outline"
-                              size="xs"
-                              iconName="cancel"
-                              iconPosition="center"
-                              className="!p-1 !min-w-0 !h-5"
+                            <Icons.generic.user
+                              className="w-6 h-6"
+                              style={{ color: "#3d48c9" }}
                             />
-                          )}
+                          </div>
+                          <div className="leading-6">
+                            <h3 className="text-sm font-semibold text-gray-300 !mb-0">
+                              User Filter
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-0">
+                              {users.length} users
+                            </p>
+                          </div>
                         </div>
+
+                        {/* Status Indicator */}
+                        <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
+                          <div className={`w-2 h-2 rounded-full ${selectedUserId ? "bg-blue-default" : "bg-gray-500"}`}></div>
+                          <span className="text-xs font-medium text-green-success">
+                            {selectedUserId ? "Filtered" : "All Users"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Main Content */}
+                      <div className="flex-1">
+                    {/* Main Value */}
+                    <div className="mb-6">
+                      <div className="text-3xl font-bold text-gray-100 mb-2">
+                        {users.length}
+                      </div>
+                      <div className="text-sm text-gray-400 mb-1">Users</div>
+                    </div>
+
+                        {/* User Selector */}
+                        <div className="mb-6">
+                          <select
+                            id="selectedUser"
+                            value={selectedUserId}
+                            onChange={(e) => handleUserSelect(e.target.value)}
+                            className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">All Users</option>
+                            {users.map((user) => (
+                              <option
+                                key={user.userUID || user.id}
+                                value={user.userUID || user.id}
+                              >
+                                {user.name || user.email}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Enhanced Data */}
+                        <div className="space-y-3 mb-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Icons.generic.user className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-400">Selected</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-300">
+                              {selectedUserId ? selectedUserName : "All Users"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Icons.buttons.filter className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-400">Status</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-300">
+                              {selectedUserId ? "Filtered" : "All Users"}
+                            </span>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
                   </div>
@@ -515,67 +599,92 @@ const AdminDashboardPage = () => {
               {appDataLoading ? (
                 <SkeletonCard />
               ) : (
-                <div className="card-small relative">
-                  <div className="absolute top-3 right-3">
-                    <div className="p-1.5 rounded-full bg-red-error flex items-center justify-center">
-                      <Icons.admin.reporters className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                  
-                  {/* Header */}
-                  <div className="mb-3">
-                    <h4 className="text-sm font-semibold">Reporter Filter</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {reporters.length} reporters
-                    </p>
-                  </div>
-                  
-                  {/* Content - one per row */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-end text-xs">
-                      <select
-                        id="selectedReporter"
-                        value={selectedReporterId}
-                        onChange={(e) => handleReporterSelect(e.target.value)}
-                        className="text-xs"
-                      >
-                        <option value="">All Reporters</option>
-                        {reporters.map((reporter) => (
-                          <option
-                            key={reporter.id || reporter.uid}
-                            value={reporter.id || reporter.uid}
+                <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
+                  <div className="h-auto">
+                    <div className="flex flex-col h-full">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="p-3 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: "#ef444420" }}
                           >
-                            {reporter.name || reporter.reporterName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
-                          <span className="text-gray-600 dark:text-gray-300">Status</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {selectedReporterId ? (
-                            <Badge variant="error" size="xs">
-                              {selectedReporterName}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-500 dark:text-gray-400">All reporters</span>
-                          )}
-                          {selectedReporterId && (
-                            <DynamicButton
-                              onClick={() => handleReporterSelect("")}
-                              variant="outline"
-                              size="xs"
-                              iconName="cancel"
-                              iconPosition="center"
-                              className="!p-1 !min-w-0 !h-5"
+                            <Icons.admin.reporters
+                              className="w-6 h-6"
+                              style={{ color: "#ef4444" }}
                             />
-                          )}
+                          </div>
+                          <div className="leading-6">
+                            <h3 className="text-sm font-semibold text-gray-300 !mb-0">
+                              Reporter Filter
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-0">
+                              {reporters.length} reporters
+                            </p>
+                          </div>
                         </div>
+
+                        {/* Status Indicator */}
+                        <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
+                          <div className={`w-2 h-2 rounded-full ${selectedReporterId ? "bg-red-error" : "bg-gray-500"}`}></div>
+                          <span className="text-xs font-medium text-green-success">
+                            {selectedReporterId ? "Filtered" : "All Reporters"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Main Content */}
+                      <div className="flex-1">
+                        {/* Main Value */}
+                        <div className="mb-6">
+                          <div className="text-3xl font-bold text-gray-100 mb-2">
+                            {reporters.length}
+                          </div>
+                          <div className="text-sm text-gray-400 mb-1">Reporters</div>
+                        </div>
+
+                        {/* Reporter Selector */}
+                        <div className="mb-6">
+                          <select
+                            id="selectedReporter"
+                            value={selectedReporterId}
+                            onChange={(e) => handleReporterSelect(e.target.value)}
+                            className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          >
+                            <option value="">All Reporters</option>
+                            {reporters.map((reporter) => (
+                              <option
+                                key={reporter.id || reporter.uid}
+                                value={reporter.id || reporter.uid}
+                              >
+                                {reporter.name || reporter.reporterName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Enhanced Data */}
+                        <div className="space-y-3 mb-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Icons.admin.reporters className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-400">Selected</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-300">
+                              {selectedReporterId ? selectedReporterName : "All Reporters"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Icons.buttons.filter className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-400">Status</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-300">
+                              {selectedReporterId ? "Filtered" : "All Reporters"}
+                            </span>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
                   </div>
@@ -588,37 +697,89 @@ const AdminDashboardPage = () => {
           {isInitialLoading ? (
             <SkeletonCard />
           ) : (
-            <div className="card-small relative">
-              <div className="absolute top-3 right-3">
-                <div className="p-1.5 rounded-full bg-warning flex items-center justify-center">
-                  <Icons.buttons.add className="w-3 h-3 text-white" />
-                </div>
-              </div>
-              
-              {/* Header */}
-              <div className="mb-3">
-                <h4 className="text-sm font-semibold">Actions</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {canCreateTasks
-                    ? "Create available"
-                    : "Create restricted"}
-                </p>
-              </div>
-              
-              {/* Content - one per row */}
-              <div className="space-y-2">
-                <div className="bg-white/50 dark:bg-gray-800/50 rounded-md p-2 border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-success"></div>
-                      <span className="text-gray-600 dark:text-gray-300">Status</span>
+            <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
+              <div className="h-auto">
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className="p-3 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: `${canCreateTasks ? "#f59e0b" : "#ef4444"}20` }}
+                      >
+                        <Icons.buttons.add
+                          className="w-6 h-6"
+                          style={{ color: canCreateTasks ? "#f59e0b" : "#ef4444" }}
+                        />
+                      </div>
+                      <div className="leading-6">
+                        <h3 className="text-sm font-semibold text-gray-300 !mb-0">
+                          Actions
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-0">
+                          {canCreateTasks
+                            ? "Create available"
+                            : "Create restricted"}
+                        </p>
+                      </div>
                     </div>
-                    <Badge 
-                      variant={canCreateTasks ? "success" : "error"} 
-                      size="xs"
-                    >
-                      {canCreateTasks ? "Active" : "Disabled"}
-                    </Badge>
+
+                    {/* Status Indicator */}
+                    <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
+                      <div className={`w-2 h-2 rounded-full ${canCreateTasks ? "bg-green-success" : "bg-red-error"}`}></div>
+                      <span className="text-xs font-medium text-green-success">
+                        {canCreateTasks ? "Active" : "Disabled"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Main Content */}
+                  <div className="flex-1">
+                    {/* Main Value */}
+                    <div className="mb-6">
+                      <div className="text-3xl font-bold text-gray-100 mb-2">
+                        {canCreateTasks ? "1" : "0"}
+                      </div>
+                      <div className="text-sm text-gray-400 mb-1">Actions</div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="mb-6">
+                      <DynamicButton
+                        onClick={handleCreateTask}
+                        variant={canCreateTasks ? "primary" : "outline"}
+                        size="sm"
+                        iconName="add"
+                        iconPosition="left"
+                        disabled={!canCreateTasks}
+                        className="w-full"
+                      >
+                        {canCreateTasks ? "Create Task" : "Create Disabled"}
+                      </DynamicButton>
+                    </div>
+
+                    {/* Enhanced Data */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icons.generic.task className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">Status</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {canCreateTasks ? "Active" : "Disabled"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icons.generic.clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">Permission</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {canCreateTasks ? "Granted" : "Restricted"}
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -628,13 +789,13 @@ const AdminDashboardPage = () => {
       </div>
 
       {/* Dashboard Cards */}
-      <div className=" overflow-hidden mb-6">
+      <div className="overflow-hidden mb-8">
         {/* Cards Section Header */}
-        <div className="py-4 border-b border-gray-300 dark:border-gray-700">
+        <div className="py-6 border-b border-gray-300 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <h3>Dashboard Cards</h3>
-              <p className="text-exsmall">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard Cards</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {isInitialLoading ? (
                   <span className="inline-block w-32 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
                 ) : (
@@ -657,12 +818,20 @@ const AdminDashboardPage = () => {
 
         {/* Dashboard Cards Content */}
         {showCards && (
-          <div className="pt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {dashboardCards.map((card) => (
-                <DashboardCard key={card.id} card={card} />
-              ))}
-            </div>
+          <div className="pt-6">
+            {isInitialLoading ? (
+              <div className="grid grid-cols-1 gap-6">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <SkeletonCard key={index} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6">
+                {dashboardCards.map((card) => (
+                  <DashboardCard key={card.id} card={card} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -670,10 +839,10 @@ const AdminDashboardPage = () => {
       {/* Professional Tasks Section */}
       <div>
         {/* Professional Section Header */}
-        <div className=" py-4 border-b border-gray-300 dark:border-gray-700">
+        <div className="py-6 border-b border-gray-300 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="capitalize">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
                 {(() => {
                   if (selectedUserId && selectedReporterId) {
                     return `${selectedUserName} & ${selectedReporterName} Tasks`;
@@ -686,7 +855,7 @@ const AdminDashboardPage = () => {
                   }
                 })()}
               </h3>
-              <p className="text-exsmall">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {isInitialLoading || isLoading ? (
                   <span className="inline-block w-40 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
                 ) : (
@@ -716,12 +885,12 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Table Content */}
-        <div className="py-4 ">
+        <div className="py-6">
           {showTable && (
             <>
               {/* Show loading when data is being fetched */}
-              {isLoading ? (
-                <SkeletonTable rows={3} />
+              {isLoading || isInitialLoading ? (
+                <SkeletonTable rows={5} />
               ) : (
                 <TaskTable
                   tasks={getFilteredTasks(

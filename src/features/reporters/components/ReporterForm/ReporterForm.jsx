@@ -4,7 +4,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
+import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/utils/errorUtils';
+import { createFormSubmissionHandler, handleFormValidation } from '@/utils/formUtils';
 import { reporterFormSchema, REPORTER_FORM_FIELDS } from '../../config/useReporterForm';
 import { TextField, SelectField } from '../../../../components/forms/components';
 import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
@@ -55,12 +56,9 @@ const ReporterForm = ({
     }
   }, [initialData, mode, reset]);
 
-  const onSubmit = async (data) => {
-    try {
-      logger.log('👤 Reporter form submission started:', { mode, data });
-      
-      let result;
-      
+  // Create standardized form submission handler
+  const handleFormSubmit = createFormSubmissionHandler(
+    async (data) => {
       if (mode === 'edit' && initialData?.id) {
         // Update existing reporter
         const updateReporterWithErrorHandling = withMutationErrorHandling(updateReporter, {
@@ -69,15 +67,11 @@ const ReporterForm = ({
           logError: true
         });
         
-        result = await updateReporterWithErrorHandling({
+        return await updateReporterWithErrorHandling({
           id: initialData.id,
           updates: data,
           userData: user
         });
-        
-        logger.log('✅ Reporter updated successfully:', result);
-        handleSuccess('Reporter updated successfully!', result, 'Update Reporter');
-        
       } else {
         // Create new reporter
         const createReporterWithErrorHandling = withMutationErrorHandling(createReporter, {
@@ -86,36 +80,28 @@ const ReporterForm = ({
           logError: true
         });
         
-        result = await createReporterWithErrorHandling({
+        return await createReporterWithErrorHandling({
           reporter: data,
           userData: user
         });
-        
-        logger.log('✅ Reporter created successfully:', result);
-        handleSuccess('Reporter created successfully!', result, 'Create Reporter');
       }
-      
-      // Reset form
-      reset();
-      
-      // Call success callback if provided
-      onSuccess?.(result);
-      
-    } catch (error) {
-      logger.error('❌ Reporter form submission failed:', error);
-      
-      // Handle permission errors specifically
-      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
-        const action = mode === 'create' ? 'create' : 'update';
-        showAuthError(`You do not have permission to ${action} reporters`);
-      } else {
-        showError(error.message || 'Failed to save reporter. Please try again.');
+    },
+    {
+      operation: mode === 'edit' ? 'update' : 'create',
+      resource: 'reporter',
+      onSuccess: (result) => {
+        reset();
+        onSuccess?.(result);
       }
     }
+  );
+
+  const onSubmit = async (data) => {
+    await handleFormSubmit(data, { reset, setError, clearErrors });
   };
 
   const handleFormError = (errors) => {
-    handleValidationError(errors, 'Reporter Form');
+    handleFormValidation(errors, 'Reporter Form');
   };
 
   const formTitle = mode === 'edit' ? 'Edit Reporter' : 'Create New Reporter';

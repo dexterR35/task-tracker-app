@@ -25,6 +25,11 @@ export const DarkModeProvider = ({ children }) => {
   const timeoutRef = useRef(null);
 
   const toggleDarkMode = () => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
     setIsTransitioning(true);
     
     // Add transition class to body
@@ -48,6 +53,7 @@ export const DarkModeProvider = ({ children }) => {
     timeoutRef.current = setTimeout(() => {
       document.body.classList.remove('transition-colors', 'duration-500');
       setIsTransitioning(false);
+      timeoutRef.current = null;
     }, 500);
   };
 
@@ -65,6 +71,7 @@ export const DarkModeProvider = ({ children }) => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, []);

@@ -1,11 +1,26 @@
 import React, { useMemo } from "react";
 import AnalyticsCard from "./AnalyticsCard";
 
-const MarketUserBreakdownCard = ({ tasks, selectedMonth, users = [] }) => {
+const MarketUserBreakdownCard = ({ tasks, selectedMonth, users = [], isLoading = false }) => {
   // Tasks are already filtered by month from useMonthSelection, no need for additional filtering
   const filteredTasks = useMemo(() => {
     return tasks || [];
   }, [tasks]);
+
+  // Show skeleton if loading or no tasks yet
+  if (isLoading || !tasks || tasks.length === 0) {
+    return (
+      <AnalyticsCard
+        title="Market Distribution by User"
+        tableData={[]}
+        tableColumns={[]}
+        chartData={[]}
+        chartTitle="Tasks by Market"
+        colors={[]}
+        isLoading={true}
+      />
+    );
+  }
 
   // Calculate market breakdown by user
   const analyticsData = useMemo(() => {
@@ -148,6 +163,7 @@ const MarketUserBreakdownCard = ({ tasks, selectedMonth, users = [] }) => {
       chartData={chartData}
       chartTitle="Tasks by Market"
       colors={colors}
+      isLoading={isLoading}
     />
   );
 };

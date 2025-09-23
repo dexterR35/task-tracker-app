@@ -88,3 +88,32 @@ export const showReauthSuccess = () => {
 export const showReauthError = (message) => {
   return showError(message || "Reauthentication failed", { autoClose: 5000 });
 };
+
+// Standardized toast patterns for common operations
+export const showOperationSuccess = (operation, resource = 'item') => {
+  return showSuccess(`${operation} ${resource} successfully!`, { autoClose: 3000 });
+};
+
+export const showOperationError = (operation, resource = 'item', error = '') => {
+  const message = error || `Failed to ${operation} ${resource}. Please try again.`;
+  return showError(message, { autoClose: 5000 });
+};
+
+export const showValidationError = (errors) => {
+  const message = `Validation failed: ${Object.keys(errors).join(', ')}`;
+  return showError(message, { autoClose: 4000 });
+};
+
+export const showPermissionError = (action, resource = 'resource') => {
+  return showAuthError(`You do not have permission to ${action} ${resource}`);
+};
+
+export const showNetworkError = () => {
+  return showError("Network error: Please check your connection and try again", { 
+    autoClose: 6000 
+  });
+};
+
+export const showLoadingToast = (message = "Loading...") => {
+  return showLoading(message, { autoClose: false });
+};

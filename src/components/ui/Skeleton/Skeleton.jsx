@@ -75,4 +75,47 @@ export const SkeletonTable = ({ rows = 5, className = '' }) => (
   </div>
 );
 
+export const SkeletonAnalyticsCard = ({ className = '' }) => (
+  <div className={`card-large ${className}`}>
+    {/* Title */}
+    <Skeleton height="1.5rem" width="40%" className="mb-6" />
+    
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Table Section */}
+      <div>
+        <Skeleton height="1.25rem" width="30%" className="mb-4" />
+        <SkeletonTable rows={4} />
+      </div>
+      
+      {/* Chart Section */}
+      <div>
+        <Skeleton height="1.25rem" width="35%" className="mb-4" />
+        <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <Skeleton height="200px" width="200px" rounded="full" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+export const SkeletonDashboardCard = ({ className = '' }) => (
+  <div className={`card-small ${className}`}>
+    <div className="mb-4">
+      <Skeleton height="1.25rem" width="60%" className="mb-2" />
+      <Skeleton height="0.875rem" width="40%" />
+    </div>
+    <div className="space-y-3">
+      <Skeleton height="2.5rem" width="100%" />
+      <div className="flex items-center justify-between">
+        <Skeleton height="0.875rem" width="50%" />
+        <Skeleton height="1.5rem" width="1.5rem" rounded="full" />
+      </div>
+      <div className="flex items-center justify-between">
+        <Skeleton height="0.875rem" width="60%" />
+        <Skeleton height="1.5rem" width="1.5rem" rounded="full" />
+      </div>
+    </div>
+  </div>
+);
+
 export default Skeleton;

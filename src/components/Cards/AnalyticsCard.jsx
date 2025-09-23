@@ -1,6 +1,7 @@
 import React from "react";
 import AnalyticsTable from "../Table/AnalyticsTable";
 import SimplePieChart from "../Charts/SimplePieChart";
+import { SkeletonAnalyticsCard } from "../ui/Skeleton/Skeleton";
 
 const AnalyticsCard = ({ 
   title,
@@ -9,13 +10,18 @@ const AnalyticsCard = ({
   chartData,
   chartTitle,
   colors,
-  className = ""
+  className = "",
+  isLoading = false
 }) => {
+  if (isLoading) {
+    return <SkeletonAnalyticsCard className={className} />;
+  }
+
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-4 ${className}`}>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h2>
+    <div className={`card-large ${className}`}>
+      <h2 className="card-title text-xl mb-6">{title}</h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Table */}
         <div>
           <AnalyticsTable

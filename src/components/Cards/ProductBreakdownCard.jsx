@@ -1,11 +1,26 @@
 import React, { useMemo } from "react";
 import AnalyticsCard from "./AnalyticsCard";
 
-const ProductBreakdownCard = ({ tasks, selectedMonth }) => {
+const ProductBreakdownCard = ({ tasks, selectedMonth, isLoading = false }) => {
   // Tasks are already filtered by month from useMonthSelection, no need for additional filtering
   const filteredTasks = useMemo(() => {
     return tasks || [];
   }, [tasks]);
+
+  // Show skeleton if loading or no tasks yet
+  if (isLoading || !tasks || tasks.length === 0) {
+    return (
+      <AnalyticsCard
+        title="Task Breakdown by Product"
+        tableData={[]}
+        tableColumns={[]}
+        chartData={[]}
+        chartTitle="Tasks by Product"
+        colors={["#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]}
+        isLoading={true}
+      />
+    );
+  }
 
   // Calculate analytics data
   const analyticsData = useMemo(() => {
@@ -110,6 +125,7 @@ const ProductBreakdownCard = ({ tasks, selectedMonth }) => {
       chartData={chartData}
       chartTitle="Tasks by Product"
       colors={["#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]}
+      isLoading={isLoading}
     />
   );
 };
