@@ -2,17 +2,10 @@ import React, { useMemo } from "react";
 import AnalyticsCard from "./AnalyticsCard";
 
 const CategoryBreakdownCard = ({ tasks, selectedMonth }) => {
-  // Filter tasks by selected month
+  // Tasks are already filtered by month from useMonthSelection, no need for additional filtering
   const filteredTasks = useMemo(() => {
-    if (!selectedMonth) return tasks;
-    
-    return tasks.filter(task => {
-      if (!task.createdAt) return false;
-      const date = new Date(task.createdAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      return monthKey === selectedMonth;
-    });
-  }, [tasks, selectedMonth]);
+    return tasks || [];
+  }, [tasks]);
 
   // Calculate analytics data
   const analyticsData = useMemo(() => {

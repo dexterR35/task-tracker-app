@@ -1,37 +1,46 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useAppData } from "@/hooks/useAppData";
+import React from "react";
+import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import CategoryBreakdownCard from "@/components/Cards/CategoryBreakdownCard";
 import ProductBreakdownCard from "@/components/Cards/ProductBreakdownCard";
+import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
+import MonthProgressBar from "@/components/ui/MonthProgressBar";
 
 const AnalyticsPage = () => {
-  const { tasks = [], isLoading } = useAppData();
-  const [selectedMonth, setSelectedMonth] = useState("");
+  // Get real-time data from month selection (same as AdminDashboardPage)
+  const { user, users, reporters, error, isLoading: appDataLoading } = useAppData();
+  
+  const {
+    tasks, // Real-time tasks data (already filtered by selected month)
+    availableMonths, // Available months for dropdown
+    currentMonth, // Current month info
+    selectedMonth, // Selected month info
+    isCurrentMonth, // Boolean check
+    isLoading, // Loading state for selected month
+    isInitialLoading, // Loading state for initial month data
+    isMonthDataReady, // Flag indicating month data is ready
+    error: monthError, // Error state
+    selectMonth, // Function to select month
+    resetToCurrentMonth, // Function to reset
+  } = useMonthSelection();
 
-  // Get unique months from tasks
-  const availableMonths = useMemo(() => {
-    const months = new Set();
-    tasks.forEach(task => {
-      if (task.createdAt) {
-        const date = new Date(task.createdAt);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        months.add(monthKey);
-      }
-    });
-    return Array.from(months).sort().reverse();
-  }, [tasks]);
+  // Get current month name for display
+  const currentMonthName = currentMonth?.monthName || "Current Month";
+  const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Set default month to most recent
-  useEffect(() => {
-    if (availableMonths.length > 0 && !selectedMonth) {
-      setSelectedMonth(availableMonths[0]);
-    }
-  }, [availableMonths, selectedMonth]);
-
-
-  if (isLoading) {
+  if (isLoading || isInitialLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500 dark:text-gray-400">Loading analytics...</div>
+      </div>
+    );
+  }
+
+  if (error || monthError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-500 dark:text-red-400">
+          Error loading analytics: {(error || monthError)?.message || "Unknown error"}
+        </div>
       </div>
     );
   }
@@ -50,19 +59,31 @@ const AnalyticsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
+            {/* Month Selector */}
             <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              value={selectedMonth?.monthId || currentMonth?.monthId || ""}
+              onChange={(e) => selectMonth(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
             >
-              <option value="">All Time</option>
               {availableMonths.map(month => (
-                <option key={month} value={month}>
-                  {new Date(month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                <option key={month.monthId} value={month.monthId}>
+                  {month.monthName}
                 </option>
               ))}
             </select>
           </div>
+        </div>
+        
+        {/* Month Progress Bar */}
+        <div className="mt-4">
+          <MonthProgressBar 
+            monthId={selectedMonth?.monthId || currentMonth?.monthId}
+            monthName={selectedMonth?.monthName || currentMonth?.monthName}
+            isCurrentMonth={isCurrentMonth}
+            startDate={selectedMonth?.startDate || currentMonth?.startDate}
+            endDate={selectedMonth?.endDate || currentMonth?.endDate}
+            daysInMonth={selectedMonth?.daysInMonth || currentMonth?.daysInMonth}
+          />
         </div>
       </div>
 
@@ -70,6 +91,7 @@ const AnalyticsPage = () => {
       <div className="space-y-6">
         <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} />
         <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} />
+        <MarketUserBreakdownCard tasks={tasks} selectedMonth={selectedMonth} users={users} />
       </div>
     </div>
   );

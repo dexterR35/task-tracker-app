@@ -245,6 +245,8 @@ export const tasksApi = createApi({
         { type: "MonthTasks", id: arg.monthId },
         { type: "Tasks", id: "LIST" },
         { type: "Analytics", id: "LIST" },
+        // Invalidate all month tasks queries to ensure real-time updates
+        { type: "MonthTasks", id: "LIST" },
       ],
     }),
 
@@ -355,6 +357,8 @@ export const tasksApi = createApi({
         { type: "Tasks", id: "LIST" },
         { type: "MonthTasks", id: task.monthId },
         { type: "Analytics", id: "LIST" },
+        // Invalidate all month tasks queries to ensure real-time updates
+        { type: "MonthTasks", id: "LIST" },
       ],
     }),
     // Update task - simple Firestore update
@@ -415,6 +419,8 @@ export const tasksApi = createApi({
         { type: "Tasks", id: "LIST" },
         { type: "MonthTasks", id: monthId },
         { type: "Analytics", id: "LIST" },
+        // Invalidate all month tasks queries to ensure real-time updates
+        { type: "MonthTasks", id: "LIST" },
       ],
     }),
 
@@ -457,6 +463,8 @@ export const tasksApi = createApi({
         { type: "Tasks", id: "LIST" },
         { type: "MonthTasks", id: monthId },
         { type: "Analytics", id: "LIST" },
+        // Invalidate all month tasks queries to ensure real-time updates
+        { type: "MonthTasks", id: "LIST" },
       ],
     }),
 
@@ -773,6 +781,8 @@ export const tasksApi = createApi({
       providesTags: (result, error, arg) => [
         { type: "CurrentMonth", id: "ENHANCED" },
         { type: "MonthTasks", id: getMonthInfo().monthId }, // Invalidate when current month tasks change
+        { type: "MonthTasks", id: "LIST" }, // Also invalidate all month tasks
+        { type: "Analytics", id: "LIST" }, // Invalidate analytics data
       ],
     }),
 
