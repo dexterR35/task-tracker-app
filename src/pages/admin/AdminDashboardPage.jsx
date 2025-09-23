@@ -203,7 +203,7 @@ const AdminDashboardPage = () => {
     selectedReporterId: null,
     selectedMonthId: currentMonthId,
     department: "video",
-    limit: 3,
+    limit: 999, // Show all users from video department
   });
 
   const designMetrics = useTop3Calculations(commonCardData, {
@@ -211,7 +211,7 @@ const AdminDashboardPage = () => {
     selectedReporterId: null,
     selectedMonthId: currentMonthId,
     department: "design",
-    limit: 3,
+    limit: 999, // Show all users from design department
   });
 
   const devMetrics = useTop3Calculations(commonCardData, {
@@ -219,7 +219,7 @@ const AdminDashboardPage = () => {
     selectedReporterId: null,
     selectedMonthId: currentMonthId,
     department: "developer",
-    limit: 3,
+    limit: 999, // Show all users from developer department
   });
 
   // Selected user metrics (user + month + reporter filtered, include all data)

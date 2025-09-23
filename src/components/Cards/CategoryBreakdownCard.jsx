@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
-import AnalyticsCard from "./AnalyticsCard";
+import LargeAnalyticsCard from "./LargeAnalyticsCard";
+import { Icons } from "@/components/icons";
+import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 
 const CategoryBreakdownCard = ({ tasks, selectedMonth, isLoading = false }) => {
   // Tasks are already filtered by month from useMonthSelection, no need for additional filtering
@@ -7,16 +9,48 @@ const CategoryBreakdownCard = ({ tasks, selectedMonth, isLoading = false }) => {
     return tasks || [];
   }, [tasks]);
 
+  // Get top 3 calculations for this card
+  const top3Data = useTop3Calculations(
+    { tasks: filteredTasks },
+    {
+      selectedUserId: null,
+      selectedReporterId: null,
+      selectedMonthId: selectedMonth?.monthId,
+      department: null,
+      limit: 3,
+    }
+  );
+
+  // Calculate market badges from tasks
+  const marketBadges = useMemo(() => {
+    const marketCounts = {};
+    filteredTasks.forEach(task => {
+      const markets = task.data_task?.markets || task.markets;
+      if (markets && Array.isArray(markets)) {
+        markets.forEach(market => {
+          if (market) {
+            marketCounts[market] = (marketCounts[market] || 0) + 1;
+          }
+        });
+      }
+    });
+
+    return Object.entries(marketCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 6)
+      .map(([market, count]) => ({ market, count }));
+  }, [filteredTasks]);
+
   // Show skeleton if loading or no tasks yet
   if (isLoading || !tasks || tasks.length === 0) {
     return (
-      <AnalyticsCard
+      <LargeAnalyticsCard
         title="Task Breakdown by Category"
-        tableData={[]}
-        tableColumns={[]}
-        chartData={[]}
-        chartTitle="Tasks by Category"
-        colors={["#3b82f6", "#10b981", "#f59e0b"]}
+        subtitle="Current Period Analysis"
+        icon={Icons.generic.chart}
+        color="blue"
+        top3Data={{}}
+        marketBadges={[]}
         isLoading={true}
       />
     );
@@ -115,13 +149,13 @@ const CategoryBreakdownCard = ({ tasks, selectedMonth, isLoading = false }) => {
   ];
 
   return (
-    <AnalyticsCard
+    <LargeAnalyticsCard
       title="Task Breakdown by Category"
-      tableData={tableData}
-      tableColumns={tableColumns}
-      chartData={chartData}
-      chartTitle="Tasks by Category"
-      colors={["#3b82f6", "#10b981", "#f59e0b"]}
+      subtitle={`${selectedMonth?.monthName || 'Current Month'} Analysis`}
+      icon={Icons.generic.chart}
+      color="blue"
+      top3Data={top3Data}
+      marketBadges={marketBadges}
       isLoading={isLoading}
     />
   );

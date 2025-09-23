@@ -65,43 +65,43 @@ const DashboardCard = ({ card }) => {
   const getTrendIconComponent = (direction) => {
     switch (direction) {
       case "up":
-        return <Icons.buttons.chevronUp className="w-3 h-3 text-green-success" />;
+        return <Icons.buttons.chevronUp className="w-3 h-3" style={{ color: cardColorHex }} />;
       case "down":
-        return <Icons.buttons.chevronDown className="w-3 h-3 text-red-error" />;
+        return <Icons.buttons.chevronDown className="w-3 h-3" style={{ color: cardColorHex }} />;
       default:
         return <Icons.buttons.minus className="w-3 h-3 text-gray-400" />;
     }
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700/50 rounded-lg p-4 w-full">
+    <div className="bg-gray-800 border border-gray-700/50 rounded-xl p-6 w-full shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="h-auto">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <div
-                className="p-3 rounded-xl flex items-center justify-center"
+                className="p-4 rounded-xl flex items-center justify-center shadow-lg border border-gray-600/30"
                 style={{ backgroundColor: `${cardColorHex}20` }}
               >
                 <card.icon
-                  className="w-6 h-6"
+                  className="w-7 h-7"
                   style={{ color: cardColorHex }}
                 />
               </div>
               <div className="leading-6">
-                <h3 className="text-sm font-semibold text-gray-300 !mb-0">
+                <h3 className="text-lg font-bold text-gray-200 !mb-1">
                   {card.title}
                 </h3>
-                <p className="text-xs text-gray-400 mt-0">{card.subtitle}</p>
+                <p className="text-sm text-gray-400 mt-0">{card.subtitle}</p>
               </div>
             </div>
 
             {/* Trend Indicator */}
             {card.trend && (
-              <div className="flex items-center space-x-1 px-2 py-1 rounded bg-gray-700/30">
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-700/40 border border-gray-600/30 shadow-sm">
                 {getTrendIconComponent(card.trendDirection)}
-                <span className="text-xs font-medium text-green-success">
+                <span className="text-sm font-semibold" style={{ color: cardColorHex }}>
                   {card.trend}
                 </span>
               </div>
@@ -112,34 +112,34 @@ const DashboardCard = ({ card }) => {
           <div className="flex-1">
             {/* Main Value */}
             <div className="mb-6">
-              <div className="text-3xl font-bold text-gray-100 mb-2">
+              <div className="text-4xl font-bold text-gray-100 mb-2">
                 {card.value}
               </div>
               <div className="text-sm text-gray-400 mb-1">{card.description}</div>
             </div>
 
-            {/* Badges Section - Current Active or Markets */}
+            {/* Badges Section - Using Card's Color */}
             {card.badges && card.badges.length > 0 && (
               <div className="mb-4">
                 <div className="flex flex-wrap gap-2">
-                  {card.badges.map((badge, index) => (
-                    <Badge 
-                      key={index} 
-                      variant="default"
-                      size="sm"
-                      className="text-white text-xs px-3 py-1.5 font-semibold shadow-md rounded-md ring-1 ring-black/10"
-                      style={{ backgroundColor: badge.color || cardColorHex }}
-                    >
-                      {badge.label}
-                    </Badge>
-                  ))}
+                  {card.badges.map((badge, index) => {
+                    return (
+                      <div 
+                        key={index} 
+                        className="flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold text-white shadow-sm"
+                        style={{ backgroundColor: cardColorHex }}
+                      >
+                        <span>{badge.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Chart Section - Only for cards with charts */}
             {card.hasChart && (
-              <div className="mb-6 h-16">
+              <div className="mb-6 h-20">
                 {card.chartData && card.chartData.length > 0 ? (
                   card.chartType === "bar" ? (
                     <ModernBarChart data={card.chartData} color={cardColorHex} />
@@ -154,20 +154,85 @@ const DashboardCard = ({ card }) => {
               </div>
             )}
 
-            {/* Enhanced Data - Matching Top Cards Design */}
+            {/* Enhanced Data - Top 3 Functionality with Consistent Card Color */}
             {card.details && (
-              <div className="space-y-3 mb-6">
-                {card.details.filter(detail => !detail.isHeader).slice(0, 4).map((detail, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Icons.generic.user className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-400">{detail.label}</span>
+              <div className="space-y-2 mb-6">
+                {card.details.map((detail, index) => {
+                  // Skip if it's a header with no value
+                  if (detail.isHeader && !detail.value) {
+                    return (
+                      <div key={index} className="pt-2 border-t border-gray-600/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-gray-200">{detail.label}</span>
+                          {detail.icon && (
+                            <detail.icon 
+                              className="w-5 h-5" 
+                              style={{ color: cardColorHex }} 
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Skip headers that are just labels
+                  if (detail.isHeader) {
+                    return null;
+                  }
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className="p-3 rounded-lg border hover:bg-gray-700/30 transition-colors"
+                      style={{ 
+                        backgroundColor: `${cardColorHex}10`,
+                        borderColor: `${cardColorHex}20`
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div 
+                            className="w-2 h-2 rounded-full p-1"
+                            style={{ 
+                              backgroundColor: cardColorHex,
+                              padding: '4px',
+                              background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
+                            }}
+                          ></div>
+                          <span className="text-xs text-gray-400">{detail.label}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">
+                          {detail.value}
+                        </span>
+                      </div>
+                      
+                      {/* Show hours value if available */}
+                      {detail.hoursValue && (
+                        <div className="ml-4 mt-1">
+                          <span className="text-xs text-gray-500">total hrs {detail.hoursValue}</span>
+                        </div>
+                      )}
+                      
+                      {/* Show market badges if available */}
+                      {detail.subValue && detail.subValue !== 'No markets' && (
+                        <div className="ml-4 mt-2">
+                          <div className="text-xs text-gray-500 mb-1">markets:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {detail.subValue.split(' ').map((market, marketIndex) => (
+                              <div 
+                                key={marketIndex}
+                                className="px-2 py-1 rounded text-xs font-semibold text-white"
+                                style={{ backgroundColor: cardColorHex }}
+                              >
+                                {market}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-sm font-medium text-gray-300">
-                      {detail.value}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

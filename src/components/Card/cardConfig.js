@@ -457,10 +457,10 @@ export const CARD_CONFIGS = {
         // Department Stats Section
         ...metrics.sections.departmentStats,
         
-        // Top 3 Users Section
+        // All Users Section
         {
           icon: Icons.generic.user,
-          label: "Top 3 Video Users",
+          label: "All Video Users",
           value: "",
           subValue: "",
           isHeader: true
@@ -533,10 +533,10 @@ export const CARD_CONFIGS = {
         // Department Stats Section
         ...metrics.sections.departmentStats,
         
-        // Top 3 Users Section
+        // All Users Section
         {
           icon: Icons.generic.user,
-          label: "Top 3 Design Users",
+          label: "All Design Users",
           value: "",
           subValue: "",
           isHeader: true
@@ -615,10 +615,10 @@ export const CARD_CONFIGS = {
         // Department Stats Section
         ...metrics.sections.departmentStats,
         
-        // Top 3 Users Section
+        // All Users Section
         {
           icon: Icons.generic.user,
-          label: "Top 3 Dev Users",
+          label: "All Dev Users",
           value: "",
           subValue: "",
           isHeader: true
@@ -818,10 +818,8 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
 // Predefined card sets for common use cases
 export const CARD_SETS = {
   DASHBOARD: [
-    CARD_TYPES.TASKS,
     CARD_TYPES.DEPARTMENT_VIDEO,
     CARD_TYPES.DEPARTMENT_DESIGN,
-    CARD_TYPES.DEPARTMENT_DEV,
-    CARD_TYPES.REPORTERS
+    CARD_TYPES.DEPARTMENT_DEV
   ]
 };

@@ -225,7 +225,6 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Markets = Object.entries(marketTaskCounts)
       .sort(([,a], [,b]) => b - a)
-      .slice(0, includeAllData ? Object.keys(marketTaskCounts).length : limit)
       .map(([market, taskCount]) => ({
         icon: Icons.generic.trendingUp,
         label: market,
@@ -248,7 +247,7 @@ export const useTop3Calculations = (data, options = {}) => {
       aiModelCounts, 
       Icons.generic.cpu, 
       "No AI models used",
-      limit
+      Object.keys(aiModelCounts).length // Show all AI models
     );
 
     // Calculate top 3 products
@@ -264,7 +263,7 @@ export const useTop3Calculations = (data, options = {}) => {
       productCounts, 
       Icons.generic.package, 
       "No products worked on",
-      includeAllData ? Object.keys(productCounts).length : limit
+      Object.keys(productCounts).length // Show all products
     );
 
     // Calculate top 3 users
@@ -303,7 +302,6 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Users = Object.values(userTaskCounts)
       .sort((a, b) => b.taskCount - a.taskCount)
-      .slice(0, limit)
       .map(userData => {
         const user = usersWithTasks.find(u => u.id === userData.userId || u.uid === userData.userId);
         const userName = user?.name || user?.email || `User ${userData.userId}`;
@@ -325,7 +323,7 @@ export const useTop3Calculations = (data, options = {}) => {
           label: userName,
           value: `${userData.taskCount} task${userData.taskCount !== 1 ? 's' : ''}`,
           subValue: marketEntries || 'No markets',
-          hoursValue: `${userData.totalHours}h total`
+          hoursValue: `${userData.totalHours}h`
         };
       });
 
@@ -360,7 +358,6 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Reporters = Object.values(reporterTaskCounts)
       .sort((a, b) => b.taskCount - a.taskCount)
-      .slice(0, limit)
       .map(reporterData => {
         const reporter = reportersWithTasks.find(r => r.id === reporterData.reporterId || r.uid === reporterData.reporterId);
         const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${reporterData.reporterId}`;

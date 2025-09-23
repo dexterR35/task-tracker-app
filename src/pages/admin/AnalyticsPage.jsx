@@ -5,6 +5,9 @@ import ProductBreakdownCard from "@/components/Cards/ProductBreakdownCard";
 import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
+import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
+import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
+import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
 import MonthProgressBar from "@/components/ui/MonthProgressBar";
 import CSVExportButton from "@/components/ui/CSVExportButton";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
@@ -122,13 +125,20 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-      {/* Analytics Cards */}
+      {/* Chart-based Analytics Cards */}
       <div className="space-y-6">
-        <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
-        <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
         <MarketUserBreakdownCard tasks={tasks} selectedMonth={selectedMonth} users={users} isLoading={isLoading} />
         <ReporterAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} reporters={reporters} isLoading={isLoading} />
         <UserAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} users={users} isLoading={isLoading} />
+        <AcquisitionAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
+        <MarketingAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
+        <ProductAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
+      </div>
+
+      {/* Icon and Badge Cards */}
+      <div className="space-y-6 mt-8">
+        <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
+        <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
       </div>
     </div>
   );
