@@ -645,8 +645,70 @@ export const CARD_CONFIGS = {
   }
 };
 
+// Map user occupation to department for access control
+const mapOccupationToDepartment = (occupation) => {
+  if (!occupation) return null;
+  
+  const occ = occupation.toLowerCase();
+  
+  // Video department mappings
+  if (occ.includes('video') || occ.includes('editor')) {
+    return 'video';
+  }
+  
+  // Design department mappings
+  if (occ.includes('design') || occ.includes('designer')) {
+    return 'design';
+  }
+  
+  // Development department mappings
+  if (occ.includes('dev') || occ.includes('developer') || occ.includes('programmer') || occ.includes('engineer')) {
+    return 'developer';
+  }
+  
+  return null;
+};
+
+// Role-based access control for dashboard cards
+export const canUserAccessCard = (user, cardType) => {
+  // Admin can access all cards
+  if (user?.role === 'admin') {
+    return true;
+  }
+  
+  // Regular users can only access their department card and their own card
+  if (user?.role === 'user') {
+    const userDepartment = mapOccupationToDepartment(user?.occupation);
+    
+    switch (cardType) {
+      case CARD_TYPES.TASKS:
+      case CARD_TYPES.REPORTERS:
+        // All users can see general task and reporter cards
+        return true;
+        
+      case CARD_TYPES.DEPARTMENT_VIDEO:
+        return userDepartment === 'video';
+        
+      case CARD_TYPES.DEPARTMENT_DESIGN:
+        return userDepartment === 'design';
+        
+      case CARD_TYPES.DEPARTMENT_DEV:
+        return userDepartment === 'developer';
+        
+      case CARD_TYPES.SELECTED_USER:
+        // Users can see their own selected user card
+        return true;
+        
+      default:
+        return false;
+    }
+  }
+  
+  return false;
+};
+
 // Create dashboard cards with optional selected user and reporter
-export const createDashboardCards = (data, selectedUserId = null, selectedUserName = null, selectedReporterId = null) => {
+export const createDashboardCards = (data, selectedUserId = null, selectedUserName = null, selectedReporterId = null, currentUser = null) => {
   // Generate simple, stable IDs - cards are memoized and don't need complex IDs
   const generateId = (cardType, cardData) => {
     switch (cardType) {
@@ -667,43 +729,52 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
     }
   };
 
-  // Create base cards (always the same)
-  const baseCards = CARD_SETS.DASHBOARD.map(cardType => {
-    const config = CARD_CONFIGS[cardType];
-    if (!config) {
-      console.warn(`Card type ${cardType} not found`);
-      return null;
-    }
+  // Create base cards (filtered by user access)
+  const baseCards = CARD_SETS.DASHBOARD
+    .filter(cardType => {
+      // Filter cards based on user access permissions
+      if (currentUser) {
+        return canUserAccessCard(currentUser, cardType);
+      }
+      // If no user provided, show all cards (fallback for admin or testing)
+      return true;
+    })
+    .map(cardType => {
+      const config = CARD_CONFIGS[cardType];
+      if (!config) {
+        console.warn(`Card type ${cardType} not found`);
+        return null;
+      }
 
-    try {
-      const card = {
-        id: generateId(cardType, data),
-        title: config.title,
-        subtitle: config.getSubtitle ? config.getSubtitle(data) : config.subtitle,
-        description: config.description,
-        icon: config.icon,
-        type: config.type,
-        color: config.color || 'default',
-        value: config.getValue(data),
-        status: config.getStatus(data),
-        details: config.getDetails(data),
-        hasChart: config.hasChart || false,
-        chartType: config.chartType || 'area',
-        chartData: config.getChartData ? config.getChartData(data) : [],
-        chartColor: config.getChartColor ? config.getChartColor(data) : '#6b7280',
-        badges: config.getBadges ? config.getBadges(data) : []
-      };
-      
-      
-      return card;
-    } catch (error) {
-      console.error(`Error creating card ${cardType}:`, error);
-      return null;
-    }
-  }).filter(card => card !== null);
+      try {
+        const card = {
+          id: generateId(cardType, data),
+          title: config.title,
+          subtitle: config.getSubtitle ? config.getSubtitle(data) : config.subtitle,
+          description: config.description,
+          icon: config.icon,
+          type: config.type,
+          color: config.color || 'default',
+          value: config.getValue(data),
+          status: config.getStatus(data),
+          details: config.getDetails(data),
+          hasChart: config.hasChart || false,
+          chartType: config.chartType || 'area',
+          chartData: config.getChartData ? config.getChartData(data) : [],
+          chartColor: config.getChartColor ? config.getChartColor(data) : '#6b7280',
+          badges: config.getBadges ? config.getBadges(data) : []
+        };
+        
+        
+        return card;
+      } catch (error) {
+        console.error(`Error creating card ${cardType}:`, error);
+        return null;
+      }
+    }).filter(card => card !== null);
 
-  // Add selected user card if user is selected
-  if (selectedUserId) {
+  // Add selected user card if user is selected and has access
+  if (selectedUserId && (!currentUser || canUserAccessCard(currentUser, CARD_TYPES.SELECTED_USER))) {
     // Create selected user card with data (filtering is now handled by useTop3Calculations)
     const cardData = {
       ...data,

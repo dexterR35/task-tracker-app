@@ -250,7 +250,8 @@ const AdminDashboardPage = () => {
       cardDataWithMetrics,
       selectedUserId,
       selectedUserName,
-      selectedReporterId
+      selectedReporterId,
+      user // Pass current user for role-based access control
     );
 
     return cards;
@@ -266,6 +267,7 @@ const AdminDashboardPage = () => {
     devMetrics,
     selectedUserMetrics,
     currentMonthId,
+    user, // Add user to dependencies for role-based access control
   ]);
 
   if (error || monthError) {
