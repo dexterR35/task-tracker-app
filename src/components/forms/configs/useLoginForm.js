@@ -29,9 +29,5 @@ export const loginSchema = Yup.object().shape({
 
   password: Yup.string()
     .required(VALIDATION_MESSAGES.REQUIRED)
-    .min(6, VALIDATION_MESSAGES.MIN_LENGTH(6))
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      VALIDATION_MESSAGES.PASSWORD_STRENGTH
-    ),
+    .min(6, VALIDATION_MESSAGES.MIN_LENGTH(6)),
 });

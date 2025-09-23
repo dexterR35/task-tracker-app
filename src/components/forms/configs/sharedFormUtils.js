@@ -38,7 +38,7 @@ export const VALIDATION_MESSAGES = {
 
   // Additional validation messages for better UX
   PASSWORD_STRENGTH:
-    "Password must contain at least 8 characters, including uppercase, lowercase, and numbers",
+    "Password must be at least 6 characters long",
 };
 
 // ===== FORM CONSTANTS =====

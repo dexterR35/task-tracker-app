@@ -317,7 +317,7 @@ const HomePage = () => {
         <div className="mb-5">
           <h1 className="mb-2 text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-center">
             <span className="text-white-dark">Welcome to </span>
-            <span className=" text-red-error">SYNC</span>
+            <span className=" text-red-error">SYNC v2</span>
           </h1>
           <p className="text-base md:text-lg leading-6 text-gray-300 max-w-xl mx-auto text-center mb-10">
             The task management platform designed for teams that
