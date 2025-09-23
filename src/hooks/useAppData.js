@@ -149,10 +149,25 @@ export const useMonthSelection = (selectedUserId = null) => {
     { skip: !shouldFetchTasks }
   );
   
-  // Get tasks for display
-  const displayTasks = isFetchingSelectedMonth 
+  // Get tasks for display with proper filtering
+  const rawTasks = isFetchingSelectedMonth 
     ? monthTasks  // Selected month data
     : (currentMonthTasks || []); // Current month data
+  
+  // Apply user-based filtering in the UI
+  const displayTasks = useMemo(() => {
+    if (!rawTasks || rawTasks.length === 0) return [];
+    
+    // If user is admin, show all tasks
+    if (userIsAdmin) {
+      return rawTasks;
+    }
+    
+    // If user is not admin, filter to only their tasks
+    return rawTasks.filter(task => 
+      task.userUID === userUID || task.createbyUID === userUID
+    );
+  }, [rawTasks, userIsAdmin, userUID]);
   
   
   // Helper functions

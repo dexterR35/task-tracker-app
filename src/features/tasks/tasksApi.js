@@ -190,19 +190,10 @@ export const tasksApi = createApi({
           const colRef = getTaskRef(arg.monthId);
           const taskLimit =
             arg.limitCount || API_CONFIG.REQUEST_LIMITS.TASKS_PER_MONTH;
-          // Build query based on user role
-          const userFilter = isUserAdmin(arg.userData)
-            ? null
-            : arg.userId || currentUserUID;
-          const query =
-            userFilter && userFilter.trim() !== ""
-              ? fsQuery(
-                  colRef,
-                  where("userUID", "==", userFilter),
-                  limit(taskLimit)
-                )
-              : fsQuery(colRef, limit(taskLimit));
-          const taskListenerKey = `tasks_${arg.monthId}_${arg.role}_${arg.userId || "all"}`;
+          // Build query - ALL users listen to ALL tasks for real-time updates
+          // Filtering happens in the UI, not in the Firestore query
+          const query = fsQuery(colRef, limit(taskLimit));
+          const taskListenerKey = `tasks_${arg.monthId}_all`;
           unsubscribe = listenerManager.addListener(taskListenerKey, () => {
             listenerManager.updateActivity();
 
@@ -244,7 +235,7 @@ export const tasksApi = createApi({
           if (unsubscribe) {
             unsubscribe();
           }
-          const taskListenerKey = `tasks_${arg.monthId}_${arg.role}_${arg.userId || "all"}`;
+          const taskListenerKey = `tasks_${arg.monthId}_all`;
           const boardListenerKey = `board_tasks_${arg.monthId}`;
           listenerManager.removeListener(taskListenerKey);
           listenerManager.removeListener(boardListenerKey);

@@ -315,8 +315,8 @@ const HomePage = () => {
       <div className="max-w-[90%] w-full mx-auto px-4 relative pt-10">
         {/* Hero Section */}
         <div className="mb-5">
-          <h1 className="mb-2 text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
-            <span className="text-white-dark">Welcome to</span>
+          <h1 className="mb-2 text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-center">
+            <span className="text-white-dark">Welcome to </span>
             <span className=" text-red-error">SYNC</span>
           </h1>
           <p className="text-base md:text-lg leading-6 text-gray-300 max-w-xl mx-auto text-center mb-10">
