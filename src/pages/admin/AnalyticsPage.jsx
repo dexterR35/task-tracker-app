@@ -8,6 +8,7 @@ import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
+import MonthlyComparisonCard from "@/components/Cards/MonthlyComparisonCard";
 import MonthProgressBar from "@/components/ui/MonthProgressBar";
 import CSVExportButton from "@/components/ui/CSVExportButton";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
@@ -123,6 +124,11 @@ const AnalyticsPage = () => {
             daysInMonth={selectedMonth?.daysInMonth || currentMonth?.daysInMonth}
           />
         </div>
+      </div>
+
+      {/* Monthly Comparison Card - Full Width */}
+      <div className="space-y-6">
+        <MonthlyComparisonCard selectedMonth={selectedMonth} isLoading={isLoading} />
       </div>
 
       {/* Chart-based Analytics Cards */}
