@@ -11,12 +11,10 @@ const SmallCard = ({ title, icon, data, color, className = "" }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-200">{title}</h4>
-        {icon && (
-          <icon 
-            className="w-5 h-5" 
-            style={{ color: cardColorHex }} 
-          />
-        )}
+        {icon && React.createElement(icon, {
+          className: "w-5 h-5",
+          style: { color: cardColorHex }
+        })}
       </div>
 
       {/* Content */}
@@ -134,7 +132,10 @@ const LargeAnalyticsCard = ({
           className="p-4 rounded-xl flex items-center justify-center shadow-lg border border-gray-600/30"
           style={{ backgroundColor: `${cardColorHex}20` }}
         >
-          {icon && <icon className="w-8 h-8" style={{ color: cardColorHex }} />}
+          {icon && React.createElement(icon, {
+            className: "w-8 h-8",
+            style: { color: cardColorHex }
+          })}
         </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>

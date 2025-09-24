@@ -134,6 +134,14 @@ export const TASK_FORM_FIELDS = [
   createCheckboxField('_usedAIEnabled', 'AI Tools Used', {
     helpText: 'Check if AI tools were used in this task'
   }),
+  createCheckboxField('isVip', 'VIP Task', {
+    helpText: 'Mark this task as VIP (high priority)',
+    required: false
+  }),
+  createCheckboxField('reworked', 'Reworked', {
+    helpText: 'Check if this task was reworked',
+    required: false
+  }),
   {
     ...createMultiSelectField('aiModels', 'AI Models Used', {
       helpText: 'Select all AI models used in this task'
@@ -202,7 +210,17 @@ export const taskFormSchema = Yup.object().shape({
     otherwise: (schema) => schema.notRequired().default([])
   }),
   
+  customDeliverables: Yup.array().when(['_hasDeliverables', 'deliverables'], {
+    is: (hasDeliverables, deliverables) => hasDeliverables && deliverables?.includes('others'),
+    then: (schema) => schema.min(1, 'Please add at least one custom deliverable when "Others" is selected'),
+    otherwise: (schema) => schema.notRequired().default([])
+  }),
+  
   _usedAIEnabled: Yup.boolean(),
+  
+  isVip: Yup.boolean(),
+  
+  reworked: Yup.boolean(),
   
   aiModels: Yup.array().when('_usedAIEnabled', {
     is: true,
@@ -253,8 +271,14 @@ export const prepareTaskFormData = (formData) => {
   
   if (!formData._hasDeliverables) {
     formData.deliverables = []; // Empty array when checkbox is not checked
+    formData.customDeliverables = []; // Empty array when checkbox is not checked
+  } else {
+    // If "others" is not selected, clear custom deliverables
+    if (!formData.deliverables?.includes('others')) {
+      formData.customDeliverables = [];
+    }
   }
-  // If checkbox is checked, keep the deliverables array as-is (validation ensures it's not empty)
+  // If checkbox is checked, keep the deliverables array as-is (validation ensures they're filled)
   
   if (!formData._usedAIEnabled) {
     formData.aiModels = []; // Empty array when checkbox is not checked

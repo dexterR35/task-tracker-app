@@ -19,6 +19,7 @@ import {
   CheckboxField,
   SimpleDateField 
 } from '../../../../components/forms/components';
+import DeliverablesField from '../../../../components/forms/components/DeliverablesField';
 import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
@@ -58,9 +59,12 @@ const TaskForm = ({
       endDate: '',
       _hasDeliverables: false,
       deliverables: [],
+      customDeliverables: [],
       _usedAIEnabled: false,
       aiModels: [],
       aiTime: 0,
+      isVip: false,
+      reworked: false,
       reporters: ''
     },
     mode: 'onSubmit',
@@ -74,12 +78,16 @@ const TaskForm = ({
   const hasDeliverables = watch('_hasDeliverables');
   const usedAIEnabled = watch('_usedAIEnabled');
 
-  // Clear validation errors when checkboxes are unchecked
+  // Clear validation errors and uncheck deliverables when checkbox is unchecked
   useEffect(() => {
     if (!hasDeliverables) {
       clearErrors('deliverables');
+      clearErrors('customDeliverables');
+      // Uncheck all deliverables when "Has Deliverables" is unchecked
+      setValue('deliverables', []);
+      setValue('customDeliverables', []);
     }
-  }, [hasDeliverables, clearErrors]);
+  }, [hasDeliverables, clearErrors, setValue]);
 
   useEffect(() => {
     if (!usedAIEnabled) {
@@ -171,6 +179,13 @@ const TaskForm = ({
         throw new Error('Please select at least one deliverable when "Has Deliverables" is checked');
       }
       
+      // Validate custom deliverables when "others" is selected
+      if (data._hasDeliverables && data.deliverables?.includes('others')) {
+        if (!data.customDeliverables || data.customDeliverables.length === 0) {
+          throw new Error('Please add at least one custom deliverable when "Others" is selected');
+        }
+      }
+      
       if (data._usedAIEnabled) {
         if (!data.aiModels || data.aiModels.length === 0) {
           throw new Error('Please select at least one AI model when "AI Tools Used" is checked');
@@ -242,6 +257,9 @@ const TaskForm = ({
 
   // Helper function to render fields based on type
   const renderField = (field, fieldProps) => {
+    if (field.name === 'deliverables') {
+      return <DeliverablesField key={field.name} {...fieldProps} />;
+    }
     if (field.type === 'select') {
       return <SelectField key={field.name} {...fieldProps} />;
     }
@@ -522,6 +540,42 @@ const TaskForm = ({
               return renderField(field, fieldProps);
             })
         )}
+
+        {/* VIP Task Checkbox - Full Width */}
+        {fieldsWithOptions
+          .filter(field => field.name === 'isVip')
+          .map((field) => {
+            const fieldProps = {
+              field,
+              register,
+              errors,
+              getInputType,
+              setValue,
+              watch,
+              trigger,
+              clearErrors,
+              formValues: watchedValues
+            };
+            return renderField(field, fieldProps);
+          }        )}
+
+        {/* Reworked Checkbox - Full Width */}
+        {fieldsWithOptions
+          .filter(field => field.name === 'reworked')
+          .map((field) => {
+            const fieldProps = {
+              field,
+              register,
+              errors,
+              getInputType,
+              setValue,
+              watch,
+              trigger,
+              clearErrors,
+              formValues: watchedValues
+            };
+            return renderField(field, fieldProps);
+          })}
 
         
         {/* Submit Button */}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 
@@ -7,11 +8,22 @@ import { logger } from '@/utils/logger';
  * Eliminates redundant code across table components
  */
 export const useTableActions = (tableType, options = {}) => {
+  const navigate = useNavigate();
   const {
     onEditSuccess = null,
     onDeleteSuccess = null,
     onSelectSuccess = null,
-    getItemDisplayName = (item) => item?.name || item?.jiraLink || item?.email || 'Unknown',
+    getItemDisplayName = (item) => {
+      // Handle task structure
+      if (item?.data_task?.taskName) {
+        return item.data_task.taskName;
+      }
+      if (item?.data_task?.departments) {
+        return item.data_task.departments;
+      }
+      // Handle other item types
+      return item?.name || item?.jiraLink || item?.email || 'Unknown';
+    },
     deleteMutation = null,
   } = options;
 
@@ -26,6 +38,13 @@ export const useTableActions = (tableType, options = {}) => {
   const handleSelect = (item) => {
     if (onSelectSuccess) {
       onSelectSuccess(item);
+    } else if (tableType === 'task') {
+      // For tasks, navigate to task detail page
+      const params = new URLSearchParams();
+      if (item.monthId) params.set('monthId', item.monthId);
+      if (item.createdByName) params.set('user', item.createdByName);
+      
+      navigate(`/task/${item.id}?${params.toString()}`);
     } else {
       const displayName = getItemDisplayName(item);
       showSuccess(`Selected ${tableType}: ${displayName}`);

@@ -18,7 +18,7 @@ const TaskEditModal = ({ isOpen, onClose, onSuccess, mode, item: task, ...props 
       <div className="rounded-lg bg-white-dark shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b border-gray-300">
           <h2 className="text-xl font-semibold text-white-dark">
-            Edit Task: {task?.jiraLink || task?.departments || 'Unknown Task'}
+            Edit Task: {task?.data_task?.taskName || task?.data_task?.departments || 'Unknown Task'}
           </h2>
           <DynamicButton
             onClick={onClose}
@@ -103,7 +103,7 @@ const TaskTable = ({
     closeDeleteModal,
     handleEditSuccess,
   } = useTableActions('task', {
-    getItemDisplayName: (task) => task?.jiraLink || task?.departments || 'Unknown Task',
+    getItemDisplayName: (task) => task?.data_task?.taskName || task?.data_task?.departments || 'Unknown Task',
     deleteMutation: handleTaskDeleteMutation,
   });
 
@@ -148,7 +148,7 @@ const TaskTable = ({
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}
         title="Delete Task"
-        message={`Are you sure you want to delete task "${itemToDelete?.jiraLink || itemToDelete?.departments || 'Unknown Task'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete task "${itemToDelete?.data_task?.taskName || itemToDelete?.data_task?.departments || 'Unknown Task'}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"

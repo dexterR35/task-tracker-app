@@ -25,6 +25,7 @@ import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import DebugPage from "@/pages/admin/DebugPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
+import TaskDetailPage from "@/pages/TaskDetailPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -39,16 +40,21 @@ const SimpleLoader = () => (
 );
 
 // Simple page wrapper with motion
-const PageWrapper = ({ children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.3, ease: "easeOut" }}
-  >
-    {children}
-  </motion.div>
-);
+const PageWrapper = ({ children }) => {
+  const location = useLocation();
+  
+  return (
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 
 
@@ -157,7 +163,7 @@ const router = createBrowserRouter([
           {
             path: "dashboard",
             element: (
-              <PageWrapper>
+              <PageWrapper key="dashboard">
                 <AdminDashboardPage />
               </PageWrapper>
             ),
@@ -168,7 +174,7 @@ const router = createBrowserRouter([
             path: "analytics",
             element: (
               <ProtectedRoute requiredRole="admin">
-                <PageWrapper>
+                <PageWrapper key="analytics">
                   <AnalyticsPage />
                 </PageWrapper>
               </ProtectedRoute>
@@ -197,6 +203,14 @@ const router = createBrowserRouter([
           {
             path: "preview/:monthId",
             element: <ComingSoonPage />,
+          },
+          {
+            path: "task/:taskId",
+            element: (
+              <PageWrapper>
+                <TaskDetailPage />
+              </PageWrapper>
+            ),
           },
         ],
       },

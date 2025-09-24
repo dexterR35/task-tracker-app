@@ -144,13 +144,23 @@ export const useTop3Calculations = (data, options = {}) => {
     includeAllData = false // For selected user card that needs all products/markets
   } = options;
 
+  // Memoize the options object to prevent unnecessary recalculations
+  const memoizedOptions = useMemo(() => ({
+    selectedUserId,
+    selectedReporterId,
+    selectedMonthId,
+    department,
+    limit,
+    includeAllData
+  }), [selectedUserId, selectedReporterId, selectedMonthId, department, limit, includeAllData]);
+
   return useMemo(() => {
     const tasks = data.tasks || [];
     const users = data.users || [];
     const reporters = data.reporters || [];
 
     // Early return if no data
-    if (!tasks.length && !users.length && !reporters.length) {
+    if (!tasks.length) {
       return {
         totalHours: 0,
         totalAIHours: 0,
@@ -173,36 +183,30 @@ export const useTop3Calculations = (data, options = {}) => {
       };
     }
 
-    // Filter tasks based on options - consolidated filtering logic
-    let filteredTasks = tasks;
-    
-    // Filter by month ID
-    if (selectedMonthId) {
-      filteredTasks = filteredTasks.filter(task => 
-        task.monthId === selectedMonthId
-      );
-    }
-    
-    // Filter by user ID
-    if (selectedUserId) {
-      filteredTasks = filteredTasks.filter(task => 
-        task.userUID === selectedUserId || task.createbyUID === selectedUserId
-      );
-    }
-    
-    // Filter by reporter ID
-    if (selectedReporterId) {
-      filteredTasks = filteredTasks.filter(task => 
-        task.reporters === selectedReporterId || task.data_task?.reporters === selectedReporterId
-      );
-    }
-    
-    // Filter by department
-    if (department) {
-      filteredTasks = filteredTasks.filter(task => 
-        task.departments === department || task.data_task?.departments === department
-      );
-    }
+    // Filter tasks based on options - optimized single pass filtering
+    const filteredTasks = tasks.filter(task => {
+      // Filter by month ID
+      if (selectedMonthId && task.monthId !== selectedMonthId) {
+        return false;
+      }
+      
+      // Filter by user ID
+      if (selectedUserId && task.userUID !== selectedUserId && task.createbyUID !== selectedUserId) {
+        return false;
+      }
+      
+      // Filter by reporter ID
+      if (selectedReporterId && task.reporters !== selectedReporterId && task.data_task?.reporters !== selectedReporterId) {
+        return false;
+      }
+      
+      // Filter by department
+      if (department && task.departments !== department && task.data_task?.departments !== department) {
+        return false;
+      }
+      
+      return true;
+    });
 
     // Calculate total hours
     const totalHours = filteredTasks.reduce((sum, task) => 
@@ -225,6 +229,7 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Markets = Object.entries(marketTaskCounts)
       .sort(([,a], [,b]) => b - a)
+      .slice(0, 3) // Limit to top 3 markets
       .map(([market, taskCount]) => ({
         icon: Icons.generic.trendingUp,
         label: market,
@@ -247,7 +252,7 @@ export const useTop3Calculations = (data, options = {}) => {
       aiModelCounts, 
       Icons.generic.cpu, 
       "No AI models used",
-      Object.keys(aiModelCounts).length // Show all AI models
+      3 // Limit to top 3 AI models
     );
 
     // Calculate top 3 products
@@ -263,7 +268,7 @@ export const useTop3Calculations = (data, options = {}) => {
       productCounts, 
       Icons.generic.package, 
       "No products worked on",
-      Object.keys(productCounts).length // Show all products
+      3 // Limit to top 3 products
     );
 
     // Calculate top 3 users
@@ -302,6 +307,7 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Users = Object.values(userTaskCounts)
       .sort((a, b) => b.taskCount - a.taskCount)
+      .slice(0, 3) // Limit to top 3 users
       .map(userData => {
         const user = usersWithTasks.find(u => u.id === userData.userId || u.uid === userData.userId);
         const userName = user?.name || user?.email || `User ${userData.userId}`;
@@ -358,6 +364,7 @@ export const useTop3Calculations = (data, options = {}) => {
 
     const top3Reporters = Object.values(reporterTaskCounts)
       .sort((a, b) => b.taskCount - a.taskCount)
+      .slice(0, 3) // Limit to top 3 reporters
       .map(reporterData => {
         const reporter = reportersWithTasks.find(r => r.id === reporterData.reporterId || r.uid === reporterData.reporterId);
         const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${reporterData.reporterId}`;
@@ -549,7 +556,7 @@ export const useTop3Calculations = (data, options = {}) => {
       calculateTop3WithNoData,
       createTop3Section
     };
-  }, [data, selectedUserId, selectedReporterId, selectedMonthId, department, limit, includeAllData]);
+  }, [data, memoizedOptions]);
 };
 
 export default useTop3Calculations;

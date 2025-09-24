@@ -7,6 +7,7 @@ import {
   startOfMonth,
   endOfMonth,
 } from 'date-fns';
+import { ro } from 'date-fns/locale';
 
 
 // Standalone date utility functions (can be used outside React components)
@@ -90,41 +91,47 @@ export const toMs = (value) => {
 };
 
 /**
- * Format date using a pattern
+ * Format date using a pattern with Romanian locale
  */
-export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm') => {
+export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm', useRomanianLocale = true) => {
   const ms = toMs(value);
   if (!ms) return 'N/A';
   try {
     const date = new Date(ms);
-    return format(date, pattern);
+    const options = useRomanianLocale ? { locale: ro } : {};
+    return format(date, pattern, options);
   } catch {
     return 'Invalid Date';
   }
 };
 
 /**
- * Format date as "time ago"
+ * Format date as "time ago" with Romanian locale
  */
-export const fromNow = (value) => {
+export const fromNow = (value, useRomanianLocale = true) => {
   const ms = toMs(value);
   if (!ms) return 'N/A';
   try {
     const date = new Date(ms);
-    return formatDistanceToNow(date, { addSuffix: true });
+    const options = { addSuffix: true };
+    if (useRomanianLocale) {
+      options.locale = ro;
+    }
+    return formatDistanceToNow(date, options);
   } catch {
     return 'N/A';
   }
 };
 
 /**
- * Format month ID to readable format
+ * Format month ID to readable format with Romanian locale
  */
-export const formatMonth = (monthId) => {
+export const formatMonth = (monthId, useRomanianLocale = true) => {
   if (!monthId) return 'N/A';
   try {
     const date = parseISO(monthId + '-01');
-    return format(date, 'MMMM yyyy');
+    const options = useRomanianLocale ? { locale: ro } : {};
+    return format(date, 'MMMM yyyy', options);
   } catch {
     return 'Invalid Month';
   }

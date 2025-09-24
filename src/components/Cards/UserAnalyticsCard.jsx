@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import AnalyticsCard from "./AnalyticsCard";
 
-const UserAnalyticsCard = ({ tasks, selectedMonth, users = [], isLoading = false }) => {
+const UserAnalyticsCard = React.memo(({ tasks, selectedMonth, users = [], isLoading = false }) => {
   // Tasks are already filtered by month from useMonthSelection, no need for additional filtering
   const filteredTasks = useMemo(() => {
     return tasks || [];
@@ -233,6 +233,8 @@ const UserAnalyticsCard = ({ tasks, selectedMonth, users = [], isLoading = false
       isLoading={isLoading}
     />
   );
-};
+});
+
+UserAnalyticsCard.displayName = 'UserAnalyticsCard';
 
 export default UserAnalyticsCard;

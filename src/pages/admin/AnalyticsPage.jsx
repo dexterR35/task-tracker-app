@@ -1,14 +1,12 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { useAppData, useMonthSelection } from "@/hooks/useAppData";
-import CategoryBreakdownCard from "@/components/Cards/CategoryBreakdownCard";
-import ProductBreakdownCard from "@/components/Cards/ProductBreakdownCard";
 import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
-import MonthlyComparisonCard from "@/components/Cards/MonthlyComparisonCard";
+import MarketDistributionByUserCard from "@/components/Cards/MarketDistributionByUserCard";
 import MonthProgressBar from "@/components/ui/MonthProgressBar";
 import CSVExportButton from "@/components/ui/CSVExportButton";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
@@ -16,6 +14,11 @@ import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 const AnalyticsPage = () => {
   // Get real-time data from month selection (same as AdminDashboardPage)
   const { user, users, reporters, error, isLoading: appDataLoading } = useAppData();
+  
+  // Force component to re-render when navigated to
+  useEffect(() => {
+    console.log('AnalyticsPage mounted/updated');
+  }, []);
   
   const {
     tasks, // Real-time tasks data (already filtered by selected month)
@@ -34,6 +37,15 @@ const AnalyticsPage = () => {
   // Get current month name for display
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
+
+  // Memoize analytics data to prevent unnecessary recalculations
+  const analyticsData = useMemo(() => ({
+    tasks,
+    selectedMonth,
+    users,
+    reporters,
+    isLoading
+  }), [tasks, selectedMonth, users, reporters, isLoading]);
 
   if (isLoading || isInitialLoading) {
     return (
@@ -126,26 +138,20 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-      {/* Monthly Comparison Card - Full Width */}
-      <div className="space-y-6">
-        <MonthlyComparisonCard selectedMonth={selectedMonth} isLoading={isLoading} />
-      </div>
 
-      {/* Chart-based Analytics Cards */}
-      <div className="space-y-6">
-        <MarketUserBreakdownCard tasks={tasks} selectedMonth={selectedMonth} users={users} isLoading={isLoading} />
-        <ReporterAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} reporters={reporters} isLoading={isLoading} />
-        <UserAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} users={users} isLoading={isLoading} />
-        <AcquisitionAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
-        <MarketingAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
-        <ProductAnalyticsCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
-      </div>
+      {/* Chart-based Analytics Cards - Only render when data is ready */}
+      {!isLoading && tasks && tasks.length > 0 && (
+        <div className="space-y-6">
+          <MarketUserBreakdownCard {...analyticsData} />
+          <ReporterAnalyticsCard {...analyticsData} />
+          <UserAnalyticsCard {...analyticsData} />
+          <MarketDistributionByUserCard {...analyticsData} />
+          <AcquisitionAnalyticsCard {...analyticsData} />
+          <MarketingAnalyticsCard {...analyticsData} />
+          <ProductAnalyticsCard {...analyticsData} />
+        </div>
+      )}
 
-      {/* Icon and Badge Cards */}
-      <div className="space-y-6 mt-8">
-        <CategoryBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
-        <ProductBreakdownCard tasks={tasks} selectedMonth={selectedMonth} isLoading={isLoading} />
-      </div>
     </div>
   );
 };

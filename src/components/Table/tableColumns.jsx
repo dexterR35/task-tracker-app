@@ -113,13 +113,34 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
-  columnHelper.accessor('createdByDate', {
+  columnHelper.accessor('createdAt', {
     header: 'Created By Date',
     cell: ({ getValue }) => {
       const value = getValue();
-      return value || '-';
+      if (!value) return '-';
+      return formatDate(value, 'dd MMM yyyy, HH:mm', true); // Romanian locale
     },
     size: 120,
+  }),
+  columnHelper.accessor('data_task.startDate', {
+    header: 'Days',
+    cell: ({ getValue, row }) => {
+      const startDate = getValue();
+      const endDate = row.original?.data_task?.endDate;
+      
+      if (!startDate || !endDate) return '-';
+      
+      try {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return `${diffDays} days`;
+      } catch {
+        return '-';
+      }
+    },
+    size: 80,
   }),
 ], [monthId, stableReporters]);
 };
@@ -183,7 +204,7 @@ export const getUserColumns = (monthId = null) => [
     cell: ({ getValue }) => {
       const value = getValue();
       if (!value) return "-";
-      return formatDate(value, 'MMM d, yyyy');
+      return formatDate(value, 'dd MMM yyyy', true); // Romanian locale
     },
     size: 120,
   }),
@@ -230,7 +251,7 @@ export const getReporterColumns = (monthId = null) => [
     cell: ({ getValue }) => {
       const value = getValue();
       if (!value) return "-";
-      return formatDate(value, 'MMM d, yyyy');
+      return formatDate(value, 'dd MMM yyyy', true); // Romanian locale
     },
     size: 120,
   }),

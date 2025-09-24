@@ -16,6 +16,19 @@ const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
+      // Optimize immutableCheck for better performance
+      immutableCheck: process.env.NODE_ENV === 'development' ? {
+        ignoredPaths: [
+          'tasksApi.queries',
+          'usersApi.queries', 
+          'reportersApi.queries',
+          'tasksApi.mutations',
+          'usersApi.mutations',
+          'reportersApi.mutations',
+        ],
+        // Increase warning threshold to 100ms
+        warnAfter: 100,
+      } : true,
       serializableCheck: {
         ignoredActions: [
           'persist/PERSIST',
@@ -38,7 +51,12 @@ const store = configureStore({
           'usersApi.queries.*.error.details.originalError',
           'tasksApi.queries.*.error.details.originalError',
           'reportersApi.queries.*.error.details.originalError',
+          'tasksApi.queries',
+          'usersApi.queries',
+          'reportersApi.queries',
         ],
+        // Increase warning threshold for serializable check too
+        warnAfter: 100,
       },
     }).concat([
       usersApi.middleware,
