@@ -37,7 +37,8 @@ const ReporterForm = ({
       name: '',
       email: '',
       departament: '',
-      country: ''
+      country: '',
+      channelName: ''
     },
     mode: 'onSubmit',
     reValidateMode: 'onChange'
@@ -50,7 +51,8 @@ const ReporterForm = ({
         name: initialData.name || '',
         email: initialData.email || '',
         departament: initialData.departament || '',
-        country: initialData.country || ''
+        country: initialData.country || '',
+        channelName: initialData.channelName || ''
       });
       logger.log('🔄 Reporter form reset with initial data:', initialData);
     }
@@ -137,6 +139,13 @@ const ReporterForm = ({
         />
         <SelectField
           field={REPORTER_FORM_FIELDS[3]} // country field
+          register={register}
+          errors={errors}
+          getInputType={getInputType}
+          formValues={{}}
+        />
+        <SelectField
+          field={REPORTER_FORM_FIELDS[4]} // channel name field
           register={register}
           errors={errors}
           getInputType={getInputType}

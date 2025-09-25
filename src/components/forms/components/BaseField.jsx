@@ -64,10 +64,6 @@ const BaseField = ({
         </div>
       )}
       
-      {/* Help text */}
-      {field.helpText && (
-        <p className="help-text">{field.helpText}</p>
-      )}
     </div>
   );
 };

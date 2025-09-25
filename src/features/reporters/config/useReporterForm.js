@@ -29,23 +29,33 @@ const REPORTER_COUNTRY_OPTIONS = [
   { value: 'fr', label: 'fr' }
 ];
 
+const REPORTER_CHANNEL_OPTIONS = [
+  { value: 'web', label: 'Web' },
+  { value: 'mobile', label: 'Mobile' },
+  { value: 'desktop', label: 'Desktop' },
+  { value: 'api', label: 'API' },
+  { value: 'backend', label: 'Backend' },
+  { value: 'frontend', label: 'Frontend' },
+  { value: 'database', label: 'Database' },
+  { value: 'infrastructure', label: 'Infrastructure' },
+  { value: 'security', label: 'Security' },
+  { value: 'analytics', label: 'Analytics' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'support', label: 'Support' }
+];
+
 // ===== REPORTER FORM FIELD CONFIGURATION =====
 export const REPORTER_FORM_FIELDS = [
-  createTextField('name', 'Reporter Name', {
-    helpText: 'Enter the reporter\'s full name'
-  }),
-  createEmailField('email', 'Email Address', {
-    helpText: 'Enter the reporter\'s email address'
-  }),
-  createSelectField('departament', 'Department', {
-    helpText: 'Select the reporter\'s department'
-  }, {
+  createTextField('name', 'Reporter Name', {}),
+  createEmailField('email', 'Email Address', {}),
+  createSelectField('departament', 'Department', {}, {
     options: REPORTER_DEPARTMENT_OPTIONS
   }),
-  createSelectField('country', 'Country', {
-    helpText: 'Select the reporter\'s country'
-  }, {
+  createSelectField('country', 'Country', {}, {
     options: REPORTER_COUNTRY_OPTIONS
+  }),
+  createSelectField('channelName', 'Channel Name', {}, {
+    options: REPORTER_CHANNEL_OPTIONS
   })
 ];
 
@@ -62,6 +72,9 @@ export const reporterFormSchema = Yup.object().shape({
     .required(VALIDATION_MESSAGES.REQUIRED),
   
   country: Yup.string()
+    .required(VALIDATION_MESSAGES.REQUIRED),
+  
+  channelName: Yup.string()
     .required(VALIDATION_MESSAGES.REQUIRED)
 });
 

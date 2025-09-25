@@ -70,7 +70,6 @@ export default defineConfig({
       'react-router-dom',
       '@reduxjs/toolkit',
       'react-redux',
-      'formik',
       'yup',
       'firebase/app',
       'firebase/auth',

@@ -235,7 +235,7 @@
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full px-3 py-2 bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-default focus:border-blue-default transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500;
   }
 
   input:not([type="radio"]).error,
@@ -266,14 +266,14 @@
     }
     /* Enhanced Global Label Styling */
     label {
-      @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ml-1;
+      @apply block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2;
     }
     ::placeholder {
       @apply text-gray-500;
     }
 
     input[type="checkbox"] {
-      @apply w-4 h-4 focus:ring-blue-default dark:focus:ring-blue-default;
+      @apply w-4 h-4 text-blue-default focus:ring-blue-default dark:focus:ring-blue-default border-gray-300 dark:border-gray-600 rounded;
     }
     /* Headings with theme colors */
     h1 {
@@ -305,17 +305,13 @@
  
   /* Global Error Message Styling */
   .error-message {
-    @apply text-sm text-red-error dark:text-red-error mt-1 flex items-center gap-2;
+    @apply text-sm text-red-error dark:text-red-error mt-2 flex items-center gap-2 font-medium;
   }
 
   .error-message::before {
     content: "⚠";
   }
 
-  /* Global Help Text Styling */
-  .help-text {
-    @apply text-xs text-gray-800 dark:text-gray-300 mt-1 mb-2;
-  }
 
   /* Global Required Indicator */
   .required-indicator {
@@ -433,6 +429,21 @@ span  {
   }
   .flex-center {
     @apply flex items-center justify-center;
+  }
+
+  /* Form Field Grouping */
+  .form-field-group {
+    @apply bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-600;
+  }
+
+  /* Enhanced Form Container */
+  .form-container {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm;
+  }
+
+  /* Form Section Divider */
+  .form-section {
+    @apply border-b border-gray-200 dark:border-gray-700 pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0;
   }
 }
 

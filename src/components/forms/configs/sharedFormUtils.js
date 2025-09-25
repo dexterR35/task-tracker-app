@@ -73,7 +73,6 @@ const createBaseField = (name, label, type, options = {}, customProps = {}) => {
     type,
     label,
     placeholder: options.placeholder || `Enter ${label.toLowerCase()}`,
-    helpText: options.helpText,
     ...customProps,
     ...options,
   };
@@ -145,6 +144,10 @@ export const createMultiSelectField = (
     ...selectOptions,
     options: selectOptions.options || [],
   }),
+});
+
+export const createTextareaField = (name, label, options = {}) => ({
+  ...createBaseField(name, label, 'textarea', options),
 });
 
 // ===== CONDITIONAL FIELD LOGIC =====

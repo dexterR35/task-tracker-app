@@ -25,10 +25,7 @@ const DeliverablesField = ({
     }
   }, [formValues?.customDeliverables]);
   
-  // Update form value when custom deliverables change (only when not in the middle of an operation)
-  useEffect(() => {
-    setValue('customDeliverables', customDeliverables);
-  }, [customDeliverables, setValue]);
+  // Note: setValue is called directly in event handlers to avoid infinite loops
   
   // Show/hide custom input based on "others" selection
   useEffect(() => {
@@ -38,7 +35,7 @@ const DeliverablesField = ({
       setValue('customDeliverables', []);
       clearErrors('customDeliverables');
     }
-  }, [hasOthers, setValue, clearErrors]);
+  }, [hasOthers]);
   
   const handleDeliverableChange = (value) => {
     const currentDeliverables = selectedDeliverables || [];
@@ -99,9 +96,6 @@ const DeliverablesField = ({
         {field.required && <span className="text-red-500 ml-1">*</span>}
       </label>
       
-      {field.helpText && (
-        <p className="form-help-text">{field.helpText}</p>
-      )}
       
       {/* Standard Deliverables */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">

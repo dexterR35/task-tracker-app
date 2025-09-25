@@ -5,26 +5,30 @@ import DynamicButton from '../Button/DynamicButton';
 const Modal = ({ 
   isOpen, 
   onClose, 
-  title = "Today is a good day", 
+  title = "Modal", 
   children, 
-  className = ""
+  className = "",
+  maxWidth = "max-w-4xl"
 }) => {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-primary flex items-center justify-center z-50 p-4">
-      <div className={`rounded-lg shadow-xl max-w-4xl w-full max-h-full overflow-y-auto ${className}`}>
-        <div className="flex justify-between items-center p-6 bg-gray-700">
-          <h2>{title}</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${maxWidth} w-full max-h-full overflow-y-auto ${className}`}>
+        {/* Modal Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
           <DynamicButton
-            variant="primary"
+            variant="outline"
             size="sm"
             onClick={onClose}
-            iconName="cancel"
+            iconName="close"
             iconPosition="center"
+            className="hover:bg-gray-100 dark:hover:bg-gray-700"
           />
         </div>
-        <div>
+        {/* Modal Content */}
+        <div className="bg-white dark:bg-gray-800">
           {children}
         </div>
       </div>

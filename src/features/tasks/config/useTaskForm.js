@@ -3,6 +3,7 @@ import { logger } from '@/utils/logger';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
 import { 
   createTextField,
+  createTextareaField,
   createSelectField,
   createMultiSelectField,
   createNumberField,
@@ -78,34 +79,25 @@ export const TASK_FORM_OPTIONS = {
 // ===== TASK FORM FIELD CONFIGURATION =====
 export const TASK_FORM_FIELDS = [
   createUrlField('jiraLink', 'Jira Link', {
-    helpText: 'Enter full Jira URL (https://gmrd.atlassian.net/browse/{PROJECT}-{number})',
     placeholder: 'https://gmrd.atlassian.net/browse/GIMODEAR-124124'
   }),
-  createSelectField('products', 'Products', {
-    helpText: 'Select the primary product this task relates to'
-  }, {
+  createSelectField('products', 'Products', {}, {
     options: TASK_FORM_OPTIONS.products
   }),
-  createSelectField('departments', 'Department', {
-    helpText: 'Select the department responsible for this task'
-  }, {
+  createSelectField('departments', 'Department', {}, {
     options: TASK_FORM_OPTIONS.departments
   }),
-  createMultiSelectField('markets', 'Markets', {
-    helpText: 'Select all target markets for this task'
-  }, {
+  createMultiSelectField('markets', 'Markets', {}, {
     options: TASK_FORM_OPTIONS.markets
   }),
   createNumberField('timeInHours', 'Total Time (Hours)', {
-    step: 0.5,
-    helpText: 'Total time spent on this task (0.5 - 999 hours)'
+    step: 0.5
   }),
   // Date range fields for task duration
   {
     name: 'startDate',
     type: 'date',
     label: 'Start Date',
-    helpText: 'When did this task start?',
     required: true,
     conditional: false
   },
@@ -113,17 +105,12 @@ export const TASK_FORM_FIELDS = [
     name: 'endDate', 
     type: 'date',
     label: 'End Date',
-    helpText: 'When did this task end?',
     required: true,
     conditional: false
   },
-  createCheckboxField('_hasDeliverables', 'Has Deliverables', {
-    helpText: 'Check if this task produces deliverables'
-  }),
+  createCheckboxField('_hasDeliverables', 'Has Deliverables', {}),
   {
-    ...createMultiSelectField('deliverables', 'Deliverables', {
-      helpText: 'Select all deliverables produced by this task'
-    }, {
+    ...createMultiSelectField('deliverables', 'Deliverables', {}, {
       options: TASK_FORM_OPTIONS.deliverables
     }),
     conditional: {
@@ -132,20 +119,16 @@ export const TASK_FORM_FIELDS = [
     }
   },
   createCheckboxField('_usedAIEnabled', 'AI Tools Used', {
-    helpText: 'Check if AI tools were used in this task'
+    // helpText: 'Check if AI tools were used in this task'
   }),
   createCheckboxField('isVip', 'VIP Task', {
-    helpText: 'Mark this task as VIP (high priority)',
     required: false
   }),
   createCheckboxField('reworked', 'Reworked', {
-    helpText: 'Check if this task was reworked',
     required: false
   }),
   {
-    ...createMultiSelectField('aiModels', 'AI Models Used', {
-      helpText: 'Select all AI models used in this task'
-    }, {
+    ...createMultiSelectField('aiModels', 'AI Models Used', {}, {
       options: TASK_FORM_OPTIONS.aiModels
     }),
     conditional: {
@@ -155,18 +138,19 @@ export const TASK_FORM_FIELDS = [
   },
   {
     ...createNumberField('aiTime', 'Time Spent on AI (Hours)', {
-      step: 0.5,
-      helpText: 'Hours spent specifically using AI tools'
+      step: 0.5
     }),
     conditional: {
       field: '_usedAIEnabled',
       value: true
     }
   },
-  createSelectField('reporters', 'Reporter', {
-    helpText: 'Select the person responsible for this task'
-  }, {
+  createSelectField('reporters', 'Reporter', {}, {
     options: [] // Will be populated dynamically
+  }),
+  createTextareaField('observations', 'Observations', {
+    placeholder: 'Enter any additional observations or notes...',
+    required: false
   })
 ];
 
@@ -239,7 +223,11 @@ export const taskFormSchema = Yup.object().shape({
   }),
   
   reporters: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED)
+    .required(VALIDATION_MESSAGES.REQUIRED),
+  
+  observations: Yup.string()
+    .optional()
+    .max(1000, 'Observations cannot exceed 1000 characters')
 });
 
 // ===== TASK FORM DATA PROCESSING =====
@@ -285,6 +273,18 @@ export const prepareTaskFormData = (formData) => {
     formData.aiTime = 0; // Zero when checkbox is not checked
   }
   // If checkbox is checked, keep aiModels and aiTime as-is (validation ensures they're filled)
+  
+  // Handle observations field - sanitize and only save if not empty
+  if (formData.observations) {
+    // Sanitize the observations text (basic HTML sanitization)
+    formData.observations = formData.observations.trim();
+    // Only keep if not empty after trimming
+    if (!formData.observations) {
+      delete formData.observations;
+    }
+  } else {
+    delete formData.observations;
+  }
   
   // Remove UI-only fields after processing (these should never be saved to DB)
   delete formData._hasDeliverables;
