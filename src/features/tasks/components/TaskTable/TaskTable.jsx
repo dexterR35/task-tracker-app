@@ -126,6 +126,10 @@ const TaskTable = ({
         enablePagination={true}
         enableColumnResizing={true}
         enableRowSelection={false}
+        initialColumnVisibility={{
+          'data_task.isVip': false,     // Hide VIP column by default
+          'data_task.reworked': false   // Hide Reworked column by default
+        }}
       />
 
       {/* Edit Modal */}

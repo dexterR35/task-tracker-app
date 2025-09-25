@@ -243,66 +243,64 @@
   textarea.error {
     @apply border-red-error dark:border-red-error bg-red-50 dark:bg-red-900/20;
   }
-    /* Select Fields */
-    select {
-      @apply cursor-pointer ;
-    }
+  /* Select Fields */
+  select {
+    @apply cursor-pointer;
+  }
 
-    /* Date Fields */
-    input[type="date"] {
-      @apply cursor-pointer;
-    }
+  /* Date Fields */
+  input[type="date"] {
+    @apply cursor-pointer;
+  }
 
-    /* Number Fields */
-    input[type="number"] {
-      @apply text-right;
-    }
+  /* Number Fields */
+  input[type="number"] {
+    @apply text-right;
+  }
 
-    /* Disabled States */
-    input:not([type="checkbox"]):not([type="radio"]):disabled,
-    select:disabled,
-    textarea:disabled {
-      @apply opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800;
-    }
-    /* Enhanced Global Label Styling */
-    label {
-      @apply block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2;
-    }
-    ::placeholder {
-      @apply text-gray-500;
-    }
+  /* Disabled States */
+  input:not([type="checkbox"]):not([type="radio"]):disabled,
+  select:disabled,
+  textarea:disabled {
+    @apply opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800;
+  }
+  /* Enhanced Global Label Styling */
+  label {
+    @apply block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2;
+  }
+  ::placeholder {
+    @apply text-gray-500;
+  }
 
-    input[type="checkbox"] {
-      @apply w-4 h-4 text-blue-default focus:ring-blue-default dark:focus:ring-blue-default border-gray-300 dark:border-gray-600 rounded;
-    }
-    /* Headings with theme colors */
-    h1 {
-      @apply text-3xl font-bold tracking-tight text-text-primary dark:text-text-white;
-    }
+  input[type="checkbox"] {
+    @apply w-4 h-4 text-blue-default focus:ring-blue-default dark:focus:ring-blue-default border-gray-300 dark:border-gray-600 rounded;
+  }
+  /* Headings with theme colors */
+  h1 {
+    @apply text-3xl font-bold tracking-tight text-text-primary dark:text-text-white;
+  }
 
-    h2 {
-      @apply  text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
-    }
-    
-    h3 {
-      @apply font-semibold text-gray-900 dark:text-white mb-1 text-xl;
-    }
-    h4 {
-      @apply font-semibold text-gray-900 dark:text-white mb-1 text-sm;
-    }
+  h2 {
+    @apply text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
+  }
 
-    tbody tr td {
-      @apply px-3 py-4  text-gray-800 dark:text-gray-300;
-    }
-    thead tr th {
-      @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-700/40 text-left;
-    }
-    .max-w-6xl {
-      @apply !max-w-[95%] mx-auto;
-    }
+  h3 {
+    @apply font-semibold text-gray-900 dark:text-white mb-1 text-xl;
+  }
+  h4 {
+    @apply font-semibold text-gray-900 dark:text-white mb-1 text-sm;
+  }
 
-  
- 
+  tbody tr td {
+    @apply px-3 py-4  text-gray-800 dark:text-gray-300;
+  }
+  thead tr th {
+    @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-700/40 text-left;
+  }
+  .max-w-6xl {
+    @apply !max-w-[95%] mx-auto;
+  }
+
   /* Global Error Message Styling */
   .error-message {
     @apply text-sm text-red-error dark:text-red-error mt-2 flex items-center gap-2 font-medium;
@@ -311,7 +309,6 @@
   .error-message::before {
     content: "⚠";
   }
-
 
   /* Global Required Indicator */
   .required-indicator {
@@ -325,18 +322,18 @@
   .text-small {
     @apply text-text-primary dark:text-gray-300 text-sm;
   }
-span  {
-  @apply text-text-primary dark:text-gray-300;
-}
+  span {
+    @apply text-text-primary dark:text-gray-300;
+  }
   /* Modern Card System */
   .card {
     @apply rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-6 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300/80 dark:hover:border-gray-600/80;
   }
-  
+
   .card-small {
     @apply bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200/60 dark:border-gray-700/60 p-4 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.01] hover:border-gray-300/80 dark:hover:border-gray-600/80;
   }
-  
+
   .card-large {
     @apply bg-white/90 dark:bg-gray-800/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-8 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300/80 dark:hover:border-gray-600/80;
   }
@@ -345,23 +342,23 @@ span  {
   .card-title {
     @apply text-lg font-semibold text-gray-900 dark:text-white tracking-tight;
   }
-  
+
   .card-subtitle {
     @apply text-xs font-medium text-gray-600 dark:text-gray-400 tracking-wide;
   }
-  
+
   .card-value {
     @apply text-2xl font-bold text-gray-900 dark:text-white tracking-tight;
   }
-  
+
   .card-description {
     @apply text-xs text-gray-600 dark:text-gray-400 leading-relaxed;
   }
-  
+
   .card-metric {
     @apply text-lg font-semibold text-gray-800 dark:text-gray-200 tracking-tight;
   }
-  
+
   .card-label {
     @apply text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wider;
   }
@@ -370,23 +367,23 @@ span  {
   .text-dashboard-xs {
     @apply text-xs font-medium text-gray-600 dark:text-gray-400;
   }
-  
+
   .text-dashboard-sm {
     @apply text-sm font-semibold text-gray-700 dark:text-gray-300;
   }
-  
+
   .text-dashboard-base {
     @apply text-base font-semibold text-gray-800 dark:text-gray-200;
   }
-  
+
   .text-dashboard-lg {
     @apply text-lg font-bold text-gray-900 dark:text-white;
   }
-  
+
   .text-dashboard-xl {
     @apply text-xl font-bold text-gray-900 dark:text-white;
   }
-  
+
   .text-dashboard-2xl {
     @apply text-2xl font-bold text-gray-900 dark:text-white;
   }
@@ -395,15 +392,15 @@ span  {
   .card-small .card-title {
     @apply text-base font-semibold;
   }
-  
+
   .card-small .card-subtitle {
     @apply text-xs font-medium;
   }
-  
+
   .card-small .card-value {
     @apply text-xl font-bold;
   }
-  
+
   .card-small .card-description {
     @apply text-xs;
   }
@@ -412,38 +409,33 @@ span  {
   .card-large .card-title {
     @apply text-xl font-semibold;
   }
-  
+
   .card-large .card-subtitle {
     @apply text-sm font-medium;
   }
-  
+
   .card-large .card-value {
     @apply text-3xl font-bold;
   }
-  
+
   .card-large .card-description {
     @apply text-sm;
   }
   .text-exsmall {
-    @apply text-text-primary dark:text-gray-300 text-sm ;
+    @apply text-text-primary dark:text-gray-300 text-sm;
   }
   .flex-center {
     @apply flex items-center justify-center;
   }
 
   /* Form Field Grouping */
-  .form-field-group {
+  /* .form-field-group {
     @apply bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-600;
-  }
-
-  /* Enhanced Form Container */
-  .form-container {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm;
-  }
+  } */
 
   /* Form Section Divider */
   .form-section {
-    @apply border-b border-gray-200 dark:border-gray-700 pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0;
+    @apply border-b border-gray-200 dark:border-gray-700 pb-4 mb-0 last:border-b-0 last:pb-0 last:mb-0;
   }
 }
 

@@ -55,44 +55,57 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
-  columnHelper.accessor('data_task.timeInHours', {
-    header: 'Hours',
+  columnHelper.accessor('data_task.markets', {
+    header: 'Markets',
     cell: ({ getValue }) => {
       const value = getValue();
-      return value || '-';
+      if (!value || !Array.isArray(value)) return '-';
+      return value.join(', ');
     },
-    size: 80,
-  }),
-  columnHelper.accessor('data_task.aiTime', {
-    header: 'AI Hr',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      return value || '-';
-    },
-    size: 80,
+    size: 150,
   }),
   columnHelper.accessor('data_task.aiModels', {
     header: 'AI Models',
     cell: ({ getValue }) => {
       const value = getValue();
-      return value || '-';
+      if (!value || !Array.isArray(value) || value.length === 0) return '-';
+      return value.join(', ');
     },
-    size: 120,
-  }),
-  columnHelper.accessor('reworked', {
-    header: 'Reworked?',
-    cell: ({ getValue }) => {
-      return getValue() ? "✓" : "-";
-    },
-    size: 100,
+    size: 150,
   }),
   columnHelper.accessor('data_task.deliverables', {
     header: 'Deliverables',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      return value || '-';
+    cell: ({ getValue, row }) => {
+      const deliverables = getValue();
+      const customDeliverables = row.original?.data_task?.customDeliverables;
+      
+      let allDeliverables = [];
+      if (deliverables && Array.isArray(deliverables)) {
+        allDeliverables = [...deliverables];
+      }
+      if (customDeliverables && Array.isArray(customDeliverables)) {
+        allDeliverables = [...allDeliverables, ...customDeliverables];
+      }
+      
+      if (allDeliverables.length === 0) return '-';
+      return allDeliverables.join(', ');
     },
-    size: 120,
+    size: 200,
+  }),
+
+  columnHelper.accessor('data_task.isVip', {
+    header: 'VIP',
+    cell: ({ getValue }) => {
+      return getValue() ? "✓" : "-";
+    },
+    size: 40,
+  }),
+  columnHelper.accessor('data_task.reworked', {
+    header: 'ReWorked',
+    cell: ({ getValue }) => {
+      return getValue() ? "✓" : "-";
+    },
+    size: 50,
   }),
   columnHelper.accessor('data_task.reporters', {
     header: 'Reporter',
@@ -102,28 +115,44 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       const reporter = stableReporters.find(r => r.id === reporterId);
       return reporter?.name || reporterId;
     },
-    size: 120,
+    size: 60,
   }),
-
   columnHelper.accessor('createdByName', {
-    header: 'Created By',
+    header: 'Created',
     cell: ({ getValue }) => {
       const value = getValue();
       return value || '-';
     },
     size: 120,
   }),
+  columnHelper.accessor('data_task.timeInHours', {
+    header: 'Task Hr',
+    cell: ({ getValue }) => {
+      const value = getValue();
+      return value ? `${value}h` : '-';
+    },
+    size: 80,
+  }),
+  columnHelper.accessor('data_task.aiTime', {
+    header: 'AI Hr',
+    cell: ({ getValue }) => {
+      const value = getValue();
+      return value ? `${value}h` : '-';
+    },
+    size: 80,
+  }),
+
   columnHelper.accessor('createdAt', {
-    header: 'Created By Date',
+    header: 'Date',
     cell: ({ getValue }) => {
       const value = getValue();
       if (!value) return '-';
-      return formatDate(value, 'dd MMM yyyy, HH:mm', true); // Romanian locale
+      return formatDate(value, 'dd MMM yyyy, HH:mm', true); 
     },
-    size: 120,
+    size: 60,
   }),
   columnHelper.accessor('data_task.startDate', {
-    header: 'Days',
+    header: 'Done',
     cell: ({ getValue, row }) => {
       const startDate = getValue();
       const endDate = row.original?.data_task?.endDate;
@@ -141,6 +170,15 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       }
     },
     size: 80,
+  }),
+  columnHelper.accessor('data_task.observations', {
+    header: 'Observations',
+    cell: ({ getValue }) => {
+      const value = getValue();
+      if (!value) return '-';
+      return value.length > 50 ? `${value.substring(0, 50)}...` : value;
+    },
+    size: 200,
   }),
 ], [monthId, stableReporters]);
 };
@@ -219,7 +257,7 @@ export const getReporterColumns = (monthId = null) => [
       <Avatar 
         user={row.original}
         gradient="from-green-500 to-green-600"
-        showEmail={false}
+        showEmail={true}
         size="md"
       />
     ),
@@ -246,6 +284,13 @@ export const getReporterColumns = (monthId = null) => [
     },
     size: 100,
   }),
+  columnHelper.accessor('channel', {
+    header: 'Channel',
+    cell: ({ getValue }) => {
+      return getValue() || '-';
+    },
+    size: 120,
+  }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
     cell: ({ getValue }) => {
@@ -255,6 +300,7 @@ export const getReporterColumns = (monthId = null) => [
     },
     size: 120,
   }),
+  
 ];
 // Column factory function
 export const getColumns = (tableType, monthId = null, reporters = []) => {

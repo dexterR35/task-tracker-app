@@ -304,7 +304,7 @@ const TanStackTable = ({
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden">
+      
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200/60 dark:divide-gray-700/60">
             <thead className="bg-gray-50/80 dark:bg-gray-800/80">
@@ -379,7 +379,7 @@ const TanStackTable = ({
             </tbody>
           </table>
         </div>
-      </div>
+     
 
       {/* TanStack Table Pagination */}
       {showPagination && enablePagination && (

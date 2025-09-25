@@ -64,7 +64,7 @@ const AuthLayout = () => {
 
           {/* Page Content - Scrollable */}
           <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-primary">
-            <div className="px-18 py-12">
+            <div className="px-6 py-6">
               <Outlet />
             </div>
           </main>

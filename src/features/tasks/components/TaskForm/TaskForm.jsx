@@ -326,7 +326,7 @@ const TaskForm = ({
   return (
     <div className={`p-6 ${className}`}>
       
-      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-3">
         {/* 1. Jira Link - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['jiraLink'])}
@@ -358,18 +358,19 @@ const TaskForm = ({
           {renderFieldsByName(['reporters'])}
         </div>
 
-        {/* 6. Observations - Full Width */}
+        {/* 6. VIP Task + Reworked - 2 columns */}
         <div className="form-section">
-          {renderFieldsByName(['observations'])}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderFieldsByName(['isVip', 'reworked'])}
+          </div>
         </div>
 
-  
         {/* 7. AI Used - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['_usedAIEnabled'])}
         </div>
 
-        {/* 7. AI Models + AI Time - 2 columns (conditional) */}
+        {/* 8. AI Models + AI Time - 2 columns (conditional) */}
         {watchedValues._usedAIEnabled && (
           <div className="form-section">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -378,25 +379,21 @@ const TaskForm = ({
           </div>
         )}
 
-        {/* 8. Has Deliverables - Full Width */}
+        {/* 9. Has Deliverables - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['_hasDeliverables'])}
         </div>
 
-        {/* 9. Deliverables - Full Width (conditional) */}
+        {/* 10. Deliverables - Full Width (conditional) */}
         {watchedValues._hasDeliverables && (
           <div className="form-section">
             {renderFieldsByName(['deliverables'])}
           </div>
         )}
 
-        {/* VIP Task Checkbox - Full Width */}
-        <div className="form-section ">
-          {renderFieldsByName(['isVip'])}
-        </div>
-
-        <div className="form-section  ">
-          {renderFieldsByName(['reworked'])}
+        {/* 11. Observations - Full Width */}
+        <div className="form-section">
+          {renderFieldsByName(['observations'])}
         </div>
 
         
