@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { getCardColorHex } from "./cardConfig";
 
-// Modern Area Chart Component
+
 const ModernAreaChart = ({ data, color }) => (
   <ResponsiveContainer width="100%" height={48}>
     <AreaChart
@@ -36,7 +36,7 @@ const ModernAreaChart = ({ data, color }) => (
   </ResponsiveContainer>
 );
 
-// Modern Bar Chart Component
+
 const ModernBarChart = ({ data, color }) => (
   <ResponsiveContainer width="100%" height={48}>
     <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
@@ -58,7 +58,7 @@ const ModernBarChart = ({ data, color }) => (
 );
 
 
-// Dashboard Card Component (based on homepage design)
+
 const DashboardCard = ({ card }) => {
   const cardColorHex = getCardColorHex(card.color);
 
@@ -74,14 +74,14 @@ const DashboardCard = ({ card }) => {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700/50 rounded-xl p-6 w-full shadow-lg hover:shadow-xl transition-all duration-300">
+    <div className="card-large ">
       <div className="h-auto">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center space-x-4">
               <div
-                className="p-4 rounded-xl flex items-center justify-center shadow-lg border border-gray-600/30"
+                className="p-4 rounded-lg flex items-center justify-center shadow-lg border border-gray-600/30"
                 style={{ backgroundColor: `${cardColorHex}20` }}
               >
                 <card.icon

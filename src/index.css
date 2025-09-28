@@ -288,11 +288,13 @@
     @apply font-semibold text-gray-900 dark:text-white mb-1 text-xl;
   }
   h4 {
-    @apply font-semibold text-gray-900 dark:text-white mb-1 text-sm;
+    @apply font-semibold text-gray-900 dark:text-white mb-0 text-base;
   }
-
+h5 {
+  @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;
+}
   tbody tr td {
-    @apply px-3 py-4  text-gray-800 dark:text-gray-300;
+    @apply px-3 py-4 text-gray-800 dark:text-gray-300;
   }
   thead tr th {
     @apply px-3 py-4 text-text-primary dark:text-text-white font-extrabold bg-gray-700/40 text-left;
@@ -323,7 +325,7 @@
     @apply text-text-primary dark:text-gray-300 text-sm;
   }
   span {
-    @apply text-text-primary dark:text-gray-300;
+    @apply text-text-primary dark:text-gray-300  text-sm;
   }
   /* Modern Card System */
   .card {
@@ -362,7 +364,9 @@
   .card-label {
     @apply text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wider;
   }
-
+.icon-bg{
+  @apply p-2 bg-gray-700 text-white rounded-lg;
+}
   /* Dashboard Typography Scale */
   .text-dashboard-xs {
     @apply text-xs font-medium text-gray-600 dark:text-gray-400;
