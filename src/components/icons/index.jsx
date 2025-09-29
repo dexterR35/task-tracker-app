@@ -46,7 +46,7 @@ import {
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
 import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
-import {MdDashboard, MdPeople, MdAssignment, MdAnalytics, MdBugReport, MdSettings, MdAdd, MdEdit, MdDelete, MdVisibility, MdVisibilityOff, MdRefresh, MdClear, MdHome, MdTask, MdBarChart, MdCode, MdDownload, MdSearch, MdFilterList, MdChevronLeft, MdChevronRight} from "react-icons/md";
+import {MdDashboard, MdPeople, MdAssignment, MdAnalytics, MdSettings, MdAdd, MdEdit, MdDelete, MdVisibility, MdVisibilityOff, MdRefresh, MdClear, MdHome, MdTask, MdBarChart, MdCode, MdDownload, MdSearch, MdFilterList, MdChevronLeft, MdChevronRight} from "react-icons/md";
 const withSize = (IconComponent) => (props) => (
   <IconComponent {...props} className={props?.className || "w-5 h-5"} />
 );
@@ -58,7 +58,6 @@ export const Icons = {
     management: withSize(MdSettings),
     tasks: withSize(MdAssignment),
     analytics: withSize(MdAnalytics),
-    debug: withSize(MdBugReport),
   },
 
   admin: {
@@ -66,7 +65,6 @@ export const Icons = {
     management: withSize(MdSettings),
     tasks: withSize(MdAssignment),
     analytics: withSize(MdAnalytics),
-    debug: withSize(MdBugReport),
     users: withSize(MdPeople),
     reporters: withSize(FiFileText),
   },

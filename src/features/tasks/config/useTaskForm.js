@@ -396,29 +396,15 @@ export const prepareTaskFormData = (formData) => {
     formData.deliverables = []; // Empty array when checkbox is not checked
     formData.customDeliverables = []; // Empty array when checkbox is not checked
   } else {
-    // Create deliverables array with deliverable object structure
-    const deliverableName = formData.deliverables;
-    const hasDeclinari = formData.declinariQuantities && 
-      Object.values(formData.declinariQuantities).some(qty => qty > 0);
-    
-    const deliverableObject = {
-      deliverableName: deliverableName,
-      deliverableQuantities: formData.deliverableQuantities || {},
-      declinariDeliverables: hasDeclinari ? { [deliverableName]: true } : {},
-      declinariQuantities: formData.declinariQuantities || {}
-    };
-    
-    formData.deliverables = [deliverableObject];
-    
     // If "others" is not selected, clear custom deliverables
-    if (deliverableName !== 'others') {
+    if (formData.deliverables !== 'others') {
       formData.customDeliverables = [];
     }
     
     // Calculate total deliverable time and update timeInHours if needed
-    if (deliverableName) {
+    if (formData.deliverables) {
       const calculatedTime = calculateTotalDeliverableTime(
-        deliverableName, 
+        formData.deliverables, 
         formData.deliverableQuantities || {},
         formData.declinariQuantities || {}
       );
@@ -429,13 +415,11 @@ export const prepareTaskFormData = (formData) => {
         logger.log('🕒 Updated timeInHours based on deliverables:', {
           calculatedTime,
           newTimeInHours: formData.timeInHours,
-          declinariQuantities: formData.declinariQuantities,
-          hasDeclinari
+          declinariQuantities: formData.declinariQuantities
         });
       }
     }
   }
-  // If checkbox is checked, keep the deliverables array as-is (validation ensures they're filled)
   
   if (!formData._usedAIEnabled) {
     formData.aiModels = []; // Empty array when checkbox is not checked
@@ -455,10 +439,6 @@ export const prepareTaskFormData = (formData) => {
     delete formData.observations;
   }
   
-  // Remove UI-only fields after processing (these should never be saved to DB)
-  delete formData._hasDeliverables;
-  delete formData._usedAIEnabled;
-  
   // Convert Date objects to ISO strings for proper storage
   if (formData.startDate instanceof Date) {
     formData.startDate = formData.startDate.toISOString();
@@ -476,10 +456,45 @@ export const prepareTaskFormData = (formData) => {
     endDateType: typeof formData.endDate
   });
   
+  // Create the new data structure with data_task wrapper BEFORE deleting UI fields
+  const dataTask = {
+    aiUsed: formData._usedAIEnabled ? [{
+      aiModels: formData.aiModels || [],
+      aiTime: formData.aiTime || 0
+    }] : [],
+    deliverablesUsed: formData._hasDeliverables ? [{
+      declinariDeliverables: {
+        name: formData.deliverables || '',
+        count: formData.declinariQuantities?.[formData.deliverables] || 0
+      },
+      deliverableQuantities: {
+        name: formData.deliverables || '',
+        count: formData.deliverableQuantities?.[formData.deliverables] || 1
+      },
+      customDeliverables: formData.customDeliverables || []
+    }] : [],
+    departments: formData.departments ? [formData.departments] : [],
+    endDate: formData.endDate,
+    isVip: formData.isVip || false,
+    monthId: formData.monthId,
+    observations: formData.observations || '',
+    products: formData.products || '',
+    reporterName: formData.reporterName || '',
+    reporters: formData.reporters || '',
+    reworked: formData.reworked || false,
+    startDate: formData.startDate,
+    taskName: formData.taskName,
+    timeInHours: formData.timeInHours
+  };
+
+  // Remove UI-only fields after creating data structure (these should never be saved to DB)
+  delete formData._hasDeliverables;
+  delete formData._usedAIEnabled;
+  
   // Serialize any Date objects to ISO strings for Redux compatibility
-  const serializedData = serializeTimestampsForRedux(formData);
+  const serializedDataTask = serializeTimestampsForRedux(dataTask);
   
-  logger.log('🔍 Final processed data for database:', serializedData);
+  logger.log('🔍 Final processed data_task for database:', serializedDataTask);
   
-  return serializedData;
+  return serializedDataTask;
 };

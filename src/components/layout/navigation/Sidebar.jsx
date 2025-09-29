@@ -43,13 +43,6 @@ const Sidebar = () => {
       adminOnly: true,
       description: "User management",
     },
-    {
-      name: "Debug",
-      href: "/debug",
-      icon: Icons.admin.debug,
-      adminOnly: true,
-      description: "System debug",
-    },
   ];
 
   return (

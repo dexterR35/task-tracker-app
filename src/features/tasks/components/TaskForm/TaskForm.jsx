@@ -150,20 +150,32 @@ const TaskForm = ({
       reset({
         jiraLink: jiraLink,
         products: taskData.products || '',
-        departments: taskData.departments || '',
+        departments: Array.isArray(taskData.departments) ? taskData.departments[0] || '' : taskData.departments || '',
         markets: taskData.markets || [],
         timeInHours: taskData.timeInHours || '',
         startDate: formattedStartDate,
         endDate: formattedEndDate,
-        _hasDeliverables: !!taskData.deliverables,
-        deliverables: taskData.deliverables?.[0]?.deliverableName || '',
-        deliverableQuantities: taskData.deliverables?.[0]?.deliverableQuantities || {},
-        declinariQuantities: taskData.deliverables?.[0]?.declinariQuantities || {},
-        declinariDeliverables: taskData.deliverables?.[0]?.declinariDeliverables || {},
-        _usedAIEnabled: (taskData.aiModels && taskData.aiModels.length > 0) || false,
-        aiModels: taskData.aiModels || [],
-        aiTime: taskData.aiTime || 0,
-        reporters: taskData.reporters || ''
+        _hasDeliverables: !!(taskData.deliverablesUsed?.[0] || taskData.deliverables),
+        deliverables: taskData.deliverablesUsed?.[0]?.deliverableQuantities?.name || 
+          taskData.deliverables?.[0]?.deliverableName || '',
+        deliverableQuantities: taskData.deliverablesUsed?.[0]?.deliverableQuantities?.name ? 
+          { [taskData.deliverablesUsed[0].deliverableQuantities.name]: taskData.deliverablesUsed[0].deliverableQuantities.count } :
+          taskData.deliverables?.[0]?.deliverableQuantities || {},
+        declinariQuantities: taskData.deliverablesUsed?.[0]?.declinariDeliverables?.name ? 
+          { [taskData.deliverablesUsed[0].declinariDeliverables.name]: taskData.deliverablesUsed[0].declinariDeliverables.count } :
+          taskData.deliverables?.[0]?.declinariQuantities || {},
+        declinariDeliverables: taskData.deliverablesUsed?.[0]?.declinariDeliverables?.name ? 
+          { [taskData.deliverablesUsed[0].declinariDeliverables.name]: true } :
+          taskData.deliverables?.[0]?.declinariDeliverables || {},
+        customDeliverables: taskData.deliverablesUsed?.[0]?.customDeliverables || 
+          taskData.customDeliverables || [],
+        _usedAIEnabled: !!(taskData.aiUsed?.[0]?.aiModels?.length || taskData.aiModels?.length),
+        aiModels: taskData.aiUsed?.[0]?.aiModels || taskData.aiModels || [],
+        aiTime: taskData.aiUsed?.[0]?.aiTime || taskData.aiTime || 0,
+        reporters: taskData.reporters || '',
+        isVip: taskData.isVip || false,
+        reworked: taskData.reworked || false,
+        observations: taskData.observations || ''
       });
       
       logger.log('🔄 Task form reset with initial data:', { 

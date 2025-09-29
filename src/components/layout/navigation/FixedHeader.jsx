@@ -19,8 +19,6 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return "Analytics";
       case "/users":
         return "User Management";
-      case "/debug":
-        return "Debug Console";
       default:
         return "Dashboard";
     }
@@ -35,8 +33,6 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return Icons.cards.chart;
       case "/users":
         return Icons.admin.users;
-      case "/debug":
-        return Icons.admin.debug;
       default:
         return Icons.cards.home;
     }

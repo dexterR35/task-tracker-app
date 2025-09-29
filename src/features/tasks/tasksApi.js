@@ -317,9 +317,9 @@ export const tasksApi = createApi({
             }
           }
 
-          // Create final document data directly
+          // Create final document data with the new structure
           const documentData = {
-            data_task: task, // Use task data directly
+            data_task: task, // Use processed task data directly
             userUID: currentUserUID,
             monthId: monthId,
             boardId: boardId,
@@ -399,8 +399,10 @@ export const tasksApi = createApi({
               throw new Error("Reporter not found for the selected reporter ID");
             }
           }
+          
+          // Structure the updates with data_task wrapper
           const updatesWithTimestamp = {
-            ...updates,
+            data_task: updates, // Wrap updates in data_task
             updatedAt: serverTimestamp(),
           };
 

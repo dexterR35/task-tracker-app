@@ -23,7 +23,6 @@ import LoginPage from "@/pages/auth/LoginPage";
 // Import all pages directly
 import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
-import DebugPage from "@/pages/admin/DebugPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 
@@ -199,16 +198,6 @@ const router = createBrowserRouter([
               <AdminRoute>
                 <PageWrapper>
                   <AdminManagementPage />
-                </PageWrapper>
-              </AdminRoute>
-            ),
-          },
-          {
-            path: "debug",
-            element: (
-              <AdminRoute>
-                <PageWrapper>
-                  <DebugPage />
                 </PageWrapper>
               </AdminRoute>
             ),

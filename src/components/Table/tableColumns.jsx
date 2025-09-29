@@ -45,6 +45,10 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       }
       
       const value = getValue();
+      // Handle both string and array formats
+      if (Array.isArray(value)) {
+        return value.length > 0 ? value.join(', ') : <span className="text-red-500 text-xs">❌ Missing</span>;
+      }
       return value || <span className="text-red-500 text-xs">❌ Missing</span>;
     },
     size: 150,
@@ -68,26 +72,99 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 150,
   }),
-  columnHelper.accessor((row) => row.data_task?.aiModels, {
+  columnHelper.accessor((row) => row.data_task?.aiUsed?.[0]?.aiModels, {
     id: 'aiModels',
     header: 'AI Models',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value || !Array.isArray(value) || value.length === 0) return '-';
-      return value.join(', ');
+    cell: ({ getValue, row }) => {
+      const aiModels = getValue();
+      const aiTime = row.original?.data_task?.aiUsed?.[0]?.aiTime;
+      
+      if (!aiModels || !Array.isArray(aiModels) || aiModels.length === 0) return '-';
+      
+      return (
+        <div className="space-y-1">
+          <div className="font-medium text-gray-900 dark:text-white">
+            {aiModels.join(', ')}
+          </div>
+          {aiTime > 0 && (
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Total: {aiTime}h
+            </div>
+          )}
+        </div>
+      );
     },
-    size: 150,
+    size: 200,
   }),
-  columnHelper.accessor((row) => row.data_task?.deliverables, {
+  columnHelper.accessor((row) => row.data_task?.deliverablesUsed, {
     id: 'deliverables',
     header: 'Deliverables',
     cell: ({ getValue, row }) => {
-      const deliverables = getValue();
-      const customDeliverables = row.original?.data_task?.customDeliverables;
+      const deliverablesUsed = getValue();
       
-      // Handle new array of deliverable objects format
-      if (deliverables && Array.isArray(deliverables) && deliverables.length > 0) {
-        const deliverable = deliverables[0];
+      // Handle new deliverablesUsed array format
+      if (deliverablesUsed && Array.isArray(deliverablesUsed) && deliverablesUsed.length > 0) {
+        const deliverableData = deliverablesUsed[0];
+        const deliverableQuantities = deliverableData.deliverableQuantities || {};
+        const declinariDeliverables = deliverableData.declinariDeliverables || {};
+        const customDeliverables = deliverableData.customDeliverables || [];
+        
+        // Handle new structure with name and count properties
+        if (deliverableQuantities.name && deliverableQuantities.count) {
+          const deliverableName = deliverableQuantities.name;
+          const quantity = deliverableQuantities.count;
+          const declinariQuantity = declinariDeliverables.count || 0;
+          
+          const deliverableOption = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableName);
+          if (deliverableOption) {
+            const calculatedTime = calculateDeliverableTime(deliverableOption, quantity);
+            const daysCalculation = calculatedTime > 0 ? ` (${(calculatedTime / 8).toFixed(1)} days)` : '';
+            
+            return (
+              <div className="space-y-1">
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {deliverableOption.label}
+                  {quantity > 1 && ` (${quantity}x)`}
+                  {declinariQuantity > 0 && (
+                    <span className="text-orange-600 dark:text-orange-400">
+                      {' '}+ {declinariQuantity}x declinari
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Total: {calculatedTime.toFixed(1)}h{daysCalculation}
+                </div>
+                {customDeliverables.length > 0 && (
+                  <div className="text-xs text-blue-600 dark:text-blue-400">
+                    Custom: {customDeliverables.join(', ')}
+                  </div>
+                )}
+              </div>
+            );
+          }
+        }
+        
+        // Handle case where only custom deliverables exist
+        if (customDeliverables.length > 0) {
+          return (
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900 dark:text-white">
+                Custom Deliverables
+              </div>
+              <div className="text-xs text-blue-600 dark:text-blue-400">
+                {customDeliverables.join(', ')}
+              </div>
+            </div>
+          );
+        }
+      }
+      
+      // Handle legacy formats for backward compatibility
+      const legacyDeliverables = row.original?.data_task?.deliverables;
+      const legacyCustomDeliverables = row.original?.data_task?.customDeliverables;
+      
+      if (legacyDeliverables && Array.isArray(legacyDeliverables) && legacyDeliverables.length > 0) {
+        const deliverable = legacyDeliverables[0];
         const deliverableName = deliverable.deliverableName;
         const deliverableQuantities = deliverable.deliverableQuantities || {};
         const declinariQuantities = deliverable.declinariQuantities || {};
@@ -120,13 +197,13 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       }
       
       // Handle legacy single string format (backward compatibility)
-      if (deliverables && typeof deliverables === 'string') {
-        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverables);
+      if (legacyDeliverables && typeof legacyDeliverables === 'string') {
+        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === legacyDeliverables);
         if (deliverable) {
           const legacyDeliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
           const legacyDeclinariQuantities = row.original?.data_task?.declinariQuantities || {};
-          const quantity = legacyDeliverableQuantities[deliverables] || 1;
-          const declinariQuantity = legacyDeclinariQuantities[deliverables] || 0;
+          const quantity = legacyDeliverableQuantities[legacyDeliverables] || 1;
+          const declinariQuantity = legacyDeclinariQuantities[legacyDeliverables] || 0;
           const calculatedTime = calculateDeliverableTime(deliverable, quantity, legacyDeclinariQuantities);
           const days = (calculatedTime / 8).toFixed(1);
           
@@ -154,37 +231,13 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
         }
       }
       
-      // Handle array format deliverables (backward compatibility)
-      if (deliverables && Array.isArray(deliverables) && !deliverables[0]?.deliverableName) {
-        const legacyDeliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
-        const deliverableNames = deliverables.map(deliverableValue => {
-          const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
-          return deliverable ? deliverable.label : deliverableValue;
-        });
-        
-        return (
-          <div className="space-y-1">
-            <div className="font-medium text-gray-900 dark:text-white">
-              {deliverableNames.join(', ')}
-            </div>
-            {Object.keys(legacyDeliverableQuantities).length > 0 && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Quantities: {Object.entries(legacyDeliverableQuantities)
-                  .map(([deliverable, qty]) => `${deliverable}: ${qty}x`)
-                  .join(', ')}
-              </div>
-            )}
-          </div>
-        );
-      }
-      
       // Handle legacy array format (fallback)
       let allDeliverables = [];
-      if (deliverables && Array.isArray(deliverables)) {
-        allDeliverables = [...deliverables];
+      if (legacyDeliverables && Array.isArray(legacyDeliverables)) {
+        allDeliverables = [...legacyDeliverables];
       }
-      if (customDeliverables && Array.isArray(customDeliverables)) {
-        allDeliverables = [...allDeliverables, ...customDeliverables];
+      if (legacyCustomDeliverables && Array.isArray(legacyCustomDeliverables)) {
+        allDeliverables = [...allDeliverables, ...legacyCustomDeliverables];
       }
       
       if (allDeliverables.length === 0) return '-';
@@ -237,15 +290,6 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 80,
   }),
-  columnHelper.accessor((row) => row.data_task?.aiTime, {
-    id: 'aiTime',
-    header: 'AI Hr',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      return value ? `${value}h` : '-';
-    },
-    size: 80,
-  }),
 
   columnHelper.accessor('createdAt', {
     header: 'Date',
@@ -257,7 +301,7 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     size: 60,
   }),
   columnHelper.accessor((row) => row.data_task?.startDate, {
-    id: 'startDate',
+    id: 'done',
     header: 'Done',
     cell: ({ getValue, row }) => {
       const startDate = getValue();
@@ -286,6 +330,15 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       return value.length > 50 ? `${value.substring(0, 50)}...` : value;
     },
     size: 200,
+  }),
+  columnHelper.accessor((row) => row.data_task?.reporterName, {
+    id: 'reporterName',
+    header: 'Reporter Name',
+    cell: ({ getValue }) => {
+      const value = getValue();
+      return value || '-';
+    },
+    size: 150,
   }),
 ], [monthId, stableReporters]);
 };
