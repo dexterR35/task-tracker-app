@@ -2,7 +2,7 @@ import React from 'react';
 import BaseField from './BaseField';
 import { showSuccess } from '@/utils/toast';
 
-const TextField = ({ field, register, errors, getInputType, formValues }) => {
+const TextField = ({ field, register, errors, getInputType, formValues, hideLabel = false }) => {
   const fieldError = errors[field.name];
   
   // Handle Jira link success toast on blur
@@ -20,7 +20,7 @@ const TextField = ({ field, register, errors, getInputType, formValues }) => {
   };
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues}>
+    <BaseField field={field} error={fieldError} formValues={formValues} hideLabel={hideLabel}>
       <input
         {...register(field.name)}
         id={field.name}

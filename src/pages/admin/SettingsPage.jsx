@@ -84,6 +84,7 @@ const SettingsPage = () => {
             errors={errors}
             getInputType={() => 'text'}
             formValues={{}}
+            hideLabel={true}
           />
         );
       },
@@ -116,6 +117,7 @@ const SettingsPage = () => {
             setValue={() => {}}
             trigger={() => {}}
             formValues={{}}
+            hideLabel={true}
           />
         );
       },
@@ -151,6 +153,7 @@ const SettingsPage = () => {
             register={register}
             errors={errors}
             formValues={{}}
+            hideLabel={true}
           />
         );
       },
@@ -184,6 +187,7 @@ const SettingsPage = () => {
             setValue={() => {}}
             trigger={() => {}}
             formValues={{}}
+            hideLabel={true}
           />
         );
       },
@@ -219,6 +223,7 @@ const SettingsPage = () => {
             register={register}
             errors={errors}
             formValues={{}}
+            hideLabel={true}
           />
         );
       },

@@ -78,65 +78,58 @@ const TaskDetailPage = () => {
 
   const daysBetween = getDaysBetweenDates();
 
-  // Analytics Card Component
+  // Analytics Card Component with smaller fonts
   const AnalyticsCard = ({ title, icon, color, data, className = "" }) => {
     const cardColorHex = getCardColorHex(color);
     
     return (
-      <div className={`bg-gray-800/50 border border-gray-700/30 rounded-lg p-6 hover:bg-gray-800/70 transition-colors ${className}`}>
+      <div className={`bg-gray-800/50 border border-gray-700/30 rounded-lg p-4 hover:bg-gray-800/70 transition-colors ${className}`}>
         {/* Header */}
-        <div className="flex items-center space-x-4 mb-4">
+        <div className="flex items-center space-x-3 mb-3">
           <div 
-            className="p-3 rounded-xl flex items-center justify-center shadow-lg border border-gray-600/30"
+            className="p-2 rounded-lg flex items-center justify-center shadow-lg border border-gray-600/30"
             style={{ backgroundColor: `${cardColorHex}20` }}
           >
             {icon && React.createElement(icon, {
-              className: "w-6 h-6",
+              className: "w-4 h-4",
               style: { color: cardColorHex }
             })}
           </div>
-          <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
+          <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
         </div>
 
         {/* Content */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {data && data.length > 0 ? (
             data.map((item, index) => (
               <div
                 key={index}
-                className="p-4 rounded-lg border hover:bg-gray-700/30 transition-colors"
+                className="p-3 rounded-lg border hover:bg-gray-700/30 transition-colors"
                 style={{ 
                   backgroundColor: `${cardColorHex}10`,
                   borderColor: `${cardColorHex}20`
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
                     <div 
-                      className="w-3 h-3 rounded-full"
+                      className="w-2 h-2 rounded-full"
                       style={{ 
                         backgroundColor: cardColorHex,
                         background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
                       }}
                     ></div>
-                    <span className="text-sm text-gray-300">{item.label}</span>
+                    <span className="text-xs text-gray-300">{item.label}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-200">
+                  <span className="text-xs font-medium text-gray-200">
                     {item.value}
                   </span>
                 </div>
-                
-                {/* Show sub-value if available */}
-                {item.subValue && (
-                  <div className="ml-6 mt-2">
-                    <span className="text-xs text-gray-400">{item.subValue}</span>
-                  </div>
-                )}
               </div>
             ))
           ) : (
-            <div className="text-center py-4">
-              <span className="text-sm text-gray-500">No data available</span>
+            <div className="text-center py-3">
+              <span className="text-xs text-gray-500">No data available</span>
             </div>
           )}
         </div>
@@ -144,29 +137,43 @@ const TaskDetailPage = () => {
     );
   };
 
-  // Prepare analytics data
+  // Prepare analytics data with comprehensive task information
   const basicInfoData = [
+    {
+      label: "Task Name",
+      value: task.data_task?.taskName || 'Unnamed Task',
+      subValue: `Jira ID: ${task.data_task?.taskName || 'N/A'}`
+    },
     {
       label: "Department",
       value: (() => {
         const departments = task.data_task?.departments;
         if (!departments) return 'Not specified';
         return Array.isArray(departments) ? departments.join(', ') : departments;
-      })()
+      })(),
+      subValue: `Work department`
     },
     {
       label: "Product", 
-      value: task.data_task?.products || 'Not specified'
+      value: task.data_task?.products || 'Not specified',
+      subValue: `Product category`
     },
     {
       label: "Markets",
       value: Array.isArray(task.data_task?.markets) 
         ? task.data_task.markets.join(', ') 
-        : task.data_task?.markets || 'Not specified'
+        : task.data_task?.markets || 'Not specified',
+      subValue: `Target markets`
     },
     {
       label: "Reporter",
-      value: task.data_task?.reporterName || 'Not specified'
+      value: task.data_task?.reporterName || 'Not specified',
+      subValue: `Task reporter`
+    },
+    {
+      label: "User",
+      value: task.data_task?.userName || task.userName || 'Not specified',
+      subValue: `Task assignee`
     }
   ];
 
@@ -224,9 +231,10 @@ const TaskDetailPage = () => {
         // Add declinari time if present
         let declinariTimeInHours = 0;
         if (declinariTime > 0) {
-          declinariTimeInHours = declinariTime;
           if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
-          if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
+          else if (declinariTimeUnit === 'hr') declinariTimeInHours = declinariTime;
+          else if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
+          else declinariTimeInHours = declinariTime / 60; // Default to minutes
         }
         
         const totalTimeForDeliverable = (timeInHours + declinariTimeInHours) * deliverableCount;
@@ -244,7 +252,7 @@ const TaskDetailPage = () => {
         
         deliverablesData.push({
           label: `Time per Unit`,
-          value: `${timePerUnit} ${timeUnit}${declinariTime > 0 ? ` + ${declinariTime} ${declinariTimeUnit}` : ''}`
+          value: `${timePerUnit} ${timeUnit}${declinariTime > 0 ? ` + ${declinariTime} ${declinariTimeUnit} declinari` : ''}`
         });
         
         deliverablesData.push({
@@ -395,30 +403,42 @@ const TaskDetailPage = () => {
     }
   }
 
+  // Calculate total hours properly
+  const taskHours = task.data_task?.timeInHours || 0;
+  const aiHours = task.data_task?.aiTime || 0;
+  const deliverablesHours = totalCalculatedTime;
+  const totalHours = taskHours + aiHours + deliverablesHours;
+
   const timeInfoData = [
     {
       label: "Task Hours",
-      value: `${task.data_task?.timeInHours || 0} hours`
+      value: `${taskHours} hours`,
+      subValue: `Manual work time`
     },
     {
       label: "AI Hours", 
-      value: `${task.data_task?.aiTime || 0} hours`
+      value: `${aiHours} hours`,
+      subValue: `AI-assisted work time`
     },
     {
       label: "Deliverables Time",
-      value: `${totalCalculatedTime.toFixed(1)} hours`
+      value: `${deliverablesHours.toFixed(1)} hours`,
+      subValue: `Calculated from deliverables`
     },
     {
       label: "Total Hours",
-      value: `${(task.data_task?.timeInHours || 0) + (task.data_task?.aiTime || 0) + totalCalculatedTime} hours`
+      value: `${totalHours.toFixed(1)} hours`,
+      subValue: `Task + AI + Deliverables`
     },
     {
       label: "Duration",
-      value: daysBetween
+      value: daysBetween,
+      subValue: `From start to end date`
     },
     {
       label: "Daily Breakdown",
-      value: daysCalculation || 'No deliverables calculated'
+      value: daysCalculation || 'No deliverables calculated',
+      subValue: `Based on 8 hours per day`
     }
   ];
 
@@ -427,34 +447,99 @@ const TaskDetailPage = () => {
       label: "Start Date",
       value: task.data_task?.startDate 
         ? formatDate(task.data_task.startDate, 'dd MMM yyyy', true)
-        : 'Not specified'
+        : 'Not specified',
+      subValue: `Task start date`
     },
     {
       label: "End Date",
       value: task.data_task?.endDate 
         ? formatDate(task.data_task.endDate, 'dd MMM yyyy', true)
-        : 'Not specified'
+        : 'Not specified',
+      subValue: `Task end date`
+    },
+    {
+      label: "Duration",
+      value: daysBetween,
+      subValue: `Days between start and end`
     },
     {
       label: "Created At",
       value: task.createdAt 
         ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true)
-        : 'Not specified'
+        : 'Not specified',
+      subValue: `Task creation time`
     },
     {
       label: "Created By",
-      value: task.createdByName || 'Not specified'
+      value: task.createdByName || 'Not specified',
+      subValue: `Task creator`
+    },
+    {
+      label: "Month",
+      value: task.monthId || 'Not specified',
+      subValue: `Task month period`
     }
   ];
 
-  const aiData = task.data_task?.aiModels && task.data_task.aiModels.length > 0 ? [
-    {
+  const aiData = [];
+  
+  // Add AI models if available
+  if (task.data_task?.aiModels && task.data_task.aiModels.length > 0) {
+    aiData.push({
       label: "AI Models Used",
       value: Array.isArray(task.data_task.aiModels) 
         ? task.data_task.aiModels.join(', ') 
-        : task.data_task.aiModels
+        : task.data_task.aiModels,
+      subValue: `AI tools utilized`
+    });
+  }
+  
+  // Add AI time if available
+  if (task.data_task?.aiTime && task.data_task.aiTime > 0) {
+    aiData.push({
+      label: "AI Time",
+      value: `${task.data_task.aiTime} hours`,
+      subValue: `Time spent using AI`
+    });
+  }
+  
+  // Add AI enabled flag
+  if (task.data_task?.usedAIEnabled !== undefined) {
+    aiData.push({
+      label: "AI Enabled",
+      value: task.data_task.usedAIEnabled ? 'Yes' : 'No',
+      subValue: `AI assistance used`
+    });
+  }
+
+  // Task status and additional information
+  const statusData = [
+    {
+      label: "Task Status",
+      value: task.isVip ? 'VIP Task' : 'Regular Task',
+      subValue: task.isVip ? 'High priority task' : 'Standard task'
+    },
+    {
+      label: "Reworked",
+      value: task.reworked ? 'Yes' : 'No',
+      subValue: task.reworked ? 'Task has been reworked' : 'Original task'
+    },
+    {
+      label: "Task ID",
+      value: task.id || 'Not specified',
+      subValue: `Unique task identifier`
+    },
+    {
+      label: "Month ID",
+      value: task.monthId || 'Not specified',
+      subValue: `Task month period`
+    },
+    {
+      label: "User UID",
+      value: task.userUID || 'Not specified',
+      subValue: `Assigned user ID`
     }
-  ] : [];
+  ];
 
   
   // Handle legacy single string format (backward compatibility)
@@ -576,7 +661,7 @@ const TaskDetailPage = () => {
         </div>
 
         {/* Analytics Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {/* Basic Information Card */}
           <AnalyticsCard
             title="Basic Information"
@@ -620,6 +705,14 @@ const TaskDetailPage = () => {
               data={deliverablesData}
             />
           )}
+
+          {/* Task Status Card */}
+          <AnalyticsCard
+            title="Task Status"
+            icon={Icons.generic.info}
+            color="indigo"
+            data={statusData}
+          />
         </div>
 
         {/* Jira Link Section */}

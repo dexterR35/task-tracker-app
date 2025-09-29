@@ -1,11 +1,11 @@
 import React from 'react';
 import BaseField from './BaseField';
 
-const SelectField = ({ field, register, errors, formValues }) => {
+const SelectField = ({ field, register, errors, formValues, hideLabel = false }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues}>
+    <BaseField field={field} error={fieldError} formValues={formValues} hideLabel={hideLabel}>
       <select
         {...register(field.name)}
         id={field.name}

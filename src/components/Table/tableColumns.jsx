@@ -159,9 +159,10 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
             // Add declinari time if present
             let declinariTimeInHours = 0;
             if (declinariTime > 0) {
-              declinariTimeInHours = declinariTime;
               if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
-              if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
+              else if (declinariTimeUnit === 'hr') declinariTimeInHours = declinariTime;
+              else if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
+              else declinariTimeInHours = declinariTime / 60; // Default to minutes
             }
             
             const calculatedTime = (timeInHours + declinariTimeInHours) * quantity;

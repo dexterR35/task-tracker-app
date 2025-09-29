@@ -1,11 +1,11 @@
 import React from 'react';
 import BaseField from './BaseField';
 
-const NumberField = ({ field, register, errors, setValue, trigger, formValues }) => {
+const NumberField = ({ field, register, errors, setValue, trigger, formValues, hideLabel = false }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues}>
+    <BaseField field={field} error={fieldError} formValues={formValues} hideLabel={hideLabel}>
       <input
         {...register(field.name, {
           valueAsNumber: true
