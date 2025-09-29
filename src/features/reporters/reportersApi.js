@@ -9,6 +9,7 @@ import {
   createOptimisticUpdate
 } from "@/utils/apiUtils";
 import { logger } from "@/utils/logger";
+import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 
 /**
  * Reporters API - Refactored to use base API factory
@@ -26,15 +27,18 @@ export const reportersApi = createApi({
     // Get all reporters
     getReporters: builder.query({
       async queryFn() {
-        try {
-          logger.log(`[Reporters API] Starting to fetch reporters...`);
-          const reporters = await fetchCollectionFromFirestore(
-            "reporters",
-            {
-              orderBy: "createdAt",
-              orderDirection: "desc",
-            }
-          );
+        const cacheKey = `getReporters`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            logger.log(`[Reporters API] Starting to fetch reporters...`);
+            const reporters = await fetchCollectionFromFirestore(
+              "reporters",
+              {
+                orderBy: "createdAt",
+                orderDirection: "desc",
+              }
+            );
 
           logger.log(
             `[Reporters API] Fetched ${reporters.length} reporters:`,
@@ -46,6 +50,7 @@ export const reportersApi = createApi({
           logger.error(`[Reporters API] Error fetching reporters:`, error);
           throw error; // Let base API handle the error
         }
+        }, 'ReportersAPI');
       },
       providesTags: ["Reporter"],
     }),
@@ -53,9 +58,12 @@ export const reportersApi = createApi({
     // Create reporter
     createReporter: builder.mutation({
       async queryFn({ reporter, userData }) {
-        try {
-          logger.log(`[Reporters API] Creating reporter:`, reporter);
-          logger.log(`[Reporters API] User data:`, userData);
+        const cacheKey = `createReporter_${userData?.uid}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            logger.log(`[Reporters API] Creating reporter:`, reporter);
+            logger.log(`[Reporters API] User data:`, userData);
 
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -117,6 +125,7 @@ export const reportersApi = createApi({
           logger.error(`[Reporters API] Error creating reporter:`, error);
           throw error; // Let base API handle the error
         }
+        }, 'ReportersAPI');
       },
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
@@ -147,8 +156,11 @@ export const reportersApi = createApi({
     // Update reporter
     updateReporter: builder.mutation({
       async queryFn({ id, updates, userData }) {
-        try {
-          logger.log(`[Reporters API] Updating reporter ${id}:`, updates);
+        const cacheKey = `updateReporter_${id}_${userData?.uid}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            logger.log(`[Reporters API] Updating reporter ${id}:`, updates);
 
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -186,6 +198,7 @@ export const reportersApi = createApi({
           logger.error(`[Reporters API] Error updating reporter:`, error);
           throw error; // Let base API handle the error
         }
+        }, 'ReportersAPI');
       },
       invalidatesTags: ["Reporter"],
       // Optimistic update for immediate UI feedback
@@ -209,8 +222,11 @@ export const reportersApi = createApi({
     // Delete reporter
     deleteReporter: builder.mutation({
       async queryFn({ id, userData }) {
-        try {
-          logger.log(`[Reporters API] Deleting reporter ${id}`);
+        const cacheKey = `deleteReporter_${id}_${userData?.uid}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            logger.log(`[Reporters API] Deleting reporter ${id}`);
 
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -237,6 +253,7 @@ export const reportersApi = createApi({
           logger.error(`[Reporters API] Error deleting reporter:`, error);
           throw error; // Let base API handle the error
         }
+        }, 'ReportersAPI');
       },
       invalidatesTags: ["Reporter"],
       // Optimistic update to remove from cache immediately

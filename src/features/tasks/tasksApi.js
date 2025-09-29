@@ -2,6 +2,7 @@ import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { getCurrentUserInfo } from "@/features/auth/authSlice";
+import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import {
   collection,
   query as fsQuery,
@@ -97,10 +98,13 @@ export const tasksApi = createApi({
     // Real-time fetch for tasks - optimized for month changes and CRUD operations
     getMonthTasks: builder.query({
       async queryFn({ monthId, userId, role, userData }) {
-        try {
-          if (!monthId) {
-            return { data: [] };
-          }
+        const cacheKey = `getMonthTasks_${monthId}_${userId}_${role}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            if (!monthId) {
+              return { data: [] };
+            }
 
           // Permission validation handled by UI components
 
@@ -138,6 +142,7 @@ export const tasksApi = createApi({
           );
           return { error: { message: error.message } };
         }
+        }, 'TasksAPI');
       },
       async onCacheEntryAdded(
         arg,

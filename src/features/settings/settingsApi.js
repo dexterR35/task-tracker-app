@@ -3,6 +3,7 @@ import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { getCurrentUserInfo } from "@/features/auth/authSlice";
 import { canDeleteData } from "@/features/utils/authUtils";
+import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import {
   doc,
   getDoc,
@@ -33,9 +34,12 @@ export const settingsApi = createApi({
     // Get application settings
     getSettings: builder.query({
       async queryFn() {
-        try {
-          const settingsRef = getSettingsRef();
-          const settingsDoc = await getDoc(settingsRef);
+        const cacheKey = `getSettings`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            const settingsRef = getSettingsRef();
+            const settingsDoc = await getDoc(settingsRef);
           
           // Fetch deliverables from specific settings document
           const deliverablesRef = getSettingsDocumentRef("deliverables");
@@ -73,6 +77,7 @@ export const settingsApi = createApi({
           logger.error('[settingsApi] Error fetching settings:', error);
           return { error: { message: error.message } };
         }
+        }, 'SettingsAPI');
       },
       providesTags: [{ type: "Settings", id: "APP" }],
     }),
@@ -80,11 +85,14 @@ export const settingsApi = createApi({
     // Update application settings
     updateSettings: builder.mutation({
       async queryFn({ settings, userData }) {
-        try {
-          // SECURITY: Validate user permissions
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
+        const cacheKey = `updateSettings_${userData?.uid}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            // SECURITY: Validate user permissions
+            if (!userData) {
+              return { error: { message: "User data is required" } };
+            }
 
           // Check if user has permission to manage settings
           if (!canDeleteData(userData)) {
@@ -115,6 +123,7 @@ export const settingsApi = createApi({
           });
           return { error: errorResponse };
         }
+        }, 'SettingsAPI');
       },
       invalidatesTags: [{ type: "Settings", id: "APP" }],
     }),
@@ -122,11 +131,14 @@ export const settingsApi = createApi({
     // Update deliverables settings
     updateDeliverables: builder.mutation({
       async queryFn({ deliverables, userData }) {
-        try {
-          // SECURITY: Validate user permissions
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
+        const cacheKey = `updateDeliverables_${userData?.uid}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            // SECURITY: Validate user permissions
+            if (!userData) {
+              return { error: { message: "User data is required" } };
+            }
 
           // Check if user has permission to manage deliverables
           if (!canDeleteData(userData)) {
@@ -158,6 +170,7 @@ export const settingsApi = createApi({
           });
           return { error: errorResponse };
         }
+        }, 'SettingsAPI');
       },
       invalidatesTags: [
         { type: "Settings", id: "APP" },
@@ -168,11 +181,14 @@ export const settingsApi = createApi({
     // Generic settings mutation for any settings type
     updateSettingsType: builder.mutation({
       async queryFn({ settingsType, settingsData, userData }) {
-        try {
-          // SECURITY: Validate user permissions
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
+        const cacheKey = `updateSettingsType_${settingsType}_${userData?.uid}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            // SECURITY: Validate user permissions
+            if (!userData) {
+              return { error: { message: "User data is required" } };
+            }
 
           // Check if user has permission to manage settings
           if (!canDeleteData(userData)) {
@@ -204,6 +220,7 @@ export const settingsApi = createApi({
           });
           return { error: errorResponse };
         }
+        }, 'SettingsAPI');
       },
       invalidatesTags: (result, error, { settingsType }) => [
         { type: "Settings", id: "APP" },
@@ -214,9 +231,12 @@ export const settingsApi = createApi({
     // Get specific settings type
     getSettingsType: builder.query({
       async queryFn({ settingsType }) {
-        try {
-          const settingsRef = getSettingsDocumentRef(settingsType);
-          const settingsDoc = await getDoc(settingsRef);
+        const cacheKey = `getSettingsType_${settingsType}`;
+        
+        return await deduplicateRequest(cacheKey, async () => {
+          try {
+            const settingsRef = getSettingsDocumentRef(settingsType);
+            const settingsDoc = await getDoc(settingsRef);
           
           if (!settingsDoc.exists()) {
             return { data: null };
@@ -228,6 +248,7 @@ export const settingsApi = createApi({
           logger.error(`[settingsApi] Error fetching ${settingsType} settings:`, error);
           return { error: { message: error.message } };
         }
+        }, 'SettingsAPI');
       },
       providesTags: (result, error, { settingsType }) => [
         { type: "Settings", id: settingsType.toLowerCase() }

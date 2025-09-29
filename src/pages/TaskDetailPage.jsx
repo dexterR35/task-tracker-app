@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppData } from '@/hooks/useAppData';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
+import { useDeliverableCalculation, calculateSingleDeliverable, formatDeliverableDisplay, formatDeclinariDisplay, formatTimeBreakdown } from '@/hooks/useDeliverableCalculation';
 import Loader from '@/components/ui/Loader/Loader';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate } from '@/utils/dateUtils';
@@ -177,68 +178,25 @@ const TaskDetailPage = () => {
     }
   ];
 
+  // Use the centralized deliverable calculation hook
+  const { deliverablesList, totalTime, totalMinutes, totalDays } = useDeliverableCalculation(
+    task.data_task?.deliverablesUsed, 
+    deliverablesOptions
+  );
+  
   // Calculate deliverables time first
   const deliverablesData = [];
-  let totalCalculatedTime = 0;
+  let totalCalculatedTime = totalTime;
   let daysCalculation = '';
   
   // Enhanced deliverables processing for new data structure
-  if (task.data_task?.deliverablesUsed && Array.isArray(task.data_task.deliverablesUsed) && task.data_task.deliverablesUsed.length > 0) {
-    // Process each deliverable
-    task.data_task.deliverablesUsed.forEach((deliverable, index) => {
-      const deliverableName = deliverable?.name;
-      const deliverableCount = deliverable?.count || 1;
+  if (deliverablesList.length > 0) {
+    // Process each deliverable using the hook results
+    deliverablesList.forEach((deliverable, index) => {
+      const deliverableName = deliverable.name;
+      const deliverableCount = deliverable.quantity;
       
-      // Safety check for deliverableName
-      if (!deliverableName || typeof deliverableName !== 'string') {
-        return;
-      }
-      
-      // Find deliverable in settings with flexible matching
-      let deliverableSettings = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
-      
-      // If exact match not found, try flexible matching
-      if (!deliverableSettings && deliverablesOptions) {
-        // Try case-insensitive matching
-        deliverableSettings = deliverablesOptions.find(d => 
-          d.value && d.value.toLowerCase() === deliverableName.toLowerCase()
-        );
-        
-        // Try partial matching (e.g., "game preview" matches "game previews")
-        if (!deliverableSettings) {
-          deliverableSettings = deliverablesOptions.find(d => 
-            d.value && (
-              d.value.toLowerCase().includes(deliverableName.toLowerCase()) ||
-              deliverableName.toLowerCase().includes(d.value.toLowerCase())
-            )
-          );
-        }
-      }
-      
-      
-      if (deliverableSettings) {
-        // Calculate time for this deliverable
-        const timePerUnit = deliverableSettings.timePerUnit || 1;
-        const timeUnit = deliverableSettings.timeUnit || 'hr';
-        const declinariTime = deliverableSettings.declinariTime || 0;
-        const declinariTimeUnit = deliverableSettings.declinariTimeUnit || 'min';
-        
-        // Convert to hours
-        let timeInHours = timePerUnit;
-        if (timeUnit === 'min') timeInHours = timePerUnit / 60;
-        if (timeUnit === 'days') timeInHours = timePerUnit * 8;
-        
-        // Add declinari time if present
-        let declinariTimeInHours = 0;
-        if (declinariTime > 0) {
-          if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
-          else if (declinariTimeUnit === 'hr') declinariTimeInHours = declinariTime;
-          else if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
-          else declinariTimeInHours = declinariTime / 60; // Default to minutes
-        }
-        
-        const totalTimeForDeliverable = (timeInHours + declinariTimeInHours) * deliverableCount;
-        totalCalculatedTime += totalTimeForDeliverable;
+      if (deliverable.configured) {
         
         deliverablesData.push({
           label: `Deliverable ${index + 1}`,
@@ -252,12 +210,38 @@ const TaskDetailPage = () => {
         
         deliverablesData.push({
           label: `Time per Unit`,
-          value: `${timePerUnit} ${timeUnit}${declinariTime > 0 ? ` + ${declinariTime} ${declinariTimeUnit} declinari` : ''}`
+          value: `${deliverable.timePerUnit} ${deliverable.timeUnit}${deliverable.declinariTime > 0 ? ` + ${deliverable.declinariTime} ${deliverable.declinariTimeUnit} declinari` : ''}`
+        });
+        
+        deliverablesData.push({
+          label: `Calculation`,
+          value: `${deliverable.timeInHours.toFixed(1)}h${deliverable.declinariTimeInHours > 0 ? ` + ${deliverable.declinariTimeInHours.toFixed(3)}h declinari` : ''} × ${deliverableCount} = ${deliverable.time.toFixed(1)}h`
         });
         
         deliverablesData.push({
           label: `Total Time`,
-          value: `${totalTimeForDeliverable.toFixed(1)} hours`
+          value: `${deliverable.time.toFixed(1)} hours`
+        });
+        
+        deliverablesData.push({
+          label: `Breakdown`,
+          value: `${(deliverable.time * 60).toFixed(0)} minutes (${(deliverable.time / 8).toFixed(2)} days)`
+        });
+        
+        // Add detailed breakdown in the format you requested
+        deliverablesData.push({
+          label: `Detailed Breakdown`,
+          value: `${deliverable.timeInHours.toFixed(1)}hr${deliverable.declinariTimeInHours > 0 ? ` + ${deliverable.declinariTimeInHours.toFixed(3)}hr declinari` : ''} = ${deliverable.time.toFixed(1)}hr`
+        });
+        
+        deliverablesData.push({
+          label: `Total Minutes`,
+          value: `${(deliverable.time * 60).toFixed(0)} minutes`
+        });
+        
+        deliverablesData.push({
+          label: `Total Days`,
+          value: `${(deliverable.time / 8).toFixed(2)} days`
         });
         
         deliverablesData.push({
@@ -288,19 +272,34 @@ const TaskDetailPage = () => {
       }
     });
     
-    // Add total calculation
+    // Add comprehensive total calculation using hook results
+    const timeBreakdown = formatTimeBreakdown(totalCalculatedTime);
+    daysCalculation = `${timeBreakdown.days} days`;
+    
     deliverablesData.push({
-      label: "TOTAL TIME",
-      value: `${totalCalculatedTime.toFixed(1)} hours`
+      label: "=== TOTAL CALCULATION ===",
+      value: "---"
     });
     
-    // Calculate days (8 hours per day)
-    const days = totalCalculatedTime / 8;
-    daysCalculation = `${days.toFixed(1)} days (${totalCalculatedTime.toFixed(1)} hours ÷ 8 hours/day)`;
+    deliverablesData.push({
+      label: "Total Hours",
+      value: `${timeBreakdown.hours} hours`
+    });
     
     deliverablesData.push({
-      label: "DAILY BREAKDOWN",
+      label: "Total Minutes", 
+      value: `${timeBreakdown.minutes} minutes`
+    });
+    
+    deliverablesData.push({
+      label: "Total Days (8hr/day)",
       value: daysCalculation
+    });
+    
+    // Add the exact format you requested
+    deliverablesData.push({
+      label: "SUMMARY",
+      value: timeBreakdown.summary
     });
   }
   
