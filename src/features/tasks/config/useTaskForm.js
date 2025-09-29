@@ -239,23 +239,27 @@ export const taskFormSchema = Yup.object().shape({
   
   _hasDeliverables: Yup.boolean(),
   
-  deliverables: Yup.array().when('_hasDeliverables', {
+  deliverables: Yup.mixed().when('_hasDeliverables', {
     is: true,
     then: (schema) => schema.test('valid-deliverables', 'Please select a deliverable when "Has Deliverables" is checked', function(value) {
-      if (!Array.isArray(value) || value.length === 0) {
+      // Accept both string (from form) and array (processed) formats
+      if (!value || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0)) {
         return this.createError({
           message: 'Please select a deliverable when "Has Deliverables" is checked'
         });
       }
       
-      // Validate each deliverable object structure
-      for (const deliverable of value) {
-        if (!deliverable.deliverableName) {
-          return this.createError({
-            message: 'Each deliverable must have a deliverableName'
-          });
+      // If it's an array (processed format), validate structure
+      if (Array.isArray(value)) {
+        for (const deliverable of value) {
+          if (!deliverable.deliverableName) {
+            return this.createError({
+              message: 'Each deliverable must have a deliverableName'
+            });
+          }
         }
       }
+      
       return true;
     }),
     otherwise: (schema) => schema.notRequired().default([])
@@ -267,10 +271,16 @@ export const taskFormSchema = Yup.object().shape({
       const deliverableValue = this.parent.deliverables;
       const quantities = value || {};
       
-      if (deliverableValue) {
-        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
+      // Handle both string (form input) and array (processed) formats
+      let actualDeliverableValue = deliverableValue;
+      if (Array.isArray(deliverableValue) && deliverableValue.length > 0) {
+        actualDeliverableValue = deliverableValue[0].deliverableName;
+      }
+      
+      if (actualDeliverableValue) {
+        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === actualDeliverableValue);
         if (deliverable && deliverable.requiresQuantity) {
-          const quantity = quantities[deliverableValue];
+          const quantity = quantities[actualDeliverableValue];
           if (!quantity || quantity < 1) {
             return this.createError({
               message: `Please enter a quantity for ${deliverable.label}`
