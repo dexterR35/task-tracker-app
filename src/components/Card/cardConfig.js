@@ -179,9 +179,6 @@ export const CARD_CONFIGS = {
           // Total Hours Section
           ...metrics.sections.totalHours,
 
-          // Top AI Models Section
-          ...metrics.sections.top3AIModels,
-
           // Top 3 Products Section
           ...metrics.sections.top3Products,
 
@@ -361,20 +358,11 @@ export const CARD_CONFIGS = {
           subValue: "",
         },
         {
-          icon: Icons.generic.ai,
-          label: "Total AI Hours",
-          value: `${metrics.totalAIHours}h`,
-          subValue: "",
-        },
-        {
           icon: Icons.generic.clock,
           label: "Total Hours",
           value: `${metrics.totalHours}h`,
           subValue: "",
         },
-
-        // Top AI Models Section
-        ...metrics.sections.top3AIModels,
 
         // Section 1: All Products (from pre-calculated metrics)
         {
@@ -497,9 +485,6 @@ export const CARD_CONFIGS = {
           },
           ...metrics.top3Users,
 
-          // Top AI Models Section
-          ...metrics.sections.top3AIModels,
-
           // Top 3 Products Section
           ...metrics.sections.top3Products,
 
@@ -576,9 +561,6 @@ export const CARD_CONFIGS = {
             isHeader: true,
           },
           ...metrics.top3Users,
-
-          // Top AI Models Section
-          ...metrics.sections.top3AIModels,
 
           // Top 3 Products Section
           ...metrics.sections.top3Products,
@@ -665,9 +647,6 @@ export const CARD_CONFIGS = {
             isHeader: true,
           },
           ...metrics.top3Users,
-
-          // Top AI Models Section
-          ...metrics.sections.top3AIModels,
 
           // Top 3 Products Section
           ...metrics.sections.top3Products,

@@ -119,11 +119,10 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
               {deliverablesList.map((deliverable, index) => (
                 <div key={index} className="text-sm">
                   <div className="font-medium text-gray-900 dark:text-white">
-                    {deliverable.name}
-                    {deliverable.quantity > 1 && ` (${deliverable.quantity}x)`}
+                    {deliverable.quantity}x{deliverable.name}
                     {deliverable.declinariQuantity > 0 && (
                       <span className="text-orange-600 dark:text-orange-400">
-                        {' '}+ {deliverable.declinariQuantity}x declinari
+                        {' '}+ {deliverable.declinariQuantity} declinari
                       </span>
                     )}
                   </div>
@@ -133,13 +132,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
                         <div>
                           <span className="font-medium">Base:</span> {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
                         </div>
-                        {deliverable.declinariQuantity > 0 && (
-                          <div>
-                            <span className="font-medium">Declinari:</span> {deliverable.declinariQuantity}x × {deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(3)}h
-                          </div>
-                        )}
                         <div className="font-semibold text-blue-600 dark:text-blue-400">
-                          <span className="font-medium">Total:</span> {deliverable.time.toFixed(1)}h ({(deliverable.time * 60).toFixed(0)}min, {(deliverable.time / 8).toFixed(2)}days)
+                          <span className="font-medium">Total:</span> {deliverable.time.toFixed(1)}h ({Math.round(deliverable.time / 8)} day, {(deliverable.time * 60).toFixed(0)}min)
                         </div>
                       </div>
                     ) : deliverable.notConfigured ? (
@@ -152,11 +146,6 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
                   </div>
                 </div>
               ))}
-              {totalTime > 0 && (
-                <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 border-t pt-1">
-                  Total: {totalTime.toFixed(1)}h ({(totalTime / 8).toFixed(1)} days)
-                </div>
-              )}
             </div>
           );
         } else {
