@@ -10,7 +10,8 @@ const DeliverablesField = ({
   watch, 
   trigger, 
   clearErrors,
-  formValues 
+  formValues,
+  options = []
 }) => {
   const [customDeliverables, setCustomDeliverables] = useState([]);
   const [newCustomValue, setNewCustomValue] = useState('');
@@ -150,7 +151,7 @@ const DeliverablesField = ({
   const quantitiesError = errors['deliverableQuantities'];
   
   // Calculate total time for selected deliverable
-  const totalCalculatedTime = calculateTotalDeliverableTime(selectedDeliverable, quantities, declinariQuantities);
+  const totalCalculatedTime = calculateTotalDeliverableTime(selectedDeliverable, quantities, declinariQuantities, options);
   
   return (
     <div className="form-field">
@@ -202,6 +203,7 @@ const DeliverablesField = ({
                     <input
                       type="number"
                       min="1"
+                      step="0.5"
                       value={quantity}
                       onChange={(e) => handleQuantityChange(option.value, e.target.value)}
                       className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
@@ -220,13 +222,14 @@ const DeliverablesField = ({
                       className="form-checkbox"
                     />
                     <label className="text-sm text-gray-600 dark:text-gray-400">
-                      Declinari (10 min/unit):
+                      Declinari ({option.declinariTime || 10} {option.declinariTimeUnit || 'min'}/unit):
                     </label>
                     {declinariEnabled[option.value] && (
                       <>
                         <input
                           type="number"
                           min="0"
+                          step="0.5"
                           value={declinariQuantities[option.value] || 0}
                           onChange={(e) => handleDeclinariQuantityChange(option.value, e.target.value)}
                           className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
@@ -243,7 +246,7 @@ const DeliverablesField = ({
                       Total: {timeEstimate}
                       {declinariEnabled[option.value] && declinariQuantities[option.value] > 0 && (
                         <span className="text-orange-600 dark:text-orange-400">
-                          {' '}(+ {((declinariQuantities[option.value] || 0) * 10)} min declinari)
+                          {' '}(+ {((declinariQuantities[option.value] || 0) * (option.declinariTime || 10))} {option.declinariTimeUnit || 'min'} declinari)
                         </span>
                       )}
                     </div>

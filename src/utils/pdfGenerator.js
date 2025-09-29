@@ -27,7 +27,6 @@ export const captureElementScreenshot = async (elementId, options = {}) => {
   }
 
   // Use only Strategy 1: High-quality capture with advanced options
-  console.log(`Using high-quality capture for ${elementId}`);
   
   const captureOptions = {
     scale: 2, // High quality
@@ -84,13 +83,13 @@ export const captureElementScreenshot = async (elementId, options = {}) => {
     
     // Verify the canvas has content
     if (canvas.width > 0 && canvas.height > 0) {
-      console.log(`Successfully captured ${elementId} with high-quality strategy`);
+      // Successfully captured with high-quality strategy
       return canvas;
     } else {
       throw new Error('Canvas has no content');
     }
   } catch (error) {
-    console.error(`High-quality capture failed for ${elementId}:`, error);
+    // High-quality capture failed
     throw new Error(`High-quality capture failed for "${elementId}": ${error.message}`);
   }
 };
@@ -111,29 +110,13 @@ export const generateAnalyticsPDF = async (selectedCards = [], options = {}) => 
 
   try {
     // Wait for all elements to be fully rendered
-    console.log('Waiting for elements to be ready...');
+    // Waiting for elements to be ready
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Verify all selected cards exist and log their details
-    console.log('Verifying selected cards:', selectedCards);
-    selectedCards.forEach(cardId => {
-      const element = document.getElementById(cardId);
-      if (element) {
-        console.log(`Card ${cardId} found:`, {
-          width: element.offsetWidth,
-          height: element.offsetHeight,
-          hasContent: element.children.length > 0,
-          hasTables: element.querySelectorAll('table').length,
-          hasCharts: element.querySelectorAll('[class*="chart"]').length
-        });
-      } else {
-        console.error(`Card ${cardId} not found in DOM`);
-      }
-    });
-    
+    // Verify all selected cards exist
     const missingCards = selectedCards.filter(cardId => !document.getElementById(cardId));
     if (missingCards.length > 0) {
-      console.warn('Missing cards:', missingCards);
+      throw new Error(`Missing cards: ${missingCards.join(', ')}`);
     }
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -161,7 +144,7 @@ export const generateAnalyticsPDF = async (selectedCards = [], options = {}) => 
       const cardId = selectedCards[i];
       
       try {
-        console.log(`Processing card ${i + 1}/${selectedCards.length}: ${cardId}`);
+        // Processing card
         
         // Check if element exists before trying to capture
         const element = document.getElementById(cardId);
@@ -169,15 +152,9 @@ export const generateAnalyticsPDF = async (selectedCards = [], options = {}) => 
           throw new Error(`Element with ID "${cardId}" not found in DOM`);
         }
         
-        // Log card content details
+        // Verify card content
         const tables = element.querySelectorAll('table');
         const charts = element.querySelectorAll('[class*="chart"], [class*="Chart"], canvas, svg');
-        console.log(`Card ${cardId} content:`, {
-          dimensions: `${element.offsetWidth}x${element.offsetHeight}`,
-          tables: tables.length,
-          charts: charts.length,
-          hasContent: element.children.length > 0
-        });
         
         // Wait a bit more for charts to render
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -186,7 +163,7 @@ export const generateAnalyticsPDF = async (selectedCards = [], options = {}) => 
         const canvas = await captureElementScreenshot(cardId);
         const imgData = canvas.toDataURL('image/png');
         
-        console.log(`Successfully captured ${cardId}, canvas size: ${canvas.width}x${canvas.height}`);
+        // Successfully captured card
         
         // Calculate dimensions to fit on page
         const imgWidth = canvas.width;
@@ -231,10 +208,10 @@ export const generateAnalyticsPDF = async (selectedCards = [], options = {}) => 
           currentY = margin;
         }
 
-        console.log(`Successfully added ${cardId} to PDF with all content`);
+        // Successfully added card to PDF
 
       } catch (error) {
-        console.error(`Failed to capture card ${cardId}:`, error);
+        // Failed to capture card
         
         // Add error message to PDF
         pdf.setFontSize(12);
@@ -255,7 +232,7 @@ export const generateAnalyticsPDF = async (selectedCards = [], options = {}) => 
     pdf.save(filename);
     
   } catch (error) {
-    console.error('PDF generation failed:', error);
+    // PDF generation failed
     throw new Error(`Failed to generate PDF: ${error.message}`);
   }
 };

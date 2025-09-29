@@ -23,10 +23,6 @@ const AnalyticsPage = () => {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStep, setExportStep] = useState('');
   
-  // Force component to re-render when navigated to
-  useEffect(() => {
-    console.log('AnalyticsPage mounted/updated');
-  }, []);
   
   const {
     tasks, // Real-time tasks data (already filtered by selected month)
@@ -84,7 +80,7 @@ const AnalyticsPage = () => {
   // Export handlers
   const handlePDFExport = async () => {
     if (selectedCards.length === 0) {
-      alert('Please select at least one card to export');
+      showError('Please select at least one card to export');
       return;
     }
 
@@ -121,7 +117,6 @@ const AnalyticsPage = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
     } catch (error) {
-      console.error('PDF export failed:', error);
       setExportStep('PDF generation failed. Please try again.');
       await new Promise(resolve => setTimeout(resolve, 2000));
     } finally {
@@ -134,7 +129,7 @@ const AnalyticsPage = () => {
 
   const handleCSVExport = async () => {
     if (selectedCards.length === 0) {
-      alert('Please select at least one card to export');
+      showError('Please select at least one card to export');
       return;
     }
 
@@ -172,7 +167,6 @@ const AnalyticsPage = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
     } catch (error) {
-      console.error('CSV export failed:', error);
       setExportStep('CSV generation failed. Please try again.');
       await new Promise(resolve => setTimeout(resolve, 2000));
     } finally {

@@ -202,7 +202,7 @@ export const useMonthSelection = (selectedUserId = null) => {
         await refetchCurrentMonth?.();
       }
     } catch (error) {
-      console.warn('Failed to refetch data on month selection:', error);
+      // Silently handle refetch errors
     }
   }, [currentMonth.monthId, availableMonths.length, refetchMonthTasks, refetchCurrentMonth]);
   

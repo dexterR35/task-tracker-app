@@ -115,7 +115,6 @@ const AdminDashboardPage = () => {
   // Delete wrapper with error handling for permission issues
   const handleTaskDeleteMutation = async (task) => {
     if (!deleteTask) {
-      console.error('deleteTask mutation not available');
       throw new Error('Delete task mutation not available');
     }
     
@@ -149,7 +148,14 @@ const AdminDashboardPage = () => {
     closeDeleteModal,
     handleEditSuccess,
   } = useTableActions('task', {
-    getItemDisplayName: (task) => task?.data_task?.taskName || task?.data_task?.departments || 'Unknown Task',
+    getItemDisplayName: (task) => {
+      if (task?.data_task?.taskName) return task.data_task.taskName;
+      if (task?.data_task?.departments) {
+        const departments = task.data_task.departments;
+        return Array.isArray(departments) ? departments.join(', ') : departments;
+      }
+      return 'Unknown Task';
+    },
     deleteMutation: handleTaskDeleteMutation,
   });
 
@@ -612,7 +618,14 @@ const AdminDashboardPage = () => {
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}
         title="Delete Task"
-        message={`Are you sure you want to delete task "${itemToDelete?.data_task?.taskName || itemToDelete?.data_task?.departments || 'Unknown Task'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete task "${(() => {
+          if (itemToDelete?.data_task?.taskName) return itemToDelete.data_task.taskName;
+          if (itemToDelete?.data_task?.departments) {
+            const departments = itemToDelete.data_task.departments;
+            return Array.isArray(departments) ? departments.join(', ') : departments;
+          }
+          return 'Unknown Task';
+        })()}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"

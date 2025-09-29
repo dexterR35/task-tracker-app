@@ -19,7 +19,8 @@ export const useTableActions = (tableType, options = {}) => {
         return item.data_task.taskName;
       }
       if (item?.data_task?.departments) {
-        return item.data_task.departments;
+        const departments = item.data_task.departments;
+        return Array.isArray(departments) ? departments.join(', ') : departments;
       }
       // Handle other item types
       return item?.name || item?.jiraLink || item?.email || 'Unknown';

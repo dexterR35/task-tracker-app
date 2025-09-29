@@ -230,30 +230,6 @@ export const exportTrend = (currentValue, previousValue) => {
  * @param {string} type - Data type to log ('categories', 'time', 'markets', 'basic', 'ai', 'enhanced', 'all')
  */
 export const logAnalytics = (tasks = [], type = 'all') => {
-  console.log(`=== Analytics Data (${type.toUpperCase()}) ===`);
-  
-  switch (type.toLowerCase()) {
-    case 'categories':
-      console.log(exportCategoryTotals(tasks));
-      break;
-    case 'time':
-      console.log(exportTimeAnalytics(tasks));
-      break;
-    case 'markets':
-      console.log(exportMarketAnalytics(tasks));
-      break;
-    case 'basic':
-      console.log(exportBasicMetrics(tasks));
-      break;
-    case 'ai':
-      console.log(exportAIMetrics(tasks));
-      break;
-    case 'enhanced':
-      console.log(exportEnhancedData(tasks));
-      break;
-    case 'all':
-    default:
-      console.log(exportCompleteAnalytics(tasks));
-      break;
-  }
+  // Debug logging removed for production
+  // Use logger.debug() if debug logging is needed
 };

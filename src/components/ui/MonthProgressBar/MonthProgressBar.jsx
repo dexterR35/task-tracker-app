@@ -26,10 +26,8 @@ const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDa
       const month = parseInt(monthIdParts[1]) - 1; // month is 0-indexed in Date constructor
       const firstDayOfMonth = new Date(year, month, 1);
       totalDays = getDaysInMonth(firstDayOfMonth);
-      console.log(`MonthId: ${monthId}, Year: ${year}, Month: ${month + 1}, Total days: ${totalDays}`);
     } else {
       totalDays = getDaysInMonth(monthStart);
-      console.log(`Using monthStart for totalDays: ${totalDays}`);
     }
     
     const currentMonthId = getCurrentMonthId();

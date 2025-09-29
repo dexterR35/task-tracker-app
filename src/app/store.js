@@ -5,6 +5,7 @@ import authReducer from "@/features/auth/authSlice";
 import { tasksApi } from "@/features/tasks/tasksApi";
 import { usersApi } from "@/features/users/usersApi";
 import { reportersApi } from "@/features/reporters/reportersApi";
+import { settingsApi } from "@/features/settings/settingsApi";
 
 // Create the store with all required reducers and middleware
 const store = configureStore({
@@ -13,6 +14,7 @@ const store = configureStore({
     [tasksApi.reducerPath]: tasksApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [reportersApi.reducerPath]: reportersApi.reducer,
+    [settingsApi.reducerPath]: settingsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -62,6 +64,7 @@ const store = configureStore({
       usersApi.middleware,
       tasksApi.middleware,
       reportersApi.middleware,
+      settingsApi.middleware,
     ]),
   devTools: process.env.NODE_ENV !== 'production',
 });

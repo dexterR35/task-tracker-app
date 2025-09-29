@@ -85,7 +85,7 @@ export const toMs = (value) => {
       return isValid(parsed) ? parsed.getTime() : null;
     }
   } catch (error) {
-    console.warn('toMs conversion error:', error, 'for value:', value);
+    // toMs conversion error
   }
   return null;
 };

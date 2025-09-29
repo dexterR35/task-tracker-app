@@ -73,7 +73,7 @@ const CSVExportButton = ({
       }, 2000);
 
     } catch (error) {
-      console.error('Export error:', error);
+      // Export error occurred
       setExportStatus('error');
       setIsExporting(false);
       setProgress(0);

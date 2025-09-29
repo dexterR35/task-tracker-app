@@ -102,9 +102,6 @@ export const getTop3MetricsForCards = (data, options = {}) => {
   }
 
   // Fallback: return empty metrics if hook data is not available
-  console.warn(
-    "getTop3MetricsForCards: No metrics found in data. Make sure to use useTop3Calculations hook in React components."
-  );
   return {
     sections: {
       totalHours: [],
@@ -159,7 +156,6 @@ export const CARD_CONFIGS = {
         const chartData = calculateDailyTasks(data.tasks || [], monthId);
         return chartData;
       } catch (error) {
-        console.error("Error calculating tasks chart data:", error);
         return [];
       }
     },
@@ -221,7 +217,6 @@ export const CARD_CONFIGS = {
         );
         return chartData;
       } catch (error) {
-        console.error("Error calculating reporters chart data:", error);
         return [];
       }
     },
@@ -630,7 +625,6 @@ export const CARD_CONFIGS = {
         );
         return chartData;
       } catch (error) {
-        console.error("Error calculating dev department chart data:", error);
         return [];
       }
     },
@@ -799,7 +793,6 @@ export const createDashboardCards = (
     .map((cardType) => {
       const config = CARD_CONFIGS[cardType];
       if (!config) {
-        console.warn(`Card type ${cardType} not found`);
         return null;
       }
 
@@ -828,7 +821,6 @@ export const createDashboardCards = (
 
         return card;
       } catch (error) {
-        console.error(`Error creating card ${cardType}:`, error);
         return null;
       }
     })
@@ -874,7 +866,7 @@ export const createDashboardCards = (
         // Add selected user card at the beginning
         return [selectedUserCard, ...baseCards];
       } catch (error) {
-        console.error(`Error creating selected user card:`, error);
+        // Silently handle card creation errors
       }
     }
   }

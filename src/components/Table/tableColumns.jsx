@@ -3,7 +3,9 @@ import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar';
 import { formatDate } from '@/utils/dateUtils';
-import { TASK_FORM_OPTIONS, calculateDeliverableTime } from '@/features/tasks/config/useTaskForm';
+import { calculateDeliverableTime } from '@/features/tasks/config/useTaskForm';
+import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
+
 
 const columnHelper = createColumnHelper();
 
@@ -12,6 +14,9 @@ const columnHelper = createColumnHelper();
 export const useTaskColumns = (monthId = null, reporters = []) => {
   // Ensure reporters is always an array to prevent hooks issues
   const stableReporters = Array.isArray(reporters) ? reporters : [];
+  
+  // Get dynamic deliverables from settings
+  const { deliverablesOptions } = useDeliverablesOptions();
   
   return useMemo(() => [
   columnHelper.accessor('data_task.taskName', {
@@ -102,58 +107,142 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     cell: ({ getValue, row }) => {
       const deliverablesUsed = getValue();
       
+      
       // Handle new deliverablesUsed array format
       if (deliverablesUsed && Array.isArray(deliverablesUsed) && deliverablesUsed.length > 0) {
-        const deliverableData = deliverablesUsed[0];
-        const deliverableQuantities = deliverableData.deliverableQuantities || {};
-        const declinariDeliverables = deliverableData.declinariDeliverables || {};
-        const customDeliverables = deliverableData.customDeliverables || [];
+        const deliverablesList = [];
+        let totalTime = 0;
         
-        // Handle new structure with name and count properties
-        if (deliverableQuantities.name && deliverableQuantities.count) {
-          const deliverableName = deliverableQuantities.name;
-          const quantity = deliverableQuantities.count;
-          const declinariQuantity = declinariDeliverables.count || 0;
+        deliverablesUsed.forEach((deliverable, index) => {
+          const deliverableName = deliverable?.name;
+          const quantity = deliverable?.count || 1;
           
-          const deliverableOption = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableName);
-          if (deliverableOption) {
-            const calculatedTime = calculateDeliverableTime(deliverableOption, quantity);
-            const daysCalculation = calculatedTime > 0 ? ` (${(calculatedTime / 8).toFixed(1)} days)` : '';
-            
-            return (
-              <div className="space-y-1">
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {deliverableOption.label}
-                  {quantity > 1 && ` (${quantity}x)`}
-                  {declinariQuantity > 0 && (
-                    <span className="text-orange-600 dark:text-orange-400">
-                      {' '}+ {declinariQuantity}x declinari
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Total: {calculatedTime.toFixed(1)}h{daysCalculation}
-                </div>
-                {customDeliverables.length > 0 && (
-                  <div className="text-xs text-blue-600 dark:text-blue-400">
-                    Custom: {customDeliverables.join(', ')}
-                  </div>
-                )}
-              </div>
-            );
+          // Safety check for deliverableName
+          if (!deliverableName || typeof deliverableName !== 'string') {
+            return;
           }
-        }
+          
+          // Find deliverable in settings with flexible matching
+          let deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
+          
+          // If exact match not found, try flexible matching
+          if (!deliverableOption && deliverablesOptions) {
+            // Try case-insensitive matching
+            deliverableOption = deliverablesOptions.find(d => 
+              d.value && d.value.toLowerCase() === deliverableName.toLowerCase()
+            );
+            
+            // Try partial matching (e.g., "game preview" matches "game previews")
+            if (!deliverableOption) {
+              deliverableOption = deliverablesOptions.find(d => 
+                d.value && (
+                  d.value.toLowerCase().includes(deliverableName.toLowerCase()) ||
+                  deliverableName.toLowerCase().includes(d.value.toLowerCase())
+                )
+              );
+            }
+          }
+          
+          
+          if (deliverableOption) {
+            // Calculate time for this deliverable
+            const timePerUnit = deliverableOption.timePerUnit || 1;
+            const timeUnit = deliverableOption.timeUnit || 'hr';
+            const declinariTime = deliverableOption.declinariTime || 0;
+            const declinariTimeUnit = deliverableOption.declinariTimeUnit || 'min';
+            
+            // Convert to hours
+            let timeInHours = timePerUnit;
+            if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+            if (timeUnit === 'days') timeInHours = timePerUnit * 8;
+            
+            // Add declinari time if present
+            let declinariTimeInHours = 0;
+            if (declinariTime > 0) {
+              declinariTimeInHours = declinariTime;
+              if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
+              if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
+            }
+            
+            const calculatedTime = (timeInHours + declinariTimeInHours) * quantity;
+            totalTime += calculatedTime;
+            
+            deliverablesList.push({
+              name: deliverableName,
+              quantity: quantity,
+              time: calculatedTime,
+              timePerUnit: timePerUnit,
+              timeUnit: timeUnit,
+              declinariTime: declinariTime,
+              declinariTimeUnit: declinariTimeUnit
+            });
+          } else {
+            // If deliverable not found in settings, show warning
+            deliverablesList.push({
+              name: deliverableName,
+              quantity: quantity,
+              time: 0,
+              timePerUnit: 0,
+              timeUnit: 'hr',
+              declinariTime: 0,
+              declinariTimeUnit: 'min',
+              notConfigured: true
+            });
+          }
+        });
         
-        // Handle case where only custom deliverables exist
-        if (customDeliverables.length > 0) {
+        if (deliverablesList.length > 0) {
           return (
             <div className="space-y-1">
-              <div className="font-medium text-gray-900 dark:text-white">
-                Custom Deliverables
-              </div>
-              <div className="text-xs text-blue-600 dark:text-blue-400">
-                {customDeliverables.join(', ')}
-              </div>
+              {deliverablesList.map((deliverable, index) => (
+                <div key={index} className="text-sm">
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {deliverable.name}
+                    {deliverable.quantity > 1 && ` (${deliverable.quantity}x)`}
+                    {deliverable.declinariTime > 0 && (
+                      <span className="text-orange-600 dark:text-orange-400">
+                        {' '}+ {deliverable.declinariTime}{deliverable.declinariTimeUnit} declinari
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {deliverable.time > 0 ? (
+                      <>
+                        {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {deliverable.time.toFixed(1)}h
+                        {deliverable.declinariTime > 0 && ` + ${(deliverable.declinariTime * deliverable.quantity).toFixed(1)}h declinari`}
+                      </>
+                    ) : deliverable.notConfigured ? (
+                      <span className="text-amber-600 dark:text-amber-400">
+                        ⚠️ Not configured in settings - Add to Settings → Deliverables
+                      </span>
+                    ) : (
+                      'No time data available'
+                    )}
+                  </div>
+                </div>
+              ))}
+              {totalTime > 0 && (
+                <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 border-t pt-1">
+                  Total: {totalTime.toFixed(1)}h ({(totalTime / 8).toFixed(1)} days)
+                </div>
+              )}
+            </div>
+          );
+        } else {
+          // If deliverablesUsed exists but no valid deliverables found, show warning
+          return (
+            <div className="space-y-1">
+              {deliverablesUsed.map((deliverable, index) => (
+                <div key={index} className="text-sm">
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {deliverable.name || 'Unknown deliverable'}
+                    {deliverable.count > 1 && ` (${deliverable.count}x)`}
+                  </div>
+                  <div className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠️ Not configured in settings - Add to Settings → Deliverables
+                  </div>
+                </div>
+              ))}
             </div>
           );
         }
@@ -168,9 +257,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
         const deliverableName = deliverable.deliverableName;
         const deliverableQuantities = deliverable.deliverableQuantities || {};
         const declinariQuantities = deliverable.declinariQuantities || {};
-        const declinariDeliverables = deliverable.declinariDeliverables || {};
         
-        const deliverableOption = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableName);
+        const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
         if (deliverableOption) {
           const quantity = deliverableQuantities[deliverableName] || 1;
           const declinariQuantity = declinariQuantities[deliverableName] || 0;
@@ -193,12 +281,25 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
               </div>
             </div>
           );
+        } else {
+          // Show warning for unconfigured deliverable
+          return (
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900 dark:text-white">
+                {deliverableName}
+                {deliverableQuantities[deliverableName] > 1 && ` (${deliverableQuantities[deliverableName]}x)`}
+              </div>
+              <div className="text-xs text-amber-600 dark:text-amber-400">
+                ⚠️ Not configured in settings - Add to Settings → Deliverables
+              </div>
+            </div>
+          );
         }
       }
       
       // Handle legacy single string format (backward compatibility)
       if (legacyDeliverables && typeof legacyDeliverables === 'string') {
-        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === legacyDeliverables);
+        const deliverable = deliverablesOptions ? deliverablesOptions.find(d => d.value === legacyDeliverables) : null;
         if (deliverable) {
           const legacyDeliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
           const legacyDeclinariQuantities = row.original?.data_task?.declinariQuantities || {};
@@ -228,6 +329,19 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
               </div>
             </div>
           );
+        } else {
+          // Show warning for unconfigured deliverable
+          return (
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900 dark:text-white">
+                {legacyDeliverables}
+                {legacyDeliverableQuantities[legacyDeliverables] > 1 && ` (${legacyDeliverableQuantities[legacyDeliverables]}x)`}
+              </div>
+              <div className="text-xs text-amber-600 dark:text-amber-400">
+                ⚠️ Not configured in settings - Add to Settings → Deliverables
+              </div>
+            </div>
+          );
         }
       }
       
@@ -240,7 +354,14 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
         allDeliverables = [...allDeliverables, ...legacyCustomDeliverables];
       }
       
-      if (allDeliverables.length === 0) return '-';
+      if (allDeliverables.length === 0) {
+        // If no deliverables found at all, show a message
+        return (
+          <span className="text-gray-500 dark:text-gray-400">
+            No deliverables
+          </span>
+        );
+      }
       return allDeliverables.join(', ');
     },
     size: 200,

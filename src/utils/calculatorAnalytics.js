@@ -114,7 +114,7 @@ export const calculateTaskCategoryTotals = (tasks = []) => {
       });
 
     } catch (error) {
-      console.error(`Error processing task ${index + 1}:`, error, task);
+      // Error processing task
     }
   });
 

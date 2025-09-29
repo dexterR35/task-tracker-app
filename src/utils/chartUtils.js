@@ -14,7 +14,6 @@ const safeParseDate = (dateValue) => {
     try {
       return parseISO(dateValue);
     } catch (error) {
-      console.warn('Failed to parse date string:', dateValue, error);
       return new Date();
     }
   }
@@ -221,6 +220,12 @@ export const calculateDailyDepartmentMetrics = (tasks, monthId, department) => {
   // Filter tasks by department
   const departmentTasks = tasks.filter(task => {
     const taskDepartment = task.data_task?.departments || task.data_task?.department;
+    
+    // Handle both array and string formats
+    if (Array.isArray(taskDepartment)) {
+      return taskDepartment.some(dept => dept && dept.toLowerCase() === department.toLowerCase());
+    }
+    
     return taskDepartment && taskDepartment.toLowerCase() === department.toLowerCase();
   });
 

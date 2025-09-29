@@ -49,12 +49,7 @@ export const useAuth = () => {
     
     // Use centralized user validation
     if (!isUserComplete(user)) {
-      console.warn('User data incomplete - missing required fields:', {
-        userUID: !!user.userUID,
-        email: !!user.email,
-        name: !!user.name,
-        role: !!user.role
-      });
+      // User data incomplete - missing required fields
       return null;
     }
     

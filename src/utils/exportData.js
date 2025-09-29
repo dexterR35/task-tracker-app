@@ -61,13 +61,13 @@ export const exportToCSV = (data, columns, tableType) => {
 // Export other utility functions if you have them
 export const exportToExcel = (data, columns, tableType) => {
   // Excel export implementation
-  console.log('Excel export not implemented yet');
+  // Excel export not implemented yet
   return false;
 };
 
 export const exportToPDF = (data, columns, tableType) => {
   // PDF export implementation
-  console.log('PDF export not implemented yet');
+  // PDF export not implemented yet
   return false;
 };
   

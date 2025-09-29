@@ -6,10 +6,11 @@ import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/utils/errorUtils';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { 
-  taskFormSchema, 
-  TASK_FORM_FIELDS, 
+  createTaskFormSchema, 
+  createTaskFormFields, 
   prepareTaskFormData
 } from '../../config/useTaskForm';
+import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
 import { shouldShowField } from '../../../../components/forms/configs/sharedFormUtils';
 import { 
   TextField, 
@@ -37,6 +38,17 @@ const TaskForm = ({
   className = "" 
 }) => {
   const { createTask, updateTask, reporters = [], monthId, user, refetchCurrentMonth, refetchMonthTasks } = useAppData();
+  const { deliverablesOptions, isLoading: loadingDeliverables } = useDeliverablesOptions();
+  
+  // Create dynamic form fields with deliverables options
+  const formFields = React.useMemo(() => {
+    return createTaskFormFields(deliverablesOptions);
+  }, [deliverablesOptions]);
+
+  // Create dynamic schema with deliverables options
+  const dynamicSchema = React.useMemo(() => {
+    return createTaskFormSchema(deliverablesOptions);
+  }, [deliverablesOptions]);
   
   const {
     register,
@@ -49,7 +61,7 @@ const TaskForm = ({
     clearErrors,
     setError
   } = useForm({
-    resolver: yupResolver(taskFormSchema),
+    resolver: yupResolver(dynamicSchema),
     defaultValues: {
       jiraLink: '',
       products: '',
@@ -147,6 +159,7 @@ const TaskForm = ({
       const formattedStartDate = formatDate(taskData.startDate);
       const formattedEndDate = formatDate(taskData.endDate);
       
+      
       reset({
         jiraLink: jiraLink,
         products: taskData.products || '',
@@ -156,16 +169,16 @@ const TaskForm = ({
         startDate: formattedStartDate,
         endDate: formattedEndDate,
         _hasDeliverables: !!(taskData.deliverablesUsed?.[0] || taskData.deliverables),
-        deliverables: taskData.deliverablesUsed?.[0]?.deliverableQuantities?.name || 
+        deliverables: taskData.deliverablesUsed?.[0]?.name || 
           taskData.deliverables?.[0]?.deliverableName || '',
-        deliverableQuantities: taskData.deliverablesUsed?.[0]?.deliverableQuantities?.name ? 
-          { [taskData.deliverablesUsed[0].deliverableQuantities.name]: taskData.deliverablesUsed[0].deliverableQuantities.count } :
+        deliverableQuantities: taskData.deliverablesUsed?.[0]?.name ? 
+          { [taskData.deliverablesUsed[0].name]: taskData.deliverablesUsed[0].count } :
           taskData.deliverables?.[0]?.deliverableQuantities || {},
-        declinariQuantities: taskData.deliverablesUsed?.[0]?.declinariDeliverables?.name ? 
-          { [taskData.deliverablesUsed[0].declinariDeliverables.name]: taskData.deliverablesUsed[0].declinariDeliverables.count } :
+        declinariQuantities: taskData.deliverablesUsed?.[0]?.name ? 
+          { [taskData.deliverablesUsed[0].name]: taskData.deliverablesUsed[0].declinariCount || 0 } :
           taskData.deliverables?.[0]?.declinariQuantities || {},
-        declinariDeliverables: taskData.deliverablesUsed?.[0]?.declinariDeliverables?.name ? 
-          { [taskData.deliverablesUsed[0].declinariDeliverables.name]: true } :
+        declinariDeliverables: taskData.deliverablesUsed?.[0]?.name ? 
+          { [taskData.deliverablesUsed[0].name]: taskData.deliverablesUsed[0].declinariEnabled || false } :
           taskData.deliverables?.[0]?.declinariDeliverables || {},
         customDeliverables: taskData.deliverablesUsed?.[0]?.customDeliverables || 
           taskData.customDeliverables || [],
@@ -177,6 +190,7 @@ const TaskForm = ({
         reworked: taskData.reworked || false,
         observations: taskData.observations || ''
       });
+      
       
       logger.log('🔄 Task form reset with initial data:', { 
         initialData, 
@@ -208,8 +222,7 @@ const TaskForm = ({
       
       // Validate deliverable quantities
       if (data._hasDeliverables && data.deliverables) {
-        const { TASK_FORM_OPTIONS } = await import('../../config/useTaskForm');
-        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === data.deliverables);
+        const deliverable = deliverablesOptions.find(d => d.value === data.deliverables);
         if (deliverable && deliverable.requiresQuantity) {
           const quantity = data.deliverableQuantities?.[data.deliverables];
           if (!quantity || quantity < 1) {
@@ -228,7 +241,7 @@ const TaskForm = ({
       }
       
       // Prepare form data for database
-      const processedData = prepareTaskFormData(data);
+      const processedData = prepareTaskFormData(data, deliverablesOptions);
       logger.log('💾 Processed task data:', processedData);
       
       if (mode === 'edit' && initialData?.id) {
@@ -240,7 +253,7 @@ const TaskForm = ({
         });
         
         return await updateTaskWithErrorHandling({
-          monthId: initialData.monthId,
+          monthId: initialData.monthId || initialData.data_task?.monthId || monthId,
           taskId: initialData.id,
           updates: processedData,
           reporters,
@@ -277,7 +290,7 @@ const TaskForm = ({
           await refetchCurrentMonth?.();
           await refetchMonthTasks?.();
         } catch (error) {
-          console.warn('Failed to refetch data after task operation:', error);
+          // Silently handle refetch errors - they don't affect the main operation
         }
         
         onSuccess?.(result);
@@ -312,7 +325,7 @@ const TaskForm = ({
   // Helper function to render fields based on type
   const renderField = (field, fieldProps) => {
     if (field.name === 'deliverables') {
-      return <DeliverablesField key={field.name} {...fieldProps} />;
+      return <DeliverablesField key={field.name} {...fieldProps} options={deliverablesOptions} />;
     }
     if (field.type === 'select') {
       return <SelectField key={field.name} {...fieldProps} />;
@@ -347,7 +360,7 @@ const TaskForm = ({
   };
 
   // Get fields with dynamic options (reporters)
-  const fieldsWithOptions = TASK_FORM_FIELDS.map(field => {
+  const fieldsWithOptions = formFields.map(field => {
     if (field.name === 'reporters') {
       const reporterOptions = reporters?.map(reporter => ({
         value: reporter.id,

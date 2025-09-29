@@ -193,6 +193,11 @@ export const canSubmitForms = (user) => {
   return isUserActive(user) && (user.role === 'user' || isAdmin(user));
 };
 
+export const canDeleteData = (user) => {
+  if (!user) return false;
+  return hasPermission(user, 'delete_data');
+};
+
 export const canPerformTaskCRUD = (user) => {
   if (!user) return false;
   return canCreateTask(user) && canUpdateTask(user) && canDeleteTask(user);

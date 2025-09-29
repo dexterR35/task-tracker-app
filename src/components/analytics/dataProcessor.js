@@ -30,18 +30,7 @@ export const processTasksForTable = (tasks = [], config = {}) => {
   // Process each task with error handling
   tasks.forEach((task, index) => {
     try {
-      // Debug logging for first few tasks
-      if (index < 3) {
-        console.log(`Processing task ${index + 1}:`, {
-          id: task.id,
-          taskName: task.taskName,
-          products: task.products,
-          markets: task.markets,
-          departments: task.departments,
-          categoryField,
-          marketField
-        });
-      }
+      // Processing task
 
       const category = extractCategory(task, categoryField);
       const market = extractMarket(task, marketField);
@@ -51,7 +40,7 @@ export const processTasksForTable = (tasks = [], config = {}) => {
         tableData[category].total++;
       }
     } catch (error) {
-      console.error(`Error processing task ${index + 1}:`, error, task);
+      // Error processing task
       // Continue processing other tasks
     }
   });
@@ -88,7 +77,7 @@ export const processTasksForChart = (tasks = [], config = {}) => {
         categoryCounts[category]++;
       }
     } catch (error) {
-      console.error(`Error processing task ${index + 1} for chart:`, error, task);
+      // Error processing task for chart
       // Continue processing other tasks
     }
   });

@@ -228,7 +228,6 @@ export const createSmallCards = (data) => {
     .map((cardType) => {
       const config = SMALL_CARD_CONFIGS[cardType];
       if (!config) {
-        console.warn(`Small card type ${cardType} not found`);
         return null;
       }
 
@@ -254,7 +253,6 @@ export const createSmallCards = (data) => {
 
         return card;
       } catch (error) {
-        console.error(`Error creating small card ${cardType}:`, error);
         return null;
       }
     })

@@ -13,7 +13,6 @@ const Sidebar = () => {
     try {
       await logout();
     } catch (error) {
-      console.error("Logout failed:", error);
       clearError();
     }
   };
@@ -42,6 +41,13 @@ const Sidebar = () => {
       icon: Icons.admin.users,
       adminOnly: true,
       description: "User management",
+    },
+    {
+      name: "Settings",
+      href: "/settings",
+      icon: Icons.generic.settings,
+      adminOnly: true,
+      description: "Application settings",
     },
   ];
 

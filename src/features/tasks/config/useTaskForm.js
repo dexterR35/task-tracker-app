@@ -33,10 +33,10 @@ export const calculateDeliverableTime = (deliverable, quantity = 1) => {
   }
 };
 
-export const calculateTotalDeliverableTime = (deliverableValue, quantities, declinariQuantities = {}) => {
+export const calculateTotalDeliverableTime = (deliverableValue, quantities, declinariQuantities = {}, deliverablesOptions = []) => {
   if (!deliverableValue) return 0;
   
-  const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
+  const deliverable = deliverablesOptions.find(d => d.value === deliverableValue);
   if (!deliverable) return 0;
   
   const quantity = quantities[deliverableValue] || 1;
@@ -44,9 +44,31 @@ export const calculateTotalDeliverableTime = (deliverableValue, quantities, decl
   
   // Add declinari time if declinari is enabled for this deliverable
   const declinariQuantity = declinariQuantities[deliverableValue] || 0;
-  const declinariTime = declinariQuantity > 0 ? (declinariQuantity * 10) / 60 : 0; // 10 min per unit, convert to hours
+  if (declinariQuantity > 0) {
+    const declinariTimePerUnit = deliverable.declinariTime || 10;
+    const declinariTimeUnit = deliverable.declinariTimeUnit || 'min';
+    const totalDeclinariTime = declinariQuantity * declinariTimePerUnit;
+    
+    // Convert declinari time to hours based on its unit
+    let declinariTimeInHours = 0;
+    switch (declinariTimeUnit) {
+      case 'min':
+        declinariTimeInHours = totalDeclinariTime / 60;
+        break;
+      case 'hr':
+        declinariTimeInHours = totalDeclinariTime;
+        break;
+      case 'days':
+        declinariTimeInHours = totalDeclinariTime * 8; // 8 hours per day
+        break;
+      default:
+        declinariTimeInHours = totalDeclinariTime / 60; // Default to minutes
+    }
+    
+    return deliverableTime + declinariTimeInHours;
+  }
   
-  return deliverableTime + declinariTime;
+  return deliverableTime;
 };
 
 export const formatTimeEstimate = (deliverable, quantity = 1) => {
@@ -65,6 +87,7 @@ export const formatTimeEstimate = (deliverable, quantity = 1) => {
 };
 
 // ===== TASK FORM OPTIONS =====
+// Static options that don't change
 export const TASK_FORM_OPTIONS = {
   products: [
     { value: "marketing casino", label: "marketing casino" },
@@ -99,20 +122,7 @@ export const TASK_FORM_OPTIONS = {
     { value: "design", label: "Design" },
     { value: "developer", label: "Development" },
   ],
-  deliverables: [
-    { value: "game preview", label: "game preview", timePerUnit: 15, timeUnit: "min", requiresQuantity: true },
-    { value: "promo pack", label: "promo pack", timePerUnit: 3.5, timeUnit: "hr", requiresQuantity: true },
-    { value: "simple design", label: "simple design", timePerUnit: 1, timeUnit: "hr", requiresQuantity: true },
-    { value: "Newsletter update", label: "Newsletter update", timePerUnit: 20, timeUnit: "min", requiresQuantity: true },
-    { value: "Newsletter new design", label: "Newsletter new design", timePerUnit: 2, timeUnit: "hr", requiresQuantity: true },
-    { value: "landing page", label: "landing page", timePerUnit: 8, timeUnit: "hr", requiresQuantity: true },
-    { value: "banner new design", label: "banner new design", timePerUnit: 2, timeUnit: "hr", requiresQuantity: true },
-    { value: "banner update", label: "banner update", timePerUnit: 20, timeUnit: "min", requiresQuantity: true },
-    { value: "minigame", label: "minigame", timePerUnit: 4, timeUnit: "days", requiresQuantity: true },
-    { value: "social media new design", label: "social media new design", timePerUnit: 3, timeUnit: "hr", requiresQuantity: true },
-    { value: "sport campaign", label: "sport campaign", timePerUnit: 2.5, timeUnit: "hr", requiresQuantity: true },
-    { value: "others", label: "Others", timePerUnit: 0, timeUnit: "hr", requiresQuantity: false },
-  ],
+  // deliverables will be loaded dynamically from database
   aiModels: [
     { value: "Photoshop", label: "Photoshop" },
     { value: "FireFly", label: "FireFly" },
@@ -128,7 +138,7 @@ export const TASK_FORM_OPTIONS = {
 };
 
 // ===== TASK FORM FIELD CONFIGURATION =====
-export const TASK_FORM_FIELDS = [
+export const createTaskFormFields = (deliverablesOptions = []) => [
   createUrlField('jiraLink', 'Jira Link', {
     placeholder: 'https://gmrd.atlassian.net/browse/GIMODEAR-124124'
   }),
@@ -162,7 +172,7 @@ export const TASK_FORM_FIELDS = [
   createCheckboxField('_hasDeliverables', 'Has Deliverables', {}),
   {
     ...createSelectField('deliverables', 'Deliverables', {}, {
-      options: TASK_FORM_OPTIONS.deliverables
+      options: deliverablesOptions
     }),
     conditional: {
       field: '_hasDeliverables',
@@ -205,8 +215,11 @@ export const TASK_FORM_FIELDS = [
   })
 ];
 
+// Fallback for backward compatibility
+export const TASK_FORM_FIELDS = createTaskFormFields();
+
 // ===== TASK FORM VALIDATION SCHEMA =====
-export const taskFormSchema = Yup.object().shape({
+export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().shape({
   jiraLink: Yup.string()
     .required(VALIDATION_MESSAGES.REQUIRED)
     .matches(VALIDATION_PATTERNS.JIRA_URL_ONLY, VALIDATION_MESSAGES.JIRA_URL_FORMAT)
@@ -278,7 +291,7 @@ export const taskFormSchema = Yup.object().shape({
       }
       
       if (actualDeliverableValue) {
-        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === actualDeliverableValue);
+        const deliverable = deliverablesOptions.find(d => d.value === actualDeliverableValue);
         if (deliverable && deliverable.requiresQuantity) {
           const quantity = quantities[actualDeliverableValue];
           if (!quantity || quantity < 1) {
@@ -365,8 +378,11 @@ export const taskFormSchema = Yup.object().shape({
     .max(1000, 'Observations cannot exceed 1000 characters')
 });
 
+// Fallback for backward compatibility (with empty deliverables)
+export const taskFormSchema = createTaskFormSchema([]);
+
 // ===== TASK FORM DATA PROCESSING =====
-export const prepareTaskFormData = (formData) => {
+export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
   if (!formData) {
     return formData;
   }
@@ -406,7 +422,8 @@ export const prepareTaskFormData = (formData) => {
       const calculatedTime = calculateTotalDeliverableTime(
         formData.deliverables, 
         formData.deliverableQuantities || {},
-        formData.declinariQuantities || {}
+        formData.declinariQuantities || {},
+        deliverablesOptions
       );
       
       // If calculated time is greater than current time, update it
@@ -463,20 +480,15 @@ export const prepareTaskFormData = (formData) => {
       aiTime: formData.aiTime || 0
     }] : [],
     deliverablesUsed: formData._hasDeliverables ? [{
-      declinariDeliverables: {
-        name: formData.deliverables || '',
-        count: formData.declinariQuantities?.[formData.deliverables] || 0
-      },
-      deliverableQuantities: {
-        name: formData.deliverables || '',
-        count: formData.deliverableQuantities?.[formData.deliverables] || 1
-      },
-      customDeliverables: formData.customDeliverables || []
+      name: formData.deliverables || '',
+      count: formData.deliverableQuantities?.[formData.deliverables] || 1,
+      declinariEnabled: formData.declinariDeliverables?.[formData.deliverables] || false,
+      declinariCount: formData.declinariQuantities?.[formData.deliverables] || 0
     }] : [],
     departments: formData.departments ? [formData.departments] : [],
+    markets: formData.markets || [],
     endDate: formData.endDate,
     isVip: formData.isVip || false,
-    monthId: formData.monthId,
     observations: formData.observations || '',
     products: formData.products || '',
     reporterName: formData.reporterName || '',
@@ -486,6 +498,11 @@ export const prepareTaskFormData = (formData) => {
     taskName: formData.taskName,
     timeInHours: formData.timeInHours
   };
+
+  // Only include monthId if it's provided and not undefined
+  if (formData.monthId !== undefined) {
+    dataTask.monthId = formData.monthId;
+  }
 
   // Remove UI-only fields after creating data structure (these should never be saved to DB)
   delete formData._hasDeliverables;
@@ -498,3 +515,6 @@ export const prepareTaskFormData = (formData) => {
   
   return serializedDataTask;
 };
+
+// Default export for backward compatibility
+export default taskFormSchema;

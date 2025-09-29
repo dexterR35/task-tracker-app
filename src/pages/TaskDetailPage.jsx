@@ -2,13 +2,14 @@ import React from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppData } from '@/hooks/useAppData';
+import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
 import Loader from '@/components/ui/Loader/Loader';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate } from '@/utils/dateUtils';
 import { showError } from '@/utils/toast';
 import { Icons } from '@/components/icons';
 import { getCardColorHex } from '@/components/Card/cardConfig';
-import { TASK_FORM_OPTIONS, calculateDeliverableTime, formatTimeEstimate } from '@/features/tasks/config/useTaskForm';
+import { calculateDeliverableTime, formatTimeEstimate } from '@/features/tasks/config/useTaskForm';
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -16,6 +17,7 @@ const TaskDetailPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tasks, isLoading, error } = useAppData();
+  const { deliverablesOptions } = useDeliverablesOptions();
   
   // Get query parameters
   const userId = searchParams.get('user');
@@ -146,7 +148,11 @@ const TaskDetailPage = () => {
   const basicInfoData = [
     {
       label: "Department",
-      value: task.data_task?.departments || 'Not specified'
+      value: (() => {
+        const departments = task.data_task?.departments;
+        if (!departments) return 'Not specified';
+        return Array.isArray(departments) ? departments.join(', ') : departments;
+      })()
     },
     {
       label: "Product", 
@@ -164,72 +170,185 @@ const TaskDetailPage = () => {
     }
   ];
 
-  const timeInfoData = [
-    {
-      label: "Task Hours",
-      value: `${task.data_task?.timeInHours || 0} hours`
-    },
-    {
-      label: "AI Hours", 
-      value: `${task.data_task?.aiTime || 0} hours`
-    },
-    {
-      label: "Total Hours",
-      value: `${(task.data_task?.timeInHours || 0) + (task.data_task?.aiTime || 0)} hours`
-    },
-    {
-      label: "Duration",
-      value: daysBetween
-    }
-  ];
-
-  const datesData = [
-    {
-      label: "Start Date",
-      value: task.data_task?.startDate 
-        ? formatDate(task.data_task.startDate, 'dd MMM yyyy', true)
-        : 'Not specified'
-    },
-    {
-      label: "End Date",
-      value: task.data_task?.endDate 
-        ? formatDate(task.data_task.endDate, 'dd MMM yyyy', true)
-        : 'Not specified'
-    },
-    {
-      label: "Created At",
-      value: task.createdAt 
-        ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true)
-        : 'Not specified'
-    },
-    {
-      label: "Created By",
-      value: task.createdByName || 'Not specified'
-    }
-  ];
-
-  const aiData = task.data_task?.aiModels && task.data_task.aiModels.length > 0 ? [
-    {
-      label: "AI Models Used",
-      value: Array.isArray(task.data_task.aiModels) 
-        ? task.data_task.aiModels.join(', ') 
-        : task.data_task.aiModels
-    }
-  ] : [];
-
+  // Calculate deliverables time first
   const deliverablesData = [];
   let totalCalculatedTime = 0;
   let daysCalculation = '';
   
-  // Handle new array of deliverable objects format
-  if (task.data_task?.deliverables && Array.isArray(task.data_task.deliverables) && task.data_task.deliverables.length > 0) {
+  // Enhanced deliverables processing for new data structure
+  if (task.data_task?.deliverablesUsed && Array.isArray(task.data_task.deliverablesUsed) && task.data_task.deliverablesUsed.length > 0) {
+    // Process each deliverable
+    task.data_task.deliverablesUsed.forEach((deliverable, index) => {
+      const deliverableName = deliverable?.name;
+      const deliverableCount = deliverable?.count || 1;
+      
+      // Safety check for deliverableName
+      if (!deliverableName || typeof deliverableName !== 'string') {
+        return;
+      }
+      
+      // Find deliverable in settings with flexible matching
+      let deliverableSettings = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
+      
+      // If exact match not found, try flexible matching
+      if (!deliverableSettings && deliverablesOptions) {
+        // Try case-insensitive matching
+        deliverableSettings = deliverablesOptions.find(d => 
+          d.value && d.value.toLowerCase() === deliverableName.toLowerCase()
+        );
+        
+        // Try partial matching (e.g., "game preview" matches "game previews")
+        if (!deliverableSettings) {
+          deliverableSettings = deliverablesOptions.find(d => 
+            d.value && (
+              d.value.toLowerCase().includes(deliverableName.toLowerCase()) ||
+              deliverableName.toLowerCase().includes(d.value.toLowerCase())
+            )
+          );
+        }
+      }
+      
+      
+      if (deliverableSettings) {
+        // Calculate time for this deliverable
+        const timePerUnit = deliverableSettings.timePerUnit || 1;
+        const timeUnit = deliverableSettings.timeUnit || 'hr';
+        const declinariTime = deliverableSettings.declinariTime || 0;
+        const declinariTimeUnit = deliverableSettings.declinariTimeUnit || 'min';
+        
+        // Convert to hours
+        let timeInHours = timePerUnit;
+        if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+        if (timeUnit === 'days') timeInHours = timePerUnit * 8;
+        
+        // Add declinari time if present
+        let declinariTimeInHours = 0;
+        if (declinariTime > 0) {
+          declinariTimeInHours = declinariTime;
+          if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
+          if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
+        }
+        
+        const totalTimeForDeliverable = (timeInHours + declinariTimeInHours) * deliverableCount;
+        totalCalculatedTime += totalTimeForDeliverable;
+        
+        deliverablesData.push({
+          label: `Deliverable ${index + 1}`,
+          value: deliverableName
+        });
+        
+        deliverablesData.push({
+          label: `Count`,
+          value: `${deliverableCount} units`
+        });
+        
+        deliverablesData.push({
+          label: `Time per Unit`,
+          value: `${timePerUnit} ${timeUnit}${declinariTime > 0 ? ` + ${declinariTime} ${declinariTimeUnit}` : ''}`
+        });
+        
+        deliverablesData.push({
+          label: `Total Time`,
+          value: `${totalTimeForDeliverable.toFixed(1)} hours`
+        });
+        
+        deliverablesData.push({
+          label: `---`,
+          value: `---`
+        });
+      } else {
+        // If deliverable not found in settings, show basic info
+        deliverablesData.push({
+          label: `Deliverable ${index + 1}`,
+          value: deliverableName
+        });
+        
+        deliverablesData.push({
+          label: `Count`,
+          value: `${deliverableCount} units`
+        });
+        
+        deliverablesData.push({
+          label: `Time per Unit`,
+          value: '⚠️ Not configured in settings - Add to Settings → Deliverables'
+        });
+        
+        deliverablesData.push({
+          label: `---`,
+          value: `---`
+        });
+      }
+    });
+    
+    // Add total calculation
+    deliverablesData.push({
+      label: "TOTAL TIME",
+      value: `${totalCalculatedTime.toFixed(1)} hours`
+    });
+    
+    // Calculate days (8 hours per day)
+    const days = totalCalculatedTime / 8;
+    daysCalculation = `${days.toFixed(1)} days (${totalCalculatedTime.toFixed(1)} hours ÷ 8 hours/day)`;
+    
+    deliverablesData.push({
+      label: "DAILY BREAKDOWN",
+      value: daysCalculation
+    });
+  }
+  
+  // Handle declinari deliverables separately
+  if (task.data_task?.declinariDeliverables && Object.keys(task.data_task.declinariDeliverables).length > 0) {
+    deliverablesData.push({
+      label: "DECLINARI DELIVERABLES",
+      value: "---"
+    });
+    
+    Object.entries(task.data_task.declinariDeliverables).forEach(([name, data]) => {
+      deliverablesData.push({
+        label: `Declinari: ${name}`,
+        value: `${data.count} units`
+      });
+    });
+  }
+  
+  // Debug: Show raw data structure if no deliverables found
+  if (deliverablesData.length === 0) {
+    deliverablesData.push({
+      label: "No deliverables available",
+      value: "No deliverables processed"
+    });
+    
+    if (task.data_task?.deliverablesUsed) {
+      deliverablesData.push({
+        label: "deliverablesUsed",
+        value: JSON.stringify(task.data_task.deliverablesUsed)
+      });
+    }
+    
+    if (task.data_task?.declinariDeliverables) {
+      deliverablesData.push({
+        label: "declinariDeliverables",
+        value: JSON.stringify(task.data_task.declinariDeliverables)
+      });
+    }
+    
+    if (task.data_task?.deliverableQuantities) {
+      deliverablesData.push({
+        label: "deliverableQuantities",
+        value: JSON.stringify(task.data_task.deliverableQuantities)
+      });
+    }
+  }
+  
+  // Handle legacy array format (backward compatibility)
+  if (task.data_task?.deliverables && Array.isArray(task.data_task.deliverables) && task.data_task.deliverables.length > 0 && deliverablesOptions) {
     const deliverableData = task.data_task.deliverables[0];
     const deliverableName = deliverableData.deliverableName;
     const deliverableQuantities = deliverableData.deliverableQuantities || {};
     const declinariQuantities = deliverableData.declinariQuantities || {};
     const declinariDeliverables = deliverableData.declinariDeliverables || {};
     
-    const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableName);
+    const deliverable = deliverablesOptions.find(d => d.value === deliverableName);
     if (deliverable) {
       const quantity = deliverableQuantities[deliverableName] || 1;
       const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
@@ -275,10 +394,72 @@ const TaskDetailPage = () => {
       });
     }
   }
+
+  const timeInfoData = [
+    {
+      label: "Task Hours",
+      value: `${task.data_task?.timeInHours || 0} hours`
+    },
+    {
+      label: "AI Hours", 
+      value: `${task.data_task?.aiTime || 0} hours`
+    },
+    {
+      label: "Deliverables Time",
+      value: `${totalCalculatedTime.toFixed(1)} hours`
+    },
+    {
+      label: "Total Hours",
+      value: `${(task.data_task?.timeInHours || 0) + (task.data_task?.aiTime || 0) + totalCalculatedTime} hours`
+    },
+    {
+      label: "Duration",
+      value: daysBetween
+    },
+    {
+      label: "Daily Breakdown",
+      value: daysCalculation || 'No deliverables calculated'
+    }
+  ];
+
+  const datesData = [
+    {
+      label: "Start Date",
+      value: task.data_task?.startDate 
+        ? formatDate(task.data_task.startDate, 'dd MMM yyyy', true)
+        : 'Not specified'
+    },
+    {
+      label: "End Date",
+      value: task.data_task?.endDate 
+        ? formatDate(task.data_task.endDate, 'dd MMM yyyy', true)
+        : 'Not specified'
+    },
+    {
+      label: "Created At",
+      value: task.createdAt 
+        ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true)
+        : 'Not specified'
+    },
+    {
+      label: "Created By",
+      value: task.createdByName || 'Not specified'
+    }
+  ];
+
+  const aiData = task.data_task?.aiModels && task.data_task.aiModels.length > 0 ? [
+    {
+      label: "AI Models Used",
+      value: Array.isArray(task.data_task.aiModels) 
+        ? task.data_task.aiModels.join(', ') 
+        : task.data_task.aiModels
+    }
+  ] : [];
+
   
   // Handle legacy single string format (backward compatibility)
-  if (task.data_task?.deliverables && typeof task.data_task.deliverables === 'string') {
-    const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === task.data_task.deliverables);
+  if (task.data_task?.deliverables && typeof task.data_task.deliverables === 'string' && deliverablesOptions) {
+    const deliverable = deliverablesOptions.find(d => d.value === task.data_task.deliverables);
     if (deliverable) {
       const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
       const declinariQuantities = task.data_task.declinariQuantities || {};

@@ -201,8 +201,17 @@ export const useTop3Calculations = (data, options = {}) => {
       }
       
       // Filter by department
-      if (department && task.departments !== department && task.data_task?.departments !== department) {
-        return false;
+      if (department) {
+        const taskDepartment = task.data_task?.departments || task.departments;
+        
+        // Handle both array and string formats
+        if (Array.isArray(taskDepartment)) {
+          if (!taskDepartment.some(dept => dept === department)) {
+            return false;
+          }
+        } else if (taskDepartment !== department) {
+          return false;
+        }
       }
       
       return true;

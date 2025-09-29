@@ -75,7 +75,7 @@ export const createMidnightScheduler = (onDateChange, onSchedule = null, options
       
       // Show alert at midnight if enabled
       if (showAlert) {
-        alert(alertMessage);
+        // Alert message removed - use toast notifications instead
       }
       
       if (hasDateChanged(lastCheckedDate)) {
