@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar';
 import { formatDate } from '@/utils/dateUtils';
+import { TASK_FORM_OPTIONS, calculateDeliverableTime } from '@/features/tasks/config/useTaskForm';
 
 const columnHelper = createColumnHelper();
 
@@ -83,7 +84,31 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     cell: ({ getValue, row }) => {
       const deliverables = getValue();
       const customDeliverables = row.original?.data_task?.customDeliverables;
+      const deliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
       
+      // Handle new single-select format
+      if (deliverables && typeof deliverables === 'string') {
+        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverables);
+        if (deliverable) {
+          const quantity = deliverableQuantities[deliverables] || 1;
+          const calculatedTime = calculateDeliverableTime(deliverable, quantity);
+          const days = (calculatedTime / 8).toFixed(1);
+          
+          return (
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900 dark:text-white">
+                {deliverable.label}
+                {deliverable.requiresQuantity && ` (${quantity}x)`}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {calculatedTime.toFixed(1)}h ({days}d)
+              </div>
+            </div>
+          );
+        }
+      }
+      
+      // Handle legacy array format
       let allDeliverables = [];
       if (deliverables && Array.isArray(deliverables)) {
         allDeliverables = [...deliverables];

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -7,25 +7,22 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { showError, showSuccess } from '@/utils/toast';
-import { exportToCSV } from "@/utils/exportData";
 import { SkeletonTable } from "../ui/Skeleton/Skeleton";
 import TableCSVExportButton from "@/components/ui/TableCSVExportButton";
 
 // Column helper for type safety
 const columnHelper = createColumnHelper();
 
-
 const TanStackTable = ({
   data = [],
   columns = [],
-  tableType = 'generic',
+  tableType = "generic",
   error = null,
-  className = '',
+  className = "",
   isLoading = false,
-  
+
   // Table features
   showPagination = true,
   showFilters = true,
@@ -38,23 +35,25 @@ const TanStackTable = ({
   enableColumnResizing = true,
   enableRowSelection = false,
   onRowSelectionChange = null,
-  
+
   // Column visibility
   initialColumnVisibility = {},
-  
+
   // Action handlers
   onEdit = null,
   onDelete = null,
   onSelect = null,
-  
+
   // Additional props
   ...additionalProps
 }) => {
   // Table state management
   const [sorting, setSorting] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState([]);
-  const [columnVisibility, setColumnVisibility] = useState(initialColumnVisibility);
+  const [columnVisibility, setColumnVisibility] = useState(
+    initialColumnVisibility
+  );
   const [rowSelection, setRowSelection] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
 
@@ -66,7 +65,7 @@ const TanStackTable = ({
     if (enableRowSelection) {
       baseColumns.push(
         columnHelper.display({
-          id: 'select',
+          id: "select",
           header: ({ table }) => (
             <input
               name="select-all"
@@ -92,58 +91,64 @@ const TanStackTable = ({
     }
 
     // Add action columns only if showActions is true
-    const actionColumn = showActions ? columnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => {
-        const item = row.original;
-        const isActionLoading = rowActionId === item.id;
+    const actionColumn = showActions
+      ? columnHelper.display({
+          id: "actions",
+          header: "Actions",
+          cell: ({ row }) => {
+            const item = row.original;
+            const isActionLoading = rowActionId === item.id;
 
-        return (
-          <div className="flex space-x-2">
-            {onSelect && (
-              <DynamicButton
-                variant="primary"
-                size="xs"
-                onClick={() => onSelect(item)}
-                iconName="edit"
-                iconPosition="center"
-                title="View Details"
-              >
-                View
-              </DynamicButton>
-            )}
-            {onEdit && (
-              <DynamicButton
-                variant="edit"
-                size="xs"
-                disabled={isActionLoading}
-                onClick={() => onEdit(item)}
-                iconName="edit"
-                iconPosition="center"
-                title="Edit"
-              />
-            )}
-            {onDelete && (
-              <DynamicButton
-                variant="danger"
-                size="xs"
-                disabled={isActionLoading}
-                onClick={() => onDelete(item)}
-                iconName="delete"
-                iconPosition="center"
-                title="Delete"
-              />
-            )}
-          </div>
-        );
-      },
-      enableSorting: false,
-      enableHiding: false,
-    }) : null;
+            return (
+              <div className="flex space-x-2">
+                {onSelect && (
+                  <DynamicButton
+                    variant="primary"
+                    size="xs"
+                    onClick={() => onSelect(item)}
+                    iconName="edit"
+                    iconPosition="center"
+                    title="View Details"
+                  >
+                    View
+                  </DynamicButton>
+                )}
+                {onEdit && (
+                  <DynamicButton
+                    variant="edit"
+                    size="xs"
+                    disabled={isActionLoading}
+                    onClick={() => onEdit(item)}
+                    iconName="edit"
+                    iconPosition="center"
+                    title="Edit"
+                  />
+                )}
+                {onDelete && (
+                  <DynamicButton
+                    variant="danger"
+                    size="xs"
+                    disabled={isActionLoading}
+                    onClick={() => onDelete(item)}
+                    iconName="delete"
+                    iconPosition="center"
+                    title="Delete"
+                  />
+                )}
+              </div>
+            );
+          },
+          enableSorting: false,
+          enableHiding: false,
+        })
+      : null;
 
     // Combine base columns, data columns, and action column (if exists)
-    return [...baseColumns, ...columns, ...(actionColumn ? [actionColumn] : [])];
+    return [
+      ...baseColumns,
+      ...columns,
+      ...(actionColumn ? [actionColumn] : []),
+    ];
   }, [columns, enableRowSelection, onSelect, onEdit, onDelete, rowActionId]);
 
   // Create table instance
@@ -162,7 +167,8 @@ const TanStackTable = ({
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: (updater) => {
-      const newSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
+      const newSelection =
+        typeof updater === "function" ? updater(rowSelection) : updater;
       setRowSelection(newSelection);
       onRowSelectionChange?.(newSelection);
     },
@@ -198,11 +204,15 @@ const TanStackTable = ({
         <div className="text-gray-400 dark:text-gray-500 mb-3">
           <div>
             <div className="text-xl mb-2">📋</div>
-            <div className="text-base font-semibold mb-1">No {tableType} found</div>
+            <div className="text-base font-semibold mb-1">
+              No {tableType} found
+            </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {tableType === 'tasks' ? 'Try creating a new task or check a different month' : 
-               tableType === 'users' ? 'No users available' : 
-               'No data available'}
+              {tableType === "tasks"
+                ? "Try creating a new task or check a different month"
+                : tableType === "users"
+                  ? "No users available"
+                  : "No data available"}
             </div>
           </div>
         </div>
@@ -213,10 +223,51 @@ const TanStackTable = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Table Controls */}
-      <div className="flex flex-col sm:flex-row gap-6 justify-end items-center sm:items-center">
-        {/* Table Controls */}
-        <div className="flex items-center space-x-3">
-          {/* Column Visibility Toggle */}
+
+      {/* Search and Rows per page - Separate row above table */}
+      <div className="flex justify-between items-center ">
+        {/* Global Filter */}
+        {showFilters && (
+          <div className="flex-1 max-w-sm">
+            <input
+              name={`${tableType}-search`}
+              id={`${tableType}-search`}
+              type="text"
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder={`Search ${tableType}...`}
+              className="text-sm font-medium"
+            />
+          </div>
+        )}
+        <div className="flex items-center space-x-2">
+          {/* Rows per page selector */}
+          {showPagination && enablePagination && (
+            <div className="flex items-center justify-center gap-2">
+              <label
+                htmlFor="page-size-select"
+                className="text-xs  m-0"
+              >
+                Rows per page
+              </label>
+              <select
+                id="page-size-select"
+                value={table.getState().pagination.pageSize}
+                onChange={(e) => {
+                  table.setPageSize(Number(e.target.value));
+                }}
+                className="h-full w-[90px] px-3 py-2 text-sm font-medium "
+              >
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <option key={pageSize} value={pageSize}>
+                    {pageSize}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+
           {showColumnToggle && (
             <div className="relative group">
               <DynamicButton
@@ -231,10 +282,14 @@ const TanStackTable = ({
               {/* checkbox inside columns toggle */}
               <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 border border-gray-200/60 dark:border-gray-700/60 ring-1 ring-gray-200/30 dark:ring-gray-600/30">
                 <div className="py-2">
-                  {table.getAllLeafColumns()
-                    .filter(column => column.getCanHide())
-                    .map(column => (
-                      <label key={column.id} className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors duration-150">
+                  {table
+                    .getAllLeafColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <label
+                        key={column.id}
+                        className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors duration-150"
+                      >
                         <input
                           name={`column-${column.id}`}
                           id={`column-${column.id}`}
@@ -250,10 +305,8 @@ const TanStackTable = ({
               </div>
             </div>
           )}
-
-          {/* Export Button */}
           <TableCSVExportButton
-            data={table.getFilteredRowModel().rows.map(row => row.original)}
+            data={table.getFilteredRowModel().rows.map((row) => row.original)}
             columns={columns}
             tableType={tableType}
             buttonText="Export CSV"
@@ -262,135 +315,107 @@ const TanStackTable = ({
         </div>
       </div>
 
-      {/* Search and Rows per page - Separate row above table */}
-      <div className="flex justify-between items-center gap-4">
-        {/* Global Filter */}
-        {showFilters && (
-          <div className="flex-1 max-w-sm">
-            <input
-              name={`${tableType}-search`}
-              id={`${tableType}-search`}
-              type="text"
-              value={globalFilter ?? ''}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder={`Search ${tableType}...`}
-              className="text-sm font-medium"
-            />
-          </div>
-        )}
-        
-        {/* Rows per page selector */}
-        {showPagination && enablePagination && (
-          <div className="flex items-center space-x-2">
-            <label htmlFor="page-size-select" className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-              Rows per page
-            </label>
-            <select
-              id="page-size-select"
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => {
-                table.setPageSize(Number(e.target.value))
-              }}
-              className="h-8 w-[70px] px-2 text-sm font-medium"
-            >
-              {[10, 20, 30, 40, 50].map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
       {/* Table */}
-      
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200/60 dark:divide-gray-700/60">
-            <thead className="bg-gray-50/80 dark:bg-gray-800/80">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className={`px-4 py-3 text-start font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider ${
-                        header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50' : ''
-                      } transition-colors duration-150`}
-                      onClick={header.column.getToggleSortingHandler()}
-                      style={{
-                        width: header.getSize(),
-                      }}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </span>
-                        {header.column.getCanSort() && (
-                          <span className="text-gray-400 dark:text-gray-500">
-                            {{
-                              asc: '↑',
-                              desc: '↓',
-                            }[header.column.getIsSorted()] ?? '↕'}
-                          </span>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200/60 dark:divide-gray-700/60">
+          <thead className="bg-gray-50/80 dark:bg-gray-800/80">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className={`px-4 py-3 text-start font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider ${
+                      header.column.getCanSort()
+                        ? "cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50"
+                        : ""
+                    } transition-colors duration-150`}
+                    onClick={header.column.getToggleSortingHandler()}
+                    style={{
+                      width: header.getSize(),
+                    }}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
                         )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200/60 dark:divide-gray-700/60">
-              {table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={table.getAllColumns().length} className="px-4 py-8 text-center">
-                    <div className="text-gray-400 dark:text-gray-500">
-                      <div className="text-sm font-semibold mb-1">No data available</div>
-                      <div className="text-xs">Try adjusting your filters or search terms</div>
+                      </span>
+                      {header.column.getCanSort() && (
+                        <span className="text-gray-400 dark:text-gray-500">
+                          {{
+                            asc: "↑",
+                            desc: "↓",
+                          }[header.column.getIsSorted()] ?? "↕"}
+                        </span>
+                      )}
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row, index) => {
-                  return (
-                    <tr
-                      key={row.id}
-                      className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-150 ${
-                        row.getIsSelected() ? 'bg-blue-50/80 dark:bg-blue-900/20' : ''
-                      }`}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900 dark:text-gray-100"
-                          style={{
-                            width: cell.column.getSize(),
-                          }}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-     
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200/60 dark:divide-gray-700/60">
+            {table.getRowModel().rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={table.getAllColumns().length}
+                  className="px-4 py-8 text-center"
+                >
+                  <div className="text-gray-400 dark:text-gray-500">
+                    <div className="text-sm font-semibold mb-1">
+                      No data available
+                    </div>
+                    <div className="text-xs">
+                      Try adjusting your filters or search terms
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              table.getRowModel().rows.map((row, index) => {
+                return (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-150 ${
+                      row.getIsSelected()
+                        ? "bg-blue-50/80 dark:bg-blue-900/20"
+                        : ""
+                    }`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900 dark:text-gray-100"
+                        style={{
+                          width: cell.column.getSize(),
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* TanStack Table Pagination */}
       {showPagination && enablePagination && (
         <div className="flex items-center justify-between space-x-3 py-4">
           <div className="flex-1 text-xs font-medium text-gray-600 dark:text-gray-400">
-            {Object.keys(rowSelection).length} of{' '}
+            {Object.keys(rowSelection).length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
           <div className="flex items-center space-x-6">
             <div className="flex w-[100px] items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Page {table.getState().pagination.pageIndex + 1} of{' '}
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
               {table.getPageCount()}
             </div>
             <div className="flex items-center space-x-2">

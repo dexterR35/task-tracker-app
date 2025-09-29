@@ -509,19 +509,15 @@ const AdminDashboardPage = () => {
                 })()}
               </h3>
               <p className="text-sm">
-                {isInitialLoading || isLoading ? (
-                  <span className="inline-block w-40 h-3 bg-gray-200 dark:bg-gray-700 rounded"></span>
-                ) : (
-                  (() => {
-                    const filteredTasks = getFilteredTasks(
-                      tasks,
-                      selectedUserId,
-                      selectedReporterId,
-                      currentMonthId
-                    );
-                    return `${filteredTasks.length} tasks`;
-                  })()
-                )}
+               {(() => {
+                  const filteredTasks = getFilteredTasks(
+                    tasks,
+                    selectedUserId,
+                    selectedReporterId,
+                    currentMonthId
+                  );
+                  return `${filteredTasks.length} tasks`;
+                })()}
               </p>
             </div>
             <DynamicButton
@@ -541,39 +537,34 @@ const AdminDashboardPage = () => {
         {/* Table Content */}
         <div className="py-2">
           {showTable && (
-            <>
-              {isLoading || isInitialLoading ? (
-                <SkeletonTable rows={4} />
-              ) : (
-                <TanStackTable
-                  data={getFilteredTasks(
-                    tasks,
-                    selectedUserId,
-                    selectedReporterId,
-                    currentMonthId
-                  )}
-                  columns={taskColumns}
-                  tableType="tasks"
-                  error={error}
-                  onSelect={handleSelect}
-                  onEdit={handleEditTask}
-                  onDelete={handleDelete}
-                  showPagination={true}
-                  showFilters={true}
-                  showColumnToggle={true}
-                  pageSize={25}
-                  enableSorting={true}
-                  enableFiltering={true}
-                  enablePagination={true}
-                  enableColumnResizing={true}
-                  enableRowSelection={false}
-                  initialColumnVisibility={{
-                    'data_task.isVip': false,     // Hide VIP column by default
-                    'data_task.reworked': false   // Hide Reworked column by default
-                  }}
-                />
+            <TanStackTable
+              data={getFilteredTasks(
+                tasks,
+                selectedUserId,
+                selectedReporterId,
+                currentMonthId
               )}
-            </>
+              columns={taskColumns}
+              tableType="tasks"
+              error={error}
+              isLoading={isLoading || isInitialLoading}
+              onSelect={handleSelect}
+              onEdit={handleEditTask}
+              onDelete={handleDelete}
+              showPagination={true}
+              showFilters={true}
+              showColumnToggle={true}
+              pageSize={25}
+              enableSorting={true}
+              enableFiltering={true}
+              enablePagination={true}
+              enableColumnResizing={true}
+              enableRowSelection={false}
+              initialColumnVisibility={{
+                'data_task.isVip': false,     // Hide VIP column by default
+                'data_task.reworked': false   // Hide Reworked column by default
+              }}
+            />
           )}
         </div>
       </div>

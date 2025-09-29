@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { calculateDeliverableTime, formatTimeEstimate, calculateTotalDeliverableTime } from '../../../features/tasks/config/useTaskForm';
 
 const DeliverablesField = ({ 
   field, 
@@ -14,16 +15,20 @@ const DeliverablesField = ({
   const [customDeliverables, setCustomDeliverables] = useState([]);
   const [newCustomValue, setNewCustomValue] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [quantities, setQuantities] = useState({});
   
-  const selectedDeliverables = watch('deliverables') || [];
-  const hasOthers = selectedDeliverables.includes('others');
+  const selectedDeliverable = watch('deliverables') || '';
+  const hasOthers = selectedDeliverable === 'others';
   
-  // Initialize custom deliverables from form data if editing
+  // Initialize custom deliverables and quantities from form data if editing
   useEffect(() => {
     if (formValues?.customDeliverables) {
       setCustomDeliverables(formValues.customDeliverables);
     }
-  }, [formValues?.customDeliverables]);
+    if (formValues?.deliverableQuantities) {
+      setQuantities(formValues.deliverableQuantities);
+    }
+  }, [formValues?.customDeliverables, formValues?.deliverableQuantities]);
   
   // Note: setValue is called directly in event handlers to avoid infinite loops
   
@@ -38,19 +43,29 @@ const DeliverablesField = ({
   }, [hasOthers]);
   
   const handleDeliverableChange = (value) => {
-    const currentDeliverables = selectedDeliverables || [];
-    let newDeliverables;
+    setValue('deliverables', value);
     
-    if (currentDeliverables.includes(value)) {
-      // Remove if already selected
-      newDeliverables = currentDeliverables.filter(item => item !== value);
-    } else {
-      // Add if not selected
-      newDeliverables = [...currentDeliverables, value];
+    // Clear previous quantities
+    const newQuantities = {};
+    
+    // Set default quantity to 1 for deliverables that require quantity
+    if (value) {
+      const deliverable = field.options.find(opt => opt.value === value);
+      if (deliverable && deliverable.requiresQuantity) {
+        newQuantities[value] = 1;
+      }
     }
     
-    setValue('deliverables', newDeliverables);
+    setQuantities(newQuantities);
+    setValue('deliverableQuantities', newQuantities);
     trigger('deliverables');
+  };
+
+  const handleQuantityChange = (deliverableValue, quantity) => {
+    const newQuantities = { ...quantities, [deliverableValue]: parseInt(quantity) || 1 };
+    setQuantities(newQuantities);
+    setValue('deliverableQuantities', newQuantities);
+    trigger('deliverableQuantities');
   };
   
   const addCustomDeliverable = () => {
@@ -88,6 +103,10 @@ const DeliverablesField = ({
   
   const error = errors[field.name];
   const customError = errors['customDeliverables'];
+  const quantitiesError = errors['deliverableQuantities'];
+  
+  // Calculate total time for selected deliverable
+  const totalCalculatedTime = calculateTotalDeliverableTime(selectedDeliverable, quantities);
   
   return (
     <div className="form-field">
@@ -97,21 +116,75 @@ const DeliverablesField = ({
       </label>
       
       
-      {/* Standard Deliverables */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-        {field.options.map((option) => (
-          <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedDeliverables.includes(option.value)}
-              onChange={() => handleDeliverableChange(option.value)}
-              className="form-checkbox"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {option.label}
-            </span>
-          </label>
-        ))}
+      {/* Standard Deliverables - Single Select */}
+      <div className="space-y-3 mb-4">
+        {field.options.map((option) => {
+          const isSelected = selectedDeliverable === option.value;
+          const quantity = quantities[option.value] || 1;
+          const timeEstimate = formatTimeEstimate(option, quantity);
+          
+          return (
+            <div key={option.value} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="deliverables"
+                  checked={isSelected}
+                  onChange={() => handleDeliverableChange(option.value)}
+                  className="form-radio"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {option.label}
+                  </span>
+                  {option.timePerUnit > 0 && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {option.requiresQuantity ? 
+                        `${option.timePerUnit} ${option.timeUnit}/unit` : 
+                        `${option.timePerUnit} ${option.timeUnit}`
+                      }
+                    </div>
+                  )}
+                </div>
+              </label>
+              
+              {/* Quantity input for deliverables that require it */}
+              {isSelected && option.requiresQuantity && (
+                <div className="mt-2 ml-6">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
+                      Quantity:
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => handleQuantityChange(option.value, e.target.value)}
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      units
+                    </span>
+                  </div>
+                  {timeEstimate && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
+                      Total: {timeEstimate}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Time estimate for non-quantity deliverables */}
+              {isSelected && !option.requiresQuantity && timeEstimate && (
+                <div className="mt-2 ml-6">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    Estimated time: {timeEstimate}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       
       {/* Custom Deliverables Input */}
@@ -170,9 +243,24 @@ const DeliverablesField = ({
         </div>
       )}
       
-      {/* Standard validation error */}
+      {/* Total calculated time display */}
+      {selectedDeliverable && totalCalculatedTime > 0 && (
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <div className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            Total Estimated Time: {totalCalculatedTime.toFixed(1)} hours
+          </div>
+          <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+            This will be used to calculate the task duration
+          </div>
+        </div>
+      )}
+      
+      {/* Validation errors */}
       {error && (
         <p className="text-red-500 text-sm mt-1">{error.message}</p>
+      )}
+      {quantitiesError && (
+        <p className="text-red-500 text-sm mt-1">{quantitiesError.message}</p>
       )}
     </div>
   );

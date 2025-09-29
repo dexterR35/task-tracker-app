@@ -36,7 +36,7 @@ const TaskForm = ({
   onSuccess, 
   className = "" 
 }) => {
-  const { createTask, updateTask, reporters = [], monthId, user } = useAppData();
+  const { createTask, updateTask, reporters = [], monthId, user, refetchCurrentMonth, refetchMonthTasks } = useAppData();
   
   const {
     register,
@@ -59,8 +59,9 @@ const TaskForm = ({
       startDate: '',
       endDate: '',
       _hasDeliverables: false,
-      deliverables: [],
+      deliverables: '',
       customDeliverables: [],
+      deliverableQuantities: {},
       _usedAIEnabled: false,
       aiModels: [],
       aiTime: 0,
@@ -152,8 +153,9 @@ const TaskForm = ({
         timeInHours: taskData.timeInHours || '',
         startDate: formattedStartDate,
         endDate: formattedEndDate,
-        _hasDeliverables: (taskData.deliverables && taskData.deliverables.length > 0) || false,
-        deliverables: taskData.deliverables || [],
+        _hasDeliverables: !!taskData.deliverables,
+        deliverables: taskData.deliverables || '',
+        deliverableQuantities: taskData.deliverableQuantities || {},
         _usedAIEnabled: (taskData.aiModels && taskData.aiModels.length > 0) || false,
         aiModels: taskData.aiModels || [],
         aiTime: taskData.aiTime || 0,
@@ -177,14 +179,26 @@ const TaskForm = ({
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
       // Additional validation for conditional fields
-      if (data._hasDeliverables && (!data.deliverables || data.deliverables.length === 0)) {
-        throw new Error('Please select at least one deliverable when "Has Deliverables" is checked');
+      if (data._hasDeliverables && !data.deliverables) {
+        throw new Error('Please select a deliverable when "Has Deliverables" is checked');
       }
       
       // Validate custom deliverables when "others" is selected
-      if (data._hasDeliverables && data.deliverables?.includes('others')) {
+      if (data._hasDeliverables && data.deliverables === 'others') {
         if (!data.customDeliverables || data.customDeliverables.length === 0) {
           throw new Error('Please add at least one custom deliverable when "Others" is selected');
+        }
+      }
+      
+      // Validate deliverable quantities
+      if (data._hasDeliverables && data.deliverables) {
+        const { TASK_FORM_OPTIONS } = await import('../../config/useTaskForm');
+        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === data.deliverables);
+        if (deliverable && deliverable.requiresQuantity) {
+          const quantity = data.deliverableQuantities?.[data.deliverables];
+          if (!quantity || quantity < 1) {
+            throw new Error(`Please enter a valid quantity for ${deliverable.label}`);
+          }
         }
       }
       
@@ -239,8 +253,17 @@ const TaskForm = ({
     {
       operation: mode === 'edit' ? 'update' : 'create',
       resource: 'task',
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         reset();
+        
+        // Trigger real-time updates
+        try {
+          await refetchCurrentMonth?.();
+          await refetchMonthTasks?.();
+        } catch (error) {
+          console.warn('Failed to refetch data after task operation:', error);
+        }
+        
         onSuccess?.(result);
       }
     }
@@ -324,7 +347,7 @@ const TaskForm = ({
   });
 
   return (
-    <div className={`p-4  w-full ${className}`}>
+    <div className={`p-6  w-full ${className}`}>
       
       <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-3 ">
         {/* 1. Jira Link - Full Width */}

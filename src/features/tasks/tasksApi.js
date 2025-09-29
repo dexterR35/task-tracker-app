@@ -359,6 +359,9 @@ export const tasksApi = createApi({
         { type: "Analytics", id: "LIST" },
         // Invalidate all month tasks queries to ensure real-time updates
         { type: "MonthTasks", id: "LIST" },
+        // Force invalidation of all month-related queries
+        { type: "MonthTasks", id: "ALL" },
+        { type: "CurrentMonth", id: "ALL" },
       ],
     }),
     // Update task - simple Firestore update
@@ -421,6 +424,9 @@ export const tasksApi = createApi({
         { type: "Analytics", id: "LIST" },
         // Invalidate all month tasks queries to ensure real-time updates
         { type: "MonthTasks", id: "LIST" },
+        // Force invalidation of all month-related queries
+        { type: "MonthTasks", id: "ALL" },
+        { type: "CurrentMonth", id: "ALL" },
       ],
     }),
 
@@ -465,6 +471,9 @@ export const tasksApi = createApi({
         { type: "Analytics", id: "LIST" },
         // Invalidate all month tasks queries to ensure real-time updates
         { type: "MonthTasks", id: "LIST" },
+        // Force invalidation of all month-related queries
+        { type: "MonthTasks", id: "ALL" },
+        { type: "CurrentMonth", id: "ALL" },
       ],
     }),
 

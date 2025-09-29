@@ -8,6 +8,7 @@ import { formatDate } from '@/utils/dateUtils';
 import { showError } from '@/utils/toast';
 import { Icons } from '@/components/icons';
 import { getCardColorHex } from '@/components/Card/cardConfig';
+import { TASK_FORM_OPTIONS, calculateDeliverableTime, formatTimeEstimate } from '@/features/tasks/config/useTaskForm';
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -217,16 +218,50 @@ const TaskDetailPage = () => {
   ] : [];
 
   const deliverablesData = [];
+  let totalCalculatedTime = 0;
+  let daysCalculation = '';
   
-  if (task.data_task?.deliverables && task.data_task.deliverables.length > 0) {
-    deliverablesData.push({
-      label: "Standard Deliverables",
-      value: Array.isArray(task.data_task.deliverables) 
-        ? task.data_task.deliverables.join(', ') 
-        : task.data_task.deliverables
-    });
+  // Handle single deliverable (new format)
+  if (task.data_task?.deliverables && typeof task.data_task.deliverables === 'string') {
+    const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === task.data_task.deliverables);
+    if (deliverable) {
+      const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
+      const calculatedTime = calculateDeliverableTime(deliverable, quantity);
+      totalCalculatedTime = calculatedTime;
+      
+      deliverablesData.push({
+        label: "Deliverable",
+        value: deliverable.label
+      });
+      
+      if (deliverable.requiresQuantity) {
+        deliverablesData.push({
+          label: "Quantity",
+          value: `${quantity} units`
+        });
+      }
+      
+      deliverablesData.push({
+        label: "Time per Unit",
+        value: `${deliverable.timePerUnit} ${deliverable.timeUnit}`
+      });
+      
+      deliverablesData.push({
+        label: "Total Time",
+        value: `${calculatedTime.toFixed(1)} hours`
+      });
+      
+      // Calculate days (8 hours per day)
+      const days = calculatedTime / 8;
+      daysCalculation = `${days.toFixed(1)} days (${calculatedTime.toFixed(1)} hours ÷ 8 hours/day)`;
+      deliverablesData.push({
+        label: "Duration",
+        value: daysCalculation
+      });
+    }
   }
   
+  // Handle custom deliverables (when "others" is selected)
   if (task.data_task?.customDeliverables && task.data_task.customDeliverables.length > 0) {
     deliverablesData.push({
       label: "Custom Deliverables",

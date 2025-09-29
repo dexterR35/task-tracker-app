@@ -70,7 +70,8 @@ export const useMonthSelection = (selectedUserId = null) => {
   const { 
     data: currentMonthData = {}, 
     isLoading: currentMonthLoading, 
-    error: currentMonthError 
+    error: currentMonthError,
+    refetch: refetchCurrentMonth
   } = useGetCurrentMonthQuery(
     currentMonthQueryParams,
     {
@@ -147,7 +148,8 @@ export const useMonthSelection = (selectedUserId = null) => {
   const { 
     data: monthTasks = [], 
     isLoading: monthTasksLoading, 
-    error: monthTasksError 
+    error: monthTasksError,
+    refetch: refetchMonthTasks
   } = useGetMonthTasksQuery(
     { 
       monthId: targetMonthId, 
@@ -182,14 +184,27 @@ export const useMonthSelection = (selectedUserId = null) => {
   
   
   // Helper functions
-  const selectMonth = useCallback((monthId) => {
+  const selectMonth = useCallback(async (monthId) => {
     setSelectedMonthId(monthId);
     
     // If selecting a different month and we haven't fetched available months yet, fetch them
     if (monthId !== currentMonth.monthId && availableMonths.length === 0) {
       fetchAvailableMonths();
     }
-  }, [currentMonth.monthId, availableMonths.length]);
+    
+    // Trigger immediate refetch for real-time updates
+    try {
+      if (monthId && monthId !== currentMonth.monthId) {
+        // Force refetch for selected month
+        await refetchMonthTasks?.();
+      } else if (monthId === currentMonth.monthId) {
+        // Refetch current month data
+        await refetchCurrentMonth?.();
+      }
+    } catch (error) {
+      console.warn('Failed to refetch data on month selection:', error);
+    }
+  }, [currentMonth.monthId, availableMonths.length, refetchMonthTasks, refetchCurrentMonth]);
   
   const resetToCurrentMonth = useCallback(() => {
     setSelectedMonthId(null);
@@ -235,6 +250,8 @@ export const useMonthSelection = (selectedUserId = null) => {
     selectMonth,
     resetToCurrentMonth,
     fetchAvailableMonths,
+    refetchCurrentMonth,
+    refetchMonthTasks,
     
     // User data
     user: userData.user,
@@ -273,7 +290,9 @@ export const useAppData = (selectedUserId = null) => {
     availableMonths: monthSelectionData.availableMonths,
     currentMonthTasks: monthSelectionData.currentMonthTasks,
     isLoading: monthSelectionData.isLoading,
-    error: monthSelectionData.error
+    error: monthSelectionData.error,
+    refetchCurrentMonth: monthSelectionData.refetchCurrentMonth,
+    refetchMonthTasks: monthSelectionData.refetchMonthTasks
   };
   
   // Current month tasks are now included in monthData from the consolidated hook
@@ -311,7 +330,11 @@ export const useAppData = (selectedUserId = null) => {
     startDate: memoizedStartDate,
     endDate: memoizedEndDate,
     boardExists: monthData.boardExists || false,
-    availableMonths: monthData.availableMonths || []
+    availableMonths: monthData.availableMonths || [],
+    
+    // Refetch functions for real-time updates
+    refetchCurrentMonth: monthData.refetchCurrentMonth,
+    refetchMonthTasks: monthData.refetchMonthTasks
   };
   
   if (userData.userIsAdmin) {

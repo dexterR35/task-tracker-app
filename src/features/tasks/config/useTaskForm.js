@@ -13,6 +13,52 @@ import {
   VALIDATION_MESSAGES
 } from '../../../components/forms/configs/sharedFormUtils';
 
+// ===== DELIVERABLE TIME CALCULATION UTILITIES =====
+export const calculateDeliverableTime = (deliverable, quantity = 1) => {
+  if (!deliverable.timePerUnit || deliverable.timePerUnit === 0) {
+    return 0;
+  }
+  
+  const totalTime = deliverable.timePerUnit * quantity;
+  
+  // Convert to hours for consistent calculation
+  switch (deliverable.timeUnit) {
+    case 'min':
+      return totalTime / 60; // Convert minutes to hours
+    case 'hr':
+      return totalTime;
+    case 'days':
+      return totalTime * 8; // Convert days to hours (8 hours per day)
+    default:
+      return totalTime;
+  }
+};
+
+export const calculateTotalDeliverableTime = (deliverableValue, quantities) => {
+  if (!deliverableValue) return 0;
+  
+  const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
+  if (!deliverable) return 0;
+  
+  const quantity = quantities[deliverableValue] || 1;
+  return calculateDeliverableTime(deliverable, quantity);
+};
+
+export const formatTimeEstimate = (deliverable, quantity = 1) => {
+  if (!deliverable.timePerUnit || deliverable.timePerUnit === 0) {
+    return '';
+  }
+  
+  const totalTime = deliverable.timePerUnit * quantity;
+  const unit = deliverable.timeUnit;
+  
+  if (deliverable.requiresQuantity) {
+    return `${totalTime} ${unit} (${quantity} × ${deliverable.timePerUnit} ${unit}/unit)`;
+  } else {
+    return `${totalTime} ${unit}`;
+  }
+};
+
 // ===== TASK FORM OPTIONS =====
 export const TASK_FORM_OPTIONS = {
   products: [
@@ -49,17 +95,19 @@ export const TASK_FORM_OPTIONS = {
     { value: "developer", label: "Development" },
   ],
   deliverables: [
-    { value: "design", label: "Design" },
-    { value: "development", label: "Development" },
-    { value: "testing", label: "Testing" },
-    { value: "documentation", label: "Documentation" },
-    { value: "deployment", label: "Deployment" },
-    { value: "training", label: "Training" },
-    { value: "support", label: "Support" },
-    { value: "maintenance", label: "Maintenance" },
-    { value: "optimization", label: "Optimization" },
-    { value: "integration", label: "Integration" },
-    { value: "others", label: "Others" },
+    { value: "game preview", label: "game preview", timePerUnit: 15, timeUnit: "min", requiresQuantity: true },
+    { value: "promo pack", label: "promo pack", timePerUnit: 3.5, timeUnit: "hr", requiresQuantity: true },
+    { value: "simple design", label: "simple design", timePerUnit: 1, timeUnit: "hr", requiresQuantity: true },
+    { value: "Newsletter update", label: "Newsletter update", timePerUnit: 20, timeUnit: "min", requiresQuantity: true },
+    { value: "Newsletter new design", label: "Newsletter new design", timePerUnit: 2, timeUnit: "hr", requiresQuantity: true },
+    { value: "landing page", label: "landing page", timePerUnit: 8, timeUnit: "hr", requiresQuantity: true },
+    { value: "banner new design", label: "banner new design", timePerUnit: 2, timeUnit: "hr", requiresQuantity: true },
+    { value: "banner update", label: "banner update", timePerUnit: 20, timeUnit: "min", requiresQuantity: true },
+    { value: "minigame", label: "minigame", timePerUnit: 4, timeUnit: "days", requiresQuantity: true },
+    { value: "social media new design", label: "social media new design", timePerUnit: 3, timeUnit: "hr", requiresQuantity: true },
+    { value: "sport campaign", label: "sport campaign", timePerUnit: 2.5, timeUnit: "hr", requiresQuantity: true },
+    { value: "declinari", label: "declinari", timePerUnit: 10, timeUnit: "min", requiresQuantity: true },
+    { value: "others", label: "Others", timePerUnit: 0, timeUnit: "hr", requiresQuantity: false },
   ],
   aiModels: [
     { value: "DALL-E", label: "DAll" },
@@ -110,7 +158,7 @@ export const TASK_FORM_FIELDS = [
   },
   createCheckboxField('_hasDeliverables', 'Has Deliverables', {}),
   {
-    ...createMultiSelectField('deliverables', 'Deliverables', {}, {
+    ...createSelectField('deliverables', 'Deliverables', {}, {
       options: TASK_FORM_OPTIONS.deliverables
     }),
     conditional: {
@@ -188,14 +236,36 @@ export const taskFormSchema = Yup.object().shape({
   
   _hasDeliverables: Yup.boolean(),
   
-  deliverables: Yup.array().when('_hasDeliverables', {
+  deliverables: Yup.string().when('_hasDeliverables', {
     is: true,
-    then: (schema) => schema.min(1, 'Please select at least one deliverable when "Has Deliverables" is checked'),
-    otherwise: (schema) => schema.notRequired().default([])
+    then: (schema) => schema.required('Please select a deliverable when "Has Deliverables" is checked'),
+    otherwise: (schema) => schema.notRequired().default('')
+  }),
+  
+  deliverableQuantities: Yup.object().when('_hasDeliverables', {
+    is: true,
+    then: (schema) => schema.test('valid-quantities', 'Please enter valid quantities for deliverables', function(value) {
+      const deliverableValue = this.parent.deliverables;
+      const quantities = value || {};
+      
+      if (deliverableValue) {
+        const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
+        if (deliverable && deliverable.requiresQuantity) {
+          const quantity = quantities[deliverableValue];
+          if (!quantity || quantity < 1) {
+            return this.createError({
+              message: `Please enter a quantity for ${deliverable.label}`
+            });
+          }
+        }
+      }
+      return true;
+    }),
+    otherwise: (schema) => schema.notRequired().default({})
   }),
   
   customDeliverables: Yup.array().when(['_hasDeliverables', 'deliverables'], {
-    is: (hasDeliverables, deliverables) => hasDeliverables && deliverables?.includes('others'),
+    is: (hasDeliverables, deliverables) => hasDeliverables && deliverables === 'others',
     then: (schema) => schema.min(1, 'Please add at least one custom deliverable when "Others" is selected'),
     otherwise: (schema) => schema.notRequired().default([])
   }),
@@ -258,12 +328,30 @@ export const prepareTaskFormData = (formData) => {
   // When checkboxes ARE checked: keep the user's input (validation should have ensured they're filled)
   
   if (!formData._hasDeliverables) {
-    formData.deliverables = []; // Empty array when checkbox is not checked
+    formData.deliverables = ''; // Empty string when checkbox is not checked
     formData.customDeliverables = []; // Empty array when checkbox is not checked
+    formData.deliverableQuantities = {}; // Empty object when checkbox is not checked
   } else {
     // If "others" is not selected, clear custom deliverables
-    if (!formData.deliverables?.includes('others')) {
+    if (formData.deliverables !== 'others') {
       formData.customDeliverables = [];
+    }
+    
+    // Calculate total deliverable time and update timeInHours if needed
+    if (formData.deliverables) {
+      const calculatedTime = calculateTotalDeliverableTime(
+        formData.deliverables, 
+        formData.deliverableQuantities || {}
+      );
+      
+      // If calculated time is greater than current time, update it
+      if (calculatedTime > 0 && calculatedTime > (formData.timeInHours || 0)) {
+        formData.timeInHours = Math.round(calculatedTime * 10) / 10; // Round to 1 decimal place
+        logger.log('🕒 Updated timeInHours based on deliverables:', {
+          calculatedTime,
+          newTimeInHours: formData.timeInHours
+        });
+      }
     }
   }
   // If checkbox is checked, keep the deliverables array as-is (validation ensures they're filled)
