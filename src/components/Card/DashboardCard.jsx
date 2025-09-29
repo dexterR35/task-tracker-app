@@ -112,15 +112,15 @@ const DashboardCard = ({ card }) => {
           <div className="flex-1">
             {/* Main Value */}
             <div className="mb-6">
-              <div className="text-4xl font-bold text-gray-100 mb-2">
+              <p className="text-lg font-bold  mb-0">
                 {card.value}
-              </div>
-              <div className="text-sm text-gray-400 mb-1">{card.description}</div>
+              </p>
+              <p className="text-xs text-gray-400 mb-1">{card.description}</p>
             </div>
 
             {/* Badges Section - Using Card's Color */}
             {card.badges && card.badges.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-6">
                 <div className="flex flex-wrap gap-2">
                   {card.badges.map((badge, index) => {
                     return (
@@ -147,8 +147,8 @@ const DashboardCard = ({ card }) => {
                     <ModernAreaChart data={card.chartData} color={cardColorHex} />
                   )
                 ) : (
-                  <div className="w-full h-full bg-gray-700/50 rounded-lg flex items-center justify-center">
-                    <span className="text-xs font-medium text-gray-400">No data available</span>
+                  <div className="w-full h-full card flex-center">
+                    <span className="text-xs font-medium ">No data available</span>
                   </div>
                 )}
               </div>
@@ -156,14 +156,15 @@ const DashboardCard = ({ card }) => {
 
             {/* Enhanced Data - Top 3 Functionality with Consistent Card Color */}
             {card.details && (
-              <div className="space-y-2 mb-6">
+              <div className="space-y-2 mb-6 ">
+           
                 {card.details.map((detail, index) => {
                   // Skip if it's a header with no value
                   if (detail.isHeader && !detail.value) {
                     return (
-                      <div key={index} className="pt-2 border-t border-gray-600/30">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-gray-200">{detail.label}</span>
+                      <div key={index} className="pt-4 ">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-semibold ">{detail.label}</span>
                           {detail.icon && (
                             <detail.icon 
                               className="w-5 h-5" 

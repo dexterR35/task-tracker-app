@@ -34,7 +34,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 200,
   }),
-  columnHelper.accessor('data_task.departments', {
+  columnHelper.accessor((row) => row.data_task?.departments, {
+    id: 'departments',
     header: 'Department',
     cell: ({ getValue, row }) => {
       // Check if data_task exists
@@ -47,7 +48,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 150,
   }),
-  columnHelper.accessor('data_task.products', {
+  columnHelper.accessor((row) => row.data_task?.products, {
+    id: 'products',
     header: 'Product',
     cell: ({ getValue }) => {
       const value = getValue();
@@ -55,7 +57,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
-  columnHelper.accessor('data_task.markets', {
+  columnHelper.accessor((row) => row.data_task?.markets, {
+    id: 'markets',
     header: 'Markets',
     cell: ({ getValue }) => {
       const value = getValue();
@@ -64,7 +67,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 150,
   }),
-  columnHelper.accessor('data_task.aiModels', {
+  columnHelper.accessor((row) => row.data_task?.aiModels, {
+    id: 'aiModels',
     header: 'AI Models',
     cell: ({ getValue }) => {
       const value = getValue();
@@ -73,7 +77,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 150,
   }),
-  columnHelper.accessor('data_task.deliverables', {
+  columnHelper.accessor((row) => row.data_task?.deliverables, {
+    id: 'deliverables',
     header: 'Deliverables',
     cell: ({ getValue, row }) => {
       const deliverables = getValue();
@@ -93,21 +98,24 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     size: 200,
   }),
 
-  columnHelper.accessor('data_task.isVip', {
+  columnHelper.accessor((row) => row.data_task?.isVip, {
+    id: 'isVip',
     header: 'VIP',
     cell: ({ getValue }) => {
       return getValue() ? "✓" : "-";
     },
     size: 40,
   }),
-  columnHelper.accessor('data_task.reworked', {
+  columnHelper.accessor((row) => row.data_task?.reworked, {
+    id: 'reworked',
     header: 'ReWorked',
     cell: ({ getValue }) => {
       return getValue() ? "✓" : "-";
     },
     size: 50,
   }),
-  columnHelper.accessor('data_task.reporters', {
+  columnHelper.accessor((row) => row.data_task?.reporters, {
+    id: 'reporters',
     header: 'Reporter',
     cell: ({ getValue }) => {
       const reporterId = getValue();
@@ -125,7 +133,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
-  columnHelper.accessor('data_task.timeInHours', {
+  columnHelper.accessor((row) => row.data_task?.timeInHours, {
+    id: 'timeInHours',
     header: 'Task Hr',
     cell: ({ getValue }) => {
       const value = getValue();
@@ -133,7 +142,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 80,
   }),
-  columnHelper.accessor('data_task.aiTime', {
+  columnHelper.accessor((row) => row.data_task?.aiTime, {
+    id: 'aiTime',
     header: 'AI Hr',
     cell: ({ getValue }) => {
       const value = getValue();
@@ -151,7 +161,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 60,
   }),
-  columnHelper.accessor('data_task.startDate', {
+  columnHelper.accessor((row) => row.data_task?.startDate, {
+    id: 'startDate',
     header: 'Done',
     cell: ({ getValue, row }) => {
       const startDate = getValue();
@@ -171,7 +182,8 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 80,
   }),
-  columnHelper.accessor('data_task.observations', {
+  columnHelper.accessor((row) => row.data_task?.observations, {
+    id: 'observations',
     header: 'Observations',
     cell: ({ getValue }) => {
       const value = getValue();

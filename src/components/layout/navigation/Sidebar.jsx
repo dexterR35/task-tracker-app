@@ -53,11 +53,11 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-300/50 dark:border-gray-700/50">
+    <div className="flex flex-col h-full pb-6 ">
       {/* Logo Section */}
-      <div className="flex items-center h-20 px-6 border-b border-gray-300/50 dark:border-gray-700/50">
+      <div className="flex items-center  px-8 border-bottom h-24">
         <Link to="/dashboard" className="flex items-center space-x-3 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-default to-btn-primary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-default to-btn-primary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl ">
             <span className="text-white font-bold text-lg">S</span>
           </div>
           <div>
@@ -81,24 +81,24 @@ const Sidebar = () => {
             <Link
               key={item.name}
               to={item.href}
-              className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`group flex items-center px-4 py-4 rounded-xl text-sm font-medium  ${
                 isActive(item.href)
-                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  ? "bg-blue-50 dark:bg-blue-900/40 dark:text-gray-200"
+                  : "text-white dark:text-gray-200 "
               }`}
             >
               <div
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-2 rounded-lg  ${
                   isActive(item.href)
                     ? "bg-blue-100 dark:bg-blue-900/30"
-                    : "bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/20"
+                    : "bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/20 text-gray-200"
                 }`}
               >
                 <Icon className="w-5 h-5" />
               </div>
               <div className="ml-3 flex-1">
                 <p className="font-medium">{item.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-[10px]">
                   {item.description}
                 </p>
               </div>
@@ -108,10 +108,8 @@ const Sidebar = () => {
       </nav>
 
       {/* Bottom Section */}
-      <div className="px-4 py-6 border-t border-gray-300/50 dark:border-gray-700/50 space-y-4">
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-          <MidnightCountdown />
-        </div>
+      <div className="px-4 pt-4 bordet-top space-y-4">
+        <MidnightCountdown />
 
         <DynamicButton
           onClick={handleLogout}
@@ -119,7 +117,7 @@ const Sidebar = () => {
           size="md"
           icon={Icons.buttons.logout}
           iconPosition="left"
-          className="w-full justify-start text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 border-gray-300 dark:border-gray-600"
+          className="w-full "
         >
           Logout
         </DynamicButton>

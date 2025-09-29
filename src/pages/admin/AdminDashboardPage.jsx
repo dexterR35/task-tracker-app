@@ -3,22 +3,27 @@ import { useSearchParams } from "react-router-dom";
 import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
+import TanStackTable from "@/components/Table/TanStackTable";
+import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
+import { useTableActions } from "@/hooks/useTableActions";
+import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import DashboardCard from "@/components/Card/DashboardCard";
 import { createDashboardCards } from "@/components/Card/cardConfig";
-import SmallCard from "@/components/Card/SmallCard";
-import { createSmallCards } from "@/components/Card/smallCardConfig.jsx";
+import SmallCard from "@/components/Card/smallCards/SmallCard";
+
+import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton";
 import { showError, showAuthError } from "@/utils/toast";
 import MonthProgressBar from "@/components/ui/MonthProgressBar";
 
-
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
   const [showTable, setShowTable] = useState(true);
   const [showCards, setShowCards] = useState(false);
 
@@ -29,7 +34,14 @@ const AdminDashboardPage = () => {
   const selectedReporterId = searchParams.get("reporter") || "";
 
   // Get basic data from useAppData hook
-  const { user, users, reporters, error, isLoading: appDataLoading } = useAppData(); // Remove selectedUserId since we handle filtering in component
+  const {
+    user,
+    users,
+    reporters,
+    error,
+    isLoading: appDataLoading,
+    deleteTask,
+  } = useAppData(); // Remove selectedUserId since we handle filtering in component
 
   const {
     tasks, // Current display tasks (current or selected month)
@@ -100,23 +112,86 @@ const AdminDashboardPage = () => {
     [setSearchParams, searchParams]
   );
 
+  // Delete wrapper with error handling for permission issues
+  const handleTaskDeleteMutation = async (task) => {
+    if (!deleteTask) {
+      console.error('deleteTask mutation not available');
+      throw new Error('Delete task mutation not available');
+    }
+    
+    try {
+      return await deleteTask({ 
+        monthId: task.monthId,  // Always use task's own monthId
+        taskId: task.id,
+        userData: user  // Pass user data for permission validation
+      });
+    } catch (error) {
+      // Show permission error toast if it's a permission issue
+      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
+        showAuthError('You do not have permission to delete tasks');
+      }
+      throw error;
+    }
+  };
+
+  // Use table actions hook
+  const {
+    showEditModal: showTableEditModal,
+    editingItem,
+    showDeleteConfirm,
+    itemToDelete,
+    rowActionId,
+    handleSelect,
+    handleEdit,
+    handleDelete,
+    confirmDelete,
+    closeEditModal,
+    closeDeleteModal,
+    handleEditSuccess,
+  } = useTableActions('task', {
+    getItemDisplayName: (task) => task?.data_task?.taskName || task?.data_task?.departments || 'Unknown Task',
+    deleteMutation: handleTaskDeleteMutation,
+  });
+
+  // Handle edit task
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setShowEditModal(true);
+  };
+
+  // Handle edit success
+  const handleEditTaskSuccess = () => {
+    setShowEditModal(false);
+    setEditingTask(null);
+    handleEditSuccess();
+  };
+
+  // Handle edit modal close
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setEditingTask(null);
+  };
+
   // Derive title based on context and role
   const title = isUserAdmin
     ? (() => {
-      if (selectedUserId && selectedReporterId) {
-        return `Tasks - ${selectedUserName} & ${selectedReporterName}`;
-      } else if (selectedUserId) {
-        return `Tasks - ${selectedUserName}`;
-      } else if (selectedReporterId) {
-        return `Tasks - ${selectedReporterName}`;
-      } else {
-        return "All Tasks - All Users";
-      }
-    })()
+        if (selectedUserId && selectedReporterId) {
+          return `Tasks - ${selectedUserName} & ${selectedReporterName}`;
+        } else if (selectedUserId) {
+          return `Tasks - ${selectedUserName}`;
+        } else if (selectedReporterId) {
+          return `Tasks - ${selectedReporterName}`;
+        } else {
+          return "All Tasks - All Users";
+        }
+      })()
     : "My Tasks";
 
   // Get current month ID for filtering
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
+
+  // Get task columns for the table
+  const taskColumns = useTaskColumns(currentMonthId, reporters);
 
   //  reusable filtering function
   const getFilteredTasks = useCallback(
@@ -168,15 +243,13 @@ const AdminDashboardPage = () => {
     reporters,
     users,
     reporterMetrics,
-    periodName: selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
+    periodName:
+      selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
     periodId: selectedMonth?.monthId || currentMonth?.monthId || "unknown",
     isCurrentMonth,
     isUserAdmin,
     currentUser: user,
   };
-
-
-
 
   // General metrics (month-filtered only, no user/reporter filtering)
   const top3Metrics = useTop3Calculations(commonCardData, {
@@ -270,38 +343,44 @@ const AdminDashboardPage = () => {
   ]);
 
   // Small cards data preparation
-  const smallCardsData = useMemo(() => ({
-    ...commonCardData,
-    selectedMonth, // Add the full month object
-    currentMonth,  // Add the full month object
-    selectedUserId,
-    selectedUserName,
-    selectedReporterId,
-    selectedReporterName,
-    canCreateTasks,
-    handleCreateTask,
-    handleUserSelect,
-    handleReporterSelect,
-    selectMonth,
-    availableMonths
-  }), [
-    commonCardData,
-    selectedMonth,
-    currentMonth,
-    selectedUserId,
-    selectedUserName,
-    selectedReporterId,
-    selectedReporterName,
-    canCreateTasks,
-    handleCreateTask,
-    handleUserSelect,
-    handleReporterSelect,
-    selectMonth,
-    availableMonths
-  ]);
+  const smallCardsData = useMemo(
+    () => ({
+      ...commonCardData,
+      selectedMonth, // Add the full month object
+      currentMonth, // Add the full month object
+      selectedUserId,
+      selectedUserName,
+      selectedReporterId,
+      selectedReporterName,
+      canCreateTasks,
+      handleCreateTask,
+      handleUserSelect,
+      handleReporterSelect,
+      selectMonth,
+      availableMonths,
+    }),
+    [
+      commonCardData,
+      selectedMonth,
+      currentMonth,
+      selectedUserId,
+      selectedUserName,
+      selectedReporterId,
+      selectedReporterName,
+      canCreateTasks,
+      handleCreateTask,
+      handleUserSelect,
+      handleReporterSelect,
+      selectMonth,
+      availableMonths,
+    ]
+  );
 
   // Create small cards
-  const smallCards = useMemo(() => createSmallCards(smallCardsData), [smallCardsData]);
+  const smallCards = useMemo(
+    () => createSmallCards(smallCardsData),
+    [smallCardsData]
+  );
 
   if (error || monthError) {
     return (
@@ -315,7 +394,19 @@ const AdminDashboardPage = () => {
       {/* Page Header */}
       <div className="mb-4">
         <div className="flex items-end justify-between">
-          <h2>Task Management </h2>
+          <div>
+            <h2>Task Management </h2>
+            <p className="text-small mt-0">
+              {title} •{" "}
+              {isInitialLoading ? (
+                <span>Loading...</span>
+              ) : (
+                selectedMonth?.monthName ||
+                currentMonth?.monthName ||
+                "No month selected"
+              )}
+            </p>
+          </div>
           {isUserAdmin && (
             <DynamicButton
               onClick={handleCreateTask}
@@ -323,20 +414,13 @@ const AdminDashboardPage = () => {
               size="md"
               iconName="add"
               iconPosition="left"
-              className="px-6 py-4 m-0"
+              className="px-4 py-3 m-0"
             >
               ADD TASK
             </DynamicButton>
           )}
         </div>
-        <p className="text-small mt-0">
-          {title} •{" "}
-          {isInitialLoading ? (
-            <span>Loading...</span>
-          ) : (
-            selectedMonth?.monthName || currentMonth?.monthName || "No month selected"
-          )}
-        </p>
+
         {/* Month Progress Bar */}
         <div className="my-6">
           <MonthProgressBar
@@ -345,38 +429,32 @@ const AdminDashboardPage = () => {
             isCurrentMonth={isCurrentMonth}
             startDate={selectedMonth?.startDate || currentMonth?.startDate}
             endDate={selectedMonth?.endDate || currentMonth?.endDate}
-            daysInMonth={selectedMonth?.daysInMonth || currentMonth?.daysInMonth}
+            daysInMonth={
+              selectedMonth?.daysInMonth || currentMonth?.daysInMonth
+            }
           />
         </div>
       </div>
-
-      <div className="mb-2">
+      {/* top cards section */}
+      <div className="mb-2 ">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Dynamic Small Cards */}
-          {isInitialLoading ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <SkeletonCard key={index} />
-            ))
-          ) : (
-            smallCards.map((card) => (
-              <SmallCard key={card.id} card={card} />
-            ))
-          )}
+          {isInitialLoading
+            ? Array.from({ length: 5 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))
+            : smallCards.map((card) => <SmallCard key={card.id} card={card} />)}
         </div>
       </div>
 
       {/* Dashboard Cards */}
       <div className="overflow-hidden mb-2">
         {/* Cards Section Header */}
-        <div className="py-6 border-b border-gray-300 dark:border-gray-700">
+        <div className="py-6 border-bottom">
           <div className="flex items-center justify-between">
             <div>
               <h3>Dashboard Cards</h3>
-              <p className="text-sm ">
-
-                {dashboardCards.length} cards
-
-              </p>
+              <p className="text-sm ">{dashboardCards.length} cards</p>
             </div>
             <DynamicButton
               onClick={() => setShowCards(!showCards)}
@@ -396,13 +474,13 @@ const AdminDashboardPage = () => {
         {showCards && (
           <div className="pt-6">
             {isInitialLoading ? (
-              <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <SkeletonCard key={index} />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 {dashboardCards.map((card) => (
                   <DashboardCard key={card.id} card={card} />
                 ))}
@@ -412,12 +490,12 @@ const AdminDashboardPage = () => {
         )}
       </div>
 
-  
+      {/* table task section */}
       <div>
-        <div className="py-6 border-b border-gray-300 dark:border-gray-700">
+        <div className="py-6 border-bottom">
           <div className="flex items-center justify-between">
             <div>
-              <h3 >
+              <h3>
                 {(() => {
                   if (selectedUserId && selectedReporterId) {
                     return `${selectedUserName} & ${selectedReporterName} Tasks`;
@@ -461,25 +539,38 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Table Content */}
-        <div className="py-6">
+        <div className="py-2">
           {showTable && (
             <>
-        
               {isLoading || isInitialLoading ? (
-                <SkeletonTable rows={5} />
+                <SkeletonTable rows={4} />
               ) : (
-                <TaskTable
-                  tasks={getFilteredTasks(
+                <TanStackTable
+                  data={getFilteredTasks(
                     tasks,
                     selectedUserId,
                     selectedReporterId,
                     currentMonthId
                   )}
-                  users={users}
-                  reporters={reporters}
-                  user={user}
-                  monthId={selectedMonth?.monthId || currentMonth?.monthId}
-                  isAdminView={isUserAdmin}
+                  columns={taskColumns}
+                  tableType="tasks"
+                  error={error}
+                  onSelect={handleSelect}
+                  onEdit={handleEditTask}
+                  onDelete={handleDelete}
+                  showPagination={true}
+                  showFilters={true}
+                  showColumnToggle={true}
+                  pageSize={25}
+                  enableSorting={true}
+                  enableFiltering={true}
+                  enablePagination={true}
+                  enableColumnResizing={true}
+                  enableRowSelection={false}
+                  initialColumnVisibility={{
+                    'data_task.isVip': false,     // Hide VIP column by default
+                    'data_task.reworked': false   // Hide Reworked column by default
+                  }}
                 />
               )}
             </>
@@ -504,6 +595,37 @@ const AdminDashboardPage = () => {
             showAuthError("You do not have permission to create tasks");
           }
         }}
+      />
+
+      {/* Edit Task Modal */}
+      <TaskFormModal
+        isOpen={showEditModal}
+        onClose={handleEditModalClose}
+        mode="edit"
+        task={editingTask}
+        onSuccess={handleEditTaskSuccess}
+        onError={(error) => {
+          // Handle permission errors
+          if (
+            error?.message?.includes("permission") ||
+            error?.message?.includes("User lacks required")
+          ) {
+            showAuthError("You do not have permission to edit tasks");
+          }
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Delete Task"
+        message={`Are you sure you want to delete task "${itemToDelete?.data_task?.taskName || itemToDelete?.data_task?.departments || 'Unknown Task'}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={rowActionId === itemToDelete?.id}
       />
     </div>
   );

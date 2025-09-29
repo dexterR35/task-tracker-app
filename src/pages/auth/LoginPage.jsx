@@ -5,15 +5,12 @@ import { LoginForm } from "@/components/forms";
 const LoginPage = () => {
   const navigate = useNavigate();
   const onSuccess = () => {
-    navigate('/dashboard', { replace: true });
+    navigate("/dashboard", { replace: true });
   };
 
   return (
-    <div className="min-h-screen flex items-center flex-col  justify-center bg-gray-100 dark:bg-gray-800">         
-          <LoginForm
-            onSuccess={onSuccess}
-            className="bg-transparent"
-          />
+    <div className="min-h-screen flex items-center flex-col  justify-center ">
+      <LoginForm onSuccess={onSuccess}/>
     </div>
   );
 };

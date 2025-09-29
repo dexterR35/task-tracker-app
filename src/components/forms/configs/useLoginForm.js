@@ -8,9 +8,9 @@ import {
 
 // ===== LOGIN FORM FIELD CONFIGURATION =====
 export const LOGIN_FORM_FIELDS = [
-  createNetBetEmailField("email", "NetBet Email Address", {
+  createNetBetEmailField("email", "Email Address", {
     placeholder: "Enter your NetBet email",
-    helpText: "Only @netbet.ro email addresses are accepted",
+    // helpText: "Only @netbet.ro email addresses are accepted",
   }),
   createPasswordField("password", "Password", {
     placeholder: "Enter your password",

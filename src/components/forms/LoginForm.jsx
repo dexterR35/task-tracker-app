@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { loginSchema, LOGIN_FORM_FIELDS } from './configs/useLoginForm';
 import { TextField, PasswordField } from './components';
@@ -10,10 +10,7 @@ import { getInputType } from './configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 
-/**
- * Dedicated Login Form Component
- * Handles user authentication with proper validation and error handling
- */
+
 const LoginForm = ({ onSuccess, className = "" }) => {
   const { login } = useAuth();
   
@@ -53,23 +50,23 @@ const LoginForm = ({ onSuccess, className = "" }) => {
   };
 
   return (
-    <div className={`${className} card-container  p-6 w-1/5 rounded-lg mx-auto border-2 border-gray-300 `}>
-      <h3 className='text-2xl font-bold text-gray-800 dark:text-gray-200 mb-0'>
+    <div className={`${className} card w-100`}>
+      <h2 className='text-3xl font-bold mb-1'>
         Login
-      </h3>
-      <p className='mb-6'>
+      </h2>
+      <p className='mb-6 text-sm'>
      Sign in to your account
     </p>
       <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
         <TextField
-          field={LOGIN_FORM_FIELDS[0]} // email field
+          field={LOGIN_FORM_FIELDS[0]} 
           register={register}
           errors={errors}
           getInputType={getInputType}
           formValues={{}}
         />
         <PasswordField
-          field={LOGIN_FORM_FIELDS[1]} // password field
+          field={LOGIN_FORM_FIELDS[1]} 
           register={register}
           errors={errors}
           getInputType={getInputType}
@@ -86,9 +83,9 @@ const LoginForm = ({ onSuccess, className = "" }) => {
             iconName="login"
             iconPosition="left"
             loadingText="Logging in..."
-            className="w-full"
+            className="w-full h-12"
           >
-            Login
+            UNlock
           </DynamicButton>
         </div>
       </form>

@@ -107,6 +107,19 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   return children;
 };
 
+// Admin-only route protection component (assumes user is already authenticated)
+const AdminRoute = ({ children }) => {
+  const authState = useAuth();
+  const { canAccess } = authState;
+
+  // Only check admin role since authentication is already verified by parent ProtectedRoute
+  if (!canAccess("admin")) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return children;
+};
+
 ProtectedRoute.displayName = "ProtectedRoute";
 
 
@@ -173,31 +186,31 @@ const router = createBrowserRouter([
           {
             path: "analytics",
             element: (
-              <ProtectedRoute requiredRole="admin">
+              <AdminRoute>
                 <PageWrapper key="analytics">
                   <AnalyticsPage />
                 </PageWrapper>
-              </ProtectedRoute>
+              </AdminRoute>
             ),
           },
           {
             path: "users",
             element: (
-              <ProtectedRoute requiredRole="admin">
+              <AdminRoute>
                 <PageWrapper>
                   <AdminManagementPage />
                 </PageWrapper>
-              </ProtectedRoute>
+              </AdminRoute>
             ),
           },
           {
             path: "debug",
             element: (
-              <ProtectedRoute requiredRole="admin">
+              <AdminRoute>
                 <PageWrapper>
                   <DebugPage />
                 </PageWrapper>
-              </ProtectedRoute>
+              </AdminRoute>
             ),
           },
           {

@@ -324,9 +324,9 @@ const TaskForm = ({
   });
 
   return (
-    <div className={`p-6 ${className}`}>
+    <div className={`p-4  w-full ${className}`}>
       
-      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-3">
+      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-3 ">
         {/* 1. Jira Link - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['jiraLink'])}

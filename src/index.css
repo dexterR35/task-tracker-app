@@ -66,13 +66,15 @@
 
 @theme {
   /* ===== BASE COLORS ===== */
-  --color-primary: #131b30;
+  --color-primary: #141521;
   --color-primary-80: #0a2470;
-  --color-secondary: #727e90;
+  --color-secondary: #1c212f;
   --color-secondary-dark: #4949492b;
   --color-hover: #c10f29;
   --color-title: #0f3cd9;
   --color-focus: #aebfff;
+
+  --color-smallCard: #1a2939e3;
 
   /* ===== SPACING SCALE ===== */
   --spacing: 0.25rem; /* 4px base unit */
@@ -111,7 +113,7 @@
   --color-gray-900: #111827;
 
   /* ===== STATUS COLORS ===== */
-  --color-red-error: #eb2743;
+  --color-red-error: #FF204E;
   --color-red-500: #c10f29;
   --color-green-success: #2fd181;
   --color-green-400: #0a9952;
@@ -235,13 +237,13 @@
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-default focus:border-blue-default transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500;
+    @apply w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-default focus:border-blue-default;
   }
 
   input:not([type="radio"]).error,
   select.error,
   textarea.error {
-    @apply border-red-error dark:border-red-error bg-red-50 dark:bg-red-900/20;
+    @apply border-red-error dark:border-red-error;
   }
   /* Select Fields */
   select {
@@ -266,7 +268,7 @@
   }
   /* Enhanced Global Label Styling */
   label {
-    @apply block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2;
+    @apply block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2;
   }
   ::placeholder {
     @apply text-gray-500;
@@ -290,9 +292,9 @@
   h4 {
     @apply font-semibold text-gray-900 dark:text-white mb-0 text-base;
   }
-h5 {
-  @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;
-}
+  h5 {
+    @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;
+  }
   tbody tr td {
     @apply px-3 py-4 text-gray-800 dark:text-gray-300;
   }
@@ -305,16 +307,17 @@ h5 {
 
   /* Global Error Message Styling */
   .error-message {
-    @apply text-sm text-red-error dark:text-red-error mt-2 flex items-center gap-2 font-medium;
+    @apply text-xs text-red-error dark:text-red-error mt-2 flex items-center gap-0 justify-start;
   }
 
-  .error-message::before {
+  /* .error-message::before {
     content: "⚠";
-  }
+    font-size: 12px;
+  } */
 
   /* Global Required Indicator */
   .required-indicator {
-    @apply text-red-500 font-bold;
+    @apply text-red-error font-bold;
   }
 
   p {
@@ -328,16 +331,23 @@ h5 {
     @apply text-text-primary dark:text-gray-300  text-sm;
   }
   /* Modern Card System */
+  .bg-primary {
+    @apply !bg-white dark:!bg-primary;
+  }
+  .bg-secondary {
+    @apply !bg-white dark:!bg-secondary;
+  }
+
   .card {
-    @apply rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-6 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300/80 dark:hover:border-gray-600/80;
+    @apply bg-white/90 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 p-4 shadow-md rounded-md;
   }
 
   .card-small {
-    @apply bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200/60 dark:border-gray-700/60 p-4 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.01] hover:border-gray-300/80 dark:hover:border-gray-600/80;
+    @apply bg-white/90 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 p-4 shadow-md rounded-md;
   }
 
   .card-large {
-    @apply bg-white/90 dark:bg-gray-800/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-8 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] hover:border-gray-300/80 dark:hover:border-gray-600/80;
+    @apply bg-white/90 dark:bg-gray-800/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-8 backdrop-blur-sm shadow-xl h-full w-full;
   }
 
   /* Enhanced Typography with Better Font Sizes */
@@ -364,9 +374,9 @@ h5 {
   .card-label {
     @apply text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wider;
   }
-.icon-bg{
-  @apply p-2 bg-gray-700 text-white rounded-lg;
-}
+  .icon-bg {
+    @apply p-2 bg-gray-700 text-white rounded-lg;
+  }
   /* Dashboard Typography Scale */
   .text-dashboard-xs {
     @apply text-xs font-medium text-gray-600 dark:text-gray-400;
@@ -440,6 +450,29 @@ h5 {
   /* Form Section Divider */
   .form-section {
     @apply border-b border-gray-200 dark:border-gray-700 pb-4 mb-0 last:border-b-0 last:pb-0 last:mb-0;
+  }
+
+  .color-primary {
+    @apply bg-gray-700/20;
+  }
+  .color-secondary {
+    @apply bg-secondary;
+  }
+  .color-hover {
+    @apply bg-hover;
+  }
+  .border-bottom {
+    @apply border-b border-gray-300/50 dark:border-gray-700/50;
+  }
+  .border-right {
+    @apply border-r border-gray-300/50 dark:border-gray-700/50;
+  }
+  .border-top {
+    @apply border-t border-gray-300/50 dark:border-gray-700/50;
+  }
+
+  .hover-blue {
+    @apply hover:text-blue-default;
   }
 }
 

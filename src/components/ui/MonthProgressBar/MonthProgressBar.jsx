@@ -54,45 +54,45 @@ const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDa
   
   // Show for all months now
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {monthName} Progress
+    <div className="card">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs capitalize">
+          {monthName} 
         </span>
-        <Icons.generic.clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <Icons.generic.clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-3">
         {/* Progress Bar */}
         <div className="relative">
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-gray-400 dark:bg-primary rounded-full h-2 ">
             <div 
-              className={`h-2 rounded-full transition-all duration-500 ease-out ${
+              className={`h-2 rounded-full transition-all duration-500 ease-out  ${
                 isCurrentMonth ? "bg-btn-primary" : "bg-red-error"
               }`}
               style={{ width: `${progress}%` }}
             />
           </div>
-          {/* Progress percentage indicator */}
-          <div className="absolute -top-6 right-0 text-xs font-medium text-gray-600 dark:text-gray-400">
+ 
+          {/* <p className="absolute -top-6.5 right-7 text-xs  ">
             {progress}%
-          </div>
+          </p> */}
         </div>
         
         {/* Days info */}
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+        <p className="flex justify-between text-xs ">
           {isCurrentMonth ? (
             <>
-              <span>{daysPassed} days passed</span>
-              <span>{daysRemaining} days left</span>
+              <span className="text-xs">{daysPassed} days passed</span>
+              <span className="text-xs">{daysRemaining} days left</span>
             </>
           ) : (
             <>
-              <span className="text-red-error">Month history</span>
-              <span>{totalDays} days completed</span>
+              <span className="text-red-error text-xs">Month history</span>
+              <span className="text-xs">{totalDays} days completed</span>
             </>
           )}
-        </div>
+        </p>
       </div>
     </div>
   );

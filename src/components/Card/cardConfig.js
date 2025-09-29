@@ -1,13 +1,13 @@
 import { Icons } from "@/components/icons";
-import { 
-  calculateDailyHours, 
-  calculateDailyTasks, 
+import {
+  calculateDailyHours,
+  calculateDailyTasks,
   calculateDailyAIHours,
   calculateDailyDepartmentMetrics,
   calculateDailyReporterMetrics,
   calculateDailyTasksByReporter,
   getChartColor,
-  getChartType
+  getChartType,
 } from "@/utils/chartUtils";
 
 // Convert card color to hex for charts, icons, badges
@@ -35,7 +35,7 @@ const createNoDataEntry = (icon, label) => ({
   icon,
   label,
   value: "No data",
-  subValue: ""
+  subValue: "",
 });
 
 // Helper function to create "No tasks created" entry
@@ -43,7 +43,7 @@ const createNoTasksEntry = (icon, label) => ({
   icon,
   label,
   value: "No tasks created",
-  subValue: ""
+  subValue: "",
 });
 
 // Helper function to check if no tasks exist and return appropriate value
@@ -64,8 +64,6 @@ const getDetailsWithNoTasksCheck = (data, icon, getActualDetails) => {
   return getActualDetails(data);
 };
 
-
-
 // Helper function to extract field from task (handles both root and data_task levels)
 const getTaskField = (task, field) => {
   return task[field] || task.data_task?.[field];
@@ -77,37 +75,36 @@ const getTaskArrayField = (task, field) => {
   return Array.isArray(value) ? value : [];
 };
 
-
-
-
 // Utility function to get top 3 metrics for card configurations
 // This function uses the metrics calculated by the useTop3Calculations hook
 export const getTop3MetricsForCards = (data, options = {}) => {
   const { department, cardType } = options;
-  
+
   // Check for reporters card specifically - should use dedicated reporters metrics
-  if (cardType === 'reporters' && data.reportersMetrics) {
+  if (cardType === "reporters" && data.reportersMetrics) {
     return data.reportersMetrics;
   }
-  
+
   // Check for department-specific metrics
-  if (department === 'video' && data.videoMetrics) {
+  if (department === "video" && data.videoMetrics) {
     return data.videoMetrics;
   }
-  if (department === 'design' && data.designMetrics) {
+  if (department === "design" && data.designMetrics) {
     return data.designMetrics;
   }
-  if (department === 'developer' && data.devMetrics) {
+  if (department === "developer" && data.devMetrics) {
     return data.devMetrics;
   }
-  
+
   // Check if general metrics are already calculated and passed in the data
   if (data.top3Metrics) {
     return data.top3Metrics;
   }
-  
+
   // Fallback: return empty metrics if hook data is not available
-  console.warn('getTop3MetricsForCards: No metrics found in data. Make sure to use useTop3Calculations hook in React components.');
+  console.warn(
+    "getTop3MetricsForCards: No metrics found in data. Make sure to use useTop3Calculations hook in React components."
+  );
   return {
     sections: {
       totalHours: [],
@@ -116,7 +113,7 @@ export const getTop3MetricsForCards = (data, options = {}) => {
       top3Products: [],
       top3Users: [],
       top3Reporters: [],
-      allUsers: []
+      allUsers: [],
     },
     totalHours: 0,
     totalAIHours: 0,
@@ -124,19 +121,18 @@ export const getTop3MetricsForCards = (data, options = {}) => {
     top3AIModels: [],
     top3Products: [],
     top3Users: [],
-    top3Reporters: []
+    top3Reporters: [],
   };
 };
 
-
 // Card configuration system for dynamic card generation
 export const CARD_TYPES = {
-  TASKS: 'tasks',
-  REPORTERS: 'reporters',
-  SELECTED_USER: 'selected-user',
-  DEPARTMENT_VIDEO: 'department-video',
-  DEPARTMENT_DESIGN: 'department-design',
-  DEPARTMENT_DEV: 'department-dev'
+  TASKS: "tasks",
+  REPORTERS: "reporters",
+  SELECTED_USER: "selected-user",
+  DEPARTMENT_VIDEO: "department-video",
+  DEPARTMENT_DESIGN: "department-design",
+  DEPARTMENT_DEV: "department-dev",
 };
 
 // Card configuration templates
@@ -150,8 +146,12 @@ export const CARD_CONFIGS = {
     color: "green",
     hasChart: true,
     chartType: "bar",
-    getValue: (data) => getValueWithNoTasksCheck(data, (data) => data.tasks?.length?.toString() || "0"),
-    getStatus: (data) => data.isCurrentMonth ? "Current" : "Historical",
+    getValue: (data) =>
+      getValueWithNoTasksCheck(
+        data,
+        (data) => data.tasks?.length?.toString() || "0"
+      ),
+    getStatus: (data) => (data.isCurrentMonth ? "Current" : "Historical"),
     getSubtitle: (data) => "View all",
     getChartData: (data) => {
       try {
@@ -159,7 +159,7 @@ export const CARD_CONFIGS = {
         const chartData = calculateDailyTasks(data.tasks || [], monthId);
         return chartData;
       } catch (error) {
-        console.error('Error calculating tasks chart data:', error);
+        console.error("Error calculating tasks chart data:", error);
         return [];
       }
     },
@@ -174,24 +174,25 @@ export const CARD_CONFIGS = {
       }
       return badges;
     },
-    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.task, (data) => {
-      // Use the hook-based calculation utility
-      const metrics = getTop3MetricsForCards(data);
-      
-      return [
-        // Total Hours Section
-        ...metrics.sections.totalHours,
-        
-        // Top AI Models Section
-        ...metrics.sections.top3AIModels,
-        
-        // Top 3 Products Section
-        ...metrics.sections.top3Products,
-        
-        // All Users Section
-        ...metrics.sections.allUsers
-      ];
-    })
+    getDetails: (data) =>
+      getDetailsWithNoTasksCheck(data, Icons.generic.task, (data) => {
+        // Use the hook-based calculation utility
+        const metrics = getTop3MetricsForCards(data);
+
+        return [
+          // Total Hours Section
+          ...metrics.sections.totalHours,
+
+          // Top AI Models Section
+          ...metrics.sections.top3AIModels,
+
+          // Top 3 Products Section
+          ...metrics.sections.top3Products,
+
+          // All Users Section
+          ...metrics.sections.allUsers,
+        ];
+      }),
   },
 
   [CARD_TYPES.REPORTERS]: {
@@ -203,16 +204,24 @@ export const CARD_CONFIGS = {
     color: "purple",
     hasChart: true,
     chartType: "bar",
-    getValue: (data) => getValueWithNoTasksCheck(data, (data) => data.reporterMetrics?.totalReporters?.toString() || "0"),
-    getStatus: (data) => data.reporterMetrics?.isFiltered ? "Filtered" : "All Tasks",
+    getValue: (data) =>
+      getValueWithNoTasksCheck(
+        data,
+        (data) => data.reporterMetrics?.totalReporters?.toString() || "0"
+      ),
+    getStatus: (data) =>
+      data.reporterMetrics?.isFiltered ? "Filtered" : "All Tasks",
     getSubtitle: (data) => "View all",
     getChartData: (data) => {
       try {
         const monthId = data.periodId || data.currentMonthId;
-        const chartData = calculateDailyTasksByReporter(data.tasks || [], monthId);
+        const chartData = calculateDailyTasksByReporter(
+          data.tasks || [],
+          monthId
+        );
         return chartData;
       } catch (error) {
-        console.error('Error calculating reporters chart data:', error);
+        console.error("Error calculating reporters chart data:", error);
         return [];
       }
     },
@@ -227,16 +236,14 @@ export const CARD_CONFIGS = {
       }
       return badges;
     },
-    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.user, (data) => {
-      // Use the hook-based calculation utility with cardType for reporters
-      const metrics = getTop3MetricsForCards(data, { cardType: 'reporters' });
-      
-      return [
-        ...metrics.sections.top3Reporters
-      ];
-    })
-  },
+    getDetails: (data) =>
+      getDetailsWithNoTasksCheck(data, Icons.generic.user, (data) => {
+        // Use the hook-based calculation utility with cardType for reporters
+        const metrics = getTop3MetricsForCards(data, { cardType: "reporters" });
 
+        return [...metrics.sections.top3Reporters];
+      }),
+  },
 
   [CARD_TYPES.SELECTED_USER]: {
     title: "Selected User",
@@ -250,14 +257,19 @@ export const CARD_CONFIGS = {
     getValue: (data) => {
       const selectedReporterId = data.selectedReporterId;
       const selectedUserName = data.selectedUserName || "No User Selected";
-      
+
       if (selectedReporterId) {
         // Find reporter name
-        const reporter = data.reporters?.find(r => r.id === selectedReporterId || r.uid === selectedReporterId);
-        const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${selectedReporterId}`;
+        const reporter = data.reporters?.find(
+          (r) => r.id === selectedReporterId || r.uid === selectedReporterId
+        );
+        const reporterName =
+          reporter?.name ||
+          reporter?.reporterName ||
+          `Reporter ${selectedReporterId}`;
         return `${selectedUserName} + ${reporterName}`;
       }
-      
+
       return selectedUserName;
     },
     getStatus: (data) => {
@@ -269,60 +281,71 @@ export const CARD_CONFIGS = {
       const monthId = data.periodId || data.currentMonthId;
       const selectedUserId = data.selectedUserId;
       const selectedReporterId = data.selectedReporterId;
-      
+
       if (!selectedUserId) {
         return [];
       }
-      
+
       // Filter tasks for selected user and reporter
-      const filteredTasks = (data.tasks || []).filter(task => {
-        const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-        const matchesReporter = !selectedReporterId || 
-          task.reporters === selectedReporterId || 
+      const filteredTasks = (data.tasks || []).filter((task) => {
+        const matchesUser =
+          task.userUID === selectedUserId ||
+          task.createbyUID === selectedUserId;
+        const matchesReporter =
+          !selectedReporterId ||
+          task.reporters === selectedReporterId ||
           task.data_task?.reporters === selectedReporterId;
         return matchesUser && matchesReporter;
       });
-      
+
       return calculateDailyHours(filteredTasks, monthId);
     },
     getChartColor: (data) => getChartColor("users", "blue"),
     getDetails: (data) => {
       const selectedUserId = data.selectedUserId;
       const selectedReporterId = data.selectedReporterId;
-      
+
       if (!selectedUserId) {
-        return [{
-          icon: Icons.generic.user,
-          label: "No user selected",
-          value: "Select a user to see details",
-          subValue: ""
-        }];
+        return [
+          {
+            icon: Icons.generic.user,
+            label: "No user selected",
+            value: "Select a user to see details",
+            subValue: "",
+          },
+        ];
       }
-      
+
       // Use selected user metrics (all filtering is now handled by useTop3Calculations)
       const metrics = data.selectedUserMetrics || getTop3MetricsForCards(data);
       const hasTasks = metrics.totalHours > 0;
-      
+
       // Get reporter name if selected
       let reporterInfo = "";
       if (selectedReporterId) {
-        const reporter = data.reporters?.find(r => r.id === selectedReporterId || r.uid === selectedReporterId);
-        const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${selectedReporterId}`;
+        const reporter = data.reporters?.find(
+          (r) => r.id === selectedReporterId || r.uid === selectedReporterId
+        );
+        const reporterName =
+          reporter?.name ||
+          reporter?.reporterName ||
+          `Reporter ${selectedReporterId}`;
         reporterInfo = ` (with ${reporterName})`;
       }
-      
+
       // If no tasks, show appropriate message
       if (!hasTasks) {
         // Check if no tasks exist at all globally
         const totalTasks = data.tasks?.length || 0;
         if (totalTasks === 0) {
-          return [
-            createNoTasksEntry(Icons.generic.clock, "No tasks created")
-          ];
+          return [createNoTasksEntry(Icons.generic.clock, "No tasks created")];
         } else {
           // Tasks exist but none match the current filter
           return [
-            createNoDataEntry(Icons.generic.clock, selectedReporterId ? "No tasks with this reporter" : "No data")
+            createNoDataEntry(
+              Icons.generic.clock,
+              selectedReporterId ? "No tasks with this reporter" : "No data"
+            ),
           ];
         }
       }
@@ -334,80 +357,88 @@ export const CARD_CONFIGS = {
           label: `Total Hours${reporterInfo}`,
           value: "",
           subValue: "",
-          isHeader: true
+          isHeader: true,
         },
         {
           icon: Icons.generic.user,
           label: "Total Tasks",
           value: metrics.departmentMetrics?.totalTasks?.toString() || "0",
-          subValue: ""
+          subValue: "",
         },
         {
           icon: Icons.generic.ai,
           label: "Total AI Hours",
           value: `${metrics.totalAIHours}h`,
-          subValue: ""
+          subValue: "",
         },
         {
           icon: Icons.generic.clock,
           label: "Total Hours",
           value: `${metrics.totalHours}h`,
-          subValue: ""
+          subValue: "",
         },
-        
+
         // Top AI Models Section
         ...metrics.sections.top3AIModels,
-        
+
         // Section 1: All Products (from pre-calculated metrics)
         {
           icon: Icons.generic.package,
-          label: selectedReporterId ? "Products (User + Reporter)" : "Products (User)",
+          label: selectedReporterId
+            ? "Products (User + Reporter)"
+            : "Products (User)",
           value: "",
           subValue: "",
-          isHeader: true
+          isHeader: true,
         },
         ...metrics.top3Products,
-        
+
         // Section 2: All Markets (from pre-calculated metrics)
         {
           icon: Icons.generic.trendingUp,
-          label: selectedReporterId ? "Markets (User + Reporter)" : "Markets (User)",
+          label: selectedReporterId
+            ? "Markets (User + Reporter)"
+            : "Markets (User)",
           value: "",
           subValue: "",
-          isHeader: true
+          isHeader: true,
         },
         ...metrics.top3Markets,
-        
+
         // Section 3: Product-Market Combinations (from pre-calculated metrics)
         {
           icon: Icons.generic.target,
-          label: selectedReporterId ? "Product-Market Combinations (User + Reporter)" : "Product-Market Combinations (User)",
+          label: selectedReporterId
+            ? "Product-Market Combinations (User + Reporter)"
+            : "Product-Market Combinations (User)",
           value: "",
           subValue: "",
-          isHeader: true
+          isHeader: true,
         },
-        ...Object.entries(metrics.productMarketCombinations || {}).map(([product, data]) => {
-          // Format market counts as badges (same format as top 3 reporters)
-          const marketEntries = Object.entries(data.markets)
-            .sort(([,a], [,b]) => b - a)
-            .map(([market, count]) => {
-              if (count === 1) {
-                return market;
-              } else {
-                return `${count}x${market}`;
-              }
-            })
-            .join(' ');
+        ...Object.entries(metrics.productMarketCombinations || {}).map(
+          ([product, data]) => {
+            // Format market counts as badges (same format as top 3 reporters)
+            const marketEntries = Object.entries(data.markets)
+              .sort(([, a], [, b]) => b - a)
+              .map(([market, count]) => {
+                if (count === 1) {
+                  return market;
+                } else {
+                  return `${count}x${market}`;
+                }
+              })
+              .join(" ");
 
-          return {
-            icon: Icons.generic.package,
-            label: product,
-            value: `${data.totalTasks} task${data.totalTasks !== 1 ? 's' : ''}`,
-            subValue: marketEntries || 'No markets'
-          };
-        })
+            return {
+              icon: Icons.generic.package,
+              label: product,
+              value: `${data.totalTasks} task${data.totalTasks !== 1 ? "s" : ""}`,
+              subValue: marketEntries || "No markets",
+            };
+          }
+        ),
       ];
-    }
+    },
   },
 
   [CARD_TYPES.DEPARTMENT_VIDEO]: {
@@ -419,16 +450,21 @@ export const CARD_CONFIGS = {
     color: "red",
     hasChart: true,
     chartType: "area",
-    getValue: (data) => getValueWithNoTasksCheck(data, (data) => {
-      // Use the pre-calculated metrics from useTop3Calculations
-      const metrics = getTop3MetricsForCards(data, { department: 'video' });
-      return metrics.departmentMetrics?.totalTasks?.toString() || "0";
-    }),
+    getValue: (data) =>
+      getValueWithNoTasksCheck(data, (data) => {
+        // Use the pre-calculated metrics from useTop3Calculations
+        const metrics = getTop3MetricsForCards(data, { department: "video" });
+        return metrics.departmentMetrics?.totalTasks?.toString() || "0";
+      }),
     getStatus: (data) => "Active",
     getSubtitle: (data) => "View all",
     getChartData: (data) => {
       const monthId = data.periodId || data.currentMonthId;
-      return calculateDailyDepartmentMetrics(data.tasks || [], monthId, 'video');
+      return calculateDailyDepartmentMetrics(
+        data.tasks || [],
+        monthId,
+        "video"
+      );
     },
     getChartColor: (data) => getCardColorHex("red"),
     getBadges: (data) => {
@@ -436,54 +472,53 @@ export const CARD_CONFIGS = {
       if (data.isCurrentMonth) {
         badges.push({ label: "Current", color: getCardColorHex("green") });
       }
-      const metrics = getTop3MetricsForCards(data, { department: 'video' });
+      const metrics = getTop3MetricsForCards(data, { department: "video" });
       if (metrics.departmentMetrics?.totalTasks > 0) {
         badges.push({ label: "Active", color: getCardColorHex("red") });
       }
       return badges;
     },
-    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.video, (data) => {
-      // Use the hook-based calculation utility with video department filter
-      const metrics = getTop3MetricsForCards(data, { department: 'video' });
-      
-      // Check if no video tasks exist
-      if (metrics.departmentMetrics?.totalTasks === 0) {
+    getDetails: (data) =>
+      getDetailsWithNoTasksCheck(data, Icons.generic.video, (data) => {
+        // Use the hook-based calculation utility with video department filter
+        const metrics = getTop3MetricsForCards(data, { department: "video" });
+
+        // Check if no video tasks exist
+        if (metrics.departmentMetrics?.totalTasks === 0) {
+          return [createNoDataEntry(Icons.generic.video, "No video tasks")];
+        }
+
         return [
-          createNoDataEntry(Icons.generic.video, "No video tasks")
+          // Department Stats Section
+          ...metrics.sections.departmentStats,
+
+          // All Users Section
+          {
+            icon: Icons.generic.user,
+            label: "All Video Users",
+            value: "",
+            subValue: "",
+            isHeader: true,
+          },
+          ...metrics.top3Users,
+
+          // Top AI Models Section
+          ...metrics.sections.top3AIModels,
+
+          // Top 3 Products Section
+          ...metrics.sections.top3Products,
+
+          // Top 3 Markets Section
+          {
+            icon: Icons.generic.trendingUp,
+            label: "Top 3 Video Markets",
+            value: "",
+            subValue: "",
+            isHeader: true,
+          },
+          ...metrics.top3Markets,
         ];
-      }
-      
-      return [
-        // Department Stats Section
-        ...metrics.sections.departmentStats,
-        
-        // All Users Section
-        {
-          icon: Icons.generic.user,
-          label: "All Video Users",
-          value: "",
-          subValue: "",
-          isHeader: true
-        },
-        ...metrics.top3Users,
-        
-        // Top AI Models Section
-        ...metrics.sections.top3AIModels,
-        
-        // Top 3 Products Section
-        ...metrics.sections.top3Products,
-        
-        // Top 3 Markets Section
-        {
-          icon: Icons.generic.trendingUp,
-          label: "Top 3 Video Markets",
-          value: "",
-          subValue: "",
-          isHeader: true
-        },
-        ...metrics.top3Markets
-      ];
-    })
+      }),
   },
 
   [CARD_TYPES.DEPARTMENT_DESIGN]: {
@@ -495,16 +530,21 @@ export const CARD_CONFIGS = {
     color: "purple",
     hasChart: true,
     chartType: "area",
-    getValue: (data) => getValueWithNoTasksCheck(data, (data) => {
-      // Use the pre-calculated metrics from useTop3Calculations
-      const metrics = getTop3MetricsForCards(data, { department: 'design' });
-      return metrics.departmentMetrics?.totalTasks?.toString() || "0";
-    }),
+    getValue: (data) =>
+      getValueWithNoTasksCheck(data, (data) => {
+        // Use the pre-calculated metrics from useTop3Calculations
+        const metrics = getTop3MetricsForCards(data, { department: "design" });
+        return metrics.departmentMetrics?.totalTasks?.toString() || "0";
+      }),
     getStatus: (data) => "Active",
     getSubtitle: (data) => "View all",
     getChartData: (data) => {
       const monthId = data.periodId || data.currentMonthId;
-      return calculateDailyDepartmentMetrics(data.tasks || [], monthId, 'design');
+      return calculateDailyDepartmentMetrics(
+        data.tasks || [],
+        monthId,
+        "design"
+      );
     },
     getChartColor: (data) => getCardColorHex("purple"),
     getBadges: (data) => {
@@ -512,54 +552,53 @@ export const CARD_CONFIGS = {
       if (data.isCurrentMonth) {
         badges.push({ label: "Current", color: getCardColorHex("green") });
       }
-      const metrics = getTop3MetricsForCards(data, { department: 'design' });
+      const metrics = getTop3MetricsForCards(data, { department: "design" });
       if (metrics.departmentMetrics?.totalTasks > 0) {
         badges.push({ label: "Active", color: getCardColorHex("purple") });
       }
       return badges;
     },
-    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.design, (data) => {
-      // Use the hook-based calculation utility with design department filter
-      const metrics = getTop3MetricsForCards(data, { department: 'design' });
-      
-      // Check if no design tasks exist
-      if (metrics.departmentMetrics?.totalTasks === 0) {
+    getDetails: (data) =>
+      getDetailsWithNoTasksCheck(data, Icons.generic.design, (data) => {
+        // Use the hook-based calculation utility with design department filter
+        const metrics = getTop3MetricsForCards(data, { department: "design" });
+
+        // Check if no design tasks exist
+        if (metrics.departmentMetrics?.totalTasks === 0) {
+          return [createNoDataEntry(Icons.generic.design, "No design tasks")];
+        }
+
         return [
-          createNoDataEntry(Icons.generic.design, "No design tasks")
+          // Department Stats Section
+          ...metrics.sections.departmentStats,
+
+          // All Users Section
+          {
+            icon: Icons.generic.user,
+            label: "All Design Users",
+            value: "",
+            subValue: "",
+            isHeader: true,
+          },
+          ...metrics.top3Users,
+
+          // Top AI Models Section
+          ...metrics.sections.top3AIModels,
+
+          // Top 3 Products Section
+          ...metrics.sections.top3Products,
+
+          // Top 3 Markets Section
+          {
+            icon: Icons.generic.trendingUp,
+            label: "Top 3 Design Markets",
+            value: "",
+            subValue: "",
+            isHeader: true,
+          },
+          ...metrics.top3Markets,
         ];
-      }
-      
-      return [
-        // Department Stats Section
-        ...metrics.sections.departmentStats,
-        
-        // All Users Section
-        {
-          icon: Icons.generic.user,
-          label: "All Design Users",
-          value: "",
-          subValue: "",
-          isHeader: true
-        },
-        ...metrics.top3Users,
-        
-        // Top AI Models Section
-        ...metrics.sections.top3AIModels,
-        
-        // Top 3 Products Section
-        ...metrics.sections.top3Products,
-        
-        // Top 3 Markets Section
-        {
-          icon: Icons.generic.trendingUp,
-          label: "Top 3 Design Markets",
-          value: "",
-          subValue: "",
-          isHeader: true
-        },
-        ...metrics.top3Markets
-      ];
-    })
+      }),
   },
 
   [CARD_TYPES.DEPARTMENT_DEV]: {
@@ -571,20 +610,27 @@ export const CARD_CONFIGS = {
     color: "blue",
     hasChart: true,
     chartType: "area",
-    getValue: (data) => getValueWithNoTasksCheck(data, (data) => {
-      // Use the pre-calculated metrics from useTop3Calculations
-      const metrics = getTop3MetricsForCards(data, { department: 'developer' });
-      return metrics.departmentMetrics?.totalTasks?.toString() || "0";
-    }),
+    getValue: (data) =>
+      getValueWithNoTasksCheck(data, (data) => {
+        // Use the pre-calculated metrics from useTop3Calculations
+        const metrics = getTop3MetricsForCards(data, {
+          department: "developer",
+        });
+        return metrics.departmentMetrics?.totalTasks?.toString() || "0";
+      }),
     getStatus: (data) => "Active",
     getSubtitle: (data) => "View all",
     getChartData: (data) => {
       try {
         const monthId = data.periodId || data.currentMonthId;
-        const chartData = calculateDailyDepartmentMetrics(data.tasks || [], monthId, 'developer');
+        const chartData = calculateDailyDepartmentMetrics(
+          data.tasks || [],
+          monthId,
+          "developer"
+        );
         return chartData;
       } catch (error) {
-        console.error('Error calculating dev department chart data:', error);
+        console.error("Error calculating dev department chart data:", error);
         return [];
       }
     },
@@ -594,152 +640,163 @@ export const CARD_CONFIGS = {
       if (data.isCurrentMonth) {
         badges.push({ label: "Current", color: getCardColorHex("green") });
       }
-      const metrics = getTop3MetricsForCards(data, { department: 'developer' });
+      const metrics = getTop3MetricsForCards(data, { department: "developer" });
       if (metrics.departmentMetrics?.totalTasks > 0) {
         badges.push({ label: "Active", color: getCardColorHex("blue") });
       }
       return badges;
     },
-    getDetails: (data) => getDetailsWithNoTasksCheck(data, Icons.generic.code, (data) => {
-      // Use the hook-based calculation utility with developer department filter
-      const metrics = getTop3MetricsForCards(data, { department: 'developer' });
-      
-      // Check if no dev tasks exist
-      if (metrics.departmentMetrics?.totalTasks === 0) {
+    getDetails: (data) =>
+      getDetailsWithNoTasksCheck(data, Icons.generic.code, (data) => {
+        // Use the hook-based calculation utility with developer department filter
+        const metrics = getTop3MetricsForCards(data, {
+          department: "developer",
+        });
+
+        // Check if no dev tasks exist
+        if (metrics.departmentMetrics?.totalTasks === 0) {
+          return [createNoDataEntry(Icons.generic.code, "No dev tasks")];
+        }
+
         return [
-          createNoDataEntry(Icons.generic.code, "No dev tasks")
+          // Department Stats Section
+          ...metrics.sections.departmentStats,
+
+          // All Users Section
+          {
+            icon: Icons.generic.user,
+            label: "All Dev Users",
+            value: "",
+            subValue: "",
+            isHeader: true,
+          },
+          ...metrics.top3Users,
+
+          // Top AI Models Section
+          ...metrics.sections.top3AIModels,
+
+          // Top 3 Products Section
+          ...metrics.sections.top3Products,
+
+          // Top 3 Markets Section
+          {
+            icon: Icons.generic.trendingUp,
+            label: "Top 3 Dev Markets",
+            value: "",
+            subValue: "",
+            isHeader: true,
+          },
+          ...metrics.top3Markets,
         ];
-      }
-      
-      return [
-        // Department Stats Section
-        ...metrics.sections.departmentStats,
-        
-        // All Users Section
-        {
-          icon: Icons.generic.user,
-          label: "All Dev Users",
-          value: "",
-          subValue: "",
-          isHeader: true
-        },
-        ...metrics.top3Users,
-        
-        // Top AI Models Section
-        ...metrics.sections.top3AIModels,
-        
-        // Top 3 Products Section
-        ...metrics.sections.top3Products,
-        
-        // Top 3 Markets Section
-        {
-          icon: Icons.generic.trendingUp,
-          label: "Top 3 Dev Markets",
-          value: "",
-          subValue: "",
-          isHeader: true
-        },
-        ...metrics.top3Markets
-      ];
-    })
-  }
+      }),
+  },
 };
 
 // Map user occupation to department for access control
 const mapOccupationToDepartment = (occupation) => {
   if (!occupation) return null;
-  
+
   const occ = occupation.toLowerCase();
-  
+
   // Video department mappings
-  if (occ.includes('video') || occ.includes('editor')) {
-    return 'video';
+  if (occ.includes("video") || occ.includes("editor")) {
+    return "video";
   }
-  
+
   // Design department mappings
-  if (occ.includes('design') || occ.includes('designer')) {
-    return 'design';
+  if (occ.includes("design") || occ.includes("designer")) {
+    return "design";
   }
-  
+
   // Development department mappings
-  if (occ.includes('dev') || occ.includes('developer') || occ.includes('programmer') || occ.includes('engineer')) {
-    return 'developer';
+  if (
+    occ.includes("dev") ||
+    occ.includes("developer") ||
+    occ.includes("programmer") ||
+    occ.includes("engineer")
+  ) {
+    return "developer";
   }
-  
+
   return null;
 };
 
 // Role-based access control for dashboard cards
 export const canUserAccessCard = (user, cardType) => {
   // Admin can access all cards
-  if (user?.role === 'admin') {
+  if (user?.role === "admin") {
     return true;
   }
-  
+
   // Regular users can only access their department card and their own card
-  if (user?.role === 'user') {
+  if (user?.role === "user") {
     const userDepartment = mapOccupationToDepartment(user?.occupation);
-    
+
     switch (cardType) {
       case CARD_TYPES.TASKS:
       case CARD_TYPES.REPORTERS:
         // All users can see general task and reporter cards
         return true;
-        
+
       case CARD_TYPES.DEPARTMENT_VIDEO:
-        return userDepartment === 'video';
-        
+        return userDepartment === "video";
+
       case CARD_TYPES.DEPARTMENT_DESIGN:
-        return userDepartment === 'design';
-        
+        return userDepartment === "design";
+
       case CARD_TYPES.DEPARTMENT_DEV:
-        return userDepartment === 'developer';
-        
+        return userDepartment === "developer";
+
       case CARD_TYPES.SELECTED_USER:
         // Users can see their own selected user card
         return true;
-        
+
       default:
         return false;
     }
   }
-  
+
   return false;
 };
 
 // Create dashboard cards with optional selected user and reporter
-export const createDashboardCards = (data, selectedUserId = null, selectedUserName = null, selectedReporterId = null, currentUser = null) => {
+export const createDashboardCards = (
+  data,
+  selectedUserId = null,
+  selectedUserName = null,
+  selectedReporterId = null,
+  currentUser = null
+) => {
   // Generate simple, stable IDs - cards are memoized and don't need complex IDs
   const generateId = (cardType, cardData) => {
     switch (cardType) {
       case CARD_TYPES.TASKS:
-        return 'tasks-card';
+        return "tasks-card";
       case CARD_TYPES.REPORTERS:
-        return 'reporters-card';
+        return "reporters-card";
       case CARD_TYPES.SELECTED_USER:
-        return 'selected-user-card';
+        return "selected-user-card";
       case CARD_TYPES.DEPARTMENT_VIDEO:
-        return 'department-video-card';
+        return "department-video-card";
       case CARD_TYPES.DEPARTMENT_DESIGN:
-        return 'department-design-card';
+        return "department-design-card";
       case CARD_TYPES.DEPARTMENT_DEV:
-        return 'department-dev-card';
+        return "department-dev-card";
       default:
         return `${cardType}-card`;
     }
   };
 
   // Create base cards (filtered by user access)
-  const baseCards = CARD_SETS.DASHBOARD
-    .filter(cardType => {
-      // Filter cards based on user access permissions
-      if (currentUser) {
-        return canUserAccessCard(currentUser, cardType);
-      }
-      // If no user provided, show all cards (fallback for admin or testing)
-      return true;
-    })
-    .map(cardType => {
+  const baseCards = CARD_SETS.DASHBOARD.filter((cardType) => {
+    // Filter cards based on user access permissions
+    if (currentUser) {
+      return canUserAccessCard(currentUser, cardType);
+    }
+    // If no user provided, show all cards (fallback for admin or testing)
+    return true;
+  })
+    .map((cardType) => {
       const config = CARD_CONFIGS[cardType];
       if (!config) {
         console.warn(`Card type ${cardType} not found`);
@@ -750,59 +807,70 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
         const card = {
           id: generateId(cardType, data),
           title: config.title,
-          subtitle: config.getSubtitle ? config.getSubtitle(data) : config.subtitle,
+          subtitle: config.getSubtitle
+            ? config.getSubtitle(data)
+            : config.subtitle,
           description: config.description,
           icon: config.icon,
           type: config.type,
-          color: config.color || 'default',
+          color: config.color || "default",
           value: config.getValue(data),
           status: config.getStatus(data),
           details: config.getDetails(data),
           hasChart: config.hasChart || false,
-          chartType: config.chartType || 'area',
+          chartType: config.chartType || "area",
           chartData: config.getChartData ? config.getChartData(data) : [],
-          chartColor: config.getChartColor ? config.getChartColor(data) : '#6b7280',
-          badges: config.getBadges ? config.getBadges(data) : []
+          chartColor: config.getChartColor
+            ? config.getChartColor(data)
+            : "#6b7280",
+          badges: config.getBadges ? config.getBadges(data) : [],
         };
-        
-        
+
         return card;
       } catch (error) {
         console.error(`Error creating card ${cardType}:`, error);
         return null;
       }
-    }).filter(card => card !== null);
+    })
+    .filter((card) => card !== null);
 
   // Add selected user card if user is selected and has access
-  if (selectedUserId && (!currentUser || canUserAccessCard(currentUser, CARD_TYPES.SELECTED_USER))) {
+  if (
+    selectedUserId &&
+    (!currentUser || canUserAccessCard(currentUser, CARD_TYPES.SELECTED_USER))
+  ) {
     // Create selected user card with data (filtering is now handled by useTop3Calculations)
     const cardData = {
       ...data,
       selectedUserId,
       selectedUserName,
-      selectedReporterId
+      selectedReporterId,
     };
-    
+
     const config = CARD_CONFIGS[CARD_TYPES.SELECTED_USER];
     if (config) {
       try {
         const selectedUserCard = {
           id: generateId(CARD_TYPES.SELECTED_USER, cardData),
           title: config.title,
-          subtitle: config.getSubtitle ? config.getSubtitle(cardData) : config.subtitle,
+          subtitle: config.getSubtitle
+            ? config.getSubtitle(cardData)
+            : config.subtitle,
           description: config.description,
           icon: config.icon,
           type: config.type,
-          color: config.color || 'default',
+          color: config.color || "default",
           value: config.getValue(cardData),
           status: config.getStatus(cardData),
           details: config.getDetails(cardData),
           hasChart: config.hasChart || false,
-          chartType: config.chartType || 'area',
+          chartType: config.chartType || "area",
           chartData: config.getChartData ? config.getChartData(cardData) : [],
-          chartColor: config.getChartColor ? config.getChartColor(cardData) : '#6b7280'
+          chartColor: config.getChartColor
+            ? config.getChartColor(cardData)
+            : "#6b7280",
         };
-        
+
         // Add selected user card at the beginning
         return [selectedUserCard, ...baseCards];
       } catch (error) {
@@ -810,7 +878,7 @@ export const createDashboardCards = (data, selectedUserId = null, selectedUserNa
       }
     }
   }
-  
+
   // Return base cards only
   return baseCards;
 };
@@ -820,6 +888,6 @@ export const CARD_SETS = {
   DASHBOARD: [
     CARD_TYPES.DEPARTMENT_VIDEO,
     CARD_TYPES.DEPARTMENT_DESIGN,
-    CARD_TYPES.DEPARTMENT_DEV
-  ]
+    CARD_TYPES.DEPARTMENT_DEV,
+  ],
 };
