@@ -121,15 +121,27 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
                   <div className="font-medium text-gray-900 dark:text-white">
                     {deliverable.name}
                     {deliverable.quantity > 1 && ` (${deliverable.quantity}x)`}
-                    {deliverable.declinariTime > 0 && (
+                    {deliverable.declinariQuantity > 0 && (
                       <span className="text-orange-600 dark:text-orange-400">
-                        {' '}+ {deliverable.declinariTime}{deliverable.declinariTimeUnit} declinari
+                        {' '}+ {deliverable.declinariQuantity}x declinari
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                     {deliverable.configured ? (
-                      formatDeliverableDisplay(deliverable)
+                      <div className="space-y-1">
+                        <div>
+                          <span className="font-medium">Base:</span> {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
+                        </div>
+                        {deliverable.declinariQuantity > 0 && (
+                          <div>
+                            <span className="font-medium">Declinari:</span> {deliverable.declinariQuantity}x × {deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(3)}h
+                          </div>
+                        )}
+                        <div className="font-semibold text-blue-600 dark:text-blue-400">
+                          <span className="font-medium">Total:</span> {deliverable.time.toFixed(1)}h ({(deliverable.time * 60).toFixed(0)}min, {(deliverable.time / 8).toFixed(2)}days)
+                        </div>
+                      </div>
                     ) : deliverable.notConfigured ? (
                       <span className="text-amber-600 dark:text-amber-400">
                         ⚠️ Not configured in settings - Add to Settings → Deliverables

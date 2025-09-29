@@ -28,26 +28,8 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
         return;
       }
       
-      // Find deliverable in settings with flexible matching
-      let deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
-      
-      // If exact match not found, try flexible matching
-      if (!deliverableOption && deliverablesOptions) {
-        // Try case-insensitive matching
-        deliverableOption = deliverablesOptions.find(d => 
-          d.value && d.value.toLowerCase() === deliverableName.toLowerCase()
-        );
-        
-        // Try partial matching (e.g., "game preview" matches "game previews")
-        if (!deliverableOption) {
-          deliverableOption = deliverablesOptions.find(d => 
-            d.value && (
-              d.value.toLowerCase().includes(deliverableName.toLowerCase()) ||
-              deliverableName.toLowerCase().includes(d.value.toLowerCase())
-            )
-          );
-        }
-      }
+      // Find deliverable in settings with exact matching only
+      const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
       
       if (deliverableOption) {
         // Calculate time for this deliverable
@@ -70,7 +52,10 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
           else declinariTimeInHours = declinariTime / 60; // Default to minutes
         }
         
-        const calculatedTime = (timeInHours + declinariTimeInHours) * quantity;
+        // Get declinari quantity for this deliverable (if available in the data)
+        const declinariQuantity = deliverable?.declinariQuantity || 0;
+        const totalDeclinariTime = declinariQuantity * declinariTimeInHours;
+        const calculatedTime = (timeInHours * quantity) + totalDeclinariTime;
         totalTime += calculatedTime;
         
         deliverablesList.push({
@@ -81,8 +66,10 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
           timeUnit: timeUnit,
           declinariTime: declinariTime,
           declinariTimeUnit: declinariTimeUnit,
+          declinariQuantity: declinariQuantity,
           timeInHours: timeInHours,
           declinariTimeInHours: declinariTimeInHours,
+          totalDeclinariTime: totalDeclinariTime,
           configured: true
         });
       } else {
@@ -114,7 +101,7 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
 /**
  * Calculate single deliverable time with declinari
  */
-export const calculateSingleDeliverable = (deliverableOption, quantity = 1) => {
+export const calculateSingleDeliverable = (deliverableOption, quantity = 1, declinariQuantity = 0) => {
   if (!deliverableOption) {
     return {
       time: 0,
@@ -145,19 +132,22 @@ export const calculateSingleDeliverable = (deliverableOption, quantity = 1) => {
     else declinariTimeInHours = declinariTime / 60; // Default to minutes
   }
   
-  const totalTime = (timeInHours + declinariTimeInHours) * quantity;
+  const totalDeclinariTime = declinariQuantity * declinariTimeInHours;
+  const totalTime = (timeInHours * quantity) + totalDeclinariTime;
   
   return {
     time: totalTime,
     timeInHours,
     declinariTimeInHours,
+    totalDeclinariTime,
     totalTime,
     minutes: totalTime * 60,
     days: totalTime / 8,
     timePerUnit,
     timeUnit,
     declinariTime,
-    declinariTimeUnit
+    declinariTimeUnit,
+    declinariQuantity
   };
 };
 
@@ -171,7 +161,8 @@ export const formatDeliverableDisplay = (deliverable) => {
     return '⚠️ Not configured in settings - Add to Settings → Deliverables';
   }
   
-  const baseText = `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${deliverable.time.toFixed(1)}h`;
+  // Calculate base time (without declinari)
+  const baseTime = deliverable.timeInHours * deliverable.quantity;
   
   if (deliverable.declinariTime > 0) {
     const declinariHours = deliverable.declinariTimeUnit === 'min' 
@@ -180,10 +171,10 @@ export const formatDeliverableDisplay = (deliverable) => {
         ? deliverable.declinariTime 
         : deliverable.declinariTime * 8;
     
-    return `${baseText} + ${declinariHours.toFixed(3)}h declinari`;
+    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h + ${declinariHours.toFixed(3)}h declinari = ${deliverable.time.toFixed(1)}h`;
   }
   
-  return baseText;
+  return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h`;
 };
 
 /**

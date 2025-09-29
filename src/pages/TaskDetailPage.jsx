@@ -210,38 +210,17 @@ const TaskDetailPage = () => {
         
         deliverablesData.push({
           label: `Time per Unit`,
-          value: `${deliverable.timePerUnit} ${deliverable.timeUnit}${deliverable.declinariTime > 0 ? ` + ${deliverable.declinariTime} ${deliverable.declinariTimeUnit} declinari` : ''}`
+          value: `${deliverable.timePerUnit} ${deliverable.timeUnit}${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime} ${deliverable.declinariTimeUnit} declinari` : ''}`
         });
         
         deliverablesData.push({
           label: `Calculation`,
-          value: `${deliverable.timeInHours.toFixed(1)}h${deliverable.declinariTimeInHours > 0 ? ` + ${deliverable.declinariTimeInHours.toFixed(3)}h declinari` : ''} × ${deliverableCount} = ${deliverable.time.toFixed(1)}h`
+          value: `${deliverable.timeInHours.toFixed(1)}h × ${deliverableCount} = ${(deliverable.timeInHours * deliverableCount).toFixed(1)}h${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime}${deliverable.declinariTimeUnit} = ${deliverable.totalDeclinariTime.toFixed(3)}h` : ''} = ${deliverable.time.toFixed(1)}h`
         });
         
         deliverablesData.push({
           label: `Total Time`,
-          value: `${deliverable.time.toFixed(1)} hours`
-        });
-        
-        deliverablesData.push({
-          label: `Breakdown`,
-          value: `${(deliverable.time * 60).toFixed(0)} minutes (${(deliverable.time / 8).toFixed(2)} days)`
-        });
-        
-        // Add detailed breakdown in the format you requested
-        deliverablesData.push({
-          label: `Detailed Breakdown`,
-          value: `${deliverable.timeInHours.toFixed(1)}hr${deliverable.declinariTimeInHours > 0 ? ` + ${deliverable.declinariTimeInHours.toFixed(3)}hr declinari` : ''} = ${deliverable.time.toFixed(1)}hr`
-        });
-        
-        deliverablesData.push({
-          label: `Total Minutes`,
-          value: `${(deliverable.time * 60).toFixed(0)} minutes`
-        });
-        
-        deliverablesData.push({
-          label: `Total Days`,
-          value: `${(deliverable.time / 8).toFixed(2)} days`
+          value: `${deliverable.time.toFixed(1)} hours (${(deliverable.time * 60).toFixed(0)} minutes, ${(deliverable.time / 8).toFixed(2)} days)`
         });
         
         deliverablesData.push({
