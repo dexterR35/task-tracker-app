@@ -221,12 +221,17 @@ const TaskDetailPage = () => {
   let totalCalculatedTime = 0;
   let daysCalculation = '';
   
-  // Handle single deliverable (new format)
-  if (task.data_task?.deliverables && typeof task.data_task.deliverables === 'string') {
-    const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === task.data_task.deliverables);
+  // Handle new array of deliverable objects format
+  if (task.data_task?.deliverables && Array.isArray(task.data_task.deliverables) && task.data_task.deliverables.length > 0) {
+    const deliverableData = task.data_task.deliverables[0];
+    const deliverableName = deliverableData.deliverableName;
+    const deliverableQuantities = deliverableData.deliverableQuantities || {};
+    const declinariQuantities = deliverableData.declinariQuantities || {};
+    const declinariDeliverables = deliverableData.declinariDeliverables || {};
+    
+    const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableName);
     if (deliverable) {
-      const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
-      const declinariQuantities = task.data_task.declinariQuantities || {};
+      const quantity = deliverableQuantities[deliverableName] || 1;
       const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
       totalCalculatedTime = calculatedTime;
       
@@ -267,6 +272,76 @@ const TaskDetailPage = () => {
       deliverablesData.push({
         label: "Duration",
         value: daysCalculation
+      });
+    }
+  }
+  
+  // Handle legacy single string format (backward compatibility)
+  if (task.data_task?.deliverables && typeof task.data_task.deliverables === 'string') {
+    const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === task.data_task.deliverables);
+    if (deliverable) {
+      const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
+      const declinariQuantities = task.data_task.declinariQuantities || {};
+      const declinariDeliverables = task.data_task.declinariDeliverables || {};
+      const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
+      totalCalculatedTime = calculatedTime;
+      
+      deliverablesData.push({
+        label: "Deliverable",
+        value: deliverable.label
+      });
+      
+      if (quantity > 1) {
+        deliverablesData.push({
+          label: "Quantity",
+          value: `${quantity}x`
+        });
+      }
+      
+      const declinariQuantity = declinariQuantities[task.data_task.deliverables] || 0;
+      if (declinariQuantity > 0) {
+        deliverablesData.push({
+          label: "Declinari Quantity",
+          value: `${declinariQuantity}x`
+        });
+      }
+      
+      if (calculatedTime > 0) {
+        deliverablesData.push({
+          label: "Time per Unit",
+          value: formatTimeEstimate(deliverable, 1)
+        });
+        
+        deliverablesData.push({
+          label: "Total Time",
+          value: `${calculatedTime.toFixed(1)} hours`
+        });
+        
+        const days = calculatedTime / 8;
+        daysCalculation = `${days.toFixed(1)} days`;
+        deliverablesData.push({
+          label: "Duration",
+          value: daysCalculation
+        });
+      }
+    }
+  }
+  
+  // Handle legacy array format deliverables (backward compatibility)
+  if (task.data_task?.deliverables && Array.isArray(task.data_task.deliverables) && !task.data_task.deliverables[0]?.deliverableName) {
+    deliverablesData.push({
+      label: "Deliverables",
+      value: task.data_task.deliverables.join(', ')
+    });
+    
+    // Show quantities if available
+    if (task.data_task.deliverableQuantities) {
+      const quantitiesText = Object.entries(task.data_task.deliverableQuantities)
+        .map(([deliverable, qty]) => `${deliverable}: ${qty}x`)
+        .join(', ');
+      deliverablesData.push({
+        label: "Quantities",
+        value: quantitiesText
       });
     }
   }

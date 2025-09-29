@@ -2,7 +2,6 @@ import * as Yup from 'yup';
 import { logger } from '@/utils/logger';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
 import { 
-  createTextField,
   createTextareaField,
   createSelectField,
   createMultiSelectField,
@@ -115,17 +114,16 @@ export const TASK_FORM_OPTIONS = {
     { value: "others", label: "Others", timePerUnit: 0, timeUnit: "hr", requiresQuantity: false },
   ],
   aiModels: [
-    { value: "DALL-E", label: "DAll" },
     { value: "Photoshop", label: "Photoshop" },
     { value: "FireFly", label: "FireFly" },
     { value: "ChatGpt", label: "ChatGpt" },
-    { value: "PicLumen", label: "PicLumen" },
-    { value: "LeonardoAi", label: "LeonardoAi" },
     { value: "ShutterStock", label: "ShutterStock" },
     { value: "Midjourney", label: "Midjourney" },
     { value: "NightCafe", label: "NightCafe" },
     { value: "FreePick", label: "FreePick" },
     { value: "Cursor", label: "Cursor" },
+    { value: "run diffusion", label: "run diffusion" },
+
   ],
 };
 
@@ -241,10 +239,26 @@ export const taskFormSchema = Yup.object().shape({
   
   _hasDeliverables: Yup.boolean(),
   
-  deliverables: Yup.string().when('_hasDeliverables', {
+  deliverables: Yup.array().when('_hasDeliverables', {
     is: true,
-    then: (schema) => schema.required('Please select a deliverable when "Has Deliverables" is checked'),
-    otherwise: (schema) => schema.notRequired().default('')
+    then: (schema) => schema.test('valid-deliverables', 'Please select a deliverable when "Has Deliverables" is checked', function(value) {
+      if (!Array.isArray(value) || value.length === 0) {
+        return this.createError({
+          message: 'Please select a deliverable when "Has Deliverables" is checked'
+        });
+      }
+      
+      // Validate each deliverable object structure
+      for (const deliverable of value) {
+        if (!deliverable.deliverableName) {
+          return this.createError({
+            message: 'Each deliverable must have a deliverableName'
+          });
+        }
+      }
+      return true;
+    }),
+    otherwise: (schema) => schema.notRequired().default([])
   }),
   
   deliverableQuantities: Yup.object().when('_hasDeliverables', {
@@ -279,6 +293,24 @@ export const taskFormSchema = Yup.object().shape({
         if (quantity < 0 || !Number.isInteger(Number(quantity))) {
           return this.createError({
             message: `Declinari quantity for ${deliverableValue} must be a non-negative integer`
+          });
+        }
+      }
+      return true;
+    }),
+    otherwise: (schema) => schema.notRequired().default({})
+  }),
+  
+  declinariDeliverables: Yup.object().when('_hasDeliverables', {
+    is: true,
+    then: (schema) => schema.test('valid-declinari-deliverables', 'Please enter valid declinari deliverables', function(value) {
+      const declinariDeliverables = value || {};
+      
+      // Validate declinari deliverables (must be boolean values)
+      for (const [deliverableValue, enabled] of Object.entries(declinariDeliverables)) {
+        if (typeof enabled !== 'boolean') {
+          return this.createError({
+            message: `Declinari deliverable for ${deliverableValue} must be a boolean`
           });
         }
       }
@@ -351,20 +383,32 @@ export const prepareTaskFormData = (formData) => {
   // When checkboxes ARE checked: keep the user's input (validation should have ensured they're filled)
   
   if (!formData._hasDeliverables) {
-    formData.deliverables = ''; // Empty string when checkbox is not checked
+    formData.deliverables = []; // Empty array when checkbox is not checked
     formData.customDeliverables = []; // Empty array when checkbox is not checked
-    formData.deliverableQuantities = {}; // Empty object when checkbox is not checked
-    formData.declinariQuantities = {}; // Empty object when checkbox is not checked
   } else {
+    // Create deliverables array with deliverable object structure
+    const deliverableName = formData.deliverables;
+    const hasDeclinari = formData.declinariQuantities && 
+      Object.values(formData.declinariQuantities).some(qty => qty > 0);
+    
+    const deliverableObject = {
+      deliverableName: deliverableName,
+      deliverableQuantities: formData.deliverableQuantities || {},
+      declinariDeliverables: hasDeclinari ? { [deliverableName]: true } : {},
+      declinariQuantities: formData.declinariQuantities || {}
+    };
+    
+    formData.deliverables = [deliverableObject];
+    
     // If "others" is not selected, clear custom deliverables
-    if (formData.deliverables !== 'others') {
+    if (deliverableName !== 'others') {
       formData.customDeliverables = [];
     }
     
     // Calculate total deliverable time and update timeInHours if needed
-    if (formData.deliverables) {
+    if (deliverableName) {
       const calculatedTime = calculateTotalDeliverableTime(
-        formData.deliverables, 
+        deliverableName, 
         formData.deliverableQuantities || {},
         formData.declinariQuantities || {}
       );
@@ -375,7 +419,8 @@ export const prepareTaskFormData = (formData) => {
         logger.log('🕒 Updated timeInHours based on deliverables:', {
           calculatedTime,
           newTimeInHours: formData.timeInHours,
-          declinariQuantities: formData.declinariQuantities
+          declinariQuantities: formData.declinariQuantities,
+          hasDeclinari
         });
       }
     }

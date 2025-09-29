@@ -66,15 +66,15 @@
 
 @theme {
   /* ===== BASE COLORS ===== */
-  --color-primary: #141521;
+  --color-primary: #17181c;
   --color-primary-80: #0a2470;
-  --color-secondary: #1c212f;
+  --color-secondary: #1d1f23;
   --color-secondary-dark: #4949492b;
   --color-hover: #c10f29;
   --color-title: #0f3cd9;
   --color-focus: #aebfff;
 
-  --color-smallCard: #1a2939e3;
+  --color-smallCard: #1d1f23;
 
   /* ===== SPACING SCALE ===== */
   --spacing: 0.25rem; /* 4px base unit */
@@ -347,7 +347,7 @@
   }
 
   .card-large {
-    @apply bg-white/90 dark:bg-gray-800/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-8 backdrop-blur-sm shadow-xl h-full w-full;
+    @apply bg-white/90 dark:bg-smallCard rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-8 backdrop-blur-sm shadow-xl h-full w-full;
   }
 
   /* Enhanced Typography with Better Font Sizes */

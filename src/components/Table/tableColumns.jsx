@@ -84,16 +84,50 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     cell: ({ getValue, row }) => {
       const deliverables = getValue();
       const customDeliverables = row.original?.data_task?.customDeliverables;
-      const deliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
-      const declinariQuantities = row.original?.data_task?.declinariQuantities || {};
       
-      // Handle new single-select format
+      // Handle new array of deliverable objects format
+      if (deliverables && Array.isArray(deliverables) && deliverables.length > 0) {
+        const deliverable = deliverables[0];
+        const deliverableName = deliverable.deliverableName;
+        const deliverableQuantities = deliverable.deliverableQuantities || {};
+        const declinariQuantities = deliverable.declinariQuantities || {};
+        const declinariDeliverables = deliverable.declinariDeliverables || {};
+        
+        const deliverableOption = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableName);
+        if (deliverableOption) {
+          const quantity = deliverableQuantities[deliverableName] || 1;
+          const declinariQuantity = declinariQuantities[deliverableName] || 0;
+          const calculatedTime = calculateDeliverableTime(deliverableOption, quantity, declinariQuantities);
+          const daysCalculation = calculatedTime > 0 ? ` (${(calculatedTime / 8).toFixed(1)} days)` : '';
+          
+          return (
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900 dark:text-white">
+                {deliverableOption.label}
+                {quantity > 1 && ` (${quantity}x)`}
+                {declinariQuantity > 0 && (
+                  <span className="text-orange-600 dark:text-orange-400">
+                    {' '}+ {declinariQuantity}x declinari
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Total: {calculatedTime.toFixed(1)}h{daysCalculation}
+              </div>
+            </div>
+          );
+        }
+      }
+      
+      // Handle legacy single string format (backward compatibility)
       if (deliverables && typeof deliverables === 'string') {
         const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverables);
         if (deliverable) {
-          const quantity = deliverableQuantities[deliverables] || 1;
-          const declinariQuantity = declinariQuantities[deliverables] || 0;
-          const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
+          const legacyDeliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
+          const legacyDeclinariQuantities = row.original?.data_task?.declinariQuantities || {};
+          const quantity = legacyDeliverableQuantities[deliverables] || 1;
+          const declinariQuantity = legacyDeclinariQuantities[deliverables] || 0;
+          const calculatedTime = calculateDeliverableTime(deliverable, quantity, legacyDeclinariQuantities);
           const days = (calculatedTime / 8).toFixed(1);
           
           return (
@@ -120,7 +154,31 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
         }
       }
       
-      // Handle legacy array format
+      // Handle array format deliverables (backward compatibility)
+      if (deliverables && Array.isArray(deliverables) && !deliverables[0]?.deliverableName) {
+        const legacyDeliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
+        const deliverableNames = deliverables.map(deliverableValue => {
+          const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
+          return deliverable ? deliverable.label : deliverableValue;
+        });
+        
+        return (
+          <div className="space-y-1">
+            <div className="font-medium text-gray-900 dark:text-white">
+              {deliverableNames.join(', ')}
+            </div>
+            {Object.keys(legacyDeliverableQuantities).length > 0 && (
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Quantities: {Object.entries(legacyDeliverableQuantities)
+                  .map(([deliverable, qty]) => `${deliverable}: ${qty}x`)
+                  .join(', ')}
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      // Handle legacy array format (fallback)
       let allDeliverables = [];
       if (deliverables && Array.isArray(deliverables)) {
         allDeliverables = [...deliverables];

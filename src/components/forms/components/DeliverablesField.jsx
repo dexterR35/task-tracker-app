@@ -33,7 +33,10 @@ const DeliverablesField = ({
     if (formValues?.declinariQuantities) {
       setDeclinariQuantities(formValues.declinariQuantities);
     }
-  }, [formValues?.customDeliverables, formValues?.deliverableQuantities, formValues?.declinariQuantities]);
+    if (formValues?.declinariDeliverables) {
+      setDeclinariEnabled(formValues.declinariDeliverables);
+    }
+  }, [formValues?.customDeliverables, formValues?.deliverableQuantities, formValues?.declinariQuantities, formValues?.declinariDeliverables]);
   
   // Note: setValue is called directly in event handlers to avoid infinite loops
   
@@ -82,6 +85,10 @@ const DeliverablesField = ({
     const newDeclinariEnabled = { ...declinariEnabled, [deliverableValue]: enabled };
     setDeclinariEnabled(newDeclinariEnabled);
     
+    // Update declinariDeliverables field
+    const newDeclinariDeliverables = { ...declinariEnabled, [deliverableValue]: enabled };
+    setValue('declinariDeliverables', newDeclinariDeliverables);
+    
     if (!enabled) {
       // Clear declinari quantity when disabled
       const newDeclinariQuantities = { ...declinariQuantities };
@@ -95,6 +102,7 @@ const DeliverablesField = ({
       setValue('declinariQuantities', newDeclinariQuantities);
     }
     trigger('declinariQuantities');
+    trigger('declinariDeliverables');
   };
 
   const handleDeclinariQuantityChange = (deliverableValue, quantity) => {
