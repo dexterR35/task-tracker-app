@@ -16,6 +16,8 @@ const DeliverablesField = ({
   const [newCustomValue, setNewCustomValue] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [quantities, setQuantities] = useState({});
+  const [declinariQuantities, setDeclinariQuantities] = useState({});
+  const [declinariEnabled, setDeclinariEnabled] = useState({});
   
   const selectedDeliverable = watch('deliverables') || '';
   const hasOthers = selectedDeliverable === 'others';
@@ -28,7 +30,10 @@ const DeliverablesField = ({
     if (formValues?.deliverableQuantities) {
       setQuantities(formValues.deliverableQuantities);
     }
-  }, [formValues?.customDeliverables, formValues?.deliverableQuantities]);
+    if (formValues?.declinariQuantities) {
+      setDeclinariQuantities(formValues.declinariQuantities);
+    }
+  }, [formValues?.customDeliverables, formValues?.deliverableQuantities, formValues?.declinariQuantities]);
   
   // Note: setValue is called directly in event handlers to avoid infinite loops
   
@@ -45,8 +50,10 @@ const DeliverablesField = ({
   const handleDeliverableChange = (value) => {
     setValue('deliverables', value);
     
-    // Clear previous quantities
+    // Clear previous quantities and declinari
     const newQuantities = {};
+    const newDeclinariQuantities = {};
+    const newDeclinariEnabled = {};
     
     // Set default quantity to 1 for deliverables that require quantity
     if (value) {
@@ -57,7 +64,10 @@ const DeliverablesField = ({
     }
     
     setQuantities(newQuantities);
+    setDeclinariQuantities(newDeclinariQuantities);
+    setDeclinariEnabled(newDeclinariEnabled);
     setValue('deliverableQuantities', newQuantities);
+    setValue('declinariQuantities', newDeclinariQuantities);
     trigger('deliverables');
   };
 
@@ -66,6 +76,32 @@ const DeliverablesField = ({
     setQuantities(newQuantities);
     setValue('deliverableQuantities', newQuantities);
     trigger('deliverableQuantities');
+  };
+
+  const handleDeclinariToggle = (deliverableValue, enabled) => {
+    const newDeclinariEnabled = { ...declinariEnabled, [deliverableValue]: enabled };
+    setDeclinariEnabled(newDeclinariEnabled);
+    
+    if (!enabled) {
+      // Clear declinari quantity when disabled
+      const newDeclinariQuantities = { ...declinariQuantities };
+      delete newDeclinariQuantities[deliverableValue];
+      setDeclinariQuantities(newDeclinariQuantities);
+      setValue('declinariQuantities', newDeclinariQuantities);
+    } else {
+      // Set default declinari quantity to 1 when enabled
+      const newDeclinariQuantities = { ...declinariQuantities, [deliverableValue]: 1 };
+      setDeclinariQuantities(newDeclinariQuantities);
+      setValue('declinariQuantities', newDeclinariQuantities);
+    }
+    trigger('declinariQuantities');
+  };
+
+  const handleDeclinariQuantityChange = (deliverableValue, quantity) => {
+    const newDeclinariQuantities = { ...declinariQuantities, [deliverableValue]: parseInt(quantity) || 0 };
+    setDeclinariQuantities(newDeclinariQuantities);
+    setValue('declinariQuantities', newDeclinariQuantities);
+    trigger('declinariQuantities');
   };
   
   const addCustomDeliverable = () => {
@@ -106,7 +142,7 @@ const DeliverablesField = ({
   const quantitiesError = errors['deliverableQuantities'];
   
   // Calculate total time for selected deliverable
-  const totalCalculatedTime = calculateTotalDeliverableTime(selectedDeliverable, quantities);
+  const totalCalculatedTime = calculateTotalDeliverableTime(selectedDeliverable, quantities, declinariQuantities);
   
   return (
     <div className="form-field">
@@ -150,7 +186,7 @@ const DeliverablesField = ({
               
               {/* Quantity input for deliverables that require it */}
               {isSelected && option.requiresQuantity && (
-                <div className="mt-2 ml-6">
+                <div className="mt-2 ml-6 space-y-3">
                   <div className="flex items-center space-x-2">
                     <label className="text-sm text-gray-600 dark:text-gray-400">
                       Quantity:
@@ -166,9 +202,42 @@ const DeliverablesField = ({
                       units
                     </span>
                   </div>
+                  
+                  {/* Declinari checkbox and quantity */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={declinariEnabled[option.value] || false}
+                      onChange={(e) => handleDeclinariToggle(option.value, e.target.checked)}
+                      className="form-checkbox"
+                    />
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
+                      Declinari (10 min/unit):
+                    </label>
+                    {declinariEnabled[option.value] && (
+                      <>
+                        <input
+                          type="number"
+                          min="0"
+                          value={declinariQuantities[option.value] || 0}
+                          onChange={(e) => handleDeclinariQuantityChange(option.value, e.target.value)}
+                          className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          units
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  
                   {timeEstimate && (
                     <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
                       Total: {timeEstimate}
+                      {declinariEnabled[option.value] && declinariQuantities[option.value] > 0 && (
+                        <span className="text-orange-600 dark:text-orange-400">
+                          {' '}(+ {((declinariQuantities[option.value] || 0) * 10)} min declinari)
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

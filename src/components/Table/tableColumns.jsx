@@ -85,13 +85,15 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       const deliverables = getValue();
       const customDeliverables = row.original?.data_task?.customDeliverables;
       const deliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
+      const declinariQuantities = row.original?.data_task?.declinariQuantities || {};
       
       // Handle new single-select format
       if (deliverables && typeof deliverables === 'string') {
         const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverables);
         if (deliverable) {
           const quantity = deliverableQuantities[deliverables] || 1;
-          const calculatedTime = calculateDeliverableTime(deliverable, quantity);
+          const declinariQuantity = declinariQuantities[deliverables] || 0;
+          const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
           const days = (calculatedTime / 8).toFixed(1);
           
           return (
@@ -99,9 +101,19 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
               <div className="font-medium text-gray-900 dark:text-white">
                 {deliverable.label}
                 {deliverable.requiresQuantity && ` (${quantity}x)`}
+                {declinariQuantity > 0 && (
+                  <span className="text-orange-600 dark:text-orange-400 ml-1">
+                    + {declinariQuantity}x declinari
+                  </span>
+                )}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {calculatedTime.toFixed(1)}h ({days}d)
+                {declinariQuantity > 0 && (
+                  <span className="text-orange-500 dark:text-orange-400 ml-1">
+                    (+{((declinariQuantity * 10) / 60).toFixed(1)}h declinari)
+                  </span>
+                )}
               </div>
             </div>
           );

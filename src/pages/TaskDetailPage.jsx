@@ -226,7 +226,8 @@ const TaskDetailPage = () => {
     const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === task.data_task.deliverables);
     if (deliverable) {
       const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
-      const calculatedTime = calculateDeliverableTime(deliverable, quantity);
+      const declinariQuantities = task.data_task.declinariQuantities || {};
+      const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
       totalCalculatedTime = calculatedTime;
       
       deliverablesData.push({
@@ -238,6 +239,15 @@ const TaskDetailPage = () => {
         deliverablesData.push({
           label: "Quantity",
           value: `${quantity} units`
+        });
+      }
+      
+      // Add declinari information if present
+      const declinariQuantity = declinariQuantities[task.data_task.deliverables] || 0;
+      if (declinariQuantity > 0) {
+        deliverablesData.push({
+          label: "Declinari",
+          value: `${declinariQuantity} units (10 min/unit)`
         });
       }
       

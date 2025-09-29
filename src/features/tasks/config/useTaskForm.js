@@ -34,14 +34,20 @@ export const calculateDeliverableTime = (deliverable, quantity = 1) => {
   }
 };
 
-export const calculateTotalDeliverableTime = (deliverableValue, quantities) => {
+export const calculateTotalDeliverableTime = (deliverableValue, quantities, declinariQuantities = {}) => {
   if (!deliverableValue) return 0;
   
   const deliverable = TASK_FORM_OPTIONS.deliverables.find(d => d.value === deliverableValue);
   if (!deliverable) return 0;
   
   const quantity = quantities[deliverableValue] || 1;
-  return calculateDeliverableTime(deliverable, quantity);
+  const deliverableTime = calculateDeliverableTime(deliverable, quantity);
+  
+  // Add declinari time if declinari is enabled for this deliverable
+  const declinariQuantity = declinariQuantities[deliverableValue] || 0;
+  const declinariTime = declinariQuantity > 0 ? (declinariQuantity * 10) / 60 : 0; // 10 min per unit, convert to hours
+  
+  return deliverableTime + declinariTime;
 };
 
 export const formatTimeEstimate = (deliverable, quantity = 1) => {
@@ -106,7 +112,6 @@ export const TASK_FORM_OPTIONS = {
     { value: "minigame", label: "minigame", timePerUnit: 4, timeUnit: "days", requiresQuantity: true },
     { value: "social media new design", label: "social media new design", timePerUnit: 3, timeUnit: "hr", requiresQuantity: true },
     { value: "sport campaign", label: "sport campaign", timePerUnit: 2.5, timeUnit: "hr", requiresQuantity: true },
-    { value: "declinari", label: "declinari", timePerUnit: 10, timeUnit: "min", requiresQuantity: true },
     { value: "others", label: "Others", timePerUnit: 0, timeUnit: "hr", requiresQuantity: false },
   ],
   aiModels: [
@@ -264,6 +269,24 @@ export const taskFormSchema = Yup.object().shape({
     otherwise: (schema) => schema.notRequired().default({})
   }),
   
+  declinariQuantities: Yup.object().when('_hasDeliverables', {
+    is: true,
+    then: (schema) => schema.test('valid-declinari-quantities', 'Please enter valid declinari quantities', function(value) {
+      const declinariQuantities = value || {};
+      
+      // Validate declinari quantities (must be 0 or positive integer)
+      for (const [deliverableValue, quantity] of Object.entries(declinariQuantities)) {
+        if (quantity < 0 || !Number.isInteger(Number(quantity))) {
+          return this.createError({
+            message: `Declinari quantity for ${deliverableValue} must be a non-negative integer`
+          });
+        }
+      }
+      return true;
+    }),
+    otherwise: (schema) => schema.notRequired().default({})
+  }),
+  
   customDeliverables: Yup.array().when(['_hasDeliverables', 'deliverables'], {
     is: (hasDeliverables, deliverables) => hasDeliverables && deliverables === 'others',
     then: (schema) => schema.min(1, 'Please add at least one custom deliverable when "Others" is selected'),
@@ -331,6 +354,7 @@ export const prepareTaskFormData = (formData) => {
     formData.deliverables = ''; // Empty string when checkbox is not checked
     formData.customDeliverables = []; // Empty array when checkbox is not checked
     formData.deliverableQuantities = {}; // Empty object when checkbox is not checked
+    formData.declinariQuantities = {}; // Empty object when checkbox is not checked
   } else {
     // If "others" is not selected, clear custom deliverables
     if (formData.deliverables !== 'others') {
@@ -341,7 +365,8 @@ export const prepareTaskFormData = (formData) => {
     if (formData.deliverables) {
       const calculatedTime = calculateTotalDeliverableTime(
         formData.deliverables, 
-        formData.deliverableQuantities || {}
+        formData.deliverableQuantities || {},
+        formData.declinariQuantities || {}
       );
       
       // If calculated time is greater than current time, update it
@@ -349,7 +374,8 @@ export const prepareTaskFormData = (formData) => {
         formData.timeInHours = Math.round(calculatedTime * 10) / 10; // Round to 1 decimal place
         logger.log('🕒 Updated timeInHours based on deliverables:', {
           calculatedTime,
-          newTimeInHours: formData.timeInHours
+          newTimeInHours: formData.timeInHours,
+          declinariQuantities: formData.declinariQuantities
         });
       }
     }
