@@ -1,64 +1,31 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { serializeTimestampsForRedux } from "@/utils/dateUtils";
-import { db, auth } from "@/app/firebase";
-import { logger } from "@/utils/logger";
-import { parseFirebaseError, withErrorHandling } from "@/features/utils/errorHandling";
+import { 
+  fetchCollectionFromFirestoreAdvanced,
+  fetchDocumentById,
+  withAuthentication,
+  createApiEndpointFactory,
+  withApiErrorHandling
+} from "@/utils/apiUtils";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { isUserAuthenticated as checkUserAuth } from "@/features/utils/authUtils";
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  limit, 
-  where, 
-  getDocs 
-} from "firebase/firestore";
+import { auth } from "@/app/firebase";
 
 
-/**
- * Fetch collection from Firestore with options
- * @param {Object} db - Firestore database instance
- * @param {string} collectionName - Name of the collection
- * @param {Object} options - Query options
- * @returns {Promise<Array>} - Array of documents
- */
-const fetchCollectionFromFirestore = async (db, collectionName, options = {}) => {
-  const { 
-    orderBy: orderByField = 'createdAt', 
-    orderDirection = 'desc',
-    where: whereClause = null,
-    limit: limitCount = null
-  } = options;
+// Create API endpoint factory for users
+const usersApiFactory = createApiEndpointFactory({
+  collectionName: 'users',
+  requiresAuth: true,
+  defaultOrderBy: 'createdAt',
+  defaultOrderDirection: 'desc'
+});
 
-  try {
-    // Check authentication before making the request
-    if (!auth.currentUser) {
-      logger.warn(`[fetchCollectionFromFirestore] No authenticated user, skipping ${collectionName} fetch`);
-      return [];
-    }
-
-    let q = query(collection(db, collectionName));
-    
-    if (whereClause) {
-      q = query(q, where(whereClause.field, whereClause.operator, whereClause.value));
-    }
-    
-    if (orderByField) {
-      q = query(q, orderBy(orderByField, orderDirection));
-    }
-    
-    if (limitCount) {
-      q = query(q, limit(limitCount));
-    }
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    const errorResponse = parseFirebaseError(error);
-    logger.error(`Error fetching collection ${collectionName}:`, errorResponse);
-    throw errorResponse;
+// Helper function for consistent error handling
+const handleAuthError = (error) => {
+  if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
+    return { data: [] };
   }
+  throw error;
 };
 
 /**
@@ -70,23 +37,19 @@ export const fetchUserByUIDFromFirestore = async (userUID) => {
   const cacheKey = `getUserByUID_${userUID}`;
   
   return await deduplicateRequest(cacheKey, async () => {
-    try {
-      const users = await fetchCollectionFromFirestore(db, "users", {
-        where: { field: "userUID", operator: "==", value: userUID },
-        orderBy: null, // No ordering needed for single user lookup
-        limit: 1
-      });
-      
-      if (users.length === 0) {
-        return null;
-      }
-      
-      return users[0];
-    } catch (error) {
-      const errorResponse = parseFirebaseError(error);
-      logger.error(`[Users API] Error fetching user by UID ${userUID}:`, errorResponse);
-      throw errorResponse;
+    const users = await fetchCollectionFromFirestoreAdvanced("users", {
+      where: { field: "userUID", operator: "==", value: userUID },
+      orderBy: null, // No ordering needed for single user lookup
+      limit: 1,
+      useCache: true,
+      cacheKey: `getUserByUID_${userUID}`
+    });
+    
+    if (users.length === 0) {
+      return null;
     }
+    
+    return users[0];
   });
 };
 
@@ -107,23 +70,14 @@ export const usersApi = createApi({
               return { data: [] };
             }
             
-            const users = await fetchCollectionFromFirestore(db, "users", {
+            const users = await usersApiFactory.getAll({
               orderBy: "createdAt",
               orderDirection: "desc"
             });
 
-            // Ensure timestamps are serialized before returning
-            const serializedUsers = serializeTimestampsForRedux(users);
-            const result = { data: serializedUsers };
-            
-            return result;
+            return { data: users };
           } catch (error) {
-            // If it's an auth error, return empty array instead of error
-            if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
-              return { data: [] };
-            }
-            
-            throw error; // Let base API handle the error
+            return handleAuthError(error);
           }
         });
       },
@@ -148,17 +102,11 @@ export const usersApi = createApi({
               return { error: { message: 'User not found', code: 'USER_NOT_FOUND' } };
             }
 
-            // Ensure timestamps are serialized before returning
-            const serializedUser = serializeTimestampsForRedux(user);
-            const result = { data: serializedUser };
-            
-            return result;
+            return { data: user };
           } catch (error) {
-            // If it's an auth error, return null instead of error
             if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
               return { data: null };
             }
-            
             throw error; // Let base API handle the error
           }
         });

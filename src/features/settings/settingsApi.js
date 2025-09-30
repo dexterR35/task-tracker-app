@@ -14,6 +14,11 @@ import {
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { handleApiError } from "@/features/utils/errorHandling";
+import { 
+  withAuthentication,
+  withApiErrorHandling,
+  validateUserPermissions
+} from "@/utils/apiUtils";
 
 // Helper function to get settings document reference
 const getSettingsRef = () => {
@@ -23,6 +28,19 @@ const getSettingsRef = () => {
 // Helper function to get specific settings document reference
 const getSettingsDocumentRef = (settingsType) => {
   return doc(db, "settings", "app", "data", settingsType);
+};
+
+// Helper function for consistent permission validation
+const validateSettingsPermissions = (userData, operation) => {
+  if (!userData) {
+    return { isValid: false, errors: ['User data is required'] };
+  }
+  
+  if (!canDeleteData(userData)) {
+    return { isValid: false, errors: ['You need \'delete_data\' permission to manage settings'] };
+  }
+  
+  return { isValid: true, errors: [] };
 };
 
 export const settingsApi = createApi({
@@ -41,42 +59,42 @@ export const settingsApi = createApi({
             const settingsRef = getSettingsRef();
             const settingsDoc = await getDoc(settingsRef);
           
-          // Fetch deliverables from specific settings document
-          const deliverablesRef = getSettingsDocumentRef("deliverables");
-          const deliverablesDoc = await getDoc(deliverablesRef);
-          
-          let deliverables = [];
-          if (deliverablesDoc.exists()) {
-            const deliverablesData = deliverablesDoc.data();
-            // Handle both old array format and new structured format
-            if (deliverablesData.deliverables && Array.isArray(deliverablesData.deliverables)) {
-              deliverables = deliverablesData.deliverables;
-            } else if (Array.isArray(deliverablesData)) {
-              // Handle old format where deliverables was stored as array directly
-              deliverables = deliverablesData;
-            }
-          }
-          
-          if (!settingsDoc.exists()) {
-            // Return default settings if document doesn't exist
-            const defaultSettings = {
-              deliverables: deliverables.length > 0 ? deliverables : [],
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            };
+            // Fetch deliverables from specific settings document
+            const deliverablesRef = getSettingsDocumentRef("deliverables");
+            const deliverablesDoc = await getDoc(deliverablesRef);
             
-            return { data: serializeTimestampsForRedux(defaultSettings) };
+            let deliverables = [];
+            if (deliverablesDoc.exists()) {
+              const deliverablesData = deliverablesDoc.data();
+              // Handle both old array format and new structured format
+              if (deliverablesData.deliverables && Array.isArray(deliverablesData.deliverables)) {
+                deliverables = deliverablesData.deliverables;
+              } else if (Array.isArray(deliverablesData)) {
+                // Handle old format where deliverables was stored as array directly
+                deliverables = deliverablesData;
+              }
+            }
+            
+            if (!settingsDoc.exists()) {
+              // Return default settings if document doesn't exist
+              const defaultSettings = {
+                deliverables: deliverables.length > 0 ? deliverables : [],
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              };
+              
+              return { data: serializeTimestampsForRedux(defaultSettings) };
+            }
+            
+            const settingsData = settingsDoc.data();
+            // Add deliverables from subcollection
+            settingsData.deliverables = deliverables;
+            
+            return { data: serializeTimestampsForRedux(settingsData) };
+          } catch (error) {
+            logger.error('[settingsApi] Error fetching settings:', error);
+            return { error: { message: error.message } };
           }
-          
-          const settingsData = settingsDoc.data();
-          // Add deliverables from subcollection
-          settingsData.deliverables = deliverables;
-          
-          return { data: serializeTimestampsForRedux(settingsData) };
-        } catch (error) {
-          logger.error('[settingsApi] Error fetching settings:', error);
-          return { error: { message: error.message } };
-        }
         }, 'SettingsAPI');
       },
       providesTags: [{ type: "Settings", id: "APP" }],
@@ -90,14 +108,10 @@ export const settingsApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // SECURITY: Validate user permissions
-            if (!userData) {
-              return { error: { message: "User data is required" } };
+            const permissionValidation = validateSettingsPermissions(userData, 'update_settings');
+            if (!permissionValidation.isValid) {
+              return { error: { message: permissionValidation.errors.join(', ') } };
             }
-
-          // Check if user has permission to manage settings
-          if (!canDeleteData(userData)) {
-            return { error: { message: "You need 'delete_data' permission to manage settings" } };
-          }
 
           const currentUser = getCurrentUserInfo();
           if (!currentUser) {
@@ -116,11 +130,7 @@ export const settingsApi = createApi({
           
           return { data: serializeTimestampsForRedux(settingsWithTimestamp) };
         } catch (error) {
-          const errorResponse = handleApiError(error, "Update Settings", {
-            showToast: false,
-            logError: true,
-          });
-          return { error: errorResponse };
+          return withApiErrorHandling(() => { throw error; }, "Update Settings")(error);
         }
         }, 'SettingsAPI');
       },
@@ -135,14 +145,10 @@ export const settingsApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // SECURITY: Validate user permissions
-            if (!userData) {
-              return { error: { message: "User data is required" } };
+            const permissionValidation = validateSettingsPermissions(userData, 'update_deliverables');
+            if (!permissionValidation.isValid) {
+              return { error: { message: permissionValidation.errors.join(', ') } };
             }
-
-          // Check if user has permission to manage deliverables
-          if (!canDeleteData(userData)) {
-            return { error: { message: "You need 'delete_data' permission to manage deliverables" } };
-          }
 
           const currentUser = getCurrentUserInfo();
           if (!currentUser) {
@@ -162,11 +168,7 @@ export const settingsApi = createApi({
           
           return { data: serializeTimestampsForRedux(deliverablesData) };
         } catch (error) {
-          const errorResponse = handleApiError(error, "Update Deliverables", {
-            showToast: false,
-            logError: true,
-          });
-          return { error: errorResponse };
+          return withApiErrorHandling(() => { throw error; }, "Update Deliverables")(error);
         }
         }, 'SettingsAPI');
       },
@@ -184,14 +186,10 @@ export const settingsApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // SECURITY: Validate user permissions
-            if (!userData) {
-              return { error: { message: "User data is required" } };
+            const permissionValidation = validateSettingsPermissions(userData, 'update_settings_type');
+            if (!permissionValidation.isValid) {
+              return { error: { message: permissionValidation.errors.join(', ') } };
             }
-
-          // Check if user has permission to manage settings
-          if (!canDeleteData(userData)) {
-            return { error: { message: "You need 'delete_data' permission to manage settings" } };
-          }
 
           const currentUser = getCurrentUserInfo();
           if (!currentUser) {
@@ -211,11 +209,7 @@ export const settingsApi = createApi({
           
           return { data: serializeTimestampsForRedux(updateData) };
         } catch (error) {
-          const errorResponse = handleApiError(error, `Update ${settingsType} Settings`, {
-            showToast: false,
-            logError: true,
-          });
-          return { error: errorResponse };
+          return withApiErrorHandling(() => { throw error; }, `Update ${settingsType} Settings`)(error);
         }
         }, 'SettingsAPI');
       },

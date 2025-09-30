@@ -1,24 +1,24 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { 
-  createDocumentInFirestore,
-  updateDocumentInFirestore,
-  deleteDocumentFromFirestore,
-  fetchCollectionFromFirestore,
-  validateUserPermissions,
-  createOptimisticUpdate
+  createApiEndpointFactory,
+  fetchCollectionFromFirestoreAdvanced,
+  checkDocumentExists
 } from "@/utils/apiUtils";
-import { logger } from "@/utils/logger";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/app/firebase";
 
 /**
  * Reporters API - Refactored to use base API factory
  * Eliminates duplicate patterns and standardizes error handling
  */
 
-// Centralized API utilities are now imported from @/utils/apiUtils
+// Create API endpoint factory for reporters
+const reportersApiFactory = createApiEndpointFactory({
+  collectionName: 'reporters',
+  requiresAuth: true,
+  defaultOrderBy: 'createdAt',
+  defaultOrderDirection: 'desc'
+});
 
 /**
  * Check if reporter email already exists
@@ -26,55 +26,40 @@ import { db } from "@/app/firebase";
  * @returns {Promise<boolean>} - True if email exists
  */
 const checkReporterEmailExists = async (email) => {
-  try {
-    const reportersRef = collection(db, "reporters");
-    const q = query(reportersRef, where("email", "==", email.toLowerCase().trim()));
-    const querySnapshot = await getDocs(q);
-    return !querySnapshot.empty;
-  } catch (error) {
-    logger.error(`[Reporters API] Error checking email existence:`, error);
-    throw error;
-  }
+  return await checkDocumentExists("reporters", "email", email.toLowerCase().trim());
 };
 
 export const reportersApi = createApi({
   reducerPath: "reportersApi",
   baseQuery: fakeBaseQuery(),
   tagTypes: ["Reporter"],
-  // Simple configuration for plain data
-  keepUnusedDataFor: 300, // Keep data for 5 minutes
-  refetchOnMountOrArgChange: true,
-  refetchOnFocus: true,
-  refetchOnReconnect: true,
+  ...getCacheConfigByType("REPORTERS"),
   endpoints: (builder) => ({
     // Get all reporters - Public data, no authentication required
     getReporters: builder.query({
       async queryFn() {
         try {
-          
           // Fetch reporters with proper ordering by createdAt
           // If createdAt field doesn't exist, fallback to no ordering
           let reporters;
           try {
-            reporters = await fetchCollectionFromFirestore(
-              "reporters",
-              { 
-                orderBy: 'createdAt', 
-                orderDirection: 'desc' 
-              }
-            );
+            reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {
+              orderBy: 'createdAt', 
+              orderDirection: 'desc',
+              useCache: true,
+              cacheKey: 'getReporters'
+            });
           } catch (orderError) {
             // Fallback: fetch without ordering if createdAt field doesn't exist
-            logger.warn(`[Reporters API] createdAt field not found, fetching without ordering:`, orderError);
-            reporters = await fetchCollectionFromFirestore(
-              "reporters",
-              { orderBy: null }
-            );
+            reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {
+              orderBy: null,
+              useCache: true,
+              cacheKey: 'getReporters_no_order'
+            });
           }
 
           return { data: reporters };
         } catch (error) {
-          logger.error(`[Reporters API] Error fetching reporters:`, error);
           throw error; // Let base API handle the error
         }
       },
@@ -88,74 +73,52 @@ export const reportersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-
-          // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
-
-          // Check if user can create reporters (admin only)
-          const permissionValidation = validateUserPermissions(userData, 'create_board', {
-            operation: 'createReporter',
-            logWarnings: true,
-            requireActive: true
-          });
-
-          if (!permissionValidation.isValid) {
-            return { error: { message: permissionValidation.errors.join(', ') } };
-          }
-
-          // User authentication is already validated by ProtectedRoute in router
-          // No need for redundant authentication checks here
-
-          // Check if reporter email already exists
-          if (reporter.email) {
-            const emailExists = await checkReporterEmailExists(reporter.email);
-            if (emailExists) {
-              return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
+            // Check if reporter email already exists
+            if (reporter.email) {
+              const emailExists = await checkReporterEmailExists(reporter.email);
+              if (emailExists) {
+                return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
+              }
             }
+
+            // Clean the reporter data - remove any undefined fields
+            const cleanReporterData = Object.fromEntries(
+              Object.entries(reporter).filter(([_, value]) => value !== undefined)
+            );
+
+            // Use the API factory for creation
+            const createdReporter = await reportersApiFactory.create(
+              {
+                ...cleanReporterData,
+                reporterUID: null, // Will be set after creation
+                createdBy: userData.userUID || userData.uid,
+                createdByName: userData.name,
+              },
+              userData,
+              {
+                addMetadata: true, // Add createdAt and updatedAt fields
+                useServerTimestamp: true, // Use server timestamp for consistency
+                lowercaseStrings: true,
+                fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
+              }
+            );
+
+            // Update with the generated reporterUID
+            const updatedReporter = await reportersApiFactory.update(
+              createdReporter.id,
+              { reporterUID: createdReporter.id },
+              userData,
+              {
+                addMetadata: true, // Add updatedAt field
+                useServerTimestamp: true, // Use server timestamp for consistency
+                lowercaseStrings: false // Don't lowercase the reporterUID
+              }
+            );
+
+            return { data: updatedReporter };
+          } catch (error) {
+            throw error; // Let base API handle the error
           }
-
-          // Clean the reporter data - remove any undefined fields
-          const cleanReporterData = Object.fromEntries(
-            Object.entries(reporter).filter(([_, value]) => value !== undefined)
-          );
-
-          // Generate reporterUID from the document ID
-          const createdReporter = await createDocumentInFirestore(
-            "reporters",
-            {
-              ...cleanReporterData,
-              reporterUID: null, // Will be set after creation
-              createdBy: userData.userUID || userData.uid,
-              createdByName: userData.name,
-            },
-            {
-              addMetadata: true, // Add createdAt and updatedAt fields
-              useServerTimestamp: true, // Use server timestamp for consistency
-              lowercaseStrings: true,
-              fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
-            }
-          );
-
-          // Update with the generated reporterUID
-          const updatedReporter = await updateDocumentInFirestore(
-            "reporters",
-            createdReporter.id,
-            { reporterUID: createdReporter.id },
-            {
-              addMetadata: true, // Add updatedAt field
-              useServerTimestamp: true, // Use server timestamp for consistency
-              lowercaseStrings: false // Don't lowercase the reporterUID
-            }
-          );
-
-
-          return { data: updatedReporter };
-        } catch (error) {
-          logger.error(`[Reporters API] Error creating reporter:`, error);
-          throw error; // Let base API handle the error
-        }
         }, 'ReportersAPI');
       },
       invalidatesTags: ["Reporter"],
@@ -195,57 +158,38 @@ export const reportersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-
-          // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
-
-          // Check if user can update reporters (admin only)
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
-          const permissionValidation = validateUserPermissions(userData, 'create_board', {
-            operation: 'updateReporter',
-            logWarnings: true,
-            requireActive: true
-          });
-
-          if (!permissionValidation.isValid) {
-            return { error: { message: permissionValidation.errors.join(', ') } };
-          }
-
-          // Check if email is being updated and if it already exists for another reporter
-          if (updates.email) {
-            const emailExists = await checkReporterEmailExists(updates.email);
-            if (emailExists) {
-              // Check if the email belongs to the current reporter being updated
-              const currentReporter = await fetchCollectionFromFirestore("reporters", { 
-                where: [["__name__", "==", id]]
-              });
-              
-              if (currentReporter.length === 0 || currentReporter[0].email !== updates.email.toLowerCase().trim()) {
-                return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
+            // Check if email is being updated and if it already exists for another reporter
+            if (updates.email) {
+              const emailExists = await checkReporterEmailExists(updates.email);
+              if (emailExists) {
+                // Check if the email belongs to the current reporter being updated
+                const currentReporter = await fetchCollectionFromFirestoreAdvanced("reporters", { 
+                  where: { field: "__name__", operator: "==", value: id },
+                  limit: 1
+                });
+                
+                if (currentReporter.length === 0 || currentReporter[0].email !== updates.email.toLowerCase().trim()) {
+                  return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
+                }
               }
             }
+
+            const updatedReporter = await reportersApiFactory.update(
+              id,
+              updates,
+              userData,
+              {
+                addMetadata: true, // Add updatedAt field
+                useServerTimestamp: true, // Use server timestamp for consistency
+                lowercaseStrings: true,
+                fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
+              }
+            );
+
+            return { data: updatedReporter };
+          } catch (error) {
+            throw error; // Let base API handle the error
           }
-
-          const updatedReporter = await updateDocumentInFirestore(
-            "reporters",
-            id,
-            updates,
-            {
-              addMetadata: true, // Add updatedAt field
-              useServerTimestamp: true, // Use server timestamp for consistency
-              lowercaseStrings: true,
-              fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
-            }
-          );
-
-
-          return { data: updatedReporter };
-        } catch (error) {
-          logger.error(`[Reporters API] Error updating reporter:`, error);
-          throw error; // Let base API handle the error
-        }
         }, 'ReportersAPI');
       },
       invalidatesTags: ["Reporter"],
@@ -274,31 +218,11 @@ export const reportersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-
-          // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
+            const result = await reportersApiFactory.delete(id, userData);
+            return { data: result };
+          } catch (error) {
+            throw error; // Let base API handle the error
           }
-
-          // Check if user can delete reporters (admin only)
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
-          const permissionValidation = validateUserPermissions(userData, 'create_board', {
-            operation: 'deleteReporter',
-            logWarnings: true,
-            requireActive: true
-          });
-
-          if (!permissionValidation.isValid) {
-            return { error: { message: permissionValidation.errors.join(', ') } };
-          }
-
-          const result = await deleteDocumentFromFirestore("reporters", id);
-
-          return { data: result };
-        } catch (error) {
-          logger.error(`[Reporters API] Error deleting reporter:`, error);
-          throw error; // Let base API handle the error
-        }
         }, 'ReportersAPI');
       },
       invalidatesTags: ["Reporter"],

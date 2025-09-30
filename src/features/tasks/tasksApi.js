@@ -24,6 +24,11 @@ import { logger } from "@/utils/logger";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import { handleApiError } from "@/features/utils/errorHandling";
 import { createMidnightScheduler } from "@/utils/midnightScheduler";
+import { 
+  withAuthentication,
+  validateUserPermissions,
+  withApiErrorHandling
+} from "@/utils/apiUtils";
 
 import {
   formatMonth,
@@ -89,6 +94,57 @@ const API_CONFIG = {
   },
 };
 
+// Helper function to validate user permissions consistently
+const validateTaskPermissions = (userData, operation) => {
+  if (!userData) {
+    return { isValid: false, errors: ['User data is required'] };
+  }
+  
+  return validateUserPermissions(userData, operation, {
+    operation: `task_${operation}`,
+    logWarnings: true,
+    requireActive: true
+  });
+};
+
+// Helper function to build task query with user filtering
+const buildTaskQuery = (tasksRef, role, userId) => {
+  if (role === "user" && userId) {
+    // Regular users: only their tasks
+    return fsQuery(tasksRef, where("userUID", "==", userId));
+  } else if (role === "admin" && userId) {
+    // Admin users: specific user's tasks when selected
+    return fsQuery(tasksRef, where("userUID", "==", userId));
+  } else {
+    // Admin users: all tasks (no filtering)
+    return fsQuery(tasksRef);
+  }
+};
+
+// Helper function to handle reporter name resolution
+const resolveReporterName = (reporters, reporterId, reporterName) => {
+  if (reporterId && !reporterName) {
+    const selectedReporter = reporters.find(r => r.id === reporterId);
+    if (selectedReporter) {
+      return selectedReporter.name || selectedReporter.reporterName;
+    } else {
+      throw new Error("Reporter not found for the selected reporter ID");
+    }
+  }
+  return reporterName;
+};
+
+// Helper function for consistent cache invalidation
+const getTaskCacheTags = (monthId) => [
+  { type: "CurrentMonth", id: "ENHANCED" },
+  { type: "Tasks", id: "LIST" },
+  { type: "MonthTasks", id: monthId },
+  { type: "Analytics", id: "LIST" },
+  { type: "MonthTasks", id: "LIST" },
+  { type: "MonthTasks", id: "ALL" },
+  { type: "CurrentMonth", id: "ALL" },
+];
+
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
@@ -123,17 +179,8 @@ export const tasksApi = createApi({
           const tasksRef = getTaskRef(monthId);
           let tasksQuery = fsQuery(tasksRef);
 
-          // Apply user filtering based on role
-          if (role === "user" && userId) {
-            // Regular users: only their tasks
-            tasksQuery = fsQuery(tasksRef, where("userUID", "==", userId));
-          } else if (role === "admin" && userId) {
-            // Admin users: specific user's tasks when selected
-            tasksQuery = fsQuery(tasksRef, where("userUID", "==", userId));
-          } else {
-            // Admin users: all tasks (no filtering)
-            tasksQuery = fsQuery(tasksRef);
-          }
+          // Apply user filtering based on role using helper function
+          tasksQuery = buildTaskQuery(tasksRef, role, userId);
 
           const tasksSnapshot = await getDocs(tasksQuery);
           const tasks = tasksSnapshot.docs.map((doc) => ({
@@ -193,7 +240,6 @@ export const tasksApi = createApi({
             return;
           }
 
-          // const yearId = getCurrentYear();
           const monthDocRef = getMonthRef(arg.monthId);
           const monthDoc = await getDoc(monthDocRef);
           if (!monthDoc.exists()) {
@@ -274,18 +320,7 @@ export const tasksApi = createApi({
           const monthId = task.monthId;
 
           // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
-
-          // Check if user can create tasks
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
-          const permissionValidation = validateUserPermissions(userData, 'create_task', {
-            operation: 'createTask',
-            logWarnings: true,
-            requireActive: true
-          });
-
+          const permissionValidation = validateTaskPermissions(userData, 'create_task');
           if (!permissionValidation.isValid) {
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
@@ -323,15 +358,7 @@ export const tasksApi = createApi({
 
           // Auto-add reporter name if we have reporter ID but no name
           if (task.reporters && !task.reporterName) {
-            // Use the reporters data passed from the API call
-            const selectedReporter = reporters.find(
-              (r) => r.id === task.reporters
-            );
-            if (selectedReporter) {
-              task.reporterName = selectedReporter.name || selectedReporter.reporterName;
-            } else {
-              throw new Error("Reporter not found for the selected reporter ID");
-            }
+            task.reporterName = resolveReporterName(reporters, task.reporters, task.reporterName);
           }
 
           // Create final document data with the new structure
@@ -362,26 +389,12 @@ export const tasksApi = createApi({
 
           return { data: serializeTimestampsForRedux(result) };
         } catch (error) {
-          const errorResponse = handleApiError(error, "Create Task", {
-            showToast: false,
-            logError: true,
-          });
-          return { error: errorResponse };
+          return withApiErrorHandling(() => { throw error; }, "Create Task")(error);
         }
       },
       invalidatesTags: (result, error, { task }) => {
         console.log('Invalidating cache tags for createTask, monthId:', task.monthId);
-        return [
-          { type: "CurrentMonth", id: "ENHANCED" },
-          { type: "Tasks", id: "LIST" },
-          { type: "MonthTasks", id: task.monthId },
-          { type: "Analytics", id: "LIST" },
-          // Invalidate all month tasks queries to ensure real-time updates
-          { type: "MonthTasks", id: "LIST" },
-          // Force invalidation of all month-related queries
-          { type: "MonthTasks", id: "ALL" },
-          { type: "CurrentMonth", id: "ALL" },
-        ];
+        return getTaskCacheTags(task.monthId);
       },
     }),
     // Update task - simple Firestore update
@@ -389,18 +402,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId, taskId, updates, reporters = [], userData }) {
         try {
           // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
-
-          // Check if user can update tasks
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
-          const permissionValidation = validateUserPermissions(userData, 'update_task', {
-            operation: 'updateTask',
-            logWarnings: true,
-            requireActive: true
-          });
-
+          const permissionValidation = validateTaskPermissions(userData, 'update_task');
           if (!permissionValidation.isValid) {
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
@@ -409,15 +411,7 @@ export const tasksApi = createApi({
           const taskRef = getTaskRef(monthId, taskId);
           // Auto-add reporter name if we have reporter ID but no name
           if (updates.reporters && !updates.reporterName) {
-            // Use the reporters data passed from the API call
-            const selectedReporter = reporters.find(
-              (r) => r.id === updates.reporters
-            );
-            if (selectedReporter) {
-              updates.reporterName = selectedReporter.name || selectedReporter.reporterName;
-            } else {
-              throw new Error("Reporter not found for the selected reporter ID");
-            }
+            updates.reporterName = resolveReporterName(reporters, updates.reporters, updates.reporterName);
           }
           
           // Structure the updates with data_task wrapper
@@ -432,26 +426,12 @@ export const tasksApi = createApi({
           const result = { id: taskId, monthId, success: true };
           return { data: serializeTimestampsForRedux(result) };
         } catch (error) {
-          const errorResponse = handleApiError(error, "Update Task", {
-            showToast: false,
-            logError: true,
-          });
-          return { error: errorResponse };
+          return withApiErrorHandling(() => { throw error; }, "Update Task")(error);
         }
       },
       invalidatesTags: (result, error, { monthId }) => {
         console.log('Invalidating cache tags for updateTask, monthId:', monthId);
-        return [
-          { type: "CurrentMonth", id: "ENHANCED" },
-          { type: "Tasks", id: "LIST" },
-          { type: "MonthTasks", id: monthId },
-          { type: "Analytics", id: "LIST" },
-          // Invalidate all month tasks queries to ensure real-time updates
-          { type: "MonthTasks", id: "LIST" },
-          // Force invalidation of all month-related queries
-          { type: "MonthTasks", id: "ALL" },
-          { type: "CurrentMonth", id: "ALL" },
-        ];
+        return getTaskCacheTags(monthId);
       },
     }),
 
@@ -462,18 +442,7 @@ export const tasksApi = createApi({
           console.log('Deleting task:', { monthId, taskId });
           
           // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
-
-          // Check if user can delete tasks
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
-          const permissionValidation = validateUserPermissions(userData, 'delete_task', {
-            operation: 'deleteTask',
-            logWarnings: true,
-            requireActive: true
-          });
-
+          const permissionValidation = validateTaskPermissions(userData, 'delete_task');
           if (!permissionValidation.isValid) {
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
@@ -486,26 +455,12 @@ export const tasksApi = createApi({
           return { data: { id: taskId, monthId } };
         } catch (error) {
           console.error('Error deleting task:', error);
-          const errorResponse = handleApiError(error, "Delete Task", {
-            showToast: false,
-            logError: true,
-          });
-          return { error: errorResponse };
+          return withApiErrorHandling(() => { throw error; }, "Delete Task")(error);
         }
       },
       invalidatesTags: (result, error, { monthId }) => {
         console.log('Invalidating cache tags for deleteTask, monthId:', monthId);
-        return [
-          { type: "CurrentMonth", id: "ENHANCED" },
-          { type: "Tasks", id: "LIST" },
-          { type: "MonthTasks", id: monthId },
-          { type: "Analytics", id: "LIST" },
-          // Invalidate all month tasks queries to ensure real-time updates
-          { type: "MonthTasks", id: "LIST" },
-          // Force invalidation of all month-related queries
-          { type: "MonthTasks", id: "ALL" },
-          { type: "CurrentMonth", id: "ALL" },
-        ];
+        return getTaskCacheTags(monthId);
       },
     }),
 
@@ -514,18 +469,7 @@ export const tasksApi = createApi({
       async queryFn({ monthId, startDate, endDate, daysInMonth, meta = {}, userData }) {
         try {
           // SECURITY: Validate user permissions at API level
-          if (!userData) {
-            return { error: { message: "User data is required" } };
-          }
-
-          // Check if user can create boards (admin only)
-          const { validateUserPermissions } = await import('@/features/utils/authUtils');
-          const permissionValidation = validateUserPermissions(userData, 'create_board', {
-            operation: 'generateMonthBoard',
-            logWarnings: true,
-            requireActive: true
-          });
-
+          const permissionValidation = validateTaskPermissions(userData, 'create_board');
           if (!permissionValidation.isValid) {
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
@@ -658,22 +602,8 @@ export const tasksApi = createApi({
                 const tasksRef = getTaskRef(currentMonthInfo.monthId);
                 let tasksQuery = fsQuery(tasksRef);
 
-                // Apply user filtering based on role
-                if (role === "user" && userId) {
-                  // Regular users: only their tasks
-                  tasksQuery = fsQuery(
-                    tasksRef,
-                    where("userUID", "==", userId)
-                  );
-                } else if (role === "admin" && userId) {
-                  // Admin users: specific user's tasks when selected
-                  tasksQuery = fsQuery(
-                    tasksRef,
-                    where("userUID", "==", userId)
-                  );
-                } else {
-                }
-                // For admin users with no userId, fetch all tasks (no filtering)
+                // Apply user filtering based on role using helper function
+                tasksQuery = buildTaskQuery(tasksRef, role, userId);
 
                 // Order by creation date
                 tasksQuery = fsQuery(tasksQuery, orderBy("createdAt", "desc"));
@@ -814,9 +744,6 @@ export const tasksApi = createApi({
         } catch (error) {
           logger.error("Error setting up enhanced month listeners:", error);
         } finally {
-          if (unsubscribeCurrentMonthTasks) {
-            unsubscribeCurrentMonthTasks();
-          }
           if (midnightScheduler) {
             midnightScheduler.stop();
           }
