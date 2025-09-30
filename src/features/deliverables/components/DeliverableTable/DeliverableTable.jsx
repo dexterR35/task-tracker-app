@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useGetSettingsTypeQuery, useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
+import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
+import { useAppData } from '@/hooks/useAppData';
 import { canDeleteData } from '@/features/utils/authUtils';
 import { showSuccess, showError } from '@/utils/toast';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
@@ -14,6 +15,7 @@ const DeliverableTable = ({
   user = null,
   error: deliverablesError = null,
   isLoading = false,
+  deliverables: propDeliverables = null,
   onCountChange = null,
 }) => {
   // Settings state
@@ -27,9 +29,12 @@ const DeliverableTable = ({
   // Check if user has permission to manage deliverables
   const canManageDeliverables = canDeleteData(user);
   
-  // API hooks for settings
-  const { data: deliverablesData, isLoading: loadingSettings, error: settingsError, refetch: refetchDeliverables } = useGetSettingsTypeQuery({ settingsType: 'deliverables' });
+  // Use prop data if provided, otherwise fallback to global data
+  const { deliverables: globalDeliverables, isLoading: loadingSettings, error: settingsError, refetchDeliverables } = useAppData();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
+  
+  // Use prop deliverables if provided, otherwise use global data
+  const deliverablesData = propDeliverables || globalDeliverables;
   
   // Debug: Log when deliverables data changes
   useEffect(() => {
@@ -46,14 +51,14 @@ const DeliverableTable = ({
   // Load deliverables when data is available
   useEffect(() => {
     // Only update if we don't have local changes or if this is the initial load
-    if (deliverablesData?.deliverables && deliverablesData.deliverables.length > 0) {
+    if (deliverablesData && deliverablesData.length > 0) {
       // Check if we have any local changes (new items or editing)
       const hasLocalChanges = deliverables.some(d => d.isNew || editingRow !== null);
       
       // Only update from server data if we don't have local changes
       if (!hasLocalChanges) {
         // Ensure all deliverables have proper default values
-        const normalizedDeliverables = deliverablesData.deliverables.map(deliverable => ({
+        const normalizedDeliverables = deliverablesData.map(deliverable => ({
           name: deliverable.name || '',
           timePerUnit: deliverable.timePerUnit || 1,
           timeUnit: deliverable.timeUnit || 'hr',
@@ -492,8 +497,8 @@ const DeliverableTable = ({
         userData: user
       }).unwrap();
       
-      // RTK Query will automatically invalidate cache and refetch data
-      // No need to manually refresh - the cache will update in real-time
+      // Trigger global data refetch to update all components
+      await refetchDeliverables?.();
       showSuccess('Deliverables saved successfully!');
     } catch (error) {
       showError('Failed to save deliverables settings');
@@ -566,7 +571,8 @@ const DeliverableTable = ({
       setSelectedDeliverables([]);
       setShowDeleteModal(false);
       
-      // RTK Query will automatically invalidate cache and refetch data
+      // Trigger global data refetch to update all components
+      await refetchDeliverables?.();
       showSuccess(`${selectedDeliverables.length} deliverable(s) deleted successfully!`);
     } catch (error) {
       showError('Failed to delete deliverables');

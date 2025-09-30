@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useState, useEffect } from "react";
 import { useGetUsersQuery, useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
+import { useGetSettingsTypeQuery } from "@/features/settings/settingsApi";
 import { 
   useGetMonthTasksQuery, 
   useGetCurrentMonthQuery,
@@ -265,6 +266,14 @@ export const useAppData = (selectedUserId = null) => {
     refetch: refetchReporters
   } = useGetReportersQuery();
   
+  // Fetch deliverables settings - global data, no dependencies
+  const { 
+    data: deliverablesData = null, 
+    isLoading: deliverablesLoading, 
+    error: deliverablesError,
+    refetch: refetchDeliverables
+  } = useGetSettingsTypeQuery({ settingsType: 'deliverables' });
+  
   
   
   // Task mutations - available to all components
@@ -293,10 +302,10 @@ export const useAppData = (selectedUserId = null) => {
 
   
   // Combine errors from all sources
-  const error = userData.error || reportersError || monthData.error;
+  const error = userData.error || reportersError || deliverablesError || monthData.error;
   
   // Combined loading state
-  const isLoading = userData.isLoading || reportersLoading || monthData.isLoading;
+  const isLoading = userData.isLoading || reportersLoading || deliverablesLoading || monthData.isLoading;
   
   
   // Date objects
@@ -312,6 +321,7 @@ export const useAppData = (selectedUserId = null) => {
     
     // Common data
     reporters: reporters || [],
+    deliverables: deliverablesData?.deliverables || [],
     tasks: tasksData || [],
     isLoading,
     error,
@@ -328,7 +338,8 @@ export const useAppData = (selectedUserId = null) => {
     // Refetch functions for real-time updates
     refetchCurrentMonth: monthData.refetchCurrentMonth,
     refetchMonthTasks: monthData.refetchMonthTasks,
-    refetchReporters
+    refetchReporters,
+    refetchDeliverables
   };
   
   if (userData.userIsAdmin) {

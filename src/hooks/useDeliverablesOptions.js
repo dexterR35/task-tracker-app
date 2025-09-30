@@ -1,22 +1,17 @@
-import { useGetSettingsTypeQuery } from '@/features/settings/settingsApi';
 import { useMemo } from 'react';
+import { useAppData } from './useAppData';
 
 export const useDeliverablesOptions = () => {
-  const { data: deliverablesData, isLoading, error } = useGetSettingsTypeQuery({ settingsType: 'deliverables' });
+  const { deliverables, isLoading, error } = useAppData();
 
   const deliverablesOptions = useMemo(() => {
     // Check if data exists and has the right structure
-    if (!deliverablesData) {
-      return [];
-    }
-    
-    // Only use data from settings API - no hardcoded defaults
-    if (!deliverablesData?.deliverables || deliverablesData.deliverables.length === 0) {
+    if (!deliverables || deliverables.length === 0) {
       return [];
     }
 
     // Transform database data to form options format
-    const options = deliverablesData.deliverables.map(deliverable => ({
+    const options = deliverables.map(deliverable => ({
       value: deliverable.name,
       label: deliverable.name,
       timePerUnit: deliverable.timePerUnit,
@@ -27,7 +22,7 @@ export const useDeliverablesOptions = () => {
     }));
     
     return options;
-  }, [deliverablesData]);
+  }, [deliverables]);
 
   return {
     deliverablesOptions,

@@ -9,11 +9,10 @@ import DeliverableTable from "@/features/deliverables/components/DeliverableTabl
 
 const AdminManagementPage = () => {
   // Get all data directly from useAppData hook (RTK Query handles caching)
-  const { monthId, monthName, users, reporters, error, isLoading } = useAppData();
+  const { monthId, monthName, users, reporters, deliverables, error, isLoading } = useAppData();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [deliverablesCount, setDeliverablesCount] = useState(0);
   
   // Show error state
   if (error) {
@@ -52,7 +51,7 @@ const AdminManagementPage = () => {
     {
       id: 'deliverables',
       name: 'Deliverables',
-      count: deliverablesCount,
+      count: deliverables?.length || 0,
       description: 'Manage deliverables and time settings'
     },
     {
@@ -168,7 +167,7 @@ const AdminManagementPage = () => {
               error={error}
               isLoading={isLoading}
               className="rounded-lg"
-              onCountChange={setDeliverablesCount}
+              deliverables={deliverables}
             />
           ) : activeTab === 'ai' ? (
             <div className="py-6">
