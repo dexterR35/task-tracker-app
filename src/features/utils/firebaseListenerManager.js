@@ -63,14 +63,12 @@ class FirebaseListenerManager {
     
     // Cleanup if idle for too long (for infrequent data usage)
     if (listenerCount > 0 && timeSinceLastActivity > this.idleTimeoutMs) {
-      logger.log(`[ListenerManager] Idle for ${Math.round(timeSinceLastActivity / 60000)} minutes, cleaning up ${listenerCount} listeners`);
       this.removeAllListeners();
       return;
     }
     
     // Log current listener status (less frequently)
     if (listenerCount > 0 && timeSinceLastActivity < 300000) { // Only log if active in last 5 minutes
-      logger.log(`[ListenerManager] Active listeners: ${listenerCount} (idle: ${Math.round(timeSinceLastActivity / 60000)}min)`);
     }
   }
 
@@ -89,7 +87,6 @@ class FirebaseListenerManager {
 
     // Clean up existing listener if it exists
     if (this.listeners.has(key)) {
-      logger.log(`[ListenerManager] Cleaning up existing listener: ${key}`);
       const existingUnsubscribe = this.listeners.get(key);
       try {
         existingUnsubscribe();
@@ -100,7 +97,6 @@ class FirebaseListenerManager {
     }
 
     // Set up new listener with error handling
-    logger.log(`[ListenerManager] Setting up new listener: ${key}`);
     let unsubscribe;
     try {
       unsubscribe = setupFn();
@@ -116,7 +112,6 @@ class FirebaseListenerManager {
       // Update activity timestamp
       this.updateActivity();
       
-      logger.log(`[ListenerManager] Successfully added listener: ${key} (Total: ${this.listeners.size})`);
     } catch (error) {
       logger.error(`[ListenerManager] Error setting up listener ${key}:`, error);
       throw error;
@@ -131,7 +126,6 @@ class FirebaseListenerManager {
    */
   removeListener(key) {
     if (this.listeners.has(key)) {
-      logger.log(`[ListenerManager] Removing listener: ${key}`);
       const unsubscribe = this.listeners.get(key);
       try {
         unsubscribe();
@@ -147,11 +141,9 @@ class FirebaseListenerManager {
    */
   removeAllListeners() {
     const listenerCount = this.listeners.size;
-    logger.log(`[ListenerManager] Removing all ${listenerCount} listeners`);
     
     for (const [key, unsubscribe] of this.listeners) {
       try {
-        logger.log(`[ListenerManager] Removing listener: ${key}`);
         unsubscribe();
       } catch (error) {
         logger.error(`[ListenerManager] Error removing listener ${key}:`, error);
@@ -159,7 +151,6 @@ class FirebaseListenerManager {
     }
     
     this.listeners.clear();
-    logger.log(`[ListenerManager] Successfully removed all listeners`);
   }
 
   /**
@@ -168,7 +159,6 @@ class FirebaseListenerManager {
   destroy() {
     this.stopCleanupInterval();
     this.removeAllListeners();
-    logger.log(`[ListenerManager] Manager destroyed`);
   }
 
   /**
@@ -210,14 +200,12 @@ if (typeof window !== 'undefined') {
   // Clean up when page becomes hidden (mobile apps, tab switching)
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      logger.log('[ListenerManager] Page hidden, performing cleanup');
       listenerManager.performCleanup();
     }
   });
   
   // Clean up on page focus loss (additional safety)
   window.addEventListener('blur', () => {
-    logger.log('[ListenerManager] Page lost focus, performing cleanup');
     listenerManager.performCleanup();
   });
 }

@@ -18,7 +18,7 @@ const AdminManagementPage = () => {
   // Show error state
   if (error) {
     return (
-      <div className=" bg-gray-900 flex items-center justify-center">
+      <div className="  flex items-center justify-center ">
         <div className="text-center py-8 max-w-md mx-auto">
           <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
             <div className="text-red-400 text-4xl mb-4">⚠️</div>
@@ -55,21 +55,21 @@ const AdminManagementPage = () => {
   
       <div >
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-8 ">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-bold ">
               Management
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+            <p className=" text-sm mt-1">
               {monthName} • User & Reporter Management
             </p>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="space-y-6">
+        <div className="space-y-6  min-h-screen">
           {/* Clean Tab Navigation */}
-          <div className="border-b border-gray-300 dark:border-gray-700">
+          <div className="border-bottom">
             <nav className="-mb-px flex space-x-8">
               {tabs.map((tab) => (
                 <button
@@ -99,7 +99,7 @@ const AdminManagementPage = () => {
           {/* Content Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+              <h2 className="text-lg font-medium ">
                 {activeTab === 'users' ? 'User Management' : 'Reporter Management'}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -124,7 +124,7 @@ const AdminManagementPage = () => {
           </div>
 
           {/* Data Table Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
+          <div>
             {activeTab === 'users' ? (
               <UserTable
                 users={users}

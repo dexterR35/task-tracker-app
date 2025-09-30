@@ -114,7 +114,6 @@ export const settingsApi = createApi({
 
           await setDoc(settingsRef, settingsWithTimestamp, { merge: true });
           
-          logger.log('[settingsApi] Settings updated successfully');
           return { data: serializeTimestampsForRedux(settingsWithTimestamp) };
         } catch (error) {
           const errorResponse = handleApiError(error, "Update Settings", {
@@ -161,7 +160,6 @@ export const settingsApi = createApi({
 
           await setDoc(deliverablesRef, deliverablesData, { merge: true });
           
-          logger.log('[settingsApi] Deliverables updated successfully');
           return { data: serializeTimestampsForRedux(deliverablesData) };
         } catch (error) {
           const errorResponse = handleApiError(error, "Update Deliverables", {
@@ -211,7 +209,6 @@ export const settingsApi = createApi({
 
           await setDoc(settingsRef, updateData, { merge: true });
           
-          logger.log(`[settingsApi] ${settingsType} settings updated successfully`);
           return { data: serializeTimestampsForRedux(updateData) };
         } catch (error) {
           const errorResponse = handleApiError(error, `Update ${settingsType} Settings`, {

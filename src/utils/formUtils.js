@@ -26,7 +26,6 @@ export const createFormSubmissionHandler = (submitFn, options = {}) => {
     const { reset, setError, clearErrors } = formMethods;
     
     try {
-      logger.log(`[Form] ${operation} started:`, data);
       
       const result = await submitFn(data);
       
@@ -34,7 +33,6 @@ export const createFormSubmissionHandler = (submitFn, options = {}) => {
         throw new Error(result.error.message || `${operation} failed`);
       }
       
-      logger.log(`[Form] ${operation} success:`, result);
       
       // Show success toast
       if (showSuccessToast) {
@@ -108,7 +106,6 @@ export const createFormResetHandler = (formMethods, defaultValues = {}) => {
     const valuesToReset = { ...defaultValues, ...newValues };
     reset(valuesToReset);
     clearErrors();
-    logger.log('[Form] Reset with values:', valuesToReset);
   };
 };
 
@@ -162,10 +159,24 @@ export const prepareFormData = (data, options = {}) => {
   const {
     removeEmptyFields = true,
     convertTypes = true,
-    addMetadata = false
+    addMetadata = false,
+    lowercaseStrings = true,
+    fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName', 'products', 'observations', 'taskName', 'reporterName']
   } = options;
   
   let preparedData = { ...data };
+  
+  // Convert strings to lowercase
+  if (lowercaseStrings) {
+    Object.entries(preparedData).forEach(([key, value]) => {
+      if (typeof value === 'string' && value.trim() !== '') {
+        // Only lowercase specific fields or all string fields if no specific fields provided
+        if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(key)) {
+          preparedData[key] = value.toLowerCase().trim();
+        }
+      }
+    });
+  }
   
   // Remove empty fields
   if (removeEmptyFields) {
@@ -226,4 +237,68 @@ export const getFormLoadingState = (isSubmitting, isLoading = false) => {
     isDisabled: isSubmitting || isLoading,
     loadingText: isSubmitting ? 'Saving...' : isLoading ? 'Loading...' : null
   };
+};
+
+/**
+ * Transform form data to lowercase for database storage
+ * @param {Object} data - Form data to transform
+ * @param {Array} fieldsToLowercase - Specific fields to lowercase (optional)
+ * @returns {Object} Transformed data with lowercase strings
+ */
+export const transformToLowercase = (data, fieldsToLowercase = []) => {
+  const transformedData = { ...data };
+  
+  Object.entries(transformedData).forEach(([key, value]) => {
+    if (typeof value === 'string' && value.trim() !== '') {
+      // If specific fields are provided, only lowercase those fields
+      if (fieldsToLowercase.length > 0) {
+        if (fieldsToLowercase.includes(key)) {
+          transformedData[key] = value.toLowerCase().trim();
+        }
+      } else {
+        // If no specific fields provided, lowercase all string fields
+        transformedData[key] = value.toLowerCase().trim();
+      }
+    }
+  });
+  
+  return transformedData;
+};
+
+/**
+ * Transform nested form data structures to lowercase
+ * @param {Object} data - Form data with potential nested structures
+ * @param {Array} fieldsToLowercase - Fields to lowercase
+ * @returns {Object} Transformed data
+ */
+export const transformNestedDataToLowercase = (data, fieldsToLowercase = []) => {
+  const transformedData = { ...data };
+  
+  // Handle top-level fields
+  Object.entries(transformedData).forEach(([key, value]) => {
+    if (typeof value === 'string' && value.trim() !== '') {
+      if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(key)) {
+        transformedData[key] = value.toLowerCase().trim();
+      }
+    }
+    // Handle arrays of objects (like deliverablesUsed, aiUsed)
+    else if (Array.isArray(value)) {
+      transformedData[key] = value.map(item => {
+        if (typeof item === 'object' && item !== null) {
+          const transformedItem = { ...item };
+          Object.entries(transformedItem).forEach(([itemKey, itemValue]) => {
+            if (typeof itemValue === 'string' && itemValue.trim() !== '') {
+              if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(itemKey)) {
+                transformedItem[itemKey] = itemValue.toLowerCase().trim();
+              }
+            }
+          });
+          return transformedItem;
+        }
+        return item;
+      });
+    }
+  });
+  
+  return transformedData;
 };

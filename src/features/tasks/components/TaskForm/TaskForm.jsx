@@ -192,16 +192,6 @@ const TaskForm = ({
       });
       
       
-      logger.log('🔄 Task form reset with initial data:', { 
-        initialData, 
-        taskData,
-        dateConversion: {
-          originalStartDate: taskData.startDate,
-          formattedStartDate: formattedStartDate,
-          originalEndDate: taskData.endDate,
-          formattedEndDate: formattedEndDate
-        }
-      });
     }
   }, [initialData, mode, reset]);
 
@@ -242,7 +232,6 @@ const TaskForm = ({
       
       // Prepare form data for database
       const processedData = prepareTaskFormData(data, deliverablesOptions);
-      logger.log('💾 Processed task data:', processedData);
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task

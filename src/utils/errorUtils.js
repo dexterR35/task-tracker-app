@@ -100,7 +100,6 @@ export const handleValidationError = (errors, formName = 'Form') => {
  * @returns {Object} Standardized success response
  */
 export const handleSuccess = (data, message, operation = 'Operation') => {
-  logger.log(`[${operation}] Success:`, { message, data });
   showSuccess(message);
   return createSuccessResponse(data, message);
 };

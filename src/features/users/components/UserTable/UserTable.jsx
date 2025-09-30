@@ -23,15 +23,12 @@ const UserTable = ({
     getItemDisplayName: (user) => user?.name || user?.email || 'Unknown User',
     onSelectSuccess: (user) => {
       showError('You don\'t have superpower for that!');
-      logger.log('User view requested for:', user);
     },
     onEditSuccess: (user) => {
       showError('You don\'t have superpower for that!');
-      logger.log('User edit requested for:', user);
     },
     onDeleteSuccess: (user) => {
       showError('You don\'t have superpower for that!');
-      logger.log('User deletion requested for:', user);
     },
   });
 

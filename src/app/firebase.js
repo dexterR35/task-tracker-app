@@ -45,9 +45,6 @@ export const db = getFirestore(appInstance);
 
 // Enable logging in development
 if (import.meta.env.MODE === "development") {
-  logger.log("🔥 Firebase initialized");
-  logger.log("App name:", appInstance.name);
-  // logger.log("Project ID:", firebaseConfig.projectId);
 }
 
 // Set up Firebase auth persistence with retry logic
@@ -55,7 +52,6 @@ const setupPersistence = async (retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
       await setPersistence(auth, browserLocalPersistence);
-      logger.log("Firebase auth persistence set to local (persists across tabs)");
       return;
     } catch (error) {
       if (i === retries - 1) {

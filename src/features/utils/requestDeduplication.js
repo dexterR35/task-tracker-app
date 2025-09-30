@@ -18,7 +18,6 @@ class RequestDeduplicationManager {
    */
   async deduplicateRequest(key, requestFn, apiName = 'API') {
     if (this.pendingRequests.has(key)) {
-      logger.log(`[${apiName}] Deduplicating request: ${key}`);
       return this.pendingRequests.get(key);
     }
     
@@ -38,7 +37,6 @@ class RequestDeduplicationManager {
    */
   clearAll() {
     this.pendingRequests.clear();
-    logger.log('[RequestDeduplication] Cleared all pending requests');
   }
 
   /**

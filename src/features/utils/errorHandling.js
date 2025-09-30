@@ -218,7 +218,6 @@ export const handleSuccess = (message, data = null, operation = 'operation') => 
     operation
   };
   
-  logger.log(`[${operation}] Success:`, successResponse);
   showSuccess(message);
   
   return successResponse;

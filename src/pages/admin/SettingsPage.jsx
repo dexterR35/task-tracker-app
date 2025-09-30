@@ -421,9 +421,7 @@ const SettingsPage = () => {
       }).unwrap();
       
       showSuccess('Deliverables saved successfully!');
-      logger.log('Deliverables saved to settings collection:', serializedData);
     } catch (error) {
-      logger.error('Error saving deliverables:', error);
       showError('Failed to save deliverables settings');
     }
   };

@@ -10,6 +10,8 @@ import {
 } from "@/utils/apiUtils";
 import { logger } from "@/utils/logger";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/app/firebase";
 
 /**
  * Reporters API - Refactored to use base API factory
@@ -17,6 +19,23 @@ import { deduplicateRequest } from "@/features/utils/requestDeduplication";
  */
 
 // Centralized API utilities are now imported from @/utils/apiUtils
+
+/**
+ * Check if reporter email already exists
+ * @param {string} email - Email to check
+ * @returns {Promise<boolean>} - True if email exists
+ */
+const checkReporterEmailExists = async (email) => {
+  try {
+    const reportersRef = collection(db, "reporters");
+    const q = query(reportersRef, where("email", "==", email.toLowerCase().trim()));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    logger.error(`[Reporters API] Error checking email existence:`, error);
+    throw error;
+  }
+};
 
 export const reportersApi = createApi({
   reducerPath: "reportersApi",
@@ -32,7 +51,6 @@ export const reportersApi = createApi({
     getReporters: builder.query({
       async queryFn() {
         try {
-          logger.log(`[Reporters API] Starting to fetch reporters...`);
           
           // Fetch reporters with proper ordering by createdAt
           // If createdAt field doesn't exist, fallback to no ordering
@@ -54,7 +72,6 @@ export const reportersApi = createApi({
             );
           }
 
-          logger.log(`[Reporters API] Successfully fetched ${reporters?.length || 0} reporters:`, reporters);
           return { data: reporters };
         } catch (error) {
           logger.error(`[Reporters API] Error fetching reporters:`, error);
@@ -71,8 +88,6 @@ export const reportersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-            logger.log(`[Reporters API] Creating reporter:`, reporter);
-            logger.log(`[Reporters API] User data:`, userData);
 
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -90,9 +105,15 @@ export const reportersApi = createApi({
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
 
-          // Validate that we have proper user data - if not, user is not authenticated
-          if (!userData?.name || !userData?.email) {
-            return { error: { message: "User authentication data incomplete. Please log in again." } };
+          // User authentication is already validated by ProtectedRoute in router
+          // No need for redundant authentication checks here
+
+          // Check if reporter email already exists
+          if (reporter.email) {
+            const emailExists = await checkReporterEmailExists(reporter.email);
+            if (emailExists) {
+              return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
+            }
           }
 
           // Clean the reporter data - remove any undefined fields
@@ -111,7 +132,9 @@ export const reportersApi = createApi({
             },
             {
               addMetadata: true, // Add createdAt and updatedAt fields
-              useServerTimestamp: true // Use server timestamp for consistency
+              useServerTimestamp: true, // Use server timestamp for consistency
+              lowercaseStrings: true,
+              fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
             }
           );
 
@@ -122,14 +145,11 @@ export const reportersApi = createApi({
             { reporterUID: createdReporter.id },
             {
               addMetadata: true, // Add updatedAt field
-              useServerTimestamp: true // Use server timestamp for consistency
+              useServerTimestamp: true, // Use server timestamp for consistency
+              lowercaseStrings: false // Don't lowercase the reporterUID
             }
           );
 
-          logger.log(
-            `[Reporters API] Reporter created successfully:`,
-            updatedReporter
-          );
 
           return { data: updatedReporter };
         } catch (error) {
@@ -175,7 +195,6 @@ export const reportersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-            logger.log(`[Reporters API] Updating reporter ${id}:`, updates);
 
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -194,20 +213,33 @@ export const reportersApi = createApi({
             return { error: { message: permissionValidation.errors.join(', ') } };
           }
 
+          // Check if email is being updated and if it already exists for another reporter
+          if (updates.email) {
+            const emailExists = await checkReporterEmailExists(updates.email);
+            if (emailExists) {
+              // Check if the email belongs to the current reporter being updated
+              const currentReporter = await fetchCollectionFromFirestore("reporters", { 
+                where: [["__name__", "==", id]]
+              });
+              
+              if (currentReporter.length === 0 || currentReporter[0].email !== updates.email.toLowerCase().trim()) {
+                return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
+              }
+            }
+          }
+
           const updatedReporter = await updateDocumentInFirestore(
             "reporters",
             id,
             updates,
             {
               addMetadata: true, // Add updatedAt field
-              useServerTimestamp: true // Use server timestamp for consistency
+              useServerTimestamp: true, // Use server timestamp for consistency
+              lowercaseStrings: true,
+              fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
             }
           );
 
-          logger.log(
-            `[Reporters API] Reporter updated successfully:`,
-            updatedReporter
-          );
 
           return { data: updatedReporter };
         } catch (error) {
@@ -242,7 +274,6 @@ export const reportersApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-            logger.log(`[Reporters API] Deleting reporter ${id}`);
 
           // SECURITY: Validate user permissions at API level
           if (!userData) {
@@ -263,7 +294,6 @@ export const reportersApi = createApi({
 
           const result = await deleteDocumentFromFirestore("reporters", id);
 
-          logger.log(`[Reporters API] Reporter deleted successfully:`, result);
           return { data: result };
         } catch (error) {
           logger.error(`[Reporters API] Error deleting reporter:`, error);

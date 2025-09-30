@@ -18,6 +18,7 @@ import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { parseFirebaseError } from "@/features/utils/errorHandling";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
+import { transformToLowercase } from "@/utils/formUtils";
 
 /**
  * Create document in Firestore with standardized error handling
@@ -29,7 +30,9 @@ import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 export const createDocumentInFirestore = async (collectionName, data, options = {}) => {
   const { 
     addMetadata = true,
-    useServerTimestamp = true
+    useServerTimestamp = true,
+    lowercaseStrings = true,
+    fieldsToLowercase = []
   } = options;
 
   try {
@@ -38,7 +41,12 @@ export const createDocumentInFirestore = async (collectionName, data, options = 
       throw new Error('User must be authenticated to create documents');
     }
 
-    const docData = { ...data };
+    let docData = { ...data };
+    
+    // Apply lowercase transformation if enabled
+    if (lowercaseStrings) {
+      docData = transformToLowercase(docData, fieldsToLowercase);
+    }
     
     if (addMetadata) {
       docData.createdAt = useServerTimestamp ? serverTimestamp() : new Date().toISOString();
@@ -66,7 +74,9 @@ export const createDocumentInFirestore = async (collectionName, data, options = 
 export const updateDocumentInFirestore = async (collectionName, docId, updates, options = {}) => {
   const { 
     addMetadata = true,
-    useServerTimestamp = true
+    useServerTimestamp = true,
+    lowercaseStrings = true,
+    fieldsToLowercase = []
   } = options;
 
   try {
@@ -75,7 +85,12 @@ export const updateDocumentInFirestore = async (collectionName, docId, updates, 
       throw new Error('User must be authenticated to update documents');
     }
 
-    const updateData = { ...updates };
+    let updateData = { ...updates };
+    
+    // Apply lowercase transformation if enabled
+    if (lowercaseStrings) {
+      updateData = transformToLowercase(updateData, fieldsToLowercase);
+    }
     
     if (addMetadata) {
       updateData.updatedAt = useServerTimestamp ? serverTimestamp() : new Date().toISOString();
@@ -180,11 +195,7 @@ export const validateUserPermissions = (userData, operation, options = {}) => {
   }
 
   if (logWarnings) {
-    logger.log(`[Permission Check] ${operation}:`, {
-      userUID: userData.userUID || userData.uid,
-      isActive: userData.isActive,
-      role: userData.role
-    });
+    // Permission check logging removed
   }
 
   return {
@@ -225,9 +236,7 @@ export const createOptimisticUpdate = (queryName, queryArgs, updateFn) => {
 export const withApiErrorHandling = (apiFunction, operation = 'API Operation') => {
   return async (...args) => {
     try {
-      logger.log(`[${operation}] Starting:`, args);
       const result = await apiFunction(...args);
-      logger.log(`[${operation}] Success:`, result);
       return { data: result };
     } catch (error) {
       logger.error(`[${operation}] Error:`, error);

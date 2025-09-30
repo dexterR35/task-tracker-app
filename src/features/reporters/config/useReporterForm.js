@@ -10,10 +10,36 @@ import {
 const REPORTER_DEPARTMENT_OPTIONS = [
   { value: 'acq', label: 'acq' },
   { value: 'crm', label: 'crm' },
-  { value: 'Design', label: 'Design' },
-  { value: 'Marketing', label: 'Marketing' },
-  { value: 'Sales', label: 'Sales' }
+  { value: 'games team', label: 'GAMES TEAM' },
+  { value: 'other', label: 'other' },
+  { value: 'product', label: 'product' },
+  { value: 'vip', label: 'vip' },
+  { value: 'content', label: 'content' },
+  { value: 'pml', label: 'pml' },
+  { value: 'misc', label: 'misc' },
+  { value: 'hr', label: 'hr' }
 ];
+
+
+
+const REPORTER_CHANNEL_OPTIONS = [
+  { value: 'acq', label: 'acq' },
+  { value: 'acq social media', label: 'acq social media' },
+  { value: 'acq social media paid', label: 'acq social media paid' },
+  { value: 'acq social media organic', label: 'acq social media organic' },
+  { value: 'games team', label: 'games team' },
+  { value: 'product', label: 'product' },
+  { value: 'other', label: 'other' },
+  { value: 'brand mgmt', label: 'brand mgmt' },
+  { value: 'pml', label: 'pml' },
+  { value: 'hr', label: 'hr' },
+  { value: 'content', label: 'content' },
+  { value: 'misc', label: 'misc' },
+  { value: 'vip', label: 'vip' },
+  { value: 'seo', label: 'seo' },
+  { value: 'crm', label: 'crm' }
+];
+
 
 const REPORTER_COUNTRY_OPTIONS = [
   { value: 'ro', label: 'ro' },
@@ -27,21 +53,6 @@ const REPORTER_COUNTRY_OPTIONS = [
   { value: 'it', label: 'it' },
   { value: 'gr', label: 'gr' },
   { value: 'fr', label: 'fr' }
-];
-
-const REPORTER_CHANNEL_OPTIONS = [
-  { value: 'acq', label: 'acq' },
-  { value: 'acq social media', label: 'acq social media' },
-  { value: 'acq social media paid', label: 'acq social media paid' },
-  { value: 'acq social media organic', label: 'acq social media organic' },
-  { value: 'backend', label: 'Backend' },
-  { value: 'frontend', label: 'Frontend' },
-  { value: 'database', label: 'Database' },
-  { value: 'infrastructure', label: 'Infrastructure' },
-  { value: 'security', label: 'Security' },
-  { value: 'analytics', label: 'Analytics' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'support', label: 'Support' }
 ];
 
 // ===== REPORTER FORM FIELD CONFIGURATION =====

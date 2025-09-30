@@ -54,7 +54,6 @@ const ReporterTable = ({
     deleteMutation: handleReporterDeleteMutation,
     onSelectSuccess: (reporter) => {
       showError('You don\'t have superpower for that!');
-      logger.log('Reporter view requested for:', reporter);
     },
   });
 

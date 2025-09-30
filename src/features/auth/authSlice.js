@@ -43,7 +43,6 @@ export const getCurrentUserInfo = (authState) => {
   
   // Only log once per session by checking if we've already logged this user
   if (!window._loggedUser || window._loggedUser !== userInfo.uid) {
-    logger.log('[getCurrentUserInfo] User found:', { uid: userInfo.uid, email: userInfo.email });
     window._loggedUser = userInfo.uid;
   }
   
@@ -181,7 +180,6 @@ export const setupAuthListener = (dispatch) => {
         }
       } else {
         // User signed out - clean up listeners and clear user
-        logger.log("User signed out, cleaning up Firebase listeners");
         listenerManager.removeAllListeners();
         dispatch(authSlice.actions.authStateChanged({ user: null }));
       }
@@ -238,12 +236,10 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Clean up all Firebase listeners before logout
-      logger.log("Cleaning up Firebase listeners before logout");
       listenerManager.removeAllListeners();
       
       // Sign out from Firebase
       await signOut(auth);
-      logger.log("User signed out successfully");
       return null;
     } catch (error) {
       logger.error("Logout error:", error);

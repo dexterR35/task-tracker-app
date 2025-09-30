@@ -35,7 +35,7 @@ import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 // Simple loading component
 const SimpleLoader = () => (
   <div className="min-h-screen flex-center ">
-    <Loader size="lg" text="Loading... Please wait2" variant="spinner" />
+    <Loader size="lg" text="Initializing app…" variant="spinner" />
   </div>
 );
 

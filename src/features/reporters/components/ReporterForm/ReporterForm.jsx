@@ -5,7 +5,7 @@ import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/utils/errorUtils';
-import { createFormSubmissionHandler, handleFormValidation } from '@/utils/formUtils';
+import { createFormSubmissionHandler, handleFormValidation, transformToLowercase } from '@/utils/formUtils';
 import { reporterFormSchema, REPORTER_FORM_FIELDS } from '../../config/useReporterForm';
 import { TextField, SelectField } from '../../../../components/forms/components';
 import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
@@ -56,13 +56,16 @@ const ReporterForm = ({
         country: initialData.country || '',
         channelName: initialData.channelName || ''
       });
-      logger.log('🔄 Reporter form reset with initial data:', initialData);
     }
   }, [initialData, mode, reset]);
 
   // Create standardized form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
+      // Apply lowercase transformation to reporter data
+      const fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName'];
+      const transformedData = transformToLowercase(data, fieldsToLowercase);
+      
       if (mode === 'edit' && initialData?.id) {
         // Update existing reporter
         const updateReporterWithErrorHandling = withMutationErrorHandling(updateReporter, {
@@ -73,7 +76,7 @@ const ReporterForm = ({
         
         return await updateReporterWithErrorHandling({
           id: initialData.id,
-          updates: data,
+          updates: transformedData,
           userData: user
         });
       } else {
@@ -85,7 +88,7 @@ const ReporterForm = ({
         });
         
         return await createReporterWithErrorHandling({
-          reporter: data,
+          reporter: transformedData,
           userData: user
         });
       }
@@ -112,42 +115,42 @@ const ReporterForm = ({
   const submitButtonText = mode === 'edit' ? 'Update Reporter' : 'Create Reporter';
 
   return (
-    <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg ${className}`}>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        {formTitle}
+    <div className={`card ${className}`}>
+      <h2 className="text-2xl font-bold mb-4 ">
+        {/* {formTitle} */}
       </h2>
       
       <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
         <TextField
-          field={REPORTER_FORM_FIELDS[0]} // name field
+          field={REPORTER_FORM_FIELDS[0]} 
           register={register}
           errors={errors}
           getInputType={getInputType}
           formValues={{}}
         />
         <TextField
-          field={REPORTER_FORM_FIELDS[1]} // email field
+          field={REPORTER_FORM_FIELDS[1]} 
           register={register}
           errors={errors}
           getInputType={getInputType}
           formValues={{}}
         />
         <SelectField
-          field={REPORTER_FORM_FIELDS[2]} // department field
+          field={REPORTER_FORM_FIELDS[2]} 
           register={register}
           errors={errors}
           getInputType={getInputType}
           formValues={{}}
         />
         <SelectField
-          field={REPORTER_FORM_FIELDS[3]} // country field
+          field={REPORTER_FORM_FIELDS[3]} 
           register={register}
           errors={errors}
           getInputType={getInputType}
           formValues={{}}
         />
         <SelectField
-          field={REPORTER_FORM_FIELDS[4]} // channel name field
+          field={REPORTER_FORM_FIELDS[4]} 
           register={register}
           errors={errors}
           getInputType={getInputType}

@@ -173,21 +173,6 @@ export const useMonthSelection = (selectedUserId = null) => {
     return rawTasks || [];
   }, [rawTasks]);
   
-  // Debug logging for tasks
-  useEffect(() => {
-    logger.log(`[useMonthSelection] Task data:`, {
-      isFetchingSelectedMonth,
-      monthTasks: monthTasks?.length || 0,
-      currentMonthTasks: currentMonthTasks?.length || 0,
-      rawTasks: rawTasks?.length || 0,
-      displayTasks: displayTasks?.length || 0,
-      targetMonthId,
-      targetUserId,
-      shouldFetchTasks,
-      monthTasksLoading,
-      currentMonthLoading
-    });
-  }, [isFetchingSelectedMonth, monthTasks, currentMonthTasks, rawTasks, displayTasks, targetMonthId, targetUserId, shouldFetchTasks, monthTasksLoading, currentMonthLoading]);
   
   
   // Helper functions
@@ -280,15 +265,6 @@ export const useAppData = (selectedUserId = null) => {
     refetch: refetchReporters
   } = useGetReportersQuery();
   
-  // Debug logging for reporters
-  useEffect(() => {
-    logger.log(`[useAppData] Reporters data:`, {
-      reporters,
-      reportersLoading,
-      reportersError,
-      reportersLength: reporters?.length || 0
-    });
-  }, [reporters, reportersLoading, reportersError]);
   
   
   // Task mutations - available to all components

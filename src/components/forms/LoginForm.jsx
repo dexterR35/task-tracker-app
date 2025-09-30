@@ -31,9 +31,7 @@ const LoginForm = ({ onSuccess, className = "" }) => {
 
   const onSubmit = async (data) => {
     try {
-      logger.log('🔐 Login attempt started:', { email: data.email });
       const result = await login(data);
-      logger.log('✅ Login successful:', result);
       handleSuccess('Login successful!', result, 'User Login');
       // Reset form
       reset();

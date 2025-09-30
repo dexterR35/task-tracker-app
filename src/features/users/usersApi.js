@@ -78,11 +78,9 @@ export const fetchUserByUIDFromFirestore = async (userUID) => {
       });
       
       if (users.length === 0) {
-        logger.log(`[Users API] No user found with UID: ${userUID}`);
         return null;
       }
       
-      logger.log(`[Users API] Found user by UID: ${userUID}`);
       return users[0];
     } catch (error) {
       const errorResponse = parseFirebaseError(error);
@@ -106,11 +104,9 @@ export const usersApi = createApi({
           try {
             // Check if user is authenticated before proceeding
             if (!checkUserAuth({ user: auth.currentUser, isAuthChecking: false, isLoading: false })) {
-              logger.log('User not authenticated yet, skipping users fetch');
               return { data: [] };
             }
             
-            logger.log("Fetching users from database...");
             const users = await fetchCollectionFromFirestore(db, "users", {
               orderBy: "createdAt",
               orderDirection: "desc"
@@ -120,12 +116,10 @@ export const usersApi = createApi({
             const serializedUsers = serializeTimestampsForRedux(users);
             const result = { data: serializedUsers };
             
-            logger.log('[getUsers] Success:', { resultCount: result.data.length });
             return result;
           } catch (error) {
             // If it's an auth error, return empty array instead of error
             if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
-              logger.log('Auth required for users fetch, returning empty array');
               return { data: [] };
             }
             
@@ -145,11 +139,9 @@ export const usersApi = createApi({
           try {
             // Check if user is authenticated before proceeding
             if (!checkUserAuth({ user: auth.currentUser, isAuthChecking: false, isLoading: false })) {
-              logger.log('User not authenticated yet, skipping user fetch');
               return { data: null };
             }
             
-            logger.log(`Fetching user ${userUID} from database...`);
             const user = await fetchUserByUIDFromFirestore(userUID);
 
             if (!user) {
@@ -160,12 +152,10 @@ export const usersApi = createApi({
             const serializedUser = serializeTimestampsForRedux(user);
             const result = { data: serializedUser };
             
-            logger.log('[getUserByUID] Success:', { userUID, found: !!result.data });
             return result;
           } catch (error) {
             // If it's an auth error, return null instead of error
             if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
-              logger.log('Auth required for user fetch, returning null');
               return { data: null };
             }
             
@@ -188,11 +178,9 @@ export const {
 // Utility function for manual cache invalidation
 export const invalidateUsersCache = (dispatch) => {
   dispatch(usersApi.util.invalidateTags(['Users']));
-  logger.log('Users cache invalidated manually');
 };
 
 // Utility function to reset all users API state
 export const resetUsersApiState = (dispatch) => {
   dispatch(usersApi.util.resetApiState());
-  logger.log('Users API state reset');
 };

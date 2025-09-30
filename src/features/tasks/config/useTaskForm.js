@@ -1,6 +1,7 @@
 import * as Yup from 'yup';
 import { logger } from '@/utils/logger';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
+import { transformNestedDataToLowercase } from '@/utils/formUtils';
 import { 
   createTextareaField,
   createSelectField,
@@ -414,7 +415,6 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
     return formData;
   }
 
-  logger.log('🔍 Raw form data before processing:', formData);
 
   // Business logic: Extract task name from Jira URL
   if (formData.jiraLink) {
@@ -456,11 +456,6 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
       // If calculated time is greater than current time, update it
       if (calculatedTime > 0 && calculatedTime > (formData.timeInHours || 0)) {
         formData.timeInHours = Math.round(calculatedTime * 10) / 10; // Round to 1 decimal place
-        logger.log('🕒 Updated timeInHours based on deliverables:', {
-          calculatedTime,
-          newTimeInHours: formData.timeInHours,
-          declinariQuantities: formData.declinariQuantities
-        });
       }
     }
   }
@@ -486,19 +481,11 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
   // Convert Date objects to ISO strings for proper storage
   if (formData.startDate instanceof Date) {
     formData.startDate = formData.startDate.toISOString();
-    logger.log('🔍 Converted startDate Date object to ISO:', formData.startDate);
   }
   if (formData.endDate instanceof Date) {
     formData.endDate = formData.endDate.toISOString();
-    logger.log('🔍 Converted endDate Date object to ISO:', formData.endDate);
   }
   
-  logger.log('🔍 Date fields after processing:', { 
-    startDate: formData.startDate, 
-    endDate: formData.endDate,
-    startDateType: typeof formData.startDate,
-    endDateType: typeof formData.endDate
-  });
   
   // Create the new data structure with data_task wrapper BEFORE deleting UI fields
   const dataTask = {
@@ -535,10 +522,12 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
   delete formData._hasDeliverables;
   delete formData._usedAIEnabled;
   
-  // Serialize any Date objects to ISO strings for Redux compatibility
-  const serializedDataTask = serializeTimestampsForRedux(dataTask);
+  // Apply lowercase transformation to string fields
+  const fieldsToLowercase = ['products', 'observations', 'taskName', 'reporterName'];
+  const lowercasedDataTask = transformNestedDataToLowercase(dataTask, fieldsToLowercase);
   
-  logger.log('🔍 Final processed data_task for database:', serializedDataTask);
+  // Serialize any Date objects to ISO strings for Redux compatibility
+  const serializedDataTask = serializeTimestampsForRedux(lowercasedDataTask);
   
   return serializedDataTask;
 };
