@@ -41,7 +41,18 @@ const SimpleDateField = ({
           id={fieldName}
           min={monthBoundaries.min}
           max={monthBoundaries.max}
-          className={`form-input ${error ? 'error' : ''}`}
+          className={`form-input ${error ? 'error' : ''} cursor-pointer`}
+          style={{ cursor: 'pointer' }}
+          onClick={(e) => {
+            // Force the date picker to open when clicking anywhere on the input
+            e.target.focus();
+            // Use a small delay to ensure focus happens first
+            setTimeout(() => {
+              if (e.target.showPicker) {
+                e.target.showPicker();
+              }
+            }, 10);
+          }}
         />
         
     
