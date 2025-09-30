@@ -568,8 +568,10 @@ const AdminDashboardPage = () => {
               enableColumnResizing={true}
               enableRowSelection={false}
               initialColumnVisibility={{
-                'data_task.isVip': false,     // Hide VIP column by default
-                'data_task.reworked': false   // Hide Reworked column by default
+                'isVip': false,        // Hide VIP column by default
+                'reworked': false,     // Hide Reworked column by default
+                'startDate': false,    // Hide Start Date column by default
+                'endDate': false       // Hide End Date column by default
               }}
             />
           )}

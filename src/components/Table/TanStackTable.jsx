@@ -325,7 +325,7 @@ const TanStackTable = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className={`px-4 py-3 text-start font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider ${
+                    className={`px-4 py-2 text-start font-semibold  uppercase tracking-wider ${
                       header.column.getCanSort()
                         ? "cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50"
                         : ""

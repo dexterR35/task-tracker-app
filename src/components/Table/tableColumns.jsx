@@ -68,6 +68,26 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
+  columnHelper.accessor((row) => row.data_task?.markets, {
+    id: 'markets',
+    header: 'Markets',
+    cell: ({ getValue }) => {
+      const markets = getValue();
+      
+      if (!markets || !Array.isArray(markets) || markets.length === 0) return '-';
+      
+      return (
+        <div className="flex flex-wrap gap-1">
+          {markets.map((market, index) => (
+            <Badge key={index} variant="blue" size="sm">
+              {market}
+            </Badge>
+          ))}
+        </div>
+      );
+    },
+    size: 200,
+  }),
   columnHelper.accessor((row) => row.data_task?.aiUsed?.[0]?.aiModels, {
     id: 'aiModels',
     header: 'AI Models',
@@ -79,8 +99,12 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
       
       return (
         <div className="space-y-1">
-          <div className="font-medium text-gray-900 dark:text-white">
-            {aiModels.join(', ')}
+          <div className="flex flex-wrap gap-1">
+            {aiModels.map((model, index) => (
+              <Badge key={index} variant="purple" size="sm">
+                {model}
+              </Badge>
+            ))}
           </div>
           {aiTime > 0 && (
             <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -118,12 +142,23 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                     {deliverable.configured ? (
-                      <div className="space-y-1">
-                        <div>
-                          <span className="font-medium">Base:</span> {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
+                      <div className="text-xs block">
+                        <div className="block">
+                          Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
+                          {deliverable.timeUnit === 'min' && (
+                            <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
+                          )}
                         </div>
-                        <div className="font-semibold text-blue-600 dark:text-blue-400">
-                          <span className="font-medium">Total:</span> {deliverable.time.toFixed(1)}h ({Math.round(deliverable.time / 8)} day, {(deliverable.time * 60).toFixed(0)}min)
+                        {deliverable.declinariQuantity > 0 && (
+                          <div className="block">
+                            Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(1)}h
+                            {deliverable.declinariTimeUnit === 'min' && (
+                              <span> ({(deliverable.totalDeclinariTime * 60).toFixed(0)}min)</span>
+                            )}
+                          </div>
+                        )}
+                        <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
+                          Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
                         </div>
                       </div>
                     ) : deliverable.notConfigured ? (
@@ -276,23 +311,6 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 200,
   }),
-
-  columnHelper.accessor((row) => row.data_task?.isVip, {
-    id: 'isVip',
-    header: 'VIP',
-    cell: ({ getValue }) => {
-      return getValue() ? "✓" : "-";
-    },
-    size: 40,
-  }),
-  columnHelper.accessor((row) => row.data_task?.reworked, {
-    id: 'reworked',
-    header: 'ReWorked',
-    cell: ({ getValue }) => {
-      return getValue() ? "✓" : "-";
-    },
-    size: 50,
-  }),
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: 'reporters',
     header: 'Reporter',
@@ -317,7 +335,16 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     header: 'Task Hr',
     cell: ({ getValue }) => {
       const value = getValue();
-      return value ? `${value}h` : '-';
+      if (!value) return '-';
+      
+      // Color code based on hours
+      const variant = value <= 2 ? 'success' : value <= 8 ? 'warning' : 'error';
+      
+      return (
+        <Badge variant={variant} size="sm">
+          {value}h
+        </Badge>
+      );
     },
     size: 80,
   }),
@@ -345,7 +372,15 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
         const end = new Date(endDate);
         const diffTime = Math.abs(end - start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return `${diffDays} days`;
+        
+        // Color code based on duration
+        const variant = diffDays <= 1 ? 'success' : diffDays <= 3 ? 'warning' : 'error';
+        
+        return (
+          <Badge variant={variant} size="sm">
+            {diffDays} days
+          </Badge>
+        );
       } catch {
         return '-';
       }
@@ -358,18 +393,57 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     cell: ({ getValue }) => {
       const value = getValue();
       if (!value) return '-';
-      return value.length > 50 ? `${value.substring(0, 50)}...` : value;
+      
+      const truncated = value.length > 50 ? `${value.substring(0, 50)}...` : value;
+      
+      return (
+        <span 
+          title={value} 
+          className="block truncate"
+        >
+          {truncated}
+        </span>
+      );
     },
     size: 200,
   }),
-  columnHelper.accessor((row) => row.data_task?.reporterName, {
-    id: 'reporterName',
-    header: 'Reporter Name',
+  
+  // Additional task data columns (hidden by default)
+  columnHelper.accessor((row) => row.data_task?.startDate, {
+    id: 'startDate',
+    header: 'Start Date',
     cell: ({ getValue }) => {
       const value = getValue();
-      return value || '-';
+      if (!value) return '-';
+      return formatDate(value, 'dd MMM yyyy, HH:mm', true);
     },
     size: 150,
+  }),
+  columnHelper.accessor((row) => row.data_task?.endDate, {
+    id: 'endDate',
+    header: 'End Date',
+    cell: ({ getValue }) => {
+      const value = getValue();
+      if (!value) return '-';
+      return formatDate(value, 'dd MMM yyyy, HH:mm', true);
+    },
+    size: 150,
+  }),
+  columnHelper.accessor((row) => row.data_task?.isVip, {
+    id: 'isVip',
+    header: 'VIP',
+    cell: ({ getValue }) => {
+      return getValue() ? "✓" : "-";
+    },
+    size: 40,
+  }),
+  columnHelper.accessor((row) => row.data_task?.reworked, {
+    id: 'reworked',
+    header: 'ReWorked',
+    cell: ({ getValue }) => {
+      return getValue() ? "✓" : "-";
+    },
+    size: 50,
   }),
 ], [monthId, stableReporters]);
 };
