@@ -43,6 +43,10 @@ const TanStackTable = ({
   onEdit = null,
   onDelete = null,
   onSelect = null,
+  
+  // Action button customization
+  selectButtonText = "View",
+  selectButtonIcon = "edit",
 
   // Additional props
   ...additionalProps
@@ -106,11 +110,11 @@ const TanStackTable = ({
                     variant="primary"
                     size="xs"
                     onClick={() => onSelect(item)}
-                    iconName="edit"
+                    iconName={selectButtonIcon}
                     iconPosition="center"
-                    title="View Details"
+                    title="Select Row"
                   >
-                    View
+                    {selectButtonText}
                   </DynamicButton>
                 )}
                 {onEdit && (

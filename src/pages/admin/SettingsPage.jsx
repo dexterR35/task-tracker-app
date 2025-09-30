@@ -4,12 +4,12 @@ import { useGetSettingsTypeQuery, useUpdateSettingsTypeMutation } from '@/featur
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
 import TanStackTable from '@/components/Table/TanStackTable';
+import { SkeletonTable } from '@/components/ui/Skeleton/Skeleton';
 import { canDeleteData } from '@/features/utils/authUtils';
 import { showSuccess, showError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
 import { prepareFormData } from '@/utils/formUtils';
-import { VALIDATION_MESSAGES } from '@/components/forms/configs/sharedFormUtils';
 import { TextField, NumberField, SelectField } from '@/components/forms/components';
 
 const SettingsPage = () => {
@@ -18,13 +18,14 @@ const SettingsPage = () => {
   const [deliverables, setDeliverables] = useState([]);
   const [selectedDeliverables, setSelectedDeliverables] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [originalData, setOriginalData] = useState(null);
+  const [rowSelection, setRowSelection] = useState({});
   
   // Check if user has permission to manage deliverables
   const canManageDeliverables = canDeleteData(user);
   
-  // All users can view deliverables, but only admin with delete_data can edit
-  const canViewDeliverables = true;
-  
+
   // API hooks
   const { data: deliverablesData, isLoading: loadingSettings, error: settingsError } = useGetSettingsTypeQuery({ settingsType: 'deliverables' });
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
@@ -33,28 +34,6 @@ const SettingsPage = () => {
   // Table columns configuration
   const columns = useMemo(() => {
     const baseColumns = [];
-    
-    // Add selection column for all users (admin-only page)
-    baseColumns.push({
-      id: 'select',
-      header: () => (
-        <input
-          type="checkbox"
-          checked={selectedDeliverables.length === deliverables.length && deliverables.length > 0}
-          onChange={(e) => e.target.checked ? selectAllDeliverables() : clearSelection()}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={selectedDeliverables.includes(row.index)}
-          onChange={() => toggleDeliverableSelection(row.index)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-      ),
-      size: 50,
-    });
     
     // Add other columns
     baseColumns.push(
@@ -76,15 +55,18 @@ const SettingsPage = () => {
         });
         
         const errors = {};
+        const isInvalid = row.original.isNew && !isDeliverableValid(row.original);
+        const isEditing = editingRow === row.index;
         
         return (
-          <TextField 
-            field={field}
-            register={register}
-            errors={errors}
-            getInputType={() => 'text'}
-            formValues={{}}
-            hideLabel={true}
+          <input
+            type="text"
+            value={getValue() || ''}
+            onChange={(e) => updateDeliverable(row.index, 'name', e.target.value)}
+            disabled={!isEditing}
+            readOnly={!isEditing}
+            className={`form-input w-full ${isInvalid ? 'border-red-500 focus:border-red-500' : ''}`}
+            placeholder="Enter deliverable name"
           />
         );
       },
@@ -101,23 +83,21 @@ const SettingsPage = () => {
           required: true
         };
         
-        const register = (fieldName) => ({
-          name: fieldName,
-          value: getValue(),
-          onChange: (e) => updateDeliverable(row.index, 'timePerUnit', parseFloat(e.target.value) || 0)
-        });
-        
         const errors = {};
+        const isInvalid = row.original.isNew && !isDeliverableValid(row.original);
+        const isEditing = editingRow === row.index;
         
         return (
-          <NumberField 
-            field={field}
-            register={register}
-            errors={errors}
-            setValue={() => {}}
-            trigger={() => {}}
-            formValues={{}}
-            hideLabel={true}
+          <input
+            type="number"
+            value={getValue() || 0}
+            onChange={(e) => updateDeliverable(row.index, 'timePerUnit', parseFloat(e.target.value) || 0)}
+            step={0.5}
+            min={0}
+            disabled={!isEditing}
+            readOnly={!isEditing}
+            className={`form-input w-full ${isInvalid ? 'border-red-500 focus:border-red-500' : ''}`}
+            placeholder="0.5, 1, 1.5, 2..."
           />
         );
       },
@@ -127,34 +107,19 @@ const SettingsPage = () => {
       accessorKey: 'timeUnit',
       header: 'Unit',
       cell: ({ row, getValue }) => {
-        const field = {
-          name: `deliverable_${row.index}_timeUnit`,
-          label: 'Time Unit',
-          placeholder: 'Select time unit',
-          options: [
-            { value: 'min', label: 'Min' },
-            { value: 'hr', label: 'Hr' },
-            { value: 'days', label: 'Days' }
-          ],
-          required: true
-        };
-        
-        const register = (fieldName) => ({
-          name: fieldName,
-          value: getValue(),
-          onChange: (e) => updateDeliverable(row.index, 'timeUnit', e.target.value)
-        });
-        
-        const errors = {};
+        const isEditing = editingRow === row.index;
         
         return (
-          <SelectField 
-            field={field}
-            register={register}
-            errors={errors}
-            formValues={{}}
-            hideLabel={true}
-          />
+          <select
+            value={getValue() || 'hr'}
+            onChange={(e) => updateDeliverable(row.index, 'timeUnit', e.target.value)}
+            disabled={!isEditing}
+            className="form-select w-full"
+          >
+            <option value="min">Min</option>
+            <option value="hr">Hr</option>
+            <option value="days">Days</option>
+          </select>
         );
       },
       size: 80,
@@ -171,23 +136,21 @@ const SettingsPage = () => {
           required: true
         };
         
-        const register = (fieldName) => ({
-          name: fieldName,
-          value: getValue(),
-          onChange: (e) => updateDeliverable(row.index, 'declinariTime', parseFloat(e.target.value) || 0)
-        });
-        
         const errors = {};
+        const isInvalid = row.original.isNew && !isDeliverableValid(row.original);
+        const isEditing = editingRow === row.index;
         
         return (
-          <NumberField 
-            field={field}
-            register={register}
-            errors={errors}
-            setValue={() => {}}
-            trigger={() => {}}
-            formValues={{}}
-            hideLabel={true}
+          <input
+            type="number"
+            value={getValue() || 0}
+            onChange={(e) => updateDeliverable(row.index, 'declinariTime', parseFloat(e.target.value) || 0)}
+            step={0.5}
+            min={0}
+            disabled={!isEditing}
+            readOnly={!isEditing}
+            className={`form-input w-full ${isInvalid ? 'border-red-500 focus:border-red-500' : ''}`}
+            placeholder="Enter declinari time"
           />
         );
       },
@@ -197,34 +160,19 @@ const SettingsPage = () => {
       accessorKey: 'declinariTimeUnit',
       header: 'Declinari Unit',
       cell: ({ row, getValue }) => {
-        const field = {
-          name: `deliverable_${row.index}_declinariTimeUnit`,
-          label: 'Declinari Time Unit',
-          placeholder: 'Select declinari time unit',
-          options: [
-            { value: 'min', label: 'Min' },
-            { value: 'hr', label: 'Hr' },
-            { value: 'days', label: 'Days' }
-          ],
-          required: true
-        };
-        
-        const register = (fieldName) => ({
-          name: fieldName,
-          value: getValue() || 'min',
-          onChange: (e) => updateDeliverable(row.index, 'declinariTimeUnit', e.target.value)
-        });
-        
-        const errors = {};
+        const isEditing = editingRow === row.index;
         
         return (
-          <SelectField 
-            field={field}
-            register={register}
-            errors={errors}
-            formValues={{}}
-            hideLabel={true}
-          />
+          <select
+            value={getValue() || 'min'}
+            onChange={(e) => updateDeliverable(row.index, 'declinariTimeUnit', e.target.value)}
+            disabled={!isEditing}
+            className="form-select w-full"
+          >
+            <option value="min">Min</option>
+            <option value="hr">Hr</option>
+            <option value="days">Days</option>
+          </select>
         );
       },
       size: 100,
@@ -234,6 +182,7 @@ const SettingsPage = () => {
       header: 'Requires Qty',
       cell: ({ row, getValue }) => {
         const isChecked = getValue();
+        const isEditing = editingRow === row.index;
         
         return (
           <div className="flex items-center justify-center">
@@ -242,7 +191,7 @@ const SettingsPage = () => {
               checked={isChecked}
               onChange={(e) => updateDeliverable(row.index, 'requiresQuantity', e.target.checked)}
               className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
-              disabled={!canManageDeliverables}
+              disabled={!canManageDeliverables || !isEditing}
             />
           </div>
         );
@@ -252,7 +201,7 @@ const SettingsPage = () => {
     );
     
     return baseColumns;
-  }, [canManageDeliverables, selectedDeliverables, deliverables]);
+  }, [canManageDeliverables, selectedDeliverables, deliverables, editingRow]);
 
   // Load deliverables when data is available
   React.useEffect(() => {
@@ -264,9 +213,29 @@ const SettingsPage = () => {
         timeUnit: deliverable.timeUnit || 'hr',
         requiresQuantity: deliverable.requiresQuantity !== undefined ? deliverable.requiresQuantity : true, // Default to true
         declinariTime: deliverable.declinariTime || 10,
-        declinariTimeUnit: deliverable.declinariTimeUnit || 'min'
+        declinariTimeUnit: deliverable.declinariTimeUnit || 'min',
+        createdAt: deliverable.createdAt || new Date().toISOString(), // Add creation date for sorting
+        updatedAt: deliverable.updatedAt || new Date().toISOString() // Add update date for sorting
       }));
-      setDeliverables(normalizedDeliverables);
+      
+      // Apply client-side sorting for new items (temporary sorting)
+      const sortedDeliverables = normalizedDeliverables.sort((a, b) => {
+        // New items (isNew: true) go to the top
+        if (a.isNew && !b.isNew) return -1;
+        if (!a.isNew && b.isNew) return 1;
+        
+        // For non-new items, use API sorting (already sorted)
+        // For new items, keep them at the top
+        if (a.isNew && b.isNew) {
+          // If both are new, sort by creation time (newest first)
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        
+        // For existing items, maintain API order
+        return 0;
+      });
+      
+      setDeliverables(sortedDeliverables);
     } else if (!loadingSettings && !settingsError) {
       // No fallback - only load from database
       setDeliverables([]);
@@ -323,6 +292,16 @@ const SettingsPage = () => {
     return null;
   };
 
+  // Check if a deliverable is valid (all required fields filled)
+  const isDeliverableValid = (deliverable) => {
+    if (!deliverable.isNew) return true; // Existing items are always valid
+    
+    // For new items, check required fields
+    return deliverable.name?.trim() && 
+           deliverable.timePerUnit > 0 && 
+           deliverable.declinariTime > 0;
+  };
+
   const validateDeliverables = () => {
     const errors = [];
     
@@ -367,6 +346,16 @@ const SettingsPage = () => {
         showError(`Validation failed: ${validationErrors.join(', ')}`);
         return;
       }
+
+      // Check for invalid new items
+      const invalidNewItems = deliverables.filter(deliverable => 
+        deliverable.isNew && !isDeliverableValid(deliverable)
+      );
+      
+      if (invalidNewItems.length > 0) {
+        showError('Please complete all required fields for new deliverables before saving');
+        return;
+      }
       
       // CHANGE DETECTION: Check if data actually changed
       const currentData = deliverablesData?.deliverables || [];
@@ -394,20 +383,24 @@ const SettingsPage = () => {
       }
       
       // SERIALIZATION: Use centralized form data preparation
-      const serializedDeliverables = deliverables.map(deliverable => 
-        prepareFormData({
-          name: deliverable.name.trim(),
-          timePerUnit: Number(deliverable.timePerUnit),
-          timeUnit: deliverable.timeUnit,
-          requiresQuantity: Boolean(deliverable.requiresQuantity),
-          declinariTime: Number(deliverable.declinariTime),
-          declinariTimeUnit: deliverable.declinariTimeUnit
+      const serializedDeliverables = deliverables.map(deliverable => {
+        // Remove isNew flag and prepare for saving
+        const { isNew, ...deliverableData } = deliverable;
+        return prepareFormData({
+          name: deliverableData.name.trim(),
+          timePerUnit: Number(deliverableData.timePerUnit),
+          timeUnit: deliverableData.timeUnit,
+          requiresQuantity: Boolean(deliverableData.requiresQuantity),
+          declinariTime: Number(deliverableData.declinariTime),
+          declinariTimeUnit: deliverableData.declinariTimeUnit,
+          createdAt: deliverableData.createdAt,
+          updatedAt: deliverableData.updatedAt
         }, {
           removeEmptyFields: false,
           convertTypes: true,
           addMetadata: false
-        })
-      );
+        });
+      });
       
       // Structure deliverables for settings/app/deliverables document
       const deliverablesDataToSave = {
@@ -447,15 +440,20 @@ const SettingsPage = () => {
       return;
     }
     
+    const now = new Date().toISOString();
     const newDeliverable = {
       name: '',
       timePerUnit: 1,
       timeUnit: 'hr',
       requiresQuantity: true,
       declinariTime: 10,
-      declinariTimeUnit: 'min'
+      declinariTimeUnit: 'min',
+      createdAt: now,
+      updatedAt: now,
+      isNew: true // Mark as new item for temporary sorting
     };
-    setDeliverables([...deliverables, newDeliverable]);
+    // Add new deliverable at the top of the list
+    setDeliverables([newDeliverable, ...deliverables]);
   };
 
   const updateDeliverable = (index, field, value) => {
@@ -464,16 +462,23 @@ const SettingsPage = () => {
       return;
     }
     
+    // Sanitize input for new items
+    let sanitizedValue = value;
+    if (field === 'name') {
+      sanitizedValue = value?.toString().trim() || '';
+    } else if (field === 'timePerUnit' || field === 'declinariTime') {
+      sanitizedValue = Number(value) || 0;
+    }
     
     // VALIDATION: Use centralized validation functions
     let validationError = null;
     
     if (field === 'name') {
-      validationError = validateDeliverableName(value, index);
+      validationError = validateDeliverableName(sanitizedValue, index);
     } else if (field === 'timePerUnit') {
-      validationError = validateTimePerUnit(value);
+      validationError = validateTimePerUnit(sanitizedValue);
     } else if (field === 'declinariTime') {
-      validationError = validateDeclinariTime(value);
+      validationError = validateDeclinariTime(sanitizedValue);
     }
     
     if (validationError) {
@@ -482,7 +487,11 @@ const SettingsPage = () => {
     }
     
     const updated = [...deliverables];
-    updated[index] = { ...updated[index], [field]: value };
+    updated[index] = { 
+      ...updated[index], 
+      [field]: sanitizedValue,
+      updatedAt: new Date().toISOString() // Update timestamp when field is modified
+    };
     setDeliverables(updated);
   };
 
@@ -525,6 +534,91 @@ const SettingsPage = () => {
     showSuccess(`${selectedDeliverables.length} deliverable(s) deleted successfully!`);
   };
 
+
+  // Handle individual row edit
+  const handleEditRow = (item) => {
+    // Find the index of the item in the deliverables array
+    const index = deliverables.findIndex(deliverable => deliverable === item);
+    setEditingRow(index);
+    // Store original data for change detection
+    setOriginalData({ ...item });
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    if (originalData && editingRow !== null) {
+      // Restore original data
+      const updated = [...deliverables];
+      updated[editingRow] = { ...originalData };
+      setDeliverables(updated);
+    }
+    setEditingRow(null);
+    setOriginalData(null);
+  };
+
+  // Handle save changes
+  const handleSaveChanges = async () => {
+    if (editingRow === null) return;
+    
+    const currentData = deliverables[editingRow];
+    
+    // Check if data has changed
+    if (originalData && JSON.stringify(currentData) === JSON.stringify(originalData)) {
+      showSuccess('No changes to save');
+      setEditingRow(null);
+      setOriginalData(null);
+      return;
+    }
+    
+    // Validate data
+    if (!isDeliverableValid(currentData)) {
+      showError('Please complete all required fields before saving');
+      return;
+    }
+    
+    try {
+      // Save to database
+      await saveSettings();
+      showSuccess('Deliverable updated successfully!');
+      setEditingRow(null);
+      setOriginalData(null);
+    } catch (error) {
+      showError('Failed to save changes');
+    }
+  };
+
+  // Handle individual row save
+  const handleSaveRow = (index) => {
+    if (!isDeliverableValid(deliverables[index])) {
+      showError('Please complete all required fields before saving');
+      return;
+    }
+    
+    const updated = [...deliverables];
+    updated[index] = { 
+      ...updated[index], 
+      isNew: false, // Remove isNew flag after saving
+      updatedAt: new Date().toISOString()
+    };
+    setDeliverables(updated);
+    setEditingRow(null);
+    showSuccess('Deliverable updated successfully!');
+  };
+
+  // Handle individual row delete
+  const handleDeleteRow = (item) => {
+    // Set selected deliverables and show delete modal
+    setSelectedDeliverables([item]);
+    setShowDeleteModal(true);
+  };
+
+  // Handle row selection change
+  const handleRowSelectionChange = (newSelection) => {
+    setRowSelection(newSelection);
+    const selectedIndices = Object.keys(newSelection).filter(key => newSelection[key]);
+    setSelectedDeliverables(selectedIndices.map(Number));
+  };
+
   const tabs = [
     { id: 'deliverables', label: 'Deliverables', icon: 'package' },
     { id: 'ai', label: 'AI Settings', icon: 'robot' },
@@ -532,29 +626,29 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen ">
+      <div className=" mx-auto  ">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="mb-6">
+          <h2 className="text-3xl">
             Settings
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Manage your application settings and configurations
+          </h2>
+          <p className="mt-0 text-sm">
+            Manage your settings
           </p>
         </div>
 
         {/* Tabs */}
         <div className="mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8">
+          <div className="border-bottom">
+            <nav className="-mb-px flex space-x-4">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      ? 'border-blue-default text-blue-default'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                 >
@@ -566,123 +660,110 @@ const SettingsPage = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div >
           {activeTab === 'deliverables' && (
-            <div className="p-6">
+            <div className="py-6">
               {/* Header Section */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h2 >
                     Deliverables Management
                   </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm ">
                     {canManageDeliverables 
-                      ? "Manage your deliverables and their time settings" 
-                      : "View deliverables and their time settings (read-only - need delete_data permission to edit)"
+                      ? "Manage your deliverables" 
+                      : "View deliverables (read-only - need permission to edit)"
                     }
                   </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <DynamicButton
-                    onClick={addDeliverable}
-                    variant="primary"
-                    size="sm"
-                    iconName="add"
-                    iconPosition="left"
-                  >
-                    Add New
-                  </DynamicButton>
-                  {selectedDeliverables.length > 0 && (
-                    <DynamicButton
-                      onClick={handleDeleteSelected}
-                      variant="danger"
-                      size="sm"
-                      iconName="trash"
-                      iconPosition="left"
-                    >
-                      Delete Selected ({selectedDeliverables.length})
-                    </DynamicButton>
-                  )}
-                  {!canManageDeliverables && (
-                    <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800">
-                      ⚠️ Read-only mode - Need delete_data permission to edit
-                    </div>
-                  )}
                 </div>
               </div>
 
 
               {loadingSettings ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-2 text-gray-500">Loading settings...</p>
+                <div className="space-y-4">
+                  <SkeletonTable rows={5} />
                 </div>
-              ) : deliverables.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 text-6xl mb-4">📦</div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Deliverables</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first deliverable</p>
-                  {canManageDeliverables && (
+              ) : (
+                <div className="space-y-4">
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-2">
                     <DynamicButton
                       onClick={addDeliverable}
                       variant="primary"
+                      size="sm"
                       iconName="add"
                       iconPosition="left"
+                      disabled={!canManageDeliverables}
                     >
-                      Add First Deliverable
+                      Add New
                     </DynamicButton>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                  <TanStackTable
-                    data={deliverables}
-                    columns={columns}
-                    enableRowSelection={false}
-                    showActions={false}
-                    showPagination={false}
-                    showFilters={false}
-                    showColumnToggle={false}
-                    className="settings-deliverables-table"
-                  />
+                    
+                    {/* Save and Cancel buttons - only visible when editing */}
+                    {editingRow !== null && (
+                      <>
+                        <DynamicButton
+                          onClick={handleSaveChanges}
+                          variant="success"
+                          size="sm"
+                          iconName="save"
+                          iconPosition="left"
+                          loading={saving}
+                          disabled={saving}
+                        >
+                          Save
+                        </DynamicButton>
+                        <DynamicButton
+                          onClick={handleCancelEdit}
+                          variant="secondary"
+                          size="sm"
+                          iconName="close"
+                          iconPosition="left"
+                          disabled={saving}
+                        >
+                          Cancel
+                        </DynamicButton>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="overflow-hidden">
+                    <TanStackTable
+                      data={deliverables}
+                      columns={columns}
+                      enableRowSelection={false}
+                      showActions={true}
+                      showPagination={true}
+                      showFilters={true}
+                      showColumnToggle={true}
+                      onEdit={handleEditRow}
+                      onDelete={handleDeleteRow}
+                      className="settings-deliverables-table"
+                    />
+                  </div>
                 </div>
               )}
 
 
-              {/* Save Button */}
-              <div className="mt-6 flex justify-end">
-                <DynamicButton
-                  onClick={saveSettings}
-                  variant="primary"
-                  size="lg"
-                  loading={saving}
-                  disabled={saving}
-                  iconName="save"
-                  iconPosition="left"
-                >
-                  {saving ? 'Saving...' : 'Save Settings'}
-                </DynamicButton>
-              </div>
             </div>
           )}
 
           {activeTab === 'ai' && (
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <div className="py-6">
+              <h2>
                 AI Settings
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm">
                 AI settings will be available soon.
               </p>
             </div>
           )}
 
           {activeTab === 'general' && (
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <div className="py-6">
+              <h2 >
                 General Settings
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm">
                 General settings will be available soon.
               </p>
             </div>

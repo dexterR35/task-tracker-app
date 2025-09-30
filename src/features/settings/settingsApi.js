@@ -243,6 +243,26 @@ export const settingsApi = createApi({
           }
           
           const settingsData = settingsDoc.data();
+          
+          // Sort deliverables if this is a deliverables query
+          if (settingsType === 'deliverables' && settingsData.deliverables && Array.isArray(settingsData.deliverables)) {
+            const sortedDeliverables = settingsData.deliverables.sort((a, b) => {
+              // First sort by latest (most recent first)
+              const dateA = new Date(a.updatedAt || a.createdAt || 0);
+              const dateB = new Date(b.updatedAt || b.createdAt || 0);
+              const dateComparison = dateB.getTime() - dateA.getTime();
+              
+              // If dates are equal or very close, sort alphabetically by name
+              if (Math.abs(dateComparison) < 1000) { // Less than 1 second difference
+                return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+              }
+              
+              return dateComparison;
+            });
+            
+            settingsData.deliverables = sortedDeliverables;
+          }
+          
           return { data: serializeTimestampsForRedux(settingsData) };
         } catch (error) {
           logger.error(`[settingsApi] Error fetching ${settingsType} settings:`, error);
