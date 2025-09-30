@@ -201,25 +201,11 @@ const TanStackTable = ({
     );
   }
 
-  // Show empty state
-  if (!data.length) {
+  // Show skeleton when loading or no data
+  if (isLoading || !data.length) {
     return (
-      <div className={`card text-center py-8 ${className}`}>
-        <div className="text-gray-400 dark:text-gray-500 mb-3">
-          <div>
-            <div className="text-xl mb-2">📋</div>
-            <div className="text-base font-semibold mb-1">
-              No {tableType} found
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {tableType === "tasks"
-                ? "Try creating a new task or check a different month"
-                : tableType === "users"
-                  ? "No users available"
-                  : "No data available"}
-            </div>
-          </div>
-        </div>
+      <div className={`space-y-4 ${className}`}>
+        <SkeletonTable rows={5} />
       </div>
     );
   }
@@ -361,24 +347,7 @@ const TanStackTable = ({
             ))}
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200/60 dark:divide-gray-700/60">
-            {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={table.getAllColumns().length}
-                  className="px-4 py-8 text-center"
-                >
-                  <div className="text-gray-400 dark:text-gray-500">
-                    <div className="text-sm font-semibold mb-1">
-                      No data available
-                    </div>
-                    <div className="text-xs">
-                      Try adjusting your filters or search terms
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map((row, index) => {
+            {table.getRowModel().rows.map((row, index) => {
                 return (
                   <tr
                     key={row.id}
@@ -405,7 +374,7 @@ const TanStackTable = ({
                   </tr>
                 );
               })
-            )}
+            }
           </tbody>
         </table>
       </div>

@@ -8,7 +8,7 @@ import ReporterTable from "@/features/reporters/components/ReporterTable/Reporte
 
 const AdminManagementPage = () => {
   // Get all data directly from useAppData hook (RTK Query handles caching)
-  const { monthId, monthName, users, reporters, error } = useAppData();
+  const { monthId, monthName, users, reporters, error, isLoading } = useAppData();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -130,6 +130,7 @@ const AdminManagementPage = () => {
                 users={users}
                 monthId={monthId}
                 error={error}
+                isLoading={isLoading}
                 className="rounded-lg"
               />
             ) : (
@@ -137,6 +138,7 @@ const AdminManagementPage = () => {
                 reporters={reporters}
                 error={error}
                 user={user}
+                isLoading={isLoading}
                 className="rounded-lg"
               />
             )}

@@ -10,6 +10,7 @@ const UserTable = ({
   users = [],
   monthId,
   error: usersError = null,
+  isLoading = false, // Loading state
 }) => {
   // Get user columns with monthId for date formatting
   const userColumns = getColumns('users', monthId);
@@ -54,6 +55,7 @@ const UserTable = ({
       initialColumnVisibility={{
         createdAt: false // Hide "Created At" column by default
       }}
+      isLoading={isLoading} // Pass loading state
     />
   );
 };

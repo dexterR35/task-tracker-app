@@ -13,6 +13,7 @@ const ReporterTable = ({
   reporters = [],
   error: reportersError = null,
   user = null, // User data for permission validation
+  isLoading = false, // Loading state
 }) => {
   // API hooks for reporter CRUD
   const [deleteReporter] = useDeleteReporterMutation();
@@ -79,7 +80,7 @@ const ReporterTable = ({
         initialColumnVisibility={{
           createdAt: false // Hide "Created At" column by default
         }}
-        isLoading={false} // Explicitly set loading state
+        isLoading={isLoading} // Pass loading state
       />
 
       {/* Edit Modal */}
