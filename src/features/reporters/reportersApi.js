@@ -22,35 +22,44 @@ export const reportersApi = createApi({
   reducerPath: "reportersApi",
   baseQuery: fakeBaseQuery(),
   tagTypes: ["Reporter"],
-  ...getCacheConfigByType("REPORTERS"),
+  // Simple configuration for plain data
+  keepUnusedDataFor: 300, // Keep data for 5 minutes
+  refetchOnMountOrArgChange: true,
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
   endpoints: (builder) => ({
-    // Get all reporters
+    // Get all reporters - Public data, no authentication required
     getReporters: builder.query({
       async queryFn() {
-        const cacheKey = `getReporters`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
+        try {
+          logger.log(`[Reporters API] Starting to fetch reporters...`);
+          
+          // Fetch reporters with proper ordering by createdAt
+          // If createdAt field doesn't exist, fallback to no ordering
+          let reporters;
           try {
-            logger.log(`[Reporters API] Starting to fetch reporters...`);
-            const reporters = await fetchCollectionFromFirestore(
+            reporters = await fetchCollectionFromFirestore(
               "reporters",
-              {
-                orderBy: "createdAt",
-                orderDirection: "desc",
+              { 
+                orderBy: 'createdAt', 
+                orderDirection: 'desc' 
               }
             );
+          } catch (orderError) {
+            // Fallback: fetch without ordering if createdAt field doesn't exist
+            logger.warn(`[Reporters API] createdAt field not found, fetching without ordering:`, orderError);
+            reporters = await fetchCollectionFromFirestore(
+              "reporters",
+              { orderBy: null }
+            );
+          }
 
-          logger.log(
-            `[Reporters API] Fetched ${reporters.length} reporters:`,
-            reporters.map((r) => ({ id: r.id, name: r.name }))
-          );
-
+          logger.log(`[Reporters API] Successfully fetched ${reporters?.length || 0} reporters:`, reporters);
           return { data: reporters };
         } catch (error) {
           logger.error(`[Reporters API] Error fetching reporters:`, error);
           throw error; // Let base API handle the error
         }
-        }, 'ReportersAPI');
       },
       providesTags: ["Reporter"],
     }),
@@ -101,7 +110,8 @@ export const reportersApi = createApi({
               createdByName: userData.name,
             },
             {
-              addMetadata: false, // Don't add updatedAt field
+              addMetadata: true, // Add createdAt and updatedAt fields
+              useServerTimestamp: true // Use server timestamp for consistency
             }
           );
 
@@ -111,7 +121,8 @@ export const reportersApi = createApi({
             createdReporter.id,
             { reporterUID: createdReporter.id },
             {
-              addMetadata: false, // Don't add updatedAt field
+              addMetadata: true, // Add updatedAt field
+              useServerTimestamp: true // Use server timestamp for consistency
             }
           );
 
@@ -134,11 +145,15 @@ export const reportersApi = createApi({
           reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
             const tempId = `temp-${Date.now()}`;
             const now = new Date().toISOString();
-            // Add the new reporter optimistically
+            // Add the new reporter optimistically with proper field mapping
             draft.unshift({
               id: tempId, // Temporary ID
               reporterUID: tempId, // Same temporary ID
-              ...arg.reporter,
+              name: arg.reporter.name,
+              email: arg.reporter.email,
+              departament: arg.reporter.departament,
+              country: arg.reporter.country,
+              channelName: arg.reporter.channelName,
               createdBy: arg.userData.userUID || arg.userData.uid,
               createdByName: arg.userData.name,
               createdAt: now,
@@ -184,7 +199,8 @@ export const reportersApi = createApi({
             id,
             updates,
             {
-              addMetadata: false, // Don't add updatedAt field
+              addMetadata: true, // Add updatedAt field
+              useServerTimestamp: true // Use server timestamp for consistency
             }
           );
 

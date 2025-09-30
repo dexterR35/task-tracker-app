@@ -11,15 +11,15 @@ import { useTableActions } from "@/hooks/useTableActions";
 const ReporterTable = ({
   className = "",
   reporters = [],
-  monthId,
   error: reportersError = null,
   user = null, // User data for permission validation
 }) => {
   // API hooks for reporter CRUD
   const [deleteReporter] = useDeleteReporterMutation();
   
-  // Get reporter columns with monthId for date formatting
-  const reporterColumns = getColumns('reporters', monthId);
+  // Get reporter columns - no monthId needed for reporters
+  const reporterColumns = getColumns('reporters');
+  
   
   // Custom delete mutation wrapper for reporters with permission error handling
   const handleReporterDeleteMutation = async (reporter) => {
@@ -80,6 +80,7 @@ const ReporterTable = ({
         initialColumnVisibility={{
           createdAt: false // Hide "Created At" column by default
         }}
+        isLoading={false} // Explicitly set loading state
       />
 
       {/* Edit Modal */}

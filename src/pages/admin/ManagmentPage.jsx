@@ -13,6 +13,7 @@ const AdminManagementPage = () => {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
   const [showCreateModal, setShowCreateModal] = useState(false);
   
+  
 
   // Show error state
   if (error) {
@@ -106,17 +107,19 @@ const AdminManagementPage = () => {
               </p>
             </div>
             
-            {/* Action Button - Only show for reporters */}
+            {/* Action Buttons - Only show for reporters */}
             {activeTab === 'reporters' && (
-              <DynamicButton
-                onClick={handleCreate}
-                variant="primary"
-                size="sm"
-                iconName="add"
-                iconPosition="left"
-              >
-                Add Reporter
-              </DynamicButton>
+              <div className="flex gap-2">
+                <DynamicButton
+                  onClick={handleCreate}
+                  variant="primary"
+                  size="sm"
+                  iconName="add"
+                  iconPosition="left"
+                >
+                  Add Reporter
+                </DynamicButton>
+              </div>
             )}
           </div>
 
@@ -132,7 +135,6 @@ const AdminManagementPage = () => {
             ) : (
               <ReporterTable
                 reporters={reporters}
-                monthId={monthId}
                 error={error}
                 user={user}
                 className="rounded-lg"

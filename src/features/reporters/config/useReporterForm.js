@@ -8,7 +8,7 @@ import {
 
 // ===== REPORTER FORM OPTIONS =====
 const REPORTER_DEPARTMENT_OPTIONS = [
-  { value: 'Engineering', label: 'Engineering' },
+  { value: 'acq', label: 'acq' },
   { value: 'Product', label: 'Product' },
   { value: 'Design', label: 'Design' },
   { value: 'Marketing', label: 'Marketing' },
@@ -30,10 +30,10 @@ const REPORTER_COUNTRY_OPTIONS = [
 ];
 
 const REPORTER_CHANNEL_OPTIONS = [
-  { value: 'web', label: 'Web' },
-  { value: 'mobile', label: 'Mobile' },
-  { value: 'desktop', label: 'Desktop' },
-  { value: 'api', label: 'API' },
+  { value: 'acq', label: 'acq' },
+  { value: 'acq social media', label: 'acq social media' },
+  { value: 'acq social media paid', label: 'acq social media paid' },
+  { value: 'acq social media organic', label: 'acq social media organic' },
   { value: 'backend', label: 'Backend' },
   { value: 'frontend', label: 'Frontend' },
   { value: 'database', label: 'Database' },

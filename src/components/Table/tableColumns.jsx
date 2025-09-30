@@ -515,7 +515,7 @@ export const getUserColumns = (monthId = null) => [
 
 
 // Reporters Table Columns
-export const getReporterColumns = (monthId = null) => [
+export const getReporterColumns = () => [
   columnHelper.accessor('name', {
     header: 'Reporter',
     cell: ({ row }) => (
@@ -549,7 +549,7 @@ export const getReporterColumns = (monthId = null) => [
     },
     size: 100,
   }),
-  columnHelper.accessor('channel', {
+  columnHelper.accessor('channelName', {
     header: 'Channel',
     cell: ({ getValue }) => {
       return getValue() || '-';
@@ -576,7 +576,7 @@ export const getColumns = (tableType, monthId = null, reporters = []) => {
     case 'users':
       return getUserColumns(monthId);
     case 'reporters':
-      return getReporterColumns(monthId);
+      return getReporterColumns();
     default:
       return [];
   }

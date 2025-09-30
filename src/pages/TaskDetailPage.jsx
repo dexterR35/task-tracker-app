@@ -322,7 +322,6 @@ const TaskDetailPage = () => {
     });
   }
   
-  // Debug: Show raw data structure if no deliverables found
   if (deliverablesData.length === 0) {
     deliverablesData.push({
       label: "No deliverables available",

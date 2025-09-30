@@ -102,7 +102,15 @@ export const tasksApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
+            logger.log(`[getMonthTasks] Starting to fetch tasks:`, {
+              monthId,
+              userId,
+              role,
+              userData: userData ? 'present' : 'missing'
+            });
+            
             if (!monthId) {
+              logger.log(`[getMonthTasks] No monthId provided, returning empty array`);
               return { data: [] };
             }
 
@@ -114,18 +122,30 @@ export const tasksApi = createApi({
           const monthDoc = await getDoc(monthDocRef);
 
           if (!monthDoc.exists()) {
+            logger.log(`[getMonthTasks] Month board does not exist for ${monthId}`);
             return { data: [] };
           }
+
+          logger.log(`[getMonthTasks] Month board exists, fetching tasks...`);
 
           // Fetch tasks for the month
           const tasksRef = getTaskRef(monthId);
           let tasksQuery = fsQuery(tasksRef);
 
           // Apply user filtering based on role
-          tasksQuery =
-            role === "user" && userId
-              ? fsQuery(tasksRef, where("userUID", "==", userId))
-              : fsQuery(tasksRef);
+          if (role === "user" && userId) {
+            // Regular users: only their tasks
+            tasksQuery = fsQuery(tasksRef, where("userUID", "==", userId));
+            logger.log(`[getMonthTasks] Filtering for user: ${userId}`);
+          } else if (role === "admin" && userId) {
+            // Admin users: specific user's tasks when selected
+            tasksQuery = fsQuery(tasksRef, where("userUID", "==", userId));
+            logger.log(`[getMonthTasks] Admin filtering for specific user: ${userId}`);
+          } else {
+            // Admin users: all tasks (no filtering)
+            tasksQuery = fsQuery(tasksRef);
+            logger.log(`[getMonthTasks] Admin fetching all tasks (no filtering)`);
+          }
 
           const tasksSnapshot = await getDocs(tasksQuery);
           const tasks = tasksSnapshot.docs.map((doc) => ({
@@ -134,6 +154,7 @@ export const tasksApi = createApi({
             ...serializeTimestampsForRedux(doc.data()),
           }));
 
+          logger.log(`[getMonthTasks] Successfully fetched ${tasks.length} tasks:`, tasks);
           return { data: tasks };
         } catch (error) {
           logger.error(
@@ -571,6 +592,12 @@ export const tasksApi = createApi({
     getCurrentMonth: builder.query({
       async queryFn({ userId, role, userData }) {
         try {
+          logger.log(`[getCurrentMonth] Starting to fetch current month data:`, {
+            userId,
+            role,
+            userData: userData ? 'present' : 'missing'
+          });
+          
           let currentMonthInfo = getMonthInfo(); // Default to actual current month
           let boardExists = false;
           let currentMonthBoard = null;
@@ -623,21 +650,36 @@ export const tasksApi = createApi({
           // Fetch current month tasks if board exists and user is authenticated
           let currentMonthTasks = [];
 
+          logger.log(`[getCurrentMonth] Board exists: ${boardExists}, User data: ${userData ? 'present' : 'missing'}`);
+
           if (boardExists && userData) {
             try {
               const currentUser = getCurrentUserInfo();
+              logger.log(`[getCurrentMonth] Current user:`, currentUser);
+              
               if (currentUser) {
                 const tasksRef = getTaskRef(currentMonthInfo.monthId);
                 let tasksQuery = fsQuery(tasksRef);
 
                 // Apply user filtering based on role
                 if (role === "user" && userId) {
+                  // Regular users: only their tasks
                   tasksQuery = fsQuery(
                     tasksRef,
                     where("userUID", "==", userId)
                   );
+                  logger.log(`[getCurrentMonth] Filtering for user: ${userId}`);
+                } else if (role === "admin" && userId) {
+                  // Admin users: specific user's tasks when selected
+                  tasksQuery = fsQuery(
+                    tasksRef,
+                    where("userUID", "==", userId)
+                  );
+                  logger.log(`[getCurrentMonth] Admin filtering for specific user: ${userId}`);
+                } else {
+                  logger.log(`[getCurrentMonth] Admin fetching all tasks (no filtering)`);
                 }
-                // For admin users, fetch all tasks (no filtering)
+                // For admin users with no userId, fetch all tasks (no filtering)
 
                 // Order by creation date
                 tasksQuery = fsQuery(tasksQuery, orderBy("createdAt", "desc"));
@@ -647,6 +689,8 @@ export const tasksApi = createApi({
                   id: doc.id,
                   ...serializeTimestampsForRedux(doc.data()),
                 }));
+                
+                logger.log(`[getCurrentMonth] Successfully fetched ${currentMonthTasks.length} current month tasks:`, currentMonthTasks);
               }
             } catch (taskError) {
               logger.error(

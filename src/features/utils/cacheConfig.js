@@ -72,8 +72,13 @@ export const CACHE_CONFIGS = {
     refetchOnReconnect: false // Don't refetch - users are stable
   },
   
-  // Static data that rarely changes
-  REPORTERS: getCacheConfig(DATA_VOLATILITY.STATIC),
+  // Reporters - allow refetching since they can be added/updated
+  REPORTERS: {
+    keepUnusedDataFor: CACHE_DURATIONS.LONG,
+    refetchOnMountOrArgChange: CACHE_DURATIONS.MEDIUM,
+    refetchOnFocus: false,
+    refetchOnReconnect: true
+  },
   
   // Charts/analytics that change moderately
   CHARTS: getCacheConfig(DATA_VOLATILITY.MEDIUM),

@@ -129,7 +129,7 @@ export const fetchCollectionFromFirestore = async (collectionName, options = {})
   try {
     let q = query(collection(db, collectionName));
     
-    if (orderByField) {
+    if (orderByField && orderByField !== null) {
       q = query(q, orderBy(orderByField, orderDirection));
     }
     

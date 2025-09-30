@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 import { useGetUsersQuery, useGetUserByUIDQuery } from "@/features/users/usersApi";
 import { useGetReportersQuery } from "@/features/reporters/reportersApi";
 import { 
@@ -19,6 +19,7 @@ export const useUserData = () => {
   const { user } = useAuth();
   const userUID = getUserUID(user);
   const userIsAdmin = isUserAdmin(user);
+  
   
   // Fetch user data (single user for regular users, all users for admin)
   const { 
@@ -167,20 +168,26 @@ export const useMonthSelection = (selectedUserId = null) => {
       : (currentMonthTasks || []); // Current month data
   }, [isFetchingSelectedMonth, monthTasks, currentMonthTasks]);
   
-  // Apply user-based filtering in the UI - optimized memoization
+  // Tasks are now filtered at the API level - no need for UI filtering
   const displayTasks = useMemo(() => {
-    if (!rawTasks || rawTasks.length === 0) return [];
-    
-    // If user is admin, show all tasks
-    if (userIsAdmin) {
-      return rawTasks;
-    }
-    
-    // If user is not admin, filter to only their tasks
-    return rawTasks.filter(task => 
-      task.userUID === userUID || task.createbyUID === userUID
-    );
-  }, [rawTasks, userIsAdmin, userUID]);
+    return rawTasks || [];
+  }, [rawTasks]);
+  
+  // Debug logging for tasks
+  useEffect(() => {
+    logger.log(`[useMonthSelection] Task data:`, {
+      isFetchingSelectedMonth,
+      monthTasks: monthTasks?.length || 0,
+      currentMonthTasks: currentMonthTasks?.length || 0,
+      rawTasks: rawTasks?.length || 0,
+      displayTasks: displayTasks?.length || 0,
+      targetMonthId,
+      targetUserId,
+      shouldFetchTasks,
+      monthTasksLoading,
+      currentMonthLoading
+    });
+  }, [isFetchingSelectedMonth, monthTasks, currentMonthTasks, rawTasks, displayTasks, targetMonthId, targetUserId, shouldFetchTasks, monthTasksLoading, currentMonthLoading]);
   
   
   // Helper functions
@@ -265,14 +272,24 @@ export const useAppData = (selectedUserId = null) => {
   const monthSelectionData = useMonthSelection(selectedUserId);
   const userData = useUserData();
   
-  // Fetch all reporters (needed for task creation) - only when user is authenticated
+  // Fetch all reporters - plain data, no dependencies
   const { 
     data: reporters = [], 
     isLoading: reportersLoading, 
-    error: reportersError 
-  } = useGetReportersQuery(undefined, {
-    skip: !userData.userUID // Skip query until user is authenticated
-  });
+    error: reportersError,
+    refetch: refetchReporters
+  } = useGetReportersQuery();
+  
+  // Debug logging for reporters
+  useEffect(() => {
+    logger.log(`[useAppData] Reporters data:`, {
+      reporters,
+      reportersLoading,
+      reportersError,
+      reportersLength: reporters?.length || 0
+    });
+  }, [reporters, reportersLoading, reportersError]);
+  
   
   // Task mutations - available to all components
   const [createTask] = useCreateTaskMutation();
@@ -334,7 +351,8 @@ export const useAppData = (selectedUserId = null) => {
     
     // Refetch functions for real-time updates
     refetchCurrentMonth: monthData.refetchCurrentMonth,
-    refetchMonthTasks: monthData.refetchMonthTasks
+    refetchMonthTasks: monthData.refetchMonthTasks,
+    refetchReporters
   };
   
   if (userData.userIsAdmin) {

@@ -30,7 +30,9 @@ const ReporterForm = ({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    reset
+    reset,
+    setError,
+    clearErrors
   } = useForm({
     resolver: yupResolver(reporterFormSchema),
     defaultValues: {

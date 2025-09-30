@@ -199,12 +199,20 @@ const AdminDashboardPage = () => {
   // Get task columns for the table
   const taskColumns = useTaskColumns(currentMonthId, reporters);
 
-  //  reusable filtering function
+  //  reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
     (tasks, selectedUserId, selectedReporterId, currentMonthId) => {
       return tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
+
+        // Role-based filtering: Regular users can only see their own tasks
+        if (!isUserAdmin) {
+          const userUID = user?.uid || user?.userUID;
+          if (userUID && task.userUID !== userUID && task.createbyUID !== userUID) {
+            return false;
+          }
+        }
 
         // If both user and reporter are selected, show tasks that match BOTH
         if (selectedUserId && selectedReporterId) {
@@ -233,11 +241,17 @@ const AdminDashboardPage = () => {
           );
         }
 
-        // If neither user nor reporter is selected, show all tasks (month-filtered)
-        return true;
+        // If neither user nor reporter is selected, show tasks based on role
+        // Admin: show all tasks, Regular user: show only their tasks
+        if (!isUserAdmin) {
+          const userUID = user?.uid || user?.userUID;
+          return userUID && (task.userUID === userUID || task.createbyUID === userUID);
+        }
+
+        return true; // Admin sees all tasks
       });
     },
-    []
+    [isUserAdmin, user]
   );
 
   // Calculate reporter metrics using global tasks (reporters card shows all data)
