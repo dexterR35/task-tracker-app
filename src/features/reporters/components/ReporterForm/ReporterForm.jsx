@@ -4,11 +4,11 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/utils/errorUtils';
+import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, transformToLowercase } from '@/utils/formUtils';
-import { reporterFormSchema, REPORTER_FORM_FIELDS } from '../../config/useReporterForm';
-import { TextField, SelectField } from '../../../../components/forms/components';
-import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
+import { reporterFormSchema, REPORTER_FORM_FIELDS } from '@/features/reporters/config/useReporterForm';
+import { TextField, SelectField } from '@/components/forms/components';
+import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 

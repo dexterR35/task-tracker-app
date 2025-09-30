@@ -1,6 +1,5 @@
-import React from 'react';
-import { useDarkMode } from '../../../context/DarkModeProvider';
-import { Icons } from '../../icons';
+import { useDarkMode } from '@/context/DarkModeProvider';
+import { Icons } from '@/components/icons';
 
 const DarkModeToggle = () => {
   const { isDarkMode, isTransitioning, toggleDarkMode } = useDarkMode();

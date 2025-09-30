@@ -1,8 +1,7 @@
-import React from 'react';
 import { 
   REQUIRED_INDICATOR 
-} from '../configs/sharedFormUtils';
-import { shouldShowField } from '../configs/sharedFormUtils';
+} from '@/components/forms/configs/sharedFormUtils';
+import { shouldShowField } from '@/components/forms/configs/sharedFormUtils';
 
 
 

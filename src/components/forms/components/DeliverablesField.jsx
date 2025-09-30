@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { calculateDeliverableTime, formatTimeEstimate, calculateTotalDeliverableTime } from '../../../features/tasks/config/useTaskForm';
+import { formatTimeEstimate } from '@/features/tasks/config/useTaskForm';
 
 const DeliverablesField = ({ 
   field, 
@@ -150,8 +150,7 @@ const DeliverablesField = ({
   const customError = errors['customDeliverables'];
   const quantitiesError = errors['deliverableQuantities'];
   
-  // Calculate total time for selected deliverable
-  const totalCalculatedTime = calculateTotalDeliverableTime(selectedDeliverable, quantities, declinariQuantities, options);
+  // Note: Total time calculation is handled in the task table and detail page
   
   return (
     <div className="form-field">
@@ -333,17 +332,7 @@ const DeliverablesField = ({
         </div>
       )}
       
-      {/* Total calculated time display */}
-      {selectedDeliverable && totalCalculatedTime > 0 && (
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-          <div className="text-sm font-medium text-blue-800 dark:text-blue-200">
-            Total Estimated Time: {totalCalculatedTime.toFixed(1)} hours
-          </div>
-          <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-            This will be used to calculate the task duration
-          </div>
-        </div>
-      )}
+      {/* Note: Total time calculation is displayed in the task table and detail page */}
       
       {/* Validation errors */}
       {error && (

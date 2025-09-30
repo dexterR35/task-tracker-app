@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import BaseField from './BaseField';
+import BaseField from '@/components/forms/components/BaseField';
 import { logger } from '@/utils/logger';
 
 const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, formValues }) => {

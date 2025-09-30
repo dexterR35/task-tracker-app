@@ -1,8 +1,7 @@
-import React from "react";
-import AnalyticsTable from "../Table/AnalyticsTable";
-import SimplePieChart from "../Charts/SimplePieChart";
-import SimpleColumnChart from "../Charts/SimpleColumnChart";
-import { SkeletonAnalyticsCard } from "../ui/Skeleton/Skeleton";
+import AnalyticsTable from "@/components/Table/AnalyticsTable";
+import SimplePieChart from "@/components/Charts/SimplePieChart";
+import SimpleColumnChart from "@/components/Charts/SimpleColumnChart";
+import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 
 const AnalyticsCard = ({ 
   title,

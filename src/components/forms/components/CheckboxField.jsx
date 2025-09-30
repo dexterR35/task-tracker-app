@@ -1,6 +1,5 @@
-import React from 'react';
-import { REQUIRED_INDICATOR } from '../configs/sharedFormUtils';
-import BaseField from './BaseField';
+import { REQUIRED_INDICATOR } from '@/components/forms/configs/sharedFormUtils';
+import BaseField from '@/components/forms/components/BaseField';
 
 const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors, formValues }) => {
   const fieldError = errors[field.name];

@@ -3,15 +3,15 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppData } from '@/hooks/useAppData';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/utils/errorUtils';
+import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { 
   createTaskFormSchema, 
   createTaskFormFields, 
   prepareTaskFormData
-} from '../../config/useTaskForm';
+} from '@/features/tasks/config/useTaskForm';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
-import { shouldShowField } from '../../../../components/forms/configs/sharedFormUtils';
+import { shouldShowField } from '@/components/forms/configs/sharedFormUtils';
 import { 
   TextField, 
   TextareaField,
@@ -20,9 +20,9 @@ import {
   NumberField, 
   CheckboxField,
   SimpleDateField 
-} from '../../../../components/forms/components';
-import DeliverablesField from '../../../../components/forms/components/DeliverablesField';
-import { getInputType } from '../../../../components/forms/configs/sharedFormUtils';
+} from '@/components/forms/components';
+import DeliverablesField from '@/components/forms/components/DeliverablesField';
+import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 // Permission validation now happens at API level

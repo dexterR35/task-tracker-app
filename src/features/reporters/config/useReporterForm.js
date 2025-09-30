@@ -4,7 +4,7 @@ import {
   createEmailField,
   createSelectField,
   VALIDATION_MESSAGES
-} from '../../../components/forms/configs/sharedFormUtils';
+} from '@/components/forms/configs/sharedFormUtils';
 
 // ===== REPORTER FORM OPTIONS =====
 const REPORTER_DEPARTMENT_OPTIONS = [

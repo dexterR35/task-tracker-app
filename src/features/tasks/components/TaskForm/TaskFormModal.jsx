@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal/Modal';
-import TaskForm from './TaskForm';
+import TaskForm from '@/features/tasks/components/TaskForm/TaskForm';
 
 const TaskFormModal = ({
   isOpen,

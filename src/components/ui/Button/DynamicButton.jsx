@@ -11,7 +11,7 @@ import {
   BUTTON_ICON_CLASSES,
   LOADING_SPINNER_CLASSES,
   BUTTON_DEFAULTS
-} from "./buttonConstants";
+} from "@/components/ui/Button/buttonConstants";
 
 const DynamicButton = ({
   id,

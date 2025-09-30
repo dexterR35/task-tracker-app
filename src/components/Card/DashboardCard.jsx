@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { getCardColorHex } from "./cardConfig";
+import { getCardColorHex } from "@/components/Card/cardConfig";
 
 
 const ModernAreaChart = ({ data, color }) => (

@@ -1,4 +1,3 @@
-import React from 'react';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 
 /**

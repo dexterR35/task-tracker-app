@@ -1,6 +1,6 @@
 import React from "react";
 import { Icons } from "@/components/icons";
-import { getCardColorHex } from "../Card/cardConfig";
+import { getCardColorHex } from "@/components/Card/cardConfig";
 
 // Small Card Component for inside the large card
 const SmallCard = ({ title, icon, data, color, className = "" }) => {

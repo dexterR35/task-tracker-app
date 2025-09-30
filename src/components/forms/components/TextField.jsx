@@ -1,5 +1,4 @@
-import React from 'react';
-import BaseField from './BaseField';
+import BaseField from '@/components/forms/components/BaseField';
 import { showSuccess } from '@/utils/toast';
 
 const TextField = ({ field, register, errors, getInputType, formValues, hideLabel = false }) => {

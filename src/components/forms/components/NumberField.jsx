@@ -1,5 +1,4 @@
-import React from 'react';
-import BaseField from './BaseField';
+import BaseField from '@/components/forms/components/BaseField';
 
 const NumberField = ({ field, register, errors, setValue, trigger, formValues, hideLabel = false }) => {
   const fieldError = errors[field.name];

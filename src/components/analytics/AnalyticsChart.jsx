@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
-import DataTable from "./DataTable";
-import SimplePieChart from "../Charts/SimplePieChart";
-import { processTasksForTable, processTasksForChart, generateSummaryData } from "./dataProcessor";
+import DataTable from "@/components/analytics/DataTable";
+import SimplePieChart from "@/components/Charts/SimplePieChart";
+import { processTasksForTable, processTasksForChart, generateSummaryData } from "@/components/analytics/dataProcessor";
 
 const AnalyticsChart = ({ 
   tasks = [], 

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
-import Avatar from "@/components/ui/Avatar";
+import Avatar from "@/components/ui/Avatar/Avatar";
 
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const { user, canAccess } = useAuth();

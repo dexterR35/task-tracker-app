@@ -1,5 +1,4 @@
-import React from 'react';
-import BaseField from './BaseField';
+import BaseField from '@/components/forms/components/BaseField';
 
 const TextareaField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];

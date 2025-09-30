@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import AnalyticsCard from "./AnalyticsCard";
+import AnalyticsCard from "@/components/Cards/AnalyticsCard";
 
 const AcquisitionAnalyticsCard = ({ tasks, selectedMonth, isLoading = false }) => {
   // Filter tasks for acquisition category

@@ -1,12 +1,12 @@
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showError } from '@/utils/toast';
 import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
-import { loginSchema, LOGIN_FORM_FIELDS } from './configs/useLoginForm';
-import { TextField, PasswordField } from './components';
-import { getInputType } from './configs/sharedFormUtils';
+import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
+import TextField from '@/components/forms/components/TextField';
+import PasswordField from '@/components/forms/components/PasswordField';
+import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 

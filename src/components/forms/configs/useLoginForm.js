@@ -4,7 +4,7 @@ import {
   createPasswordField,
   VALIDATION_PATTERNS,
   VALIDATION_MESSAGES,
-} from "./sharedFormUtils";
+} from "@/components/forms/configs/sharedFormUtils";
 
 // ===== LOGIN FORM FIELD CONFIGURATION =====
 export const LOGIN_FORM_FIELDS = [

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import LargeAnalyticsCard from "./LargeAnalyticsCard";
+import LargeAnalyticsCard from "@/components/Cards/LargeAnalyticsCard";
 import { Icons } from "@/components/icons";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 import { 

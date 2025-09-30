@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { useAnalyticsExport } from '@/hooks/useAnalyticsExport';
-import { useAppData } from '@/hooks/useAppData';
+import React from 'react';
+import { useUnifiedExport } from '@/hooks/useUnifiedExport';
 
 const CSVExportButton = ({ 
   tasks = [], 
@@ -8,82 +7,16 @@ const CSVExportButton = ({
   buttonText = "Convert to CSV",
   filename = "analytics_export"
 }) => {
-  const [isExporting, setIsExporting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [exportStatus, setExportStatus] = useState('idle'); // 'idle', 'processing', 'completed', 'error'
-  const [currentStep, setCurrentStep] = useState('');
-  
-  const { getCompleteAnalytics } = useAnalyticsExport(tasks);
-  const { users, reporters } = useAppData();
+  const { exportCSV, isExporting, exportProgress, exportStep, exportStatus } = useUnifiedExport(tasks, {
+    dataType: 'analytics',
+    tableType: 'analytics',
+    filename
+  });
 
   const handleExport = async () => {
-    if (isExporting) return;
-
-    setIsExporting(true);
-    setProgress(0);
-    setExportStatus('processing');
-
-    try {
-      // Simulate processing steps with real progress
-      const steps = [
-        { step: 'Preparing data...', progress: 10 },
-        { step: 'Processing analytics...', progress: 20 },
-        { step: 'Generating categories...', progress: 30 },
-        { step: 'Calculating time metrics...', progress: 40 },
-        { step: 'Processing market data...', progress: 50 },
-        { step: 'Generating user analytics...', progress: 60 },
-        { step: 'Creating reporter breakdown...', progress: 70 },
-        { step: 'Calculating AI metrics...', progress: 80 },
-        { step: 'Formatting CSV data...', progress: 90 },
-        { step: 'Finalizing export...', progress: 100 }
-      ];
-
-      // Process each step with delay
-      for (const { step, progress: stepProgress } of steps) {
-        setCurrentStep(step);
-        setProgress(stepProgress);
-        await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay per step
-      }
-
-      // Get analytics data
-      const analyticsData = getCompleteAnalytics();
-      
-      // Convert to CSV format
-      const csvData = convertAnalyticsToCSV(analyticsData);
-      
-      // Create and download CSV
-      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      setExportStatus('completed');
-      
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setIsExporting(false);
-        setProgress(0);
-        setExportStatus('idle');
-      }, 2000);
-
-    } catch (error) {
-      // Export error occurred
-      setExportStatus('error');
-      setIsExporting(false);
-      setProgress(0);
-      
-      // Reset after 3 seconds
-      setTimeout(() => {
-        setExportStatus('idle');
-      }, 3000);
-    }
+    await exportCSV();
   };
+
 
   // Convert analytics data to CSV format with direct data (no calculations)
   const convertAnalyticsToCSV = (data) => {
@@ -252,14 +185,14 @@ const CSVExportButton = ({
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                   <div 
                     className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${progress}%` }}
+                    style={{ width: `${exportProgress}%` }}
                   ></div>
                 </div>
                 
                 {/* Progress percentage */}
                 <div className="text-center">
                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {progress}% complete
+                    {exportProgress}% complete
                   </span>
                 </div>
               </div>

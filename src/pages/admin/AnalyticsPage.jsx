@@ -7,10 +7,11 @@ import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCar
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
 import MarketDistributionByUserCard from "@/components/Cards/MarketDistributionByUserCard";
-import MonthProgressBar from "@/components/ui/MonthProgressBar";
-import CSVExportButton from "@/components/ui/CSVExportButton";
+import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
+import CSVExportButton from "@/components/ui/CSVExportButton/CSVExportButton";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
-import { generateAnalyticsPDF, generateAnalyticsCSV, downloadCSV } from "@/utils/pdfGenerator";
+import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
+import { useUnifiedExport } from "@/hooks/useUnifiedExport";
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection (same as AdminDashboardPage)
@@ -18,11 +19,6 @@ const AnalyticsPage = () => {
   
   // Card selection state
   const [selectedCards, setSelectedCards] = useState([]);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportType, setExportType] = useState(null); // 'pdf' or 'csv'
-  const [exportProgress, setExportProgress] = useState(0);
-  const [exportStep, setExportStep] = useState('');
-  
   
   const {
     tasks, // Real-time tasks data (already filtered by selected month)
@@ -37,6 +33,12 @@ const AnalyticsPage = () => {
     selectMonth, // Function to select month
     resetToCurrentMonth, // Function to reset
   } = useMonthSelection();
+
+  // Use unified export hook (after tasks is defined)
+  const { exportCSV, exportPDF, isUnifiedExporting: isUnifiedExporting, exportProgress, exportStep, exportStatus } = useUnifiedExport(tasks, {
+    dataType: 'analytics',
+    tableType: 'analytics'
+  });
 
   // Get current month name for display
   const currentMonthName = currentMonth?.monthName || "Current Month";
@@ -133,48 +135,11 @@ const AnalyticsPage = () => {
       return;
     }
 
-    setIsExporting(true);
     setExportType('csv');
-    setExportProgress(0);
-    setExportStep('Preparing CSV generation...');
-
-    try {
-      // Simulate progress steps
-      const progressSteps = [
-        { step: 'Preparing data...', progress: 15 },
-        { step: 'Extracting table data...', progress: 35 },
-        { step: 'Processing card content...', progress: 55 },
-        { step: 'Formatting CSV data...', progress: 75 },
-        { step: 'Generating file...', progress: 90 },
-        { step: 'Saving CSV...', progress: 100 }
-      ];
-
-      // Process each step with delay
-      for (const { step, progress } of progressSteps) {
-        setExportStep(step);
-        setExportProgress(progress);
-        await new Promise(resolve => setTimeout(resolve, 400));
-      }
-
-      const csvContent = generateAnalyticsCSV(selectedCards, analyticsData, {
-        includeMetadata: true
-      });
-      
-      const filename = `analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-      downloadCSV(csvContent, filename);
-
-      setExportStep('CSV generated successfully!');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-    } catch (error) {
-      setExportStep('CSV generation failed. Please try again.');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } finally {
-      setIsExporting(false);
-      setExportType(null);
-      setExportProgress(0);
-      setExportStep('');
-    }
+    await exportCSV({
+      filename: `analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`
+    });
+    setExportType(null);
   };
 
   if (isLoading || isInitialLoading) {
@@ -256,16 +221,16 @@ const AnalyticsPage = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={handlePDFExport}
-                disabled={isExporting || selectedCards.length === 0}
+                disabled={isUnifiedExporting || selectedCards.length === 0}
                 className={`px-4 py-2 text-white text-sm rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg ${
                   selectedCards.length === 0
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : isExporting && exportType === 'pdf'
+                    : isUnifiedExporting
                     ? 'bg-red-500 cursor-not-allowed'
                     : 'bg-red-600 hover:bg-red-700 hover:scale-105'
                 }`}
               >
-                {isExporting && exportType === 'pdf' ? (
+                {isUnifiedExporting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>Generating PDF...</span>
@@ -291,16 +256,16 @@ const AnalyticsPage = () => {
 
               <button
                 onClick={handleCSVExport}
-                disabled={isExporting || selectedCards.length === 0}
+                disabled={isUnifiedExporting || selectedCards.length === 0}
                 className={`px-4 py-2 text-white text-sm rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg ${
                   selectedCards.length === 0
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : isExporting && exportType === 'csv'
+                    : isUnifiedExporting
                     ? 'bg-green-500 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700 hover:scale-105'
                 }`}
               >
-                {isExporting && exportType === 'csv' ? (
+                {isUnifiedExporting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>Generating CSV...</span>
@@ -515,7 +480,7 @@ const AnalyticsPage = () => {
       )}
 
       {/* Loading Modal */}
-      {isExporting && (
+      {isUnifiedExporting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
             <div className="space-y-6">

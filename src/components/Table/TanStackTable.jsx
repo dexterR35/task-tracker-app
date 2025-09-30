@@ -9,8 +9,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { SkeletonTable } from "../ui/Skeleton/Skeleton";
-import TableCSVExportButton from "@/components/ui/TableCSVExportButton";
+import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
+import TableCSVExportButton from "@/components/ui/TableCSVExportButton/TableCSVExportButton";
 
 // Column helper for type safety
 const columnHelper = createColumnHelper();

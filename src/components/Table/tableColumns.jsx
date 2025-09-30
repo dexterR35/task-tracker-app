@@ -1,7 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
-import Avatar from '@/components/ui/Avatar';
+import Avatar from '@/components/ui/Avatar/Avatar';
 import { formatDate } from '@/utils/dateUtils';
 import { calculateDeliverableTime } from '@/features/tasks/config/useTaskForm';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';

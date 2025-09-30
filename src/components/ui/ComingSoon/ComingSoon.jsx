@@ -1,5 +1,4 @@
-import React from "react";
-import DynamicButton from "../Button/DynamicButton";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const ComingSoonPage = ({
   title = "Coming Soon",

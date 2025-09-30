@@ -11,7 +11,7 @@ import {
   createUrlField,
   VALIDATION_PATTERNS,
   VALIDATION_MESSAGES
-} from '../../../components/forms/configs/sharedFormUtils';
+} from '@/components/forms/configs/sharedFormUtils';
 
 // ===== DELIVERABLE TIME CALCULATION UTILITIES =====
 export const calculateDeliverableTime = (deliverable, quantity = 1) => {
@@ -34,43 +34,7 @@ export const calculateDeliverableTime = (deliverable, quantity = 1) => {
   }
 };
 
-export const calculateTotalDeliverableTime = (deliverableValue, quantities, declinariQuantities = {}, deliverablesOptions = []) => {
-  if (!deliverableValue) return 0;
-  
-  const deliverable = deliverablesOptions.find(d => d.value === deliverableValue);
-  if (!deliverable) return 0;
-  
-  const quantity = quantities[deliverableValue] || 1;
-  const deliverableTime = calculateDeliverableTime(deliverable, quantity);
-  
-  // Add declinari time if declinari is enabled for this deliverable
-  const declinariQuantity = declinariQuantities[deliverableValue] || 0;
-  if (declinariQuantity > 0) {
-    const declinariTimePerUnit = deliverable.declinariTime || 10;
-    const declinariTimeUnit = deliverable.declinariTimeUnit || 'min';
-    const totalDeclinariTime = declinariQuantity * declinariTimePerUnit;
-    
-    // Convert declinari time to hours based on its unit
-    let declinariTimeInHours = 0;
-    switch (declinariTimeUnit) {
-      case 'min':
-        declinariTimeInHours = totalDeclinariTime / 60;
-        break;
-      case 'hr':
-        declinariTimeInHours = totalDeclinariTime;
-        break;
-      case 'days':
-        declinariTimeInHours = totalDeclinariTime * 8; // 8 hours per day
-        break;
-      default:
-        declinariTimeInHours = totalDeclinariTime / 60; // Default to minutes
-    }
-    
-    return deliverableTime + declinariTimeInHours;
-  }
-  
-  return deliverableTime;
-};
+// Note: calculateTotalDeliverableTime removed - calculations handled in table and detail page
 
 export const formatTimeEstimate = (deliverable, quantity = 1) => {
   if (!deliverable.timePerUnit || deliverable.timePerUnit === 0) {
@@ -444,20 +408,7 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
       formData.customDeliverables = [];
     }
     
-    // Calculate total deliverable time and update timeInHours if needed
-    if (formData.deliverables) {
-      const calculatedTime = calculateTotalDeliverableTime(
-        formData.deliverables, 
-        formData.deliverableQuantities || {},
-        formData.declinariQuantities || {},
-        deliverablesOptions
-      );
-      
-      // If calculated time is greater than current time, update it
-      if (calculatedTime > 0 && calculatedTime > (formData.timeInHours || 0)) {
-        formData.timeInHours = Math.round(calculatedTime * 10) / 10; // Round to 1 decimal place
-      }
-    }
+    // Note: Deliverable time calculations are handled in the task table and detail page
   }
   
   if (!formData._usedAIEnabled) {

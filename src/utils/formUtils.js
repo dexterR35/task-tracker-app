@@ -3,8 +3,8 @@
  * Standardizes form handling patterns across the application
  */
 
-import { showOperationSuccess, showOperationError, showValidationError } from './toast';
-import { logger } from './logger';
+import { showOperationSuccess, showOperationError, showValidationError } from '@/utils/toast';
+import { logger } from '@/utils/logger';
 
 /**
  * Standardized form submission handler

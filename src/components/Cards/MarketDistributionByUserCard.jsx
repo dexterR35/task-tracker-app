@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
-import AnalyticsCard from "./AnalyticsCard";
-import MarketDistributionTable from "../Table/MarketDistributionTable";
-import SimplePieChart from "../Charts/SimplePieChart";
+import AnalyticsCard from "@/components/Cards/AnalyticsCard";
+import MarketDistributionTable from "@/components/Table/MarketDistributionTable";
+import SimplePieChart from "@/components/Charts/SimplePieChart";
 
 const MarketDistributionByUserCard = ({ tasks, selectedMonth, users = [], isLoading = false }) => {
   // Calculate market distribution by user

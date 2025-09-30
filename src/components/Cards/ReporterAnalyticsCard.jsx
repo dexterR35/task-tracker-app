@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import AnalyticsCard from "./AnalyticsCard";
+import AnalyticsCard from "@/components/Cards/AnalyticsCard";
 
 const ReporterAnalyticsCard = ({ tasks, selectedMonth, reporters = [], isLoading = false }) => {
   // Tasks are already filtered by month from useMonthSelection, no need for additional filtering

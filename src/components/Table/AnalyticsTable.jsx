@@ -1,5 +1,4 @@
-import React from "react";
-import { SkeletonTable } from "../ui/Skeleton/Skeleton";
+import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
 
 const AnalyticsTable = ({ 
   data, 

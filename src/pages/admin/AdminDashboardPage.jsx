@@ -15,9 +15,9 @@ import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
-import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton";
+import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
 import { showError, showAuthError } from "@/utils/toast";
-import MonthProgressBar from "@/components/ui/MonthProgressBar";
+import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAppData } from './useAppData';
+import { useAppData } from '@/hooks/useAppData';
 
 export const useDeliverablesOptions = () => {
   const { deliverables, isLoading, error } = useAppData();
