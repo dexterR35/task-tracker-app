@@ -213,7 +213,10 @@ export const tasksApi = createApi({
             return onSnapshot(
               query,
               (snapshot) => {
+                console.log('Real-time listener triggered for monthId:', arg.monthId, 'docs count:', snapshot?.docs?.length);
+                
                 if (!snapshot || !snapshot.docs || snapshot.empty) {
+                  console.log('No tasks found, updating cache with empty array');
                   updateCachedData(() => []);
                   return;
                 }
@@ -232,6 +235,7 @@ export const tasksApi = createApi({
                   )
                   .filter((task) => task !== null);
 
+                console.log('Real-time update: tasks count:', tasks.length);
                 listenerManager.updateActivity();
                 updateCachedData(() => tasks);
               },
@@ -365,17 +369,20 @@ export const tasksApi = createApi({
           return { error: errorResponse };
         }
       },
-      invalidatesTags: (result, error, { task }) => [
-        { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "Tasks", id: "LIST" },
-        { type: "MonthTasks", id: task.monthId },
-        { type: "Analytics", id: "LIST" },
-        // Invalidate all month tasks queries to ensure real-time updates
-        { type: "MonthTasks", id: "LIST" },
-        // Force invalidation of all month-related queries
-        { type: "MonthTasks", id: "ALL" },
-        { type: "CurrentMonth", id: "ALL" },
-      ],
+      invalidatesTags: (result, error, { task }) => {
+        console.log('Invalidating cache tags for createTask, monthId:', task.monthId);
+        return [
+          { type: "CurrentMonth", id: "ENHANCED" },
+          { type: "Tasks", id: "LIST" },
+          { type: "MonthTasks", id: task.monthId },
+          { type: "Analytics", id: "LIST" },
+          // Invalidate all month tasks queries to ensure real-time updates
+          { type: "MonthTasks", id: "LIST" },
+          // Force invalidation of all month-related queries
+          { type: "MonthTasks", id: "ALL" },
+          { type: "CurrentMonth", id: "ALL" },
+        ];
+      },
     }),
     // Update task - simple Firestore update
     updateTask: builder.mutation({
@@ -432,23 +439,28 @@ export const tasksApi = createApi({
           return { error: errorResponse };
         }
       },
-      invalidatesTags: (result, error, { monthId }) => [
-        { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "Tasks", id: "LIST" },
-        { type: "MonthTasks", id: monthId },
-        { type: "Analytics", id: "LIST" },
-        // Invalidate all month tasks queries to ensure real-time updates
-        { type: "MonthTasks", id: "LIST" },
-        // Force invalidation of all month-related queries
-        { type: "MonthTasks", id: "ALL" },
-        { type: "CurrentMonth", id: "ALL" },
-      ],
+      invalidatesTags: (result, error, { monthId }) => {
+        console.log('Invalidating cache tags for updateTask, monthId:', monthId);
+        return [
+          { type: "CurrentMonth", id: "ENHANCED" },
+          { type: "Tasks", id: "LIST" },
+          { type: "MonthTasks", id: monthId },
+          { type: "Analytics", id: "LIST" },
+          // Invalidate all month tasks queries to ensure real-time updates
+          { type: "MonthTasks", id: "LIST" },
+          // Force invalidation of all month-related queries
+          { type: "MonthTasks", id: "ALL" },
+          { type: "CurrentMonth", id: "ALL" },
+        ];
+      },
     }),
 
     // Delete task - simple Firestore delete
     deleteTask: builder.mutation({
       async queryFn({ monthId, taskId, userData }) {
         try {
+          console.log('Deleting task:', { monthId, taskId });
+          
           // SECURITY: Validate user permissions at API level
           if (!userData) {
             return { error: { message: "User data is required" } };
@@ -470,8 +482,10 @@ export const tasksApi = createApi({
           const taskRef = getTaskRef(monthId, taskId);
           await deleteDoc(taskRef);
 
+          console.log('Task deleted successfully:', { id: taskId, monthId });
           return { data: { id: taskId, monthId } };
         } catch (error) {
+          console.error('Error deleting task:', error);
           const errorResponse = handleApiError(error, "Delete Task", {
             showToast: false,
             logError: true,
@@ -479,17 +493,20 @@ export const tasksApi = createApi({
           return { error: errorResponse };
         }
       },
-      invalidatesTags: (result, error, { monthId }) => [
-        { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "Tasks", id: "LIST" },
-        { type: "MonthTasks", id: monthId },
-        { type: "Analytics", id: "LIST" },
-        // Invalidate all month tasks queries to ensure real-time updates
-        { type: "MonthTasks", id: "LIST" },
-        // Force invalidation of all month-related queries
-        { type: "MonthTasks", id: "ALL" },
-        { type: "CurrentMonth", id: "ALL" },
-      ],
+      invalidatesTags: (result, error, { monthId }) => {
+        console.log('Invalidating cache tags for deleteTask, monthId:', monthId);
+        return [
+          { type: "CurrentMonth", id: "ENHANCED" },
+          { type: "Tasks", id: "LIST" },
+          { type: "MonthTasks", id: monthId },
+          { type: "Analytics", id: "LIST" },
+          // Invalidate all month tasks queries to ensure real-time updates
+          { type: "MonthTasks", id: "LIST" },
+          // Force invalidation of all month-related queries
+          { type: "MonthTasks", id: "ALL" },
+          { type: "CurrentMonth", id: "ALL" },
+        ];
+      },
     }),
 
     // Generate month board (admin only)

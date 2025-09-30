@@ -219,10 +219,14 @@ export const settingsApi = createApi({
         }
         }, 'SettingsAPI');
       },
-      invalidatesTags: (result, error, { settingsType }) => [
-        { type: "Settings", id: "APP" },
-        { type: "Settings", id: settingsType.toLowerCase() }
-      ],
+      invalidatesTags: (result, error, { settingsType }) => {
+        console.log('Invalidating cache tags for settingsType:', settingsType);
+        return [
+          { type: "Settings", id: "APP" },
+          { type: "Settings", id: settingsType.toLowerCase() },
+          { type: "Settings", id: "deliverables" } // Always invalidate deliverables
+        ];
+      },
     }),
 
     // Get specific settings type
@@ -267,9 +271,13 @@ export const settingsApi = createApi({
         }
         }, 'SettingsAPI');
       },
-      providesTags: (result, error, { settingsType }) => [
-        { type: "Settings", id: settingsType.toLowerCase() }
-      ],
+      providesTags: (result, error, { settingsType }) => {
+        console.log('Providing cache tags for settingsType:', settingsType);
+        return [
+          { type: "Settings", id: settingsType.toLowerCase() },
+          { type: "Settings", id: "deliverables" } // Always provide deliverables tag
+        ];
+      },
     }),
   }),
 });

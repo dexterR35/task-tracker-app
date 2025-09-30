@@ -84,7 +84,15 @@ export const CACHE_CONFIGS = {
   CHARTS: getCacheConfig(DATA_VOLATILITY.MEDIUM),
   
   // Month data that changes rarely
-  MONTHS: getCacheConfig(DATA_VOLATILITY.LOW)
+  MONTHS: getCacheConfig(DATA_VOLATILITY.LOW),
+  
+  // Settings data - allow refetching since they can be updated
+  SETTINGS: {
+    keepUnusedDataFor: CACHE_DURATIONS.SHORT, // Short cache for settings
+    refetchOnMountOrArgChange: CACHE_DURATIONS.SHORT,
+    refetchOnFocus: true, // Refetch on focus for settings
+    refetchOnReconnect: true
+  }
 };
 
 /**

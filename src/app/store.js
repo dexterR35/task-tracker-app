@@ -24,9 +24,11 @@ const store = configureStore({
           'tasksApi.queries',
           'usersApi.queries', 
           'reportersApi.queries',
+          'settingsApi.queries',
           'tasksApi.mutations',
           'usersApi.mutations',
           'reportersApi.mutations',
+          'settingsApi.mutations',
         ],
         // Increase warning threshold to 100ms
         warnAfter: 100,
@@ -53,9 +55,11 @@ const store = configureStore({
           'usersApi.queries.*.error.details.originalError',
           'tasksApi.queries.*.error.details.originalError',
           'reportersApi.queries.*.error.details.originalError',
+          'settingsApi.queries.*.error.details.originalError',
           'tasksApi.queries',
           'usersApi.queries',
           'reportersApi.queries',
+          'settingsApi.queries',
         ],
         // Increase warning threshold for serializable check too
         warnAfter: 100,

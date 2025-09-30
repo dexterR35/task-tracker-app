@@ -24,7 +24,6 @@ import LoginPage from "@/pages/auth/LoginPage";
 import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
-import SettingsPage from "@/pages/admin/SettingsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 
 // Import simple components directly (no lazy loading needed)
@@ -199,16 +198,6 @@ const router = createBrowserRouter([
               <AdminRoute>
                 <PageWrapper>
                   <AdminManagementPage />
-                </PageWrapper>
-              </AdminRoute>
-            ),
-          },
-          {
-            path: "settings",
-            element: (
-              <AdminRoute>
-                <PageWrapper key="settings">
-                  <SettingsPage />
                 </PageWrapper>
               </AdminRoute>
             ),

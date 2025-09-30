@@ -36,18 +36,11 @@ const Sidebar = () => {
       description: "Data insights",
     },
     {
-      name: "Users",
+      name: "Management",
       href: "/users",
-      icon: Icons.admin.users,
-      adminOnly: true,
-      description: "User management",
-    },
-    {
-      name: "Settings",
-      href: "/settings",
       icon: Icons.generic.settings,
       adminOnly: true,
-      description: "Application settings",
+      description: "User & Settings management",
     },
   ];
 

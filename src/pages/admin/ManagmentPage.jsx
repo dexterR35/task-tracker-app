@@ -5,16 +5,16 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
+import DeliverableTable from "@/features/deliverables/components/DeliverableTable/DeliverableTable";
 
 const AdminManagementPage = () => {
   // Get all data directly from useAppData hook (RTK Query handles caching)
   const { monthId, monthName, users, reporters, error, isLoading } = useAppData();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('users'); // 'users' or 'reporters'
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deliverablesCount, setDeliverablesCount] = useState(0);
   
-  
-
   // Show error state
   if (error) {
     return (
@@ -48,116 +48,156 @@ const AdminManagementPage = () => {
       name: 'Reporters',
       count: reporters?.length || 0,
       description: 'Manage reporter profiles and assignments'
+    },
+    {
+      id: 'deliverables',
+      name: 'Deliverables',
+      count: deliverablesCount,
+      description: 'Manage deliverables and time settings'
+    },
+    {
+      id: 'ai',
+      name: 'AI Settings',
+      count: 0,
+      description: 'Configure AI and automation settings'
+    },
+    {
+      id: 'general',
+      name: 'General',
+      count: 0,
+      description: 'General application settings'
     }
   ];
 
   return (
-  
-      <div >
-        {/* Page Header */}
-        <div className="mb-8 ">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold ">
-              Management
-            </h1>
-            <p className=" text-sm mt-1">
-              {monthName} • User & Reporter Management
+    <div>
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">
+            Management
+          </h1>
+          <p className="text-sm mt-1">
+            {monthName} • User & Reporter Management
+          </p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="space-y-6 min-h-screen">
+        {/* Clean Tab Navigation */}
+        <div className="border-bottom">
+          <nav className="-mb-px flex space-x-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span>{tab.name}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    activeTab === tab.id
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Content Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-medium">
+              {activeTab === 'users' ? 'User Management' : 
+               activeTab === 'reporters' ? 'Reporter Management' :
+               activeTab === 'deliverables' ? 'Deliverables Management' :
+               activeTab === 'ai' ? 'AI Settings' :
+               activeTab === 'general' ? 'General Settings' : 'Management'}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {tabs.find(tab => tab.id === activeTab)?.description}
             </p>
           </div>
+          
+          {/* Action Buttons */}
+          {activeTab === 'reporters' && (
+            <div className="flex gap-2">
+              <DynamicButton
+                onClick={handleCreate}
+                variant="primary"
+                size="sm"
+                iconName="add"
+                iconPosition="left"
+              >
+                Add Reporter
+              </DynamicButton>
+            </div>
+          )}
         </div>
 
-        {/* Main Content */}
-        <div className="space-y-6  min-h-screen">
-          {/* Clean Tab Navigation */}
-          <div className="border-bottom">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <span>{tab.name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      activeTab === tab.id
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Content Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-medium ">
-                {activeTab === 'users' ? 'User Management' : 'Reporter Management'}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {tabs.find(tab => tab.id === activeTab)?.description}
+        {/* Content Section */}
+        <div>
+          {activeTab === 'users' ? (
+            <UserTable
+              users={users}
+              monthId={monthId}
+              error={error}
+              isLoading={isLoading}
+              className="rounded-lg"
+            />
+          ) : activeTab === 'reporters' ? (
+            <ReporterTable
+              reporters={reporters}
+              error={error}
+              user={user}
+              isLoading={isLoading}
+              className="rounded-lg"
+            />
+          ) : activeTab === 'deliverables' ? (
+            <DeliverableTable
+              user={user}
+              error={error}
+              isLoading={isLoading}
+              className="rounded-lg"
+              onCountChange={setDeliverablesCount}
+            />
+          ) : activeTab === 'ai' ? (
+            <div className="py-6">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                AI settings will be available soon.
               </p>
             </div>
-            
-            {/* Action Buttons - Only show for reporters */}
-            {activeTab === 'reporters' && (
-              <div className="flex gap-2">
-                <DynamicButton
-                  onClick={handleCreate}
-                  variant="primary"
-                  size="sm"
-                  iconName="add"
-                  iconPosition="left"
-                >
-                  Add Reporter
-                </DynamicButton>
-              </div>
-            )}
-          </div>
-
-          {/* Data Table Section */}
-          <div>
-            {activeTab === 'users' ? (
-              <UserTable
-                users={users}
-                monthId={monthId}
-                error={error}
-                isLoading={isLoading}
-                className="rounded-lg"
-              />
-            ) : (
-              <ReporterTable
-                reporters={reporters}
-                error={error}
-                user={user}
-                isLoading={isLoading}
-                className="rounded-lg"
-              />
-            )}
-          </div>
+          ) : activeTab === 'general' ? (
+            <div className="py-6">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                General settings will be available soon.
+              </p>
+            </div>
+          ) : null}
         </div>
-
-        {/* Reporter Form Modal - Only show for reporters tab */}
-        {activeTab === 'reporters' && (
-          <ReporterFormModal
-            isOpen={showCreateModal}
-            onClose={() => setShowCreateModal(false)}
-            mode="create"
-            onSuccess={() => {
-              setShowCreateModal(false);
-            }}
-          />
-        )}
       </div>
-   
+
+      {/* Reporter Form Modal - Only show for reporters tab */}
+      {activeTab === 'reporters' && (
+        <ReporterFormModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          mode="create"
+          onSuccess={() => {
+            setShowCreateModal(false);
+          }}
+        />
+      )}
+    </div>
   );
 };
 
