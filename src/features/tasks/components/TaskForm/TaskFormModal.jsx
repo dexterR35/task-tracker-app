@@ -22,10 +22,7 @@ const TaskFormModal = ({
       <TaskForm
         mode={mode}
         initialData={task}
-        onSuccess={() => {
-          onSuccess?.();
-          onClose();
-        }}
+        onSuccess={onSuccess}
         onError={onError}
       />
     </Modal>

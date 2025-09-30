@@ -283,17 +283,18 @@ const TaskForm = ({
       operation: mode === 'edit' ? 'update' : 'create',
       resource: 'task',
       onSuccess: async (result) => {
+        // Close modal immediately for better UX
+        onSuccess?.(result);
+        
         reset();
         
-        // Trigger real-time updates
+        // Trigger real-time updates in background
         try {
           await refetchCurrentMonth?.();
           await refetchMonthTasks?.();
         } catch (error) {
           // Silently handle refetch errors - they don't affect the main operation
         }
-        
-        onSuccess?.(result);
       }
     }
   );
