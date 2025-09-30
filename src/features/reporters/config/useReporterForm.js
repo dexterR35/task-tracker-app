@@ -9,7 +9,7 @@ import {
 // ===== REPORTER FORM OPTIONS =====
 const REPORTER_DEPARTMENT_OPTIONS = [
   { value: 'acq', label: 'acq' },
-  { value: 'Product', label: 'Product' },
+  { value: 'crm', label: 'crm' },
   { value: 'Design', label: 'Design' },
   { value: 'Marketing', label: 'Marketing' },
   { value: 'Sales', label: 'Sales' }
