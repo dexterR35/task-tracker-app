@@ -575,7 +575,7 @@ const AdminDashboardPage = () => {
               showPagination={true}
               showFilters={true}
               showColumnToggle={true}
-              pageSize={25}
+              pageSize={10}
               enableSorting={true}
               enableFiltering={true}
               enablePagination={true}

@@ -8,6 +8,7 @@ import { logger } from "@/utils/logger";
 class FirebaseListenerManager {
   constructor() {
     this.listeners = new Map();
+    this.preservedListeners = new Map(); // Store critical listeners that should be preserved
     this.isInitialized = false;
     this.cleanupInterval = null;
     this.maxListeners = 50; // Prevent excessive listeners
@@ -76,9 +77,10 @@ class FirebaseListenerManager {
    * Add a listener with automatic deduplication and memory leak prevention
    * @param {string} key - Unique key for the listener
    * @param {Function} setupFn - Function that returns unsubscribe function
+   * @param {boolean} preserve - Whether to preserve this listener during cleanup
    * @returns {Function} - Unsubscribe function
    */
-  addListener(key, setupFn) {
+  addListener(key, setupFn, preserve = false) {
     // Check for excessive listeners
     if (this.listeners.size >= this.maxListeners) {
       logger.warn(`[ListenerManager] Maximum listeners reached (${this.maxListeners}), cleaning up`);
@@ -109,6 +111,11 @@ class FirebaseListenerManager {
       // Store the unsubscribe function
       this.listeners.set(key, unsubscribe);
       
+      // If this listener should be preserved, store it separately
+      if (preserve) {
+        this.preservedListeners.set(key, { setupFn, unsubscribe });
+      }
+      
       // Update activity timestamp
       this.updateActivity();
       
@@ -137,12 +144,17 @@ class FirebaseListenerManager {
   }
 
   /**
-   * Remove all listeners with error handling
+   * Remove all listeners with error handling (preserves critical listeners)
    */
   removeAllListeners() {
     const listenerCount = this.listeners.size;
     
     for (const [key, unsubscribe] of this.listeners) {
+      // Skip preserved listeners
+      if (this.preservedListeners.has(key)) {
+        continue;
+      }
+      
       try {
         unsubscribe();
       } catch (error) {
@@ -150,7 +162,38 @@ class FirebaseListenerManager {
       }
     }
     
-    this.listeners.clear();
+    // Clear only non-preserved listeners
+    for (const [key] of this.listeners) {
+      if (!this.preservedListeners.has(key)) {
+        this.listeners.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Restore preserved listeners when app becomes visible again
+   */
+  restorePreservedListeners() {
+    for (const [key, { setupFn, unsubscribe }] of this.preservedListeners) {
+      // Clean up old listener if it exists
+      if (this.listeners.has(key)) {
+        try {
+          this.listeners.get(key)();
+        } catch (error) {
+          logger.error(`[ListenerManager] Error cleaning up old listener ${key}:`, error);
+        }
+      }
+      
+      // Set up new listener
+      try {
+        const newUnsubscribe = setupFn();
+        this.listeners.set(key, newUnsubscribe);
+        this.preservedListeners.set(key, { setupFn, unsubscribe: newUnsubscribe });
+        this.updateActivity();
+      } catch (error) {
+        logger.error(`[ListenerManager] Error restoring listener ${key}:`, error);
+      }
+    }
   }
 
   /**
@@ -159,6 +202,8 @@ class FirebaseListenerManager {
   destroy() {
     this.stopCleanupInterval();
     this.removeAllListeners();
+    // Also clear preserved listeners on destroy
+    this.preservedListeners.clear();
   }
 
   /**
@@ -197,14 +242,18 @@ if (typeof window !== 'undefined') {
     listenerManager.destroy();
   });
   
-  // Clean up when page becomes hidden (mobile apps, tab switching)
+  // Handle visibility changes - preserve auth listeners
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      // Only perform cleanup, don't remove preserved listeners
       listenerManager.performCleanup();
+    } else {
+      // App became visible again - restore preserved listeners
+      listenerManager.restorePreservedListeners();
     }
   });
   
-  // Clean up on page focus loss (additional safety)
+  // Clean up on page focus loss (additional safety) - but preserve critical listeners
   window.addEventListener('blur', () => {
     listenerManager.performCleanup();
   });

@@ -144,9 +144,12 @@ export const setupAuthListener = (dispatch) => {
   // Set initial auth checking state
   dispatch(authSlice.actions.startAuthInit());
 
-  authUnsubscribe = onAuthStateChanged(
-    auth,
-    async (user) => {
+  // Use the listener manager to preserve auth listener during app suspension
+  authUnsubscribe = listenerManager.addListener(
+    'auth-state-listener',
+    () => onAuthStateChanged(
+      auth,
+      async (user) => {
       if (user) {
         try {
           // Get user data from Firestore (has all the data we need)
@@ -190,6 +193,8 @@ export const setupAuthListener = (dispatch) => {
         authSlice.actions.authStateChanged({ user: null, error: error.message })
       );
     }
+  ),
+  true // Preserve this listener during app suspension
   );
 };
 
