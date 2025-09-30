@@ -79,7 +79,7 @@ const TaskDetailPage = () => {
 
   const daysBetween = getDaysBetweenDates();
 
-  // Analytics Card Component with smaller fonts
+  // Analytics Card Component matching dashboard format
   const AnalyticsCard = ({ title, icon, color, data, className = "" }) => {
     const cardColorHex = getCardColorHex(color);
     
@@ -99,7 +99,7 @@ const TaskDetailPage = () => {
           <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
         </div>
 
-        {/* Content */}
+        {/* Content - Matching dashboard card format */}
         <div className="space-y-2">
           {data && data.length > 0 ? (
             data.map((item, index) => (
@@ -114,18 +114,46 @@ const TaskDetailPage = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div 
-                      className="w-2 h-2 rounded-full"
+                      className="w-2 h-2 rounded-full p-1"
                       style={{ 
                         backgroundColor: cardColorHex,
+                        padding: '4px',
                         background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
                       }}
                     ></div>
-                    <span className="text-xs text-gray-300">{item.label}</span>
+                    <span className="text-xs text-gray-400">{item.label}</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-200">
-                    {item.value}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    {/* Show badges for all data values with card color */}
+                    {Array.isArray(item.value) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {item.value.map((value, badgeIndex) => (
+                          <div
+                            key={badgeIndex}
+                            className="px-2 py-1 rounded text-xs font-semibold text-white"
+                            style={{ backgroundColor: cardColorHex }}
+                          >
+                            {value}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        className="px-2 py-1 rounded text-xs font-semibold text-white"
+                        style={{ backgroundColor: cardColorHex }}
+                      >
+                        {item.value}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Show hours value if available */}
+                {item.hoursValue && (
+                  <div className="ml-4 mt-1">
+                    <span className="text-xs text-gray-500">total hrs {item.hoursValue}</span>
+                  </div>
+                )}
               </div>
             ))
           ) : (
@@ -142,8 +170,7 @@ const TaskDetailPage = () => {
   const basicInfoData = [
     {
       label: "Task Name",
-      value: task.data_task?.taskName || 'Unnamed Task',
-      subValue: `Jira ID: ${task.data_task?.taskName || 'N/A'}`
+      value: task.data_task?.taskName || 'Unnamed Task'
     },
     {
       label: "Department",
@@ -151,30 +178,27 @@ const TaskDetailPage = () => {
         const departments = task.data_task?.departments;
         if (!departments) return 'Not specified';
         return Array.isArray(departments) ? departments.join(', ') : departments;
-      })(),
-      subValue: `Work department`
+      })()
     },
     {
-      label: "Product", 
-      value: task.data_task?.products || 'Not specified',
-      subValue: `Product category`
-    },
-    {
-      label: "Markets",
-      value: Array.isArray(task.data_task?.markets) 
-        ? task.data_task.markets.join(', ') 
-        : task.data_task?.markets || 'Not specified',
-      subValue: `Target markets`
+      label: "Products", 
+      value: Array.isArray(task.data_task?.products) 
+        ? task.data_task.products
+        : task.data_task?.products ? [task.data_task.products] : ['Not specified']
     },
     {
       label: "Reporter",
-      value: task.data_task?.reporterName || 'Not specified',
-      subValue: `Task reporter`
+      value: task.data_task?.reporterName || 'Not specified'
     },
     {
       label: "User",
-      value: task.data_task?.userName || task.userName || 'Not specified',
-      subValue: `Task assignee`
+      value: task.data_task?.userName || task.userName || 'Not specified'
+    },
+    {
+      label: "AI Models",
+      value: Array.isArray(task.data_task?.aiModels) 
+        ? task.data_task.aiModels
+        : task.data_task?.aiModels ? [task.data_task.aiModels] : ['Not specified']
     }
   ];
 
@@ -200,7 +224,8 @@ const TaskDetailPage = () => {
         
         deliverablesData.push({
           label: `Deliverable ${index + 1}`,
-          value: deliverableName
+          value: deliverableName,
+          subValue: `${deliverableCount}x${deliverableName}${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity} declinari` : ''}`
         });
         
         deliverablesData.push({
@@ -342,7 +367,8 @@ const TaskDetailPage = () => {
       
       deliverablesData.push({
         label: "Deliverable",
-        value: deliverable.label
+        value: deliverable.label,
+        subValue: `${quantity}x${deliverable.label}${declinariQuantity > 0 ? ` + ${declinariQuantity} declinari` : ''}`
       });
       
       if (deliverable.requiresQuantity) {
@@ -390,33 +416,27 @@ const TaskDetailPage = () => {
   const timeInfoData = [
     {
       label: "Task Hours",
-      value: `${taskHours} hours`,
-      subValue: `Manual work time`
+      value: `${taskHours} hours`
     },
     {
       label: "AI Hours", 
-      value: `${aiHours} hours`,
-      subValue: `AI-assisted work time`
+      value: `${aiHours} hours`
     },
     {
       label: "Deliverables Time",
-      value: `${deliverablesHours.toFixed(1)} hours`,
-      subValue: `Calculated from deliverables`
+      value: `${deliverablesHours.toFixed(1)} hours`
     },
     {
       label: "Total Hours",
-      value: `${totalHours.toFixed(1)} hours`,
-      subValue: `Task + AI + Deliverables`
+      value: `${totalHours.toFixed(1)} hours`
     },
     {
       label: "Duration",
-      value: daysBetween,
-      subValue: `From start to end date`
+      value: daysBetween
     },
     {
       label: "Daily Breakdown",
-      value: daysCalculation || 'No deliverables calculated',
-      subValue: `Based on 8 hours per day`
+      value: daysCalculation || 'No deliverables calculated'
     }
   ];
 
@@ -425,37 +445,31 @@ const TaskDetailPage = () => {
       label: "Start Date",
       value: task.data_task?.startDate 
         ? formatDate(task.data_task.startDate, 'dd MMM yyyy', true)
-        : 'Not specified',
-      subValue: `Task start date`
+        : 'Not specified'
     },
     {
       label: "End Date",
       value: task.data_task?.endDate 
         ? formatDate(task.data_task.endDate, 'dd MMM yyyy', true)
-        : 'Not specified',
-      subValue: `Task end date`
+        : 'Not specified'
     },
     {
       label: "Duration",
-      value: daysBetween,
-      subValue: `Days between start and end`
+      value: daysBetween
     },
     {
       label: "Created At",
       value: task.createdAt 
         ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true)
-        : 'Not specified',
-      subValue: `Task creation time`
+        : 'Not specified'
     },
     {
       label: "Created By",
-      value: task.createdByName || 'Not specified',
-      subValue: `Task creator`
+      value: task.createdByName || 'Not specified'
     },
     {
       label: "Month",
-      value: task.monthId || 'Not specified',
-      subValue: `Task month period`
+      value: task.monthId || 'Not specified'
     }
   ];
 
@@ -467,8 +481,7 @@ const TaskDetailPage = () => {
       label: "AI Models Used",
       value: Array.isArray(task.data_task.aiModels) 
         ? task.data_task.aiModels.join(', ') 
-        : task.data_task.aiModels,
-      subValue: `AI tools utilized`
+        : task.data_task.aiModels
     });
   }
   
@@ -476,8 +489,7 @@ const TaskDetailPage = () => {
   if (task.data_task?.aiTime && task.data_task.aiTime > 0) {
     aiData.push({
       label: "AI Time",
-      value: `${task.data_task.aiTime} hours`,
-      subValue: `Time spent using AI`
+      value: `${task.data_task.aiTime} hours`
     });
   }
   
@@ -485,8 +497,7 @@ const TaskDetailPage = () => {
   if (task.data_task?.usedAIEnabled !== undefined) {
     aiData.push({
       label: "AI Enabled",
-      value: task.data_task.usedAIEnabled ? 'Yes' : 'No',
-      subValue: `AI assistance used`
+      value: task.data_task.usedAIEnabled ? 'Yes' : 'No'
     });
   }
 
@@ -494,28 +505,23 @@ const TaskDetailPage = () => {
   const statusData = [
     {
       label: "Task Status",
-      value: task.isVip ? 'VIP Task' : 'Regular Task',
-      subValue: task.isVip ? 'High priority task' : 'Standard task'
+      value: task.isVip ? 'VIP Task' : 'Regular Task'
     },
     {
       label: "Reworked",
-      value: task.reworked ? 'Yes' : 'No',
-      subValue: task.reworked ? 'Task has been reworked' : 'Original task'
+      value: task.reworked ? 'Yes' : 'No'
     },
     {
       label: "Task ID",
-      value: task.id || 'Not specified',
-      subValue: `Unique task identifier`
+      value: task.id || 'Not specified'
     },
     {
       label: "Month ID",
-      value: task.monthId || 'Not specified',
-      subValue: `Task month period`
+      value: task.monthId || 'Not specified'
     },
     {
       label: "User UID",
-      value: task.userUID || 'Not specified',
-      subValue: `Assigned user ID`
+      value: task.userUID || 'Not specified'
     }
   ];
 
@@ -664,15 +670,6 @@ const TaskDetailPage = () => {
             data={datesData}
           />
 
-          {/* AI Information Card */}
-          {aiData.length > 0 && (
-            <AnalyticsCard
-              title="AI Information"
-              icon={Icons.generic.ai}
-              color="pink"
-              data={aiData}
-            />
-          )}
 
           {/* Deliverables Card */}
           {deliverablesData.length > 0 && (

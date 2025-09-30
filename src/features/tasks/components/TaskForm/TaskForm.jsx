@@ -391,11 +391,9 @@ const TaskForm = ({
           </div>
         </div>
 
-        {/* 3. Markets + Total Time Hours - 2 columns */}
+        {/* 3. Total Time Hours - Full Width */}
         <div className="form-section">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderFieldsByName(['markets', 'timeInHours'])}
-          </div>
+          {renderFieldsByName(['timeInHours'])}
         </div>
         
         {/* 4. Start Date + End Date - 2 columns */}

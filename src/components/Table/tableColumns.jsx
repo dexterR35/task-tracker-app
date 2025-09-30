@@ -68,16 +68,6 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
     },
     size: 120,
   }),
-  columnHelper.accessor((row) => row.data_task?.markets, {
-    id: 'markets',
-    header: 'Markets',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value || !Array.isArray(value)) return '-';
-      return value.join(', ');
-    },
-    size: 150,
-  }),
   columnHelper.accessor((row) => row.data_task?.aiUsed?.[0]?.aiModels, {
     id: 'aiModels',
     header: 'AI Models',
