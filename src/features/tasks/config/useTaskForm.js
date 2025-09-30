@@ -214,8 +214,9 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
     options: [] // Will be populated dynamically
   }),
   createTextareaField('observations', 'Observations', {
-    placeholder: 'Enter any additional observations or notes...',
-    required: false
+    placeholder: 'Enter any additional observations or notes... (max 300 characters)',
+    required: false,
+    maxLength: 300
   })
 ];
 
@@ -401,7 +402,7 @@ export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().s
   
   observations: Yup.string()
     .optional()
-    .max(1000, 'Observations cannot exceed 1000 characters')
+    .max(300, 'Observations cannot exceed 300 characters')
 });
 
 // Fallback for backward compatibility (with empty deliverables)

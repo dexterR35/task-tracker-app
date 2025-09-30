@@ -11,6 +11,7 @@ const TextareaField = ({ field, register, errors, formValues }) => {
         id={field.name}
         placeholder={field.placeholder}
         rows={field.rows || 4}
+        maxLength={field.maxLength}
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
         className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
