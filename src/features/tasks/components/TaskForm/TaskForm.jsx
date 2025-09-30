@@ -391,36 +391,41 @@ const TaskForm = ({
           </div>
         </div>
 
-        {/* 3. Total Time Hours - Full Width */}
+        {/* 3. Markets - Full Width */}
+        <div className="form-section">
+          {renderFieldsByName(['markets'])}
+        </div>
+
+        {/* 4. Total Time Hours - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['timeInHours'])}
         </div>
         
-        {/* 4. Start Date + End Date - 2 columns */}
+        {/* 5. Start Date + End Date - 2 columns */}
         <div className="form-section">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renderFieldsByName(['startDate', 'endDate'])}
           </div>
         </div>
 
-        {/* 5. Reporter - Full Width */}
+        {/* 6. Reporter - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['reporters'])}
         </div>
 
-        {/* 6. VIP Task + Reworked - 2 columns */}
+        {/* 7. VIP Task + Reworked - 2 columns */}
         <div className="form-section">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renderFieldsByName(['isVip', 'reworked'])}
           </div>
         </div>
 
-        {/* 7. AI Used - Full Width */}
+        {/* 8. AI Used - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['_usedAIEnabled'])}
         </div>
 
-        {/* 8. AI Models + AI Time - 2 columns (conditional) */}
+        {/* 9. AI Models + AI Time - 2 columns (conditional) */}
         {watchedValues._usedAIEnabled && (
           <div className="form-section">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -429,12 +434,12 @@ const TaskForm = ({
           </div>
         )}
 
-        {/* 9. Has Deliverables - Full Width */}
+        {/* 10. Has Deliverables - Full Width */}
         <div className="form-section">
           {renderFieldsByName(['_hasDeliverables'])}
         </div>
 
-        {/* 10. Deliverables - Full Width (conditional) */}
+        {/* 11. Deliverables - Full Width (conditional) */}
         {watchedValues._hasDeliverables && (
           <div className="form-section">
             {renderFieldsByName(['deliverables'])}

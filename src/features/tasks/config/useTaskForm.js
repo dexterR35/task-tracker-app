@@ -148,6 +148,9 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
   createSelectField('departments', 'Department', {}, {
     options: TASK_FORM_OPTIONS.departments
   }),
+  createMultiSelectField('markets', 'Markets', {}, {
+    options: TASK_FORM_OPTIONS.markets
+  }),
   createNumberField('timeInHours', 'Total Time (Hours)', {
     step: 0.5
   }),
