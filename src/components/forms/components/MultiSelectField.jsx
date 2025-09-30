@@ -47,7 +47,7 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
         <select
           value=""
           id={field.name}
-          className="form-input"
+          className={`form-input ${fieldError ? 'error' : ''}`}
           onChange={(e) => handleAddValue(e.target.value)}
         >
           <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>

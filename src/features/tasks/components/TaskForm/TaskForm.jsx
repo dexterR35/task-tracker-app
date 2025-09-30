@@ -391,26 +391,18 @@ const TaskForm = ({
           </div>
         </div>
 
-        {/* 3. Markets - Full Width */}
-        <div className="form-section">
-          {renderFieldsByName(['markets'])}
-        </div>
-
-        {/* 4. Total Time Hours - Full Width */}
-        <div className="form-section">
-          {renderFieldsByName(['timeInHours'])}
-        </div>
-        
-        {/* 5. Start Date + End Date - 2 columns */}
+        {/* 3. Markets + Reporter - 2 columns */}
         <div className="form-section">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderFieldsByName(['startDate', 'endDate'])}
+            {renderFieldsByName(['markets', 'reporters'])}
           </div>
         </div>
 
-        {/* 6. Reporter - Full Width */}
+        {/* 4. Start Date + End Date + Total Time Hours - 3 columns */}
         <div className="form-section">
-          {renderFieldsByName(['reporters'])}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {renderFieldsByName(['startDate', 'endDate', 'timeInHours'])}
+          </div>
         </div>
 
         {/* 7. VIP Task + Reworked - 2 columns */}

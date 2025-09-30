@@ -25,16 +25,16 @@ const SimpleDateField = ({
   };
 
   const monthBoundaries = getMonthBoundariesLocal();
-  const currentMonthName = monthName;
+  // const currentMonthName = monthName;
 
   return (
     <BaseField field={field} error={error} formValues={formValues}>
       <div className="simple-date-field-container">
-        <div className="mb-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Select a day within {currentMonthName} (month and year are fixed)
+        {/* <div className="mb-2">
+          <p className="text-xs">
+            Select a day within {currentMonthName} 
           </p>
-        </div>
+        </div> */}
         
         <input
           type="date"
@@ -45,12 +45,7 @@ const SimpleDateField = ({
           className={`form-input ${error ? 'error' : ''}`}
         />
         
-        {/* Month Boundaries Info */}
-        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <p className="text-xs text-blue-800 dark:text-blue-200">
-            <strong>Available range:</strong> {monthBoundaries.min} to {monthBoundaries.max}
-          </p>
-        </div>
+    
       </div>
     </BaseField>
   );

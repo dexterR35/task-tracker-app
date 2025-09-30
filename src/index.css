@@ -240,9 +240,45 @@
     @apply w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-default focus:border-blue-default;
   }
 
+  /* Comprehensive error styling for all input types */
   input:not([type="radio"]).error,
   select.error,
   textarea.error {
+    @apply border-red-error dark:border-red-error;
+  }
+
+  /* Checkbox error styling */
+  input[type="checkbox"].error {
+    @apply border-red-error dark:border-red-error;
+  }
+
+  /* Radio button error styling */
+  input[type="radio"].error {
+    @apply border-red-error dark:border-red-error;
+  }
+
+  /* Additional error styling for custom inputs */
+  .form-input.error,
+  input.error,
+  select.error,
+  textarea.error {
+    @apply border-red-error dark:border-red-error;
+  }
+
+  /* Error styling for any input with error class */
+  [class*="error"] input,
+  [class*="error"] select,
+  [class*="error"] textarea {
+    @apply border-red-error dark:border-red-error;
+  }
+
+  /* Global error styling - catch all inputs with error class */
+  input.error,
+  select.error,
+  textarea.error,
+  .error input,
+  .error select,
+  .error textarea {
     @apply border-red-error dark:border-red-error;
   }
   /* Select Fields */
@@ -258,6 +294,22 @@
   /* Number Fields */
   input[type="number"] {
     @apply text-right;
+  }
+
+  /* Number input with left alignment */
+  .number-input-left {
+    @apply text-left;
+  }
+
+  /* Hide number input arrows and position text to left */
+  .number-input-left::-webkit-outer-spin-button,
+  .number-input-left::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .number-input-left[type="number"] {
+    -moz-appearance: textfield;
   }
 
   /* Disabled States */

@@ -203,10 +203,15 @@ const DeliverablesField = ({
                     <input
                       type="number"
                       min="1"
-                      step="0.5"
+                      step="1"
                       value={quantity}
                       onChange={(e) => handleQuantityChange(option.value, e.target.value)}
-                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white number-input-left"
+                      style={{
+                        textAlign: 'left',
+                        paddingLeft: '8px',
+                        paddingRight: '4px'
+                      }}
                     />
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       units
@@ -229,10 +234,15 @@ const DeliverablesField = ({
                         <input
                           type="number"
                           min="0"
-                          step="0.5"
+                          step="1"
                           value={declinariQuantities[option.value] || 0}
                           onChange={(e) => handleDeclinariQuantityChange(option.value, e.target.value)}
-                          className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white number-input-left"
+                          style={{
+                            textAlign: 'left',
+                            paddingLeft: '6px',
+                            paddingRight: '4px'
+                          }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           units

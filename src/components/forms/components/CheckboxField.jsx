@@ -12,6 +12,7 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
           {...register(field.name)}
           id={field.name}
           type="checkbox"
+          className={`form-checkbox ${fieldError ? 'error' : ''}`}
           onChange={(e) => {
             setValue(field.name, e.target.checked);
             trigger(field.name);

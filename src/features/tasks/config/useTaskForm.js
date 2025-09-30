@@ -151,9 +151,6 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
   createMultiSelectField('markets', 'Markets', {}, {
     options: TASK_FORM_OPTIONS.markets
   }),
-  createNumberField('timeInHours', 'Total Time (Hours)', {
-    step: 0.5
-  }),
   // Date range fields for task duration
   {
     name: 'startDate',
@@ -169,6 +166,11 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
     required: true,
     conditional: false
   },
+  createNumberField('timeInHours', 'Total Time (Hours)', {
+    step: 0.5,
+    defaultValue: 0,
+    min: 0
+  }),
   createCheckboxField('_hasDeliverables', 'Has Deliverables', {}),
   {
     ...createSelectField('deliverables', 'Deliverables', {}, {
@@ -199,7 +201,9 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
   },
   {
     ...createNumberField('aiTime', 'Time Spent on AI (Hours)', {
-      step: 0.5
+      step: 0.5,
+      defaultValue: 0,
+      min: 0
     }),
     conditional: {
       field: '_usedAIEnabled',
@@ -239,7 +243,18 @@ export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().s
     .typeError('Please enter a valid number')
     .required(VALIDATION_MESSAGES.REQUIRED)
     .min(0.5, VALIDATION_MESSAGES.MIN_VALUE(0.5))
-    .max(999, VALIDATION_MESSAGES.MAX_VALUE(999)),
+    .max(999, VALIDATION_MESSAGES.MAX_VALUE(999))
+    .test('valid-increment', 'Time must be in 0.5 hour increments (0, 0.5, 1, 1.5, 2, etc.)', function(value) {
+      if (value === undefined || value === null) return true;
+      // Check if the value is a valid 0.5 increment
+      const remainder = value % 0.5;
+      if (remainder !== 0) {
+        return this.createError({
+          message: '❌ Time must be in 0.5 hour increments (0, 0.5, 1, 1.5, 2, etc.)'
+        });
+      }
+      return true;
+    }),
   
   startDate: Yup.date()
     .required(VALIDATION_MESSAGES.REQUIRED)
@@ -366,7 +381,18 @@ export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().s
       .typeError('Please enter a valid number')
       .required('AI time is required when "AI Tools Used" is checked')
       .min(0.5, 'AI time must be at least 0.5 hours')
-      .max(999, 'AI time cannot exceed 999 hours'),
+      .max(999, 'AI time cannot exceed 999 hours')
+      .test('valid-increment', 'AI time must be in 0.5 hour increments ', function(value) {
+        if (value === undefined || value === null) return true;
+        // Check if the value is a valid 0.5 increment
+        const remainder = value % 0.5;
+        if (remainder !== 0) {
+          return this.createError({
+            message: '❌ AI time must be in 0.5 hour increments '
+          });
+        }
+        return true;
+      }),
     otherwise: (schema) => schema.notRequired().default(0)
   }),
   
