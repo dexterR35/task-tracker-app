@@ -16,20 +16,25 @@ const SimpleDateField = ({
   const { monthId, monthName } = useAppData();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
-  // Always use the current month from monthId, no navigation allowed
-  const currentMonth = new Date(monthId);
+  const [currentMonth, setCurrentMonth] = useState(new Date(monthId));
   const inputRef = useRef(null);
   
   const fieldName = field.name;
   const error = errors[fieldName];
   const watchedValue = watch(fieldName);
 
-  // Get month boundaries for date restrictions
-  const getMonthBoundariesLocal = () => {
-    return getMonthBoundaries(monthId);
+  // Navigation functions for month selection
+  const navigateMonth = (direction) => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev);
+      if (direction === 'prev') {
+        newMonth.setMonth(newMonth.getMonth() - 1);
+      } else {
+        newMonth.setMonth(newMonth.getMonth() + 1);
+      }
+      return newMonth;
+    });
   };
-
-  const monthBoundaries = getMonthBoundariesLocal();
 
   useEffect(() => {
     if (watchedValue) {
@@ -76,8 +81,9 @@ const SimpleDateField = ({
     
     const days = [];
     const today = new Date();
-    const minDate = new Date(monthBoundaries.min);
-    const maxDate = new Date(monthBoundaries.max);
+    // Remove date restrictions - allow any date selection
+    const minDate = new Date(2020, 0, 1); // Allow dates from 2020 onwards
+    const maxDate = new Date(2030, 11, 31); // Allow dates up to 2030
 
     for (let i = 0; i < 42; i++) {
       const date = new Date(startDate);
@@ -160,11 +166,29 @@ const SimpleDateField = ({
             
             {/* Calendar */}
             <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl p-6 w-96 max-w-full">
-              {/* Calendar Header - No Navigation */}
-              <div className="flex items-center justify-center mb-6">
+              {/* Calendar Header - With Navigation */}
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  type="button"
+                  onClick={() => navigateMonth('prev')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
                 <h3 className="text-xl font-bold text-gray-800">
                   {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => navigateMonth('next')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
 
               {/* Day Headers */}
@@ -203,7 +227,7 @@ const SimpleDateField = ({
               <div className="mt-6 pt-4 border-t border-gray-100">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">
-                    Select a date within {monthName}
+                    Select any date (2020-2030)
                   </span>
                   <button
                     type="button"
