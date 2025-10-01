@@ -521,7 +521,7 @@ export const getUserColumns = (monthId = null) => [
     size: 200,
   }),
   columnHelper.accessor('occupation', {
-    header: 'Occupation',
+    header: 'Department',
     cell: ({ getValue }) => {
       return getValue();
     },
