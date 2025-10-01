@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
 import { useAppData } from '@/hooks/useAppData';
 import { isUserAdmin } from '@/features/utils/authUtils';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import TanStackTable from '@/components/Table/TanStackTable';
 import { SkeletonTable } from '@/components/ui/Skeleton/Skeleton';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
@@ -205,16 +205,7 @@ const DeliverableTable = ({
   return (
     <div className={`deliverable-table ${className}`}>
       {/* Table Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Deliverables Management
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage deliverable types and their time requirements
-          </p>
-        </div>
-        
+      <div className="flex justify-end items-center mb-4">
         {canManageDeliverables && (
           <DynamicButton
             variant="primary"

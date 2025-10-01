@@ -3,9 +3,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { showSuccess, showError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
-import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
+import { handleValidationError, withMutationErrorHandling } from '@/features/utils/errorHandling';
+import { createFormSubmissionHandler } from '@/utils/formUtils';
 import { 
   DELIVERABLE_FORM_FIELDS,
   createDeliverableFormSchema,
@@ -21,7 +20,6 @@ import {
 } from '@/components/forms/components/';
 import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { logger } from '@/utils/logger';
 import { useAppData } from '@/hooks/useAppData';
 
 /**
@@ -53,39 +51,6 @@ const DeliverableForm = ({
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch, trigger } = form;
   const formValues = watch();
 
-  // Custom validation for deliverable name uniqueness
-  const validateNameUniqueness = async (name) => {
-    if (mode === 'edit' && deliverable?.name === name) {
-      return true; // Same name is allowed for edit
-    }
-    
-    const error = validateDeliverableName(name, existingDeliverables || []);
-    if (error) {
-      setValue('name', name, { shouldValidate: true });
-      return error;
-    }
-    return true;
-  };
-
-  // Custom validation for time per unit
-  const validateTime = async (time) => {
-    const error = validateTimePerUnit(time);
-    if (error) {
-      setValue('timePerUnit', time, { shouldValidate: true });
-      return error;
-    }
-    return true;
-  };
-
-  // Custom validation for declinari time
-  const validateDeclinari = async (time) => {
-    const error = validateDeclinariTime(time);
-    if (error) {
-      setValue('declinariTime', time, { shouldValidate: true });
-      return error;
-    }
-    return true;
-  };
 
   // Form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
@@ -93,6 +58,16 @@ const DeliverableForm = ({
       const preparedData = prepareDeliverableFormData(formData);
       
       if (mode === 'create') {
+        // Check if deliverable name already exists
+        const currentDeliverables = existingDeliverables || [];
+        const nameExists = currentDeliverables.some(deliverable => 
+          deliverable.name && deliverable.name.toLowerCase() === preparedData.name.toLowerCase()
+        );
+        
+        if (nameExists) {
+          throw new Error(`A deliverable with the name "${preparedData.name}" already exists. Please choose a different name.`);
+        }
+
         const createDeliverableWithErrorHandling = withMutationErrorHandling(updateSettings, {
           operationName: 'create deliverable',
           showToast: true,
@@ -108,7 +83,6 @@ const DeliverableForm = ({
         };
 
         // Get current deliverables and add new one
-        const currentDeliverables = existingDeliverables || [];
         const updatedDeliverables = [...currentDeliverables, newDeliverable];
 
         await createDeliverableWithErrorHandling({
@@ -119,6 +93,18 @@ const DeliverableForm = ({
           userData: user
         });
       } else {
+        // Check if deliverable name already exists (excluding current deliverable)
+        const currentDeliverables = existingDeliverables || [];
+        const nameExists = currentDeliverables.some(d => 
+          d.id !== deliverable.id && 
+          d.name && 
+          d.name.toLowerCase() === preparedData.name.toLowerCase()
+        );
+        
+        if (nameExists) {
+          throw new Error(`A deliverable with the name "${preparedData.name}" already exists. Please choose a different name.`);
+        }
+
         const updateDeliverableWithErrorHandling = withMutationErrorHandling(updateSettings, {
           operationName: 'update deliverable',
           showToast: true,
@@ -126,7 +112,6 @@ const DeliverableForm = ({
         });
 
         // Update existing deliverable in the array
-        const currentDeliverables = existingDeliverables || [];
         const updatedDeliverables = currentDeliverables.map(d => 
           d.id === deliverable.id 
             ? { ...d, ...preparedData, updatedAt: new Date().toISOString() }

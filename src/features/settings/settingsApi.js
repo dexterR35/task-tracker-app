@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
-import { getCurrentUserInfo } from "@/features/auth/authSlice";
+import { selectUser } from "@/features/auth/authSlice";
 import { canDeleteData, hasPermission, isUserAdmin } from "@/features/utils/authUtils";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import {
@@ -129,16 +129,15 @@ export const settingsApi = createApi({
               return { error: { message: permissionValidation.errors.join(', ') } };
             }
 
-          const currentUser = getCurrentUserInfo();
-          if (!currentUser) {
-            return { error: { message: "User not authenticated" } };
+          if (!userData) {
+            return { error: { message: "User data is required" } };
           }
 
           const settingsRef = getSettingsRef();
           const settingsWithTimestamp = {
             ...settings,
             updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid,
+            updatedBy: userData.uid || userData.userUID,
             updatedByName: userData.name
           };
 
@@ -166,9 +165,8 @@ export const settingsApi = createApi({
               return { error: { message: permissionValidation.errors.join(', ') } };
             }
 
-          const currentUser = getCurrentUserInfo();
-          if (!currentUser) {
-            return { error: { message: "User not authenticated" } };
+          if (!userData) {
+            return { error: { message: "User data is required" } };
           }
 
           // Update deliverables in specific settings document
@@ -176,7 +174,7 @@ export const settingsApi = createApi({
           const deliverablesData = {
             ...deliverables, // This now contains the structured object with deliverables array and metadata
             updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid,
+            updatedBy: userData.uid || userData.userUID,
             updatedByName: userData.name
           };
 
@@ -209,9 +207,8 @@ export const settingsApi = createApi({
               return { error: { message: permissionValidation.errors.join(', ') } };
             }
 
-          const currentUser = getCurrentUserInfo();
-          if (!currentUser) {
-            return { error: { message: "User not authenticated" } };
+          if (!userData) {
+            return { error: { message: "User data is required" } };
           }
 
           // Update specific settings document
@@ -219,7 +216,7 @@ export const settingsApi = createApi({
           const updateData = {
             ...settingsData,
             updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid,
+            updatedBy: userData.uid || userData.userUID,
             updatedByName: userData.name
           };
 
