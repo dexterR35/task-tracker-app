@@ -181,14 +181,6 @@ const DeliverablesField = ({
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {option.label}
                   </span>
-                  {option.timePerUnit > 0 && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {option.requiresQuantity ? 
-                        `${option.timePerUnit} ${option.timeUnit}/unit` : 
-                        `${option.timePerUnit} ${option.timeUnit}`
-                      }
-                    </div>
-                  )}
                 </div>
               </label>
               
@@ -226,7 +218,7 @@ const DeliverablesField = ({
                       className="form-checkbox"
                     />
                     <label className="text-sm text-gray-600 dark:text-gray-400">
-                      Declinari ({option.declinariTime || 10} {option.declinariTimeUnit || 'min'}/unit):
+                      Declinari (per unit):
                     </label>
                     {declinariEnabled[option.value] && (
                       <>
@@ -250,27 +242,9 @@ const DeliverablesField = ({
                     )}
                   </div>
                   
-                  {timeEstimate && (
-                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
-                      Total: {timeEstimate}
-                      {declinariEnabled[option.value] && declinariQuantities[option.value] > 0 && (
-                        <span className="text-orange-600 dark:text-orange-400">
-                          {' '}(+ {((declinariQuantities[option.value] || 0) * (option.declinariTime || 10))} {option.declinariTimeUnit || 'min'} declinari)
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
               
-              {/* Time estimate for non-quantity deliverables */}
-              {isSelected && !option.requiresQuantity && timeEstimate && (
-                <div className="mt-2 ml-6">
-                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                    Estimated time: {timeEstimate}
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}

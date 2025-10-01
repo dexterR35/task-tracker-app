@@ -301,7 +301,7 @@ const TaskForm = ({
   };
 
   const formTitle = mode === 'edit' ? 'Edit Task' : 'Create New Task';
-  const submitButtonText = mode === 'edit' ? 'Update Task' : 'Create Task';
+  const submitButtonText = mode === 'edit' ? 'Update Task' : 'Save Task';
 
   // Helper function to create field props
   const createFieldProps = (field) => ({
