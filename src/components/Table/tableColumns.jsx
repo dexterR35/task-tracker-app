@@ -495,6 +495,36 @@ export const getUserColumns = (monthId = null) => [
     },
     size: 100,
   }),
+  columnHelper.accessor('permissions', {
+    header: 'Permissions',
+    cell: ({ getValue }) => {
+      const permissions = getValue();
+      if (!permissions || !Array.isArray(permissions) || permissions.length === 0) {
+        return <span className="text-gray-500">No permissions</span>;
+      }
+      
+      return (
+        <div className="flex flex-wrap gap-1">
+          {permissions.slice(0, 3).map((permission, index) => (
+            <Badge 
+              key={index} 
+              variant="blue" 
+              size="xs"
+              className="text-xs"
+            >
+              {permission.replace(/_/g, ' ')}
+            </Badge>
+          ))}
+          {permissions.length > 3 && (
+            <Badge variant="gray" size="xs" className="text-xs">
+              +{permissions.length - 3} more
+            </Badge>
+          )}
+        </div>
+      );
+    },
+    size: 200,
+  }),
   columnHelper.accessor('occupation', {
     header: 'Occupation',
     cell: ({ getValue }) => {

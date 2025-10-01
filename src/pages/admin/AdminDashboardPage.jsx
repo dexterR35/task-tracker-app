@@ -84,9 +84,14 @@ const AdminDashboardPage = () => {
   const selectedReporterName =
     selectedReporter?.name || selectedReporter?.reporterName;
 
-  // Handle user selection (admin only) - memoized with useCallback
+  // Handle user selection with role-based access control
   const handleUserSelect = useCallback(
     (userId) => {
+      // Regular users can only select themselves
+      if (!isUserAdmin && userId && userId !== (user?.uid || user?.userUID)) {
+        return; // Prevent regular users from selecting other users
+      }
+      
       const currentParams = Object.fromEntries(searchParams.entries());
       if (!userId) {
         delete currentParams.user;
@@ -95,12 +100,19 @@ const AdminDashboardPage = () => {
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams]
+    [setSearchParams, searchParams, isUserAdmin, user]
   );
 
-  // Handle reporter selection (admin only) - memoized with useCallback
+  // Handle reporter selection with role-based access control
   const handleReporterSelect = useCallback(
     (reporterId) => {
+      // Regular users can only select reporters they're assigned to
+      if (!isUserAdmin && reporterId) {
+        // TODO: Add logic to check if user is assigned to this reporter
+        // For now, allow all reporters for regular users
+        // This should be updated based on your user-reporter assignment logic
+      }
+      
       const currentParams = Object.fromEntries(searchParams.entries());
       if (!reporterId) {
         delete currentParams.reporter;
@@ -109,7 +121,7 @@ const AdminDashboardPage = () => {
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams]
+    [setSearchParams, searchParams, isUserAdmin]
   );
 
   // Delete wrapper with error handling for permission issues
@@ -206,10 +218,17 @@ const AdminDashboardPage = () => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
 
-        // Role-based filtering: Regular users can only see their own tasks
+        // Role-based filtering: Regular users can only see their own tasks + their assigned reporters' tasks
         if (!isUserAdmin) {
           const userUID = user?.uid || user?.userUID;
-          if (userUID && task.userUID !== userUID && task.createbyUID !== userUID) {
+          const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
+          
+          // TODO: Add logic to check if user is assigned to this reporter
+          // For now, allow all reporter tasks for regular users
+          const isReporterTask = task.reporters || task.data_task?.reporters;
+          
+          // Regular users can see: their own tasks OR reporter tasks
+          if (!isUserTask && !isReporterTask) {
             return false;
           }
         }
@@ -242,10 +261,12 @@ const AdminDashboardPage = () => {
         }
 
         // If neither user nor reporter is selected, show tasks based on role
-        // Admin: show all tasks, Regular user: show only their tasks
+        // Admin: show all tasks, Regular user: show only their tasks + reporter tasks
         if (!isUserAdmin) {
           const userUID = user?.uid || user?.userUID;
-          return userUID && (task.userUID === userUID || task.createbyUID === userUID);
+          const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
+          const isReporterTask = task.reporters || task.data_task?.reporters;
+          return isUserTask || isReporterTask;
         }
 
         return true; // Admin sees all tasks
@@ -427,18 +448,16 @@ const AdminDashboardPage = () => {
               )}
             </p>
           </div>
-          {isUserAdmin && (
-            <DynamicButton
-              onClick={handleCreateTask}
-              variant="primary"
-              size="md"
-              iconName="add"
-              iconPosition="left"
-              className="px-4 py-3 m-0"
-            >
-              ADD TASK
-            </DynamicButton>
-          )}
+          <DynamicButton
+            onClick={handleCreateTask}
+            variant="primary"
+            size="md"
+            iconName="add"
+            iconPosition="left"
+            className="px-4 py-3 m-0"
+          >
+            ADD TASK
+          </DynamicButton>
         </div>
 
         {/* Month Progress Bar */}

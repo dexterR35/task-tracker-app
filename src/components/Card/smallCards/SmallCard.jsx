@@ -18,6 +18,12 @@ const SmallCard = ({ card }) => {
         return "primary";
       case "historical":
         return "secondary";
+      case "admin":
+        return "error";
+      case "user":
+        return "secondary";
+      case "reporter":
+        return "primary";
       default:
         return "secondary";
     }
@@ -27,16 +33,22 @@ const SmallCard = ({ card }) => {
     switch (status?.toLowerCase()) {
       case "active":
       case "current":
-        return "green";
+        return "success";
       case "inactive":
       case "disabled":
-        return "red";
+        return "error";
       case "filtered":
-        return "blue";
+        return "primary";
       case "historical":
-        return "gray";
+        return "secondary";
+      case "admin":
+        return "error";
+      case "user":
+        return "secondary";
+      case "reporter":
+        return "primary";
       default:
-        return "gray";
+        return "secondary";
     }
   };
 
@@ -68,7 +80,7 @@ const SmallCard = ({ card }) => {
             
             {/* Status Badge */}
             {card.status && (
-              <Badge variant={getStatusBadgeVariant(card.status)}>
+              <Badge variant={getStatusBadgeColor(card.status)} color={card.color}>
                 {card.status}
               </Badge>
             )}

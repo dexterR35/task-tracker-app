@@ -6,6 +6,7 @@ const Badge = ({
   variant = 'default', 
   size = 'sm', 
   className = '',
+  color,
   ...props 
 }) => {
   // Size variants
@@ -35,7 +36,26 @@ const Badge = ({
 
   const baseClasses = 'inline-flex items-center font-normal rounded';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
-  const variantClass = variantClasses[variant] || variantClasses.default;
+  
+  // Use custom color if provided, otherwise use variant
+  const getVariantClass = () => {
+    if (color) {
+      // Map color names to solid CSS classes (no gradients, no opacity)
+      const colorMap = {
+        'red': 'bg-red-600 text-white',
+        'blue': 'bg-blue-600 text-white',
+        'green': 'bg-green-600 text-white',
+        'purple': 'bg-purple-600 text-white',
+        'yellow': 'bg-yellow-600 text-white',
+        'gray': 'bg-gray-600 text-white',
+        'secondary': 'bg-gray-700 text-white'
+      };
+      return colorMap[color] || variantClasses[variant] || variantClasses.default;
+    }
+    return variantClasses[variant] || variantClasses.default;
+  };
+  
+  const variantClass = getVariantClass();
 
   return (
     <span 

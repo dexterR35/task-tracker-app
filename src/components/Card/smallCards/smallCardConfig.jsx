@@ -3,45 +3,15 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 // Small Card Types
 export const SMALL_CARD_TYPES = {
-  CURRENT_BOARD: "current-board",
   MONTH_SELECTION: "month-selection",
   USER_FILTER: "user-filter",
   REPORTER_FILTER: "reporter-filter",
+  USER_PROFILE: "user-profile",
   ACTIONS: "actions",
 };
 
 // Small Card Configuration Templates
 export const SMALL_CARD_CONFIGS = {
-  [SMALL_CARD_TYPES.CURRENT_BOARD]: {
-    title: "Current Board",
-    subtitle: (data) =>
-      data.selectedMonth?.monthName ||
-      data.currentMonth?.monthName ||
-      "No month",
-    description: "Tasks",
-    icon: Icons.generic.dashboard,
-    color: "blue",
-    getValue: (data) => data.tasks?.length || 0,
-    getStatus: (data) => {
-      if (data.isCurrentMonth) {
-        return data.currentMonth?.boardExists ? "Active" : "Inactive";
-      }
-      return "Inactive";
-    },
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.clock,
-        label: "Year",
-        value:
-          data.selectedMonth?.monthId || data.currentMonth?.monthId
-            ? (data.selectedMonth?.monthId || data.currentMonth?.monthId).split(
-                "-"
-              )[0]
-            : "N/A",
-      },
-    ],
-  },
-
   [SMALL_CARD_TYPES.MONTH_SELECTION]: {
     title: "Month Period",
     subtitle: (data) => `${data.availableMonths?.length || 0} periods`,
@@ -173,6 +143,67 @@ export const SMALL_CARD_CONFIGS = {
     ],
   },
 
+  [SMALL_CARD_TYPES.USER_PROFILE]: {
+    title: "User Profile",
+    subtitle: "NetBet",
+    description:"Tasks",
+    icon: Icons.generic.user,
+    color: (data) => {
+      const role = data.currentUser?.role;
+      switch (role) {
+        case 'admin': return 'red';
+        case 'reporter': return 'blue';
+        case 'user':
+        default: return 'purple';
+      }
+    },
+    getValue: (data) => {
+      // Calculate total tasks for current user + reporter if selected
+      const userUID = data.currentUser?.uid || data.currentUser?.userUID;
+      const selectedReporterId = data.selectedReporterId;
+      
+      if (!data.tasks) return "0";
+      
+      const userTasks = data.tasks.filter(task => {
+        // User's own tasks
+        const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
+        
+        // Reporter tasks if reporter is selected
+        const isReporterTask = selectedReporterId && (
+          task.reporters === selectedReporterId || 
+          task.data_task?.reporters === selectedReporterId
+        );
+        
+        return isUserTask || isReporterTask;
+      });
+      
+      return userTasks.length.toString();
+    },
+    getStatus: (data) => (data.currentUser?.role || "user").toUpperCase(),
+    getDetails: (data) => [
+      {
+        label: "Name",
+        value: data.currentUser?.name || "N/A",
+      },
+      {
+        label: "Email",
+        value: data.currentUser?.email || "N/A",
+      },
+      {
+        label: "Current Board",
+        value: data.selectedMonth?.monthName || data.currentMonth?.monthName || "No board",
+      },
+      {
+        label: "Department", 
+        value: data.currentUser?.occupation || "N/A",
+      },
+      {
+        label: "Permissions",
+        value: `${data.currentUser?.permissions?.length || 0} granted`,
+      },
+    ],
+  },
+
   [SMALL_CARD_TYPES.ACTIONS]: {
     title: "Actions",
     subtitle: (data) =>
@@ -216,12 +247,13 @@ export const SMALL_CARD_CONFIGS = {
 // Create small cards with data
 export const createSmallCards = (data) => {
   const cardTypes = [
-    SMALL_CARD_TYPES.CURRENT_BOARD,
     SMALL_CARD_TYPES.MONTH_SELECTION,
+    // Show filters based on user role
     ...(data.isUserAdmin
-      ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
-      : []),
+      ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER] // Admin sees all filters
+      : [SMALL_CARD_TYPES.REPORTER_FILTER]), // Regular users see only reporter filter
     SMALL_CARD_TYPES.ACTIONS,
+    SMALL_CARD_TYPES.USER_PROFILE,
   ];
 
   return cardTypes
@@ -239,7 +271,10 @@ export const createSmallCards = (data) => {
             typeof config.subtitle === "function"
               ? config.subtitle(data)
               : config.subtitle,
-          description: config.description,
+          description:
+            typeof config.description === "function"
+              ? config.description(data)
+              : config.description,
           icon: config.icon,
           color:
             typeof config.color === "function"
