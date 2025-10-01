@@ -17,6 +17,7 @@ const TaskDetailPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isUserAdmin = user?.role === 'admin';
   const { tasks, isLoading, error } = useAppData();
   const { deliverablesOptions } = useDeliverablesOptions();
   
@@ -233,20 +234,23 @@ const TaskDetailPage = () => {
           value: `${deliverableCount} units`
         });
         
-        deliverablesData.push({
-          label: `Time per Unit`,
-          value: `${deliverable.timePerUnit} ${deliverable.timeUnit}${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime} ${deliverable.declinariTimeUnit} declinari` : ''}`
-        });
-        
-        deliverablesData.push({
-          label: `Calculation`,
-          value: `${deliverable.timeInHours.toFixed(1)}h × ${deliverableCount} = ${(deliverable.timeInHours * deliverableCount).toFixed(1)}h${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime}${deliverable.declinariTimeUnit} = ${deliverable.totalDeclinariTime.toFixed(3)}h` : ''} = ${deliverable.time.toFixed(1)}h`
-        });
-        
-        deliverablesData.push({
-          label: `Total Time`,
-          value: `${deliverable.time.toFixed(1)} hours (${(deliverable.time * 60).toFixed(0)} minutes, ${(deliverable.time / 8).toFixed(2)} days)`
-        });
+        // Show time calculations only for admin users
+        if (isUserAdmin) {
+          deliverablesData.push({
+            label: `Time per Unit`,
+            value: `${deliverable.timePerUnit} ${deliverable.timeUnit}${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime} ${deliverable.declinariTimeUnit} declinari` : ''}`
+          });
+          
+          deliverablesData.push({
+            label: `Calculation`,
+            value: `${deliverable.timeInHours.toFixed(1)}h × ${deliverableCount} = ${(deliverable.timeInHours * deliverableCount).toFixed(1)}h${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime}${deliverable.declinariTimeUnit} = ${deliverable.totalDeclinariTime.toFixed(3)}h` : ''} = ${deliverable.time.toFixed(1)}h`
+          });
+          
+          deliverablesData.push({
+            label: `Total Time`,
+            value: `${deliverable.time.toFixed(1)} hours (${(deliverable.time * 60).toFixed(0)} minutes, ${(deliverable.time / 8).toFixed(2)} days)`
+          });
+        }
         
         deliverablesData.push({
           label: `---`,
@@ -264,10 +268,13 @@ const TaskDetailPage = () => {
           value: `${deliverableCount} units`
         });
         
-        deliverablesData.push({
-          label: `Time per Unit`,
-          value: '⚠️ Not configured in settings - Add to Settings → Deliverables'
-        });
+        // Show time configuration warning only for admin users
+        if (isUserAdmin) {
+          deliverablesData.push({
+            label: `Time per Unit`,
+            value: '⚠️ Not configured in settings - Add to Settings → Deliverables'
+          });
+        }
         
         deliverablesData.push({
           label: `---`,
@@ -276,35 +283,37 @@ const TaskDetailPage = () => {
       }
     });
     
-    // Add comprehensive total calculation using hook results
-    const timeBreakdown = formatTimeBreakdown(totalCalculatedTime);
-    daysCalculation = `${timeBreakdown.days} days`;
-    
-    deliverablesData.push({
-      label: "=== TOTAL CALCULATION ===",
-      value: "---"
-    });
-    
-    deliverablesData.push({
-      label: "Total Hours",
-      value: `${timeBreakdown.hours} hours`
-    });
-    
-    deliverablesData.push({
-      label: "Total Minutes", 
-      value: `${timeBreakdown.minutes} minutes`
-    });
-    
-    deliverablesData.push({
-      label: "Total Days (8hr/day)",
-      value: daysCalculation
-    });
-    
-    // Add the exact format you requested
-    deliverablesData.push({
-      label: "SUMMARY",
-      value: timeBreakdown.summary
-    });
+    // Add comprehensive total calculation using hook results (admin only)
+    if (isUserAdmin) {
+      const timeBreakdown = formatTimeBreakdown(totalCalculatedTime);
+      daysCalculation = `${timeBreakdown.days} days`;
+      
+      deliverablesData.push({
+        label: "=== TOTAL CALCULATION ===",
+        value: "---"
+      });
+      
+      deliverablesData.push({
+        label: "Total Hours",
+        value: `${timeBreakdown.hours} hours`
+      });
+      
+      deliverablesData.push({
+        label: "Total Minutes", 
+        value: `${timeBreakdown.minutes} minutes`
+      });
+      
+      deliverablesData.push({
+        label: "Total Days (8hr/day)",
+        value: daysCalculation
+      });
+      
+      // Add the exact format you requested
+      deliverablesData.push({
+        label: "SUMMARY",
+        value: timeBreakdown.summary
+      });
+    }
   }
   
   // Handle declinari deliverables separately
@@ -386,23 +395,26 @@ const TaskDetailPage = () => {
         });
       }
       
-      deliverablesData.push({
-        label: "Time per Unit",
-        value: `${deliverable.timePerUnit} ${deliverable.timeUnit}`
-      });
-      
-      deliverablesData.push({
-        label: "Total Time",
-        value: `${calculatedTime.toFixed(1)} hours`
-      });
-      
-      // Calculate days (8 hours per day)
-      const days = calculatedTime / 8;
-      daysCalculation = `${days.toFixed(1)} days (${calculatedTime.toFixed(1)} hours ÷ 8 hours/day)`;
-      deliverablesData.push({
-        label: "Duration",
-        value: daysCalculation
-      });
+      // Show time calculations only for admin users
+      if (isUserAdmin) {
+        deliverablesData.push({
+          label: "Time per Unit",
+          value: `${deliverable.timePerUnit} ${deliverable.timeUnit}`
+        });
+        
+        deliverablesData.push({
+          label: "Total Time",
+          value: `${calculatedTime.toFixed(1)} hours`
+        });
+        
+        // Calculate days (8 hours per day)
+        const days = calculatedTime / 8;
+        daysCalculation = `${days.toFixed(1)} days (${calculatedTime.toFixed(1)} hours ÷ 8 hours/day)`;
+        deliverablesData.push({
+          label: "Duration",
+          value: daysCalculation
+        });
+      }
     }
   }
 
@@ -413,22 +425,25 @@ const TaskDetailPage = () => {
   const totalHours = taskHours + aiHours + deliverablesHours;
 
   const timeInfoData = [
-    {
-      label: "Task Hours",
-      value: `${taskHours} hours`
-    },
-    {
-      label: "AI Hours", 
-      value: `${aiHours} hours`
-    },
-    {
-      label: "Deliverables Time",
-      value: `${deliverablesHours.toFixed(1)} hours`
-    },
-    {
-      label: "Total Hours",
-      value: `${totalHours.toFixed(1)} hours`
-    },
+    // Show time calculations only for admin users
+    ...(isUserAdmin ? [
+      {
+        label: "Task Hours",
+        value: `${taskHours} hours`
+      },
+      {
+        label: "AI Hours", 
+        value: `${aiHours} hours`
+      },
+      {
+        label: "Deliverables Time",
+        value: `${deliverablesHours.toFixed(1)} hours`
+      },
+      {
+        label: "Total Hours",
+        value: `${totalHours.toFixed(1)} hours`
+      },
+    ] : []),
     {
       label: "Duration",
       value: daysBetween
