@@ -3,20 +3,20 @@
 
 export const CARD_COLORS = {
   // Role-based colors
-  ADMIN: 'red',
+  ADMIN: 'crimson',
   USER: 'purple', 
   REPORTER: 'blue',
   
   // Status-based colors
   ACTIVE: 'green',
   INACTIVE: 'gray',
-  WARNING: 'yellow',
+  WARNING: 'amber',
   
   // Feature-based colors
   FILTER: 'blue',
-  ACTIONS: 'yellow',
+  ACTIONS: 'amber',
   PROFILE: 'purple',
-  MONTH: 'blue',
+  MONTH: 'crimson',
   
   // Default fallback
   DEFAULT: 'gray'
@@ -26,19 +26,20 @@ export const CARD_COLORS = {
 export const getCardColor = (cardType, data = {}) => {
   switch (cardType) {
     case 'user-profile':
-      return data?.currentUser?.role === 'admin' ? CARD_COLORS.ADMIN : 
-             data?.currentUser?.role === 'reporter' ? CARD_COLORS.REPORTER : 
-             CARD_COLORS.USER;
+      // Only admin and user roles exist for authenticated users (no reporter)
+      return data?.currentUser?.role === 'admin' ? 'crimson' : 'purple';
     
     case 'actions':
-      return data?.canCreateTasks ? CARD_COLORS.ACTIVE : CARD_COLORS.WARNING;
+      return 'amber';
     
     case 'user-filter':
+      return 'blue';
+    
     case 'reporter-filter':
-      return CARD_COLORS.FILTER;
+      return 'crimson';
     
     case 'month-selection':
-      return CARD_COLORS.MONTH;
+      return 'pink';
     
     default:
       return CARD_COLORS.DEFAULT;

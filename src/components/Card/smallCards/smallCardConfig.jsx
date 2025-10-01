@@ -187,7 +187,7 @@ export const SMALL_CARD_CONFIGS = {
       
       return userTasks.length.toString();
     },
-    getStatus: (data) => (data.currentUser?.role || "user").toUpperCase(),
+    getStatus: (data) => (data.currentUser?.role || "user").toLowerCase(),
     getDetails: (data) => [
       {
         label: "Name",
@@ -215,10 +215,10 @@ export const SMALL_CARD_CONFIGS = {
               window.dispatchEvent(new PopStateEvent('popstate'));
             }
           }}
-          iconName="user"
+          iconName="view"
           className="w-full transition-colors uppercase bg-blue-600 hover:bg-blue-700 text-white"
         >
-          View My Data
+          VIEW MY DATA
         </DynamicButton>
       </div>
     ),
@@ -244,7 +244,7 @@ export const SMALL_CARD_CONFIGS = {
               : "bg-gray-600 text-gray-400 cursor-not-allowed"
           }`}
         >
-          {data.canCreateTasks ? "Add Task" : "Create Disabled"}
+          {data.canCreateTasks ? "ADD TASK" : "CREATE DISABLED"}
         </DynamicButton>
       </div>
     ),

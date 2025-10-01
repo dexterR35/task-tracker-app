@@ -165,7 +165,11 @@ const getCardColorHex = (color) => {
     case "blue":
       return "#3b82f6"; // blue-default
     case "purple":
-      return "#8b5cf6"; // btn-primary
+      return "#8b5cf6"; // purple-primary
+    case "crimson":
+      return "#dc2626"; // crimson-red
+    case "amber":
+      return "#f59e0b"; // amber-warning
     case "red":
       return "#ef4444"; // red-error
     case "yellow":

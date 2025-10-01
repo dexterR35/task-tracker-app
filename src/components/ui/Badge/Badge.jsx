@@ -47,6 +47,9 @@ const Badge = ({
         'green': 'bg-green-600 text-white',
         'purple': 'bg-purple-600 text-white',
         'yellow': 'bg-yellow-600 text-white',
+        'amber': 'bg-amber-600 text-white',
+        'crimson': 'bg-red-700 text-white',
+        'pink': 'bg-pink-600 text-white',
         'gray': 'bg-gray-600 text-white',
         'secondary': 'bg-gray-700 text-white'
       };
