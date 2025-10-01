@@ -209,28 +209,70 @@ const AdminDashboardPage = () => {
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
   // Get task columns for the table
-  const taskColumns = useTaskColumns(currentMonthId, reporters);
+  const taskColumns = useTaskColumns(currentMonthId, reporters, user);
 
   //  reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
     (tasks, selectedUserId, selectedReporterId, currentMonthId) => {
+      // Debug logging to see what tasks we're working with
+      console.log('getFilteredTasks called with:', {
+        totalTasks: tasks.length,
+        currentUser: user,
+        isUserAdmin,
+        selectedUserId,
+        selectedReporterId,
+        currentMonthId,
+        tasks: tasks.map(t => ({
+          id: t.id,
+          userUID: t.userUID,
+          createbyUID: t.createbyUID,
+          title: t.data_task?.taskName || 'No title'
+        }))
+      });
+      
       return tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
 
-        // Role-based filtering: Regular users can only see their own tasks + their assigned reporters' tasks
+        // Role-based filtering: Regular users can only see their own tasks
         if (!isUserAdmin) {
           const userUID = user?.uid || user?.userUID;
-          const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
           
-          // TODO: Add logic to check if user is assigned to this reporter
-          // For now, allow all reporter tasks for regular users
-          const isReporterTask = task.reporters || task.data_task?.reporters;
+          // Check if this task belongs to the current user
+          // A task belongs to a user if:
+          // 1. The task.userUID matches the current user's UID, OR
+          // 2. The task.createbyUID matches the current user's UID
+          const isUserTask = userUID && (
+            task.userUID === userUID || 
+            task.createbyUID === userUID ||
+            task.userUID === user?.uid ||
+            task.createbyUID === user?.uid ||
+            // Also check if the task was created by the current user's email
+            task.createdByName === user?.name ||
+            task.createdByName === user?.email ||
+            // Check if the task has the user's email in any field
+            (task.data_task && (
+              task.data_task.createdByName === user?.name ||
+              task.data_task.createdByName === user?.email
+            ))
+          );
           
-          // Regular users can see: their own tasks OR reporter tasks
-          if (!isUserTask && !isReporterTask) {
-            return false;
-          }
+          // Debug logging to help troubleshoot
+          console.log('Task filtering debug:', {
+            currentUser: user,
+            userUID,
+            taskId: task.id,
+            taskUserUID: task.userUID,
+            taskCreatebyUID: task.createbyUID,
+            taskCreatedByName: task.createdByName,
+            taskDataCreatedByName: task.data_task?.createdByName,
+            isUserTask,
+            taskTitle: task.data_task?.taskName || 'No title',
+            fullTask: task
+          });
+          
+          // Regular users can ONLY see their own tasks
+          return isUserTask;
         }
 
         // If both user and reporter are selected, show tasks that match BOTH

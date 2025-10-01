@@ -6,18 +6,22 @@ import { formatDate } from '@/utils/dateUtils';
 import { calculateDeliverableTime } from '@/features/tasks/config/useTaskForm';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
 import { useDeliverableCalculation, formatDeliverableDisplay, formatDeclinariDisplay } from '@/hooks/useDeliverableCalculation';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 
 const columnHelper = createColumnHelper();
 
 
 // Tasks Table Columns - Memoized to prevent re-renders
-export const useTaskColumns = (monthId = null, reporters = []) => {
+export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
   // Ensure reporters is always an array to prevent hooks issues
   const stableReporters = Array.isArray(reporters) ? reporters : [];
   
   // Get dynamic deliverables from settings
   const { deliverablesOptions } = useDeliverablesOptions();
+  
+  // Check if user is admin for role-based column content
+  const isUserAdmin = user?.role === 'admin';
   
   return useMemo(() => [
   columnHelper.accessor('data_task.taskName', {
@@ -140,35 +144,40 @@ export const useTaskColumns = (monthId = null, reporters = []) => {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                    {deliverable.configured ? (
-                      <div className="text-xs block">
-                        <div className="block">
-                          Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
-                          {deliverable.timeUnit === 'min' && (
-                            <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
-                          )}
-                        </div>
-                        {deliverable.declinariQuantity > 0 && (
+                  {/* Show detailed calculations only for admin users */}
+                  {isUserAdmin && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                      {deliverable.configured ? (
+                        <div className="text-xs block">
                           <div className="block">
-                            Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(1)}h
-                            {deliverable.declinariTimeUnit === 'min' && (
-                              <span> ({(deliverable.totalDeclinariTime * 60).toFixed(0)}min)</span>
+                            Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
+                            {deliverable.timeUnit === 'min' && (
+                              <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
                             )}
                           </div>
-                        )}
-                        <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
-                          Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
+                          {deliverable.declinariQuantity > 0 && (
+                            <div className="block">
+                              Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(1)}h
+                              {deliverable.declinariTimeUnit === 'min' && (
+                                <span> ({(deliverable.totalDeclinariTime * 60).toFixed(0)}min)</span>
+                              )}
+                            </div>
+                          )}
+                          <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
+                            Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
+                          </div>
                         </div>
-                      </div>
-                    ) : deliverable.notConfigured ? (
-                      <span className="text-amber-600 dark:text-amber-400">
-                        ⚠️ Not configured in settings - Add to Settings → Deliverables
-                      </span>
-                    ) : (
-                      'No time data available'
-                    )}
-                  </div>
+                      ) : deliverable.notConfigured ? (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          ⚠️ Not configured in settings - Add to Settings → Deliverables
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          No time configuration
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

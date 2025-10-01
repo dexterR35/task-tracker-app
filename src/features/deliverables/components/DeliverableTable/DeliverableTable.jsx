@@ -75,91 +75,103 @@ const DeliverableTable = ({
     }
   });
 
-  // Table columns
-  const columns = useMemo(() => [
-    {
-      accessorKey: 'name',
-      header: 'Deliverable Name',
-      cell: ({ getValue }) => (
-        <span className="font-medium text-gray-900 dark:text-white">
-          {getValue() || 'N/A'}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'timePerUnit',
-      header: 'Time Per Unit',
-      cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
-          {getValue() || 0}
-        </span>
-      ),
-      size: 100,
-    },
-    {
-      accessorKey: 'timeUnit',
-      header: 'Unit',
-      cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
-          {getValue() || 'hr'}
-        </span>
-      ),
-      size: 80,
-    },
-    {
-      accessorKey: 'declinariTime',
-      header: 'Declinari Time',
-      cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
-          {getValue() || 0} min
-        </span>
-      ),
-      size: 120,
-    },
-    {
-      accessorKey: 'requiresQuantity',
-      header: 'Requires Quantity',
-      cell: ({ getValue }) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          getValue() 
-            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-        }`}>
-          {getValue() ? 'Yes' : 'No'}
-        </span>
-      ),
-      size: 140,
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <DynamicButton
-            variant="outline"
-            size="sm"
-            onClick={() => handleEdit(row.original)}
-            disabled={!canManageDeliverables}
-            iconName="edit"
-            iconPosition="left"
-          >
-            Edit
-          </DynamicButton>
-          <DynamicButton
-            variant="danger"
-            size="sm"
-            onClick={() => handleDelete(row.original)}
-            disabled={!canManageDeliverables}
-            iconName="trash"
-            iconPosition="left"
-          >
-            Delete
-          </DynamicButton>
-        </div>
-      ),
-      size: 150,
-    },
-  ], [canManageDeliverables, handleEdit, handleDelete]);
+  // Table columns - different for admin vs regular users
+  const columns = useMemo(() => {
+    const baseColumns = [
+      {
+        accessorKey: 'name',
+        header: 'Deliverable Name',
+        cell: ({ getValue }) => (
+          <span className="font-medium text-gray-900 dark:text-white">
+            {getValue() || 'N/A'}
+          </span>
+        ),
+      }
+    ];
+
+    // Admin users see all columns including calculations and actions
+    if (canManageDeliverables) {
+      return [
+        ...baseColumns,
+        {
+          accessorKey: 'timePerUnit',
+          header: 'Time Per Unit',
+          cell: ({ getValue }) => (
+            <span className="text-gray-700 dark:text-gray-300">
+              {getValue() || 0}
+            </span>
+          ),
+          size: 100,
+        },
+        {
+          accessorKey: 'timeUnit',
+          header: 'Unit',
+          cell: ({ getValue }) => (
+            <span className="text-gray-700 dark:text-gray-300">
+              {getValue() || 'hr'}
+            </span>
+          ),
+          size: 80,
+        },
+        {
+          accessorKey: 'declinariTime',
+          header: 'Declinari Time',
+          cell: ({ getValue }) => (
+            <span className="text-gray-700 dark:text-gray-300">
+              {getValue() || 0} min
+            </span>
+          ),
+          size: 120,
+        },
+        {
+          accessorKey: 'requiresQuantity',
+          header: 'Requires Quantity',
+          cell: ({ getValue }) => (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              getValue() 
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+            }`}>
+              {getValue() ? 'Yes' : 'No'}
+            </span>
+          ),
+          size: 140,
+        },
+        {
+          id: 'actions',
+          header: 'Actions',
+          cell: ({ row }) => (
+            <div className="flex items-center space-x-2">
+              <DynamicButton
+                variant="outline"
+                size="sm"
+                onClick={() => handleEdit(row.original)}
+                disabled={!canManageDeliverables}
+                iconName="edit"
+                iconPosition="left"
+              >
+                Edit
+              </DynamicButton>
+              <DynamicButton
+                variant="danger"
+                size="sm"
+                onClick={() => handleDelete(row.original)}
+                disabled={!canManageDeliverables}
+                iconName="trash"
+                iconPosition="left"
+              >
+                Delete
+              </DynamicButton>
+            </div>
+          ),
+          size: 150,
+        }
+      ];
+    }
+
+    // Regular users only see name and count
+    return baseColumns;
+  }, [canManageDeliverables, handleEdit, handleDelete]);
 
   // Handle create deliverable
   const handleCreateDeliverable = () => {

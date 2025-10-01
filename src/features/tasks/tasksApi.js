@@ -109,14 +109,20 @@ const validateTaskPermissions = (userData, operation) => {
 
 // Helper function to build task query with user filtering
 const buildTaskQuery = (tasksRef, role, userId) => {
+  console.log('buildTaskQuery called with:', { role, userId });
+  
   if (role === "user" && userId) {
-    // Regular users: only their tasks
-    return fsQuery(tasksRef, where("userUID", "==", userId));
+    // TEMPORARY: For debugging, let's fetch all tasks and filter in the app
+    // This will help us see what userUID values are actually in the tasks
+    console.log('Building query for regular user (TEMPORARY - fetching all tasks):', userId);
+    return fsQuery(tasksRef); // Remove the where clause temporarily
   } else if (role === "admin" && userId) {
     // Admin users: specific user's tasks when selected
+    console.log('Building query for admin user selection:', userId);
     return fsQuery(tasksRef, where("userUID", "==", userId));
   } else {
     // Admin users: all tasks (no filtering)
+    console.log('Building query for admin - all tasks');
     return fsQuery(tasksRef);
   }
 };
@@ -188,6 +194,19 @@ export const tasksApi = createApi({
             monthId: monthId,
             ...serializeTimestampsForRedux(doc.data()),
           }));
+
+          console.log('getMonthTasks query result:', {
+            monthId,
+            userId,
+            role,
+            totalTasks: tasks.length,
+            tasks: tasks.map(t => ({
+              id: t.id,
+              userUID: t.userUID,
+              createbyUID: t.createbyUID,
+              title: t.data_task?.taskName || 'No title'
+            }))
+          });
 
           return { data: tasks };
         } catch (error) {
@@ -613,6 +632,18 @@ export const tasksApi = createApi({
                   id: doc.id,
                   ...serializeTimestampsForRedux(doc.data()),
                 }));
+                
+                console.log('getCurrentMonth query result:', {
+                  userId,
+                  role,
+                  totalTasks: currentMonthTasks.length,
+                  tasks: currentMonthTasks.map(t => ({
+                    id: t.id,
+                    userUID: t.userUID,
+                    createbyUID: t.createbyUID,
+                    title: t.data_task?.taskName || 'No title'
+                  }))
+                });
                 
               }
             } catch (taskError) {
