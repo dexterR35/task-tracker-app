@@ -1,5 +1,4 @@
 import * as Yup from 'yup';
-import { logger } from '@/utils/logger';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
 import { transformNestedDataToLowercase } from '@/utils/formUtils';
 import { 
@@ -222,14 +221,28 @@ export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().s
       return true;
     }),
   
-  startDate: Yup.date()
+  startDate: Yup.string()
     .required(VALIDATION_MESSAGES.REQUIRED)
-    .typeError('Please enter a valid start date'),
+    .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
+    .test('valid-date', 'Please enter a valid start date', function(value) {
+      if (!value) return false;
+      const date = new Date(value + 'T00:00:00.000Z');
+      return !isNaN(date.getTime());
+    }),
   
-  endDate: Yup.date()
+  endDate: Yup.string()
     .required(VALIDATION_MESSAGES.REQUIRED)
-    .typeError('Please enter a valid end date')
-    .min(Yup.ref('startDate'), 'End date must be after start date'),
+    .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
+    .test('valid-date', 'Please enter a valid end date', function(value) {
+      if (!value) return false;
+      const date = new Date(value + 'T00:00:00.000Z');
+      return !isNaN(date.getTime());
+    })
+    .test('after-start', 'End date must be after start date', function(value) {
+      const { startDate } = this.parent;
+      if (!value || !startDate) return true;
+      return new Date(value + 'T00:00:00.000Z') >= new Date(startDate + 'T00:00:00.000Z');
+    }),
   
   _hasDeliverables: Yup.boolean(),
   
@@ -429,12 +442,26 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
     delete formData.observations;
   }
   
-  // Convert Date objects to ISO strings for proper storage
-  if (formData.startDate instanceof Date) {
-    formData.startDate = formData.startDate.toISOString();
+  // Sanitize and convert date strings to ISO strings for proper storage
+  if (formData.startDate && typeof formData.startDate === 'string') {
+    // Sanitize: trim whitespace and validate format
+    const sanitizedStartDate = formData.startDate.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(sanitizedStartDate)) {
+      // Convert YYYY-MM-DD to ISO string (add time component)
+      formData.startDate = new Date(sanitizedStartDate + 'T00:00:00.000Z').toISOString();
+    } else {
+      throw new Error('Invalid start date format');
+    }
   }
-  if (formData.endDate instanceof Date) {
-    formData.endDate = formData.endDate.toISOString();
+  if (formData.endDate && typeof formData.endDate === 'string') {
+    // Sanitize: trim whitespace and validate format
+    const sanitizedEndDate = formData.endDate.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(sanitizedEndDate)) {
+      // Convert YYYY-MM-DD to ISO string (add time component)
+      formData.endDate = new Date(sanitizedEndDate + 'T00:00:00.000Z').toISOString();
+    } else {
+      throw new Error('Invalid end date format');
+    }
   }
   
   
