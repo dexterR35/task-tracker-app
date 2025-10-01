@@ -108,16 +108,29 @@ const SmallCard = ({ card }) => {
             {card.details && card.details.length > 0 && (
               <div className="space-y-1">
                 {card.details.map((detail, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {detail.icon && (
-                        <detail.icon className="w-3.5 h-3.5 text-gray-400" />
-                      )}
-                      <span className="text-xs text-gray-400">{detail.label}</span>
+                  <div 
+                    key={index}
+                    className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
+                    style={{ 
+                      backgroundColor: `${cardColorHex}10`,
+                      borderColor: `${cardColorHex}20`
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div 
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ 
+                            backgroundColor: cardColorHex,
+                            background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
+                          }}
+                        ></div>
+                        <span className="text-xs text-gray-400">{detail.label}</span>
+                      </div>
+                      <span className="text-xs font-medium text-gray-300">
+                        {detail.value}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-300">
-                      {detail.value}
-                    </span>
                   </div>
                 ))}
               </div>

@@ -207,6 +207,14 @@ const router = createBrowserRouter([
             element: <ComingSoonPage />,
           },
           {
+            path: "view-my-data",
+            element: (
+              <PageWrapper>
+                <ComingSoonPage />
+              </PageWrapper>
+            ),
+          },
+          {
             path: "task/:taskId",
             element: (
               <PageWrapper>

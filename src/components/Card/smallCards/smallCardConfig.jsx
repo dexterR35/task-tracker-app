@@ -15,7 +15,7 @@ export const SMALL_CARD_TYPES = {
 export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.MONTH_SELECTION]: {
     title: "Month Period",
-    subtitle: (data) => data.currentMonth?.monthName || data.selectedMonth?.monthName || "No month",
+    subtitle: "View All",
     description: "Months",
     icon: Icons.generic.clock,
     color: (data) => getCardColor('month-selection', data),
@@ -50,16 +50,21 @@ export const SMALL_CARD_CONFIGS = {
         value: data.isCurrentMonth ? "Yes" : "No",
       },
       {
+        icon: Icons.generic.calendar,
+        label: "Available",
+        value: `${data.availableMonths?.length || 0} months`,
+      },
+      {
         icon: Icons.generic.clock,
-        label: "Status",
-        value: data.isCurrentMonth ? "Current" : "Historical",
+        label: "Period",
+        value: data.selectedMonth?.monthName || data.currentMonth?.monthName || "None",
       },
     ],
   },
 
   [SMALL_CARD_TYPES.USER_FILTER]: {
     title: "User Filter",
-    subtitle: (data) => `${data.users?.length || 0} users`,
+    subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
     color: (data) => getCardColor('user-filter', data),
@@ -92,16 +97,21 @@ export const SMALL_CARD_CONFIGS = {
         value: data.selectedUserId ? data.selectedUserName : "All Users",
       },
       {
+        icon: Icons.generic.users,
+        label: "Total Users",
+        value: `${data.users?.length || 0} users`,
+      },
+      {
         icon: Icons.buttons.filter,
-        label: "Status",
-        value: data.selectedUserId ? "Filtered" : "All Users",
+        label: "Filter Status",
+        value: data.selectedUserId ? "Active" : "Inactive",
       },
     ],
   },
 
   [SMALL_CARD_TYPES.REPORTER_FILTER]: {
     title: "Reporter Filter",
-    subtitle: (data) => `${data.reporters?.length || 0} reporters`,
+    subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
     color: (data) => getCardColor('reporter-filter', data),
@@ -137,16 +147,21 @@ export const SMALL_CARD_CONFIGS = {
           : "All Reporters",
       },
       {
+        icon: Icons.admin.reporters,
+        label: "Total Reporters",
+        value: `${data.reporters?.length || 0} reporters`,
+      },
+      {
         icon: Icons.buttons.filter,
-        label: "Status",
-        value: data.selectedReporterId ? "Filtered" : "All Reporters",
+        label: "Filter Status",
+        value: data.selectedReporterId ? "Active" : "Inactive",
       },
     ],
   },
 
   [SMALL_CARD_TYPES.USER_PROFILE]: {
     title: "User Profile",
-    subtitle: "NetBet",
+    subtitle: "View All",
     description:"Tasks",
     icon: Icons.generic.user,
     color: (data) => getCardColor('user-profile', data),
@@ -183,24 +198,35 @@ export const SMALL_CARD_CONFIGS = {
         value: data.currentUser?.email || "N/A",
       },
       {
-        label: "Current Board",
-        value: data.selectedMonth?.monthName || data.currentMonth?.monthName || "No board",
-      },
-      {
         label: "Department", 
         value: data.currentUser?.occupation || "N/A",
       },
-      {
-        label: "Permissions",
-        value: `${data.currentUser?.permissions?.length || 0} granted`,
-      },
     ],
+    getContent: (data) => (
+      <div className="mb-6">
+        <DynamicButton
+          onClick={() => {
+            // Use React Router navigation to prevent page refresh
+            if (data.navigate) {
+              data.navigate('/view-my-data');
+            } else {
+              // Fallback: use history API for client-side navigation
+              window.history.pushState({}, '', '/view-my-data');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          }}
+          iconName="user"
+          className="w-full transition-colors uppercase bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          View My Data
+        </DynamicButton>
+      </div>
+    ),
   },
 
   [SMALL_CARD_TYPES.ACTIONS]: {
     title: "Actions",
-    subtitle: (data) =>
-      data.canCreateTasks ? "Create available" : "Create restricted",
+    subtitle: "View All",
     description: "Actions",
     icon: Icons.buttons.add,
     color: (data) => getCardColor('actions', data),
@@ -224,14 +250,19 @@ export const SMALL_CARD_CONFIGS = {
     ),
     getDetails: (data) => [
       {
-        icon: Icons.generic.task,
-        label: "Status",
-        value: data.canCreateTasks ? "Active" : "Disabled",
-      },
-      {
         icon: Icons.generic.clock,
         label: "Permission",
         value: data.canCreateTasks ? "Granted" : "Restricted",
+      },
+      {
+        icon: Icons.buttons.add,
+        label: "Create Status",
+        value: data.canCreateTasks ? "Enabled" : "Disabled",
+      },
+      {
+        icon: Icons.generic.task,
+        label: "Action Type",
+        value: "Task Creation",
       },
     ],
   },

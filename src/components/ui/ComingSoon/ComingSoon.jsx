@@ -2,7 +2,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const ComingSoonPage = ({
   title = "Coming Soon",
-  description = "This feature is under development and will be available soon.",
+  description = "This shit is under development.",
   showHomeLink = true,
   customAction = null,
 }) => {
