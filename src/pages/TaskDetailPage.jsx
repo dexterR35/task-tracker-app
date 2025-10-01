@@ -424,26 +424,8 @@ const TaskDetailPage = () => {
   const deliverablesHours = totalCalculatedTime;
   const totalHours = taskHours + aiHours + deliverablesHours;
 
-  const timeInfoData = [
-    // Show time calculations only for admin users
-    ...(isUserAdmin ? [
-      {
-        label: "Task Hours",
-        value: `${taskHours} hours`
-      },
-      {
-        label: "AI Hours", 
-        value: `${aiHours} hours`
-      },
-      {
-        label: "Deliverables Time",
-        value: `${deliverablesHours.toFixed(1)} hours`
-      },
-      {
-        label: "Total Hours",
-        value: `${totalHours.toFixed(1)} hours`
-      },
-    ] : []),
+  // Create time info data with conditional admin-only fields
+  const baseTimeInfoData = [
     {
       label: "Duration",
       value: daysBetween
@@ -453,6 +435,29 @@ const TaskDetailPage = () => {
       value: daysCalculation || 'No deliverables calculated'
     }
   ];
+
+  const adminTimeInfoData = [
+    {
+      label: "Task Hours",
+      value: `${taskHours} hours`
+    },
+    {
+      label: "AI Hours", 
+      value: `${aiHours} hours`
+    },
+    {
+      label: "Deliverables Time",
+      value: `${deliverablesHours.toFixed(1)} hours`
+    },
+    {
+      label: "Total Hours",
+      value: `${totalHours.toFixed(1)} hours`
+    }
+  ];
+
+  const timeInfoData = isUserAdmin 
+    ? [...adminTimeInfoData, ...baseTimeInfoData]
+    : baseTimeInfoData;
 
   const datesData = [
     {
@@ -685,8 +690,8 @@ const TaskDetailPage = () => {
           />
 
 
-          {/* Deliverables Card */}
-          {deliverablesData.length > 0 && (
+          {/* Deliverables Card - Admin Only */}
+          {isUserAdmin && deliverablesData.length > 0 && (
             <AnalyticsCard
               title="Deliverables"
               icon={Icons.generic.package}
