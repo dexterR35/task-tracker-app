@@ -34,10 +34,14 @@ import { logger } from '@/utils/logger';
 const TaskForm = ({ 
   mode = 'create', 
   initialData = null, 
+  monthId: propMonthId = null,
   onSuccess, 
   className = "" 
 }) => {
-  const { createTask, updateTask, reporters = [], monthId, user, refetchCurrentMonth, refetchMonthTasks } = useAppData();
+  const { createTask, updateTask, reporters = [], monthId: hookMonthId, user, refetchCurrentMonth, refetchMonthTasks } = useAppData();
+  
+  // Use prop monthId if provided, otherwise fall back to hook monthId
+  const monthId = propMonthId || hookMonthId;
   const { deliverablesOptions, isLoading: loadingDeliverables } = useDeliverablesOptions();
   
   // Create dynamic form fields with deliverables options

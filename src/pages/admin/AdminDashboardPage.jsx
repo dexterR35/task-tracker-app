@@ -616,6 +616,7 @@ const AdminDashboardPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         mode="create"
+        monthId={currentMonthId}
         onSuccess={() => {
           setShowCreateModal(false);
         }}
@@ -636,6 +637,7 @@ const AdminDashboardPage = () => {
         onClose={handleEditModalClose}
         mode="edit"
         task={editingTask}
+        monthId={currentMonthId}
         onSuccess={handleEditTaskSuccess}
         onError={(error) => {
           // Handle permission errors

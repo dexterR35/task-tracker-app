@@ -7,6 +7,7 @@ const TaskFormModal = ({
   onClose,
   mode = 'create', // 'create' or 'edit'
   task = null, // task data for edit mode
+  monthId = null, // monthId for task creation
   onSuccess,
   onError
 }) => {
@@ -22,6 +23,7 @@ const TaskFormModal = ({
       <TaskForm
         mode={mode}
         initialData={task}
+        monthId={monthId}
         onSuccess={onSuccess}
         onError={onError}
       />
