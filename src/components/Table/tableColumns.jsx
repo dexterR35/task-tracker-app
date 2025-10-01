@@ -505,7 +505,7 @@ export const getUserColumns = (monthId = null) => [
       
       return (
         <div className="flex flex-wrap gap-1">
-          {permissions.slice(0, 3).map((permission, index) => (
+          {permissions.map((permission, index) => (
             <Badge 
               key={index} 
               variant="blue" 
@@ -515,11 +515,6 @@ export const getUserColumns = (monthId = null) => [
               {permission.replace(/_/g, ' ')}
             </Badge>
           ))}
-          {permissions.length > 3 && (
-            <Badge variant="gray" size="xs" className="text-xs">
-              +{permissions.length - 3} more
-            </Badge>
-          )}
         </div>
       );
     },

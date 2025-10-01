@@ -157,30 +157,22 @@ const SmallCard = ({ card }) => {
   );
 };
 
-// Convert card color to hex
+import { COLOR_SYSTEM } from '@/utils/colorSystem';
+
+// Convert card color to hex using the new color system with better colors
 const getCardColorHex = (color) => {
-  switch (color) {
-    case "green":
-      return "#10b981"; // green-success
-    case "blue":
-      return "#3b82f6"; // blue-default
-    case "purple":
-      return "#8b5cf6"; // purple-primary
-    case "crimson":
-      return "#dc2626"; // crimson-red
-    case "amber":
-      return "#f59e0b"; // amber-warning
-    case "red":
-      return "#ef4444"; // red-error
-    case "yellow":
-      return "#f59e0b"; // warning
-    case "pink":
-      return "#ec4899"; // btn-secondary
-    case "gray":
-      return "#6b7280"; // secondary
-    default:
-      return "#6b7280"; // secondary
-  }
+  const colorMap = {
+    "green": "#10b981",      // Emerald-500 - Fresh, growth
+    "blue": "#3b82f6",       // Blue-500 - Professional, trust
+    "purple": "#8b5cf6",     // Purple-500 - Premium, personal
+    "crimson": "#dc2626",    // Red-600 - Authority, admin
+    "amber": "#f59e0b",      // Amber-500 - Energy, action
+    "pink": "#ec4899",       // Pink-500 - Calendar, time
+    "red": "#ef4444",        // Red-500 - Error
+    "yellow": "#f59e0b",     // Amber-500 - Warning
+    "gray": "#64748b",       // Slate-500 - Disabled
+  };
+  return colorMap[color] || "#64748b";
 };
 
 export default SmallCard;

@@ -227,7 +227,7 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.ACTIONS]: {
     title: "Actions",
     subtitle: "View All",
-    description: "Actions",
+    description: "------",
     icon: Icons.buttons.add,
     color: (data) => getCardColor('actions', data),
     getValue: (data) => (data.canCreateTasks ? "1" : "0"),

@@ -22,7 +22,7 @@ export const CARD_COLORS = {
   DEFAULT: 'gray'
 };
 
-// Color mapping for different card types
+// Color mapping for different card types with better colors
 export const getCardColor = (cardType, data = {}) => {
   switch (cardType) {
     case 'user-profile':
@@ -36,7 +36,7 @@ export const getCardColor = (cardType, data = {}) => {
       return 'blue';
     
     case 'reporter-filter':
-      return 'crimson';
+      return 'green';
     
     case 'month-selection':
       return 'pink';

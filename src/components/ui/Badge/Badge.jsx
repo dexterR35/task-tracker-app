@@ -40,18 +40,18 @@ const Badge = ({
   // Use custom color if provided, otherwise use variant
   const getVariantClass = () => {
     if (color) {
-      // Map color names to solid CSS classes (no gradients, no opacity)
+      // Map color names to subtle CSS classes (muted colors like icons)
       const colorMap = {
-        'red': 'bg-red-600 text-white',
-        'blue': 'bg-blue-600 text-white',
-        'green': 'bg-green-600 text-white',
-        'purple': 'bg-purple-600 text-white',
-        'yellow': 'bg-yellow-600 text-white',
-        'amber': 'bg-amber-600 text-white',
-        'crimson': 'bg-red-700 text-white',
-        'pink': 'bg-pink-600 text-white',
-        'gray': 'bg-gray-600 text-white',
-        'secondary': 'bg-gray-700 text-white'
+        'red': 'bg-red-500/20 text-red-300 border border-red-500/30',
+        'blue': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+        'green': 'bg-green-500/20 text-green-300 border border-green-500/30',
+        'purple': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+        'yellow': 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30',
+        'amber': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+        'crimson': 'bg-red-600/20 text-red-300 border border-red-600/30',
+        'pink': 'bg-pink-500/20 text-pink-300 border border-pink-500/30',
+        'gray': 'bg-gray-500/20 text-gray-300 border border-gray-500/30',
+        'secondary': 'bg-gray-600/20 text-gray-300 border border-gray-600/30'
       };
       return colorMap[color] || variantClasses[variant] || variantClasses.default;
     }
