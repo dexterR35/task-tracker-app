@@ -1,6 +1,7 @@
 import React from "react";
 import { Icons } from "@/components/icons";
 import Badge from "@/components/ui/Badge/Badge";
+import { getBadgeColor } from "./cardColors";
 
 // Dynamic Small Card Component
 const SmallCard = ({ card }) => {
@@ -80,7 +81,7 @@ const SmallCard = ({ card }) => {
             
             {/* Status Badge */}
             {card.status && (
-              <Badge variant={getStatusBadgeColor(card.status)} color={card.color}>
+              <Badge variant="default" color={card.color}>
                 {card.status}
               </Badge>
             )}

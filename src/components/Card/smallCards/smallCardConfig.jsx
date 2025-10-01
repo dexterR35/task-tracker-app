@@ -1,5 +1,6 @@
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { getCardColor, getBadgeColor } from "./cardColors";
 
 // Small Card Types
 export const SMALL_CARD_TYPES = {
@@ -14,10 +15,10 @@ export const SMALL_CARD_TYPES = {
 export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.MONTH_SELECTION]: {
     title: "Month Period",
-    subtitle: (data) => `${data.availableMonths?.length || 0} periods`,
-    description: "Periods",
+    subtitle: (data) => data.currentMonth?.monthName || data.selectedMonth?.monthName || "No month",
+    description: "Months",
     icon: Icons.generic.clock,
-    color: "blue",
+    color: (data) => getCardColor('month-selection', data),
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getContent: (data) => (
@@ -61,7 +62,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: (data) => `${data.users?.length || 0} users`,
     description: "Users",
     icon: Icons.generic.user,
-    color: "purple",
+    color: (data) => getCardColor('user-filter', data),
     getValue: (data) => data.users?.length || 0,
     getStatus: (data) => (data.selectedUserId ? "Filtered" : "All Users"),
     getContent: (data) => (
@@ -103,7 +104,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: (data) => `${data.reporters?.length || 0} reporters`,
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: "red",
+    color: (data) => getCardColor('reporter-filter', data),
     getValue: (data) => data.reporters?.length || 0,
     getStatus: (data) =>
       data.selectedReporterId ? "Filtered" : "All Reporters",
@@ -148,15 +149,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "NetBet",
     description:"Tasks",
     icon: Icons.generic.user,
-    color: (data) => {
-      const role = data.currentUser?.role;
-      switch (role) {
-        case 'admin': return 'red';
-        case 'reporter': return 'blue';
-        case 'user':
-        default: return 'purple';
-      }
-    },
+    color: (data) => getCardColor('user-profile', data),
     getValue: (data) => {
       // Calculate total tasks for current user + reporter if selected
       const userUID = data.currentUser?.uid || data.currentUser?.userUID;
@@ -210,7 +203,7 @@ export const SMALL_CARD_CONFIGS = {
       data.canCreateTasks ? "Create available" : "Create restricted",
     description: "Actions",
     icon: Icons.buttons.add,
-    color: (data) => (data.canCreateTasks ? "yellow" : "red"),
+    color: (data) => getCardColor('actions', data),
     getValue: (data) => (data.canCreateTasks ? "1" : "0"),
     getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),
     getContent: (data) => (
