@@ -143,11 +143,64 @@ export const CARD_CONFIGS = {
     color: "green",
     hasChart: true,
     chartType: "bar",
-    getValue: (data) =>
-      getValueWithNoTasksCheck(
+    getValue: (data) => {
+      // For regular users, show only their own tasks
+      if (data.currentUser && data.currentUser.role === 'user') {
+        const userUID = data.currentUser.uid || data.currentUser.userUID;
+        const userTasks = (data.tasks || []).filter(task => 
+          task.userUID === userUID || 
+          task.createbyUID === userUID ||
+          task.userUID === data.currentUser.uid ||
+          task.createbyUID === data.currentUser.uid
+        );
+        return getValueWithNoTasksCheck(
+          { ...data, tasks: userTasks },
+          (data) => data.tasks?.length?.toString() || "0"
+        );
+      }
+      
+      // For admin users, show filtered tasks based on selection
+      if (data.selectedUserId && data.selectedReporterId) {
+        // Both user and reporter selected
+        const filteredTasks = (data.tasks || []).filter(task => {
+          const matchesUser = task.userUID === data.selectedUserId || task.createbyUID === data.selectedUserId;
+          const matchesReporter = task.reporters === data.selectedReporterId || task.data_task?.reporters === data.selectedReporterId;
+          return matchesUser && matchesReporter;
+        });
+        return getValueWithNoTasksCheck(
+          { ...data, tasks: filteredTasks },
+          (data) => data.tasks?.length?.toString() || "0"
+        );
+      }
+      
+      if (data.selectedUserId) {
+        // Only user selected
+        const filteredTasks = (data.tasks || []).filter(task => 
+          task.userUID === data.selectedUserId || task.createbyUID === data.selectedUserId
+        );
+        return getValueWithNoTasksCheck(
+          { ...data, tasks: filteredTasks },
+          (data) => data.tasks?.length?.toString() || "0"
+        );
+      }
+      
+      if (data.selectedReporterId) {
+        // Only reporter selected
+        const filteredTasks = (data.tasks || []).filter(task => 
+          task.reporters === data.selectedReporterId || task.data_task?.reporters === data.selectedReporterId
+        );
+        return getValueWithNoTasksCheck(
+          { ...data, tasks: filteredTasks },
+          (data) => data.tasks?.length?.toString() || "0"
+        );
+      }
+      
+      // No filters - show all tasks for admin
+      return getValueWithNoTasksCheck(
         data,
         (data) => data.tasks?.length?.toString() || "0"
-      ),
+      );
+    },
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "Historical"),
     getSubtitle: (data) => "View all",
     getChartData: (data) => {

@@ -399,6 +399,7 @@ const AdminDashboardPage = () => {
       devMetrics: devMetrics,
       selectedUserMetrics: selectedUserMetrics, // For selected user card metrics
       currentMonthId: currentMonthId, // Pass month ID for any remaining filtering needs
+      currentUser: user, // Pass current user for role-based task counting
     };
 
     const cards = createDashboardCards(
@@ -579,6 +580,12 @@ const AdminDashboardPage = () => {
             <div>
               <h3>
                 {(() => {
+                  // For regular users, show "My Tasks"
+                  if (!isUserAdmin) {
+                    return `My Tasks - ${user?.name || user?.email || 'User'}`;
+                  }
+                  
+                  // For admin users, show filtered titles
                   if (selectedUserId && selectedReporterId) {
                     return `${selectedUserName} & ${selectedReporterName} Tasks`;
                   } else if (selectedUserId) {
@@ -586,7 +593,7 @@ const AdminDashboardPage = () => {
                   } else if (selectedReporterId) {
                     return `${selectedReporterName} Tasks`;
                   } else {
-                    return "Tasks";
+                    return "All Tasks";
                   }
                 })()}
               </h3>
@@ -598,7 +605,22 @@ const AdminDashboardPage = () => {
                     selectedReporterId,
                     currentMonthId
                   );
-                  return `${filteredTasks.length} tasks`;
+                  
+                  // For regular users, show their task count
+                  if (!isUserAdmin) {
+                    return `${filteredTasks.length} of your tasks`;
+                  }
+                  
+                  // For admin users, show filtered task count
+                  if (selectedUserId && selectedReporterId) {
+                    return `${filteredTasks.length} tasks (User + Reporter)`;
+                  } else if (selectedUserId) {
+                    return `${filteredTasks.length} tasks (User only)`;
+                  } else if (selectedReporterId) {
+                    return `${filteredTasks.length} tasks (Reporter only)`;
+                  } else {
+                    return `${filteredTasks.length} total tasks`;
+                  }
                 })()}
               </p>
             </div>
