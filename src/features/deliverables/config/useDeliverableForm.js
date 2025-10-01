@@ -1,3 +1,4 @@
+import * as Yup from 'yup';
 import { 
   createTextField,
   createNumberField,
@@ -78,25 +79,59 @@ export const DELIVERABLE_FORM_FIELDS = [
 
 // ===== DELIVERABLE FORM SCHEMA =====
 export const createDeliverableFormSchema = (fields) => {
-  const schema = {};
+  const schemaShape = {};
   
   fields.forEach(field => {
     if (field.validation) {
-      schema[field.name] = field.validation;
+      // Convert react-hook-form validation to Yup schema
+      if (field.type === 'text') {
+        let yupField = Yup.string();
+        if (field.validation.required) {
+          yupField = yupField.required(field.validation.required);
+        }
+        if (field.validation.minLength) {
+          yupField = yupField.min(field.validation.minLength.value, field.validation.minLength.message);
+        }
+        if (field.validation.maxLength) {
+          yupField = yupField.max(field.validation.maxLength.value, field.validation.maxLength.message);
+        }
+        if (field.validation.pattern) {
+          yupField = yupField.matches(field.validation.pattern.value, field.validation.pattern.message);
+        }
+        schemaShape[field.name] = yupField;
+      } else if (field.type === 'number') {
+        let yupField = Yup.number();
+        if (field.validation.required) {
+          yupField = yupField.required(field.validation.required);
+        }
+        if (field.validation.min) {
+          yupField = yupField.min(field.validation.min.value, field.validation.min.message);
+        }
+        if (field.validation.max) {
+          yupField = yupField.max(field.validation.max.value, field.validation.max.message);
+        }
+        schemaShape[field.name] = yupField;
+      } else if (field.type === 'select') {
+        let yupField = Yup.string();
+        if (field.validation.required) {
+          yupField = yupField.required(field.validation.required);
+        }
+        schemaShape[field.name] = yupField;
+      }
     }
   });
   
-  return schema;
+  return Yup.object().shape(schemaShape);
 };
 
 // ===== DELIVERABLE FORM UTILITIES =====
 export const prepareDeliverableFormData = (formData) => {
   return {
-    name: formData.name?.trim(),
-    timePerUnit: parseFloat(formData.timePerUnit),
-    timeUnit: formData.timeUnit,
+    name: formData.name?.trim() || '',
+    timePerUnit: parseFloat(formData.timePerUnit) || 1,
+    timeUnit: formData.timeUnit || 'hr',
     requiresQuantity: true, // Always true for deliverables
-    declinariTime: parseInt(formData.declinariTime)
+    declinariTime: parseInt(formData.declinariTime) || 0
   };
 };
 
@@ -114,6 +149,7 @@ export const validateDeliverableName = (name, existingDeliverables = [], exclude
   const trimmedName = name.trim().toLowerCase();
   const duplicate = existingDeliverables.find((deliverable, index) => 
     index !== excludeIndex && 
+    deliverable?.name && 
     deliverable.name.toLowerCase() === trimmedName
   );
   

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
 import { useAppData } from '@/hooks/useAppData';
-import { canDeleteData } from '@/features/utils/authUtils';
+import { isUserAdmin } from '@/features/utils/authUtils';
 import { showSuccess, showError } from '@/utils/toast';
 import TanStackTable from '@/components/Table/TanStackTable';
 import { SkeletonTable } from '@/components/ui/Skeleton/Skeleton';
@@ -20,13 +20,9 @@ const DeliverableTable = ({
 }) => {
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editingDeliverable, setEditingDeliverable] = useState(null);
-  const [deletingDeliverable, setDeletingDeliverable] = useState(null);
   
-  // Check if user has permission to manage deliverables
-  const canManageDeliverables = canDeleteData(user);
+  // Check if user has permission to manage deliverables (admin only)
+  const canManageDeliverables = isUserAdmin(user);
   
   // Use prop data if provided, otherwise fallback to global data
   const { deliverables: globalDeliverables, isLoading: loadingSettings, error: settingsError, refetchDeliverables } = useAppData();
@@ -42,18 +38,42 @@ const DeliverableTable = ({
     }
   }, [deliverablesData?.length, onCountChange]);
 
+  // Handle delete deliverable function
+  const handleDeleteDeliverable = async (deliverable) => {
+    try {
+      const updatedDeliverables = deliverablesData.filter(d => d.id !== deliverable.id);
+      
+      await updateSettings({
+        settingsType: 'deliverables',
+        settingsData: {
+          deliverables: updatedDeliverables
+        },
+        userData: user
+      });
+      // Note: Success toast is handled by useTableActions hook
+    } catch (error) {
+      showError(`Failed to delete deliverable: ${error.message}`);
+    }
+  };
+
   // Table actions hook
   const {
     handleSelect,
     handleEdit,
     handleDelete,
     showEditModal: showTableEditModal,
-    showDeleteModal: showTableDeleteModal,
+    showDeleteConfirm: showTableDeleteModal,
     editingItem,
-    deletingItem,
+    itemToDelete: deletingItem,
     closeEditModal,
     closeDeleteModal,
-  } = useTableActions();
+    confirmDelete,
+  } = useTableActions('deliverable', {
+    deleteMutation: handleDeleteDeliverable,
+    onDeleteSuccess: () => {
+      refetchDeliverables?.();
+    }
+  });
 
   // Table columns
   const columns = useMemo(() => [
@@ -146,38 +166,15 @@ const DeliverableTable = ({
     setShowCreateModal(true);
   };
 
-  // Handle edit deliverable
-  const handleEditDeliverable = (deliverable) => {
-    setEditingDeliverable(deliverable);
-    setShowEditModal(true);
-  };
-
-  // Handle delete deliverable
-  const handleDeleteDeliverable = async (deliverable) => {
-    try {
-      await updateSettings({
-        type: 'deliverables',
-        data: deliverablesData.filter(d => d.id !== deliverable.id)
-      });
-      showSuccess('delete', 'deliverable');
-    } catch (error) {
-      showError(`Failed to delete deliverable: ${error.message}`);
-    }
-  };
-
   // Handle form success
   const handleFormSuccess = () => {
     setShowCreateModal(false);
-    setShowEditModal(false);
-    setEditingDeliverable(null);
     refetchDeliverables?.();
   };
 
   // Handle form cancel
   const handleFormCancel = () => {
     setShowCreateModal(false);
-    setShowEditModal(false);
-    setEditingDeliverable(null);
   };
 
   // Loading state
@@ -254,10 +251,10 @@ const DeliverableTable = ({
 
       {/* Edit Modal */}
       <DeliverableFormModal
-        isOpen={showEditModal}
-        onClose={handleFormCancel}
+        isOpen={showTableEditModal}
+        onClose={closeEditModal}
         mode="edit"
-        deliverable={editingDeliverable}
+        deliverable={editingItem}
         onSuccess={handleFormSuccess}
       />
 
@@ -265,7 +262,7 @@ const DeliverableTable = ({
       <ConfirmationModal
         isOpen={showTableDeleteModal}
         onClose={closeDeleteModal}
-        onConfirm={() => handleDeleteDeliverable(deletingItem)}
+        onConfirm={confirmDelete}
         title="Delete Deliverable"
         message={`Are you sure you want to delete "${deletingItem?.name}"? This action cannot be undone.`}
         variant="danger"

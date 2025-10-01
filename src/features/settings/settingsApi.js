@@ -2,7 +2,7 @@ import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { getCurrentUserInfo } from "@/features/auth/authSlice";
-import { canDeleteData } from "@/features/utils/authUtils";
+import { canDeleteData, hasPermission, isUserAdmin } from "@/features/utils/authUtils";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import {
   doc,
@@ -36,8 +36,24 @@ const validateSettingsPermissions = (userData, operation) => {
     return { isValid: false, errors: ['User data is required'] };
   }
   
-  if (!canDeleteData(userData)) {
-    return { isValid: false, errors: ['You need \'delete_data\' permission to manage settings'] };
+  // Check specific permissions based on operation
+  if (operation === 'update_settings_type' || operation === 'update_deliverables') {
+    // For deliverables, only admin users can manage them
+    if (userData.settingsType === 'deliverables' || operation.includes('deliverable')) {
+      if (!isUserAdmin(userData)) {
+        return { isValid: false, errors: ['Only admin users can manage deliverables'] };
+      }
+    } else {
+      // For other settings, check delete_data permission
+      if (!canDeleteData(userData)) {
+        return { isValid: false, errors: ['You need \'delete_data\' permission to manage settings'] };
+      }
+    }
+  } else {
+    // Default to delete_data permission for other operations
+    if (!canDeleteData(userData)) {
+      return { isValid: false, errors: ['You need \'delete_data\' permission to manage settings'] };
+    }
   }
   
   return { isValid: true, errors: [] };
@@ -145,7 +161,7 @@ export const settingsApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // SECURITY: Validate user permissions
-            const permissionValidation = validateSettingsPermissions(userData, 'update_deliverables');
+            const permissionValidation = validateSettingsPermissions({ ...userData, settingsType: 'deliverables' }, 'update_deliverables');
             if (!permissionValidation.isValid) {
               return { error: { message: permissionValidation.errors.join(', ') } };
             }
@@ -186,7 +202,9 @@ export const settingsApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // SECURITY: Validate user permissions
-            const permissionValidation = validateSettingsPermissions(userData, 'update_settings_type');
+            console.log('User data for validation:', { ...userData, settingsType });
+            console.log('Is user admin?', isUserAdmin(userData));
+            const permissionValidation = validateSettingsPermissions({ ...userData, settingsType }, 'update_settings_type');
             if (!permissionValidation.isValid) {
               return { error: { message: permissionValidation.errors.join(', ') } };
             }
@@ -217,7 +235,7 @@ export const settingsApi = createApi({
         console.log('Invalidating cache tags for settingsType:', settingsType);
         return [
           { type: "Settings", id: "APP" },
-          { type: "Settings", id: settingsType.toLowerCase() },
+          ...(settingsType ? [{ type: "Settings", id: settingsType.toLowerCase() }] : []),
           { type: "Settings", id: "deliverables" } // Always invalidate deliverables
         ];
       },
@@ -268,7 +286,7 @@ export const settingsApi = createApi({
       providesTags: (result, error, { settingsType }) => {
         console.log('Providing cache tags for settingsType:', settingsType);
         return [
-          { type: "Settings", id: settingsType.toLowerCase() },
+          ...(settingsType ? [{ type: "Settings", id: settingsType.toLowerCase() }] : []),
           { type: "Settings", id: "deliverables" } // Always provide deliverables tag
         ];
       },

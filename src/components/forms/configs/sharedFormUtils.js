@@ -17,11 +17,13 @@ export const VALIDATION_PATTERNS = {
     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
   NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@netbet\.ro$/,
   JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
+  ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
 };
 
 // ===== VALIDATION MESSAGES =====
 export const VALIDATION_MESSAGES = {
   REQUIRED: "This field is required",
+  required: "This field is required",
   EMAIL: "Please enter a valid email address",
   NETBET_EMAIL: "Please enter a valid NetBet email address (@netbet.ro)",
   MIN_LENGTH: (min) => `Must be at least ${min} characters`,

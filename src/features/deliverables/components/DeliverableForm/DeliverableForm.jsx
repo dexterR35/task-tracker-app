@@ -2,6 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError } from '@/utils/toast';
 import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
@@ -35,6 +36,7 @@ const DeliverableForm = ({
   className = "" 
 }) => {
   const { deliverables: existingDeliverables } = useAppData();
+  const { user } = useAuth();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
   
   // Form setup
@@ -97,14 +99,24 @@ const DeliverableForm = ({
           logError: true
         });
 
+        // Create new deliverable with unique ID
+        const newDeliverable = {
+          ...preparedData,
+          id: `deliverable_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        // Get current deliverables and add new one
+        const currentDeliverables = existingDeliverables || [];
+        const updatedDeliverables = [...currentDeliverables, newDeliverable];
+
         await createDeliverableWithErrorHandling({
-          type: 'deliverables',
-          data: {
-            ...preparedData,
-            id: `deliverable_${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
+          settingsType: 'deliverables',
+          settingsData: {
+            deliverables: updatedDeliverables
+          },
+          userData: user
         });
       } else {
         const updateDeliverableWithErrorHandling = withMutationErrorHandling(updateSettings, {
@@ -113,17 +125,24 @@ const DeliverableForm = ({
           logError: true
         });
 
+        // Update existing deliverable in the array
+        const currentDeliverables = existingDeliverables || [];
+        const updatedDeliverables = currentDeliverables.map(d => 
+          d.id === deliverable.id 
+            ? { ...d, ...preparedData, updatedAt: new Date().toISOString() }
+            : d
+        );
+
         await updateDeliverableWithErrorHandling({
-          type: 'deliverables',
-          data: {
-            ...deliverable,
-            ...preparedData,
-            updatedAt: new Date().toISOString()
-          }
+          settingsType: 'deliverables',
+          settingsData: {
+            deliverables: updatedDeliverables
+          },
+          userData: user
         });
       }
 
-      handleSuccess(mode === 'create' ? 'create' : 'update', 'deliverable');
+      // Success toast is handled by createFormSubmissionHandler
       onSuccess?.();
     },
     {
