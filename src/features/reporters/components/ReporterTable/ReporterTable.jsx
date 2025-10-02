@@ -22,18 +22,9 @@ const ReporterTable = ({
   const reporterColumns = getColumns('reporters');
   
   
-  // Custom delete mutation wrapper for reporters with permission error handling
+  // Custom delete mutation wrapper for reporters - simplified since useTableActions now handles permission errors
   const handleReporterDeleteMutation = async (reporter) => {
-    try {
-      return await deleteReporter({ id: reporter.id, userData: user });
-    } catch (error) {
-      // Show permission error toast if it's a permission issue
-      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
-        const { showAuthError } = await import('@/utils/toast');
-        showAuthError('You do not have permission to delete reporters');
-      }
-      throw error;
-    }
+    return await deleteReporter({ id: reporter.id, userData: user });
   };
 
   // Use table actions hook

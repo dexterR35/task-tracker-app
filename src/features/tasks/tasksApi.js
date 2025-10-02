@@ -26,9 +26,9 @@ import { handleApiError } from "@/features/utils/errorHandling";
 import { createMidnightScheduler } from "@/utils/midnightScheduler";
 import { 
   withAuthentication,
-  validateUserPermissions,
   withApiErrorHandling
 } from "@/utils/apiUtils";
+import { validateUserPermissions } from "@/features/utils/authUtils";
 
 import {
   formatMonth,

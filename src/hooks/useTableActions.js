@@ -73,11 +73,32 @@ export const useTableActions = (tableType, options = {}) => {
 
       const result = await deleteMutation(itemToDelete);
       
+      // Check if the result has an error property (RTK Query error response)
+      if (result?.error) {
+        const errorMessage = result.error.message || 'Unknown error';
+        logger.error(`${tableType} delete error:`, result.error);
+        
+        // Check if it's a permission error
+        const isPermissionError = errorMessage.includes('permission') || 
+                                  errorMessage.includes('User lacks required') ||
+                                  errorMessage.includes('You do not have permission');
+        
+        if (isPermissionError) {
+          // Show permission error toast
+          const { showAuthError } = await import('@/utils/toast');
+          showAuthError(`You do not have permission to delete ${tableType}s`);
+        } else {
+          showError(`Failed to delete ${tableType}: ${errorMessage}`);
+        }
+        return; // Don't show success toast or proceed with success logic
+      }
+      
       // Check if the result has an unwrap method (RTK Query mutation result)
       if (result && typeof result.unwrap === 'function') {
         await result.unwrap();
       }
       
+      // Only show success toast if we reach this point without errors
       const displayName = getItemDisplayName(itemToDelete);
       showSuccess(`${tableType} deleted successfully!`);
       
@@ -86,7 +107,16 @@ export const useTableActions = (tableType, options = {}) => {
       }
     } catch (error) {
       logger.error(`${tableType} delete error:`, error);
-      showError(`Failed to delete ${tableType}: ${error?.message || "Please try again."}`);
+      
+      // Check if it's a permission error - if so, don't show additional error toast
+      // as the permission error toast should have already been shown
+      const isPermissionError = error?.message?.includes('permission') || 
+                                error?.message?.includes('User lacks required') ||
+                                error?.message?.includes('You do not have permission');
+      
+      if (!isPermissionError) {
+        showError(`Failed to delete ${tableType}: ${error?.message || "Please try again."}`);
+      }
     } finally {
       setRowActionId(null);
       setItemToDelete(null);

@@ -124,25 +124,17 @@ const AdminDashboardPage = () => {
     [setSearchParams, searchParams, isUserAdmin]
   );
 
-  // Delete wrapper with error handling for permission issues
+  // Delete wrapper - simplified since useTableActions now handles permission errors
   const handleTaskDeleteMutation = async (task) => {
     if (!deleteTask) {
       throw new Error('Delete task mutation not available');
     }
     
-    try {
-      return await deleteTask({ 
-        monthId: task.monthId,  // Always use task's own monthId
-        taskId: task.id,
-        userData: user  // Pass user data for permission validation
-      });
-    } catch (error) {
-      // Show permission error toast if it's a permission issue
-      if (error?.message?.includes('permission') || error?.message?.includes('User lacks required')) {
-        showAuthError('You do not have permission to delete tasks');
-      }
-      throw error;
-    }
+    return await deleteTask({ 
+      monthId: task.monthId,  // Always use task's own monthId
+      taskId: task.id,
+      userData: user  // Pass user data for permission validation
+    });
   };
 
   // Use table actions hook
