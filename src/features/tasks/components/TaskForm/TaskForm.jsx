@@ -19,6 +19,7 @@ import {
   MultiSelectField, 
   NumberField, 
   CheckboxField,
+  SearchableSelectField,
   SimpleDateField 
 } from '@/components/forms/components';
 import DeliverablesField from '@/components/forms/components/DeliverablesField';
@@ -321,6 +322,9 @@ const TaskForm = ({
     if (field.name === 'deliverables') {
       return <DeliverablesField key={field.name} {...fieldProps} options={deliverablesOptions} />;
     }
+    if (field.name === 'reporters') {
+      return <SearchableSelectField key={field.name} {...fieldProps} />;
+    }
     if (field.type === 'select') {
       return <SelectField key={field.name} {...fieldProps} />;
     }
@@ -358,7 +362,9 @@ const TaskForm = ({
     if (field.name === 'reporters') {
       const reporterOptions = reporters?.map(reporter => ({
         value: reporter.id,
-        label: `${reporter.name} (${reporter.email})`
+        label: reporter.name, // Just the name for display
+        name: reporter.name,
+        email: reporter.email
       })) || [];
       
       return {
