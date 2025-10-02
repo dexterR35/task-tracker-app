@@ -19,6 +19,7 @@ import {
   MultiSelectField, 
   NumberField, 
   CheckboxField,
+  SearchableDeliverablesField,
   SearchableSelectField,
   SimpleDateField 
 } from '@/components/forms/components';
@@ -320,7 +321,7 @@ const TaskForm = ({
   // Helper function to render fields based on type
   const renderField = (field, fieldProps) => {
     if (field.name === 'deliverables') {
-      return <DeliverablesField key={field.name} {...fieldProps} options={deliverablesOptions} />;
+      return <SearchableDeliverablesField key={field.name} {...fieldProps} />;
     }
     if (field.name === 'reporters') {
       return <SearchableSelectField key={field.name} {...fieldProps} />;
@@ -357,7 +358,7 @@ const TaskForm = ({
       });
   };
 
-  // Get fields with dynamic options (reporters)
+  // Get fields with dynamic options (reporters and deliverables)
   const fieldsWithOptions = formFields.map(field => {
     if (field.name === 'reporters') {
       const reporterOptions = reporters?.map(reporter => ({
@@ -370,6 +371,21 @@ const TaskForm = ({
       return {
         ...field,
         options: reporterOptions
+      };
+    }
+    if (field.name === 'deliverables') {
+      const deliverableOptions = deliverablesOptions?.map(deliverable => ({
+        value: deliverable.value,
+        label: deliverable.label,
+        name: deliverable.label,
+        timePerUnit: deliverable.timePerUnit,
+        timeUnit: deliverable.timeUnit,
+        requiresQuantity: deliverable.requiresQuantity
+      })) || [];
+      
+      return {
+        ...field,
+        options: deliverableOptions
       };
     }
     return field;

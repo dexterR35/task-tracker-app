@@ -39,7 +39,9 @@ const SearchableSelectField = ({
         return (
           option.label.toLowerCase().includes(searchLower) ||
           option.name?.toLowerCase().includes(searchLower) ||
-          option.email?.toLowerCase().includes(searchLower)
+          option.email?.toLowerCase().includes(searchLower) ||
+          option.timePerUnit?.toString().includes(searchLower) ||
+          option.timeUnit?.toLowerCase().includes(searchLower)
         );
       });
       setFilteredOptions(filtered);
@@ -184,12 +186,17 @@ const SearchableSelectField = ({
                         {option.email}
                       </span>
                     )}
+                    {option.timePerUnit && option.timeUnit && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400">
+                        {option.timePerUnit} {option.timeUnit}/unit
+                      </span>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
               <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                No reporters found
+                No options found
               </div>
             )}
           </div>
