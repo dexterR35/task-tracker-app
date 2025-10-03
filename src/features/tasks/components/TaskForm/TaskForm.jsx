@@ -8,11 +8,12 @@ import { createFormSubmissionHandler, handleFormValidation, prepareFormData } fr
 import { 
   createTaskFormSchema, 
   createTaskFormFields, 
-  prepareTaskFormData
+  prepareTaskFormData,
+  shouldShowField,
+  isConditionallyRequired
 } from '@/features/tasks/config/useTaskForm';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
 import { useDeliverablesByDepartment } from '@/hooks/useDeliverablesByDepartment';
-import { shouldShowField } from '@/components/forms/configs/sharedFormUtils';
 import { 
   TextField, 
   TextareaField,
@@ -22,10 +23,10 @@ import {
   CheckboxField,
   SearchableDeliverablesField,
   SearchableSelectField,
-  SimpleDateField 
+  SimpleDateField,
+  UrlField
 } from '@/components/forms/components';
 import DeliverablesField from '@/components/forms/components/DeliverablesField';
-import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 // Permission validation now happens at API level
@@ -47,6 +48,12 @@ const TaskForm = ({
   const monthId = propMonthId || hookMonthId;
   const { deliverablesOptions, isLoading: loadingDeliverables } = useDeliverablesOptions();
   
+  // Debug logging for deliverables
+  React.useEffect(() => {
+    console.log('TaskForm - deliverablesOptions:', deliverablesOptions);
+    console.log('TaskForm - loadingDeliverables:', loadingDeliverables);
+  }, [deliverablesOptions, loadingDeliverables]);
+  
   // Create dynamic form fields with deliverables options
   const formFields = React.useMemo(() => {
     return createTaskFormFields(deliverablesOptions);
@@ -54,8 +61,8 @@ const TaskForm = ({
 
   // Create dynamic schema with deliverables options
   const dynamicSchema = React.useMemo(() => {
-    return createTaskFormSchema(deliverablesOptions);
-  }, [deliverablesOptions]);
+    return createTaskFormSchema();
+  }, []);
   
   const {
     register,
@@ -97,6 +104,20 @@ const TaskForm = ({
 
   // Watch all form values for conditional field logic
   const watchedValues = watch();
+  
+  // Explicitly register deliverableQuantities field
+  React.useEffect(() => {
+    register('deliverableQuantities');
+    register('declinariQuantities');
+    register('declinariDeliverables');
+    
+    // Initialize deliverableQuantities with empty object if not set
+    const currentQuantities = watch('deliverableQuantities');
+    console.log('TaskForm - current deliverableQuantities:', currentQuantities);
+    if (!currentQuantities || Object.keys(currentQuantities).length === 0) {
+      setValue('deliverableQuantities', {});
+    }
+  }, [register, setValue, watch]);
 
   // Watch the selected department to filter deliverables
   const selectedDepartment = watch('departments');
@@ -230,11 +251,23 @@ const TaskForm = ({
       }
       
       // Validate deliverable quantities
-      if (data._hasDeliverables && data.deliverables) {
+      console.log('Form submission - data._hasDeliverables:', data._hasDeliverables);
+      console.log('Form submission - data.deliverables:', data.deliverables);
+      console.log('Form submission - data.deliverableQuantities:', data.deliverableQuantities);
+      console.log('Form submission - deliverablesOptions:', deliverablesOptions);
+      
+      if (data._hasDeliverables && data.deliverables && data.deliverables !== '') {
         const deliverable = deliverablesOptions.find(d => d.value === data.deliverables);
+        console.log('Form submission - found deliverable:', deliverable);
         if (deliverable && deliverable.requiresQuantity) {
           const quantity = data.deliverableQuantities?.[data.deliverables];
+          console.log('Form submission - quantity for', data.deliverables, ':', quantity);
+          console.log('Form submission - quantity type:', typeof quantity);
+          console.log('Form submission - quantity isNaN:', isNaN(quantity));
+          console.log('Form submission - quantity < 1:', quantity < 1);
+          
           if (!quantity || quantity < 1) {
+            console.log('Form submission - quantity validation failed');
             throw new Error(`Please enter a valid quantity for ${deliverable.label}`);
           }
         }
@@ -323,7 +356,6 @@ const TaskForm = ({
     field,
     register,
     errors,
-    getInputType,
     setValue,
     watch,
     trigger,
@@ -338,6 +370,10 @@ const TaskForm = ({
     }
     if (field.name === 'reporters') {
       return <SearchableSelectField key={field.name} {...fieldProps} />;
+    }
+    if (field.type === 'hidden') {
+      // Hidden fields don't need to be rendered visually
+      return null;
     }
     if (field.type === 'select') {
       return <SelectField key={field.name} {...fieldProps} />;
@@ -356,6 +392,9 @@ const TaskForm = ({
     }
     if (field.type === 'textarea') {
       return <TextareaField key={field.name} {...fieldProps} />;
+    }
+    if (field.type === 'url') {
+      return <UrlField key={field.name} {...fieldProps} />;
     }
     // Default to TextField
     return <TextField key={field.name} {...fieldProps} />;

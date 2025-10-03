@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppData } from '@/hooks/useAppData';
 import { getMonthBoundaries } from '@/utils/monthUtils';
-import BaseField from '@/components/forms/components/BaseField';
 
 const SimpleDateField = ({ 
   field, 
@@ -123,7 +122,14 @@ const SimpleDateField = ({
   ];
 
   return (
-    <BaseField field={field} error={error} formValues={formValues}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <div className="relative">
         {/* Hidden input for form registration */}
         <input
@@ -242,7 +248,9 @@ const SimpleDateField = ({
           </>
         )}
       </div>
-    </BaseField>
+      
+      {error && <div className="error-message">{error.message}</div>}
+    </div>
   );
 };
 

@@ -1,17 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { formatTimeEstimate } from '@/features/tasks/config/useTaskForm';
+
+
+// Local utility function for time estimation
+const formatTimeEstimate = (option, quantity) => {
+  if (!option || !option.timePerUnit) return '0h';
+  
+  const totalTime = option.timePerUnit * quantity;
+  const hours = Math.floor(totalTime);
+  const minutes = Math.round((totalTime - hours) * 60);
+  
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}m`;
+  } else if (hours > 0) {
+    return `${hours}h`;
+  } else {
+    return `${minutes}m`;
+  }
+};
 
 const DeliverablesField = ({ 
   field, 
-  register, 
   errors, 
   setValue, 
   watch, 
   trigger, 
   clearErrors,
   formValues,
-  options = []
 }) => {
   const [customDeliverables, setCustomDeliverables] = useState([]);
   const [newCustomValue, setNewCustomValue] = useState('');

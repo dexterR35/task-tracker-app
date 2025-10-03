@@ -1,11 +1,11 @@
-import { REQUIRED_INDICATOR } from '@/components/forms/configs/sharedFormUtils';
-import BaseField from '@/components/forms/components/BaseField';
+// ===== FORM CONSTANTS =====
+const REQUIRED_INDICATOR = "*";
 
 const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} hideLabel={true} formValues={formValues}>
+    <div className="field-wrapper">
       <div className="checkbox-field space-x-2 flex justify-start items-center">
         <input
           {...register(field.name)}
@@ -25,7 +25,10 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
           {field.required && <span className="required-indicator">{REQUIRED_INDICATOR}</span>}
         </label>
       </div>
-    </BaseField>
+      
+      {/* Error message */}
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 

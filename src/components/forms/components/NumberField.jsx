@@ -1,6 +1,4 @@
-import BaseField from '@/components/forms/components/BaseField';
-
-const NumberField = ({ field, register, errors, setValue, trigger, formValues, hideLabel = false }) => {
+const NumberField = ({ field, register, errors, setValue, trigger, formValues }) => {
   const fieldError = errors[field.name];
   
   const handleChange = (e) => {
@@ -10,7 +8,14 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues, h
   };
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues} hideLabel={hideLabel}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <input
         {...register(field.name, {
           valueAsNumber: true,
@@ -33,7 +38,9 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues, h
         onInput={handleChange}
         onBlur={handleChange}
       />
-    </BaseField>
+      
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 

@@ -10,7 +10,6 @@ import { formatDate } from '@/utils/dateUtils';
 import { showError } from '@/utils/toast';
 import { Icons } from '@/components/icons';
 import { getCardColorHex } from '@/components/Card/cardConfig';
-import { calculateDeliverableTime, formatTimeEstimate } from '@/features/tasks/config/useTaskForm';
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -370,8 +369,8 @@ const TaskDetailPage = () => {
     const deliverable = deliverablesOptions.find(d => d.value === deliverableName);
     if (deliverable) {
       const quantity = deliverableQuantities[deliverableName] || 1;
-      const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
-      totalCalculatedTime = calculatedTime;
+      const calculatedTime = calculateSingleDeliverable(deliverable, quantity, declinariQuantities[deliverableName] || 0);
+      totalCalculatedTime = calculatedTime.totalTime;
       
       deliverablesData.push({
         label: "Deliverable",
@@ -552,8 +551,8 @@ const TaskDetailPage = () => {
       const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
       const declinariQuantities = task.data_task.declinariQuantities || {};
       const declinariDeliverables = task.data_task.declinariDeliverables || {};
-      const calculatedTime = calculateDeliverableTime(deliverable, quantity, declinariQuantities);
-      totalCalculatedTime = calculatedTime;
+      const calculatedTime = calculateSingleDeliverable(deliverable, quantity, declinariQuantities[task.data_task.deliverables] || 0);
+      totalCalculatedTime = calculatedTime.totalTime;
       
       deliverablesData.push({
         label: "Deliverable",

@@ -1,10 +1,10 @@
 import * as Yup from 'yup';
-import { 
-  createTextField,
-  createEmailField,
-  createSelectField,
-  VALIDATION_MESSAGES
-} from '@/components/forms/configs/sharedFormUtils';
+// ===== VALIDATION CONSTANTS =====
+const VALIDATION_MESSAGES = {
+  REQUIRED: "This field is required",
+  EMAIL: "Please enter a valid email address",
+};
+import { TASK_FORM_OPTIONS } from '@/features/tasks/config/useTaskForm';
 
 // ===== REPORTER FORM OPTIONS =====
 const REPORTER_DEPARTMENT_OPTIONS = [
@@ -57,17 +57,55 @@ const REPORTER_COUNTRY_OPTIONS = [
 
 // ===== REPORTER FORM FIELD CONFIGURATION =====
 export const REPORTER_FORM_FIELDS = [
-  createTextField('name', 'Reporter Name', {}),
-  createEmailField('email', 'Email Address', {}),
-  createSelectField('departament', 'Department', {}, {
+  {
+    name: 'name',
+    type: 'text',
+    label: 'Reporter Name',
+    required: true,
+    validation: {
+      required: VALIDATION_MESSAGES.required,
+      minLength: {
+        value: 2,
+        message: "Name must be at least 2 characters"
+      },
+      maxLength: {
+        value: 50,
+        message: "Name must be less than 50 characters"
+      },
+      pattern: {
+        value: /^[a-zA-Z0-9\s]+$/,
+        message: "Name can only contain letters, numbers, and spaces"
+      }
+    }
+  },
+  {
+    name: 'email',
+    type: 'email',
+    label: 'Email Address',
+    required: true,
+    autoComplete: 'email'
+  },
+  {
+    name: 'departament',
+    type: 'select',
+    label: 'Department',
+    required: true,
     options: REPORTER_DEPARTMENT_OPTIONS
-  }),
-  createSelectField('country', 'Country', {}, {
-    options: REPORTER_COUNTRY_OPTIONS
-  }),
-  createSelectField('channelName', 'Channel Name', {}, {
+  },
+  {
+    name: 'country',
+    type: 'select',
+    label: 'Country',
+    required: true,
+    options: TASK_FORM_OPTIONS.markets
+  },
+  {
+    name: 'channelName',
+    type: 'select',
+    label: 'Channel Name',
+    required: true,
     options: REPORTER_CHANNEL_OPTIONS
-  })
+  }
 ];
 
 // ===== REPORTER FORM VALIDATION SCHEMA =====

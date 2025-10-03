@@ -53,7 +53,7 @@ export const useUserData = () => {
   };
 };
 
-// Simplified hook for month selection - uses APIs directly
+// Smart month selection hook with caching
 export const useMonthSelection = (selectedUserId = null) => {
   const { user } = useAuth();
   const userUID = getUserUID(user);
@@ -68,7 +68,7 @@ export const useMonthSelection = (selectedUserId = null) => {
     userData: user
   };
   
-  // Fetch current month data
+  // Fetch current month data first
   const { 
     data: currentMonthData = {}, 
     isLoading: currentMonthLoading, 
@@ -84,22 +84,13 @@ export const useMonthSelection = (selectedUserId = null) => {
   // Extract current month data
   const { 
     currentMonth = {}, 
-    currentMonthBoard = null,
     boardExists = false,
     currentMonthTasks = []
   } = currentMonthData;
 
   const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
   
-  // Use centralized month utilities for consistent month handling
-  const currentMonthInfo = useMemo(() => {
-    if (monthId) {
-      return getMonthDateRange(monthId);
-    }
-    return getCurrentMonthInfo();
-  }, [monthId]);
-
-  // Fetch available months by default so they show in the dropdown
+  // Fetch available months for dropdown
   const { 
     data: availableMonths = [], 
     isLoading: availableMonthsLoading,
@@ -108,12 +99,11 @@ export const useMonthSelection = (selectedUserId = null) => {
     skip: !user // Only skip if user is not authenticated
   });
 
-
-  // Create dropdown options with current month always available
+  // Create dropdown options with current month first
   const dropdownOptions = useMemo(() => {
     const options = [];
     
-    // Always include current month first (only if we have the data)
+    // Always include current month first
     if (monthId && monthName) {
       options.push({
         monthId: monthId,
@@ -123,14 +113,22 @@ export const useMonthSelection = (selectedUserId = null) => {
       });
     }
     
-    // Add other available months (only if fetched)
-    if (availableMonths.length > 0) {
+    // Add other available months
+    if (availableMonths && availableMonths.length > 0) {
       const otherMonths = availableMonths
         .filter(m => m.monthId !== monthId) // Exclude current month to avoid duplicates
         .sort((a, b) => b.monthId.localeCompare(a.monthId)); // Sort by newest first
       
       options.push(...otherMonths);
     }
+    
+    // Debug logging
+    console.log('Month dropdown options:', {
+      currentMonth: { monthId, monthName, boardExists },
+      availableMonths: availableMonths?.length || 0,
+      totalOptions: options.length,
+      options: options.map(o => ({ monthId: o.monthId, monthName: o.monthName, isCurrent: o.isCurrent }))
+    });
     
     return options;
   }, [availableMonths, monthId, monthName, boardExists]);
@@ -173,8 +171,6 @@ export const useMonthSelection = (selectedUserId = null) => {
   const displayTasks = useMemo(() => {
     return rawTasks || [];
   }, [rawTasks]);
-  
-  
   
   // Helper functions
   const selectMonth = useCallback(async (monthId) => {
@@ -254,7 +250,7 @@ export const useMonthSelection = (selectedUserId = null) => {
 };
 
 export const useAppData = (selectedUserId = null) => {
-  // Use the simplified month selection hook
+  // Use the smart month selection hook
   const monthSelectionData = useMonthSelection(selectedUserId);
   const userData = useUserData();
   
@@ -281,7 +277,7 @@ export const useAppData = (selectedUserId = null) => {
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
   
-  // Extract month data from the consolidated hook
+  // Extract month data from the smart month selection hook
   const monthData = {
     monthId: monthSelectionData.currentMonth.monthId,
     monthName: monthSelectionData.currentMonth.monthName,
@@ -297,7 +293,7 @@ export const useAppData = (selectedUserId = null) => {
     refetchMonthTasks: monthSelectionData.refetchMonthTasks
   };
   
-  // Current month tasks are now included in monthData from the consolidated hook
+  // Tasks from selected or current month
   const tasksData = monthSelectionData.tasks || [];
 
   
@@ -326,7 +322,7 @@ export const useAppData = (selectedUserId = null) => {
     isLoading,
     error,
     
-    // Month data (from consolidated hook) - with safety checks
+    // Month data (with selection support) - with safety checks
     monthId: monthData.monthId || null,
     monthName: monthData.monthName || null,
     daysInMonth: monthData.daysInMonth || null,
@@ -335,9 +331,19 @@ export const useAppData = (selectedUserId = null) => {
     boardExists: monthData.boardExists || false,
     availableMonths: monthData.availableMonths || [],
     
+    // Month selection info
+    currentMonth: monthSelectionData.currentMonth,
+    selectedMonth: monthSelectionData.selectedMonth,
+    isCurrentMonth: monthSelectionData.isCurrentMonth,
+    isInitialLoading: monthSelectionData.isInitialLoading,
+    isMonthDataReady: monthSelectionData.isMonthDataReady,
+    
+    // Month selection functions
+    selectMonth: monthSelectionData.selectMonth,
+    resetToCurrentMonth: monthSelectionData.resetToCurrentMonth,
+    
     // Refetch functions for real-time updates
     refetchCurrentMonth: monthData.refetchCurrentMonth,
-    refetchMonthTasks: monthData.refetchMonthTasks,
     refetchReporters,
     refetchDeliverables
   };

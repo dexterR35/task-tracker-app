@@ -36,6 +36,13 @@ const Sidebar = () => {
       description: "Data insights",
     },
     {
+      name: "Task Deliverables",
+      href: "/task-deliverables",
+      icon: Icons.generic.clock,
+      adminOnly: true,
+      description: "Deliverable calculations",
+    },
+    {
       name: "Management",
       href: "/users",
       icon: Icons.generic.settings,

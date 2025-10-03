@@ -6,7 +6,6 @@ import { handleValidationError, handleSuccess } from '@/features/utils/errorHand
 import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
 import TextField from '@/components/forms/components/TextField';
 import PasswordField from '@/components/forms/components/PasswordField';
-import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 
@@ -33,9 +32,7 @@ const LoginForm = ({ onSuccess, className = "" }) => {
     try {
       const result = await login(data);
       handleSuccess('Login successful!', result, 'User Login');
-      // Reset form
       reset();
-      // Call success callback if provided
       onSuccess?.(result);
     } catch (error) {
       logger.error('❌ Login failed:', error);
@@ -48,27 +45,23 @@ const LoginForm = ({ onSuccess, className = "" }) => {
   };
 
   return (
-    <div className={`${className} card w-100`}>
-      <h2 className='text-3xl font-bold mb-1'>
+    <div className={`${className} card w-100 p-6`}>
+      <h2 className='font-bold mb-1'>
         Login
       </h2>
-      <p className='mb-6 text-sm'>
+      <p className='mb-10 text-sm'>
      Sign in to your account
     </p>
-      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-8">
         <TextField
           field={LOGIN_FORM_FIELDS[0]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
-          formValues={{}}
         />
         <PasswordField
           field={LOGIN_FORM_FIELDS[1]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
-          formValues={{}}
         />
         
         <div className="flex justify-center">

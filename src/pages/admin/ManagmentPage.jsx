@@ -6,7 +6,6 @@ import ReporterFormModal from "@/features/reporters/components/ReporterForm/Repo
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
 import DeliverableTable from "@/features/deliverables/components/DeliverableTable/DeliverableTable";
-import CalculationExamples from "@/components/ui/CalculationExamples/CalculationExamples";
 
 const AdminManagementPage = () => {
   // Get all data directly from useAppData hook (RTK Query handles caching)
@@ -14,7 +13,6 @@ const AdminManagementPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCalculationExamples, setShowCalculationExamples] = useState(false);
   
   // Show error state
   if (error) {
@@ -137,18 +135,6 @@ const AdminManagementPage = () => {
             </div>
           )}
           
-          {activeTab === 'deliverables' && (
-            <DynamicButton
-              onClick={() => setShowCalculationExamples(!showCalculationExamples)}
-              variant="outline"
-              size="sm"
-              iconName={showCalculationExamples ? "hide" : "show"}
-              iconPosition="left"
-              className="w-32"
-            >
-              {showCalculationExamples ? "Hide" : "Show"} Examples
-            </DynamicButton>
-          )}
         </div>
 
         {/* Content Section */}
@@ -170,19 +156,13 @@ const AdminManagementPage = () => {
               className="rounded-lg"
             />
           ) : activeTab === 'deliverables' ? (
-            <div>
-              {showCalculationExamples && (
-                <CalculationExamples deliverables={deliverables} />
-              )}
-              
-              <DeliverableTable
-                user={user}
-                error={error}
-                isLoading={isLoading}
-                className="rounded-lg"
-                deliverables={deliverables}
-              />
-            </div>
+            <DeliverableTable
+              user={user}
+              error={error}
+              isLoading={isLoading}
+              className="rounded-lg"
+              deliverables={deliverables}
+            />
           ) : activeTab === 'general' ? (
             <div className="py-6">
               <p className="text-sm text-gray-500 dark:text-gray-400">

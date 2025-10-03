@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAppData, useMonthSelection } from "@/hooks/useAppData";
+import { useAppData } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
@@ -33,17 +33,11 @@ const AdminDashboardPage = () => {
   const selectedUserId = searchParams.get("user") || "";
   const selectedReporterId = searchParams.get("reporter") || "";
 
-  // Get basic data from useAppData hook
+  // Get all data from useAppData hook (includes month selection)
   const {
     user,
     users,
     reporters,
-    error,
-    isLoading: appDataLoading,
-    deleteTask,
-  } = useAppData(); // Remove selectedUserId since we handle filtering in component
-
-  const {
     tasks, // Current display tasks (current or selected month)
     availableMonths, // For dropdown options
     currentMonth, // Current month info
@@ -52,10 +46,11 @@ const AdminDashboardPage = () => {
     isLoading, // Loading state for selected month
     isInitialLoading, // Loading state for initial month data
     isMonthDataReady, // Flag indicating month data is ready
-    error: monthError, // Error state
+    error, // Error state
     selectMonth, // Function to select month
     resetToCurrentMonth, // Function to reset
-  } = useMonthSelection(); // Remove selectedUserId to get ALL tasks
+    deleteTask,
+  } = useAppData(); // Get all data from single hook
 
   // Task creation is only allowed for current month with existing board
   // Permission validation happens at API level
@@ -203,24 +198,27 @@ const AdminDashboardPage = () => {
   // Get task columns for the table
   const taskColumns = useTaskColumns(currentMonthId, reporters, user);
 
+  // Extract stable user values to prevent unnecessary re-renders
+  const userUID = useMemo(() => user?.uid || user?.userUID, [user?.uid, user?.userUID]);
+  
   //  reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
     (tasks, selectedUserId, selectedReporterId, currentMonthId) => {
-      // Debug logging to see what tasks we're working with
-      console.log('getFilteredTasks called with:', {
-        totalTasks: tasks.length,
-        currentUser: user,
-        isUserAdmin,
-        selectedUserId,
-        selectedReporterId,
-        currentMonthId,
-        tasks: tasks.map(t => ({
-          id: t.id,
-          userUID: t.userUID,
-          createbyUID: t.createbyUID,
-          title: t.data_task?.taskName || 'No title'
-        }))
-      });
+      // Debug logging to see what tasks we're working with (commented out to reduce noise)
+      // console.log('getFilteredTasks called with:', {
+      //   totalTasks: tasks.length,
+      //   currentUser: user,
+      //   isUserAdmin,
+      //   selectedUserId,
+      //   selectedReporterId,
+      //   currentMonthId,
+      //   tasks: tasks.map(t => ({
+      //     id: t.id,
+      //     userUID: t.userUID,
+      //     createbyUID: t.createbyUID,
+      //     title: t.data_task?.taskName || 'No title'
+      //   }))
+      // });
       
       return tasks.filter((task) => {
         // Always filter by month first
@@ -228,7 +226,6 @@ const AdminDashboardPage = () => {
 
         // Role-based filtering: Regular users can only see their own tasks
         if (!isUserAdmin) {
-          const userUID = user?.uid || user?.userUID;
           
           // Check if this task belongs to the current user
           // A task belongs to a user if:
@@ -306,7 +303,7 @@ const AdminDashboardPage = () => {
         return true; // Admin sees all tasks
       });
     },
-    [isUserAdmin, user]
+    [isUserAdmin, userUID]
   );
 
   // Calculate reporter metrics using global tasks (reporters card shows all data)
@@ -458,10 +455,10 @@ const AdminDashboardPage = () => {
     [smallCardsData]
   );
 
-  if (error || monthError) {
+  if (error) {
     return (
       <div className=" mx-auto px-4 py-6 text-center text-red-error">
-        Error loading tasks: {(error || monthError)?.message || "Unknown error"}
+        Error loading tasks: {error?.message || "Unknown error"}
       </div>
     );
   }

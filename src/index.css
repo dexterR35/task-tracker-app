@@ -321,7 +321,7 @@
   }
   /* Enhanced Global Label Styling */
   label {
-    @apply block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2;
+    @apply block text-sm text-gray-800 dark:text-gray-200 mb-2;
   }
   ::placeholder {
     @apply text-gray-500;
@@ -332,7 +332,7 @@
   }
   /* Headings with theme colors */
   h1 {
-    @apply text-3xl font-bold tracking-tight text-text-primary dark:text-text-white;
+    @apply text-4xl font-bold tracking-tight text-text-primary dark:text-text-white;
   }
 
   h2 {
@@ -381,7 +381,7 @@
     @apply text-text-primary dark:text-gray-300 text-sm;
   }
   span:not(th span) {
-    @apply text-text-primary dark:text-gray-300 text-sm;
+    @apply text-text-primary dark:text-gray-300 ;
   }
   /* Modern Card System */
   .bg-primary {

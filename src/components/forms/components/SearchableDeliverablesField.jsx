@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import BaseField from '@/components/forms/components/BaseField';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 
 const SearchableDeliverablesField = ({ 
@@ -10,15 +9,29 @@ const SearchableDeliverablesField = ({
   watch, 
   trigger,
   clearErrors,
-  formValues, 
-  hideLabel = false 
+  formValues
 }) => {
   const [quantities, setQuantities] = useState({});
   const [declinariQuantities, setDeclinariQuantities] = useState({});
   const [declinariEnabled, setDeclinariEnabled] = useState({});
   
   const selectedDeliverable = watch('deliverables') || '';
+  const selectedDepartment = watch('departments') || '';
+  const hasDeliverables = watch('_hasDeliverables') || false;
   const selectedOption = field.options?.find(option => option.value === selectedDeliverable);
+  
+  // Ensure default quantity is set when deliverable is selected
+  useEffect(() => {
+    if (selectedDeliverable && selectedOption && selectedOption.requiresQuantity) {
+      const currentQuantity = quantities[selectedDeliverable];
+      
+      if (!currentQuantity || currentQuantity < 1) {
+        const newQuantities = { ...quantities, [selectedDeliverable]: 1 };
+        setQuantities(newQuantities);
+        setValue('deliverableQuantities', newQuantities);
+      }
+    }
+  }, [selectedDeliverable, selectedOption, quantities, setValue]);
   
   // Initialize quantities and declinari from form data if editing
   useEffect(() => {
@@ -50,54 +63,83 @@ const SearchableDeliverablesField = ({
       }
     }
     
-    setQuantities(newQuantities);
-    setDeclinariQuantities(newDeclinariQuantities);
-    setDeclinariEnabled(newDeclinariEnabled);
-    setValue('deliverableQuantities', newQuantities);
-    setValue('declinariQuantities', newDeclinariQuantities);
-    setValue('declinariDeliverables', newDeclinariEnabled);
-    trigger('deliverables');
+    // Update all states and form values
+    updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
+    updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
+    updateStateAndForm(setDeclinariEnabled, 'declinariDeliverables', newDeclinariEnabled);
+    
+    // Trigger validation
+    setTimeout(() => {
+      trigger('deliverables');
+      trigger('deliverableQuantities');
+    }, 0);
   };
 
   const handleQuantityChange = (deliverableValue, quantity) => {
     const newQuantities = { ...quantities, [deliverableValue]: parseInt(quantity) || 1 };
-    setQuantities(newQuantities);
-    setValue('deliverableQuantities', newQuantities);
-    trigger('deliverableQuantities');
+    updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
+    
+    // Trigger validation
+    setTimeout(() => {
+      trigger('deliverableQuantities');
+      trigger('deliverables');
+    }, 0);
+  };
+
+  // Helper function to update state and form values
+  const updateStateAndForm = (stateSetter, formField, newValue) => {
+    stateSetter(newValue);
+    setValue(formField, newValue);
   };
 
   const handleDeclinariToggle = (deliverableValue, enabled) => {
     const newDeclinariEnabled = { ...declinariEnabled, [deliverableValue]: enabled };
-    setDeclinariEnabled(newDeclinariEnabled);
-    setValue('declinariDeliverables', newDeclinariEnabled);
+    updateStateAndForm(setDeclinariEnabled, 'declinariDeliverables', newDeclinariEnabled);
     
     if (!enabled) {
       // Clear declinari quantity when disabled
       const newDeclinariQuantities = { ...declinariQuantities };
       delete newDeclinariQuantities[deliverableValue];
-      setDeclinariQuantities(newDeclinariQuantities);
-      setValue('declinariQuantities', newDeclinariQuantities);
+      updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
     } else {
       // Set default declinari quantity to 1 when enabled
       const newDeclinariQuantities = { ...declinariQuantities, [deliverableValue]: 1 };
-      setDeclinariQuantities(newDeclinariQuantities);
-      setValue('declinariQuantities', newDeclinariQuantities);
+      updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
     }
     trigger('declinariDeliverables');
   };
 
   const handleDeclinariQuantityChange = (deliverableValue, quantity) => {
     const newDeclinariQuantities = { ...declinariQuantities, [deliverableValue]: parseInt(quantity) || 1 };
-    setDeclinariQuantities(newDeclinariQuantities);
-    setValue('declinariQuantities', newDeclinariQuantities);
+    updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
     trigger('declinariQuantities');
   };
+
+  // Filter out declinari deliverables from search options
+  const filteredOptions = React.useMemo(() => {
+    // If has deliverables is checked but no department is selected, show empty options
+    if (hasDeliverables && !selectedDepartment) {
+      return [];
+    }
+    
+    if (!field.options || field.options.length === 0) {
+      return [];
+    }
+    
+    // Filter out deliverables that contain "declinari" in the name (case insensitive)
+    return field.options.filter(option => {
+      const name = option.name || option.label || option.value || '';
+      return !name.toLowerCase().includes('declinari');
+    });
+  }, [field.options, hasDeliverables, selectedDepartment]);
 
   // Custom field props for SearchableSelectField
   const searchableFieldProps = {
     field: {
       ...field,
-      onChange: handleDeliverableChange
+      options: filteredOptions, // Use filtered options
+      onChange: handleDeliverableChange,
+      required: hasDeliverables // Make required when hasDeliverables is checked
     },
     register,
     errors,
@@ -106,7 +148,9 @@ const SearchableDeliverablesField = ({
     trigger,
     clearErrors,
     formValues,
-    hideLabel
+    noOptionsMessage: hasDeliverables && !selectedDepartment 
+      ? "Select a department, it's required to select a department for deliverables"
+      : "No options found"
   };
 
   return (

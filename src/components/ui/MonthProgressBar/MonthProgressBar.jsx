@@ -5,20 +5,11 @@ import { Icons } from "@/components/icons";
 
 const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDate, daysInMonth }) => {
   const getMonthProgress = useMemo(() => {
-    if (!monthId || !startDate || !endDate) {
-      return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
-    }
-    
-    // Use dateUtils to normalize the dates from your month data
-    const monthStart = normalizeTimestamp(startDate);
-    const monthEnd = normalizeTimestamp(endDate);
-    
-    if (!monthStart || !monthEnd) {
+    if (!monthId) {
       return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
     }
     
     // Calculate the actual number of days in this month using date-fns
-    // Try parsing the monthId to get the correct year and month
     let totalDays;
     const monthIdParts = monthId.split('-');
     if (monthIdParts.length === 2) {
@@ -27,7 +18,8 @@ const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDa
       const firstDayOfMonth = new Date(year, month, 1);
       totalDays = getDaysInMonth(firstDayOfMonth);
     } else {
-      totalDays = getDaysInMonth(monthStart);
+      // Fallback to daysInMonth prop if available
+      totalDays = daysInMonth || 30;
     }
     
     const currentMonthId = getCurrentMonthId();
@@ -46,7 +38,7 @@ const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDa
     const progress = Math.round((daysPassed / totalDays) * 100);
     
     return { progress, daysPassed, totalDays, daysRemaining };
-  }, [monthId, startDate, endDate]);
+  }, [monthId, startDate, endDate, daysInMonth]);
   
   const { progress, daysPassed, totalDays, daysRemaining } = getMonthProgress;
   

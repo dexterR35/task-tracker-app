@@ -1,10 +1,15 @@
-import BaseField from '@/components/forms/components/BaseField';
-
 const PasswordField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <input
         {...register(field.name)}
         type="password"
@@ -14,9 +19,10 @@ const PasswordField = ({ field, register, errors, formValues }) => {
         disabled={field.disabled || false}
         className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
       />
-    </BaseField>
+      
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 
 export default PasswordField;
-

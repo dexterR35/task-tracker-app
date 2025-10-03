@@ -8,7 +8,6 @@ import { handleValidationError, handleSuccess, withMutationErrorHandling } from 
 import { createFormSubmissionHandler, handleFormValidation, transformToLowercase } from '@/utils/formUtils';
 import { reporterFormSchema, REPORTER_FORM_FIELDS } from '@/features/reporters/config/useReporterForm';
 import { TextField, SelectField } from '@/components/forms/components';
-import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 
@@ -125,35 +124,30 @@ const ReporterForm = ({
           field={REPORTER_FORM_FIELDS[0]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
           formValues={{}}
         />
         <TextField
           field={REPORTER_FORM_FIELDS[1]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
           formValues={{}}
         />
         <SelectField
           field={REPORTER_FORM_FIELDS[2]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
           formValues={{}}
         />
         <SelectField
           field={REPORTER_FORM_FIELDS[3]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
           formValues={{}}
         />
         <SelectField
           field={REPORTER_FORM_FIELDS[4]} 
           register={register}
           errors={errors}
-          getInputType={getInputType}
           formValues={{}}
         />
         

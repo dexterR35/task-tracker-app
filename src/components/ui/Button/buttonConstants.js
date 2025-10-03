@@ -1,11 +1,11 @@
 
 // ===== BASE CLASSES =====
-export const BUTTON_BASE_CLASSES = "px-3 py-1.5 inline-flex rounded-md font-medium shadow-sm !focus:outline-none focus:ring-focus focus:ring-1 focus:ring-offset-0";
+export const BUTTON_BASE_CLASSES = "px-3 py-2 inline-flex rounded-md font-medium shadow-sm !focus:outline-none transition-all duration-200";
 
 // ===== VARIANT CLASSES =====
 export const BUTTON_VARIANTS = {
-  PRIMARY: "bg-btn-primary text-gray-200 hover:bg-primary",
-  SECONDARY: "bg-secondary text-white hover:bg-gray-600",
+  PRIMARY: "bg-btn-primary text-gray-200 hover:bg-btn-secondary ",
+  SECONDARY: "bg-secondary text-white hover:bg-btn-primary",
   SUCCESS: "bg-green-success text-white hover:bg-green-400",
   DANGER: "bg-red-error text-white hover:bg-red-500",
   WARNING: "bg-warning text-white hover:bg-btn-warning",
@@ -18,8 +18,8 @@ export const BUTTON_SIZES = {
   XS: "px-2 py-1 text-xs",
   SM: "px-2.5 py-1 text-xs",
   MD: "px-3 py-1.5 text-sm",
-  LG: "px-4 py-2 text-base",
-  XL: "px-6 py-3 text-lg",
+  LG: "px-2 py-3 text-lg",
+  XL: "px-6 py-3 text-2xl",
 };
 
 // ===== STATE CLASSES =====

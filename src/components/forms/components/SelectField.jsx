@@ -1,10 +1,15 @@
-import BaseField from '@/components/forms/components/BaseField';
-
-const SelectField = ({ field, register, errors, formValues, hideLabel = false }) => {
+const SelectField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues} hideLabel={hideLabel}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <select
         {...register(field.name)}
         id={field.name}
@@ -17,7 +22,9 @@ const SelectField = ({ field, register, errors, formValues, hideLabel = false })
           </option>
         ))}
       </select>
-    </BaseField>
+      
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 

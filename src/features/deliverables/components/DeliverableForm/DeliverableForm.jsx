@@ -18,7 +18,6 @@ import {
   NumberField, 
   SelectField 
 } from '@/components/forms/components/';
-import { getInputType } from '@/components/forms/configs/sharedFormUtils';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { useAppData } from '@/hooks/useAppData';
 
@@ -165,7 +164,6 @@ const DeliverableForm = ({
             field={DELIVERABLE_FORM_FIELDS[0]}
             register={register}
             errors={errors}
-            getInputType={getInputType}
             formValues={formValues}
           />
 

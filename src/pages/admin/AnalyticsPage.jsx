@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useAppData, useMonthSelection } from "@/hooks/useAppData";
+import { useAppData } from "@/hooks/useAppData";
 import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
@@ -18,7 +18,7 @@ const AnalyticsPage = () => {
   const [selectedCards, setSelectedCards] = useState([]);
   
   const {
-    tasks, // Real-time tasks data (already filtered by selected month)
+    tasks, // Real-time tasks data (selected or current month)
     availableMonths, // Available months for dropdown
     currentMonth, // Current month info
     selectedMonth, // Selected month info
@@ -29,7 +29,19 @@ const AnalyticsPage = () => {
     error: monthError, // Error state
     selectMonth, // Function to select month
     resetToCurrentMonth, // Function to reset
-  } = useMonthSelection();
+  } = useAppData();
+
+  // Debug logging for month data
+  console.log('AnalyticsPage month data:', {
+    availableMonths: availableMonths?.length || 0,
+    currentMonth: currentMonth?.monthId,
+    selectedMonth: selectedMonth?.monthId,
+    isCurrentMonth,
+    isLoading,
+    isInitialLoading,
+    isMonthDataReady,
+    tasks: tasks?.length || 0
+  });
 
   // Use unified export hook (after tasks is defined)
   const { exportCSV, exportPDF, isUnifiedExporting: isUnifiedExporting, exportProgress, exportStep, exportStatus } = useUnifiedExport(tasks, {
@@ -290,11 +302,19 @@ const AnalyticsPage = () => {
               onChange={(e) => selectMonth(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
             >
-              {availableMonths.map(month => (
-                <option key={month.monthId} value={month.monthId}>
-                  {month.monthName}
-                </option>
-              ))}
+              {availableMonths && availableMonths.length > 0 ? (
+                availableMonths.map(month => (
+                  <option key={month.monthId} value={month.monthId}>
+                    {month.monthName} {month.isCurrent ? "(Current)" : ""}
+                  </option>
+                ))
+              ) : (
+                currentMonth && (
+                  <option value={currentMonth.monthId}>
+                    {currentMonth.monthName} (Current)
+                  </option>
+                )
+              )}
             </select>
           </div>
         </div>

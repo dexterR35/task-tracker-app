@@ -9,7 +9,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center flex-col  justify-center ">
+    <div className="min-h-screen flex items-center flex-col justify-center ">
       <LoginForm onSuccess={onSuccess}/>
     </div>
   );

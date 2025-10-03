@@ -1,17 +1,22 @@
 import * as Yup from 'yup';
-import { 
-  createTextField,
-  createNumberField,
-  createSelectField,
-  VALIDATION_PATTERNS,
-  VALIDATION_MESSAGES
-} from '@/components/forms/configs/sharedFormUtils';
+// ===== VALIDATION CONSTANTS =====
+const VALIDATION_PATTERNS = {
+  ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
+};
+
+const VALIDATION_MESSAGES = {
+  required: "This field is required",
+};
+import { TASK_FORM_OPTIONS } from '@/features/tasks/config/useTaskForm';
 
 // ===== DELIVERABLE FORM FIELD CONFIGURATION =====
 export const DELIVERABLE_FORM_FIELDS = [
-  createTextField("name", "Deliverable Name", {
-    placeholder: "Enter deliverable name",
+  {
+    name: "name",
+    type: "text",
+    label: "Deliverable Name",
     required: true,
+    placeholder: "Enter deliverable name",
     validation: {
       required: VALIDATION_MESSAGES.required,
       minLength: {
@@ -27,21 +32,23 @@ export const DELIVERABLE_FORM_FIELDS = [
         message: "Name can only contain letters, numbers, and spaces"
       }
     }
-  }),
-  createSelectField("department", "Department", {
+  },
+  {
+    name: "departments",
+    type: "select",
+    label: "Department",
     required: true,
-    options: [
-      { value: "video", label: "Video Production" },
-      { value: "design", label: "Design" },
-      { value: "developer", label: "Development" }
-    ],
+    options: TASK_FORM_OPTIONS.departments,
     validation: {
       required: VALIDATION_MESSAGES.required
     }
-  }),
-  createNumberField("timePerUnit", "Time Per Unit", {
-    placeholder: "Enter time per unit",
+  },
+  {
+    name: "timePerUnit",
+    type: "number",
+    label: "Time Per Unit",
     required: true,
+    placeholder: "Enter time per unit",
     min: 0.1,
     max: 999,
     step: 0.1,
@@ -56,8 +63,11 @@ export const DELIVERABLE_FORM_FIELDS = [
         message: "Time must be less than 999"
       }
     }
-  }),
-  createSelectField("timeUnit", "Time Unit", {
+  },
+  {
+    name: "timeUnit",
+    type: "select",
+    label: "Time Unit",
     required: true,
     options: [
       { value: "min", label: "Minutes" },
@@ -67,10 +77,13 @@ export const DELIVERABLE_FORM_FIELDS = [
     validation: {
       required: VALIDATION_MESSAGES.required
     }
-  }),
-  createNumberField("declinariTime", "Declinari Time", {
-    placeholder: "Enter declinari time",
+  },
+  {
+    name: "declinariTime",
+    type: "number",
+    label: "Declinari Time",
     required: true,
+    placeholder: "Enter declinari time",
     min: 0,
     max: 999,
     step: 1,
@@ -85,7 +98,7 @@ export const DELIVERABLE_FORM_FIELDS = [
         message: "Declinari time must be less than 999"
       }
     }
-  })
+  }
 ];
 
 // ===== DELIVERABLE FORM SCHEMA =====

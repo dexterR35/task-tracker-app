@@ -1,57 +1,46 @@
 import * as Yup from 'yup';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
 import { transformNestedDataToLowercase } from '@/utils/formUtils';
-import { 
-  createTextareaField,
-  createSelectField,
-  createMultiSelectField,
-  createNumberField,
-  createCheckboxField,
-  createUrlField,
-  VALIDATION_PATTERNS,
-  VALIDATION_MESSAGES
-} from '@/components/forms/configs/sharedFormUtils';
 
-// ===== DELIVERABLE TIME CALCULATION UTILITIES =====
-export const calculateDeliverableTime = (deliverable, quantity = 1) => {
-  if (!deliverable.timePerUnit || deliverable.timePerUnit === 0) {
-    return 0;
-  }
-  
-  const totalTime = deliverable.timePerUnit * quantity;
-  
-  // Convert to hours for consistent calculation
-  switch (deliverable.timeUnit) {
-    case 'min':
-      return totalTime / 60; // Convert minutes to hours
-    case 'hr':
-      return totalTime;
-    case 'days':
-      return totalTime * 8; // Convert days to hours (8 hours per day)
-    default:
-      return totalTime;
-  }
+
+
+
+const VALIDATION_PATTERNS = {
+  JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
 };
 
-// Note: calculateTotalDeliverableTime removed - calculations handled in table and detail page
+const VALIDATION_MESSAGES = {
+  REQUIRED: "This field is required",
+  JIRA_URL_FORMAT: "Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}",
+  MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
+  MIN_VALUE: (min) => `Must be at least ${min}`,
+  MAX_VALUE: (max) => `Must be no more than ${max}`,
+  SELECT_ONE: "Please select at least one option",
+};
 
-export const formatTimeEstimate = (deliverable, quantity = 1) => {
-  if (!deliverable.timePerUnit || deliverable.timePerUnit === 0) {
-    return '';
+// ===== CONDITIONAL FIELD LOGIC =====
+export const shouldShowField = (field, formValues) => {
+  if (!field.conditional) return true;
+  
+  const { field: conditionalField, value: conditionalValue } = field.conditional;
+  const conditionalFieldValue = formValues[conditionalField];
+  
+  return conditionalFieldValue === conditionalValue;
+};
+
+export const isConditionallyRequired = (field, formValues) => {
+  if (!field.required) {
+    return false;
   }
   
-  const totalTime = deliverable.timePerUnit * quantity;
-  const unit = deliverable.timeUnit;
-  
-  if (deliverable.requiresQuantity) {
-    return `${totalTime} ${unit} (${quantity} × ${deliverable.timePerUnit} ${unit}/unit)`;
-  } else {
-    return `${totalTime} ${unit}`;
+  if (field.conditional) {
+    return shouldShowField(field, formValues);
   }
+  
+  return field.required;
 };
 
 // ===== TASK FORM OPTIONS =====
-// Static options that don't change
 export const TASK_FORM_OPTIONS = {
   products: [
     { value: "marketing casino", label: "marketing casino" },
@@ -103,18 +92,34 @@ export const TASK_FORM_OPTIONS = {
 
 // ===== TASK FORM FIELD CONFIGURATION =====
 export const createTaskFormFields = (deliverablesOptions = []) => [
-  createUrlField('jiraLink', 'Jira Link', {
+  {
+    name: 'jiraLink',
+    type: 'url',
+    label: 'Jira Link',
+    required: true,
     placeholder: 'https://gmrd.atlassian.net/browse/GIMODEAR-124124'
-  }),
-  createSelectField('products', 'Products', {}, {
+  },
+  {
+    name: 'products',
+    type: 'select',
+    label: 'Products',
+    required: true,
     options: TASK_FORM_OPTIONS.products
-  }),
-  createSelectField('departments', 'Department', {}, {
+  },
+  {
+    name: 'departments',
+    type: 'select',
+    label: 'Department',
+    required: true,
     options: TASK_FORM_OPTIONS.departments
-  }),
-  createMultiSelectField('markets', 'Markets', {}, {
+  },
+  {
+    name: 'markets',
+    type: 'multiSelect',
+    label: 'Markets',
+    required: true,
     options: TASK_FORM_OPTIONS.markets
-  }),
+  },
   // Date range fields for task duration
   {
     name: 'startDate',
@@ -130,65 +135,116 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
     required: true,
     conditional: false
   },
-  createNumberField('timeInHours', 'Total Time (Hours)', {
+  {
+    name: 'timeInHours',
+    type: 'number',
+    label: 'Total Time (Hours)',
+    required: true,
     step: 0.5,
     defaultValue: 0,
     min: 0
-  }),
-  createCheckboxField('_hasDeliverables', 'Has Deliverables', {}),
+  },
   {
-    ...createSelectField('deliverables', 'Deliverables', {}, {
-      options: deliverablesOptions
-    }),
+    name: '_hasDeliverables',
+    type: 'checkbox',
+    label: 'Has Deliverables',
+    required: false
+  },
+  {
+    name: 'deliverables',
+    type: 'select',
+    label: 'Deliverables',
+    required: true, // Will be conditionally required based on _hasDeliverables
+    options: deliverablesOptions,
     conditional: {
       field: '_hasDeliverables',
       value: true
     }
   },
-  createCheckboxField('_usedAIEnabled', 'AI Tools Used', {
-    // helpText: 'Check if AI tools were used in this task'
-  }),
-  createCheckboxField('isVip', 'VIP Task', {
-    required: false
-  }),
-  createCheckboxField('reworked', 'Reworked', {
-    required: false
-  }),
+  // Hidden fields for deliverable quantities and declinari
   {
-    ...createMultiSelectField('aiModels', 'AI Models Used', {}, {
-      options: TASK_FORM_OPTIONS.aiModels
-    }),
-    conditional: {
-      field: '_usedAIEnabled',
-      value: true
-    }
-  },
-  {
-    ...createNumberField('aiTime', 'Time Spent on AI (Hours)', {
-      step: 0.5,
-      defaultValue: 0,
-      min: 0
-    }),
-    conditional: {
-      field: '_usedAIEnabled',
-      value: true
-    }
-  },
-  createSelectField('reporters', 'Reporter', {}, {
-    options: [] // Will be populated dynamically
-  }),
-  createTextareaField('observations', 'Observations', {
-    placeholder: 'Enter any additional observations or notes... (max 300 characters)',
+    name: 'deliverableQuantities',
+    type: 'hidden',
+    label: 'Deliverable Quantities',
     required: false,
+    conditional: false
+  },
+  {
+    name: 'declinariQuantities',
+    type: 'hidden',
+    label: 'Declinari Quantities',
+    required: false,
+    conditional: false
+  },
+  {
+    name: 'declinariDeliverables',
+    type: 'hidden',
+    label: 'Declinari Deliverables',
+    required: false,
+    conditional: false
+  },
+  {
+    name: '_usedAIEnabled',
+    type: 'checkbox',
+    label: 'AI Tools Used',
+    required: false
+  },
+  {
+    name: 'isVip',
+    type: 'checkbox',
+    label: 'VIP Task',
+    required: false
+  },
+  {
+    name: 'reworked',
+    type: 'checkbox',
+    label: 'Reworked',
+    required: false
+  },
+  {
+    name: 'aiModels',
+    type: 'multiSelect',
+    label: 'AI Models Used',
+    required: false,
+    options: TASK_FORM_OPTIONS.aiModels,
+    conditional: {
+      field: '_usedAIEnabled',
+      value: true
+    }
+  },
+  {
+    name: 'aiTime',
+    type: 'number',
+    label: 'Time Spent on AI (Hours)',
+    required: false,
+    step: 0.5,
+    defaultValue: 0,
+    min: 0,
+    conditional: {
+      field: '_usedAIEnabled',
+      value: true
+    }
+  },
+  {
+    name: 'reporters',
+    type: 'select',
+    label: 'Reporter',
+    required: true,
+    options: [] // Will be populated dynamically
+  },
+  {
+    name: 'observations',
+    type: 'textarea',
+    label: 'Observations',
+    required: false,
+    placeholder: 'Enter any additional observations or notes... (max 300 characters)',
     maxLength: 300
-  })
+  }
 ];
 
-// Fallback for backward compatibility
-export const TASK_FORM_FIELDS = createTaskFormFields();
 
 // ===== TASK FORM VALIDATION SCHEMA =====
-export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().shape({
+export const createTaskFormSchema = () => Yup.object().shape({
   jiraLink: Yup.string()
     .required(VALIDATION_MESSAGES.REQUIRED)
     .matches(VALIDATION_PATTERNS.JIRA_URL_ONLY, VALIDATION_MESSAGES.JIRA_URL_FORMAT)
@@ -248,106 +304,22 @@ export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().s
   
   deliverables: Yup.mixed().when('_hasDeliverables', {
     is: true,
-    then: (schema) => schema.test('valid-deliverables', 'Please select a deliverable when "Has Deliverables" is checked', function(value) {
-      // Accept both string (from form) and array (processed) formats
-      if (!value || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0)) {
-        return this.createError({
-          message: 'Please select a deliverable when "Has Deliverables" is checked'
-        });
+    then: (schema) => schema.test('deliverable-required', 'Please select an option', function(value) {
+      // Handle both string and object formats
+      if (typeof value === 'string') {
+        return value && value.trim() !== '';
       }
-      
-      // If it's an array (processed format), validate structure
-      if (Array.isArray(value)) {
-        for (const deliverable of value) {
-          if (!deliverable.deliverableName) {
-            return this.createError({
-              message: 'Each deliverable must have a deliverableName'
-            });
-          }
-        }
+      if (typeof value === 'object' && value !== null) {
+        return value.name && value.name.trim() !== '';
       }
-      
-      return true;
+      return false;
     }),
-    otherwise: (schema) => schema.notRequired().default([])
-  }),
-  
-  deliverableQuantities: Yup.object().when('_hasDeliverables', {
-    is: true,
-    then: (schema) => schema.test('valid-quantities', 'Please enter valid quantities for deliverables', function(value) {
-      const deliverableValue = this.parent.deliverables;
-      const quantities = value || {};
-      
-      // Handle both string (form input) and array (processed) formats
-      let actualDeliverableValue = deliverableValue;
-      if (Array.isArray(deliverableValue) && deliverableValue.length > 0) {
-        actualDeliverableValue = deliverableValue[0].deliverableName;
-      }
-      
-      if (actualDeliverableValue) {
-        const deliverable = deliverablesOptions.find(d => d.value === actualDeliverableValue);
-        if (deliverable && deliverable.requiresQuantity) {
-          const quantity = quantities[actualDeliverableValue];
-          if (!quantity || quantity < 1) {
-            return this.createError({
-              message: `Please enter a quantity for ${deliverable.label}`
-            });
-          }
-        }
-      }
-      return true;
-    }),
-    otherwise: (schema) => schema.notRequired().default({})
-  }),
-  
-  declinariQuantities: Yup.object().when('_hasDeliverables', {
-    is: true,
-    then: (schema) => schema.test('valid-declinari-quantities', 'Please enter valid declinari quantities', function(value) {
-      const declinariQuantities = value || {};
-      
-      // Validate declinari quantities (must be 0 or positive integer)
-      for (const [deliverableValue, quantity] of Object.entries(declinariQuantities)) {
-        if (quantity < 0 || !Number.isInteger(Number(quantity))) {
-          return this.createError({
-            message: `Declinari quantity for ${deliverableValue} must be a non-negative integer`
-          });
-        }
-      }
-      return true;
-    }),
-    otherwise: (schema) => schema.notRequired().default({})
-  }),
-  
-  declinariDeliverables: Yup.object().when('_hasDeliverables', {
-    is: true,
-    then: (schema) => schema.test('valid-declinari-deliverables', 'Please enter valid declinari deliverables', function(value) {
-      const declinariDeliverables = value || {};
-      
-      // Validate declinari deliverables (must be boolean values)
-      for (const [deliverableValue, enabled] of Object.entries(declinariDeliverables)) {
-        if (typeof enabled !== 'boolean') {
-          return this.createError({
-            message: `Declinari deliverable for ${deliverableValue} must be a boolean`
-          });
-        }
-      }
-      return true;
-    }),
-    otherwise: (schema) => schema.notRequired().default({})
-  }),
-  
-  customDeliverables: Yup.array().when(['_hasDeliverables', 'deliverables'], {
-    is: (hasDeliverables, deliverables) => hasDeliverables && deliverables === 'others',
-    then: (schema) => schema.min(1, 'Please add at least one custom deliverable when "Others" is selected'),
-    otherwise: (schema) => schema.notRequired().default([])
+    otherwise: (schema) => schema.notRequired().default('')
   }),
   
   _usedAIEnabled: Yup.boolean(),
-  
   isVip: Yup.boolean(),
-  
   reworked: Yup.boolean(),
-  
   aiModels: Yup.array().when('_usedAIEnabled', {
     is: true,
     then: (schema) => schema.min(1, 'Please select at least one AI model when "AI Tools Used" is checked'),
@@ -383,11 +355,42 @@ export const createTaskFormSchema = (deliverablesOptions = []) => Yup.object().s
     .max(300, 'Observations cannot exceed 300 characters')
 });
 
-// Fallback for backward compatibility (with empty deliverables)
-export const taskFormSchema = createTaskFormSchema([]);
+
+// ===== TASK FORM SANITIZATION UTILITIES =====
+const sanitizeTaskFormData = (formData) => {
+  // Handle observations field - sanitize and only save if not empty
+  if (formData.observations) {
+    formData.observations = formData.observations.trim();
+    if (!formData.observations) {
+      delete formData.observations;
+    }
+  } else {
+    delete formData.observations;
+  }
+  
+  // Sanitize and convert date strings to ISO strings for proper storage
+  if (formData.startDate && typeof formData.startDate === 'string') {
+    const sanitizedStartDate = formData.startDate.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(sanitizedStartDate)) {
+      formData.startDate = new Date(sanitizedStartDate + 'T00:00:00.000Z').toISOString();
+    } else {
+      throw new Error('Invalid start date format');
+    }
+  }
+  if (formData.endDate && typeof formData.endDate === 'string') {
+    const sanitizedEndDate = formData.endDate.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(sanitizedEndDate)) {
+      formData.endDate = new Date(sanitizedEndDate + 'T00:00:00.000Z').toISOString();
+    } else {
+      throw new Error('Invalid end date format');
+    }
+  }
+  
+  return formData;
+};
 
 // ===== TASK FORM DATA PROCESSING =====
-export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
+export const prepareTaskFormData = (formData) => {
   if (!formData) {
     return formData;
   }
@@ -430,43 +433,13 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
   }
   // If checkbox is checked, keep aiModels and aiTime as-is (validation ensures they're filled)
   
-  // Handle observations field - sanitize and only save if not empty
-  if (formData.observations) {
-    // Sanitize the observations text (basic HTML sanitization)
-    formData.observations = formData.observations.trim();
-    // Only keep if not empty after trimming
-    if (!formData.observations) {
-      delete formData.observations;
-    }
-  } else {
-    delete formData.observations;
-  }
-  
-  // Sanitize and convert date strings to ISO strings for proper storage
-  if (formData.startDate && typeof formData.startDate === 'string') {
-    // Sanitize: trim whitespace and validate format
-    const sanitizedStartDate = formData.startDate.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(sanitizedStartDate)) {
-      // Convert YYYY-MM-DD to ISO string (add time component)
-      formData.startDate = new Date(sanitizedStartDate + 'T00:00:00.000Z').toISOString();
-    } else {
-      throw new Error('Invalid start date format');
-    }
-  }
-  if (formData.endDate && typeof formData.endDate === 'string') {
-    // Sanitize: trim whitespace and validate format
-    const sanitizedEndDate = formData.endDate.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(sanitizedEndDate)) {
-      // Convert YYYY-MM-DD to ISO string (add time component)
-      formData.endDate = new Date(sanitizedEndDate + 'T00:00:00.000Z').toISOString();
-    } else {
-      throw new Error('Invalid end date format');
-    }
-  }
+  // Apply sanitization using utility function
+  sanitizeTaskFormData(formData);
   
   
   // Create the new data structure with data_task wrapper BEFORE deleting UI fields
   const dataTask = {
+    // Include all fields with their values (empty if not provided)
     aiUsed: formData._usedAIEnabled ? [{
       aiModels: formData.aiModels || [],
       aiTime: formData.aiTime || 0
@@ -478,15 +451,15 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
       declinariCount: formData.declinariQuantities?.[formData.deliverables] || 0
     }] : [],
     departments: formData.departments ? [formData.departments] : [],
-    markets: formData.markets || [],
-    endDate: formData.endDate,
+    markets: formData.markets || [], // Required field - validation ensures it's not empty
+    endDate: formData.endDate, // Required field - validation ensures it's not empty
     isVip: formData.isVip || false,
     observations: formData.observations || '',
-    products: formData.products || '',
-    reporterName: formData.reporterName || '',
-    reporters: formData.reporters || '',
+    products: formData.products || '', // Required field - validation ensures it's not empty
+    reporterName: formData.reporterName || '', // Required field - validation ensures it's not empty
+    reporters: formData.reporters || [], // Required field - validation ensures it's not empty
     reworked: formData.reworked || false,
-    startDate: formData.startDate,
+    startDate: formData.startDate, // Required field - validation ensures it's not empty
     taskName: formData.taskName,
     timeInHours: formData.timeInHours
   };
@@ -500,15 +473,15 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
   delete formData._hasDeliverables;
   delete formData._usedAIEnabled;
   
-  // Apply lowercase transformation to string fields
-  const fieldsToLowercase = ['products', 'observations', 'taskName', 'reporterName'];
+  // Apply lowercase transformation to string fields, but keep taskName uppercase
+  const fieldsToLowercase = ['products', 'observations', 'reporterName', 'departments', 'markets', 'reporters'];
   const lowercasedDataTask = transformNestedDataToLowercase(dataTask, fieldsToLowercase);
   
-  // Serialize any Date objects to ISO strings for Redux compatibility
+  // Serialize any Date objects to ISO strings for Redux compatibility using utility
   const serializedDataTask = serializeTimestampsForRedux(lowercasedDataTask);
   
   return serializedDataTask;
 };
 
 // Default export for backward compatibility
-export default taskFormSchema;
+export default createTaskFormSchema;

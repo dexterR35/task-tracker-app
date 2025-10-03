@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import BaseField from '@/components/forms/components/BaseField';
 import { logger } from '@/utils/logger';
 
 const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, formValues }) => {
@@ -35,7 +34,14 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
   }, [watchedValue, field.name, setValue]);
 
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <div className="multi-select-container">
         {/* Hidden input for React Hook Form validation */}
         <input
@@ -100,7 +106,9 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
           </div>
         )}
       </div>
-    </BaseField>
+      
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 

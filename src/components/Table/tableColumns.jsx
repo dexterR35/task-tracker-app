@@ -3,22 +3,77 @@ import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
 import { formatDate } from '@/utils/dateUtils';
-import { calculateDeliverableTime } from '@/features/tasks/config/useTaskForm';
+import { useDeliverableCalculation } from '@/hooks/useDeliverableCalculation';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
-import { useDeliverableCalculation, formatDeliverableDisplay, formatDeclinariDisplay } from '@/hooks/useDeliverableCalculation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 
 const columnHelper = createColumnHelper();
 
+// Component that uses the hook directly
+const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
+  const { deliverablesOptions = [] } = useDeliverablesOptions();
+  const { deliverablesList, totalTime } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
+  
+  if (!deliverablesList || deliverablesList.length === 0) {
+    return <span className="text-gray-500 dark:text-gray-400">No deliverables</span>;
+  }
+  
+  return (
+    <div className="space-y-1">
+      {deliverablesList.map((deliverable, index) => (
+        <div key={index} className="text-sm">
+          <div className="font-medium text-gray-900 dark:text-white">
+            {deliverable.quantity}x{deliverable.name}
+            {deliverable.declinariQuantity > 0 && (
+              <span className="text-orange-600 dark:text-orange-400">
+                {' '}+ {deliverable.declinariQuantity} declinari
+              </span>
+            )}
+          </div>
+          {isUserAdmin && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+              {deliverable.configured ? (
+                <div className="text-xs block">
+                  <div className="block">
+                    Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
+                    {deliverable.timeUnit === 'min' && (
+                      <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
+                    )}
+                  </div>
+                  {deliverable.declinariQuantity > 0 && (
+                    <div className="block">
+                      Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(1)}h
+                      {deliverable.declinariTimeUnit === 'min' && (
+                        <span> ({(deliverable.totalDeclinariTime * 60).toFixed(0)}min)</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
+                    Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
+                  </div>
+                </div>
+              ) : deliverable.notConfigured ? (
+                <span className="text-amber-600 dark:text-amber-400">
+                  ⚠️ Not configured in settings - Add to Settings → Deliverables
+                </span>
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">
+                  No time configuration
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Tasks Table Columns - Memoized to prevent re-renders
 export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
   // Ensure reporters is always an array to prevent hooks issues
   const stableReporters = Array.isArray(reporters) ? reporters : [];
-  
-  // Get dynamic deliverables from settings
-  const { deliverablesOptions } = useDeliverablesOptions();
   
   // Check if user is admin for role-based column content
   const isUserAdmin = user?.role === 'admin';
@@ -126,197 +181,11 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
     cell: ({ getValue, row }) => {
       const deliverablesUsed = getValue();
       
-      
-      // Handle new deliverablesUsed array format using the hook
-      if (deliverablesUsed && Array.isArray(deliverablesUsed) && deliverablesUsed.length > 0) {
-        const { deliverablesList, totalTime } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
-        
-        if (deliverablesList.length > 0) {
-          return (
-            <div className="space-y-1">
-              {deliverablesList.map((deliverable, index) => (
-                <div key={index} className="text-sm">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {deliverable.quantity}x{deliverable.name}
-                    {deliverable.declinariQuantity > 0 && (
-                      <span className="text-orange-600 dark:text-orange-400">
-                        {' '}+ {deliverable.declinariQuantity} declinari
-                      </span>
-                    )}
-                  </div>
-                  {/* Show detailed calculations only for admin users */}
-                  {isUserAdmin && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                      {deliverable.configured ? (
-                        <div className="text-xs block">
-                          <div className="block">
-                            Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
-                            {deliverable.timeUnit === 'min' && (
-                              <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
-                            )}
-                          </div>
-                          {deliverable.declinariQuantity > 0 && (
-                            <div className="block">
-                              Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(1)}h
-                              {deliverable.declinariTimeUnit === 'min' && (
-                                <span> ({(deliverable.totalDeclinariTime * 60).toFixed(0)}min)</span>
-                              )}
-                            </div>
-                          )}
-                          <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
-                            Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
-                          </div>
-                        </div>
-                      ) : deliverable.notConfigured ? (
-                        <span className="text-amber-600 dark:text-amber-400">
-                          ⚠️ Not configured in settings - Add to Settings → Deliverables
-                        </span>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">
-                          No time configuration
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          );
-        } else {
-          // If deliverablesUsed exists but no valid deliverables found, show warning
-          return (
-            <div className="space-y-1">
-              {deliverablesUsed.map((deliverable, index) => (
-                <div key={index} className="text-sm">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {deliverable.name || 'Unknown deliverable'}
-                    {deliverable.count > 1 && ` (${deliverable.count}x)`}
-                  </div>
-                  <div className="text-xs text-amber-600 dark:text-amber-400">
-                    ⚠️ Not configured in settings - Add to Settings → Deliverables
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        }
-      }
-      
-      // Handle legacy formats for backward compatibility
-      const legacyDeliverables = row.original?.data_task?.deliverables;
-      const legacyCustomDeliverables = row.original?.data_task?.customDeliverables;
-      
-      if (legacyDeliverables && Array.isArray(legacyDeliverables) && legacyDeliverables.length > 0) {
-        const deliverable = legacyDeliverables[0];
-        const deliverableName = deliverable.deliverableName;
-        const deliverableQuantities = deliverable.deliverableQuantities || {};
-        const declinariQuantities = deliverable.declinariQuantities || {};
-        
-        const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
-        if (deliverableOption) {
-          const quantity = deliverableQuantities[deliverableName] || 1;
-          const declinariQuantity = declinariQuantities[deliverableName] || 0;
-          const calculatedTime = calculateDeliverableTime(deliverableOption, quantity, declinariQuantities);
-          const daysCalculation = calculatedTime > 0 ? ` (${(calculatedTime / 8).toFixed(1)} days)` : '';
-          
-          return (
-            <div className="space-y-1">
-              <div className="font-medium text-gray-900 dark:text-white">
-                {deliverableOption.label}
-                {quantity > 1 && ` (${quantity}x)`}
-                {declinariQuantity > 0 && (
-                  <span className="text-orange-600 dark:text-orange-400">
-                    {' '}+ {declinariQuantity}x declinari
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Total: {calculatedTime.toFixed(1)}h{daysCalculation}
-              </div>
-            </div>
-          );
-        } else {
-          // Show warning for unconfigured deliverable
-          return (
-            <div className="space-y-1">
-              <div className="font-medium text-gray-900 dark:text-white">
-                {deliverableName}
-                {deliverableQuantities[deliverableName] > 1 && ` (${deliverableQuantities[deliverableName]}x)`}
-              </div>
-              <div className="text-xs text-amber-600 dark:text-amber-400">
-                ⚠️ Not configured in settings - Add to Settings → Deliverables
-              </div>
-            </div>
-          );
-        }
-      }
-      
-      // Handle legacy single string format (backward compatibility)
-      if (legacyDeliverables && typeof legacyDeliverables === 'string') {
-        const deliverable = deliverablesOptions ? deliverablesOptions.find(d => d.value === legacyDeliverables) : null;
-        if (deliverable) {
-          const legacyDeliverableQuantities = row.original?.data_task?.deliverableQuantities || {};
-          const legacyDeclinariQuantities = row.original?.data_task?.declinariQuantities || {};
-          const quantity = legacyDeliverableQuantities[legacyDeliverables] || 1;
-          const declinariQuantity = legacyDeclinariQuantities[legacyDeliverables] || 0;
-          const calculatedTime = calculateDeliverableTime(deliverable, quantity, legacyDeclinariQuantities);
-          const days = (calculatedTime / 8).toFixed(1);
-          
-          return (
-            <div className="space-y-1">
-              <div className="font-medium text-gray-900 dark:text-white">
-                {deliverable.label}
-                {deliverable.requiresQuantity && ` (${quantity}x)`}
-                {declinariQuantity > 0 && (
-                  <span className="text-orange-600 dark:text-orange-400 ml-1">
-                    + {declinariQuantity}x declinari
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {calculatedTime.toFixed(1)}h ({days}d)
-                {declinariQuantity > 0 && (
-                  <span className="text-orange-500 dark:text-orange-400 ml-1">
-                    (+{((declinariQuantity * (deliverable.declinariTime || 10)) / 60).toFixed(3)}h declinari)
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        } else {
-          // Show warning for unconfigured deliverable
-          return (
-            <div className="space-y-1">
-              <div className="font-medium text-gray-900 dark:text-white">
-                {legacyDeliverables}
-                {legacyDeliverableQuantities[legacyDeliverables] > 1 && ` (${legacyDeliverableQuantities[legacyDeliverables]}x)`}
-              </div>
-              <div className="text-xs text-amber-600 dark:text-amber-400">
-                ⚠️ Not configured in settings - Add to Settings → Deliverables
-              </div>
-            </div>
-          );
-        }
-      }
-      
-      // Handle legacy array format (fallback)
-      let allDeliverables = [];
-      if (legacyDeliverables && Array.isArray(legacyDeliverables)) {
-        allDeliverables = [...legacyDeliverables];
-      }
-      if (legacyCustomDeliverables && Array.isArray(legacyCustomDeliverables)) {
-        allDeliverables = [...allDeliverables, ...legacyCustomDeliverables];
-      }
-      
-      if (allDeliverables.length === 0) {
-        // If no deliverables found at all, show a message
-        return (
-          <span className="text-gray-500 dark:text-gray-400">
-            No deliverables
-          </span>
-        );
-      }
-      return allDeliverables.join(', ');
+      // Use the hook directly
+      return <DeliverableCalculationCell 
+        deliverablesUsed={deliverablesUsed || row.original?.data_task}
+        isUserAdmin={isUserAdmin}
+      />;
     },
     size: 200,
   }),

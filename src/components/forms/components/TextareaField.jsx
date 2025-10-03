@@ -1,10 +1,15 @@
-import BaseField from '@/components/forms/components/BaseField';
-
 const TextareaField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];
   
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <textarea
         {...register(field.name)}
         id={field.name}
@@ -16,7 +21,9 @@ const TextareaField = ({ field, register, errors, formValues }) => {
         className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
         style={{ resize: 'vertical', minHeight: '80px' }}
       />
-    </BaseField>
+      
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 

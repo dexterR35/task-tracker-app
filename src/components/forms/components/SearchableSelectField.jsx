@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import BaseField from '@/components/forms/components/BaseField';
 
 const SearchableSelectField = ({ 
   field, 
@@ -9,8 +8,8 @@ const SearchableSelectField = ({
   watch, 
   trigger,
   clearErrors,
-  formValues, 
-  hideLabel = false 
+  formValues,
+  noOptionsMessage = "No options found"
 }) => {
   const fieldError = errors[field.name];
   const [isOpen, setIsOpen] = useState(false);
@@ -129,7 +128,14 @@ const SearchableSelectField = ({
   const displayValue = isOpen ? searchTerm : (selectedOption?.name || selectedOption?.label || '');
 
   return (
-    <BaseField field={field} error={fieldError} formValues={formValues} hideLabel={hideLabel}>
+    <div className="field-wrapper">
+      {field.label && (
+        <label htmlFor={field.name} className="field-label">
+          {field.label}
+          {field.required && <span className="required-indicator">*</span>}
+        </label>
+      )}
+      
       <div className="relative" ref={dropdownRef}>
         <div className="relative">
           <input
@@ -196,13 +202,15 @@ const SearchableSelectField = ({
               ))
             ) : (
               <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                No options found
+                {noOptionsMessage}
               </div>
             )}
           </div>
         )}
       </div>
-    </BaseField>
+      
+      {fieldError && <div className="error-message">{fieldError.message}</div>}
+    </div>
   );
 };
 

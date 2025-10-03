@@ -1,20 +1,33 @@
 import * as Yup from "yup";
-import {
-  createNetBetEmailField,
-  createPasswordField,
-  VALIDATION_PATTERNS,
-  VALIDATION_MESSAGES,
-} from "@/components/forms/configs/sharedFormUtils";
+// ===== VALIDATION CONSTANTS =====
+const VALIDATION_PATTERNS = {
+  NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@netbet\.ro$/,
+};
+
+const VALIDATION_MESSAGES = {
+  REQUIRED: "This field is required",
+  NETBET_EMAIL: "Please enter a valid NetBet email address (@netbet.ro)",
+  MIN_LENGTH: (min) => `Must be at least ${min} characters`,
+};
 
 // ===== LOGIN FORM FIELD CONFIGURATION =====
 export const LOGIN_FORM_FIELDS = [
-  createNetBetEmailField("email", "Email Address", {
+  {
+    name: "email",
+    type: "email",
+    label: "Email Address",
+    required: true,
     placeholder: "Enter your NetBet email",
-    // helpText: "Only @netbet.ro email addresses are accepted",
-  }),
-  createPasswordField("password", "Password", {
+    autoComplete: "email"
+  },
+  {
+    name: "password",
+    type: "password",
+    label: "Password",
+    required: true,
     placeholder: "Enter your password",
-  }),
+    autoComplete: "current-password"
+  }
 ];
 
 // ===== LOGIN FORM VALIDATION SCHEMA =====

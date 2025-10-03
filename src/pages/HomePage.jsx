@@ -1,6 +1,6 @@
 import React from "react";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import netbetLogo from "@/assets/netbet-logo.png";  
+import netbetLogo from "@/assets/netbet-logo.png";
 import { Icons } from "@/components/icons";
 import {
   AreaChart,
@@ -94,7 +94,7 @@ const homepageCards = [
     bestAI: "Claude",
     deliverables: null,
     bestCategory: "Poker",
-    trend: "+20% from last month",
+    trend: "+20% /  month",
     trendDirection: "up",
     icon: Icons.generic.chart,
     hasChart: true,
@@ -105,12 +105,12 @@ const homepageCards = [
     title: "Team Performance",
     type: "user-performance",
     value: "92%",
-    subtitle: "User per month",
+    subtitle: "User / month",
     reporterName: "John Travolta",
     bestAI: null,
     deliverables: null,
     bestCategory: "Design",
-    trend: "+5% / week",
+    trend: "+5% / day",
     trendDirection: "up",
     icon: Icons.admin.users,
     hasChart: true,
@@ -127,7 +127,7 @@ const homepageCards = [
     bestAI: null,
     deliverables: null,
     bestCategory: "Sports",
-    trend: "+8% from last month",
+    trend: "+8% / month",
     trendDirection: "up",
     icon: Icons.generic.clock,
     hasChart: false,
@@ -142,10 +142,10 @@ const homepageCards = [
     bestAI: null,
     deliverables: null,
     bestCategory: "Casino",
-    trend: "-12% from last month",
+    trend: "-12% /  month",
     trendDirection: "down",
     icon: Icons.generic.task,
-    hasChart: true, 
+    hasChart: true,
     chartData: ChartData,
   },
   {
@@ -158,7 +158,7 @@ const homepageCards = [
     bestAI: null,
     deliverables: 120,
     bestCategory: "Sport",
-    trend: "-18% from last month",
+    trend: "-18%/ month",
     trendDirection: "up",
     icon: Icons.cards.chart,
     hasChart: true,
@@ -173,7 +173,9 @@ const HomepageCard = ({ card }) => {
   const getTrendIconComponent = (direction) => {
     switch (direction) {
       case "up":
-        return <Icons.buttons.chevronUp className="w-4 h-4 text-green-success" />;
+        return (
+          <Icons.buttons.chevronUp className="w-4 h-4 text-green-success" />
+        );
       case "down":
         return <Icons.buttons.chevronDown className="w-4 h-4 text-red-error" />;
       default:
@@ -192,10 +194,7 @@ const HomepageCard = ({ card }) => {
                 className="p-3 rounded-xl flex items-center justify-center"
                 style={{ backgroundColor: `${metricColor}20` }}
               >
-                <card.icon
-                  className="w-6 h-6"
-                  style={{ color: metricColor }}
-                />
+                <card.icon className="w-6 h-6" style={{ color: metricColor }} />
               </div>
               <div className="leading-6">
                 <h3 className="text-sm font-semibold text-gray-300 !mb-0">
@@ -280,7 +279,6 @@ const HomepageCard = ({ card }) => {
                 </span>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -289,32 +287,28 @@ const HomepageCard = ({ card }) => {
 };
 
 const HomePage = () => {
-  
   return (
-    <div className="min-h-screen w-full bg-white-dark flex items-center justify-center flex-col">
+    <div className="min-h-screen w-full flex items-center justify-center flex-col">
       <div className="max-w-[90%] w-full mx-auto px-4 relative pt-10">
         {/* Hero Section */}
         <div className="mb-5">
-          <h1 className="mb-2 text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-center">
-            <span className="text-white-dark">Welcome to </span>
-            <span className=" text-red-error">SYNC v2</span>
+          <h1 className="mb-2 text-center text-6xl">
+            <span >Welcome to </span>
+            <span className="text-red-error ">SYNC</span>
           </h1>
-          <p className="text-base md:text-lg leading-6 text-gray-300 max-w-xl mx-auto text-center mb-10">
-            The task management platform designed for teams that
-            prioritize{" "}
-            <span className="text-red-error">calculate monthly reports</span>{" "}
-            and <span className="text-blue-default">analyze performance</span>
+          <p className="md:text-lg max-w-xl mx-auto text-center mb-10">
+            The task management platform designed for teams that prioritize{" "}
+           <span className="text-red-error">calculate monthly reports</span> and <span className="text-blue-default">analyze performance</span>
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center  ">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <DynamicButton
               to="/login"
               variant="primary"
               size="lg"
-              className="text-xl w-1/8"
+              className="w-48"
               type="button"
               iconName="default"
-        
             >
               Get Started
             </DynamicButton>
@@ -322,11 +316,11 @@ const HomePage = () => {
         </div>
         {/* Metrics Section */}
         <div className="relative">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
-              {homepageCards.map((card) => (
-                <HomepageCard key={card.id} card={card} />
-              ))}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-center">
+            {homepageCards.map((card) => (
+              <HomepageCard key={card.id} card={card} />
+            ))}
+          </div>
         </div>
         {/* Footer */}
         <div className="flex-center space-x-2 mt-20 mb-10">
