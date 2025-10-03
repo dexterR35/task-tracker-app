@@ -31,6 +31,17 @@ const DeliverableTable = ({
   // Use prop deliverables if provided, otherwise use global data
   const deliverablesData = propDeliverables || globalDeliverables;
   
+  // Debug logging to track data changes
+  useEffect(() => {
+    if (deliverablesData) {
+      console.log('DeliverableTable: deliverablesData changed:', {
+        count: deliverablesData.length,
+        ids: deliverablesData.map(d => d.id),
+        names: deliverablesData.map(d => d.name)
+      });
+    }
+  }, [deliverablesData]);
+  
   // Notify parent component about count changes
   useEffect(() => {
     if (onCountChange) {

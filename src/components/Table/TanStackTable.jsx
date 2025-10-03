@@ -348,18 +348,28 @@ const TanStackTable = ({
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200/60 dark:divide-gray-700/60">
             {table.getRowModel().rows.map((row, index) => {
+                const rowKey = row.original?.id || row.id;
+                // Debug logging for row keys
+                if (tableType === 'deliverables') {
+                  console.log(`TanStackTable: Rendering row ${index}:`, {
+                    rowKey,
+                    originalId: row.original?.id,
+                    tanStackId: row.id,
+                    name: row.original?.name
+                  });
+                }
                 return (
                   <tr
-                    key={row.id}
+                    key={rowKey}
                     className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-150 ${
                       row.getIsSelected()
                         ? "bg-blue-50/80 dark:bg-blue-900/20"
                         : ""
                     }`}
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getVisibleCells().map((cell, cellIndex) => (
                       <td
-                        key={cell.id}
+                        key={`${row.original?.id || row.id}-${cell.column.id}`}
                         className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900 dark:text-gray-100"
                         style={{
                           width: cell.column.getSize(),
