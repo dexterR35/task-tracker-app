@@ -28,7 +28,7 @@ const TanStackTable = ({
   showFilters = true,
   showColumnToggle = true,
   showActions = true,
-  pageSize = 25,
+  pageSize = 5,
   enableSorting = true,
   enableFiltering = true,
   enablePagination = true,
@@ -248,7 +248,7 @@ const TanStackTable = ({
                 }}
                 className="h-full w-[90px] px-3 py-2 text-sm font-medium "
               >
-                {[10, 20, 30, 40, 50].map((pageSize) => (
+                {[5, 10, 20, 30, 40, 50].map((pageSize) => (
                   <option key={pageSize} value={pageSize}>
                     {pageSize}
                   </option>

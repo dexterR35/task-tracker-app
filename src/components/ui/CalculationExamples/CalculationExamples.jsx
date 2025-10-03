@@ -2,6 +2,7 @@ import React from 'react';
 import { Icons } from '@/components/icons';
 
 const CalculationExamples = ({ deliverables = [] }) => {
+  
   // Use real deliverables data if available, otherwise show examples
   const getExamples = () => {
     if (deliverables && deliverables.length > 0) {
@@ -117,7 +118,7 @@ const CalculationExamples = ({ deliverables = [] }) => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {examples.map((example, index) => {
+            {examples.map((example, index) => {
           const baseTime = calculateTime(example.timePerUnit, example.timeUnit, example.quantity);
           const declinariTime = example.declinariEnabled ? (example.declinariTime * example.quantity) : 0;
           const totalTime = baseTime + declinariTime;
@@ -273,8 +274,8 @@ const CalculationExamples = ({ deliverables = [] }) => {
       
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <p className="text-xs text-blue-700 dark:text-blue-300">
-          <strong>Note:</strong> Declinari time is added to the base deliverable time when enabled. 
-          Time units are automatically converted and displayed in the most appropriate format.
+          <strong>Note:</strong> Declinari time is added to the base deliverable time when enabled in task form,. 
+          Time units are automatically converted and displayed.
         </p>
       </div>
     </div>

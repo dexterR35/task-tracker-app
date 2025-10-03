@@ -14,6 +14,7 @@ const AdminManagementPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCalculationExamples, setShowCalculationExamples] = useState(true);
   
   // Show error state
   if (error) {
@@ -135,6 +136,19 @@ const AdminManagementPage = () => {
               </DynamicButton>
             </div>
           )}
+          
+          {activeTab === 'deliverables' && (
+            <DynamicButton
+              onClick={() => setShowCalculationExamples(!showCalculationExamples)}
+              variant="outline"
+              size="sm"
+              iconName={showCalculationExamples ? "hide" : "show"}
+              iconPosition="left"
+              className="w-32"
+            >
+              {showCalculationExamples ? "Hide" : "Show"} Examples
+            </DynamicButton>
+          )}
         </div>
 
         {/* Content Section */}
@@ -157,7 +171,10 @@ const AdminManagementPage = () => {
             />
           ) : activeTab === 'deliverables' ? (
             <div>
-              <CalculationExamples deliverables={deliverables} />
+              {showCalculationExamples && (
+                <CalculationExamples deliverables={deliverables} />
+              )}
+              
               <DeliverableTable
                 user={user}
                 error={error}
