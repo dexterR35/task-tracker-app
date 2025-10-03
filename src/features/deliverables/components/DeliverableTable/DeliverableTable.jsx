@@ -29,15 +29,17 @@ const DeliverableTable = ({
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
   
   // Use prop deliverables if provided, otherwise use global data
-  const deliverablesData = propDeliverables || globalDeliverables;
+  // Show ALL deliverables including duplicates for manual cleanup
+  const rawDeliverablesData = propDeliverables || globalDeliverables;
+  const deliverablesData = rawDeliverablesData || [];
   
   // Debug logging to track data changes
   useEffect(() => {
     if (deliverablesData) {
-      console.log('DeliverableTable: deliverablesData changed:', {
-        count: deliverablesData.length,
-        ids: deliverablesData.map(d => d.id),
-        names: deliverablesData.map(d => d.name)
+      console.log('📋 DeliverableTable: All deliverables data:', deliverablesData);
+      console.log('📊 Total count:', deliverablesData.length);
+      deliverablesData.forEach((deliverable, index) => {
+        console.log(`  ${index + 1}. ${deliverable.name} (ID: ${deliverable.id || 'no-id'}) - Department: ${deliverable.department}`);
       });
     }
   }, [deliverablesData]);
@@ -52,7 +54,21 @@ const DeliverableTable = ({
   // Handle delete deliverable function
   const handleDeleteDeliverable = async (deliverable) => {
     try {
-      const updatedDeliverables = deliverablesData.filter(d => d.id !== deliverable.id);
+      // Simple filter by ID or by exact match if no ID
+      const updatedDeliverables = deliverablesData.filter(d => {
+        if (deliverable.id && d.id) {
+          return d.id !== deliverable.id;
+        }
+        // If no IDs, match by all properties
+        return !(
+          d.name === deliverable.name &&
+          d.department === deliverable.department &&
+          d.timePerUnit === deliverable.timePerUnit &&
+          d.timeUnit === deliverable.timeUnit &&
+          d.declinariTime === deliverable.declinariTime &&
+          d.requiresQuantity === deliverable.requiresQuantity
+        );
+      });
       
       await updateSettings({
         settingsType: 'deliverables',
@@ -92,11 +108,29 @@ const DeliverableTable = ({
       {
         accessorKey: 'name',
         header: 'Deliverable Name',
-        cell: ({ getValue }) => (
-          <span className="font-medium text-gray-900 dark:text-white">
-            {getValue() || 'N/A'}
-          </span>
-        ),
+        cell: ({ getValue, row }) => {
+          const name = getValue();
+          const department = row.original.department;
+          
+          // Check for duplicates within the same department only
+          const isDuplicate = deliverablesData.filter(d => 
+            d.name?.toLowerCase() === name?.toLowerCase() && 
+            d.department === department
+          ).length > 1;
+          
+          return (
+            <div className="flex items-center space-x-2">
+              <span className="font-medium text-gray-900 dark:text-white">
+                {name || 'N/A'}
+              </span>
+              {isDuplicate && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                  Duplicate in {department}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'department',
@@ -245,6 +279,7 @@ const DeliverableTable = ({
 
   return (
     <div className={`deliverable-table ${className}`}>
+
       {/* Table Header */}
       <div className="flex justify-end items-center mb-4">
         {canManageDeliverables && (

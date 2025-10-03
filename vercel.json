@@ -1,17 +1,15 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "redirects": [
-    {
-      "source": "/((?!maintenance).*)",
-      "destination": "/maintenance.html",
-      "permanent": false
+  "functions": {
+    "api/maintenance.js": {
+      "runtime": "nodejs18.x"
     }
-  ],
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "destination": "/api/maintenance"
     }
   ],
   "headers": [

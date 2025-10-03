@@ -37,6 +37,15 @@ const DeliverableForm = ({
   const { user } = useAuth();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
   
+  // Debug: Log all deliverables to see what's in the database
+  console.log('🔍 All deliverables in database:', existingDeliverables);
+  console.log('📊 Total count:', existingDeliverables?.length || 0);
+  if (existingDeliverables) {
+    existingDeliverables.forEach((deliverable, index) => {
+      console.log(`  ${index + 1}. ${deliverable.name} (ID: ${deliverable.id || 'no-id'})`);
+    });
+  }
+  
   // Form setup
   const form = useForm({
     resolver: yupResolver(createDeliverableFormSchema(DELIVERABLE_FORM_FIELDS)),
@@ -57,16 +66,17 @@ const DeliverableForm = ({
   const handleFormSubmit = createFormSubmissionHandler(
     async (formData) => {
       const preparedData = prepareDeliverableFormData(formData);
+      const currentDeliverables = existingDeliverables || [];
       
       if (mode === 'create') {
-        // Check if deliverable name already exists
-        const currentDeliverables = existingDeliverables || [];
-        const nameExists = currentDeliverables.some(deliverable => 
-          deliverable.name && deliverable.name.toLowerCase() === preparedData.name.toLowerCase()
+        // Check for duplicates within the same department only
+        const duplicateInDepartment = currentDeliverables.some(d => 
+          d.name?.toLowerCase() === preparedData.name?.toLowerCase() && 
+          d.department === preparedData.department
         );
         
-        if (nameExists) {
-          throw new Error(`A deliverable with the name "${preparedData.name}" already exists. Please choose a different name.`);
+        if (duplicateInDepartment) {
+          throw new Error(`A deliverable with the name "${preparedData.name}" already exists in the ${preparedData.department} department. Please choose a different name or department.`);
         }
 
         const createDeliverableWithErrorHandling = withMutationErrorHandling(updateSettings, {
@@ -83,7 +93,7 @@ const DeliverableForm = ({
           updatedAt: new Date().toISOString()
         };
 
-        // Get current deliverables and add new one
+        // Add new deliverable to existing array
         const updatedDeliverables = [...currentDeliverables, newDeliverable];
 
         await createDeliverableWithErrorHandling({
@@ -94,16 +104,15 @@ const DeliverableForm = ({
           userData: user
         });
       } else {
-        // Check if deliverable name already exists (excluding current deliverable)
-        const currentDeliverables = existingDeliverables || [];
-        const nameExists = currentDeliverables.some(d => 
-          d.id !== deliverable.id && 
-          d.name && 
-          d.name.toLowerCase() === preparedData.name.toLowerCase()
+        // Check for duplicates within the same department (excluding current deliverable)
+        const duplicateInDepartment = currentDeliverables.some(d => 
+          d.id !== deliverable.id &&
+          d.name?.toLowerCase() === preparedData.name?.toLowerCase() && 
+          d.department === preparedData.department
         );
         
-        if (nameExists) {
-          throw new Error(`A deliverable with the name "${preparedData.name}" already exists. Please choose a different name.`);
+        if (duplicateInDepartment) {
+          throw new Error(`A deliverable with the name "${preparedData.name}" already exists in the ${preparedData.department} department. Please choose a different name or department.`);
         }
 
         const updateDeliverableWithErrorHandling = withMutationErrorHandling(updateSettings, {
