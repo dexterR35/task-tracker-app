@@ -48,24 +48,29 @@
     </div>
 
     <script>
-        // 4 hours countdown timer
-        let timeLeft = 4 * 60 * 60; // 4 hours in seconds
+        // Calculate time remaining until 3:31 PM (4 hours from 11:31 AM)
+        const maintenanceStartTime = new Date();
+        maintenanceStartTime.setHours(11, 31, 0, 0); // 11:31 AM
+        
+        const maintenanceEndTime = new Date(maintenanceStartTime);
+        maintenanceEndTime.setHours(maintenanceStartTime.getHours() + 4); // 3:31 PM
         
         function updateCountdown() {
-            const hours = Math.floor(timeLeft / 3600);
-            const minutes = Math.floor((timeLeft % 3600) / 60);
-            const seconds = timeLeft % 60;
+            const now = new Date();
+            const timeLeft = Math.max(0, maintenanceEndTime - now);
+            
+            if (timeLeft <= 0) {
+                document.getElementById('countdown').textContent = "00:00:00";
+                clearInterval(timer);
+                return;
+            }
+            
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
             
             const display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             document.getElementById('countdown').textContent = display;
-            
-            if (timeLeft > 0) {
-                timeLeft--;
-            } else {
-                // Timer finished - you can add logic here if needed
-                document.getElementById('countdown').textContent = "00:00:00";
-                clearInterval(timer);
-            }
         }
         
         // Update countdown every second
