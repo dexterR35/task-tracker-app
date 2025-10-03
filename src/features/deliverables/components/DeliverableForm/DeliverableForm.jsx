@@ -148,7 +148,7 @@ const DeliverableForm = ({
   };
 
   return (
-    <div className={`deliverable-form ${className}`}>
+    <div className={`deliverable-form ${className} card`}>
       <form onSubmit={handleSubmit(handleFormSubmit, handleFormError)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Deliverable Name */}
