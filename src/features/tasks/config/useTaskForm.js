@@ -397,7 +397,7 @@ export const prepareTaskFormData = (formData, deliverablesOptions = []) => {
   if (formData.jiraLink) {
     const jiraMatch = formData.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
     if (jiraMatch) {
-      formData.taskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
+      formData.taskName = jiraMatch[1].toUpperCase(); // e.g., "GIMODEAR-124124" - ensure uppercase
     } else {
       // If URL format is invalid, throw an error (validation should have caught this)
       throw new Error('Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}');

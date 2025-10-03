@@ -125,9 +125,9 @@ const TaskForm = ({
       // Handle nested data_task structure from database
       const taskData = initialData.data_task || initialData;
       
-      // Reconstruct jiraLink from taskName for editing
+      // Reconstruct jiraLink from taskName for editing - ensure taskName is uppercase
       const jiraLink = taskData.taskName ? 
-        `https://gmrd.atlassian.net/browse/${taskData.taskName}` : 
+        `https://gmrd.atlassian.net/browse/${taskData.taskName.toUpperCase()}` : 
         (taskData.jiraLink || '');
       
       // Handle various date formats for form display

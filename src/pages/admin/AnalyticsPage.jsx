@@ -3,10 +3,7 @@ import { useAppData, useMonthSelection } from "@/hooks/useAppData";
 import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
-import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
-import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
-import MarketDistributionByUserCard from "@/components/Cards/MarketDistributionByUserCard";
 import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
 import CSVExportButton from "@/components/ui/CSVExportButton/CSVExportButton";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
@@ -67,10 +64,7 @@ const AnalyticsPage = () => {
       'market-user-breakdown-card',
       'reporter-analytics-card', 
       'user-analytics-card',
-      'market-distribution-card',
-      'acquisition-analytics-card',
-      'marketing-analytics-card',
-      'product-analytics-card'
+      'marketing-analytics-card'
     ];
     setSelectedCards(allCardIds);
   };
@@ -388,49 +382,7 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Market Distribution Card */}
-          <div className="relative">
-            <div id="market-distribution-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('market-distribution-card')}
-                      onChange={() => handleCardSelection('market-distribution-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <MarketDistributionByUserCard {...analyticsData} />
-              </div>
-            </div>
-          </div>
 
-          {/* Acquisition Analytics Card */}
-          <div className="relative">
-            <div id="acquisition-analytics-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('acquisition-analytics-card')}
-                      onChange={() => handleCardSelection('acquisition-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <AcquisitionAnalyticsCard {...analyticsData} />
-              </div>
-            </div>
-          </div>
 
           {/* Marketing Analytics Card */}
           <div className="relative">
@@ -454,27 +406,6 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Product Analytics Card */}
-          <div className="relative">
-            <div id="product-analytics-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('product-analytics-card')}
-                      onChange={() => handleCardSelection('product-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <ProductAnalyticsCard {...analyticsData} />
-              </div>
-            </div>
-          </div>
 
         </div>
       )}

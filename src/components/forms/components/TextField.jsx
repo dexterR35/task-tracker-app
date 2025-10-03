@@ -12,7 +12,7 @@ const TextField = ({ field, register, errors, getInputType, formValues, hideLabe
       // Extract task ID from Jira URL (e.g., GIMODEAR-124124 from https://gmrd.atlassian.net/browse/GIMODEAR-124124)
       const jiraMatch = jiraUrl.match(/\/browse\/([A-Z]+-\d+)/);
       if (jiraMatch) {
-        const extractedTaskName = jiraMatch[1]; // e.g., "GIMODEAR-124124"
+        const extractedTaskName = jiraMatch[1].toUpperCase(); // e.g., "GIMODEAR-124124" - ensure uppercase
         showSuccess(`✅ Task number extracted: ${extractedTaskName}`);
       }
     }

@@ -91,13 +91,12 @@ const UserAnalyticsCard = React.memo(({ tasks, selectedMonth, users = [], isLoad
           }
         });
 
-        // Process categories (extract from products) - exclude marketing
+        // Process categories (extract from products) - exclude marketing and acquisition
         products.forEach(product => {
           if (product && typeof product === 'string') {
             let category = '';
-            if (product.includes('acquisition')) category = 'Acquisition';
-            else if (product.includes('product')) category = 'Product';
-            // Removed marketing category
+            if (product.includes('product')) category = 'Product';
+            // Removed marketing and acquisition categories
             
             if (category) {
               allCategories.add(category);
