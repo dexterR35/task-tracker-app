@@ -26,11 +26,19 @@
         <!-- Maintenance Message -->
         <div class="mb-8">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                System Maintenance
+                App Maintenance
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 text-lg">
-                We'll be back in a few hours
+            <p class="text-gray-600 dark:text-gray-400 text-lg mb-6">
+                Will be available soon
             </p>
+            
+            <!-- Countdown Timer -->
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mb-4">
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Estimated time remaining:</div>
+                <div id="countdown" class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    04:00:00
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -38,5 +46,33 @@
             <p>Powered by NetBet</p>
         </div>
     </div>
+
+    <script>
+        // 4 hours countdown timer
+        let timeLeft = 4 * 60 * 60; // 4 hours in seconds
+        
+        function updateCountdown() {
+            const hours = Math.floor(timeLeft / 3600);
+            const minutes = Math.floor((timeLeft % 3600) / 60);
+            const seconds = timeLeft % 60;
+            
+            const display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('countdown').textContent = display;
+            
+            if (timeLeft > 0) {
+                timeLeft--;
+            } else {
+                // Timer finished - you can add logic here if needed
+                document.getElementById('countdown').textContent = "00:00:00";
+                clearInterval(timer);
+            }
+        }
+        
+        // Update countdown every second
+        const timer = setInterval(updateCountdown, 1000);
+        
+        // Initial call
+        updateCountdown();
+    </script>
 </body>
 </html>
