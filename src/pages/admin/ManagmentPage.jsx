@@ -14,7 +14,7 @@ const AdminManagementPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCalculationExamples, setShowCalculationExamples] = useState(true);
+  const [showCalculationExamples, setShowCalculationExamples] = useState(false);
   
   // Show error state
   if (error) {
