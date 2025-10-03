@@ -36,6 +36,12 @@ const Sidebar = () => {
       description: "Data insights",
     },
     {
+      name: "Landing Pages",
+      href: "/landing-pages",
+      icon: Icons.generic.document,
+      description: "Landing pages management",
+    },
+    {
       name: "Management",
       href: "/users",
       icon: Icons.generic.settings,

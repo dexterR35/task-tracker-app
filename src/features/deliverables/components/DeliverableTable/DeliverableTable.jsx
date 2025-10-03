@@ -86,6 +86,24 @@ const DeliverableTable = ({
             {getValue() || 'N/A'}
           </span>
         ),
+      },
+      {
+        accessorKey: 'department',
+        header: 'Department',
+        cell: ({ getValue }) => {
+          const department = getValue();
+          const departmentLabels = {
+            'video': 'Video Production',
+            'design': 'Design',
+            'developer': 'Development'
+          };
+          return (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              {departmentLabels[department] || department || 'N/A'}
+            </span>
+          );
+        },
+        size: 140,
       }
     ];
 

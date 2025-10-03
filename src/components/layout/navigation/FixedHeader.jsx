@@ -17,6 +17,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return canAccess("admin") ? "Task Management" : "My Dashboard";
       case "/analytics":
         return "Analytics";
+      case "/landing-pages":
+        return "Landing Pages";
       case "/users":
         return "User Management";
       default:
@@ -31,6 +33,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return Icons.cards.home;
       case "/analytics":
         return Icons.cards.chart;
+      case "/landing-pages":
+        return Icons.generic.document;
       case "/users":
         return Icons.admin.users;
       default:

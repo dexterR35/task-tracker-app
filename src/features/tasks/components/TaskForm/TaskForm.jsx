@@ -11,6 +11,7 @@ import {
   prepareTaskFormData
 } from '@/features/tasks/config/useTaskForm';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
+import { useDeliverablesByDepartment } from '@/hooks/useDeliverablesByDepartment';
 import { shouldShowField } from '@/components/forms/configs/sharedFormUtils';
 import { 
   TextField, 
@@ -97,6 +98,10 @@ const TaskForm = ({
   // Watch all form values for conditional field logic
   const watchedValues = watch();
 
+  // Watch the selected department to filter deliverables
+  const selectedDepartment = watch('departments');
+  const { deliverablesOptions: filteredDeliverablesOptions } = useDeliverablesByDepartment(selectedDepartment);
+
   // Watch checkbox values to clear errors when unchecked
   const hasDeliverables = watch('_hasDeliverables');
   const usedAIEnabled = watch('_usedAIEnabled');
@@ -111,6 +116,14 @@ const TaskForm = ({
       setValue('customDeliverables', []);
     }
   }, [hasDeliverables, clearErrors, setValue]);
+
+  // Clear deliverables selection when department changes
+  useEffect(() => {
+    if (selectedDepartment) {
+      setValue('deliverables', '');
+      clearErrors('deliverables');
+    }
+  }, [selectedDepartment, setValue, clearErrors]);
 
   useEffect(() => {
     if (!usedAIEnabled) {
@@ -374,10 +387,12 @@ const TaskForm = ({
       };
     }
     if (field.name === 'deliverables') {
-      const deliverableOptions = deliverablesOptions?.map(deliverable => ({
+      // Use filtered deliverables based on selected department
+      const deliverableOptions = filteredDeliverablesOptions?.map(deliverable => ({
         value: deliverable.value,
         label: deliverable.label,
         name: deliverable.label,
+        department: deliverable.department,
         timePerUnit: deliverable.timePerUnit,
         timeUnit: deliverable.timeUnit,
         requiresQuantity: deliverable.requiresQuantity

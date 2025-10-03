@@ -42,6 +42,7 @@ const DeliverableForm = ({
     resolver: yupResolver(createDeliverableFormSchema(DELIVERABLE_FORM_FIELDS)),
     defaultValues: {
       name: deliverable?.name || '',
+      department: deliverable?.department || '',
       timePerUnit: deliverable?.timePerUnit || 1,
       timeUnit: deliverable?.timeUnit || 'hr',
       declinariTime: deliverable?.declinariTime || 10
@@ -159,9 +160,17 @@ const DeliverableForm = ({
             formValues={formValues}
           />
 
+          {/* Department */}
+          <SelectField
+            field={DELIVERABLE_FORM_FIELDS[1]}
+            register={register}
+            errors={errors}
+            formValues={formValues}
+          />
+
           {/* Time Per Unit */}
           <NumberField
-            field={DELIVERABLE_FORM_FIELDS[1]}
+            field={DELIVERABLE_FORM_FIELDS[2]}
             register={register}
             errors={errors}
             setValue={setValue}
@@ -171,7 +180,7 @@ const DeliverableForm = ({
 
           {/* Time Unit */}
           <SelectField
-            field={DELIVERABLE_FORM_FIELDS[2]}
+            field={DELIVERABLE_FORM_FIELDS[3]}
             register={register}
             errors={errors}
             formValues={formValues}
@@ -179,7 +188,7 @@ const DeliverableForm = ({
 
           {/* Declinari Time */}
           <NumberField
-            field={DELIVERABLE_FORM_FIELDS[3]}
+            field={DELIVERABLE_FORM_FIELDS[4]}
             register={register}
             errors={errors}
             setValue={setValue}

@@ -28,6 +28,17 @@ export const DELIVERABLE_FORM_FIELDS = [
       }
     }
   }),
+  createSelectField("department", "Department", {
+    required: true,
+    options: [
+      { value: "video", label: "Video Production" },
+      { value: "design", label: "Design" },
+      { value: "developer", label: "Development" }
+    ],
+    validation: {
+      required: VALIDATION_MESSAGES.required
+    }
+  }),
   createNumberField("timePerUnit", "Time Per Unit", {
     placeholder: "Enter time per unit",
     required: true,
@@ -128,6 +139,7 @@ export const createDeliverableFormSchema = (fields) => {
 export const prepareDeliverableFormData = (formData) => {
   return {
     name: formData.name?.trim() || '',
+    department: formData.department || '',
     timePerUnit: parseFloat(formData.timePerUnit) || 1,
     timeUnit: formData.timeUnit || 'hr',
     requiresQuantity: true, // Always true for deliverables

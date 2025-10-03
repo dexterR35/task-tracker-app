@@ -25,6 +25,7 @@ import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
+import LandingPages from "@/pages/LandingPages";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -190,6 +191,14 @@ const router = createBrowserRouter([
                   <AnalyticsPage />
                 </PageWrapper>
               </AdminRoute>
+            ),
+          },
+          {
+            path: "landing-pages",
+            element: (
+              <PageWrapper key="landing-pages">
+                <LandingPages />
+              </PageWrapper>
             ),
           },
           {

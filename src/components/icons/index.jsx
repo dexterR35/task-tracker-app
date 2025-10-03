@@ -128,6 +128,7 @@ export const Icons = {
     design: withSize(FiMonitor),
     code: withSize(FiCode),
     ai: withSize(FiCpu),
+    document: withSize(FiFileText),
   },
   
   profile: {

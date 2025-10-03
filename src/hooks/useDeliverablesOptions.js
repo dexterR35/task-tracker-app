@@ -14,6 +14,7 @@ export const useDeliverablesOptions = () => {
     const options = deliverables.map(deliverable => ({
       value: deliverable.name,
       label: deliverable.name,
+      department: deliverable.department,
       timePerUnit: deliverable.timePerUnit,
       timeUnit: deliverable.timeUnit,
       requiresQuantity: deliverable.requiresQuantity,
