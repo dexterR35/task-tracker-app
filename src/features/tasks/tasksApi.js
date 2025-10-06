@@ -130,10 +130,24 @@ const buildTaskQuery = (tasksRef, role, userId) => {
 // Helper function to handle reporter name resolution
 const resolveReporterName = (reporters, reporterId, reporterName) => {
   if (reporterId && !reporterName) {
-    const selectedReporter = reporters.find(r => r.id === reporterId);
+    // Debug logging to help troubleshoot reporter ID issues
+    console.log('resolveReporterName - Looking for reporter ID:', reporterId);
+    console.log('resolveReporterName - Available reporters:', reporters.map(r => ({ id: r.id, reporterUID: r.reporterUID, uid: r.uid, name: r.name })));
+    
+    // Check ONLY reporterUID since that's what we're using as the value (case-insensitive)
+    const selectedReporter = reporters.find(r => 
+      r.reporterUID && r.reporterUID.toLowerCase() === reporterId.toLowerCase()
+    );
+    
     if (selectedReporter) {
+      console.log('resolveReporterName - Found reporter:', selectedReporter);
       return selectedReporter.name || selectedReporter.reporterName;
     } else {
+      console.error('resolveReporterName - Reporter not found for ID:', reporterId);
+      console.error('resolveReporterName - Available reporter IDs:', reporters.map(r => r.id));
+      console.error('resolveReporterName - Available reporterUIDs:', reporters.map(r => r.reporterUID));
+      console.error('resolveReporterName - Available UIDs:', reporters.map(r => r.uid));
+      console.error('resolveReporterName - Full reporter objects:', reporters);
       throw new Error("Reporter not found for the selected reporter ID");
     }
   }
@@ -376,6 +390,11 @@ export const tasksApi = createApi({
           const updatedAt = createdAt; // For new tasks, updatedAt equals createdAt
 
           // Auto-add reporter name if we have reporter ID but no name
+          console.log('createTask - task.reporters:', task.reporters);
+          console.log('createTask - task.reporterName:', task.reporterName);
+          console.log('createTask - reporters array length:', reporters.length);
+          console.log('createTask - First few reporters:', reporters.slice(0, 3).map(r => ({ reporterUID: r.reporterUID, name: r.name })));
+          
           if (task.reporters && !task.reporterName) {
             task.reporterName = resolveReporterName(reporters, task.reporters, task.reporterName);
           }

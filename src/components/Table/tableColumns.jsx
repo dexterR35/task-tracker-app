@@ -195,7 +195,10 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
     cell: ({ getValue }) => {
       const reporterId = getValue();
       if (!reporterId) return '-';
-      const reporter = stableReporters.find(r => r.id === reporterId);
+      // Check ONLY reporterUID since that's what we're using as the value (case-insensitive)
+      const reporter = stableReporters.find(r => 
+        r.reporterUID && r.reporterUID.toLowerCase() === reporterId.toLowerCase()
+      );
       return reporter?.name || reporterId;
     },
     size: 60,

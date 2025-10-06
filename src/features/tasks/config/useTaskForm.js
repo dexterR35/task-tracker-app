@@ -457,7 +457,7 @@ export const prepareTaskFormData = (formData) => {
     observations: formData.observations || '',
     products: formData.products || '', // Required field - validation ensures it's not empty
     reporterName: formData.reporterName || '', // Required field - validation ensures it's not empty
-    reporters: formData.reporters || [], // Required field - validation ensures it's not empty
+    reporters: formData.reporters || '', // Required field - validation ensures it's not empty
     reworked: formData.reworked || false,
     startDate: formData.startDate, // Required field - validation ensures it's not empty
     taskName: formData.taskName,

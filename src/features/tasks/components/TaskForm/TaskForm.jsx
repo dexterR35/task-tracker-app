@@ -105,6 +105,16 @@ const TaskForm = ({
   // Watch all form values for conditional field logic
   const watchedValues = watch();
   
+  // Watch reporters field specifically for debugging
+  const selectedReporter = watch('reporters');
+  React.useEffect(() => {
+    console.log('TaskForm - Selected reporter value:', selectedReporter);
+    if (selectedReporter) {
+      const matchingReporter = reporters.find(r => r.reporterUID === selectedReporter);
+      console.log('TaskForm - Matching reporter found:', matchingReporter);
+    }
+  }, [selectedReporter, reporters]);
+  
   // Explicitly register deliverableQuantities field
   React.useEffect(() => {
     register('deliverableQuantities');
@@ -283,7 +293,9 @@ const TaskForm = ({
       }
       
       // Prepare form data for database
+      console.log('TaskForm - Raw form data before processing:', data);
       const processedData = prepareTaskFormData(data, deliverablesOptions);
+      console.log('TaskForm - Processed data after prepareTaskFormData:', processedData);
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task
@@ -414,11 +426,16 @@ const TaskForm = ({
   const fieldsWithOptions = formFields.map(field => {
     if (field.name === 'reporters') {
       const reporterOptions = reporters?.map(reporter => ({
-        value: reporter.id,
+        value: reporter.reporterUID, // Use ONLY reporterUID since that's your primary field
         label: reporter.name, // Just the name for display
         name: reporter.name,
         email: reporter.email
       })) || [];
+      
+      console.log('TaskForm - Creating reporter options:', reporterOptions);
+      console.log('TaskForm - Raw reporters data:', reporters);
+      console.log('TaskForm - First reporter example:', reporters?.[0]);
+      console.log('TaskForm - First option example:', reporterOptions?.[0]);
       
       return {
         ...field,
