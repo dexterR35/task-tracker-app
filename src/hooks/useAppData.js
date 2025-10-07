@@ -81,14 +81,26 @@ export const useMonthSelection = (selectedUserId = null) => {
     }
   );
   
-  // Extract current month data
-  const { 
-    currentMonth = {}, 
-    boardExists = false,
-    currentMonthTasks = []
-  } = currentMonthData;
+  // Extract current month data with memoization to prevent unnecessary re-renders
+  const { monthId, monthName, daysInMonth, startDate, endDate, boardExists, currentMonthTasks } = useMemo(() => {
+    const { 
+      currentMonth = {}, 
+      boardExists = false,
+      currentMonthTasks = []
+    } = currentMonthData;
 
-  const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
+    const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
+    
+    return {
+      monthId,
+      monthName,
+      daysInMonth,
+      startDate,
+      endDate,
+      boardExists,
+      currentMonthTasks
+    };
+  }, [currentMonthData]);
   
   // Fetch available months for dropdown
   const { 
@@ -122,13 +134,6 @@ export const useMonthSelection = (selectedUserId = null) => {
       options.push(...otherMonths);
     }
     
-    // Debug logging
-    console.log('Month dropdown options:', {
-      currentMonth: { monthId, monthName, boardExists },
-      availableMonths: availableMonths?.length || 0,
-      totalOptions: options.length,
-      options: options.map(o => ({ monthId: o.monthId, monthName: o.monthName, isCurrent: o.isCurrent }))
-    });
     
     return options;
   }, [availableMonths, monthId, monthName, boardExists]);
@@ -193,7 +198,7 @@ export const useMonthSelection = (selectedUserId = null) => {
     } catch (error) {
       // Silently handle refetch errors
     }
-  }, [currentMonth.monthId, availableMonths.length, refetchMonthTasks, refetchCurrentMonth]);
+  }, [monthId, availableMonths.length, refetchMonthTasks, refetchCurrentMonth]);
   
   const resetToCurrentMonth = useCallback(() => {
     setSelectedMonthId(null);
@@ -205,23 +210,32 @@ export const useMonthSelection = (selectedUserId = null) => {
   const isInitialLoading = currentMonthLoading && !monthId;
   const isMonthDataReady = monthId && monthName;
   
-  return {
-    // Month data
-    currentMonth: {
-      monthId,
-      monthName,
-      daysInMonth,
-      startDate,
-      endDate,
-      boardExists,
-      isCurrent: true,
-      isReady: isMonthDataReady
-    },
-    selectedMonth: isCurrentMonth ? null : {
+  // Memoize currentMonth object to prevent unnecessary re-renders
+  const currentMonth = useMemo(() => ({
+    monthId,
+    monthName,
+    daysInMonth,
+    startDate,
+    endDate,
+    boardExists,
+    isCurrent: true,
+    isReady: isMonthDataReady
+  }), [monthId, monthName, daysInMonth, startDate, endDate, boardExists, isMonthDataReady]);
+
+  // Memoize selectedMonth object to prevent unnecessary re-renders
+  const selectedMonth = useMemo(() => {
+    if (isCurrentMonth) return null;
+    return {
       monthId: selectedMonthId,
       monthName: dropdownOptions.find(m => m.monthId === selectedMonthId)?.monthName,
       isCurrent: false
-    },
+    };
+  }, [isCurrentMonth, selectedMonthId, dropdownOptions]);
+
+  return {
+    // Month data
+    currentMonth,
+    selectedMonth,
     availableMonths: dropdownOptions,
     isCurrentMonth,
     
