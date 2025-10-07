@@ -143,7 +143,6 @@ const AdminDashboardPage = () => {
     handleEdit,
     handleDelete,
     confirmDelete,
-    closeEditModal,
     closeDeleteModal,
     handleEditSuccess,
   } = useTableActions('task', {
