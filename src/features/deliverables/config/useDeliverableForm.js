@@ -34,7 +34,7 @@ export const DELIVERABLE_FORM_FIELDS = [
     }
   },
   {
-    name: "departments",
+    name: "department",
     type: "select",
     label: "Department",
     required: true,
@@ -150,7 +150,10 @@ export const createDeliverableFormSchema = (fields) => {
 
 // ===== DELIVERABLE FORM UTILITIES =====
 export const prepareDeliverableFormData = (formData) => {
-  return {
+  console.log('🔍 prepareDeliverableFormData - Input formData:', formData);
+  console.log('🔍 prepareDeliverableFormData - department value:', formData.department);
+  
+  const result = {
     name: formData.name?.trim() || '',
     department: formData.department || '',
     timePerUnit: parseFloat(formData.timePerUnit) || 1,
@@ -158,6 +161,9 @@ export const prepareDeliverableFormData = (formData) => {
     requiresQuantity: true, // Always true for deliverables
     declinariTime: parseInt(formData.declinariTime) || 0
   };
+  
+  console.log('🔍 prepareDeliverableFormData - Output result:', result);
+  return result;
 };
 
 // ===== DELIVERABLE VALIDATION UTILITIES =====

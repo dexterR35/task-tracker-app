@@ -56,15 +56,41 @@ const DeliverableForm = ({
       declinariTime: deliverable?.declinariTime || 10
     }
   });
+  
+  // Debug: Log the deliverable being edited
+  console.log('🔍 Editing deliverable:', deliverable);
+  console.log('🔍 Department from deliverable:', deliverable?.department);
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch, trigger } = form;
   const formValues = watch();
+  
+  // Debug: Log form values when they change
+  React.useEffect(() => {
+    console.log('🔍 Form values changed:', formValues);
+    console.log('🔍 Department value:', formValues.department);
+  }, [formValues]);
+  
+  // Reset form when deliverable changes (for editing)
+  React.useEffect(() => {
+    if (deliverable && mode === 'edit') {
+      console.log('🔍 Resetting form with deliverable data:', deliverable);
+      reset({
+        name: deliverable.name || '',
+        department: deliverable.department || '',
+        timePerUnit: deliverable.timePerUnit || 1,
+        timeUnit: deliverable.timeUnit || 'hr',
+        declinariTime: deliverable.declinariTime || 10
+      });
+    }
+  }, [deliverable, mode, reset]);
 
 
   // Form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (formData) => {
+      console.log('🔍 Form submission - Raw formData:', formData);
       const preparedData = prepareDeliverableFormData(formData);
+      console.log('🔍 Form submission - Prepared data:', preparedData);
       const currentDeliverables = existingDeliverables || [];
       
       if (mode === 'create') {
