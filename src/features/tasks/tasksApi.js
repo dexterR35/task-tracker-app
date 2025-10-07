@@ -174,7 +174,9 @@ export const tasksApi = createApi({
     // Real-time fetch for tasks - optimized for month changes and CRUD operations
     getMonthTasks: builder.query({
       async queryFn({ monthId, userId, role, userData }) {
-        const cacheKey = `getMonthTasks_${monthId}_${userId}_${role}`;
+        // Use consistent cache key for all users viewing the same month
+        // This ensures cache invalidation works across different user sessions
+        const cacheKey = `getMonthTasks_${monthId}`;
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
@@ -315,6 +317,7 @@ export const tasksApi = createApi({
                   .filter((task) => task !== null);
 
                 console.log('Real-time update: tasks count:', tasks.length);
+                console.log('Real-time update: updating cache for monthId:', arg.monthId);
                 listenerManager.updateActivity();
                 updateCachedData(() => tasks);
               },
@@ -432,13 +435,14 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, { task }) => {
         console.log('Invalidating cache tags for createTask, monthId:', task.monthId);
+        // Force invalidation of ALL cache entries to ensure real-time updates work across users
         return [
-          ...getTaskCacheTags(task.monthId),
-          // Force invalidation of all month tasks queries to ensure real-time updates
           { type: "MonthTasks", id: "LIST" },
           { type: "MonthTasks", id: task.monthId },
           { type: "Tasks", id: "LIST" },
-          { type: "Analytics", id: "LIST" }
+          { type: "Analytics", id: "LIST" },
+          { type: "CurrentMonth", id: "ALL" },
+          { type: "CurrentMonth", id: "ENHANCED" }
         ];
       },
     }),
@@ -476,13 +480,14 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, { monthId }) => {
         console.log('Invalidating cache tags for updateTask, monthId:', monthId);
+        // Force invalidation of ALL cache entries to ensure real-time updates work across users
         return [
-          ...getTaskCacheTags(monthId),
-          // Force invalidation of all month tasks queries to ensure real-time updates
           { type: "MonthTasks", id: "LIST" },
           { type: "MonthTasks", id: monthId },
           { type: "Tasks", id: "LIST" },
-          { type: "Analytics", id: "LIST" }
+          { type: "Analytics", id: "LIST" },
+          { type: "CurrentMonth", id: "ALL" },
+          { type: "CurrentMonth", id: "ENHANCED" }
         ];
       },
     }),
@@ -512,13 +517,14 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, { monthId }) => {
         console.log('Invalidating cache tags for deleteTask, monthId:', monthId);
+        // Force invalidation of ALL cache entries to ensure real-time updates work across users
         return [
-          ...getTaskCacheTags(monthId),
-          // Force invalidation of all month tasks queries to ensure real-time updates
           { type: "MonthTasks", id: "LIST" },
           { type: "MonthTasks", id: monthId },
           { type: "Tasks", id: "LIST" },
-          { type: "Analytics", id: "LIST" }
+          { type: "Analytics", id: "LIST" },
+          { type: "CurrentMonth", id: "ALL" },
+          { type: "CurrentMonth", id: "ENHANCED" }
         ];
       },
     }),
