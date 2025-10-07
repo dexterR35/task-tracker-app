@@ -53,6 +53,7 @@ const Sidebar = () => {
       name: "Landing Pages",
       href: "/landing-pages",
       icon: Icons.generic.document,
+      adminOnly: true,
       description: "LP Management",
     },
   ];

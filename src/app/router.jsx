@@ -197,9 +197,11 @@ const router = createBrowserRouter([
           {
             path: "landing-pages",
             element: (
-              <PageWrapper key="landing-pages">
-                <LandingPages />
-              </PageWrapper>
+              <AdminRoute>
+                <PageWrapper key="landing-pages">
+                  <LandingPages />
+                </PageWrapper>
+              </AdminRoute>
             ),
           },
           {
