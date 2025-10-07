@@ -449,8 +449,6 @@ const TaskForm = ({
         label: deliverable.label,
         name: deliverable.label,
         department: deliverable.department,
-        timePerUnit: deliverable.timePerUnit,
-        timeUnit: deliverable.timeUnit,
         requiresQuantity: deliverable.requiresQuantity
       })) || [];
       

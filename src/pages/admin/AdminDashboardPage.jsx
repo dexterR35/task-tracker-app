@@ -657,7 +657,9 @@ const AdminDashboardPage = () => {
                 'isVip': false,        // Hide VIP column by default
                 'reworked': false,     // Hide Reworked column by default
                 'startDate': false,    // Hide Start Date column by default
-                'endDate': false       // Hide End Date column by default
+                'endDate': false,      // Hide End Date column by default
+                'observations': false  // Hide Observations column by default
+                
               }}
             />
           )}
