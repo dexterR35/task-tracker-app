@@ -36,14 +36,6 @@ const DeliverableForm = ({
   const { user } = useAuth();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
   
-  // Debug: Log all deliverables to see what's in the database
-  console.log('🔍 All deliverables in database:', existingDeliverables);
-  console.log('📊 Total count:', existingDeliverables?.length || 0);
-  if (existingDeliverables) {
-    existingDeliverables.forEach((deliverable, index) => {
-      console.log(`  ${index + 1}. ${deliverable.name} (ID: ${deliverable.id || 'no-id'})`);
-    });
-  }
   
   // Form setup
   const form = useForm({
@@ -57,23 +49,13 @@ const DeliverableForm = ({
     }
   });
   
-  // Debug: Log the deliverable being edited
-  console.log('🔍 Editing deliverable:', deliverable);
-  console.log('🔍 Department from deliverable:', deliverable?.department);
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch, trigger } = form;
   const formValues = watch();
   
-  // Debug: Log form values when they change
-  React.useEffect(() => {
-    console.log('🔍 Form values changed:', formValues);
-    console.log('🔍 Department value:', formValues.department);
-  }, [formValues]);
-  
   // Reset form when deliverable changes (for editing)
   React.useEffect(() => {
     if (deliverable && mode === 'edit') {
-      console.log('🔍 Resetting form with deliverable data:', deliverable);
       reset({
         name: deliverable.name || '',
         department: deliverable.department || '',
@@ -88,9 +70,7 @@ const DeliverableForm = ({
   // Form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (formData) => {
-      console.log('🔍 Form submission - Raw formData:', formData);
       const preparedData = prepareDeliverableFormData(formData);
-      console.log('🔍 Form submission - Prepared data:', preparedData);
       const currentDeliverables = existingDeliverables || [];
       
       if (mode === 'create') {
