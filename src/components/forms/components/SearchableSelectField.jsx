@@ -9,7 +9,8 @@ const SearchableSelectField = ({
   trigger,
   clearErrors,
   formValues,
-  noOptionsMessage = "No options found"
+  noOptionsMessage = "No options found",
+  hideTimeInfo = false
 }) => {
   const fieldError = errors[field.name];
   const [isOpen, setIsOpen] = useState(false);
@@ -192,7 +193,7 @@ const SearchableSelectField = ({
                         {option.email}
                       </span>
                     )}
-                    {option.timePerUnit && option.timeUnit && (
+                    {!hideTimeInfo && option.timePerUnit && option.timeUnit && (
                       <span className="text-xs text-blue-600 dark:text-blue-400">
                         {option.timePerUnit} {option.timeUnit}/unit
                       </span>

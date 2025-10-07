@@ -378,7 +378,7 @@ const TaskForm = ({
   // Helper function to render fields based on type
   const renderField = (field, fieldProps) => {
     if (field.name === 'deliverables') {
-      return <SearchableDeliverablesField key={field.name} {...fieldProps} />;
+      return <SearchableDeliverablesField key={field.name} {...fieldProps} hideTimeInfo={true} />;
     }
     if (field.name === 'reporters') {
       return <SearchableSelectField key={field.name} {...fieldProps} />;

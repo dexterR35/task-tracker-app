@@ -9,7 +9,8 @@ const SearchableDeliverablesField = ({
   watch, 
   trigger,
   clearErrors,
-  formValues
+  formValues,
+  hideTimeInfo = false
 }) => {
   const [quantities, setQuantities] = useState({});
   const [declinariQuantities, setDeclinariQuantities] = useState({});
@@ -150,7 +151,8 @@ const SearchableDeliverablesField = ({
     formValues,
     noOptionsMessage: hasDeliverables && !selectedDepartment 
       ? "Select a department, it's required to select a department for deliverables"
-      : "No options found"
+      : "No options found",
+    hideTimeInfo
   };
 
   return (
@@ -211,15 +213,17 @@ const SearchableDeliverablesField = ({
           )}
           
           {/* Time Information */}
-          <div className="flex-1 min-w-[200px] space-y-2">
-            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Information</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <div>Time per unit: {selectedOption.timePerUnit} {selectedOption.timeUnit}</div>
-              {selectedOption.declinariTime && (
-                <div>Declinari time: {selectedOption.declinariTime} {selectedOption.declinariTimeUnit || 'min'}</div>
-              )}
+          {!hideTimeInfo && (
+            <div className="flex-1 min-w-[200px] space-y-2">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Information</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div>Time per unit: {selectedOption.timePerUnit} {selectedOption.timeUnit}</div>
+                {selectedOption.declinariTime && (
+                  <div>Declinari time: {selectedOption.declinariTime} {selectedOption.declinariTimeUnit || 'min'}</div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
