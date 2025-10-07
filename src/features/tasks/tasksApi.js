@@ -432,7 +432,14 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, { task }) => {
         console.log('Invalidating cache tags for createTask, monthId:', task.monthId);
-        return getTaskCacheTags(task.monthId);
+        return [
+          ...getTaskCacheTags(task.monthId),
+          // Force invalidation of all month tasks queries to ensure real-time updates
+          { type: "MonthTasks", id: "LIST" },
+          { type: "MonthTasks", id: task.monthId },
+          { type: "Tasks", id: "LIST" },
+          { type: "Analytics", id: "LIST" }
+        ];
       },
     }),
     // Update task - simple Firestore update
@@ -469,7 +476,14 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, { monthId }) => {
         console.log('Invalidating cache tags for updateTask, monthId:', monthId);
-        return getTaskCacheTags(monthId);
+        return [
+          ...getTaskCacheTags(monthId),
+          // Force invalidation of all month tasks queries to ensure real-time updates
+          { type: "MonthTasks", id: "LIST" },
+          { type: "MonthTasks", id: monthId },
+          { type: "Tasks", id: "LIST" },
+          { type: "Analytics", id: "LIST" }
+        ];
       },
     }),
 
@@ -498,7 +512,14 @@ export const tasksApi = createApi({
       },
       invalidatesTags: (result, error, { monthId }) => {
         console.log('Invalidating cache tags for deleteTask, monthId:', monthId);
-        return getTaskCacheTags(monthId);
+        return [
+          ...getTaskCacheTags(monthId),
+          // Force invalidation of all month tasks queries to ensure real-time updates
+          { type: "MonthTasks", id: "LIST" },
+          { type: "MonthTasks", id: monthId },
+          { type: "Tasks", id: "LIST" },
+          { type: "Analytics", id: "LIST" }
+        ];
       },
     }),
 
