@@ -267,7 +267,7 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
       if (!value) return '-';
       
       return (
-        <Badge variant="crimson" size="sm">
+        <Badge variant="blue" size="sm">
           {value}h
         </Badge>
       );

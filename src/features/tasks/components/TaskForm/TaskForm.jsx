@@ -54,11 +54,6 @@ const TaskForm = ({
     console.log('TaskForm - loadingDeliverables:', loadingDeliverables);
   }, [deliverablesOptions, loadingDeliverables]);
   
-  // Create dynamic form fields with deliverables options
-  const formFields = React.useMemo(() => {
-    return createTaskFormFields(deliverablesOptions);
-  }, [deliverablesOptions]);
-
   // Create dynamic schema with deliverables options
   const dynamicSchema = React.useMemo(() => {
     return createTaskFormSchema();
@@ -105,6 +100,14 @@ const TaskForm = ({
   // Watch all form values for conditional field logic
   const watchedValues = watch();
   
+  // Debug specific fields in edit mode
+  if (mode === 'edit') {
+    console.log('TaskForm - Edit mode watched values:');
+    console.log('- deliverables:', watchedValues.deliverables);
+    console.log('- reporters:', watchedValues.reporters);
+    console.log('- _hasDeliverables:', watchedValues._hasDeliverables);
+  }
+  
   // Watch reporters field specifically for debugging
   const selectedReporter = watch('reporters');
   React.useEffect(() => {
@@ -132,6 +135,11 @@ const TaskForm = ({
   // Watch the selected department to filter deliverables
   const selectedDepartment = watch('departments');
   const { deliverablesOptions: filteredDeliverablesOptions } = useDeliverablesByDepartment(selectedDepartment);
+
+  // Create dynamic form fields with deliverables options (after filteredDeliverablesOptions is defined)
+  const formFields = React.useMemo(() => {
+    return createTaskFormFields(filteredDeliverablesOptions);
+  }, [filteredDeliverablesOptions]);
 
   // Watch checkbox values to clear errors when unchecked
   const hasDeliverables = watch('_hasDeliverables');
@@ -216,35 +224,116 @@ const TaskForm = ({
         jiraLink: jiraLink,
         products: taskData.products || '',
         departments: Array.isArray(taskData.departments) ? taskData.departments[0] || '' : taskData.departments || '',
-        markets: taskData.markets || [],
+        markets: taskData.markets || null,
         timeInHours: taskData.timeInHours || '',
         startDate: formattedStartDate,
         endDate: formattedEndDate,
-        _hasDeliverables: !!(taskData.deliverablesUsed?.[0] || taskData.deliverables),
-        deliverables: taskData.deliverablesUsed?.[0]?.name || 
-          taskData.deliverables?.[0]?.deliverableName || '',
-        deliverableQuantities: taskData.deliverablesUsed?.[0]?.name ? 
-          { [taskData.deliverablesUsed[0].name]: taskData.deliverablesUsed[0].count } :
-          taskData.deliverables?.[0]?.deliverableQuantities || {},
-        declinariQuantities: taskData.deliverablesUsed?.[0]?.name ? 
-          { [taskData.deliverablesUsed[0].name]: taskData.deliverablesUsed[0].declinariCount || 0 } :
-          taskData.deliverables?.[0]?.declinariQuantities || {},
-        declinariDeliverables: taskData.deliverablesUsed?.[0]?.name ? 
-          { [taskData.deliverablesUsed[0].name]: taskData.deliverablesUsed[0].declinariEnabled || false } :
-          taskData.deliverables?.[0]?.declinariDeliverables || {},
-        customDeliverables: taskData.deliverablesUsed?.[0]?.customDeliverables || 
-          taskData.customDeliverables || [],
+        _hasDeliverables: !!(taskData.deliverablesUsed?.length || taskData.deliverables?.length),
+        deliverables: (() => {
+          // Get the first deliverable from deliverablesUsed
+          const firstDeliverable = taskData.deliverablesUsed?.[0];
+          if (!firstDeliverable?.name) return null;
+          
+          // Find the matching option in filtered deliverables options
+          const matchingOption = filteredDeliverablesOptions.find(opt => opt.value === firstDeliverable.name);
+          if (matchingOption) {
+            return firstDeliverable.name;
+          }
+          
+          // If no exact match, check if it's a custom deliverable
+          if (firstDeliverable.customDeliverables?.length > 0) {
+            return 'others';
+          }
+          
+          // Return the original name as fallback
+          return firstDeliverable.name;
+        })(),
+        deliverableQuantities: (() => {
+          const quantities = {};
+          if (taskData.deliverablesUsed?.length) {
+            taskData.deliverablesUsed.forEach(deliverable => {
+              if (deliverable.name && deliverable.count) {
+                quantities[deliverable.name] = deliverable.count;
+              }
+            });
+          } else if (taskData.deliverables?.[0]?.deliverableQuantities) {
+            return taskData.deliverables[0].deliverableQuantities;
+          }
+          return quantities;
+        })(),
+        declinariQuantities: (() => {
+          const quantities = {};
+          if (taskData.deliverablesUsed?.length) {
+            taskData.deliverablesUsed.forEach(deliverable => {
+              if (deliverable.name && deliverable.declinariCount) {
+                quantities[deliverable.name] = deliverable.declinariCount;
+              }
+            });
+          } else if (taskData.deliverables?.[0]?.declinariQuantities) {
+            return taskData.deliverables[0].declinariQuantities;
+          }
+          return quantities;
+        })(),
+        declinariDeliverables: (() => {
+          const enabled = {};
+          if (taskData.deliverablesUsed?.length) {
+            taskData.deliverablesUsed.forEach(deliverable => {
+              if (deliverable.name) {
+                enabled[deliverable.name] = deliverable.declinariEnabled || false;
+              }
+            });
+          } else if (taskData.deliverables?.[0]?.declinariDeliverables) {
+            return taskData.deliverables[0].declinariDeliverables;
+          }
+          return enabled;
+        })(),
+        customDeliverables: (() => {
+          if (taskData.deliverablesUsed?.length) {
+            // Extract custom deliverables from all deliverablesUsed
+            const customDeliverables = [];
+            taskData.deliverablesUsed.forEach(deliverable => {
+              if (deliverable.customDeliverables?.length) {
+                customDeliverables.push(...deliverable.customDeliverables);
+              }
+            });
+            return customDeliverables;
+          }
+          return taskData.customDeliverables || null;
+        })(),
         _usedAIEnabled: !!(taskData.aiUsed?.[0]?.aiModels?.length || taskData.aiModels?.length),
-        aiModels: taskData.aiUsed?.[0]?.aiModels || taskData.aiModels || [],
+        aiModels: taskData.aiUsed?.[0]?.aiModels || taskData.aiModels || null,
         aiTime: taskData.aiUsed?.[0]?.aiTime || taskData.aiTime || 0,
-        reporters: taskData.reporters || '',
+        reporters: taskData.reporters || null,
         isVip: taskData.isVip || false,
         reworked: taskData.reworked || false,
         observations: taskData.observations || ''
       };
       
       console.log('TaskForm - Edit mode: form data being set:', formData);
-      reset(formData);
+      console.log('TaskForm - Edit mode: deliverablesUsed data:', taskData.deliverablesUsed);
+      console.log('TaskForm - Edit mode: selected deliverable:', formData.deliverables);
+      console.log('TaskForm - Edit mode: available filtered options:', filteredDeliverablesOptions?.map(opt => opt.value) || 'No options');
+      console.log('TaskForm - Edit mode: selected department:', taskData.departments);
+      console.log('TaskForm - Edit mode: reporter data:', taskData.reporters);
+      console.log('TaskForm - Edit mode: available reporters:', reporters.map(r => ({ uid: r.reporterUID, name: r.name })));
+      console.log('TaskForm - Edit mode: About to reset form with:', formData);
+      
+      // Use setTimeout to ensure form is ready and options are loaded
+      setTimeout(() => {
+        console.log('TaskForm - Edit mode: About to reset with options available:');
+        console.log('- filteredDeliverablesOptions:', filteredDeliverablesOptions?.length || 0);
+        console.log('- reporters:', reporters?.length || 0);
+        reset(formData);
+        console.log('TaskForm - Edit mode: Form reset completed');
+        
+        // Force re-render of form components
+        setTimeout(() => {
+          console.log('TaskForm - Edit mode: Forcing component re-render');
+          // Trigger a small state change to force re-render
+          setValue('reporters', formData.reporters);
+          setValue('deliverables', formData.deliverables);
+        }, 50);
+      }, 200);
       
       
     }
@@ -430,7 +519,7 @@ const TaskForm = ({
         label: reporter.name, // Just the name for display
         name: reporter.name,
         email: reporter.email
-      })) || [];
+      })) || null;
       
     
       return {
@@ -446,7 +535,7 @@ const TaskForm = ({
         name: deliverable.label,
         department: deliverable.department,
         requiresQuantity: deliverable.requiresQuantity
-      })) || [];
+      })) || null;
       
       return {
         ...field,
@@ -476,6 +565,12 @@ const TaskForm = ({
         <div className="form-section">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renderFieldsByName(['markets', 'reporters'])}
+            {/* Debug info for reporters */}
+            {mode === 'edit' && (
+              <div className="text-xs text-gray-500 mt-1">
+                Debug: Selected reporter value: {watchedValues.reporters}
+              </div>
+            )}
           </div>
         </div>
 
@@ -515,7 +610,29 @@ const TaskForm = ({
         {/* 11. Deliverables - Full Width (conditional) */}
         {watchedValues._hasDeliverables && (
           <div className="form-section">
-            {renderFieldsByName(['deliverables'])}
+            <SearchableDeliverablesField
+              field={{
+                name: 'deliverables',
+                type: 'select',
+                label: 'Deliverables',
+                required: true,
+                options: filteredDeliverablesOptions || null
+              }}
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              watch={watch}
+              trigger={trigger}
+              clearErrors={clearErrors}
+              formValues={watchedValues}
+              hideTimeInfo={true}
+            />
+            {/* Debug info for deliverables */}
+            {mode === 'edit' && (
+              <div className="text-xs text-gray-500 mt-1">
+                Debug: Selected deliverable: {watchedValues.deliverables} | Has deliverables: {watchedValues._hasDeliverables ? 'Yes' : 'No'}
+              </div>
+            )}
           </div>
         )}
 

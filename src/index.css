@@ -142,14 +142,7 @@
   --color-btn-light: #dce6f0;
   --color-btn-dark: #0a1225;
 
-  /* ===== BADGE COLORS (same as cards) ===== */
-  --color-badge-green: #2fd181;
-  --color-badge-blue: #2a9df4;
-  --color-badge-purple: #3d48c9;
-  --color-badge-red: #eb2743;
-  --color-badge-yellow: #eb2743;
-  --color-badge-pink: #c10f29;
-  --color-badge-gray: #727e90;
+
 
   /* ===== AVATAR BACKGROUNDS ===== */
   --color-avatar-primary: #3d48c9;
@@ -328,7 +321,7 @@
     @apply text-gray-500;
   }
   td a,td  {
-    @apply dark:!text-blue-100
+    @apply dark:!text-gray-50
   }
 
   input[type="checkbox"] {
@@ -352,11 +345,9 @@
   h5 {
     @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;
   }
-  tbody tr td {
-    @apply px-3 py-4 text-gray-800 dark:text-gray-300;
-  }
+
   thead tr th {
-    @apply px-3 py-4 text-text-primary dark:text-text-white font-normal text-left text-xs !capitalize ;
+    @apply  text-text-primary dark:text-text-white font-semibold text-left text-xs !capitalize ;
   }
   .max-w-6xl {
     @apply !max-w-[95%] mx-auto;
@@ -404,7 +395,7 @@
   }
 
   .card-large {
-    @apply bg-white/90 dark:bg-smallCard rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-8 backdrop-blur-sm shadow-xl h-full w-full;
+    @apply bg-white/90 dark:bg-smallCard rounded-xl border border-gray-200/60 dark:border-gray-700/60 p-6 backdrop-blur-sm shadow-xl h-full w-full;
   }
 
   /* Enhanced Typography with Better Font Sizes */

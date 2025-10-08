@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Badge from '@/components/ui/Badge/Badge';
 
 const SearchableSelectField = ({ 
   field, 
@@ -21,6 +22,36 @@ const SearchableSelectField = ({
   
   const currentValue = watch(field.name);
   const selectedOption = field.options?.find(option => option.value === currentValue);
+  
+  // Debug logging for edit mode
+  if (field.name === 'reporters' && currentValue) {
+    console.log('SearchableSelectField - reporters field:');
+    console.log('- currentValue:', currentValue);
+    console.log('- selectedOption:', selectedOption);
+    console.log('- available options:', field.options?.length || 0);
+  }
+
+  // Handle initial value when form is reset
+  useEffect(() => {
+    if (currentValue && field.options && field.options.length > 0) {
+      const option = field.options.find(opt => opt.value === currentValue);
+      if (option && !searchTerm) {
+        // Set the search term to show the selected option
+        setSearchTerm('');
+      }
+    }
+  }, [currentValue, field.options, searchTerm]);
+
+  // Handle case where options are loaded after component has a value
+  useEffect(() => {
+    if (currentValue && field.options && field.options.length > 0) {
+      const option = field.options.find(opt => opt.value === currentValue);
+      if (option) {
+        // Force a re-render to update the display value
+        console.log('SearchableSelectField - Options loaded, found matching option:', option);
+      }
+    }
+  }, [field.options, currentValue]);
 
   // Trigger validation when value changes
   useEffect(() => {
@@ -126,7 +157,69 @@ const SearchableSelectField = ({
     }
   };
 
-  const displayValue = isOpen ? searchTerm : (selectedOption?.name || selectedOption?.label || '');
+  // Enhanced display logic with fallback
+  const getDisplayValue = () => {
+    if (isOpen) {
+      return searchTerm;
+    }
+    
+    // First try to use selectedOption if it exists
+    if (selectedOption) {
+      return selectedOption.name || selectedOption.label || '';
+    }
+    
+    // Fallback: if we have a currentValue but no selectedOption (options not loaded yet)
+    // try to find the option again
+    if (currentValue && field.options && field.options.length > 0) {
+      const fallbackOption = field.options.find(opt => opt.value === currentValue);
+      if (fallbackOption) {
+        return fallbackOption.name || fallbackOption.label || '';
+      }
+    }
+    
+    // Last resort: if we have a currentValue but no matching option found,
+    // it might be a timing issue - return empty string to avoid showing the UID
+    if (currentValue) {
+      console.log('SearchableSelectField - WARNING: currentValue exists but no matching option found');
+      console.log('- currentValue:', currentValue);
+      console.log('- field.options available:', field.options?.length || 0);
+      return ''; // Return empty to avoid showing the UID
+    }
+    
+    return '';
+  };
+  
+  const displayValue = getDisplayValue();
+  
+  // Debug display value
+  if (field.name === 'reporters') {
+    console.log('SearchableSelectField - display logic:');
+    console.log('- isOpen:', isOpen);
+    console.log('- searchTerm:', searchTerm);
+    console.log('- currentValue:', currentValue);
+    console.log('- selectedOption:', selectedOption);
+    console.log('- field.options:', field.options);
+    console.log('- field.options length:', field.options?.length || 0);
+    console.log('- displayValue:', displayValue);
+    
+    // Additional debugging for edit mode
+    if (currentValue && !selectedOption && field.options?.length > 0) {
+      console.log('SearchableSelectField - DEBUG: currentValue exists but selectedOption is null');
+      console.log('- Looking for value:', currentValue);
+      console.log('- Available options:', field.options.map(opt => ({ value: opt.value, label: opt.label })));
+    }
+    
+    // Debug the getDisplayValue function step by step
+    if (currentValue) {
+      console.log('SearchableSelectField - getDisplayValue debug:');
+      console.log('- isOpen:', isOpen);
+      console.log('- selectedOption exists:', !!selectedOption);
+      console.log('- selectedOption name:', selectedOption?.name);
+      console.log('- selectedOption label:', selectedOption?.label);
+      console.log('- fallback check - currentValue:', currentValue);
+      console.log('- fallback check - field.options length:', field.options?.length);
+    }
+  }
 
   return (
     <div className="field-wrapper">
@@ -172,6 +265,26 @@ const SearchableSelectField = ({
           type="hidden"
           value={currentValue || ''}
         />
+
+        {/* Badge display for selected value */}
+        {currentValue && displayValue && (
+          <div className="mt-2">
+            <Badge
+              variant="crimson"
+              size="sm"
+              className="inline-flex items-center gap-1"
+            >
+              <span className='text-inherit'>{displayValue}</span>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="ml-1 hover:opacity-75 transition-opacity text-inherit"
+              >
+                ×
+              </button>
+            </Badge>
+          </div>
+        )}
 
         {isOpen && (
           <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">

@@ -81,16 +81,16 @@ const DashboardCard = ({ card }) => {
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center space-x-4">
               <div
-                className="p-4 rounded-lg flex items-center justify-center shadow-lg border border-gray-600/30"
+                className="p-3 rounded-lg flex items-center justify-center  border border-gray-600/30"
                 style={{ backgroundColor: `${cardColorHex}20` }}
               >
                 <card.icon
-                  className="w-7 h-7"
+                  className="w-5 h-5"
                   style={{ color: cardColorHex }}
                 />
               </div>
               <div className="leading-6">
-                <h3 className="text-lg font-bold text-gray-200 !mb-1">
+                <h3 className="text-lg mb-0">
                   {card.title}
                 </h3>
                 <p className="text-sm text-gray-400 mt-0">{card.subtitle}</p>
@@ -99,7 +99,7 @@ const DashboardCard = ({ card }) => {
 
             {/* Trend Indicator */}
             {card.trend && (
-              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-700/40 border border-gray-600/30 shadow-sm">
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-700/40 border border-gray-600/30">
                 {getTrendIconComponent(card.trendDirection)}
                 <span className="text-sm font-semibold" style={{ color: cardColorHex }}>
                   {card.trend}
@@ -112,34 +112,17 @@ const DashboardCard = ({ card }) => {
           <div className="flex-1">
             {/* Main Value */}
             <div className="mb-6">
-              <p className="text-lg font-bold  mb-0">
+              <p className="text-2xl font-bold  mb-0">
                 {card.value}
               </p>
-              <p className="text-xs text-gray-400 mb-1">{card.description}</p>
+              <p className="text-xs">{card.description}</p>
             </div>
 
-            {/* Badges Section - Using Card's Color */}
-            {card.badges && card.badges.length > 0 && (
-              <div className="mb-6">
-                <div className="flex flex-wrap gap-2">
-                  {card.badges.map((badge, index) => {
-                    return (
-                      <div 
-                        key={index} 
-                        className="flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold text-white shadow-sm"
-                        style={{ backgroundColor: cardColorHex }}
-                      >
-                        <span>{badge.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          
 
             {/* Chart Section - Only for cards with charts */}
             {card.hasChart && (
-              <div className="mb-6 h-20">
+              <div className="mb-4 h-auto">
                 {card.chartData && card.chartData.length > 0 ? (
                   card.chartType === "bar" ? (
                     <ModernBarChart data={card.chartData} color={cardColorHex} />
@@ -154,16 +137,16 @@ const DashboardCard = ({ card }) => {
               </div>
             )}
 
-            {/* Enhanced Data - Top 3 Functionality with Consistent Card Color */}
+         
             {card.details && (
-              <div className="space-y-2 mb-6 ">
+              <div className="space-y-2 mb-6  bg-red-500 w-1/2">
            
                 {card.details.map((detail, index) => {
                   // Skip if it's a header with no value
                   if (detail.isHeader && !detail.value) {
                     return (
-                      <div key={index} className="pt-4 ">
-                        <div className="flex items-center justify-between mb-1">
+                      <div key={index} className="pt-4 bg-grexen-400x  ">
+                        <div className="flex   items-center justify-between mb-1">
                           <span className="text-sm font-semibold ">{detail.label}</span>
                           {detail.icon && (
                             <detail.icon 
@@ -184,12 +167,14 @@ const DashboardCard = ({ card }) => {
                   return (
                     <div 
                       key={index} 
-                      className="p-3 rounded-lg border hover:bg-gray-700/30 transition-colors"
+                      className="py-2 px-4 w-[50%]  rounded-lg border hover:bg-gray-700/30 transition-colors"
                       style={{ 
                         backgroundColor: `${cardColorHex}10`,
                         borderColor: `${cardColorHex}20`
                       }}
                     >
+                      
+                      
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <div 
@@ -200,9 +185,9 @@ const DashboardCard = ({ card }) => {
                               background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
                             }}
                           ></div>
-                          <span className="text-xs text-gray-400">{detail.label}</span>
+                          <span className="text-xs text-gray-300">{detail.label}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-300">
+                        <span className="text-xs font-medium text-gray-300">
                           {detail.value}
                         </span>
                       </div>
@@ -210,14 +195,14 @@ const DashboardCard = ({ card }) => {
                       {/* Show hours value if available */}
                       {detail.hoursValue && (
                         <div className="ml-4 mt-1">
-                          <span className="text-xs text-gray-500">total hrs {detail.hoursValue}</span>
+                          <span className="text-xs text-gray-400">total hrs {detail.hoursValue}</span>
                         </div>
                       )}
                       
                       {/* Show market badges if available */}
                       {detail.subValue && detail.subValue !== 'No markets' && (
-                        <div className="ml-4 mt-2">
-                          <div className="text-xs text-gray-500 mb-1">markets:</div>
+                        <div className="ml-4 mt-1  flex space-x-2">
+                          <div className="text-xs text-gray-400 mb-1">markets:</div>
                           <div className="flex flex-wrap gap-1">
                             {detail.subValue.split(' ').map((market, marketIndex) => (
                               <div 

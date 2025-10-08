@@ -34,14 +34,14 @@ const Badge = ({
     reporter: 'bg-blue-default text-white',
     user: 'bg-green-success text-white',
     // Legacy variants for backward compatibility
-    blue: 'bg-blue-default text-white',
+    blue: 'bg-btn-primary text-white font-semibold',
     green: 'bg-green-success text-white',
     red: 'bg-red-error text-white',
     yellow: 'bg-warning text-white',
     purple: 'bg-btn-primary text-white'
   };
 
-  const baseClasses = 'inline-flex items-center font-normal rounded';
+  const baseClasses = 'inline-flex items-center font-medium rounded';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
   
   // Get the final variant class

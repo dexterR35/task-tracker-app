@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-table";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
-import TableCSVExportButton from "@/components/ui/TableCSVExportButton/TableCSVExportButton";
+import { exportToCSV } from "@/utils/exportData";
 import { createSelectionColumn } from "./tableColumns";
 
 
@@ -91,7 +91,9 @@ const TableControls = ({
   tableType,
   globalFilter,
   setGlobalFilter,
-  columns
+  columns,
+  handleCSVExport,
+  isExporting
 }) => (
   <div className="flex justify-between items-center">
     {/* Global Filter */}
@@ -151,7 +153,7 @@ const TableControls = ({
                 .map((column) => (
                   <label
                     key={column.id}
-                    className="flex items-center px-4 py-0.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors duration-150"
+                    className="flex items-center px-4 py-0.5 text-sm font-medium hover:bg-hover cursor-pointer transition-colors duration-150"
                   >
                     <input
                       name={`column-${column.id}`}
@@ -169,13 +171,17 @@ const TableControls = ({
         </div>
       )}
       
-      <TableCSVExportButton
-        data={table.getFilteredRowModel().rows.map((row) => row.original)}
-        columns={columns}
-        tableType={tableType}
-        buttonText="Export CSV"
+      <DynamicButton
+        variant="outline"
+        size="sm"
+        onClick={handleCSVExport}
+        disabled={isExporting}
+        iconName={isExporting ? "loading" : "download"}
+        iconPosition="left"
         className="font-semibold"
-      />
+      >
+        {isExporting ? 'Exporting...' : 'Export CSV'}
+      </DynamicButton>
     </div>
   </div>
 );
@@ -267,6 +273,11 @@ const TanStackTable = ({
   const [rowSelection, setRowSelection] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportType, setExportType] = useState(null);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStep, setExportStep] = useState('');
+
   // Memoized row selection handler
   const handleRowSelectionChange = useCallback((updater) => {
     const newSelection = typeof updater === "function" ? updater(rowSelection) : updater;
@@ -284,6 +295,7 @@ const TanStackTable = ({
   const handleClearSelection = useCallback(() => {
     setRowSelection({});
   }, []);
+
 
   // Memoize columns to prevent unnecessary re-renders
   const memoizedColumns = useMemo(() => {
@@ -336,6 +348,58 @@ const TanStackTable = ({
     },
   });
 
+  // Export handler with progress simulation
+  const handleCSVExport = useCallback(async () => {
+    setIsExporting(true);
+    setExportType('csv');
+    setExportProgress(0);
+    setExportStep('Preparing CSV export...');
+
+    try {
+      // Simulate progress steps
+      const progressSteps = [
+        { step: 'Preparing data...', progress: 10 },
+        { step: 'Processing rows...', progress: 30 },
+        { step: 'Formatting data...', progress: 50 },
+        { step: 'Generating CSV...', progress: 70 },
+        { step: 'Finalizing export...', progress: 90 },
+        { step: 'Saving file...', progress: 100 }
+      ];
+
+      // Process each step with delay
+      for (const { step, progress } of progressSteps) {
+        setExportStep(step);
+        setExportProgress(progress);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // Perform actual export
+      const success = exportToCSV(
+        table.getFilteredRowModel().rows.map((row) => row.original),
+        columns,
+        tableType,
+        { filename: `${tableType}_export_${new Date().toISOString().split('T')[0]}.csv` }
+      );
+
+      if (success) {
+        setExportStep('CSV exported successfully!');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        setExportStep('CSV export failed. Please try again.');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+    } catch (error) {
+      setExportStep('CSV export failed. Please try again.');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } finally {
+      setIsExporting(false);
+      setExportType(null);
+      setExportProgress(0);
+      setExportStep('');
+    }
+  }, [table, columns, tableType]);
+
   // Memoized values
   const selectedCount = getSelectedCount(rowSelection);
   const totalRows = table.getFilteredRowModel().rows.length;
@@ -362,6 +426,8 @@ const TanStackTable = ({
         globalFilter={globalFilter}
         setGlobalFilter={setGlobalFilter}
         columns={columns}
+        handleCSVExport={handleCSVExport}
+        isExporting={isExporting}
       />
 
       {/* Bulk Actions Bar */}
@@ -376,7 +442,7 @@ const TanStackTable = ({
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full">
-          <thead className="bg-soft py-2 h-14">
+          <thead className="bg-btn-primary py-2 h-14">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -384,7 +450,7 @@ const TanStackTable = ({
                     key={header.id}
                     className={`px-4 py-2 text-start font-semibold !capitalize tracking-wider ${
                       header.column.getCanSort()
-                        ? "cursor-pointer select-none hover:bg-primary/50"
+                        ? "cursor-pointer select-none hover:bg-hover"
                         : ""
                     } transition-colors duration-150`}
                     onClick={header.column.getToggleSortingHandler()}
@@ -412,10 +478,7 @@ const TanStackTable = ({
               return (
                 <tr
                   key={rowKey}
-                  className={`hover:bg-gray-50/80 dark:hover:bg-soft/30 cursor-pointer transition-colors duration-150 ${
-                    row.getIsSelected()
-                      ? "bg-blue-50/80 dark:bg-blue-900/20"
-                      : ""
+                  className={`hover:bg-hover cursor-pointer transition-colors duration-150 
                   }`}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -442,6 +505,73 @@ const TanStackTable = ({
         selectedCount={selectedCount}
         totalRows={totalRows}
       />
+
+      {/* Export Progress Modal */}
+      {isExporting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center">
+                <div className="relative inline-block mb-4">
+                  {/* Animated loading icon */}
+                  <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full animate-pulse"></div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Generating CSV Export
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {exportStep}
+                </p>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div 
+                    className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${exportProgress}%` }}
+                  ></div>
+                </div>
+                
+                {/* Progress percentage */}
+                <div className="text-center">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {exportProgress}% complete
+                  </span>
+                </div>
+              </div>
+              
+              {/* Processing details */}
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  Processing table data and formatting for CSV export...
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <div>• Table type: {tableType}</div>
+                  <div>• Rows: {table.getFilteredRowModel().rows.length}</div>
+                  <div>• Export type: CSV</div>
+                  <div>• Quality: High</div>
+                </div>
+              </div>
+              
+              {/* Success/Error message */}
+              {(exportStep.includes('successfully') || exportStep.includes('failed')) && (
+                <div className="text-center">
+                  <p className={`text-sm font-medium ${
+                    exportStep.includes('successfully') 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {exportStep.includes('successfully') ? '✅' : '❌'} {exportStep}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

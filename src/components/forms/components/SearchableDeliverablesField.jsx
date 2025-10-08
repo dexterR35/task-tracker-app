@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
+import Badge from '@/components/ui/Badge/Badge';
 
 const SearchableDeliverablesField = ({ 
   field, 
@@ -20,6 +21,24 @@ const SearchableDeliverablesField = ({
   const selectedDepartment = watch('departments') || '';
   const hasDeliverables = watch('_hasDeliverables') || false;
   const selectedOption = field.options?.find(option => option.value === selectedDeliverable);
+  
+  // Debug logging for deliverables field
+  if (selectedDeliverable) {
+    console.log('SearchableDeliverablesField - deliverables field:');
+    console.log('- selectedDeliverable:', selectedDeliverable);
+    console.log('- selectedOption:', selectedOption);
+    console.log('- available options:', field.options?.length || 0);
+  }
+
+  // Handle initial value when form is reset
+  useEffect(() => {
+    if (selectedDeliverable && field.options && field.options.length > 0) {
+      const option = field.options.find(opt => opt.value === selectedDeliverable);
+      if (option) {
+        console.log('SearchableDeliverablesField - Found matching option:', option);
+      }
+    }
+  }, [selectedDeliverable, field.options]);
   
   // Ensure default quantity is set when deliverable is selected
   useEffect(() => {

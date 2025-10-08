@@ -5,10 +5,9 @@ import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
-import CSVExportButton from "@/components/ui/CSVExportButton/CSVExportButton";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
-import { useUnifiedExport } from "@/hooks/useUnifiedExport";
+import { exportAnalyticsToCSV } from "@/utils/exportData";
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection (same as AdminDashboardPage)
@@ -43,11 +42,12 @@ const AnalyticsPage = () => {
     tasks: tasks?.length || 0
   });
 
-  // Use unified export hook (after tasks is defined)
-  const { exportCSV, exportPDF, isUnifiedExporting: isUnifiedExporting, exportProgress, exportStep, exportStatus } = useUnifiedExport(tasks, {
-    dataType: 'analytics',
-    tableType: 'analytics'
-  });
+  // Export state
+  const [isUnifiedExporting, setIsUnifiedExporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportType, setExportType] = useState(null);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStep, setExportStep] = useState('');
 
   // Get current month name for display
   const currentMonthName = currentMonth?.monthName || "Current Month";
@@ -83,6 +83,13 @@ const AnalyticsPage = () => {
 
   const handleDeselectAll = () => {
     setSelectedCards([]);
+  };
+
+  // Error handling function
+  const showError = (message) => {
+    console.error(message);
+    // You can replace this with a toast notification if you have one
+    alert(message);
   };
 
   // Export handlers
@@ -141,11 +148,25 @@ const AnalyticsPage = () => {
       return;
     }
 
+    setIsUnifiedExporting(true);
     setExportType('csv');
-    await exportCSV({
-      filename: `analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`
-    });
-    setExportType(null);
+    
+    try {
+      const success = exportAnalyticsToCSV(tasks, 'analytics', {
+        filename: `analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`
+      });
+      
+      if (success) {
+        console.log('Analytics CSV exported successfully!');
+      } else {
+        console.error('Analytics CSV export failed');
+      }
+    } catch (error) {
+      console.error('Analytics export error:', error);
+    } finally {
+      setIsUnifiedExporting(false);
+      setExportType(null);
+    }
   };
 
   if (isLoading || isInitialLoading) {
