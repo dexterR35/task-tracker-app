@@ -3,29 +3,23 @@ import { useSearchParams } from "react-router-dom";
 import { useAppData } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
-import TanStackTable from "@/components/Table/TanStackTable";
-import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
-import { useTableActions } from "@/hooks/useTableActions";
-import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import DashboardCard from "@/components/Card/DashboardCard";
 import { createDashboardCards } from "@/components/Card/cardConfig";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
-
 import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
 import { useReporterMetrics } from "@/hooks/useReporterMetrics";
 import { useTop3Calculations } from "@/hooks/useTop3Calculations";
-import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
+import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { showError, showAuthError } from "@/utils/toast";
 import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
   const [showTable, setShowTable] = useState(true);
   const [showCards, setShowCards] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Get auth functions separately
   const { canAccess } = useAuth();
@@ -33,37 +27,21 @@ const AdminDashboardPage = () => {
   const selectedUserId = searchParams.get("user") || "";
   const selectedReporterId = searchParams.get("reporter") || "";
 
-  // Get all data from useAppData hook (includes month selection)
+  // Get all data from useAppData hook
   const {
     user,
     users,
     reporters,
-    tasks, // Current display tasks (current or selected month)
-    availableMonths, // For dropdown options
-    currentMonth, // Current month info
-    selectedMonth, // Selected month info
-    isCurrentMonth, // Boolean check
-    isLoading, // Loading state for selected month
-    isInitialLoading, // Loading state for initial month data
-    isMonthDataReady, // Flag indicating month data is ready
-    error, // Error state
-    selectMonth, // Function to select month
-    resetToCurrentMonth, // Function to reset
-    deleteTask,
-  } = useAppData(); // Get all data from single hook
-
-  // Task creation is only allowed for current month with existing board
-  // Permission validation happens at API level
-  const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
-
-  // Always allow button click - permission checking happens at form submission
-  const handleCreateTask = () => {
-    if (!canCreateTasks) {
-      showError("Create Task is not available for this month");
-      return;
-    }
-    setShowCreateModal(true);
-  };
+    tasks,
+    availableMonths,
+    currentMonth,
+    selectedMonth,
+    isCurrentMonth,
+    isLoading,
+    isInitialLoading,
+    error,
+    selectMonth,
+  } = useAppData();
 
   // Get selected user name for display
   const selectedUser = users.find(
@@ -83,7 +61,7 @@ const AdminDashboardPage = () => {
   const handleUserSelect = useCallback(
     (userId) => {
       // Regular users can only select themselves
-      if (!isUserAdmin && userId && userId !== (user?.uid || user?.userUID)) {
+      if (!isUserAdmin && userId && userId !== user?.userUID) {
         return; // Prevent regular users from selecting other users
       }
       
@@ -101,13 +79,6 @@ const AdminDashboardPage = () => {
   // Handle reporter selection with role-based access control
   const handleReporterSelect = useCallback(
     (reporterId) => {
-      // Regular users can only select reporters they're assigned to
-      if (!isUserAdmin && reporterId) {
-        // TODO: Add logic to check if user is assigned to this reporter
-        // For now, allow all reporters for regular users
-        // This should be updated based on your user-reporter assignment logic
-      }
-      
       const currentParams = Object.fromEntries(searchParams.entries());
       if (!reporterId) {
         delete currentParams.reporter;
@@ -116,65 +87,9 @@ const AdminDashboardPage = () => {
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams, isUserAdmin]
+    [setSearchParams, searchParams]
   );
 
-  // Delete wrapper - simplified since useTableActions now handles permission errors
-  const handleTaskDeleteMutation = async (task) => {
-    if (!deleteTask) {
-      throw new Error('Delete task mutation not available');
-    }
-    
-    return await deleteTask({ 
-      monthId: task.monthId,  // Always use task's own monthId
-      taskId: task.id,
-      userData: user  // Pass user data for permission validation
-    });
-  };
-
-  // Use table actions hook
-  const {
-    showEditModal: showTableEditModal,
-    editingItem,
-    showDeleteConfirm,
-    itemToDelete,
-    rowActionId,
-    handleSelect,
-    handleEdit,
-    handleDelete,
-    confirmDelete,
-    closeDeleteModal,
-    handleEditSuccess,
-  } = useTableActions('task', {
-    getItemDisplayName: (task) => {
-      if (task?.data_task?.taskName) return task.data_task.taskName;
-      if (task?.data_task?.departments) {
-        const departments = task.data_task.departments;
-        return Array.isArray(departments) ? departments.join(', ') : departments;
-      }
-      return 'Unknown Task';
-    },
-    deleteMutation: handleTaskDeleteMutation,
-  });
-
-  // Handle edit task
-  const handleEditTask = (task) => {
-    setEditingTask(task);
-    setShowEditModal(true);
-  };
-
-  // Handle edit success
-  const handleEditTaskSuccess = () => {
-    setShowEditModal(false);
-    setEditingTask(null);
-    handleEditSuccess();
-  };
-
-  // Handle edit modal close
-  const handleEditModalClose = () => {
-    setShowEditModal(false);
-    setEditingTask(null);
-  };
 
   // Derive title based on context and role
   const title = isUserAdmin
@@ -194,116 +109,17 @@ const AdminDashboardPage = () => {
   // Get current month ID for filtering
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
-  // Get task columns for the table
-  const taskColumns = useTaskColumns(currentMonthId, reporters, user);
+  // Task creation is only allowed for current month with existing board
+  const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
 
-  // Extract stable user values to prevent unnecessary re-renders
-  const userUID = useMemo(() => user?.uid || user?.userUID, [user?.uid, user?.userUID]);
-  
-  //  reusable filtering function with role-based access control
-  const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId) => {
-      // Debug logging to see what tasks we're working with (commented out to reduce noise)
-      // console.log('getFilteredTasks called with:', {
-      //   totalTasks: tasks.length,
-      //   currentUser: user,
-      //   isUserAdmin,
-      //   selectedUserId,
-      //   selectedReporterId,
-      //   currentMonthId,
-      //   tasks: tasks.map(t => ({
-      //     id: t.id,
-      //     userUID: t.userUID,
-      //     createbyUID: t.createbyUID,
-      //     title: t.data_task?.taskName || 'No title'
-      //   }))
-      // });
-      
-      return tasks.filter((task) => {
-        // Always filter by month first
-        if (currentMonthId && task.monthId !== currentMonthId) return false;
-
-        // Role-based filtering: Regular users can only see their own tasks
-        if (!isUserAdmin) {
-          
-          // Check if this task belongs to the current user
-          // A task belongs to a user if:
-          // 1. The task.userUID matches the current user's UID, OR
-          // 2. The task.createbyUID matches the current user's UID
-          const isUserTask = userUID && (
-            task.userUID === userUID || 
-            task.createbyUID === userUID ||
-            task.userUID === user?.uid ||
-            task.createbyUID === user?.uid ||
-            // Also check if the task was created by the current user's email
-            task.createdByName === user?.name ||
-            task.createdByName === user?.email ||
-            // Check if the task has the user's email in any field
-            (task.data_task && (
-              task.data_task.createdByName === user?.name ||
-              task.data_task.createdByName === user?.email
-            ))
-          );
-          
-          // Debug logging to help troubleshoot
-          console.log('Task filtering debug:', {
-            currentUser: user,
-            userUID,
-            taskId: task.id,
-            taskUserUID: task.userUID,
-            taskCreatebyUID: task.createbyUID,
-            taskCreatedByName: task.createdByName,
-            taskDataCreatedByName: task.data_task?.createdByName,
-            isUserTask,
-            taskTitle: task.data_task?.taskName || 'No title',
-            fullTask: task
-          });
-          
-          // Regular users can ONLY see their own tasks
-          return isUserTask;
-        }
-
-        // If both user and reporter are selected, show tasks that match BOTH
-        if (selectedUserId && selectedReporterId) {
-          const matchesUser =
-            task.userUID === selectedUserId ||
-            task.createbyUID === selectedUserId;
-          const matchesReporter =
-            task.reporters === selectedReporterId ||
-            task.data_task?.reporters === selectedReporterId;
-          return matchesUser && matchesReporter;
-        }
-
-        // If only user is selected, show tasks for that user
-        if (selectedUserId && !selectedReporterId) {
-          return (
-            task.userUID === selectedUserId ||
-            task.createbyUID === selectedUserId
-          );
-        }
-
-        // If only reporter is selected, show tasks for that reporter
-        if (selectedReporterId && !selectedUserId) {
-          return (
-            task.reporters === selectedReporterId ||
-            task.data_task?.reporters === selectedReporterId
-          );
-        }
-
-        // If neither user nor reporter is selected, show tasks based on role
-        // Admin: show all tasks, Regular user: show only their tasks + reporter tasks
-        if (!isUserAdmin) {
-          const userUID = user?.uid || user?.userUID;
-          const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
-          const isReporterTask = task.reporters || task.data_task?.reporters;
-          return isUserTask || isReporterTask;
-        }
-
-        return true; // Admin sees all tasks
-      });
-    },
-    [isUserAdmin, userUID]
-  );
+  // Handle create task
+  const handleCreateTask = () => {
+    if (!canCreateTasks) {
+      showError("Create Task is not available for this month");
+      return;
+    }
+    setShowCreateModal(true);
+  };
 
   // Calculate reporter metrics using global tasks (reporters card shows all data)
   const reporterMetrics = useReporterMetrics(tasks, reporters, {});
@@ -375,30 +191,27 @@ const AdminDashboardPage = () => {
     includeAllData: true, // Include all products/markets for selected user card
   });
 
-  //  dashboard cards with hook-based metrics
+  // Dashboard cards with hook-based metrics
   const dashboardCards = useMemo(() => {
-    //  custom card data object that includes all calculated metrics
     const cardDataWithMetrics = {
       ...commonCardData,
-      top3Metrics: top3Metrics,
-      reportersMetrics: reportersMetrics,
-      videoMetrics: videoMetrics,
-      designMetrics: designMetrics,
-      devMetrics: devMetrics,
-      selectedUserMetrics: selectedUserMetrics, // For selected user card metrics
-      currentMonthId: currentMonthId, // Pass month ID for any remaining filtering needs
-      currentUser: user, // Pass current user for role-based task counting
+      top3Metrics,
+      reportersMetrics,
+      videoMetrics,
+      designMetrics,
+      devMetrics,
+      selectedUserMetrics,
+      currentMonthId,
+      currentUser: user,
     };
 
-    const cards = createDashboardCards(
+    return createDashboardCards(
       cardDataWithMetrics,
       selectedUserId,
       selectedUserName,
       selectedReporterId,
-      user // Pass current user for role-based access control
+      user
     );
-
-    return cards;
   }, [
     commonCardData,
     selectedUserId,
@@ -411,15 +224,15 @@ const AdminDashboardPage = () => {
     devMetrics,
     selectedUserMetrics,
     currentMonthId,
-    user, //  user for role-based access control
+    user,
   ]);
 
   // Small cards data preparation
   const smallCardsData = useMemo(
     () => ({
       ...commonCardData,
-      selectedMonth, // Add the full month object
-      currentMonth, // Add the full month object
+      selectedMonth,
+      currentMonth,
       selectedUserId,
       selectedUserName,
       selectedReporterId,
@@ -586,30 +399,7 @@ const AdminDashboardPage = () => {
                 })()}
               </h3>
               <p className="text-sm">
-               {(() => {
-                  const filteredTasks = getFilteredTasks(
-                    tasks,
-                    selectedUserId,
-                    selectedReporterId,
-                    currentMonthId
-                  );
-                  
-                  // For regular users, show their task count
-                  if (!isUserAdmin) {
-                    return `${filteredTasks.length} of your tasks`;
-                  }
-                  
-                  // For admin users, show filtered task count
-                  if (selectedUserId && selectedReporterId) {
-                    return `${filteredTasks.length} tasks (User + Reporter)`;
-                  } else if (selectedUserId) {
-                    return `${filteredTasks.length} tasks (User only)`;
-                  } else if (selectedReporterId) {
-                    return `${filteredTasks.length} tasks (Reporter only)`;
-                  } else {
-                    return `${filteredTasks.length} total tasks`;
-                  }
-                })()}
+                Task management and tracking
               </p>
             </div>
             <DynamicButton
@@ -629,37 +419,12 @@ const AdminDashboardPage = () => {
         {/* Table Content */}
         <div className="py-2">
           {showTable && (
-            <TanStackTable
-              data={getFilteredTasks(
-                tasks,
-                selectedUserId,
-                selectedReporterId,
-                currentMonthId
-              )}
-              columns={taskColumns}
-              tableType="tasks"
+            <TaskTable
+              selectedUserId={selectedUserId}
+              selectedReporterId={selectedReporterId}
+              selectedMonthId={currentMonthId}
               error={error}
               isLoading={isLoading || isInitialLoading}
-              onSelect={handleSelect}
-              onEdit={handleEditTask}
-              onDelete={handleDelete}
-              showPagination={true}
-              showFilters={true}
-              showColumnToggle={true}
-              pageSize={5}
-              enableSorting={true}
-              enableFiltering={true}
-              enablePagination={true}
-              enableColumnResizing={true}
-              enableRowSelection={false}
-              initialColumnVisibility={{
-                'isVip': false,        // Hide VIP column by default
-                'reworked': false,     // Hide Reworked column by default
-                'startDate': false,    // Hide Start Date column by default
-                'endDate': false,      // Hide End Date column by default
-                'observations': false  // Hide Observations column by default
-                
-              }}
             />
           )}
         </div>
@@ -685,44 +450,6 @@ const AdminDashboardPage = () => {
         }}
       />
 
-      {/* Edit Task Modal */}
-      <TaskFormModal
-        isOpen={showEditModal}
-        onClose={handleEditModalClose}
-        mode="edit"
-        task={editingTask}
-        monthId={currentMonthId}
-        onSuccess={handleEditTaskSuccess}
-        onError={(error) => {
-          // Handle permission errors
-          if (
-            error?.message?.includes("permission") ||
-            error?.message?.includes("User lacks required")
-          ) {
-            showAuthError("You do not have permission to edit tasks");
-          }
-        }}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={closeDeleteModal}
-        onConfirm={confirmDelete}
-        title="Delete Task"
-        message={`Are you sure you want to delete task "${(() => {
-          if (itemToDelete?.data_task?.taskName) return itemToDelete.data_task.taskName;
-          if (itemToDelete?.data_task?.departments) {
-            const departments = itemToDelete.data_task.departments;
-            return Array.isArray(departments) ? departments.join(', ') : departments;
-          }
-          return 'Unknown Task';
-        })()}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={rowActionId === itemToDelete?.id}
-      />
     </div>
   );
 };

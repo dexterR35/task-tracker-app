@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { logger } from '@/utils/logger';
+import Badge from '@/components/ui/Badge/Badge';
 
 const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, formValues }) => {
   const watchedValue = watch(field.name);
@@ -67,39 +68,37 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
         {/* Selected Items Display with Badges */}
         {selectedValues.length > 0 && (
           <div className="selected-items-container mt-3">
-            <div className="text-xs text-gray-500 mb-2">Selected {field.label.toLowerCase()}:</div>
+            <div className="text-xs text-gray-300 mb-2">Selected {field.label.toLowerCase()}:</div>
             <div className="flex flex-wrap gap-2">
               {selectedValues.map((item, index) => {
                 const option = field.options?.find(opt => opt.value === item);
                 const label = option?.label || item;
                 
-                // Get color based on field type
-                const getBadgeColor = () => {
-                  if (field.name === 'markets') return '#3b82f6'; // Blue for markets
-                  if (field.name === 'aiModels') return '#10b981'; // Green for AI models
-                  if (field.name === 'products') return '#f59e0b'; // Orange for products
-                  if (field.name === 'departments') return '#8b5cf6'; // Purple for departments
-                  return '#6b7280'; // Gray default
+                // Get variant based on field type
+                const getBadgeVariant = () => {
+                  if (field.name === 'markets') return 'crimson'; // Amber for markets
+                  if (field.name === 'aiModels') return 'crimson'; // Green for AI models
+                  return 'default'; // Gray default
                 };
                 
-                const badgeColor = getBadgeColor();
+                const badgeVariant = getBadgeVariant();
                 
                 return (
-                  <div
+                  <Badge
                     key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
-                    style={{ backgroundColor: badgeColor }}
+                    variant={badgeVariant}
+                    size="sm"
+                    className="inline-flex items-center gap-1"
                   >
-                    <span>{label}</span>
+                    <span className="text-inherit">{label}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveValue(index)}
-                      className="ml-2 hover:opacity-75 transition-opacity"
-                      style={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                      className="ml-1 hover:opacity-75 transition-opacity text-inherit"
                     >
                       ×
                     </button>
-                  </div>
+                  </Badge>
                 );
               })}
             </div>

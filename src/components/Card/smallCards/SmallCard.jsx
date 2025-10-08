@@ -157,7 +157,7 @@ const SmallCard = ({ card }) => {
   );
 };
 
-import { COLOR_SYSTEM } from '@/utils/colorSystem';
+// import { COLOR_SYSTEM } from '@/utils/colorSystem';
 
 // Convert card color to hex using the new color system with better colors
 const getCardColorHex = (color) => {

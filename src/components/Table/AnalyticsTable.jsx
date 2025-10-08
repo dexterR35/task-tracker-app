@@ -1,4 +1,8 @@
-import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
+import React, { useMemo } from "react";
+import TanStackTable from "@/components/Table/TanStackTable";
+import { createColumnHelper } from "@tanstack/react-table";
+
+const columnHelper = createColumnHelper();
 
 const AnalyticsTable = ({ 
   data, 
@@ -7,63 +11,35 @@ const AnalyticsTable = ({
   className = "",
   isLoading = false
 }) => {
-  if (isLoading) {
-    return (
-      <div className={`card-small ${className}`}>
-        <h3 className="card-title text-base mb-4">{title}</h3>
-        <SkeletonTable rows={4} />
-      </div>
+  // Convert columns to TanStack format
+  const tableColumns = useMemo(() => {
+    return columns.map(column => 
+      columnHelper.accessor(column.key, {
+        header: column.header,
+        cell: ({ getValue, row }) => {
+          const value = getValue();
+          if (column.render) {
+            return column.render(value, row.original);
+          }
+          return value;
+        },
+        size: column.size || 100,
+      })
     );
-  }
-
-  if (!data || data.length === 0) {
-    return (
-      <div className={`card-small ${className}`}>
-        <h3 className="card-title text-base mb-4">{title}</h3>
-        <div className="text-center text-gray-500 dark:text-gray-400 text-sm font-medium">No data available</div>
-      </div>
-    );
-  }
+  }, [columns]);
 
   return (
     <div className={`card-small ${className}`}>
       <h3 className="card-title text-base mb-4">{title}</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-gray-200/60 dark:border-gray-600/60">
-              {columns.map((column, index) => (
-                <th 
-                  key={index}
-                  className={`py-3 px-2 text-left font-semibold text-gray-700 dark:text-gray-300 tracking-wide ${
-                    column.align === 'center' ? 'text-center' : 
-                    column.align === 'right' ? 'text-right' : 'text-left'
-                  }`}
-                >
-                  {column.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, rowIndex) => (
-              <tr key={rowIndex} className="border-b border-gray-100/60 dark:border-gray-700/60 last:border-b-0 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors duration-200">
-                {columns.map((column, colIndex) => (
-                  <td 
-                    key={colIndex}
-                    className={`py-3 px-2 text-gray-900 dark:text-white ${
-                      column.align === 'center' ? 'text-center' : 
-                      column.align === 'right' ? 'text-right' : 'text-left'
-                    } ${column.bold ? 'font-bold' : 'font-semibold'} ${column.highlight ? 'text-blue-600 dark:text-blue-400' : ''}`}
-                  >
-                    {column.render ? column.render(row[column.key], row) : row[column.key]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <TanStackTable
+        data={data || []}
+        columns={tableColumns}
+        tableType="analytics"
+        isLoading={isLoading}
+        className="text-xs"
+        enableRowSelection={false}
+        showBulkActions={false}
+      />
     </div>
   );
 };

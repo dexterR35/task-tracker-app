@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./styles/colorSystem.css";
+
 
 /* Modern CSS cascade layers for better control */
 @layer theme, base, components, utilities;
@@ -74,8 +74,9 @@
   --color-hover: #c10f29;
   --color-title: #0f3cd9;
   --color-focus: #aebfff;
-
-  --color-smallCard: #1d1f23;
+  --color-soft: #3d48c9; /* blue-soft */
+  --color-smallCard: #202735;
+  --color-smallCard-white: #e8edff;
 
   /* ===== SPACING SCALE ===== */
   --spacing: 0.25rem; /* 4px base unit */
@@ -325,6 +326,9 @@
   }
   ::placeholder {
     @apply text-gray-500;
+  }
+  td a,td  {
+    @apply dark:!text-blue-100
   }
 
   input[type="checkbox"] {

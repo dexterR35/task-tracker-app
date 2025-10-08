@@ -166,8 +166,10 @@ const TaskForm = ({
   // Reset form when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData && mode === 'edit') {
+      console.log('TaskForm - Edit mode: initialData received:', initialData);
       // Handle nested data_task structure from database
       const taskData = initialData.data_task || initialData;
+      console.log('TaskForm - Edit mode: processed taskData:', taskData);
       
       // Reconstruct jiraLink from taskName for editing - ensure taskName is uppercase
       const jiraLink = taskData.taskName ? 
@@ -210,7 +212,7 @@ const TaskForm = ({
       const formattedEndDate = formatDate(taskData.endDate);
       
       
-      reset({
+      const formData = {
         jiraLink: jiraLink,
         products: taskData.products || '',
         departments: Array.isArray(taskData.departments) ? taskData.departments[0] || '' : taskData.departments || '',
@@ -239,7 +241,10 @@ const TaskForm = ({
         isVip: taskData.isVip || false,
         reworked: taskData.reworked || false,
         observations: taskData.observations || ''
-      });
+      };
+      
+      console.log('TaskForm - Edit mode: form data being set:', formData);
+      reset(formData);
       
       
     }
@@ -260,12 +265,7 @@ const TaskForm = ({
         }
       }
       
-      // Validate deliverable quantities
-      console.log('Form submission - data._hasDeliverables:', data._hasDeliverables);
-      console.log('Form submission - data.deliverables:', data.deliverables);
-      console.log('Form submission - data.deliverableQuantities:', data.deliverableQuantities);
-      console.log('Form submission - deliverablesOptions:', deliverablesOptions);
-      
+
       if (data._hasDeliverables && data.deliverables && data.deliverables !== '') {
         const deliverable = deliverablesOptions.find(d => d.value === data.deliverables);
         console.log('Form submission - found deliverable:', deliverable);
@@ -432,11 +432,7 @@ const TaskForm = ({
         email: reporter.email
       })) || [];
       
-      console.log('TaskForm - Creating reporter options:', reporterOptions);
-      console.log('TaskForm - Raw reporters data:', reporters);
-      console.log('TaskForm - First reporter example:', reporters?.[0]);
-      console.log('TaskForm - First option example:', reporterOptions?.[0]);
-      
+    
       return {
         ...field,
         options: reporterOptions

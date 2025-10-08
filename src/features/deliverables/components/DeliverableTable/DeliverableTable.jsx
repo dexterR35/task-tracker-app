@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
 import { useAppData } from '@/hooks/useAppData';
 import { isUserAdmin } from '@/features/utils/authUtils';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import TanStackTable from '@/components/Table/TanStackTable';
 import { SkeletonTable } from '@/components/ui/Skeleton/Skeleton';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
@@ -33,17 +33,7 @@ const DeliverableTable = ({
   const rawDeliverablesData = propDeliverables || globalDeliverables;
   const deliverablesData = rawDeliverablesData || [];
   
-  // Debug logging to track data changes
-  useEffect(() => {
-    if (deliverablesData) {
-      console.log('📋 DeliverableTable: All deliverables data:', deliverablesData);
-      console.log('📊 Total count:', deliverablesData.length);
-      deliverablesData.forEach((deliverable, index) => {
-        console.log(`  ${index + 1}. ${deliverable.name} (ID: ${deliverable.id || 'no-id'}) - Department: ${deliverable.department}`);
-      });
-    }
-  }, [deliverablesData]);
-  
+
   // Notify parent component about count changes
   useEffect(() => {
     if (onCountChange) {
@@ -200,35 +190,6 @@ const DeliverableTable = ({
           ),
           size: 140,
         },
-        {
-          id: 'actions',
-          header: 'Actions',
-          cell: ({ row }) => (
-            <div className="flex items-center space-x-2">
-              <DynamicButton
-                variant="outline"
-                size="sm"
-                onClick={() => handleEdit(row.original)}
-                disabled={!canManageDeliverables}
-                iconName="edit"
-                iconPosition="left"
-              >
-                Edit
-              </DynamicButton>
-              <DynamicButton
-                variant="danger"
-                size="sm"
-                onClick={() => handleDelete(row.original)}
-                disabled={!canManageDeliverables}
-                iconName="trash"
-                iconPosition="left"
-              >
-                Delete
-              </DynamicButton>
-            </div>
-          ),
-          size: 150,
-        }
       ];
     }
 
@@ -301,10 +262,55 @@ const DeliverableTable = ({
         tableType="deliverables"
         isLoading={isLoading}
         error={deliverablesError}
-        showPagination={true}
-        showFilters={true}
-        showColumnToggle={true}
-        showActions={false}
+        enableRowSelection={canManageDeliverables}
+        showBulkActions={canManageDeliverables}
+        bulkActions={canManageDeliverables ? [
+          {
+            label: "View Selected",
+            icon: "edit",
+            variant: "primary",
+            onClick: (selectedDeliverables) => {
+              if (selectedDeliverables.length === 1) {
+                handleSelect(selectedDeliverables[0]);
+              } else {
+                showSuccess(`Viewing ${selectedDeliverables.length} selected deliverables`);
+              }
+            }
+          },
+          {
+            label: "Edit Selected",
+            icon: "edit",
+            variant: "edit",
+            onClick: (selectedDeliverables) => {
+              if (selectedDeliverables.length === 1) {
+                handleEdit(selectedDeliverables[0]);
+              } else {
+                showSuccess(`Editing ${selectedDeliverables.length} selected deliverables`);
+              }
+            }
+          },
+          {
+            label: "Delete Selected",
+            icon: "delete",
+            variant: "danger",
+            onClick: async (selectedDeliverables) => {
+              if (selectedDeliverables.length === 1) {
+                handleDelete(selectedDeliverables[0]);
+              } else {
+                // Handle bulk delete
+                try {
+                  for (const deliverable of selectedDeliverables) {
+                    await handleDeleteDeliverable(deliverable);
+                  }
+                  showSuccess(`Deleted ${selectedDeliverables.length} deliverables successfully!`);
+                  refetchDeliverables?.();
+                } catch (error) {
+                  showError(`Failed to delete some deliverables: ${error.message}`);
+                }
+              }
+            }
+          }
+        ] : []}
         className="deliverable-table"
       />
 

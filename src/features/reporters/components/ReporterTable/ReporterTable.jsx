@@ -1,8 +1,7 @@
 import React from "react";
 import { useDeleteReporterMutation } from "@/features/reporters/reportersApi";
 import { getColumns } from "@/components/Table/tableColumns.jsx";
-import { showError } from "@/utils/toast.js";
-import { logger } from "@/utils/logger.js";
+import { showError, showSuccess } from "@/utils/toast.js";
 import TanStackTable from "@/components/Table/TanStackTable";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
@@ -18,7 +17,7 @@ const ReporterTable = ({
   // API hooks for reporter CRUD
   const [deleteReporter] = useDeleteReporterMutation();
   
-  // Get reporter columns - no monthId needed for reporters
+  // Get reporter columns
   const reporterColumns = getColumns('reporters');
   
   
@@ -52,26 +51,65 @@ const ReporterTable = ({
   return (
     <div className={className}>
       <TanStackTable
-        data={reporters}
+        data={reporters || []}
         columns={reporterColumns}
         tableType="reporters"
         error={reportersError}
+        className=""
+        isLoading={isLoading}
+        enableRowSelection={true}
+        showBulkActions={true}
+        bulkActions={[
+          {
+            label: "View Selected",
+            icon: "edit",
+            variant: "primary",
+            onClick: (selectedReporters) => {
+              if (selectedReporters.length === 1) {
+                handleSelect(selectedReporters[0]);
+              } else {
+                showSuccess(`Viewing ${selectedReporters.length} selected reporters`);
+              }
+            }
+          },
+          {
+            label: "Edit Selected",
+            icon: "edit",
+            variant: "edit",
+            onClick: (selectedReporters) => {
+              if (selectedReporters.length === 1) {
+                handleEdit(selectedReporters[0]);
+              } else {
+                showSuccess(`Editing ${selectedReporters.length} selected reporters`);
+              }
+            }
+          },
+          {
+            label: "Delete Selected",
+            icon: "delete",
+            variant: "danger",
+            onClick: async (selectedReporters) => {
+              if (selectedReporters.length === 1) {
+                handleDelete(selectedReporters[0]);
+              } else {
+                try {
+                  for (const reporter of selectedReporters) {
+                    await handleReporterDeleteMutation(reporter);
+                  }
+                  showSuccess(`Deleted ${selectedReporters.length} reporters successfully!`);
+                } catch (error) {
+                  showError(`Failed to delete some reporters: ${error.message}`);
+                }
+              }
+            }
+          }
+        ]}
         onSelect={handleSelect}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        showPagination={true}
-        showFilters={true}
-        showColumnToggle={true}
-        pageSize={5}
-        enableSorting={true}
-        enableFiltering={true}
-        enablePagination={true}
-        enableColumnResizing={true}
-        enableRowSelection={false}
         initialColumnVisibility={{
-          createdAt: false // Hide "Created At" column by default
+          createdAt: false
         }}
-        isLoading={isLoading} // Pass loading state
       />
 
       {/* Edit Modal */}

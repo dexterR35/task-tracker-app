@@ -166,42 +166,77 @@ export const SMALL_CARD_CONFIGS = {
     icon: Icons.generic.user,
     color: (data) => getCardColor('user-profile', data),
     getValue: (data) => {
-      // Calculate total tasks for current user + reporter if selected
-      const userUID = data.currentUser?.uid || data.currentUser?.userUID;
-      const selectedReporterId = data.selectedReporterId;
-      
       if (!data.tasks) return "0";
       
-      const userTasks = data.tasks.filter(task => {
-        // User's own tasks
-        const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
+      const selectedUserId = data.selectedUserId;
+      const selectedReporterId = data.selectedReporterId;
+      const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
+      
+      // Filter tasks based on selections
+      const filteredTasks = data.tasks.filter(task => {
+        // Always filter by month first
+        if (currentMonthId && task.monthId !== currentMonthId) return false;
         
-        // Reporter tasks if reporter is selected
-        const isReporterTask = selectedReporterId && (
-          task.reporters === selectedReporterId || 
-          task.data_task?.reporters === selectedReporterId
-        );
+        // If both user and reporter are selected, show tasks that match BOTH
+        if (selectedUserId && selectedReporterId) {
+          const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+          const matchesReporter = task.reporterUID === selectedReporterId || task.data_task?.reporterUID === selectedReporterId;
+          return matchesUser && matchesReporter;
+        }
         
-        return isUserTask || isReporterTask;
+        // If only user is selected, show tasks for that user
+        if (selectedUserId && !selectedReporterId) {
+          return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+        }
+        
+        // If only reporter is selected, show tasks for that reporter
+        if (selectedReporterId && !selectedUserId) {
+          return task.reporterUID === selectedReporterId || task.data_task?.reporterUID === selectedReporterId;
+        }
+        
+        // If no selections, show current user's tasks
+        const userUID = data.currentUser?.userUID;
+        return userUID && (task.userUID === userUID || task.createbyUID === userUID);
       });
       
-      return userTasks.length.toString();
+      return filteredTasks.length.toString();
     },
     getStatus: (data) => (data.currentUser?.role || "user").toLowerCase(),
-    getDetails: (data) => [
-      {
-        label: "Name",
-        value: data.currentUser?.name || "N/A",
-      },
-      {
-        label: "Email",
-        value: data.currentUser?.email || "N/A",
-      },
-      {
-        label: "Department", 
-        value: data.currentUser?.occupation || "N/A",
-      },
-    ],
+    getDetails: (data) => {
+      const details = [];
+      
+      // Show selected user info if user is selected
+      if (data.selectedUserId) {
+        const selectedUser = data.users?.find(u => (u.userUID || u.id) === data.selectedUserId);
+        details.push({
+          label: "Selected User",
+          value: selectedUser?.name || selectedUser?.email || "Unknown User",
+        });
+      }
+      
+      // Show selected reporter info if reporter is selected
+      if (data.selectedReporterId) {
+        const selectedReporter = data.reporters?.find(r => (r.id || r.uid) === data.selectedReporterId);
+        details.push({
+          label: "Selected Reporter",
+          value: selectedReporter?.name || selectedReporter?.reporterName || "Unknown Reporter",
+        });
+      }
+      
+      // Show current user info
+      details.push({
+        label: "Current User",
+        value: data.currentUser?.name || data.currentUser?.email || "N/A",
+      });
+      
+      // Show filter status
+      details.push({
+        label: "Filter Status",
+        value: data.selectedUserId || data.selectedReporterId ? "Filtered" : "All Tasks",
+      });
+      
+      return details;
+    },
     getContent: (data) => (
       <div className="mb-6">
         <DynamicButton

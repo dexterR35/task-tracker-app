@@ -1,6 +1,6 @@
 import React from "react";
 import { getColumns } from "@/components/Table/tableColumns.jsx";
-import { showError } from "@/utils/toast.js";
+import { showError, showSuccess } from "@/utils/toast.js";
 import { logger } from "@/utils/logger.js";
 import TanStackTable from "@/components/Table/TanStackTable";
 import { useTableActions } from "@/hooks/useTableActions";
@@ -12,7 +12,7 @@ const UserTable = ({
   error: usersError = null,
   isLoading = false, // Loading state
 }) => {
-  // Get user columns with monthId for date formatting
+  // Get user columns
   const userColumns = getColumns('users', monthId);
   
   // Use table actions hook with disabled functionality
@@ -35,27 +35,16 @@ const UserTable = ({
 
   return (
     <TanStackTable
-      className={className}
-      data={users}
+      data={users || []}
       columns={userColumns}
       tableType="users"
       error={usersError}
-      onSelect={handleSelect}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      showPagination={true}
-      showFilters={true}
-      showColumnToggle={true}
-      pageSize={5}
-      enableSorting={true}
-      enableFiltering={true}
-      enablePagination={true}
-      enableColumnResizing={true}
+      className={className}
+      isLoading={isLoading}
       enableRowSelection={false}
       initialColumnVisibility={{
-        createdAt: false // Hide "Created At" column by default
+        createdAt: false
       }}
-      isLoading={isLoading} // Pass loading state
     />
   );
 };

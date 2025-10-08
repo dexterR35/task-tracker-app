@@ -2,20 +2,85 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
+import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate } from '@/utils/dateUtils';
 import { useDeliverableCalculation } from '@/hooks/useDeliverableCalculation';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
-import { useAuth } from '@/features/auth/hooks/useAuth';
-
 
 const columnHelper = createColumnHelper();
 
-// Component that uses the hook directly
+// Selection and Action Column Functions
+export const createSelectionColumn = () => 
+  columnHelper.display({
+    id: "select",
+    header: () => (
+      <span >Select</span>
+    ),
+    size: 30,
+    cell: ({ row }) => (
+      <input
+        name={`select-row-${row.id}`}
+        id={`select-row-${row.id}`}
+        type="checkbox"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  });
+
+
+// Constants
+const DATE_FORMATS = {
+  SHORT: 'dd MMM yyyy',
+  LONG: 'dd MMM yyyy, HH:mm'
+};
+
+// Badge variants moved to Badge component
+
+// Utility functions
+const formatDateCell = (value, format = DATE_FORMATS.SHORT, showTime = true) => {
+  if (!value) return '-';
+  return formatDate(value, format, showTime);
+};
+
+// getTimeVariant moved to Badge component
+
+const getDurationDays = (startDate, endDate) => {
+  if (!startDate || !endDate) return null;
+  
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Check if dates are valid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+    
+    // Calculate duration from start to end (not absolute difference)
+    const diffTime = end - start;
+    
+    // If end is before start, return 0
+    if (diffTime < 0) return 0;
+    
+    // Return days (including partial days)
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  } catch {
+    return null;
+  }
+};
+
+// Common column cell helpers
+const createSimpleCell = (fallback = '-') => ({ getValue }) => getValue() || fallback;
+const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => formatDateCell(getValue(), format);
+const createBooleanCell = (trueText = "✓", falseText = "-") => ({ getValue }) => getValue() ? trueText : falseText;
+
+// Optimized DeliverableCalculationCell component
 const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
   const { deliverablesOptions = [] } = useDeliverablesOptions();
   const { deliverablesList, totalTime } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
   
-  if (!deliverablesList || deliverablesList.length === 0) {
+  if (!deliverablesList?.length) {
     return <span className="text-gray-500 dark:text-gray-400">No deliverables</span>;
   }
   
@@ -70,82 +135,67 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
   );
 };
 
-// Tasks Table Columns - Memoized to prevent re-renders
-export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
-  // Ensure reporters is always an array to prevent hooks issues
-  const stableReporters = Array.isArray(reporters) ? reporters : [];
-  
-  // Check if user is admin for role-based column content
-  const isUserAdmin = user?.role === 'admin';
-  
-  return useMemo(() => [
+// Task column definitions
+const createTaskColumns = (isUserAdmin, stableReporters) => [
   columnHelper.accessor('data_task.taskName', {
     header: 'Jira Link',
     cell: ({ getValue, row }) => {
-      const taskName = getValue() || row.original?.data_task?.taskName || null;
+      const taskName = getValue() || row.original?.data_task?.taskName;
       if (!taskName) return 'No Link';
-      
-      const jiraUrl = `https://gmrd.atlassian.net/browse/${taskName}`;
       
       return (
         <a 
-          href={jiraUrl} 
+          href={`https://gmrd.atlassian.net/browse/${taskName}`}
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800 underline"
+          className="underline"
         >
           {taskName}
         </a>
       );
     },
-    size: 200,
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.departments, {
     id: 'departments',
     header: 'Department',
     cell: ({ getValue, row }) => {
-      // Check if data_task exists
       if (!row.original?.data_task) {
         return <span className="text-red-500 text-xs">❌ No data_task</span>;
       }
       
       const value = getValue();
-      // Handle both string and array formats
       if (Array.isArray(value)) {
         return value.length > 0 ? value.join(', ') : <span className="text-red-500 text-xs">❌ Missing</span>;
       }
       return value || <span className="text-red-500 text-xs">❌ Missing</span>;
     },
-    size: 150,
+    size: 100,
   }),
   columnHelper.accessor((row) => row.data_task?.products, {
     id: 'products',
     header: 'Product',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      return value || '-';
-    },
-    size: 120,
+    cell: createSimpleCell(),
+    size: 100,
   }),
   columnHelper.accessor((row) => row.data_task?.markets, {
     id: 'markets',
     header: 'Markets',
     cell: ({ getValue }) => {
       const markets = getValue();
-      
-      if (!markets || !Array.isArray(markets) || markets.length === 0) return '-';
+      if (!markets?.length) return '-';
       
       return (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} variant="blue" size="sm">
+            <Badge key={index} variant="amber" size="sm">
               {market}
             </Badge>
           ))}
         </div>
       );
     },
-    size: 200,
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.aiUsed?.[0]?.aiModels, {
     id: 'aiModels',
@@ -154,13 +204,13 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
       const aiModels = getValue();
       const aiTime = row.original?.data_task?.aiUsed?.[0]?.aiTime;
       
-      if (!aiModels || !Array.isArray(aiModels) || aiModels.length === 0) return '-';
+      if (!aiModels?.length) return '-';
       
       return (
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} variant="purple" size="sm">
+              <Badge key={index} variant="amber" size="sm">
                 {model}
               </Badge>
             ))}
@@ -173,21 +223,18 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
         </div>
       );
     },
-    size: 200,
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.deliverablesUsed, {
     id: 'deliverables',
     header: 'Deliverables',
-    cell: ({ getValue, row }) => {
-      const deliverablesUsed = getValue();
-      
-      // Use the hook directly
-      return <DeliverableCalculationCell 
-        deliverablesUsed={deliverablesUsed || row.original?.data_task}
+    cell: ({ getValue, row }) => (
+      <DeliverableCalculationCell 
+        deliverablesUsed={getValue() || row.original?.data_task}
         isUserAdmin={isUserAdmin}
-      />;
-    },
-    size: 200,
+      />
+    ),
+    size: 150,
   }),
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: 'reporters',
@@ -195,20 +242,17 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
     cell: ({ getValue }) => {
       const reporterId = getValue();
       if (!reporterId) return '-';
-      // Check ONLY reporterUID since that's what we're using as the value (case-insensitive)
+      
       const reporter = stableReporters.find(r => 
-        r.reporterUID && r.reporterUID.toLowerCase() === reporterId.toLowerCase()
+        r.reporterUID?.toLowerCase() === reporterId.toLowerCase()
       );
       return reporter?.name || reporterId;
     },
-    size: 60,
+    size: 120,
   }),
   columnHelper.accessor('createdByName', {
     header: 'Created',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      return value || '-';
-    },
+    cell: createSimpleCell(),
     size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.timeInHours, {
@@ -218,26 +262,18 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
       const value = getValue();
       if (!value) return '-';
       
-      // Color code based on hours
-      const variant = value <= 2 ? 'success' : value <= 8 ? 'warning' : 'error';
-      
       return (
-        <Badge variant={variant} size="sm">
+        <Badge variant="crimson" size="sm">
           {value}h
         </Badge>
       );
     },
     size: 80,
   }),
-
   columnHelper.accessor('createdAt', {
     header: 'Date',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return '-';
-      return formatDate(value, 'dd MMM yyyy, HH:mm', true); 
-    },
-    size: 60,
+    cell: createDateCell(DATE_FORMATS.LONG),
+    size: 150,
   }),
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: 'done',
@@ -246,25 +282,21 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
       const startDate = getValue();
       const endDate = row.original?.data_task?.endDate;
       
-      if (!startDate || !endDate) return '-';
+      const days = getDurationDays(startDate, endDate);
       
-      try {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Color code based on duration
-        const variant = diffDays <= 1 ? 'success' : diffDays <= 3 ? 'warning' : 'error';
-        
+      if (days === 0) {
         return (
-          <Badge variant={variant} size="sm">
-            {diffDays} days
+          <Badge variant="amber" size="sm">
+            Same day
           </Badge>
         );
-      } catch {
-        return '-';
       }
+
+      return (
+        <Badge variant="crimson" size="sm">
+          {days} days
+        </Badge>
+      );
     },
     size: 80,
   }),
@@ -293,44 +325,39 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: 'startDate',
     header: 'Start Date',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return '-';
-      return formatDate(value, 'dd MMM yyyy, HH:mm', true);
-    },
-    size: 150,
+    cell: createDateCell(DATE_FORMATS.LONG),
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.endDate, {
     id: 'endDate',
     header: 'End Date',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return '-';
-      return formatDate(value, 'dd MMM yyyy, HH:mm', true);
-    },
-    size: 150,
+    cell: createDateCell(DATE_FORMATS.LONG),
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.isVip, {
     id: 'isVip',
     header: 'VIP',
-    cell: ({ getValue }) => {
-      return getValue() ? "✓" : "-";
-    },
+    cell: createBooleanCell(),
     size: 40,
   }),
   columnHelper.accessor((row) => row.data_task?.reworked, {
     id: 'reworked',
     header: 'ReWorked',
-    cell: ({ getValue }) => {
-      return getValue() ? "✓" : "-";
-    },
+    cell: createBooleanCell(),
     size: 50,
   }),
-], [monthId, stableReporters]);
+];
+
+// Tasks Table Columns - Memoized to prevent re-renders
+export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
+  const stableReporters = Array.isArray(reporters) ? reporters : [];
+  const isUserAdmin = user?.role === 'admin';
+  
+  return useMemo(() => createTaskColumns(isUserAdmin, stableReporters), [monthId, stableReporters, isUserAdmin]);
 };
 
-// Users Table Columns
-export const getUserColumns = (monthId = null) => [
+// User column definitions
+const createUserColumns = () => [
   columnHelper.accessor('name', {
     header: 'User',
     cell: ({ row }) => (
@@ -345,32 +372,16 @@ export const getUserColumns = (monthId = null) => [
   }),
   columnHelper.accessor('email', {
     header: 'Email',
-    cell: ({ getValue }) => {
-      return getValue();
-    },
+    cell: createSimpleCell(),
     size: 200,
   }),
   columnHelper.accessor('role', {
     header: 'Role',
     cell: ({ getValue }) => {
-      const role = getValue();
-      const getRoleVariant = (role) => {
-        switch (role) {
-          case 'admin':
-            return 'red';
-          case 'reporter':
-            return 'blue';
-          case 'user':
-          default:
-            return 'green';
-        }
-      };
-      
-      const displayRole = role || 'user';
-      
+      const role = getValue() || 'user';
       return (
-        <Badge variant={getRoleVariant(displayRole)} size="sm">
-          {displayRole}
+        <Badge variant={role} size="sm">
+          {role}
         </Badge>
       );
     },
@@ -380,7 +391,7 @@ export const getUserColumns = (monthId = null) => [
     header: 'Permissions',
     cell: ({ getValue }) => {
       const permissions = getValue();
-      if (!permissions || !Array.isArray(permissions) || permissions.length === 0) {
+      if (!permissions?.length) {
         return <span className="text-gray-500">No permissions</span>;
       }
       
@@ -403,31 +414,24 @@ export const getUserColumns = (monthId = null) => [
   }),
   columnHelper.accessor('occupation', {
     header: 'Department',
-    cell: ({ getValue }) => {
-      return getValue();
-    },
+    cell: createSimpleCell(),
     size: 150,
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return "-";
-      return formatDate(value, 'dd MMM yyyy', true); // Romanian locale
-    },
+    cell: createDateCell(),
     size: 120,
   }),
 ];
 
-
-// Reporters Table Columns
-export const getReporterColumns = () => [
+// Reporter column definitions
+const createReporterColumns = () => [
   columnHelper.accessor('name', {
     header: 'Reporter',
     cell: ({ row }) => (
       <Avatar 
         user={row.original}
-        gradient="from-green-500 to-green-600"
+        gradient="from-red-error to-red-700"
         showEmail={true}
         size="md"
       />
@@ -436,53 +440,42 @@ export const getReporterColumns = () => [
   }),
   columnHelper.accessor('email', {
     header: 'Email',
-    cell: ({ getValue }) => {
-      return getValue();
-    },
+    cell: createSimpleCell(),
     size: 200,
   }),
   columnHelper.accessor('departament', {
     header: 'Department',
-    cell: ({ getValue }) => {
-      return getValue();
-    },
+    cell: createSimpleCell(),
     size: 150,
   }),
   columnHelper.accessor('country', {
     header: 'Country',
-    cell: ({ getValue }) => {
-      return getValue();
-    },
+    cell: createSimpleCell(),
     size: 100,
   }),
   columnHelper.accessor('channelName', {
     header: 'Channel',
-    cell: ({ getValue }) => {
-      return getValue() || '-';
-    },
+    cell: createSimpleCell(),
     size: 120,
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return "-";
-      return formatDate(value, 'dd MMM yyyy', true); // Romanian locale
-    },
+    cell: createDateCell(),
     size: 120,
   }),
-  
 ];
-// Column factory function
-export const getColumns = (tableType, monthId = null, reporters = []) => {
+
+// Unified column factory function for all tables
+export const getColumns = (tableType, monthId = null, reporters = [], user = null) => {
   switch (tableType) {
     case 'tasks':
-      // Note: For tasks, use useTaskColumns hook directly in components for better performance
+      // For tasks, we need the hook for memoization and admin logic
+      // This will be handled by useTaskColumns in components
       return [];
     case 'users':
-      return getUserColumns(monthId);
+      return createUserColumns();
     case 'reporters':
-      return getReporterColumns();
+      return createReporterColumns();
     default:
       return [];
   }
