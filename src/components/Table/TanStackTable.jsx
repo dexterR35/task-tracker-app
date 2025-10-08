@@ -47,6 +47,11 @@ const BulkActionsBar = ({
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium">
             {selectedCount} row(s) selected
+            {selectedCount > 1 && (
+              <span className="text-xs text-amber-600 dark:text-amber-400 ml-2">
+                (Select only ONE task for actions)
+              </span>
+            )}
           </span>
           <DynamicButton
             onClick={onClearSelection}
@@ -65,6 +70,7 @@ const BulkActionsBar = ({
               iconName={action.icon}
               iconPosition="left"
               className="font-semibold"
+              disabled={selectedCount > 1}
             >
               {action.label}
             </DynamicButton>

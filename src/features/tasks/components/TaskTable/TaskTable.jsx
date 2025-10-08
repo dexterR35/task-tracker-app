@@ -212,12 +212,12 @@ const TaskTable = ({
                 handleSelect(selectedTasks[0]);
                 showSuccess(`Viewing task: ${selectedTasks[0].data_task?.taskName}`);
               } else {
-                showSuccess(`Viewing ${selectedTasks.length} selected tasks`);
+                showError("Please select only ONE task to view");
               }
             }
           },
           {
-            label: "Edit",
+            label: "Edit Selected",
             icon: "edit",
             variant: "edit",
             onClick: (selectedTasks) => {
@@ -225,27 +225,19 @@ const TaskTable = ({
                 handleEditTask(selectedTasks[0]);
                 showSuccess(`Opening edit form for: ${selectedTasks[0].data_task?.taskName}`);
               } else {
-                showSuccess(`Opening edit forms for ${selectedTasks.length} selected tasks`);
+                showError("Please select only ONE task to edit");
               }
             }
           },
           {
-            label: "Delete ",
+            label: "Delete Selected",
             icon: "delete",
             variant: "danger",
             onClick: async (selectedTasks) => {
               if (selectedTasks.length === 1) {
                 handleDelete(selectedTasks[0]);
               } else {
-                // Handle bulk delete
-                try {
-                  for (const task of selectedTasks) {
-                    await handleTaskDeleteMutation(task);
-                  }
-                  showSuccess(`Deleted ${selectedTasks.length} tasks successfully!`);
-                } catch (error) {
-                  showError(`Failed to delete some tasks: ${error.message}`);
-                }
+                showError("Please select only ONE task to delete");
               }
             }
           }
