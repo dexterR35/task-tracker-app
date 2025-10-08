@@ -6,6 +6,7 @@ import ReporterFormModal from "@/features/reporters/components/ReporterForm/Repo
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
 import DeliverableTable from "@/features/deliverables/components/DeliverableTable/DeliverableTable";
+import CalculationFormula from "@/components/ui/CalculationFormula/CalculationFormula";
 
 const AdminManagementPage = () => {
   // Get all data directly from useAppData hook (RTK Query handles caching)
@@ -156,13 +157,19 @@ const AdminManagementPage = () => {
               className="rounded-lg"
             />
           ) : activeTab === 'deliverables' ? (
-            <DeliverableTable
-              user={user}
-              error={error}
-              isLoading={isLoading}
-              className="rounded-lg"
-              deliverables={deliverables}
-            />
+            <div className="space-y-6">
+              {/* Calculation Formula Card */}
+              <CalculationFormula />
+              
+              {/* Deliverables Table */}
+              <DeliverableTable
+                user={user}
+                error={error}
+                isLoading={isLoading}
+                className="rounded-lg"
+                deliverables={deliverables}
+              />
+            </div>
           ) : activeTab === 'general' ? (
             <div className="py-6">
               <p className="text-sm text-gray-500 dark:text-gray-400">

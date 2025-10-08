@@ -24,7 +24,6 @@ import LoginPage from "@/pages/auth/LoginPage";
 import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
-import TaskDeliverablesPage from "@/pages/admin/TaskDeliverablesPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
 
@@ -210,16 +209,6 @@ const router = createBrowserRouter([
               <AdminRoute>
                 <PageWrapper>
                   <AdminManagementPage />
-                </PageWrapper>
-              </AdminRoute>
-            ),
-          },
-          {
-            path: "task-deliverables",
-            element: (
-              <AdminRoute>
-                <PageWrapper key="task-deliverables">
-                  <TaskDeliverablesPage />
                 </PageWrapper>
               </AdminRoute>
             ),
