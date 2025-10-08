@@ -63,8 +63,12 @@ const getDurationDays = (startDate, endDate) => {
     // If end is before start, return 0
     if (diffTime < 0) return 0;
     
-    // Return days (including partial days)
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Calculate calendar days (24 hours per day)
+    // Convert milliseconds to days
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    
+    // Return calendar days (including partial days)
+    return Math.ceil(diffDays);
   } catch {
     return null;
   }
@@ -271,35 +275,11 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
     size: 80,
   }),
   columnHelper.accessor('createdAt', {
-    header: 'Date',
+    header: 'Date created',
     cell: createDateCell(DATE_FORMATS.LONG),
     size: 150,
   }),
-  columnHelper.accessor((row) => row.data_task?.startDate, {
-    id: 'done',
-    header: 'Done',
-    cell: ({ getValue, row }) => {
-      const startDate = getValue();
-      const endDate = row.original?.data_task?.endDate;
-      
-      const days = getDurationDays(startDate, endDate);
-      
-      if (days === 0) {
-        return (
-          <Badge variant="amber" size="sm">
-            Same day
-          </Badge>
-        );
-      }
 
-      return (
-        <Badge variant="crimson" size="sm">
-          {days} days
-        </Badge>
-      );
-    },
-    size: 80,
-  }),
   columnHelper.accessor((row) => row.data_task?.observations, {
     id: 'observations',
     header: 'Observations',
@@ -333,6 +313,31 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
     header: 'End Date',
     cell: createDateCell(DATE_FORMATS.LONG),
     size: 120,
+  }),
+  columnHelper.accessor((row) => row.data_task?.startDate, {
+    id: 'done',
+    header: 'Done',
+    cell: ({ getValue, row }) => {
+      const startDate = getValue();
+      const endDate = row.original?.data_task?.endDate;
+      
+      const days = getDurationDays(startDate, endDate);
+      
+      if (days === 0) {
+        return (
+          <Badge variant="amber" size="sm">
+            Same day
+          </Badge>
+        );
+      }
+
+      return (
+        <Badge variant="crimson" size="sm">
+          {days} days
+        </Badge>
+      );
+    },
+    size: 80,
   }),
   columnHelper.accessor((row) => row.data_task?.isVip, {
     id: 'isVip',
