@@ -120,6 +120,7 @@ const ReporterTable = ({
           onSuccess={handleEditSuccess}
           mode="edit"
           reporter={editingItem}
+          reporters={reporters}
         />
       )}
 

@@ -113,11 +113,11 @@ const AnalyticsPage = () => {
         { step: 'Saving PDF...', progress: 100 }
       ];
 
-      // Process each step with delay
+      // Process each step quickly
       for (const { step, progress } of progressSteps) {
         setExportStep(step);
         setExportProgress(progress);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms to 100ms
       }
 
       await generateAnalyticsPDF(selectedCards, {
@@ -127,11 +127,11 @@ const AnalyticsPage = () => {
       });
 
       setExportStep('PDF generated successfully!');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 200)); // Reduced from 1000ms to 200ms
 
     } catch (error) {
       setExportStep('PDF generation failed. Please try again.');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
     } finally {
       setIsExporting(false);
       setExportType(null);
@@ -155,7 +155,6 @@ const AnalyticsPage = () => {
       });
       
       if (success) {
-        console.log('Analytics CSV exported successfully!');
       } else {
         console.error('Analytics CSV export failed');
       }

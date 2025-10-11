@@ -13,14 +13,14 @@ import { auth, db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import { fetchUserByUIDFromFirestore } from "@/features/users/usersApi";
+import { AUTH } from '@/constants';
 
 // --- Configuration & Constants ---
-const VALID_ROLES = ["admin", "user"];
+const VALID_ROLES = AUTH.VALID_ROLES;
 
 // --- Internal Utilities ---
 let authUnsubscribe = null;
 
-// REMOVED: fetchUserFromFirestore moved to usersApi.js
 // Use fetchUserByUIDFromFirestore from @/features/users/usersApi instead
 
 /**
@@ -49,7 +49,6 @@ export const getCurrentUserInfo = (authState) => {
   return userInfo;
 };
 
-// REMOVED: getCompleteUserData - not needed
 // Just use fetchUserByUIDFromFirestore directly - it has all the data we need
 
 /**

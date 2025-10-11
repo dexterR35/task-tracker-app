@@ -161,21 +161,15 @@ export const prepareFormData = (data, options = {}) => {
     convertTypes = true,
     addMetadata = false,
     lowercaseStrings = true,
-    fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName', 'products', 'observations', 'taskName', 'reporterName']
+    fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName', 'products', 'observations', 'reporterName', 'departments', 'markets', 'reporters'],
+    fieldsToKeepUppercase = ['taskName'] // Fields that should remain uppercase
   } = options;
   
   let preparedData = { ...data };
   
-  // Convert strings to lowercase
+  // Apply lowercase transformation using consolidated function
   if (lowercaseStrings) {
-    Object.entries(preparedData).forEach(([key, value]) => {
-      if (typeof value === 'string' && value.trim() !== '') {
-        // Only lowercase specific fields or all string fields if no specific fields provided
-        if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(key)) {
-          preparedData[key] = value.toLowerCase().trim();
-        }
-      }
-    });
+    preparedData = transformDataToLowercase(preparedData, fieldsToLowercase, fieldsToKeepUppercase);
   }
   
   // Remove empty fields
@@ -240,44 +234,24 @@ export const getFormLoadingState = (isSubmitting, isLoading = false) => {
 };
 
 /**
- * Transform form data to lowercase for database storage
+ * Transform form data to lowercase for database storage with uppercase exceptions
  * @param {Object} data - Form data to transform
- * @param {Array} fieldsToLowercase - Specific fields to lowercase (optional)
- * @returns {Object} Transformed data with lowercase strings
+ * @param {Array} fieldsToLowercase - Specific fields to lowercase (optional, defaults to all string fields)
+ * @param {Array} fieldsToKeepUppercase - Fields to keep uppercase (defaults to ['taskName'])
+ * @returns {Object} Transformed data with lowercase strings (except specified uppercase fields)
  */
-export const transformToLowercase = (data, fieldsToLowercase = []) => {
-  const transformedData = { ...data };
-  
-  Object.entries(transformedData).forEach(([key, value]) => {
-    if (typeof value === 'string' && value.trim() !== '') {
-      // If specific fields are provided, only lowercase those fields
-      if (fieldsToLowercase.length > 0) {
-        if (fieldsToLowercase.includes(key)) {
-          transformedData[key] = value.toLowerCase().trim();
-        }
-      } else {
-        // If no specific fields provided, lowercase all string fields
-        transformedData[key] = value.toLowerCase().trim();
-      }
-    }
-  });
-  
-  return transformedData;
-};
-
-/**
- * Transform nested form data structures to lowercase
- * @param {Object} data - Form data with potential nested structures
- * @param {Array} fieldsToLowercase - Fields to lowercase
- * @returns {Object} Transformed data
- */
-export const transformNestedDataToLowercase = (data, fieldsToLowercase = []) => {
+export const transformDataToLowercase = (data, fieldsToLowercase = [], fieldsToKeepUppercase = ['taskName']) => {
   const transformedData = { ...data };
   
   // Handle top-level fields
   Object.entries(transformedData).forEach(([key, value]) => {
     if (typeof value === 'string' && value.trim() !== '') {
-      if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(key)) {
+      // Keep uppercase fields as-is
+      if (fieldsToKeepUppercase.includes(key)) {
+        transformedData[key] = value.trim();
+      }
+      // Lowercase specified fields (or all string fields if no specific fields provided)
+      else if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(key)) {
         transformedData[key] = value.toLowerCase().trim();
       }
     }
@@ -288,7 +262,12 @@ export const transformNestedDataToLowercase = (data, fieldsToLowercase = []) => 
           const transformedItem = { ...item };
           Object.entries(transformedItem).forEach(([itemKey, itemValue]) => {
             if (typeof itemValue === 'string' && itemValue.trim() !== '') {
-              if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(itemKey)) {
+              // Keep uppercase fields as-is
+              if (fieldsToKeepUppercase.includes(itemKey)) {
+                transformedItem[itemKey] = itemValue.trim();
+              }
+              // Lowercase specified fields (or all string fields if no specific fields provided)
+              else if (fieldsToLowercase.length === 0 || fieldsToLowercase.includes(itemKey)) {
                 transformedItem[itemKey] = itemValue.toLowerCase().trim();
               }
             }
@@ -302,3 +281,7 @@ export const transformNestedDataToLowercase = (data, fieldsToLowercase = []) => 
   
   return transformedData;
 };
+
+// Backward compatibility aliases
+export const transformToLowercase = transformDataToLowercase;
+export const transformNestedDataToLowercase = transformDataToLowercase;

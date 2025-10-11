@@ -6,7 +6,7 @@ import Badge from "@/components/ui/Badge/Badge";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import Skeleton from "@/components/ui/Skeleton/Skeleton";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
-import MonthSelector from "@/components/ui/MonthSelector/MonthSelector";
+import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import { createUserDataCard } from "@/utils/cardUtils";
 
 
@@ -446,10 +446,33 @@ const UserDataPage = () => {
           </div>
           <div className="flex items-center space-x-3">
             {/* Month Selector */}
-            <MonthSelector
-              selectedUserId={selectedUserIdFromUrl}
-              id="userDataMonthSelector"
-            />
+            <div className="w-64">
+              <SearchableSelectField
+                field={{
+                  name: 'selectedMonth',
+                  type: 'select',
+                  label: 'Select Month',
+                  required: false,
+                  options: availableMonths?.map((month) => ({
+                    value: month.monthId,
+                    label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`
+                  })) || [],
+                  placeholder: 'Search months...'
+                }}
+                register={() => {}} // Not needed for this use case
+                errors={{}}
+                setValue={(fieldName, value) => {
+                  if (fieldName === 'selectedMonth' && selectMonth) {
+                    selectMonth(value);
+                  }
+                }}
+                watch={() => selectedMonth?.monthId || currentMonth?.monthId || ""}
+                trigger={() => {}}
+                clearErrors={() => {}}
+                formValues={{}}
+                noOptionsMessage="No months available"
+              />
+            </div>
           </div>
         </div>
         

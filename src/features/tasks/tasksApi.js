@@ -108,39 +108,29 @@ const validateTaskPermissions = (userData, operation) => {
 };
 
 // Helper function to build task query with user filtering
-const buildTaskQuery = (tasksRef, role, userId) => {
-  console.log('buildTaskQuery called with:', { role, userId });
-  
-  if (role === "user" && userId) {
-    // TEMPORARY: For debugging, let's fetch all tasks and filter in the app
-    // This will help us see what userUID values are actually in the tasks
-    console.log('Building query for regular user (TEMPORARY - fetching all tasks):', userId);
-    return fsQuery(tasksRef); // Remove the where clause temporarily
-  } else if (role === "admin" && userId) {
-    // Admin users: specific user's tasks when selected
-    console.log('Building query for admin user selection:', userId);
-    return fsQuery(tasksRef, where("userUID", "==", userId));
-  } else {
-    // Admin users: all tasks (no filtering)
-    console.log('Building query for admin - all tasks');
-    return fsQuery(tasksRef);
-  }
-};
+  const buildTaskQuery = (tasksRef, role, userId) => {
+    if (role === "user" && userId) {
+      // TEMPORARY: For debugging, let's fetch all tasks and filter in the app
+      // This will help us see what userUID values are actually in the tasks
+      return fsQuery(tasksRef); // Remove the where clause temporarily
+    } else if (role === "admin" && userId) {
+      // Admin users: specific user's tasks when selected
+      return fsQuery(tasksRef, where("userUID", "==", userId));
+    } else {
+      // Admin users: all tasks (no filtering)
+      return fsQuery(tasksRef);
+    }
+  };
 
 // Helper function to handle reporter name resolution
 const resolveReporterName = (reporters, reporterId, reporterName) => {
   if (reporterId && !reporterName) {
-    // Debug logging to help troubleshoot reporter ID issues
-    console.log('resolveReporterName - Looking for reporter ID:', reporterId);
-    console.log('resolveReporterName - Available reporters:', reporters.map(r => ({ id: r.id, reporterUID: r.reporterUID, uid: r.uid, name: r.name })));
-    
     // Check ONLY reporterUID since that's what we're using as the value (case-insensitive)
     const selectedReporter = reporters.find(r => 
       r.reporterUID && r.reporterUID.toLowerCase() === reporterId.toLowerCase()
     );
     
     if (selectedReporter) {
-      console.log('resolveReporterName - Found reporter:', selectedReporter);
       return selectedReporter.name || selectedReporter.reporterName;
     } else {
       console.error('resolveReporterName - Reporter not found for ID:', reporterId);
@@ -211,18 +201,6 @@ export const tasksApi = createApi({
             ...serializeTimestampsForRedux(doc.data()),
           }));
 
-          console.log('getMonthTasks query result:', {
-            monthId,
-            userId,
-            role,
-            totalTasks: tasks.length,
-            tasks: tasks.map(t => ({
-              id: t.id,
-              userUID: t.userUID,
-              createbyUID: t.createbyUID,
-              title: t.data_task?.taskName || 'No title'
-            }))
-          });
 
           return { data: tasks };
         } catch (error) {
@@ -294,10 +272,7 @@ export const tasksApi = createApi({
             return onSnapshot(
               query,
               (snapshot) => {
-                console.log('Real-time listener triggered for monthId:', arg.monthId, 'docs count:', snapshot?.docs?.length);
-                
                 if (!snapshot || !snapshot.docs || snapshot.empty) {
-                  console.log('No tasks found, updating cache with empty array');
                   updateCachedData(() => []);
                   return;
                 }
@@ -392,13 +367,8 @@ export const tasksApi = createApi({
           const createdAt = serverTimestamp();
           const updatedAt = createdAt; // For new tasks, updatedAt equals createdAt
 
-          // Auto-add reporter name if we have reporter ID but no name
-          console.log('createTask - task.reporters:', task.reporters);
-          console.log('createTask - task.reporterName:', task.reporterName);
-          console.log('createTask - reporters array length:', reporters.length);
-          console.log('createTask - First few reporters:', reporters.slice(0, 3).map(r => ({ reporterUID: r.reporterUID, name: r.name })));
-          
-          if (task.reporters && !task.reporterName) {
+            // Auto-add reporter name if we have reporter ID but no name
+            if (task.reporters && !task.reporterName) {
             task.reporterName = resolveReporterName(reporters, task.reporters, task.reporterName);
           }
 
@@ -433,18 +403,12 @@ export const tasksApi = createApi({
           return withApiErrorHandling(() => { throw error; }, "Create Task")(error);
         }
       },
-      invalidatesTags: (result, error, { task }) => {
-        console.log('Invalidating cache tags for createTask, monthId:', task.monthId);
-        // Force invalidation of ALL cache entries to ensure real-time updates work across users
-        return [
-          { type: "MonthTasks", id: "LIST" },
-          { type: "MonthTasks", id: task.monthId },
-          { type: "Tasks", id: "LIST" },
-          { type: "Analytics", id: "LIST" },
-          { type: "CurrentMonth", id: "ALL" },
-          { type: "CurrentMonth", id: "ENHANCED" }
-        ];
-      },
+        invalidatesTags: (result, error, { task }) => {
+          // Only invalidate specific month tasks - real-time listeners handle updates
+          return [
+            { type: "MonthTasks", id: task.monthId }
+          ];
+        },
     }),
     // Update task - simple Firestore update
     updateTask: builder.mutation({
@@ -478,27 +442,19 @@ export const tasksApi = createApi({
           return withApiErrorHandling(() => { throw error; }, "Update Task")(error);
         }
       },
-      invalidatesTags: (result, error, { monthId }) => {
-        console.log('Invalidating cache tags for updateTask, monthId:', monthId);
-        // Force invalidation of ALL cache entries to ensure real-time updates work across users
-        return [
-          { type: "MonthTasks", id: "LIST" },
-          { type: "MonthTasks", id: monthId },
-          { type: "Tasks", id: "LIST" },
-          { type: "Analytics", id: "LIST" },
-          { type: "CurrentMonth", id: "ALL" },
-          { type: "CurrentMonth", id: "ENHANCED" }
-        ];
-      },
+        invalidatesTags: (result, error, { monthId }) => {
+          // Only invalidate specific month tasks - real-time listeners handle updates
+          return [
+            { type: "MonthTasks", id: monthId }
+          ];
+        },
     }),
 
     // Delete task - simple Firestore delete
     deleteTask: builder.mutation({
-      async queryFn({ monthId, taskId, userData }) {
-        try {
-          console.log('Deleting task:', { monthId, taskId });
-          
-          // SECURITY: Validate user permissions at API level
+        async queryFn({ monthId, taskId, userData }) {
+          try {
+            // SECURITY: Validate user permissions at API level
           const permissionValidation = validateTaskPermissions(userData, 'delete_task');
           if (!permissionValidation.isValid) {
             return { error: { message: permissionValidation.errors.join(', ') } };
@@ -506,27 +462,20 @@ export const tasksApi = createApi({
 
           // Delete the task document
           const taskRef = getTaskRef(monthId, taskId);
-          await deleteDoc(taskRef);
+            await deleteDoc(taskRef);
 
-          console.log('Task deleted successfully:', { id: taskId, monthId });
-          return { data: { id: taskId, monthId } };
+            return { data: { id: taskId, monthId } };
         } catch (error) {
           console.error('Error deleting task:', error);
           return withApiErrorHandling(() => { throw error; }, "Delete Task")(error);
         }
       },
-      invalidatesTags: (result, error, { monthId }) => {
-        console.log('Invalidating cache tags for deleteTask, monthId:', monthId);
-        // Force invalidation of ALL cache entries to ensure real-time updates work across users
-        return [
-          { type: "MonthTasks", id: "LIST" },
-          { type: "MonthTasks", id: monthId },
-          { type: "Tasks", id: "LIST" },
-          { type: "Analytics", id: "LIST" },
-          { type: "CurrentMonth", id: "ALL" },
-          { type: "CurrentMonth", id: "ENHANCED" }
-        ];
-      },
+        invalidatesTags: (result, error, { monthId }) => {
+          // Only invalidate specific month tasks - real-time listeners handle updates
+          return [
+            { type: "MonthTasks", id: monthId }
+          ];
+        },
     }),
 
     // Generate month board (admin only)
@@ -679,17 +628,7 @@ export const tasksApi = createApi({
                   ...serializeTimestampsForRedux(doc.data()),
                 }));
                 
-                console.log('getCurrentMonth query result:', {
-                  userId,
-                  role,
-                  totalTasks: currentMonthTasks.length,
-                  tasks: currentMonthTasks.map(t => ({
-                    id: t.id,
-                    userUID: t.userUID,
-                    createbyUID: t.createbyUID,
-                    title: t.data_task?.taskName || 'No title'
-                  }))
-                });
+                // Query result processed
                 
               }
             } catch (taskError) {

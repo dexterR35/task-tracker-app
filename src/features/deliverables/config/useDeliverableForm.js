@@ -1,12 +1,5 @@
 import * as Yup from 'yup';
-// ===== VALIDATION CONSTANTS =====
-const VALIDATION_PATTERNS = {
-  ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
-};
-
-const VALIDATION_MESSAGES = {
-  required: "This field is required",
-};
+import { VALIDATION, FORM_OPTIONS } from '@/constants';
 import { TASK_FORM_OPTIONS } from '@/features/tasks/config/useTaskForm';
 
 // ===== DELIVERABLE FORM FIELD CONFIGURATION =====
@@ -18,17 +11,17 @@ export const DELIVERABLE_FORM_FIELDS = [
     required: true,
     placeholder: "Enter deliverable name",
     validation: {
-      required: VALIDATION_MESSAGES.required,
+      required: VALIDATION.MESSAGES.REQUIRED,
       minLength: {
-        value: 2,
-        message: "Name must be at least 2 characters"
+        value: VALIDATION.LIMITS.NAME_MIN,
+        message: VALIDATION.MESSAGES.MIN_LENGTH(VALIDATION.LIMITS.NAME_MIN)
       },
       maxLength: {
-        value: 50,
-        message: "Name must be less than 50 characters"
+        value: VALIDATION.LIMITS.NAME_MAX,
+        message: VALIDATION.MESSAGES.MAX_LENGTH(VALIDATION.LIMITS.NAME_MAX)
       },
       pattern: {
-        value: VALIDATION_PATTERNS.ALPHANUMERIC_SPACES,
+        value: VALIDATION.PATTERNS.ALPHANUMERIC_SPACES,
         message: "Name can only contain letters, numbers, and spaces"
       }
     }
@@ -40,7 +33,7 @@ export const DELIVERABLE_FORM_FIELDS = [
     required: true,
     options: TASK_FORM_OPTIONS.departments,
     validation: {
-      required: VALIDATION_MESSAGES.required
+      required: VALIDATION.MESSAGES.REQUIRED
     }
   },
   {
@@ -53,14 +46,14 @@ export const DELIVERABLE_FORM_FIELDS = [
     max: 999,
     step: 0.1,
     validation: {
-      required: VALIDATION_MESSAGES.required,
+      required: VALIDATION.MESSAGES.REQUIRED,
       min: {
-        value: 0.1,
-        message: "Time must be at least 0.1"
+        value: VALIDATION.LIMITS.TIME_MIN,
+        message: VALIDATION.MESSAGES.MIN_VALUE(VALIDATION.LIMITS.TIME_MIN)
       },
       max: {
-        value: 999,
-        message: "Time must be less than 999"
+        value: VALIDATION.LIMITS.TIME_MAX,
+        message: VALIDATION.MESSAGES.MAX_VALUE(VALIDATION.LIMITS.TIME_MAX)
       }
     }
   },
@@ -75,7 +68,7 @@ export const DELIVERABLE_FORM_FIELDS = [
       { value: "days", label: "Days" }
     ],
     validation: {
-      required: VALIDATION_MESSAGES.required
+      required: VALIDATION.MESSAGES.REQUIRED
     }
   },
   {
@@ -88,7 +81,7 @@ export const DELIVERABLE_FORM_FIELDS = [
     max: 999,
     step: 1,
     validation: {
-      required: VALIDATION_MESSAGES.required,
+      required: VALIDATION.MESSAGES.REQUIRED,
       min: {
         value: 0,
         message: "Declinari time must be at least 0"
@@ -149,16 +142,7 @@ export const createDeliverableFormSchema = (fields) => {
 };
 
 // ===== DELIVERABLE FORM UTILITIES =====
-export const prepareDeliverableFormData = (formData) => {
-  return {
-    name: formData.name?.trim() || '',
-    department: formData.department || '',
-    timePerUnit: parseFloat(formData.timePerUnit) || 1,
-    timeUnit: formData.timeUnit || 'hr',
-    requiresQuantity: true, // Always true for deliverables
-    declinariTime: parseInt(formData.declinariTime) || 0
-  };
-};
+// Note: Data preparation is now handled by the centralized prepareFormData function in formUtils.js
 
 // ===== DELIVERABLE VALIDATION UTILITIES =====
 export const validateDeliverableName = (name, existingDeliverables = [], excludeIndex = -1) => {

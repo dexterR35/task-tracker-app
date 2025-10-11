@@ -169,15 +169,7 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
         col.id !== 'select' && col.id !== 'actions'
       );
       
-      // Debug logging
-      console.log('Total columns passed to export:', columns.length);
-      console.log('Columns after filtering:', allColumns.length);
-      console.log('Column details:', allColumns.map(col => ({
-        id: col.id,
-        header: col.header,
-        accessorKey: col.accessorKey,
-        hasAccessorFn: typeof col.accessorFn === 'function'
-      })));
+      // Debug logging removed
   
       // Create headers
       const headers = allColumns.map(col => {

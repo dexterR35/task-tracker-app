@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppData } from '@/hooks/useAppData';
@@ -48,14 +48,10 @@ const TaskForm = ({
   const monthId = propMonthId || hookMonthId;
   const { deliverablesOptions, isLoading: loadingDeliverables } = useDeliverablesOptions();
   
-  // Debug logging for deliverables
-  React.useEffect(() => {
-    console.log('TaskForm - deliverablesOptions:', deliverablesOptions);
-    console.log('TaskForm - loadingDeliverables:', loadingDeliverables);
-  }, [deliverablesOptions, loadingDeliverables]);
+  // Debug logging for deliverables (removed for production)
   
   // Create dynamic schema with deliverables options
-  const dynamicSchema = React.useMemo(() => {
+  const dynamicSchema = useMemo(() => {
     return createTaskFormSchema();
   }, []);
   
@@ -100,33 +96,20 @@ const TaskForm = ({
   // Watch all form values for conditional field logic
   const watchedValues = watch();
   
-  // Debug specific fields in edit mode
-  if (mode === 'edit') {
-    console.log('TaskForm - Edit mode watched values:');
-    console.log('- deliverables:', watchedValues.deliverables);
-    console.log('- reporters:', watchedValues.reporters);
-    console.log('- _hasDeliverables:', watchedValues._hasDeliverables);
-  }
+  // Debug specific fields in edit mode (removed for production)
   
-  // Watch reporters field specifically for debugging
+  // Watch reporters field for form logic
   const selectedReporter = watch('reporters');
-  React.useEffect(() => {
-    console.log('TaskForm - Selected reporter value:', selectedReporter);
-    if (selectedReporter) {
-      const matchingReporter = reporters.find(r => r.reporterUID === selectedReporter);
-      console.log('TaskForm - Matching reporter found:', matchingReporter);
-    }
-  }, [selectedReporter, reporters]);
   
   // Explicitly register deliverableQuantities field
-  React.useEffect(() => {
+  useEffect(() => {
     register('deliverableQuantities');
     register('declinariQuantities');
     register('declinariDeliverables');
     
     // Initialize deliverableQuantities with empty object if not set
     const currentQuantities = watch('deliverableQuantities');
-    console.log('TaskForm - current deliverableQuantities:', currentQuantities);
+    // Watch deliverableQuantities for form logic
     if (!currentQuantities || Object.keys(currentQuantities).length === 0) {
       setValue('deliverableQuantities', {});
     }
@@ -137,7 +120,7 @@ const TaskForm = ({
   const { deliverablesOptions: filteredDeliverablesOptions } = useDeliverablesByDepartment(selectedDepartment);
 
   // Create dynamic form fields with deliverables options (after filteredDeliverablesOptions is defined)
-  const formFields = React.useMemo(() => {
+  const formFields = useMemo(() => {
     return createTaskFormFields(filteredDeliverablesOptions);
   }, [filteredDeliverablesOptions]);
 
@@ -174,10 +157,8 @@ const TaskForm = ({
   // Reset form when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData && mode === 'edit') {
-      console.log('TaskForm - Edit mode: initialData received:', initialData);
       // Handle nested data_task structure from database
       const taskData = initialData.data_task || initialData;
-      console.log('TaskForm - Edit mode: processed taskData:', taskData);
       
       // Reconstruct jiraLink from taskName for editing - ensure taskName is uppercase
       const jiraLink = taskData.taskName ? 
@@ -309,31 +290,15 @@ const TaskForm = ({
         observations: taskData.observations || ''
       };
       
-      console.log('TaskForm - Edit mode: form data being set:', formData);
-      console.log('TaskForm - Edit mode: deliverablesUsed data:', taskData.deliverablesUsed);
-      console.log('TaskForm - Edit mode: selected deliverable:', formData.deliverables);
-      console.log('TaskForm - Edit mode: available filtered options:', filteredDeliverablesOptions?.map(opt => opt.value) || 'No options');
-      console.log('TaskForm - Edit mode: selected department:', taskData.departments);
-      console.log('TaskForm - Edit mode: reporter data:', taskData.reporters);
-      console.log('TaskForm - Edit mode: available reporters:', reporters.map(r => ({ uid: r.reporterUID, name: r.name })));
-      console.log('TaskForm - Edit mode: About to reset form with:', formData);
       
-      // Use setTimeout to ensure form is ready and options are loaded
+      // Reset form immediately - no delays needed
+      reset(formData);
+      
+      // Force re-render of form components with minimal delay
       setTimeout(() => {
-        console.log('TaskForm - Edit mode: About to reset with options available:');
-        console.log('- filteredDeliverablesOptions:', filteredDeliverablesOptions?.length || 0);
-        console.log('- reporters:', reporters?.length || 0);
-        reset(formData);
-        console.log('TaskForm - Edit mode: Form reset completed');
-        
-        // Force re-render of form components
-        setTimeout(() => {
-          console.log('TaskForm - Edit mode: Forcing component re-render');
-          // Trigger a small state change to force re-render
-          setValue('reporters', formData.reporters);
-          setValue('deliverables', formData.deliverables);
-        }, 50);
-      }, 200);
+        setValue('reporters', formData.reporters);
+        setValue('deliverables', formData.deliverables);
+      }, 10); // Reduced from 250ms to 10ms
       
       
     }
@@ -357,16 +322,10 @@ const TaskForm = ({
 
       if (data._hasDeliverables && data.deliverables && data.deliverables !== '') {
         const deliverable = deliverablesOptions.find(d => d.value === data.deliverables);
-        console.log('Form submission - found deliverable:', deliverable);
         if (deliverable && deliverable.requiresQuantity) {
           const quantity = data.deliverableQuantities?.[data.deliverables];
-          console.log('Form submission - quantity for', data.deliverables, ':', quantity);
-          console.log('Form submission - quantity type:', typeof quantity);
-          console.log('Form submission - quantity isNaN:', isNaN(quantity));
-          console.log('Form submission - quantity < 1:', quantity < 1);
           
           if (!quantity || quantity < 1) {
-            console.log('Form submission - quantity validation failed');
             throw new Error(`Please enter a valid quantity for ${deliverable.label}`);
           }
         }
@@ -382,9 +341,7 @@ const TaskForm = ({
       }
       
       // Prepare form data for database
-      console.log('TaskForm - Raw form data before processing:', data);
       const processedData = prepareTaskFormData(data, deliverablesOptions);
-      console.log('TaskForm - Processed data after prepareTaskFormData:', processedData);
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task

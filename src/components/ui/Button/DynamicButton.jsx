@@ -2,32 +2,23 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Icons from "@/components/icons";
 import { showSuccess, showError } from "@/utils/toast";
-import {
-  BUTTON_BASE_CLASSES,
-  VARIANT_MAP,
-  SIZE_MAP,
-  ICON_POSITION_MAP,
-  BUTTON_STATES,
-  BUTTON_ICON_CLASSES,
-  LOADING_SPINNER_CLASSES,
-  BUTTON_DEFAULTS
-} from "@/components/ui/Button/buttonConstants";
+import { BUTTON_SYSTEM } from "@/constants";
 
 const DynamicButton = ({
   id,
-  variant = BUTTON_DEFAULTS.VARIANT,
-  size = BUTTON_DEFAULTS.SIZE,
+  variant = BUTTON_SYSTEM.DEFAULTS.VARIANT,
+  size = BUTTON_SYSTEM.DEFAULTS.SIZE,
   children,
   onClick,
   disabled = false,
   loading = false,
   icon: Icon,
-  iconPosition = BUTTON_DEFAULTS.ICON_POSITION, // "left" | "right" | "center"
+  iconPosition = BUTTON_SYSTEM.DEFAULTS.ICON_POSITION, // "left" | "right" | "center"
   iconName,
-  iconCategory = BUTTON_DEFAULTS.ICON_CATEGORY,
-  type = BUTTON_DEFAULTS.TYPE,
+  iconCategory = BUTTON_SYSTEM.DEFAULTS.ICON_CATEGORY,
+  type = BUTTON_SYSTEM.DEFAULTS.TYPE,
   className = "",
-  loadingText = BUTTON_DEFAULTS.LOADING_TEXT,
+  loadingText = BUTTON_SYSTEM.DEFAULTS.LOADING_TEXT,
   successMessage,
   errorMessage,
   to,
@@ -39,11 +30,11 @@ const DynamicButton = ({
   const isDisabled = disabled || isLoading;
 
   const buttonClasses = `
-    ${BUTTON_BASE_CLASSES} 
-    ${VARIANT_MAP[variant] || VARIANT_MAP[BUTTON_DEFAULTS.VARIANT]} 
-    ${SIZE_MAP[size] || SIZE_MAP[BUTTON_DEFAULTS.SIZE]}
-    ${isDisabled ? BUTTON_STATES.DISABLED : ""}
-    ${isLoading ? BUTTON_STATES.LOADING : ""}
+    ${BUTTON_SYSTEM.BASE_CLASSES} 
+    ${BUTTON_SYSTEM.VARIANT_MAP[variant] || BUTTON_SYSTEM.VARIANT_MAP[BUTTON_SYSTEM.DEFAULTS.VARIANT]} 
+    ${BUTTON_SYSTEM.SIZE_MAP[size] || BUTTON_SYSTEM.SIZE_MAP[BUTTON_SYSTEM.DEFAULTS.SIZE]}
+    ${isDisabled ? BUTTON_SYSTEM.STATES.DISABLED : ""}
+    ${isLoading ? BUTTON_SYSTEM.STATES.LOADING : ""}
     ${className}
   `.trim();
 
@@ -71,24 +62,24 @@ const DynamicButton = ({
   const renderIcon = () => {
     if (isLoading) {
       return (
-        <div className={LOADING_SPINNER_CLASSES} />
+        <div className={BUTTON_SYSTEM.LOADING_SPINNER_CLASSES} />
       );
     }
     // Backward compatibility: explicit Icon prop wins
     if (Icon) {
-      return <Icon className={BUTTON_ICON_CLASSES} />;
+      return <Icon className={BUTTON_SYSTEM.ICON_CLASSES} />;
     }
     // Resolve from centralized registry if provided
     if (iconName && Icons?.[iconCategory]?.[iconName]) {
       const ResolvedIcon = Icons[iconCategory][iconName];
-      return <ResolvedIcon className={BUTTON_ICON_CLASSES} />;
+      return <ResolvedIcon className={BUTTON_SYSTEM.ICON_CLASSES} />;
     }
     return null;
   };
 
   // Build button content based on iconPosition
   const content = (() => {
-    const contentClasses = ICON_POSITION_MAP[iconPosition] || ICON_POSITION_MAP[BUTTON_DEFAULTS.ICON_POSITION];
+    const contentClasses = BUTTON_SYSTEM.ICON_POSITION_MAP[iconPosition] || BUTTON_SYSTEM.ICON_POSITION_MAP[BUTTON_SYSTEM.DEFAULTS.ICON_POSITION];
     
     switch (iconPosition) {
       case "left":

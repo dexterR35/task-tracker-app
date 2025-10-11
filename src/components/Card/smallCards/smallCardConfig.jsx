@@ -1,16 +1,11 @@
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { getCardColor, getBadgeColor } from "@/utils/cardUtils";
-import MonthSelector from "@/components/ui/MonthSelector/MonthSelector";
+import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
+import { CARD_SYSTEM } from '@/constants';
 
 // Small Card Types
-export const SMALL_CARD_TYPES = {
-  MONTH_SELECTION: "month-selection",
-  USER_FILTER: "user-filter",
-  REPORTER_FILTER: "reporter-filter",
-  USER_PROFILE: "user-profile",
-  ACTIONS: "actions",
-};
+export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
 
 // Small Card Configuration Templates
 export const SMALL_CARD_CONFIGS = {
@@ -24,11 +19,30 @@ export const SMALL_CARD_CONFIGS = {
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getContent: (data) => (
       <div className="mb-6">
-        <MonthSelector
-          selectedUserId={data.selectedUserId}
-          id="smallCardMonthSelector"
-          className="w-full"
-          placeholder="No months available"
+        <SearchableSelectField
+          field={{
+            name: 'selectedMonth',
+            type: 'select',
+            label: 'Select Month',
+            required: false,
+            options: data.availableMonths?.map((month) => ({
+              value: month.monthId,
+              label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`
+            })) || [],
+            placeholder: 'Search months...'
+          }}
+          register={() => {}} // Not needed for this use case
+          errors={{}}
+          setValue={(fieldName, value) => {
+            if (fieldName === 'selectedMonth' && data.selectMonth) {
+              data.selectMonth(value);
+            }
+          }}
+          watch={() => data.selectedMonth?.monthId || data.currentMonth?.monthId || ""}
+          trigger={() => {}}
+          clearErrors={() => {}}
+          formValues={{}}
+          noOptionsMessage="No months available"
         />
       </div>
     ),
@@ -61,22 +75,31 @@ export const SMALL_CARD_CONFIGS = {
     getStatus: (data) => (data.selectedUserId ? "Filtered" : "All Users"),
     getContent: (data) => (
       <div className="mb-6">
-        <select
-          id="selectedUser"
-          value={data.selectedUserId || ""}
-          onChange={(e) => data.handleUserSelect?.(e.target.value)}
-          className="w-full py-2 px-3"
-        >
-          <option value="">All Users</option>
-          {data.users?.map((user) => (
-            <option
-              key={user.userUID || user.id}
-              value={user.userUID || user.id}
-            >
-              {user.name || user.email}
-            </option>
-          ))}
-        </select>
+        <SearchableSelectField
+          field={{
+            name: 'selectedUser',
+            type: 'select',
+            label: 'Select User',
+            required: false,
+            options: data.users?.map((user) => ({
+              value: user.userUID || user.id,
+              label: user.name || user.email
+            })) || [],
+            placeholder: 'Search users...'
+          }}
+          register={() => {}} // Not needed for this use case
+          errors={{}}
+          setValue={(fieldName, value) => {
+            if (fieldName === 'selectedUser' && data.handleUserSelect) {
+              data.handleUserSelect(value);
+            }
+          }}
+          watch={() => data.selectedUserId || ""}
+          trigger={() => {}}
+          clearErrors={() => {}}
+          formValues={{}}
+          noOptionsMessage="No users found"
+        />
       </div>
     ),
     getDetails: (data) => [
@@ -109,22 +132,31 @@ export const SMALL_CARD_CONFIGS = {
       data.selectedReporterId ? "Filtered" : "All Reporters",
     getContent: (data) => (
       <div className="mb-6">
-        <select
-          id="selectedReporter"
-          value={data.selectedReporterId || ""}
-          onChange={(e) => data.handleReporterSelect?.(e.target.value)}
-          className="w-full px-3 py-2 text-sm"
-        >
-          <option value="">All Reporters</option>
-          {data.reporters?.map((reporter) => (
-            <option
-              key={reporter.id || reporter.uid}
-              value={reporter.id || reporter.uid}
-            >
-              {reporter.name || reporter.reporterName}
-            </option>
-          ))}
-        </select>
+        <SearchableSelectField
+          field={{
+            name: 'selectedReporter',
+            type: 'select',
+            label: 'Select Reporter',
+            required: false,
+            options: data.reporters?.map((reporter) => ({
+              value: reporter.id || reporter.uid,
+              label: reporter.name || reporter.reporterName
+            })) || [],
+            placeholder: 'Search reporters...'
+          }}
+          register={() => {}} // Not needed for this use case
+          errors={{}}
+          setValue={(fieldName, value) => {
+            if (fieldName === 'selectedReporter' && data.handleReporterSelect) {
+              data.handleReporterSelect(value);
+            }
+          }}
+          watch={() => data.selectedReporterId || ""}
+          trigger={() => {}}
+          clearErrors={() => {}}
+          formValues={{}}
+          noOptionsMessage="No reporters found"
+        />
       </div>
     ),
     getDetails: (data) => [

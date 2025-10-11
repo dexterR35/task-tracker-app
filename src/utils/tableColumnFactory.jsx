@@ -12,32 +12,11 @@ import DynamicButton from '@/components/ui/Button/DynamicButton';
 
 const columnHelper = createColumnHelper();
 
-// ============================================================================
-// COLUMN TYPES
-// ============================================================================
+import { TABLE_SYSTEM } from '@/constants';
 
-export const COLUMN_TYPES = {
-  TEXT: 'text',
-  NUMBER: 'number',
-  DATE: 'date',
-  BOOLEAN: 'boolean',
-  BADGE: 'badge',
-  AVATAR: 'avatar',
-  BUTTON: 'button',
-  SELECTION: 'selection',
-  CUSTOM: 'custom'
-};
-
-// ============================================================================
-// DATE FORMATS
-// ============================================================================
-
-export const DATE_FORMATS = {
-  SHORT: 'dd MMM yyyy',
-  LONG: 'dd MMM yyyy, HH:mm',
-  TIME_ONLY: 'HH:mm',
-  DATE_ONLY: 'yyyy-MM-dd'
-};
+// Re-export constants from centralized location for backward compatibility
+export const COLUMN_TYPES = TABLE_SYSTEM.COLUMN_TYPES;
+export const DATE_FORMATS = TABLE_SYSTEM.DATE_FORMATS;
 
 // ============================================================================
 // COLUMN FACTORY FUNCTIONS
@@ -340,16 +319,21 @@ export const createSelectionColumn = (config = {}) => {
       </span>
     ),
     size,
-    cell: ({ row }) => (
-      <input
-        name={`select-row-${row.id}`}
-        id={`select-row-${row.id}`}
-        type="checkbox"
-        checked={row.getIsSelected()}
-        onChange={row.getToggleSelectedHandler()}
-        className={`w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 ${className}`}
-      />
-    ),
+    cell: ({ row }) => {
+      // Use Firestore document ID for consistency
+      const documentId = row.original?.id || row.id;
+      return (
+        <input
+          name={`select-row-${documentId}`}
+          id={`select-row-${documentId}`}
+          type="checkbox"
+          checked={row.getIsSelected()}
+          onChange={row.getToggleSelectedHandler()}
+          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
+          className={`w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer ${className}`}
+        />
+      );
+    },
     enableSorting: false,
     enableHiding: false
   });

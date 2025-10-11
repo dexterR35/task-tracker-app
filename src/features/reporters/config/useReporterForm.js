@@ -1,79 +1,43 @@
 import * as Yup from 'yup';
-// ===== VALIDATION CONSTANTS =====
-const VALIDATION_MESSAGES = {
-  REQUIRED: "This field is required",
-  EMAIL: "Please enter a valid email address",
+import { VALIDATION, FORM_OPTIONS } from '@/constants';
+
+// ===== DYNAMIC REPORTER FORM OPTIONS =====
+// These functions generate options from actual database data
+export const getReporterDepartmentOptions = (reporters = []) => {
+  const departments = [...new Set(reporters.map(r => r.departament).filter(Boolean))];
+  return departments.map(dept => ({ value: dept, label: dept }));
 };
-import { TASK_FORM_OPTIONS } from '@/features/tasks/config/useTaskForm';
 
-// ===== REPORTER FORM OPTIONS =====
-const REPORTER_DEPARTMENT_OPTIONS = [
-  { value: 'acq', label: 'acq' },
-  { value: 'crm', label: 'crm' },
-  { value: 'games team', label: 'GAMES TEAM' },
-  { value: 'other', label: 'other' },
-  { value: 'product', label: 'product' },
-  { value: 'vip', label: 'vip' },
-  { value: 'content', label: 'content' },
-  { value: 'pml', label: 'pml' },
-  { value: 'misc', label: 'misc' },
-  { value: 'hr', label: 'hr' }
-];
+export const getReporterChannelOptions = (reporters = []) => {
+  const channels = [...new Set(reporters.map(r => r.channelName).filter(Boolean))];
+  return channels.map(channel => ({ value: channel, label: channel }));
+};
 
-
-
-const REPORTER_CHANNEL_OPTIONS = [
-  { value: 'acq', label: 'acq' },
-  { value: 'acq social media', label: 'acq social media' },
-  { value: 'acq social media paid', label: 'acq social media paid' },
-  { value: 'acq social media organic', label: 'acq social media organic' },
-  { value: 'games team', label: 'games team' },
-  { value: 'product', label: 'product' },
-  { value: 'other', label: 'other' },
-  { value: 'brand mgmt', label: 'brand mgmt' },
-  { value: 'pml', label: 'pml' },
-  { value: 'hr', label: 'hr' },
-  { value: 'content', label: 'content' },
-  { value: 'misc', label: 'misc' },
-  { value: 'vip', label: 'vip' },
-  { value: 'seo', label: 'seo' },
-  { value: 'crm', label: 'crm' }
-];
-
-
-const REPORTER_COUNTRY_OPTIONS = [
-  { value: 'ro', label: 'ro' },
-  { value: 'com', label: 'com' },
-  { value: 'uk', label: 'uk' },
-  { value: 'ie', label: 'ie' },
-  { value: 'fi', label: 'fi' },
-  { value: 'dk', label: 'dk' },
-  { value: 'de', label: 'de' },
-  { value: 'at', label: 'at' },
-  { value: 'it', label: 'it' },
-  { value: 'gr', label: 'gr' },
-  { value: 'fr', label: 'fr' }
-];
+export const getReporterCountryOptions = (reporters = []) => {
+  const countries = [...new Set(reporters.map(r => r.country).filter(Boolean))];
+  return countries.map(country => ({ value: country, label: country }));
+};
 
 // ===== REPORTER FORM FIELD CONFIGURATION =====
-export const REPORTER_FORM_FIELDS = [
+// This function creates form fields with dynamic options based on existing data
+export const createReporterFormFields = (reporters = []) => [
   {
     name: 'name',
     type: 'text',
     label: 'Reporter Name',
     required: true,
     validation: {
-      required: VALIDATION_MESSAGES.required,
+      required: VALIDATION.MESSAGES.REQUIRED,
       minLength: {
-        value: 2,
-        message: "Name must be at least 2 characters"
+        value: VALIDATION.LIMITS.NAME_MIN,
+        message: VALIDATION.MESSAGES.MIN_LENGTH(VALIDATION.LIMITS.NAME_MIN)
       },
       maxLength: {
-        value: 50,
-        message: "Name must be less than 50 characters"
+        value: VALIDATION.LIMITS.NAME_MAX,
+        message: VALIDATION.MESSAGES.MAX_LENGTH(VALIDATION.LIMITS.NAME_MAX)
       },
       pattern: {
-        value: /^[a-zA-Z0-9\s]+$/,
+        value: VALIDATION.PATTERNS.ALPHANUMERIC_SPACES,
         message: "Name can only contain letters, numbers, and spaces"
       }
     }
@@ -90,40 +54,47 @@ export const REPORTER_FORM_FIELDS = [
     type: 'select',
     label: 'Department',
     required: true,
-    options: REPORTER_DEPARTMENT_OPTIONS
+    options: getReporterDepartmentOptions(reporters)
   },
   {
     name: 'country',
     type: 'select',
     label: 'Country',
     required: true,
-    options: TASK_FORM_OPTIONS.markets
+    options: getReporterCountryOptions(reporters)
   },
   {
     name: 'channelName',
     type: 'select',
     label: 'Channel Name',
     required: true,
-    options: REPORTER_CHANNEL_OPTIONS
+    options: getReporterChannelOptions(reporters)
   }
 ];
+
+// ===== BACKWARD COMPATIBILITY =====
+// For components that still expect the old static form fields
+export const REPORTER_FORM_FIELDS = createReporterFormFields([]);
 
 // ===== REPORTER FORM VALIDATION SCHEMA =====
 export const reporterFormSchema = Yup.object().shape({
   name: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   email: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED)
-    .email(VALIDATION_MESSAGES.EMAIL),
+    .required(VALIDATION.MESSAGES.REQUIRED)
+    .email(VALIDATION.MESSAGES.EMAIL),
   
   departament: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   country: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   channelName: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED)
+    .required(VALIDATION.MESSAGES.REQUIRED)
 });
+
+// ===== REPORTER FORM UTILITIES =====
+// Note: Data preparation is now handled by the centralized prepareFormData function in formUtils.js
 

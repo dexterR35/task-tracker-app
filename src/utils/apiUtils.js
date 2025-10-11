@@ -22,7 +22,7 @@ import { db, auth } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { parseFirebaseError } from "@/features/utils/errorHandling";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
-import { transformToLowercase } from "@/utils/formUtils";
+import { transformDataToLowercase } from "@/utils/formUtils";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 
 /**
@@ -50,7 +50,7 @@ export const createDocumentInFirestore = async (collectionName, data, options = 
     
     // Apply lowercase transformation if enabled
     if (lowercaseStrings) {
-      docData = transformToLowercase(docData, fieldsToLowercase);
+      docData = transformDataToLowercase(docData, fieldsToLowercase);
     }
     
     if (addMetadata) {
@@ -94,7 +94,7 @@ export const updateDocumentInFirestore = async (collectionName, docId, updates, 
     
     // Apply lowercase transformation if enabled
     if (lowercaseStrings) {
-      updateData = transformToLowercase(updateData, fieldsToLowercase);
+      updateData = transformDataToLowercase(updateData, fieldsToLowercase);
     }
     
     if (addMetadata) {

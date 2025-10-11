@@ -4,16 +4,10 @@
  */
 
 import { Icons } from "@/components/icons";
+import { CARD_SYSTEM } from '@/constants';
 
 // Analytics Card Types
-export const ANALYTICS_CARD_TYPES = {
-  MARKET_USER_BREAKDOWN: "market-user-breakdown",
-  REPORTER_ANALYTICS: "reporter-analytics", 
-  USER_ANALYTICS: "user-analytics",
-  MARKETING_ANALYTICS: "marketing-analytics",
-  PRODUCT_BREAKDOWN: "product-breakdown",
-  CATEGORY_BREAKDOWN: "category-breakdown"
-};
+export const ANALYTICS_CARD_TYPES = CARD_SYSTEM.ANALYTICS_CARD_TYPES;
 
 // Analytics Card Configurations
 export const ANALYTICS_CARD_CONFIGS = {

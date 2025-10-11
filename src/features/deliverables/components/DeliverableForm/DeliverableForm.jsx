@@ -1,14 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { handleValidationError, withMutationErrorHandling } from '@/features/utils/errorHandling';
-import { createFormSubmissionHandler } from '@/utils/formUtils';
+import { createFormSubmissionHandler, prepareFormData } from '@/utils/formUtils';
 import { 
   DELIVERABLE_FORM_FIELDS,
   createDeliverableFormSchema,
-  prepareDeliverableFormData,
   validateDeliverableName,
   validateTimePerUnit,
   validateDeclinariTime
@@ -54,7 +53,7 @@ const DeliverableForm = ({
   const formValues = watch();
   
   // Reset form when deliverable changes (for editing)
-  React.useEffect(() => {
+  useEffect(() => {
     if (deliverable && mode === 'edit') {
       reset({
         name: deliverable.name || '',
@@ -70,7 +69,11 @@ const DeliverableForm = ({
   // Form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (formData) => {
-      const preparedData = prepareDeliverableFormData(formData);
+      const preparedData = prepareFormData(formData, {
+        // Lowercase all string fields by default (no specific fields needed)
+        fieldsToLowercase: [], // Empty array means lowercase ALL string fields
+        fieldsToKeepUppercase: [] // No uppercase exceptions for deliverables
+      });
       const currentDeliverables = existingDeliverables || [];
       
       if (mode === 'create') {

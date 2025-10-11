@@ -200,8 +200,6 @@ export const settingsApi = createApi({
         return await deduplicateRequest(cacheKey, async () => {
           try {
             // SECURITY: Validate user permissions
-            console.log('User data for validation:', { ...userData, settingsType });
-            console.log('Is user admin?', isUserAdmin(userData));
             const permissionValidation = validateSettingsPermissions({ ...userData, settingsType }, 'update_settings_type');
             if (!permissionValidation.isValid) {
               return { error: { message: permissionValidation.errors.join(', ') } };
@@ -229,7 +227,6 @@ export const settingsApi = createApi({
         }, 'SettingsAPI');
       },
       invalidatesTags: (result, error, { settingsType }) => {
-        console.log('Invalidating cache tags for settingsType:', settingsType);
         return [
           { type: "Settings", id: "APP" },
           ...(settingsType ? [{ type: "Settings", id: settingsType.toLowerCase() }] : []),
@@ -281,7 +278,6 @@ export const settingsApi = createApi({
         }, 'SettingsAPI');
       },
       providesTags: (result, error, { settingsType }) => {
-        console.log('Providing cache tags for settingsType:', settingsType);
         return [
           ...(settingsType ? [{ type: "Settings", id: settingsType.toLowerCase() }] : []),
           { type: "Settings", id: "deliverables" } // Always provide deliverables tag

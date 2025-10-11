@@ -1,5 +1,4 @@
-// ===== FORM CONSTANTS =====
-const REQUIRED_INDICATOR = "*";
+import { UI_CONFIG } from '@/constants';
 
 const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors, formValues }) => {
   const fieldError = errors[field.name];
@@ -22,7 +21,7 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
         />
         <label htmlFor={field.name} className='m-0'>
           {field.label}
-          {field.required && <span className="required-indicator">{REQUIRED_INDICATOR}</span>}
+          {field.required && <span className="required-indicator">{UI_CONFIG.REQUIRED_INDICATOR}</span>}
         </label>
       </div>
       

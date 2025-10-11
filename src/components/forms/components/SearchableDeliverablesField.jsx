@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 import Badge from '@/components/ui/Badge/Badge';
 
@@ -24,10 +24,6 @@ const SearchableDeliverablesField = ({
   
   // Debug logging for deliverables field
   if (selectedDeliverable) {
-    console.log('SearchableDeliverablesField - deliverables field:');
-    console.log('- selectedDeliverable:', selectedDeliverable);
-    console.log('- selectedOption:', selectedOption);
-    console.log('- available options:', field.options?.length || 0);
   }
 
   // Handle initial value when form is reset
@@ -35,7 +31,6 @@ const SearchableDeliverablesField = ({
     if (selectedDeliverable && field.options && field.options.length > 0) {
       const option = field.options.find(opt => opt.value === selectedDeliverable);
       if (option) {
-        console.log('SearchableDeliverablesField - Found matching option:', option);
       }
     }
   }, [selectedDeliverable, field.options]);
@@ -88,22 +83,18 @@ const SearchableDeliverablesField = ({
     updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
     updateStateAndForm(setDeclinariEnabled, 'declinariDeliverables', newDeclinariEnabled);
     
-    // Trigger validation
-    setTimeout(() => {
-      trigger('deliverables');
-      trigger('deliverableQuantities');
-    }, 0);
+    // Trigger validation immediately
+    trigger('deliverables');
+    trigger('deliverableQuantities');
   };
 
   const handleQuantityChange = (deliverableValue, quantity) => {
     const newQuantities = { ...quantities, [deliverableValue]: parseInt(quantity) || 1 };
     updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
     
-    // Trigger validation
-    setTimeout(() => {
-      trigger('deliverableQuantities');
-      trigger('deliverables');
-    }, 0);
+    // Trigger validation immediately
+    trigger('deliverableQuantities');
+    trigger('deliverables');
   };
 
   // Helper function to update state and form values
@@ -136,7 +127,7 @@ const SearchableDeliverablesField = ({
   };
 
   // Filter out declinari deliverables from search options
-  const filteredOptions = React.useMemo(() => {
+  const filteredOptions = useMemo(() => {
     // If has deliverables is checked but no department is selected, show empty options
     if (hasDeliverables && !selectedDepartment) {
       return [];

@@ -5,8 +5,8 @@ import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
-import { createFormSubmissionHandler, handleFormValidation, transformToLowercase } from '@/utils/formUtils';
-import { reporterFormSchema, REPORTER_FORM_FIELDS } from '@/features/reporters/config/useReporterForm';
+import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
+import { reporterFormSchema, createReporterFormFields } from '@/features/reporters/config/useReporterForm';
 import { TextField, SelectField } from '@/components/forms/components';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
@@ -19,11 +19,15 @@ const ReporterForm = ({
   mode = 'create', 
   initialData = null, 
   onSuccess, 
-  className = "" 
+  className = "",
+  reporters = [] // Pass existing reporters for dynamic options
 }) => {
   const { user } = useAuth();
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
+  
+  // Generate dynamic form fields based on existing reporter data
+  const formFields = createReporterFormFields(reporters);
   
   const {
     register,
@@ -61,9 +65,11 @@ const ReporterForm = ({
   // Create standardized form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
-      // Apply lowercase transformation to reporter data
-      const fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName'];
-      const transformedData = transformToLowercase(data, fieldsToLowercase);
+      // Prepare reporter data with lowercase enforcement
+      const transformedData = prepareFormData(data, {
+        fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName'],
+        fieldsToKeepUppercase: []
+      });
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing reporter
@@ -120,36 +126,18 @@ const ReporterForm = ({
       </h2>
       
       <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
-        <TextField
-          field={REPORTER_FORM_FIELDS[0]} 
-          register={register}
-          errors={errors}
-          formValues={{}}
-        />
-        <TextField
-          field={REPORTER_FORM_FIELDS[1]} 
-          register={register}
-          errors={errors}
-          formValues={{}}
-        />
-        <SelectField
-          field={REPORTER_FORM_FIELDS[2]} 
-          register={register}
-          errors={errors}
-          formValues={{}}
-        />
-        <SelectField
-          field={REPORTER_FORM_FIELDS[3]} 
-          register={register}
-          errors={errors}
-          formValues={{}}
-        />
-        <SelectField
-          field={REPORTER_FORM_FIELDS[4]} 
-          register={register}
-          errors={errors}
-          formValues={{}}
-        />
+        {formFields.map((field, index) => {
+          const FieldComponent = field.type === 'select' ? SelectField : TextField;
+          return (
+            <FieldComponent
+              key={field.name}
+              field={field}
+              register={register}
+              errors={errors}
+              formValues={{}}
+            />
+          );
+        })}
         
         <div className="flex justify-end">
           <DynamicButton

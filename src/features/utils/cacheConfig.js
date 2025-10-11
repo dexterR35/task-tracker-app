@@ -1,20 +1,9 @@
 
-// Cache duration constants (in seconds) - moved from constants.js
-export const CACHE_DURATIONS = {
-  SHORT: 300,     // 5 minutes (increased from 1 minute)
-  MEDIUM: 600,    // 10 minutes (increased from 5 minutes)
-  LONG: 1800,     // 30 minutes
-  VERY_LONG: 3600, // 1 hour
-  INFINITE: Infinity
-};
+import { CACHE_CONFIG } from '@/constants';
 
-// Data volatility categories
-export const DATA_VOLATILITY = {
-  HIGH: 'HIGH',     // Changes frequently (tasks, real-time data)
-  MEDIUM: 'MEDIUM', // Changes moderately (user data, reports)
-  LOW: 'LOW',       // Changes rarely (static config, reporters)
-  STATIC: 'STATIC'  // Never changes (constants, enums)
-};
+// Re-export constants from centralized location for backward compatibility
+export const CACHE_DURATIONS = CACHE_CONFIG.DURATIONS;
+export const DATA_VOLATILITY = CACHE_CONFIG.DATA_VOLATILITY;
 
 /**
  * Get cache configuration based on data volatility

@@ -7,7 +7,8 @@ const ReporterFormModal = ({
   onClose,
   mode = 'create', // 'create' or 'edit'
   reporter = null, // reporter data for edit mode
-  onSuccess
+  onSuccess,
+  reporters = [] // existing reporters for dynamic options
 }) => {
   const title = mode === 'create' ? 'Create New Reporter' : 'Edit Reporter';
   
@@ -21,6 +22,7 @@ const ReporterFormModal = ({
       <ReporterForm
         mode={mode}
         initialData={reporter}
+        reporters={reporters}
         onSuccess={() => {
           onSuccess?.();
           onClose();

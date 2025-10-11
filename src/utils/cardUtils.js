@@ -3,46 +3,14 @@
  * Centralized card system for consistent design and functionality
  */
 
-// ============================================================================
-// CARD COLOR SYSTEM
-// ============================================================================
+import { CARD_SYSTEM } from '@/constants';
 
-// Card color constants
-export const CARD_COLORS = {
-  // Role-based colors
-  ADMIN: 'crimson',
-  USER: 'purple', 
-  REPORTER: 'blue',
-  
-  // Status-based colors
-  ACTIVE: 'green',
-  INACTIVE: 'gray',
-  WARNING: 'amber',
-  
-  // Feature-based colors
-  FILTER: 'blue',
-  ACTIONS: 'amber',
-  PROFILE: 'purple',
-  MONTH: 'crimson',
-  
-  // Default fallback
-  DEFAULT: 'gray'
-};
+// Re-export constants from centralized location for backward compatibility
+export const CARD_COLORS = CARD_SYSTEM.COLORS;
 
 // Convert card color to hex for charts, icons, badges
 export const getCardColorHex = (color) => {
-  const colorMap = {
-    "green": "#10b981",      // Emerald-500 - Fresh, growth
-    "blue": "#3b82f6",       // Blue-500 - Professional, trust
-    "purple": "#8b5cf6",     // Purple-500 - Premium, personal
-    "crimson": "#dc2626",    // Red-600 - Authority, admin
-    "amber": "#f59e0b",      // Amber-500 - Energy, action
-    "pink": "#ec4899",       // Pink-500 - Calendar, time
-    "red": "#ef4444",        // Red-500 - Error
-    "yellow": "#f59e0b",     // Amber-500 - Warning
-    "gray": "#64748b",       // Slate-500 - Disabled
-  };
-  return colorMap[color] || "#64748b";
+  return CARD_SYSTEM.COLOR_HEX_MAP[color] || "#64748b";
 };
 
 // Color mapping for different card types with better colors

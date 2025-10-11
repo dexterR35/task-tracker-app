@@ -25,10 +25,6 @@ const SearchableSelectField = ({
   
   // Debug logging for edit mode
   if (field.name === 'reporters' && currentValue) {
-    console.log('SearchableSelectField - reporters field:');
-    console.log('- currentValue:', currentValue);
-    console.log('- selectedOption:', selectedOption);
-    console.log('- available options:', field.options?.length || 0);
   }
 
   // Handle initial value when form is reset
@@ -48,7 +44,6 @@ const SearchableSelectField = ({
       const option = field.options.find(opt => opt.value === currentValue);
       if (option) {
         // Force a re-render to update the display value
-        console.log('SearchableSelectField - Options loaded, found matching option:', option);
       }
     }
   }, [field.options, currentValue]);
@@ -180,9 +175,6 @@ const SearchableSelectField = ({
     // Last resort: if we have a currentValue but no matching option found,
     // it might be a timing issue - return empty string to avoid showing the UID
     if (currentValue) {
-      console.log('SearchableSelectField - WARNING: currentValue exists but no matching option found');
-      console.log('- currentValue:', currentValue);
-      console.log('- field.options available:', field.options?.length || 0);
       return ''; // Return empty to avoid showing the UID
     }
     
@@ -193,31 +185,13 @@ const SearchableSelectField = ({
   
   // Debug display value
   if (field.name === 'reporters') {
-    console.log('SearchableSelectField - display logic:');
-    console.log('- isOpen:', isOpen);
-    console.log('- searchTerm:', searchTerm);
-    console.log('- currentValue:', currentValue);
-    console.log('- selectedOption:', selectedOption);
-    console.log('- field.options:', field.options);
-    console.log('- field.options length:', field.options?.length || 0);
-    console.log('- displayValue:', displayValue);
     
     // Additional debugging for edit mode
     if (currentValue && !selectedOption && field.options?.length > 0) {
-      console.log('SearchableSelectField - DEBUG: currentValue exists but selectedOption is null');
-      console.log('- Looking for value:', currentValue);
-      console.log('- Available options:', field.options.map(opt => ({ value: opt.value, label: opt.label })));
     }
     
     // Debug the getDisplayValue function step by step
     if (currentValue) {
-      console.log('SearchableSelectField - getDisplayValue debug:');
-      console.log('- isOpen:', isOpen);
-      console.log('- selectedOption exists:', !!selectedOption);
-      console.log('- selectedOption name:', selectedOption?.name);
-      console.log('- selectedOption label:', selectedOption?.label);
-      console.log('- fallback check - currentValue:', currentValue);
-      console.log('- fallback check - field.options length:', field.options?.length);
     }
   }
 

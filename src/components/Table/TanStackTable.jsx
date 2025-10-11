@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useImperativeHandle, forwardRef, useEffect, useRef } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -11,21 +11,17 @@ import {
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
 import { exportToCSV } from "@/utils/exportData";
-import { createSelectionColumn } from "./tableColumns";
-
-
+import { TABLE_SYSTEM } from '@/constants';
 
 // Constants
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 40, 50];
-const SORT_ICONS = {
-  asc: "↑",
-  desc: "↓",
-  false: "↕"
-};
+const PAGE_SIZE_OPTIONS = TABLE_SYSTEM.PAGE_SIZE_OPTIONS;
+const SORT_ICONS = TABLE_SYSTEM.SORT_ICONS;
 
 // Utility functions
 const getSelectedRows = (table, rowSelection) => {
-  return table.getFilteredRowModel().rows.filter(row => rowSelection[row.id]);
+  return table.getFilteredRowModel().rows.filter(row => {
+    return rowSelection[row.id];
+  });
 };
 
 const getSelectedCount = (rowSelection) => Object.keys(rowSelection).length;
@@ -46,12 +42,10 @@ const BulkActionsBar = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium">
-            {selectedCount} row(s) selected
-            {selectedCount > 1 && (
-              <span className="text-xs text-amber-600 dark:text-amber-400 ml-2">
-                (Select only ONE task for actions)
-              </span>
-            )}
+            {selectedCount} row selected
+            <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">
+              (Single selection mode)
+            </span>
           </span>
           <DynamicButton
             onClick={onClearSelection}
@@ -230,7 +224,7 @@ const Pagination = ({
   );
 };
 
-const TanStackTable = ({
+const TanStackTable = forwardRef(({
   data = [],
   columns = [],
   tableType = "generic",
@@ -264,7 +258,7 @@ const TanStackTable = ({
 
   // Additional props
   ...additionalProps
-}) => {
+}, ref) => {
   // Table state management
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -278,48 +272,97 @@ const TanStackTable = ({
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStep, setExportStep] = useState('');
 
-  // Memoized row selection handler
-  const handleRowSelectionChange = useCallback((updater) => {
-    const newSelection = typeof updater === "function" ? updater(rowSelection) : updater;
-    setRowSelection(newSelection);
-    onRowSelectionChange?.(newSelection);
-  }, [rowSelection, onRowSelectionChange]);
+  // Ref for click outside detection
+  const tableRef = useRef(null);
+
+  // Note: handleRowSelectionChange removed since we handle selection manually via row clicks
 
   // Memoized bulk action handler
   const handleBulkAction = useCallback((action, tableInstance) => {
     const selectedRows = getSelectedRows(tableInstance, rowSelection);
+    
+    // Debug: Log bulk action info (removed for production)
+    
     action.onClick(selectedRows.map(row => row.original));
   }, [rowSelection]);
 
   // Memoized clear selection handler
   const handleClearSelection = useCallback(() => {
     setRowSelection({});
-  }, []);
+    onRowSelectionChange?.({});
+  }, [onRowSelectionChange]);
 
+  // Memoized row selection change handler (using TanStack's built-in)
+  const handleRowSelectionChange = useCallback((updater) => {
+    const newSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
+    
+    // Enforce single selection - if multiple rows selected, keep only the last one
+    const selectedKeys = Object.keys(newSelection);
+    if (selectedKeys.length > 1) {
+      const lastSelected = selectedKeys[selectedKeys.length - 1];
+      const singleSelection = { [lastSelected]: true };
+      setRowSelection(singleSelection);
+      onRowSelectionChange?.(singleSelection);
+    } else {
+      setRowSelection(newSelection);
+      onRowSelectionChange?.(newSelection);
+    }
+  }, [rowSelection, onRowSelectionChange]);
+
+  // Memoized row click handler for selection
+  const handleRowClick = useCallback((row) => {
+    if (!enableRowSelection) return;
+    
+    // Use TanStack's built-in row ID for selection
+    const rowId = row.id;
+    const isCurrentlySelected = rowSelection[rowId];
+    
+    // Debug: Log selection info (removed for production)
+    
+    // Toggle selection: if currently selected, deselect; otherwise select
+    const newSelection = isCurrentlySelected ? {} : { [rowId]: true };
+    handleRowSelectionChange(newSelection);
+  }, [enableRowSelection, rowSelection, handleRowSelectionChange]);
+
+  // Handle click outside table to clear selection
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tableRef.current && !tableRef.current.contains(event.target)) {
+        // Only clear if there's a selection and we're not clicking on a modal or dropdown
+        const isModal = event.target.closest('[role="dialog"]') || 
+                       event.target.closest('.modal') || 
+                       event.target.closest('[data-modal]') ||
+                       event.target.closest('.dropdown') ||
+                       event.target.closest('[data-dropdown]');
+        
+        if (Object.keys(rowSelection).length > 0 && !isModal) {
+          handleClearSelection();
+        }
+      }
+    };
+
+    if (enableRowSelection) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [enableRowSelection, rowSelection, handleClearSelection]);
+
+  // Expose clear selection function to parent components
+  useImperativeHandle(ref, () => ({
+    clearSelection: handleClearSelection
+  }), [handleClearSelection]);
 
   // Memoize columns to prevent unnecessary re-renders
   const memoizedColumns = useMemo(() => {
-    const baseColumns = [];
-
-    // Add selection column if enabled
-    if (enableRowSelection) {
-      baseColumns.push(createSelectionColumn());
-    }
-
-    // Combine base columns and data columns
-    return [
-      ...baseColumns,
-      ...columns,
-    ];
-  }, [
-    columns, 
-    enableRowSelection
-  ]);
+    // Selection column removed - row selection now works by clicking anywhere on the row
+    return columns;
+  }, [columns]);
 
   // Create table instance
   const table = useReactTable({
     data,
     columns: memoizedColumns,
+    getRowId: (row) => row.id, // Use the document ID as row ID
     state: {
       sorting,
       globalFilter,
@@ -366,11 +409,11 @@ const TanStackTable = ({
         { step: 'Saving file...', progress: 100 }
       ];
 
-      // Process each step with delay
+      // Process each step quickly
       for (const { step, progress } of progressSteps) {
         setExportStep(step);
         setExportProgress(progress);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 300ms to 50ms
       }
 
       // Perform actual export
@@ -383,15 +426,15 @@ const TanStackTable = ({
 
       if (success) {
         setExportStep('CSV exported successfully!');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 200)); // Reduced from 1000ms to 200ms
       } else {
         setExportStep('CSV export failed. Please try again.');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
       }
 
     } catch (error) {
       setExportStep('CSV export failed. Please try again.');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
     } finally {
       setIsExporting(false);
       setExportType(null);
@@ -404,107 +447,110 @@ const TanStackTable = ({
   const selectedCount = getSelectedCount(rowSelection);
   const totalRows = table.getFilteredRowModel().rows.length;
 
-  // Show skeleton when loading or no data
-  if (isLoading || !data.length) {
-    return (
-      <div className={`space-y-4 ${className}`}>
-        <SkeletonTable rows={5} />
-      </div>
-    );
-  }
+  // Show skeleton when loading or no data - but don't return early to avoid hook order issues
+  const shouldShowSkeleton = isLoading || !data.length;
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Table Controls */}
-      <TableControls
-        showFilters={showFilters}
-        showPagination={showPagination}
-        enablePagination={enablePagination}
-        showColumnToggle={showColumnToggle}
-        table={table}
-        tableType={tableType}
-        globalFilter={globalFilter}
-        setGlobalFilter={setGlobalFilter}
-        columns={columns}
-        handleCSVExport={handleCSVExport}
-        isExporting={isExporting}
-      />
+    <div ref={tableRef} className={`space-y-4 ${className}`}>
+      {shouldShowSkeleton ? (
+        <SkeletonTable rows={5} />
+      ) : (
+        <>
+          {/* Table Controls */}
+          <TableControls
+            showFilters={showFilters}
+            showPagination={showPagination}
+            enablePagination={enablePagination}
+            showColumnToggle={showColumnToggle}
+            table={table}
+            tableType={tableType}
+            globalFilter={globalFilter}
+            setGlobalFilter={setGlobalFilter}
+            columns={columns}
+            handleCSVExport={handleCSVExport}
+            isExporting={isExporting}
+          />
 
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={selectedCount}
-        onClearSelection={handleClearSelection}
-        bulkActions={bulkActions}
-        onBulkAction={handleBulkAction}
-        table={table}
-      />
+          {/* Bulk Actions Bar */}
+          <BulkActionsBar
+            selectedCount={selectedCount}
+            onClearSelection={handleClearSelection}
+            bulkActions={bulkActions}
+            onBulkAction={handleBulkAction}
+            table={table}
+          />
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-btn-primary py-2 h-14">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={`px-4 py-2 text-start font-semibold !capitalize tracking-wider ${
-                      header.column.getCanSort()
-                        ? "cursor-pointer select-none hover:bg-hover"
-                        : ""
-                    } transition-colors duration-150`}
-                    onClick={header.column.getToggleSortingHandler()}
-                    style={{ width: header.getSize() }}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                      </span>
-                      {header.column.getCanSort() && (
-                        <span className="text-gray-200">
-                          {SORT_ICONS[header.column.getIsSorted()] ?? SORT_ICONS.false}
-                        </span>
-                      )}
-                    </div>
-                  </th>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-btn-primary py-2 h-14">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className={`px-4 py-2 text-start font-semibold !capitalize tracking-wider ${
+                          header.column.getCanSort()
+                            ? "cursor-pointer select-none hover:bg-hover"
+                            : ""
+                        } transition-colors duration-150`}
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{ width: header.getSize() }}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </span>
+                          {header.column.getCanSort() && (
+                            <span className="text-gray-200">
+                              {SORT_ICONS[header.column.getIsSorted()] ?? SORT_ICONS.false}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="bg-smallCard-white dark:bg-smallCard divide-y divide-gray-300 dark:divide-gray-600">
-            {table.getRowModel().rows.map((row) => {
-              const rowKey = row.original?.id || row.id;
-             
-              return (
-                <tr
-                  key={rowKey}
-                  className={`hover:bg-hover cursor-pointer transition-colors duration-150 
-                  }`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={`${row.original?.id || row.id}-${cell.column.id}`}
-                      className="px-4 py-2 h-16 whitespace-nowrap text-xs font-medium capitalize"
-                      style={{ width: cell.column.getSize() }}
+              </thead>
+              <tbody className="bg-smallCard-white dark:bg-smallCard divide-y divide-gray-300 dark:divide-gray-600">
+                {table.getRowModel().rows.map((row) => {
+                  const rowKey = row.original?.id || row.id;
+                  const isSelected = rowSelection[row.id];
+                 
+                  return (
+                    <tr
+                      key={rowKey}
+                      className={`hover:bg-hover cursor-pointer transition-colors duration-150 ${
+                        isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''
+                      }`}
+                      onClick={() => handleRowClick(row)}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={`${row.original?.id || row.id}-${cell.column.id}`}
+                          className="px-4 py-2 h-16 whitespace-nowrap text-xs font-medium capitalize"
+                          style={{ width: cell.column.getSize() }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Pagination */}
-      <Pagination
-        showPagination={showPagination}
-        enablePagination={enablePagination}
-        table={table}
-        selectedCount={selectedCount}
-        totalRows={totalRows}
-      />
+          {/* Pagination */}
+          <Pagination
+            showPagination={showPagination}
+            enablePagination={enablePagination}
+            table={table}
+            selectedCount={selectedCount}
+            totalRows={totalRows}
+          />
+        </>
+      )}
 
       {/* Export Progress Modal */}
       {isExporting && (
@@ -574,6 +620,8 @@ const TanStackTable = ({
       )}
     </div>
   );
-};
+});
+
+TanStackTable.displayName = 'TanStackTable';
 
 export default TanStackTable;

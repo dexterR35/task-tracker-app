@@ -1,22 +1,7 @@
 import * as Yup from 'yup';
 import { serializeTimestampsForRedux } from '@/utils/dateUtils';
-import { transformNestedDataToLowercase } from '@/utils/formUtils';
-
-
-
-
-const VALIDATION_PATTERNS = {
-  JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
-};
-
-const VALIDATION_MESSAGES = {
-  REQUIRED: "This field is required",
-  JIRA_URL_FORMAT: "Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}",
-  MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
-  MIN_VALUE: (min) => `Must be at least ${min}`,
-  MAX_VALUE: (max) => `Must be no more than ${max}`,
-  SELECT_ONE: "Please select at least one option",
-};
+import { prepareFormData } from '@/utils/formUtils';
+import { VALIDATION, FORM_OPTIONS } from '@/constants';
 
 // ===== CONDITIONAL FIELD LOGIC =====
 export const shouldShowField = (field, formValues) => {
@@ -42,52 +27,11 @@ export const isConditionallyRequired = (field, formValues) => {
 
 // ===== TASK FORM OPTIONS =====
 export const TASK_FORM_OPTIONS = {
-  products: [
-    { value: "marketing casino", label: "marketing casino" },
-    { value: "marketing sport", label: "marketing sport" },
-    { value: "marketing poker", label: "marketing poker" },
-    { value: "marketing lotto", label: "marketing lotto" },
-    { value: "acquisition casino", label: "acquisition casino" },
-    { value: "acquisition sport", label: "acquisition sport" },
-    { value: "acquisition poker", label: "acquisition poker" },
-    { value: "acquisition lotto", label: "acquisition lotto" },
-    { value: "product casino", label: "product casino" },
-    { value: "product sport", label: "product sport" },
-    { value: "product poker", label: "product poker" },
-    { value: "product lotto", label: "product lotto" },
-    { value: "misc", label: "misc" },
-  ],
-  markets: [
-    { value: 'ro', label: 'ro' },
-    { value: 'com', label: 'com' },
-    { value: 'uk', label: 'uk' },
-    { value: 'ie', label: 'ie' },
-    { value: 'fi', label: 'fi' },
-    { value: 'dk', label: 'dk' },
-    { value: 'de', label: 'de' },
-    { value: 'at', label: 'at' },
-    { value: 'it', label: 'it' },
-    { value: 'gr', label: 'gr' },
-    { value: 'fr', label: 'fr' }
-  ],
-  departments: [
-    { value: "video", label: "Video Production" },
-    { value: "design", label: "Design" },
-    { value: "developer", label: "Development" },
-  ],
+  products: FORM_OPTIONS.PRODUCTS,
+  markets: FORM_OPTIONS.MARKETS,
+  departments: FORM_OPTIONS.DEPARTMENTS,
   // deliverables will be loaded dynamically from database
-  aiModels: [
-    { value: "Photoshop", label: "Photoshop" },
-    { value: "FireFly", label: "FireFly" },
-    { value: "ChatGpt", label: "ChatGpt" },
-    { value: "ShutterStock", label: "ShutterStock" },
-    { value: "Midjourney", label: "Midjourney" },
-    { value: "NightCafe", label: "NightCafe" },
-    { value: "FreePick", label: "FreePick" },
-    { value: "Cursor", label: "Cursor" },
-    { value: "run diffusion", label: "run diffusion" },
-
-  ],
+  aiModels: FORM_OPTIONS.AI_MODELS,
 };
 
 // ===== TASK FORM FIELD CONFIGURATION =====
@@ -246,25 +190,25 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
 // ===== TASK FORM VALIDATION SCHEMA =====
 export const createTaskFormSchema = () => Yup.object().shape({
   jiraLink: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED)
-    .matches(VALIDATION_PATTERNS.JIRA_URL_ONLY, VALIDATION_MESSAGES.JIRA_URL_FORMAT)
-    .max(200, VALIDATION_MESSAGES.MAX_LENGTH(200)),
+    .required(VALIDATION.MESSAGES.REQUIRED)
+    .matches(VALIDATION.PATTERNS.JIRA_URL_ONLY, VALIDATION.MESSAGES.JIRA_URL_FORMAT)
+    .max(200, VALIDATION.MESSAGES.MAX_LENGTH(200)),
   
   products: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   departments: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   markets: Yup.array()
-    .min(1, VALIDATION_MESSAGES.SELECT_ONE)
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .min(1, VALIDATION.MESSAGES.SELECT_ONE)
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   timeInHours: Yup.number()
     .typeError('Please enter a valid number')
-    .required(VALIDATION_MESSAGES.REQUIRED)
-    .min(0.5, VALIDATION_MESSAGES.MIN_VALUE(0.5))
-    .max(999, VALIDATION_MESSAGES.MAX_VALUE(999))
+    .required(VALIDATION.MESSAGES.REQUIRED)
+    .min(0.5, VALIDATION.MESSAGES.MIN_VALUE(0.5))
+    .max(999, VALIDATION.MESSAGES.MAX_VALUE(999))
     .test('valid-increment', 'Time must be in 0.5 hour increments (0, 0.5, 1, 1.5, 2, etc.)', function(value) {
       if (value === undefined || value === null) return true;
       // Check if the value is a valid 0.5 increment
@@ -278,7 +222,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
     }),
   
   startDate: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED)
+    .required(VALIDATION.MESSAGES.REQUIRED)
     .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
     .test('valid-date', 'Please enter a valid start date', function(value) {
       if (!value) return false;
@@ -287,7 +231,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
     }),
   
   endDate: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED)
+    .required(VALIDATION.MESSAGES.REQUIRED)
     .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
     .test('valid-date', 'Please enter a valid end date', function(value) {
       if (!value) return false;
@@ -348,11 +292,11 @@ export const createTaskFormSchema = () => Yup.object().shape({
   }),
   
   reporters: Yup.string()
-    .required(VALIDATION_MESSAGES.REQUIRED),
+    .required(VALIDATION.MESSAGES.REQUIRED),
   
   observations: Yup.string()
     .optional()
-    .max(300, 'Observations cannot exceed 300 characters')
+    .max(300, VALIDATION.MESSAGES.MAX_LENGTH(300))
 });
 
 
@@ -475,7 +419,13 @@ export const prepareTaskFormData = (formData) => {
   
   // Apply lowercase transformation to string fields, but keep taskName uppercase
   const fieldsToLowercase = ['products', 'observations', 'reporterName', 'departments', 'markets', 'reporters'];
-  const lowercasedDataTask = transformNestedDataToLowercase(dataTask, fieldsToLowercase);
+  const fieldsToKeepUppercase = ['taskName'];
+  const lowercasedDataTask = prepareFormData(dataTask, {
+    fieldsToLowercase,
+    fieldsToKeepUppercase,
+    removeEmptyFields: false, // Don't remove empty fields as they're part of the data structure
+    convertTypes: false // Types are already converted
+  });
   
   // Serialize any Date objects to ISO strings for Redux compatibility using utility
   const serializedDataTask = serializeTimestampsForRedux(lowercasedDataTask);

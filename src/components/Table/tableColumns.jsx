@@ -2,40 +2,19 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
-import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate } from '@/utils/dateUtils';
 import { useDeliverableCalculation } from '@/hooks/useDeliverableCalculation';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
+import { TABLE_SYSTEM } from '@/constants';
 
 const columnHelper = createColumnHelper();
 
-// Selection and Action Column Functions
-export const createSelectionColumn = () => 
-  columnHelper.display({
-    id: "select",
-    header: () => (
-      <span >Select</span>
-    ),
-    size: 30,
-    cell: ({ row }) => (
-      <input
-        name={`select-row-${row.id}`}
-        id={`select-row-${row.id}`}
-        type="checkbox"
-        checked={row.getIsSelected()}
-        onChange={row.getToggleSelectedHandler()}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  });
+// Note: createSelectionColumn moved to tableColumnFactory.jsx to avoid duplication
+// This function is no longer used since row selection is handled by clicking the row
 
 
 // Constants
-const DATE_FORMATS = {
-  SHORT: 'dd MMM yyyy',
-  LONG: 'dd MMM yyyy, HH:mm'
-};
+const DATE_FORMATS = TABLE_SYSTEM.DATE_FORMATS;
 
 // Badge variants moved to Badge component
 
@@ -148,14 +127,9 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
       if (!taskName) return 'No Link';
       
       return (
-        <a 
-          href={`https://gmrd.atlassian.net/browse/${taskName}`}
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="underline"
-        >
+        <span className="font-mono text-blue-600 dark:text-blue-400">
           {taskName}
-        </a>
+        </span>
       );
     },
     size: 120,

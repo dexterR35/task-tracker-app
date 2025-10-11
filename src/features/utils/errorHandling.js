@@ -1,33 +1,15 @@
 import { logger } from "@/utils/logger";
 import { showError, showSuccess } from "@/utils/toast";
+import { ERROR_SYSTEM } from '@/constants';
 
 /**
  * Standardized error handling utilities
  * Provides consistent error handling patterns across the application
  */
 
-/**
- * Error types for consistent error handling
- */
-export const ERROR_TYPES = {
-  AUTHENTICATION: 'AUTHENTICATION',
-  AUTHORIZATION: 'AUTHORIZATION',
-  VALIDATION: 'VALIDATION',
-  NETWORK: 'NETWORK',
-  NOT_FOUND: 'NOT_FOUND',
-  SERVER: 'SERVER',
-  UNKNOWN: 'UNKNOWN'
-};
-
-/**
- * Error severity levels
- */
-export const ERROR_SEVERITY = {
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH',
-  CRITICAL: 'CRITICAL'
-};
+// Re-export constants from centralized location for backward compatibility
+export const ERROR_TYPES = ERROR_SYSTEM.TYPES;
+export const ERROR_SEVERITY = ERROR_SYSTEM.SEVERITY;
 
 /**
  * Standard error response structure - ensures all values are serializable

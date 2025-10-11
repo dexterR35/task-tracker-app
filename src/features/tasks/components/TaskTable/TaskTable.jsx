@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppData } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import TanStackTable from "@/components/Table/TanStackTable";
@@ -20,10 +21,16 @@ const TaskTable = ({
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  
+  // Table ref for clearing selection
+  const tableRef = useRef(null);
 
   // Get auth functions separately
   const { canAccess, user } = useAuth();
   const isUserAdmin = canAccess("admin");
+  
+  // Get navigate function for React Router navigation
+  const navigate = useNavigate();
 
   // Get data from useAppData hook
   const {
@@ -44,7 +51,7 @@ const TaskTable = ({
         taskId: task.id,
         userData: user  // Pass user data for permission validation
       });
-      showSuccess(`Task "${task.data_task?.taskName}" deleted successfully!`);
+      // Note: Success toast is already shown by useTableActions hook
     } catch (error) {
       showError(`Failed to delete task: ${error.message}`);
       throw error; // Re-throw to maintain error handling in bulk operations
@@ -74,6 +81,14 @@ const TaskTable = ({
       return task?.data_task?.taskName || task?.id;
     },
     deleteMutation: handleTaskDeleteMutation,
+    onDeleteSuccess: () => {
+      // Clear table selection after delete
+      tableRef.current?.clearSelection();
+    },
+    onSelectSuccess: () => {
+      // Don't clear selection immediately for view action - let navigation handle it
+      // The selection will be cleared when the component unmounts or when user returns
+    }
   });
 
   // Handle edit task
@@ -87,7 +102,9 @@ const TaskTable = ({
     setShowEditModal(false);
     setEditingTask(null);
     handleEditSuccess();
-    showSuccess('Task updated successfully!');
+    // Clear table selection after edit
+    tableRef.current?.clearSelection();
+    // Note: Success toast is already shown by TaskForm's createFormSubmissionHandler
   };
 
   // Handle edit modal close
@@ -192,6 +209,7 @@ const TaskTable = ({
 
       {/* Table */}
       <TanStackTable
+        ref={tableRef}
         data={filteredTasks}
         columns={taskColumns}
         tableType="tasks"
@@ -209,8 +227,15 @@ const TaskTable = ({
             variant: "primary",
             onClick: (selectedTasks) => {
               if (selectedTasks.length === 1) {
-                handleSelect(selectedTasks[0]);
-                showSuccess(`Viewing task: ${selectedTasks[0].data_task?.taskName}`);
+                const task = selectedTasks[0];
+                
+                // Navigate using React Router (no page reload!)
+                const params = new URLSearchParams();
+                if (task.monthId) params.set('monthId', task.monthId);
+                if (task.createdByName) params.set('user', task.createdByName);
+                
+                // Use React Router navigate for smooth navigation
+                navigate(`/task/${task.id}?${params.toString()}`);
               } else {
                 showError("Please select only ONE task to view");
               }
@@ -223,7 +248,7 @@ const TaskTable = ({
             onClick: (selectedTasks) => {
               if (selectedTasks.length === 1) {
                 handleEditTask(selectedTasks[0]);
-                showSuccess(`Opening edit form for: ${selectedTasks[0].data_task?.taskName}`);
+                // Note: Success toast will be shown by TaskForm when edit completes
               } else {
                 showError("Please select only ONE task to edit");
               }

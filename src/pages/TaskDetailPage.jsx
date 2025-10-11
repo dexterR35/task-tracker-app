@@ -31,33 +31,9 @@ const TaskDetailPage = () => {
     navigate('/dashboard');
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader size="lg" text="Loading task details..." variant="spinner" />
-      </div>
-    );
-  }
-
-  if (!task) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Task Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">The requested task could not be found.</p>
-          <DynamicButton
-            onClick={handleGoBack}
-            variant="primary"
-            size="md"
-            iconName="arrowLeft"
-            iconPosition="left"
-          >
-            Back to Dashboard
-          </DynamicButton>
-        </div>
-      </div>
-    );
-  }
+  // Determine what to show - but don't return early to avoid hook order issues
+  const shouldShowLoading = isLoading;
+  const shouldShowNotFound = !isLoading && !task;
 
   // Calculate days between start and end dates
   const getDaysBetweenDates = () => {
@@ -626,110 +602,132 @@ const TaskDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+      {shouldShowLoading ? (
+        <div className="flex items-center justify-center">
+          <Loader size="lg" text="Loading task details..." variant="spinner" />
+        </div>
+      ) : shouldShowNotFound ? (
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Task Not Found</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">The requested task could not be found.</p>
             <DynamicButton
               onClick={handleGoBack}
-              variant="outline"
-              size="sm"
+              variant="primary"
+              size="md"
               iconName="arrowLeft"
               iconPosition="left"
             >
               Back to Dashboard
             </DynamicButton>
           </div>
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
-            <h1 className="text-3xl font-bold">
-              {task.data_task?.taskName || 'Unnamed Task'}
-            </h1>
-            <p className="text-blue-100 mt-2">
-              Task ID: {task.id}
-            </p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {task.isVip && (
-                <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  VIP Task
-                </span>
-              )}
-              {task.reworked && (
-                <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Reworked
-                </span>
-              )}
-            </div>
-          </div>
         </div>
-
-        {/* Analytics Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {/* Basic Information Card */}
-          <AnalyticsCard
-            title="Basic Information"
-            icon={Icons.generic.task}
-            color="blue"
-            data={basicInfoData}
-          />
-
-          {/* Time Information Card */}
-          <AnalyticsCard
-            title="Time Information"
-            icon={Icons.generic.clock}
-            color="green"
-            data={timeInfoData}
-          />
-
-          {/* Dates Information Card */}
-          <AnalyticsCard
-            title="Dates & Timeline"
-            icon={Icons.generic.calendar}
-            color="purple"
-            data={datesData}
-          />
-
-
-          {/* Deliverables Card - Admin Only */}
-          {isUserAdmin && deliverablesData.length > 0 && (
-            <AnalyticsCard
-              title="Deliverables"
-              icon={Icons.generic.package}
-              color="yellow"
-              data={deliverablesData}
-            />
-          )}
-
-          {/* Task Status Card */}
-          <AnalyticsCard
-            title="Task Status"
-            icon={Icons.generic.info}
-            color="indigo"
-            data={statusData}
-          />
-        </div>
-
-        {/* Jira Link Section */}
-        {task.data_task?.taskName && (
-          <div className="mt-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Jira Integration
-              </h3>
-              <a
-                href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-lg"
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <DynamicButton
+                onClick={handleGoBack}
+                variant="outline"
+                size="sm"
+                iconName="arrowLeft"
+                iconPosition="left"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Open in Jira
-              </a>
+                Back to Dashboard
+              </DynamicButton>
+            </div>
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
+              <h1 className="text-3xl font-bold">
+                {task.data_task?.taskName || 'Unnamed Task'}
+              </h1>
+              <p className="text-blue-100 mt-2">
+                Task ID: {task.id}
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {task.isVip && (
+                  <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    VIP Task
+                  </span>
+                )}
+                {task.reworked && (
+                  <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Reworked
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Analytics Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Basic Information Card */}
+            <AnalyticsCard
+              title="Basic Information"
+              icon={Icons.generic.task}
+              color="blue"
+              data={basicInfoData}
+            />
+
+            {/* Time Information Card */}
+            <AnalyticsCard
+              title="Time Information"
+              icon={Icons.generic.clock}
+              color="green"
+              data={timeInfoData}
+            />
+
+            {/* Dates Information Card */}
+            <AnalyticsCard
+              title="Dates & Timeline"
+              icon={Icons.generic.calendar}
+              color="purple"
+              data={datesData}
+            />
+
+
+            {/* Deliverables Card - Admin Only */}
+            {isUserAdmin && deliverablesData.length > 0 && (
+              <AnalyticsCard
+                title="Deliverables"
+                icon={Icons.generic.package}
+                color="yellow"
+                data={deliverablesData}
+              />
+            )}
+
+            {/* Task Status Card */}
+            <AnalyticsCard
+              title="Task Status"
+              icon={Icons.generic.info}
+              color="indigo"
+              data={statusData}
+            />
+          </div>
+
+          {/* Jira Link Section */}
+          {task.data_task?.taskName && (
+            <div className="mt-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Jira Integration
+                </h3>
+                <a
+                  href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-lg"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Open in Jira
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
