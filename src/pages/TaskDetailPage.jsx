@@ -9,7 +9,7 @@ import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate } from '@/utils/dateUtils';
 import { showError } from '@/utils/toast';
 import { Icons } from '@/components/icons';
-import { getCardColorHex } from '@/components/Card/cardConfig';
+import { getCardColorHex } from '@/utils/cardUtils';
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();

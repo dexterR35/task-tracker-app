@@ -26,6 +26,7 @@ import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
+import UserDataPage from "@/pages/UserDataPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -221,7 +222,7 @@ const router = createBrowserRouter([
             path: "view-my-data",
             element: (
               <PageWrapper>
-                <ComingSoonPage />
+                <UserDataPage />
               </PageWrapper>
             ),
           },

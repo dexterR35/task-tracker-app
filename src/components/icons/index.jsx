@@ -43,6 +43,10 @@ import {
   FiCode,
   FiCpu,
   FiCopy,
+  FiStar,
+  FiGlobe,
+  FiLayers,
+  FiBox,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
 import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
@@ -113,6 +117,7 @@ export const Icons = {
 
   generic: {
     user: withSize(FiUser),
+    users: withSize(FiUsers),
     dashboard: withSize(MdDashboard),
     moon: withSize(IoMoonOutline),
     sun: withSize(IoSunnyOutline),
@@ -121,6 +126,7 @@ export const Icons = {
     settings: withSize(MdSettings),
     home: withSize(MdHome),
     clock: withSize(FiClock),
+    timer: withSize(FiClock),
     zap: withSize(FiZap),
     package: withSize(FiPackage),
     target: withSize(FiTarget),
@@ -129,6 +135,13 @@ export const Icons = {
     code: withSize(FiCode),
     ai: withSize(FiCpu),
     document: withSize(FiFileText),
+    deliverable: withSize(FiLayers),
+    star: withSize(FiStar),
+    refresh: withSize(FiRefreshCw),
+    globe: withSize(FiGlobe),
+    product: withSize(FiBox),
+    department: withSize(FiUsers),
+    reporter: withSize(FiFileText),
   },
   
   profile: {

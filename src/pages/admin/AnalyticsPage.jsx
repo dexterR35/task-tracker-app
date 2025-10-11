@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
-import MarketUserBreakdownCard from "@/components/Cards/MarketUserBreakdownCard";
-import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
-import UserAnalyticsCard from "@/components/Cards/UserAnalyticsCard";
-import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
-import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
+import UnifiedAnalyticsCard from "@/components/Cards/UnifiedAnalyticsCard";
+import { ANALYTICS_CARD_TYPES } from "@/components/Cards/analyticsCardConfig";
+import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
 import { exportAnalyticsToCSV } from "@/utils/exportData";
@@ -374,7 +372,10 @@ const AnalyticsPage = () => {
                     </span>
                   </label>
                 </div>
-                <MarketUserBreakdownCard {...analyticsData} />
+                <UnifiedAnalyticsCard 
+                  cardType={ANALYTICS_CARD_TYPES.MARKET_USER_BREAKDOWN}
+                  {...analyticsData} 
+                />
               </div>
             </div>
           </div>
@@ -396,7 +397,10 @@ const AnalyticsPage = () => {
                     </span>
                   </label>
                 </div>
-                <ReporterAnalyticsCard {...analyticsData} />
+                <UnifiedAnalyticsCard 
+                  cardType={ANALYTICS_CARD_TYPES.REPORTER_ANALYTICS}
+                  {...analyticsData} 
+                />
               </div>
             </div>
           </div>
@@ -418,7 +422,10 @@ const AnalyticsPage = () => {
                     </span>
                   </label>
                 </div>
-                <UserAnalyticsCard {...analyticsData} />
+                <UnifiedAnalyticsCard 
+                  cardType={ANALYTICS_CARD_TYPES.USER_ANALYTICS}
+                  {...analyticsData} 
+                />
               </div>
             </div>
           </div>
@@ -442,7 +449,10 @@ const AnalyticsPage = () => {
                     </span>
                   </label>
                 </div>
-                <MarketingAnalyticsCard {...analyticsData} />
+                <UnifiedAnalyticsCard 
+                  cardType={ANALYTICS_CARD_TYPES.MARKETING_ANALYTICS}
+                  {...analyticsData} 
+                />
               </div>
             </div>
           </div>

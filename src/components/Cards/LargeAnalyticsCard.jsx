@@ -1,6 +1,6 @@
 import React from "react";
 import { Icons } from "@/components/icons";
-import { getCardColorHex } from "@/components/Card/cardConfig";
+import { getCardColorHex, getCardBackgroundColor, getCardBorderColor, getCardGradient } from "@/utils/cardUtils";
 
 // Small Card Component for inside the large card
 const SmallCard = ({ title, icon, data, color, className = "" }) => {
@@ -25,8 +25,8 @@ const SmallCard = ({ title, icon, data, color, className = "" }) => {
               key={index}
               className="p-3 rounded-lg border hover:bg-gray-700/30 transition-colors"
               style={{ 
-                backgroundColor: `${cardColorHex}10`,
-                borderColor: `${cardColorHex}20`
+                backgroundColor: getCardBackgroundColor(color, 0.1),
+                borderColor: getCardBorderColor(color, 0.2)
               }}
             >
               <div className="flex items-center justify-between">
@@ -36,7 +36,7 @@ const SmallCard = ({ title, icon, data, color, className = "" }) => {
                     style={{ 
                       backgroundColor: cardColorHex,
                       padding: '4px',
-                      background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
+                      background: getCardGradient(color)
                     }}
                   ></div>
                   <span className="text-xs text-gray-400">{item.label}</span>
@@ -130,7 +130,7 @@ const LargeAnalyticsCard = ({
       <div className="flex items-center space-x-4 mb-6">
         <div 
           className="p-4 rounded-xl flex items-center justify-center shadow-lg border border-gray-600/30"
-          style={{ backgroundColor: `${cardColorHex}20` }}
+          style={{ backgroundColor: getCardBackgroundColor(color, 0.2) }}
         >
           {icon && React.createElement(icon, {
             className: "w-8 h-8",

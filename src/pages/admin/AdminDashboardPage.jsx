@@ -5,20 +5,14 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
-import DashboardCard from "@/components/Card/DashboardCard";
-import { createDashboardCards } from "@/components/Card/cardConfig";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
-import { useReporterMetrics } from "@/hooks/useReporterMetrics";
-import { useTop3Calculations } from "@/hooks/useTop3Calculations";
-import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { showError, showAuthError } from "@/utils/toast";
-import MonthProgressBar from "@/components/ui/MonthProgressBar/MonthProgressBar";
+import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showTable, setShowTable] = useState(true);
-  const [showCards, setShowCards] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Get auth functions separately
@@ -121,15 +115,11 @@ const AdminDashboardPage = () => {
     setShowCreateModal(true);
   };
 
-  // Calculate reporter metrics using global tasks (reporters card shows all data)
-  const reporterMetrics = useReporterMetrics(tasks, reporters, {});
-
-  // Common data for cards
+  // Common data for small cards
   const commonCardData = {
     tasks, // ✅ Global tasks - never filtered
     reporters,
     users,
-    reporterMetrics,
     periodName:
       selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
     periodId: selectedMonth?.monthId || currentMonth?.monthId || "unknown",
@@ -137,95 +127,6 @@ const AdminDashboardPage = () => {
     isUserAdmin,
     currentUser: user,
   };
-
-  // General metrics (month-filtered only, no user/reporter filtering)
-  const top3Metrics = useTop3Calculations(commonCardData, {
-    selectedUserId: null,
-    selectedReporterId: null,
-    selectedMonthId: currentMonthId,
-    department: null,
-    limit: 3,
-  });
-
-  // Reporters metrics (month-filtered only, no user filtering) - Show all reporters
-  const reportersMetrics = useTop3Calculations(commonCardData, {
-    selectedUserId: null,
-    selectedReporterId: null,
-    selectedMonthId: currentMonthId,
-    department: null,
-    limit: 999, // Show all reporters instead of just top 3
-  });
-
-  // Department-specific metrics (month-filtered only)
-  const videoMetrics = useTop3Calculations(commonCardData, {
-    selectedUserId: null,
-    selectedReporterId: null,
-    selectedMonthId: currentMonthId,
-    department: "video",
-    limit: 999, // Show all users from video department
-  });
-
-  const designMetrics = useTop3Calculations(commonCardData, {
-    selectedUserId: null,
-    selectedReporterId: null,
-    selectedMonthId: currentMonthId,
-    department: "design",
-    limit: 999, // Show all users from design department
-  });
-
-  const devMetrics = useTop3Calculations(commonCardData, {
-    selectedUserId: null,
-    selectedReporterId: null,
-    selectedMonthId: currentMonthId,
-    department: "developer",
-    limit: 999, // Show all users from developer department
-  });
-
-  // Selected user metrics (user + month + reporter filtered, include all data)
-  const selectedUserMetrics = useTop3Calculations(commonCardData, {
-    selectedUserId,
-    selectedReporterId,
-    selectedMonthId: currentMonthId,
-    department: null,
-    limit: 3,
-    includeAllData: true, // Include all products/markets for selected user card
-  });
-
-  // Dashboard cards with hook-based metrics
-  const dashboardCards = useMemo(() => {
-    const cardDataWithMetrics = {
-      ...commonCardData,
-      top3Metrics,
-      reportersMetrics,
-      videoMetrics,
-      designMetrics,
-      devMetrics,
-      selectedUserMetrics,
-      currentMonthId,
-      currentUser: user,
-    };
-
-    return createDashboardCards(
-      cardDataWithMetrics,
-      selectedUserId,
-      selectedUserName,
-      selectedReporterId,
-      user
-    );
-  }, [
-    commonCardData,
-    selectedUserId,
-    selectedUserName,
-    selectedReporterId,
-    top3Metrics,
-    reportersMetrics,
-    videoMetrics,
-    designMetrics,
-    devMetrics,
-    selectedUserMetrics,
-    currentMonthId,
-    user,
-  ]);
 
   // Small cards data preparation
   const smallCardsData = useMemo(
@@ -324,54 +225,19 @@ const AdminDashboardPage = () => {
           {/* Dynamic Small Cards */}
           {isInitialLoading
             ? Array.from({ length: 5 }).map((_, index) => (
-                <SkeletonCard key={index} />
+                <div key={index} className="card-small p-4">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                  </div>
+                </div>
               ))
             : smallCards.map((card) => <SmallCard key={card.id} card={card} />)}
         </div>
       </div>
 
-      {/* Dashboard Cards */}
-      <div className="overflow-hidden mb-2">
-        {/* Cards Section Header */}
-        <div className="py-6 border-bottom">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3>Dashboard Cards</h3>
-              <p className="text-sm ">{dashboardCards.length} cards</p>
-            </div>
-            <DynamicButton
-              onClick={() => setShowCards(!showCards)}
-              variant="outline"
-              size="lg"
-              iconName={showCards ? "hide" : "show"}
-              iconPosition="left"
-              disabled={isInitialLoading}
-              className="w-24"
-            >
-              {showCards ? "Hide" : "Show"}
-            </DynamicButton>
-          </div>
-        </div>
-
-        {/* Dashboard Cards Content */}
-        {showCards && (
-          <div className="pt-6">
-            {isInitialLoading ? (
-              <div className="grid grid-cols-2 gap-6">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <SkeletonCard key={index} />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-6">
-                {dashboardCards.map((card) => (
-                  <DashboardCard key={card.id} card={card} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
 
       {/* table task section */}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppData } from '@/hooks/useAppData';
-import { getMonthBoundaries } from '@/utils/monthUtils';
+import { getMonthBoundaries } from '@/utils/monthUtils.jsx';
 
 const SimpleDateField = ({ 
   field, 

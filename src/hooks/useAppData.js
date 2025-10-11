@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
 import { logger } from "@/utils/logger";
-import { getCurrentMonthInfo, getMonthDateRange } from "@/utils/monthUtils";
+import { getCurrentMonthInfo, getMonthDateRange } from "@/utils/monthUtils.jsx";
 
 
 export const useUserData = () => {

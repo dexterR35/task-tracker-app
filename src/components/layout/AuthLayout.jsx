@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/layout/navigation/Sidebar";
 import FixedHeader from "@/components/layout/navigation/FixedHeader";
-import MonthBoardBanner from "@/components/layout/components/MonthBoardBanner";
+import { MonthBoardBanner } from "@/utils/monthUtils.jsx";
 
 const AuthLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);

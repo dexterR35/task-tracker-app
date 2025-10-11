@@ -1,6 +1,7 @@
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { getCardColor, getBadgeColor } from "./cardColors";
+import { getCardColor, getBadgeColor } from "@/utils/cardUtils";
+import MonthSelector from "@/components/ui/MonthSelector/MonthSelector";
 
 // Small Card Types
 export const SMALL_CARD_TYPES = {
@@ -23,24 +24,12 @@ export const SMALL_CARD_CONFIGS = {
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getContent: (data) => (
       <div className="mb-6">
-        <select
-          id="selectedMonth"
-          value={
-            data.selectedMonth?.monthId || data.currentMonth?.monthId || ""
-          }
-          onChange={(e) => data.selectMonth?.(e.target.value)}
-          className="w-full px-3 py-2 text-sm capitalize"
-        >
-          {data.availableMonths?.length > 0 ? (
-            data.availableMonths.map((month) => (
-              <option key={month.monthId} value={month.monthId}>
-                {month.monthName} {month.isCurrent ? "(Current)" : ""}
-              </option>
-            ))
-          ) : (
-            <option value="">No months available</option>
-          )}
-        </select>
+        <MonthSelector
+          selectedUserId={data.selectedUserId}
+          id="smallCardMonthSelector"
+          className="w-full"
+          placeholder="No months available"
+        />
       </div>
     ),
     getDetails: (data) => [
@@ -241,19 +230,40 @@ export const SMALL_CARD_CONFIGS = {
       <div className="mb-6">
         <DynamicButton
           onClick={() => {
+            // Determine which user's data to view
+            let targetUserId = null;
+            let buttonText = "VIEW MY DATA";
+            
+            // If admin has selected a user, view that user's data
+            if (data.selectedUserId && data.currentUser?.role === 'admin') {
+              targetUserId = data.selectedUserId;
+              const selectedUser = data.users?.find(u => u.userUID === data.selectedUserId);
+              buttonText = selectedUser ? `VIEW ${selectedUser.name?.toUpperCase() || selectedUser.email?.toUpperCase() || 'USER'} DATA` : "VIEW USER DATA";
+            }
+            
+            // Build URL with user parameter if needed
+            const url = targetUserId ? `/view-my-data?userId=${targetUserId}` : '/view-my-data';
+            
             // Use React Router navigation to prevent page refresh
             if (data.navigate) {
-              data.navigate('/view-my-data');
+              data.navigate(url);
             } else {
               // Fallback: use history API for client-side navigation
-              window.history.pushState({}, '', '/view-my-data');
+              window.history.pushState({}, '', url);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }
           }}
           iconName="view"
           className="w-full transition-colors uppercase bg-blue-600 hover:bg-blue-700 text-white"
         >
-          VIEW MY DATA
+          {(() => {
+            // Determine button text based on context
+            if (data.selectedUserId && data.currentUser?.role === 'admin') {
+              const selectedUser = data.users?.find(u => u.userUID === data.selectedUserId);
+              return selectedUser ? `VIEW ${selectedUser.name?.toUpperCase() || selectedUser.email?.toUpperCase() || 'USER'} DATA` : "VIEW USER DATA";
+            }
+            return "VIEW MY DATA";
+          })()}
         </DynamicButton>
       </div>
     ),

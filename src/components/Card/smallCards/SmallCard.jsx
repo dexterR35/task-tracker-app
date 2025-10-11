@@ -1,57 +1,16 @@
 import React from "react";
 import { Icons } from "@/components/icons";
 import Badge from "@/components/ui/Badge/Badge";
-import { getBadgeColor } from "./cardColors";
+import { 
+  getCardColorHex, 
+  getStatusBadgeVariant, 
+  getStatusBadgeColor 
+} from "@/utils/cardUtils";
 
 // Dynamic Small Card Component
 const SmallCard = ({ card }) => {
   const cardColorHex = getCardColorHex(card.color);
 
-  const getStatusBadgeVariant = (status) => {
-    switch (status?.toLowerCase()) {
-      case "active":
-      case "current":
-        return "success";
-      case "inactive":
-      case "disabled":
-        return "error";
-      case "filtered":
-        return "primary";
-      case "historical":
-        return "secondary";
-      case "admin":
-        return "error";
-      case "user":
-        return "secondary";
-      case "reporter":
-        return "primary";
-      default:
-        return "secondary";
-    }
-  };
-
-  const getStatusBadgeColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "active":
-      case "current":
-        return "success";
-      case "inactive":
-      case "disabled":
-        return "error";
-      case "filtered":
-        return "primary";
-      case "historical":
-        return "secondary";
-      case "admin":
-        return "error";
-      case "user":
-        return "secondary";
-      case "reporter":
-        return "primary";
-      default:
-        return "secondary";
-    }
-  };
 
   return (
     <div className="card-small p-4">
@@ -157,22 +116,5 @@ const SmallCard = ({ card }) => {
   );
 };
 
-// import { COLOR_SYSTEM } from '@/utils/colorSystem';
-
-// Convert card color to hex using the new color system with better colors
-const getCardColorHex = (color) => {
-  const colorMap = {
-    "green": "#10b981",      // Emerald-500 - Fresh, growth
-    "blue": "#3b82f6",       // Blue-500 - Professional, trust
-    "purple": "#8b5cf6",     // Purple-500 - Premium, personal
-    "crimson": "#dc2626",    // Red-600 - Authority, admin
-    "amber": "#f59e0b",      // Amber-500 - Energy, action
-    "pink": "#ec4899",       // Pink-500 - Calendar, time
-    "red": "#ef4444",        // Red-500 - Error
-    "yellow": "#f59e0b",     // Amber-500 - Warning
-    "gray": "#64748b",       // Slate-500 - Disabled
-  };
-  return colorMap[color] || "#64748b";
-};
 
 export default SmallCard;
