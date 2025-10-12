@@ -1,5 +1,5 @@
 import React from "react";
-import { useMonthSelection } from "@/hooks/useAppData";
+import { useAppData } from "@/hooks/useAppData";
 
 const MonthSelector = ({ 
   selectedUserId = null,
@@ -8,14 +8,14 @@ const MonthSelector = ({
   id = "monthSelector",
   placeholder = "Select Month"
 }) => {
-  // Use the existing month selection hook
+  // Use the app data hook which includes month selection
   const {
     currentMonth,
     selectedMonth,
     availableMonths,
     selectMonth,
     isLoading
-  } = useMonthSelection(selectedUserId);
+  } = useAppData(selectedUserId);
 
   const handleChange = (e) => {
     const monthId = e.target.value;

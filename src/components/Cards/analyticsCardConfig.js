@@ -48,21 +48,6 @@ export const ANALYTICS_CARD_CONFIGS = {
     chartType: "column"
   },
 
-  [ANALYTICS_CARD_TYPES.PRODUCT_BREAKDOWN]: {
-    type: "large",
-    title: "Task Breakdown by Product",
-    subtitle: "Product-focused analysis",
-    icon: Icons.generic.package,
-    color: "green"
-  },
-
-  [ANALYTICS_CARD_TYPES.CATEGORY_BREAKDOWN]: {
-    type: "large", 
-    title: "Category Breakdown",
-    subtitle: "Task categorization analysis",
-    icon: Icons.generic.layers,
-    color: "purple"
-  }
 };
 
 // Get card configuration by type
@@ -83,10 +68,6 @@ export const getAnalyticsCardTypesByCategory = (category) => {
       ANALYTICS_CARD_TYPES.REPORTER_ANALYTICS,
       ANALYTICS_CARD_TYPES.USER_ANALYTICS,
       ANALYTICS_CARD_TYPES.MARKETING_ANALYTICS
-    ],
-    "large": [
-      ANALYTICS_CARD_TYPES.PRODUCT_BREAKDOWN,
-      ANALYTICS_CARD_TYPES.CATEGORY_BREAKDOWN
     ]
   };
   

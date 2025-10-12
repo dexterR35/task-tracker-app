@@ -1,10 +1,7 @@
 import React, { useMemo } from "react";
 import AnalyticsCard from "@/components/Cards/AnalyticsCard";
-import LargeAnalyticsCard from "@/components/Cards/LargeAnalyticsCard";
 import { Icons } from "@/components/icons";
-import { useTop3Calculations } from "@/hooks/useTop3Calculations";
 import { 
-  calculateMarketBadges, 
   calculateAnalyticsData, 
   generateProductTableData, 
   generateProductChartData 
@@ -17,7 +14,6 @@ import { ANALYTICS_CARD_TYPES, getAnalyticsCardConfig } from "./analyticsCardCon
  */
 const UnifiedAnalyticsCard = ({ 
   cardType, // Use predefined card types
-  type = "analytics", // "analytics" | "large"
   title,
   subtitle,
   icon,
@@ -33,17 +29,13 @@ const UnifiedAnalyticsCard = ({
   chartData,
   chartTitle,
   chartType = "pie",
-  multiBar = false,
-  // Large-specific props
-  top3Data = {},
-  marketBadges = []
+  multiBar = false
 }) => {
   // Get configuration for predefined card types
   const config = cardType ? getAnalyticsCardConfig(cardType) : {};
   
   // Merge props with config
   const finalProps = {
-    type: type || config.type || "analytics",
     title: title || config.title || "Analytics",
     subtitle: subtitle || config.subtitle || "",
     icon: icon || config.icon || Icons.generic.chart,
@@ -51,27 +43,6 @@ const UnifiedAnalyticsCard = ({
     chartType: chartType || config.chartType || "pie",
     multiBar: multiBar || config.multiBar || false
   };
-  // Calculate top 3 data if not provided
-  const calculatedTop3Data = useMemo(() => {
-    if (top3Data && Object.keys(top3Data).length > 0) {
-      return top3Data;
-    }
-    
-    if (!tasks || tasks.length === 0) {
-      return {};
-    }
-
-    return useTop3Calculations(
-      { tasks },
-      {
-        selectedUserId: null,
-        selectedReporterId: null,
-        selectedMonthId: selectedMonth?.monthId,
-        department: null,
-        limit: 3,
-      }
-    );
-  }, [tasks, selectedMonth, top3Data]);
 
   // Helper functions for different analytics calculations
   const calculateMarketUserBreakdown = (filteredTasks, users) => {
@@ -681,14 +652,6 @@ const UnifiedAnalyticsCard = ({
     };
   };
 
-  // Calculate market badges if not provided
-  const calculatedMarketBadges = useMemo(() => {
-    if (marketBadges && marketBadges.length > 0) {
-      return marketBadges;
-    }
-    
-    return calculateMarketBadges(tasks);
-  }, [tasks, marketBadges]);
 
   // Calculate specific analytics data based on card type
   const calculatedAnalyticsData = useMemo(() => {
@@ -718,44 +681,15 @@ const UnifiedAnalyticsCard = ({
 
   // Show skeleton if loading
   if (isLoading || !tasks || tasks.length === 0) {
-    if (finalProps.type === "large") {
-      return (
-        <LargeAnalyticsCard
-          title={finalProps.title}
-          subtitle={finalProps.subtitle}
-          icon={finalProps.icon}
-          color={finalProps.color}
-          top3Data={{}}
-          marketBadges={[]}
-          isLoading={true}
-        />
-      );
-    } else {
-      return (
-        <AnalyticsCard
-          title={finalProps.title}
-          tableData={[]}
-          tableColumns={[]}
-          chartData={[]}
-          chartTitle={chartTitle}
-          colors={[]}
-          isLoading={true}
-        />
-      );
-    }
-  }
-
-  // Render based on type
-  if (finalProps.type === "large") {
     return (
-      <LargeAnalyticsCard
+      <AnalyticsCard
         title={finalProps.title}
-        subtitle={finalProps.subtitle}
-        icon={finalProps.icon}
-        color={finalProps.color}
-        top3Data={calculatedTop3Data}
-        marketBadges={calculatedMarketBadges}
-        isLoading={isLoading}
+        tableData={[]}
+        tableColumns={[]}
+        chartData={[]}
+        chartTitle={chartTitle}
+        colors={[]}
+        isLoading={true}
       />
     );
   }

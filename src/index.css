@@ -394,9 +394,6 @@
     @apply bg-white/90 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 p-4 shadow-md rounded-md;
   }
 
-  .card-large {
-    @apply bg-white/90 dark:bg-smallCard rounded-xl border border-gray-200/60 dark:border-gray-700/60 p-6 backdrop-blur-sm shadow-xl h-full w-full;
-  }
 
   /* Enhanced Typography with Better Font Sizes */
   .card-title {
@@ -467,22 +464,6 @@
     @apply text-xs;
   }
 
-  /* Large Card Typography */
-  .card-large .card-title {
-    @apply text-xl font-semibold;
-  }
-
-  .card-large .card-subtitle {
-    @apply text-sm font-medium;
-  }
-
-  .card-large .card-value {
-    @apply text-3xl font-bold;
-  }
-
-  .card-large .card-description {
-    @apply text-sm;
-  }
   .text-exsmall {
     @apply text-text-primary dark:text-gray-300 text-sm;
   }

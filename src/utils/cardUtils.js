@@ -123,30 +123,6 @@ export const createUserDataCard = (title, subtitle, value, description, icon, co
   chartColor: getCardColorHex(color)
 });
 
-// Generate market badges from tasks
-export const calculateMarketBadges = (tasks) => {
-  if (!tasks || tasks.length === 0) return [];
-  
-  const marketCounts = {};
-  
-  tasks.forEach(task => {
-    const markets = Array.isArray(task.data_task?.markets) ? task.data_task.markets : 
-                   Array.isArray(task.markets) ? task.markets : 
-                   typeof task.data_task?.markets === 'string' ? [task.data_task.markets] :
-                   typeof task.markets === 'string' ? [task.markets] : [];
-    
-    markets.forEach(market => {
-      if (market && typeof market === 'string') {
-        marketCounts[market] = (marketCounts[market] || 0) + 1;
-      }
-    });
-  });
-  
-  return Object.entries(marketCounts)
-    .map(([market, count]) => ({ market, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10); // Top 10 markets
-};
 
 // ============================================================================
 // CARD STYLING UTILITIES

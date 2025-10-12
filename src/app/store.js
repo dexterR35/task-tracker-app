@@ -3,6 +3,7 @@ import authReducer from "@/features/auth/authSlice";
 
 // Import RTK Query APIs - required for RTK Query to function
 import { tasksApi } from "@/features/tasks/tasksApi";
+import { monthsApi } from "@/features/months/monthsApi";
 import { usersApi } from "@/features/users/usersApi";
 import { reportersApi } from "@/features/reporters/reportersApi";
 import { settingsApi } from "@/features/settings/settingsApi";
@@ -12,6 +13,7 @@ const store = configureStore({
   reducer: {
     auth: authReducer,
     [tasksApi.reducerPath]: tasksApi.reducer,
+    [monthsApi.reducerPath]: monthsApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [reportersApi.reducerPath]: reportersApi.reducer,
     [settingsApi.reducerPath]: settingsApi.reducer,
@@ -22,10 +24,12 @@ const store = configureStore({
       immutableCheck: process.env.NODE_ENV === 'development' ? {
         ignoredPaths: [
           'tasksApi.queries',
+          'monthsApi.queries',
           'usersApi.queries', 
           'reportersApi.queries',
           'settingsApi.queries',
           'tasksApi.mutations',
+          'monthsApi.mutations',
           'usersApi.mutations',
           'reportersApi.mutations',
           'settingsApi.mutations',
@@ -54,9 +58,11 @@ const store = configureStore({
         ignoredPaths: [
           'usersApi.queries.*.error.details.originalError',
           'tasksApi.queries.*.error.details.originalError',
+          'monthsApi.queries.*.error.details.originalError',
           'reportersApi.queries.*.error.details.originalError',
           'settingsApi.queries.*.error.details.originalError',
           'tasksApi.queries',
+          'monthsApi.queries',
           'usersApi.queries',
           'reportersApi.queries',
           'settingsApi.queries',
@@ -67,6 +73,7 @@ const store = configureStore({
     }).concat([
       usersApi.middleware,
       tasksApi.middleware,
+      monthsApi.middleware,
       reportersApi.middleware,
       settingsApi.middleware,
     ]),

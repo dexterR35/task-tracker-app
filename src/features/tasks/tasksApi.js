@@ -36,28 +36,14 @@ import {
   getEndOfMonth,
   formatDate,
 } from "@/utils/dateUtils";
+import {
+  getMonthInfo,
+  getCurrentYear,
+  generateMonthId,
+} from "@/utils/monthUtils.jsx";
 import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
 
-// Helper function to get month info using centralized dateUtils
-const getMonthInfo = (date = new Date()) => {
-  const start = getStartOfMonth(date);
-  const end = getEndOfMonth(date);
-  const monthId = formatDate(date, "yyyy-MM");
-  const yearId = formatDate(date, "yyyy");
-  return {
-    monthId,
-    yearId,
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
-    monthName: formatMonth(monthId),
-    daysInMonth: end.getDate(),
-  };
-};
-
-// Helper function to get current year
-const getCurrentYear = () => {
-  return new Date().getFullYear().toString(); // Always use current year
-};
+// Month utility functions are now imported from monthUtils.jsx
 
 // REMOVED: getYearFromMonthId - not used anywhere
 
@@ -158,7 +144,7 @@ const getTaskCacheTags = (monthId) => [
 export const tasksApi = createApi({
   reducerPath: "tasksApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["MonthTasks", "Tasks", "Analytics", "CurrentMonth"],
+  tagTypes: ["MonthTasks", "Tasks", "Analytics"],
   ...getCacheConfigByType("TASKS"),
   endpoints: (builder) => ({
     // Real-time fetch for tasks - optimized for month changes and CRUD operations
@@ -170,8 +156,10 @@ export const tasksApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
+            console.log('🔍 getMonthTasks API called:', { monthId, userId, role });
             
             if (!monthId) {
+              console.log('❌ No monthId provided');
               return { data: [] };
             }
 
@@ -182,7 +170,14 @@ export const tasksApi = createApi({
           const monthDocRef = getMonthRef(monthId);
           const monthDoc = await getDoc(monthDocRef);
 
+          console.log('📅 Month board check:', { 
+            monthId, 
+            boardExists: monthDoc.exists(),
+            yearId 
+          });
+
           if (!monthDoc.exists()) {
+            console.log('❌ Month board does not exist for:', monthId);
             return { data: [] };
           }
 
@@ -201,6 +196,13 @@ export const tasksApi = createApi({
             ...serializeTimestampsForRedux(doc.data()),
           }));
 
+          console.log('📋 Tasks fetched:', { 
+            monthId, 
+            tasksCount: tasks.length,
+            userId,
+            role,
+            tasks: tasks.map(t => ({ id: t.id, userUID: t.userUID }))
+          });
 
           return { data: tasks };
         } catch (error) {
@@ -478,357 +480,8 @@ export const tasksApi = createApi({
         },
     }),
 
-    // Generate month board (admin only)
-    generateMonthBoard: builder.mutation({
-      async queryFn({ monthId, startDate, endDate, daysInMonth, meta = {}, userData }) {
-        try {
-          // SECURITY: Validate user permissions at API level
-          const permissionValidation = validateTaskPermissions(userData, 'create_board');
-          if (!permissionValidation.isValid) {
-            return { error: { message: permissionValidation.errors.join(', ') } };
-          }
-
-          const currentUser = getCurrentUserInfo();
-          const boardRef = getMonthRef(monthId);
-          const boardDoc = await getDoc(boardRef);
-          if (boardDoc.exists()) {
-            // Board already exists, return success with existing data
-            return { 
-              data: serializeTimestampsForRedux({
-                monthId,
-                boardId: boardDoc.data().boardId,
-                exists: true,
-                createdAt: boardDoc.data().createdAt,
-                createdBy: boardDoc.data().createdBy,
-                createdByName: boardDoc.data().createdByName,
-                createdByRole: boardDoc.data().createdByRole,
-              })
-            };
-          }
-          const yearId = getCurrentYear();
-          const boardId = `${monthId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const monthMetadata = {
-            monthId,
-            boardId,
-            yearId,
-            department: "design",
-            month: parseInt(monthId.split("-")[1]),
-            year: parseInt(yearId),
-            monthName: formatMonth(monthId),
-            startDate: startDate || getMonthInfo().startDate,
-            endDate: endDate || getMonthInfo().endDate,
-            daysInMonth: daysInMonth || getMonthInfo().daysInMonth,
-            createdAt: serverTimestamp(),
-            createdBy: currentUser?.uid,
-            createdByName: userData.name,
-            createdByRole: userData.role,
-            status: "active",
-            description: `Month ${monthId} board for Design department`,
-            ...meta,
-          };
-
-          await setDoc(boardRef, monthMetadata);
-          const serializedBoardData = {
-            monthId,
-            boardId,
-            exists: true,
-            createdAt: serverTimestamp(),
-            createdBy: currentUser?.uid,
-            createdByName: userData.name,
-            createdByRole: userData.role,
-          };
-
-          return { data: serializeTimestampsForRedux(serializedBoardData) };
-        } catch (error) {
-          logger.error(
-            `[tasksApi] Failed to generate board for ${monthId}:`,
-            error
-          );
-          return { error: { message: error.message } };
-        }
-      },
-      invalidatesTags: [{ type: "CurrentMonth", id: "ENHANCED" }],
-    }),
-
-    // Enhanced getCurrentMonth - Fetches only current month data (optimized)
-    getCurrentMonth: builder.query({
-      async queryFn({ userId, role, userData }) {
-        try {
-          
-          let currentMonthInfo = getMonthInfo(); // Default to actual current month
-          let boardExists = false;
-          let currentMonthBoard = null;
-
-          // Get available months from the current year (2025) under departments/design
-          // Based on your structure: departments/design/2025/{monthId}/
-          const yearId = getCurrentYear(); // This will be "2025"
-          const monthsRef = collection(db, "departments", "design", yearId);
-          const monthsSnapshot = await getDocs(monthsRef);
-          const availableMonths = [];
-
-          monthsSnapshot.docs.forEach((monthDoc) => {
-            if (monthDoc && monthDoc.exists() && monthDoc.data() && monthDoc.id) {
-              const monthData = {
-                monthId: monthDoc.id, // Use document ID as the source of truth
-                ...monthDoc.data()
-              };
-              // Override the monthId from data with the document ID (correct one)
-              monthData.monthId = monthDoc.id;
-              availableMonths.push(monthData);
-            }
-          });
-
-          // Always check if the actual current month board exists
-          const monthDocRef = getMonthRef(currentMonthInfo.monthId);
-          const monthDoc = await getDoc(monthDocRef);
-          boardExists = monthDoc.exists();
-          
-          if (boardExists) {
-            currentMonthBoard = {
-              monthId: currentMonthInfo.monthId,
-              monthName: currentMonthInfo.monthName,
-              isCurrent: true,
-              boardExists: true,
-              ...serializeTimestampsForRedux(monthDoc.data()),
-            };
-          } else {
-            // Even if board doesn't exist, provide the current month info
-            currentMonthBoard = {
-              monthId: currentMonthInfo.monthId,
-              monthName: currentMonthInfo.monthName,
-              isCurrent: true,
-              boardExists: false,
-              startDate: currentMonthInfo.startDate,
-              endDate: currentMonthInfo.endDate,
-              daysInMonth: currentMonthInfo.daysInMonth,
-            };
-          }
-
-          // Fetch current month tasks if board exists and user is authenticated
-          let currentMonthTasks = [];
 
 
-          if (boardExists && userData) {
-            try {
-              const currentUser = getCurrentUserInfo();
-              
-              if (currentUser) {
-                const tasksRef = getTaskRef(currentMonthInfo.monthId);
-                let tasksQuery = fsQuery(tasksRef);
-
-                // Apply user filtering based on role using helper function
-                tasksQuery = buildTaskQuery(tasksRef, role, userId);
-
-                // Order by creation date
-                tasksQuery = fsQuery(tasksQuery, orderBy("createdAt", "desc"));
-
-                const tasksSnapshot = await getDocs(tasksQuery);
-                currentMonthTasks = tasksSnapshot.docs.map((doc) => ({
-                  id: doc.id,
-                  ...serializeTimestampsForRedux(doc.data()),
-                }));
-                
-                // Query result processed
-                
-              }
-            } catch (taskError) {
-              logger.error(
-                `[tasksApi] Error fetching current month tasks:`,
-                taskError
-              );
-              // Don't fail the entire query if tasks fail to load
-            }
-          }
-
-          // Calculate initial msUntilMidnight
-          const now = new Date();
-          const midnight = new Date();
-          midnight.setHours(24, 0, 0, 0);
-          const initialMsUntilMidnight = midnight.getTime() - now.getTime();
-
-          const finalBoardExists = boardExists;
-
-          return {
-            data: {
-              currentMonth: currentMonthInfo,
-              currentMonthBoard,
-              boardExists: finalBoardExists, // Use task-based boardExists
-              currentMonthTasks,
-              msUntilMidnight: initialMsUntilMidnight,
-              lastUpdated: Date.now(),
-            },
-          };
-        } catch (error) {
-          logger.error(`[tasksApi] Failed to get current month data:`, error);
-          return { error: { message: error.message } };
-        }
-      },
-      async onCacheEntryAdded(
-        arg,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
-      ) {
-        let unsubscribeCurrentMonthBoard = null;
-        let midnightScheduler = null;
-
-        try {
-          await cacheDataLoaded;
-          const currentUser = getCurrentUserInfo();
-
-          if (!currentUser) {
-            logger.warn(
-              `[Tasks API] Cannot set up current month listener: User not authenticated`
-            );
-            return;
-          }
-
-          const currentMonthInfo = getMonthInfo();
-
-          // Note: Current month tasks are handled by the getMonthTasks query
-          // No need for a separate listener here as it would be redundant
-
-          // Set up real-time listener for current month board document
-          if (arg.userData && currentUser && !unsubscribeCurrentMonthBoard) {
-            const monthDocRef = getMonthRef(currentMonthInfo.monthId);
-            const currentMonthBoardListenerKey = `current_month_board_${currentMonthInfo.monthId}`;
-
-            unsubscribeCurrentMonthBoard = listenerManager.addListener(
-              currentMonthBoardListenerKey,
-              () => {
-                listenerManager.updateActivity();
-
-                return onSnapshot(
-                  monthDocRef,
-                  (snapshot) => {
-                    const boardExists = snapshot.exists();
-                    let currentMonthBoard = null;
-
-                    if (boardExists) {
-                      currentMonthBoard = {
-                        monthId: currentMonthInfo.monthId,
-                        monthName: currentMonthInfo.monthName,
-                        isCurrent: true,
-                        boardExists: true,
-                        ...serializeTimestampsForRedux(snapshot.data()),
-                      };
-                    }
-
-                    updateCachedData((draft) => {
-                      draft.boardExists = boardExists;
-                      draft.currentMonthBoard = currentMonthBoard;
-                      draft.lastUpdated = Date.now();
-                    });
-                  },
-                  (error) => {
-                    logger.error("Current month board listener error:", error);
-                  }
-                );
-              }
-            );
-          }
-
-          // Set up midnight-based month rollover scheduler with alerts
-          midnightScheduler = createMidnightScheduler(
-            (newDate) => {
-              // Date has changed - check if month has changed
-              const currentMonthInfo = getMonthInfo();
-              updateCachedData((draft) => {
-                if (draft.currentMonth.monthId !== currentMonthInfo.monthId) {
-                  draft.currentMonth = currentMonthInfo;
-                  draft.lastUpdated = Date.now();
-
-                  // Trigger data refresh for new month
-                  // This will cause components to re-fetch data for the new month
-                }
-              });
-            },
-            (msUntilMidnight) => {
-              // Store the msUntilMidnight value in cached data for real-time countdown
-              updateCachedData((draft) => {
-                draft.msUntilMidnight = msUntilMidnight;
-              });
-            },
-            {
-              showAlert: true,
-              alertMessage:
-                "🌙 Midnight Alert! New day has begun. Your task tracker is updating...",
-            }
-          );
-
-          midnightScheduler.start();
-
-          await cacheEntryRemoved;
-        } catch (error) {
-          logger.error("Error setting up enhanced month listeners:", error);
-        } finally {
-          if (midnightScheduler) {
-            midnightScheduler.stop();
-          }
-
-          // Note: Current month tasks listener cleanup not needed as we don't create it
-
-          // Clean up current month board listener
-          if (unsubscribeCurrentMonthBoard) {
-            const currentMonthInfo = getMonthInfo();
-            const currentMonthBoardListenerKey = `current_month_board_${currentMonthInfo.monthId}`;
-            listenerManager.removeListener(currentMonthBoardListenerKey);
-          }
-        }
-      },
-      providesTags: (result, error, arg) => [
-        { type: "CurrentMonth", id: "ENHANCED" },
-        { type: "MonthTasks", id: getMonthInfo().monthId }, // Invalidate when current month tasks change
-        { type: "MonthTasks", id: "LIST" }, // Also invalidate all month tasks
-        { type: "Analytics", id: "LIST" }, // Invalidate analytics data
-      ],
-    }),
-
-    // Get available months (on-demand for dropdown)
-    getAvailableMonths: builder.query({
-      async queryFn() {
-        try {
-          const currentMonthInfo = getMonthInfo();
-          const availableMonths = [];
-
-          // Get months from the current year under departments/design
-          // Based on your structure: departments/design/2025/{monthId}/
-          const yearId = getCurrentYear(); // This will be "2025"
-          const monthsRef = collection(db, "departments", "design", yearId);
-          const monthsSnapshot = await getDocs(monthsRef);
-
-          monthsSnapshot.docs.forEach((monthDoc) => {
-            if (monthDoc && monthDoc.exists() && monthDoc.data() && monthDoc.id) {
-              const monthData = serializeTimestampsForRedux({
-                monthId: monthDoc.id, // Use document ID as the source of truth
-                ...monthDoc.data(),
-              });
-              
-              // Override the monthId from data with the document ID (correct one)
-              monthData.monthId = monthDoc.id;
-              
-              if (monthData && monthData.monthId) {
-                monthData.monthName = formatMonth(monthData.monthId);
-                monthData.isCurrent = monthData.monthId === currentMonthInfo.monthId;
-                monthData.boardExists = true; // If we found the document, the board exists
-                availableMonths.push(monthData);
-              }
-            }
-          });
-
-          // Sort by monthId (newest first)
-          availableMonths.sort((a, b) => {
-            if (a.isCurrent) return -1;
-            if (b.isCurrent) return 1;
-            return b.monthId.localeCompare(a.monthId);
-          });
-
-          return { data: availableMonths };
-        } catch (error) {
-          logger.error(`[tasksApi] Failed to get available months:`, error);
-          return { error: { message: error.message } };
-        }
-      },
-      providesTags: [{ type: "MonthTasks", id: "AVAILABLE_MONTHS" }],
-    }),
 
   }),
 });
@@ -838,7 +491,4 @@ export const {
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
-  useGenerateMonthBoardMutation,
-  useGetCurrentMonthQuery,
-  useGetAvailableMonthsQuery,
 } = tasksApi;

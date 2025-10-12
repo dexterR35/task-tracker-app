@@ -2,14 +2,9 @@ import React from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppData } from '@/hooks/useAppData';
-import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
-import { useDeliverableCalculation, calculateSingleDeliverable, formatDeliverableDisplay, formatDeclinariDisplay, formatTimeBreakdown } from '@/hooks/useDeliverableCalculation';
 import Loader from '@/components/ui/Loader/Loader';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate } from '@/utils/dateUtils';
-import { showError } from '@/utils/toast';
-import { Icons } from '@/components/icons';
-import { getCardColorHex } from '@/utils/cardUtils';
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -17,8 +12,7 @@ const TaskDetailPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isUserAdmin = user?.role === 'admin';
-  const { tasks, isLoading, error } = useAppData();
-  const { deliverablesOptions } = useDeliverablesOptions();
+  const { tasks, isLoading } = useAppData();
   
   // Get query parameters
   const userId = searchParams.get('user');
@@ -31,12 +25,14 @@ const TaskDetailPage = () => {
     navigate('/dashboard');
   };
 
-  // Determine what to show - but don't return early to avoid hook order issues
+  // Determine what to show
   const shouldShowLoading = isLoading;
   const shouldShowNotFound = !isLoading && !task;
 
   // Calculate days between start and end dates
   const getDaysBetweenDates = () => {
+    if (!task || !task.data_task) return 'Unknown';
+    
     const startDate = task.data_task?.startDate;
     const endDate = task.data_task?.endDate;
     
@@ -55,550 +51,21 @@ const TaskDetailPage = () => {
 
   const daysBetween = getDaysBetweenDates();
 
-  // Analytics Card Component matching dashboard format
-  const AnalyticsCard = ({ title, icon, color, data, className = "" }) => {
-    const cardColorHex = getCardColorHex(color);
-    
-    return (
-      <div className={`bg-gray-800/50 border border-gray-700/30 rounded-lg p-4 hover:bg-gray-800/70 transition-colors ${className}`}>
-        {/* Header */}
-        <div className="flex items-center space-x-3 mb-3">
-          <div 
-            className="p-2 rounded-lg flex items-center justify-center shadow-lg border border-gray-600/30"
-            style={{ backgroundColor: `${cardColorHex}20` }}
-          >
-            {icon && React.createElement(icon, {
-              className: "w-4 h-4",
-              style: { color: cardColorHex }
-            })}
-          </div>
-          <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
-        </div>
-
-        {/* Content - Matching dashboard card format */}
-        <div className="space-y-2">
-          {data && data.length > 0 ? (
-            data.map((item, index) => (
-              <div
-                key={index}
-                className="p-3 rounded-lg border hover:bg-gray-700/30 transition-colors"
-                style={{ 
-                  backgroundColor: `${cardColorHex}10`,
-                  borderColor: `${cardColorHex}20`
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-2 h-2 rounded-full p-1"
-                      style={{ 
-                        backgroundColor: cardColorHex,
-                        padding: '4px',
-                        background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
-                      }}
-                    ></div>
-                    <span className="text-xs text-gray-400">{item.label}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {/* Show badges for all data values with card color */}
-                    {Array.isArray(item.value) ? (
-                      <div className="flex flex-wrap gap-1">
-                        {item.value.map((value, badgeIndex) => (
-                          <div
-                            key={badgeIndex}
-                            className="px-2 py-1 rounded text-xs font-semibold text-white"
-                            style={{ backgroundColor: cardColorHex }}
-                          >
-                            {value}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div
-                        className="px-2 py-1 rounded text-xs font-semibold text-white"
-                        style={{ backgroundColor: cardColorHex }}
-                      >
-                        {item.value}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Show hours value if available */}
-                {item.hoursValue && (
-                  <div className="ml-4 mt-1">
-                    <span className="text-xs text-gray-500">total hrs {item.hoursValue}</span>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-3">
-              <span className="text-xs text-gray-500">No data available</span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  // Helper function to format array values
+  const formatArrayValue = (value) => {
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    return value || 'Not specified';
   };
 
-  // Prepare analytics data with comprehensive task information
-  const basicInfoData = [
-    {
-      label: "Task Name",
-      value: task.data_task?.taskName || 'Unnamed Task'
-    },
-    {
-      label: "Department",
-      value: (() => {
-        const departments = task.data_task?.departments;
-        if (!departments) return 'Not specified';
-        return Array.isArray(departments) ? departments.join(', ') : departments;
-      })()
-    },
-    {
-      label: "Products", 
-      value: Array.isArray(task.data_task?.products) 
-        ? task.data_task.products
-        : task.data_task?.products ? [task.data_task.products] : ['Not specified']
-    },
-    {
-      label: "Reporter",
-      value: task.data_task?.reporterName || 'Not specified'
-    },
-    {
-      label: "User",
-      value: task.data_task?.userName || task.userName || 'Not specified'
-    },
-    {
-      label: "AI Models",
-      value: Array.isArray(task.data_task?.aiModels) 
-        ? task.data_task.aiModels
-        : task.data_task?.aiModels ? [task.data_task.aiModels] : ['Not specified']
+  // Helper function to format JSON values
+  const formatJsonValue = (value) => {
+    if (value && typeof value === 'object') {
+      return JSON.stringify(value, null, 2);
     }
-  ];
-
-  // Use the centralized deliverable calculation hook
-  const { deliverablesList, totalTime, totalMinutes, totalDays } = useDeliverableCalculation(
-    task.data_task?.deliverablesUsed, 
-    deliverablesOptions
-  );
-  
-  // Calculate deliverables time first
-  const deliverablesData = [];
-  let totalCalculatedTime = totalTime;
-  let daysCalculation = '';
-  
-  // Enhanced deliverables processing for new data structure
-  if (deliverablesList.length > 0) {
-    // Process each deliverable using the hook results
-    deliverablesList.forEach((deliverable, index) => {
-      const deliverableName = deliverable.name;
-      const deliverableCount = deliverable.quantity;
-      
-      if (deliverable.configured) {
-        
-        deliverablesData.push({
-          label: `Deliverable ${index + 1}`,
-          value: deliverableName,
-          subValue: `${deliverableCount}x${deliverableName}${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity} declinari` : ''}`
-        });
-        
-        deliverablesData.push({
-          label: `Count`,
-          value: `${deliverableCount} units`
-        });
-        
-        // Show time calculations only for admin users
-        if (isUserAdmin) {
-          deliverablesData.push({
-            label: `Time per Unit`,
-            value: `${deliverable.timePerUnit} ${deliverable.timeUnit}${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime} ${deliverable.declinariTimeUnit} declinari` : ''}`
-          });
-          
-          deliverablesData.push({
-            label: `Calculation`,
-            value: `${deliverable.timeInHours.toFixed(1)}h × ${deliverableCount} = ${(deliverable.timeInHours * deliverableCount).toFixed(1)}h${deliverable.declinariQuantity > 0 ? ` + ${deliverable.declinariQuantity}x × ${deliverable.declinariTime}${deliverable.declinariTimeUnit} = ${deliverable.totalDeclinariTime.toFixed(3)}h` : ''} = ${deliverable.time.toFixed(1)}h`
-          });
-          
-          deliverablesData.push({
-            label: `Total Time`,
-            value: `${deliverable.time.toFixed(1)} hours (${(deliverable.time * 60).toFixed(0)} minutes, ${(deliverable.time / 8).toFixed(2)} days)`
-          });
-        }
-        
-        deliverablesData.push({
-          label: `---`,
-          value: `---`
-        });
-      } else {
-        // If deliverable not found in settings, show basic info
-        deliverablesData.push({
-          label: `Deliverable ${index + 1}`,
-          value: deliverableName
-        });
-        
-        deliverablesData.push({
-          label: `Count`,
-          value: `${deliverableCount} units`
-        });
-        
-        // Show time configuration warning only for admin users
-        if (isUserAdmin) {
-          deliverablesData.push({
-            label: `Time per Unit`,
-            value: '⚠️ Not configured in settings - Add to Settings → Deliverables'
-          });
-        }
-        
-        deliverablesData.push({
-          label: `---`,
-          value: `---`
-        });
-      }
-    });
-    
-    // Add comprehensive total calculation using hook results (admin only)
-    if (isUserAdmin) {
-      const timeBreakdown = formatTimeBreakdown(totalCalculatedTime);
-      daysCalculation = `${timeBreakdown.days} days`;
-      
-      deliverablesData.push({
-        label: "=== TOTAL CALCULATION ===",
-        value: "---"
-      });
-      
-      deliverablesData.push({
-        label: "Total Hours",
-        value: `${timeBreakdown.hours} hours`
-      });
-      
-      deliverablesData.push({
-        label: "Total Minutes", 
-        value: `${timeBreakdown.minutes} minutes`
-      });
-      
-      deliverablesData.push({
-        label: "Total Days (8hr/day)",
-        value: daysCalculation
-      });
-      
-      // Add the exact format you requested
-      deliverablesData.push({
-        label: "SUMMARY",
-        value: timeBreakdown.summary
-      });
-    }
-  }
-  
-  // Handle declinari deliverables separately
-  if (task.data_task?.declinariDeliverables && Object.keys(task.data_task.declinariDeliverables).length > 0) {
-    deliverablesData.push({
-      label: "DECLINARI DELIVERABLES",
-      value: "---"
-    });
-    
-    Object.entries(task.data_task.declinariDeliverables).forEach(([name, data]) => {
-      deliverablesData.push({
-        label: `Declinari: ${name}`,
-        value: `${data.count} units`
-      });
-    });
-  }
-  
-  if (deliverablesData.length === 0) {
-    deliverablesData.push({
-      label: "No deliverables available",
-      value: "No deliverables processed"
-    });
-    
-    if (task.data_task?.deliverablesUsed) {
-      deliverablesData.push({
-        label: "deliverablesUsed",
-        value: JSON.stringify(task.data_task.deliverablesUsed)
-      });
-    }
-    
-    if (task.data_task?.declinariDeliverables) {
-      deliverablesData.push({
-        label: "declinariDeliverables",
-        value: JSON.stringify(task.data_task.declinariDeliverables)
-      });
-    }
-    
-    if (task.data_task?.deliverableQuantities) {
-      deliverablesData.push({
-        label: "deliverableQuantities",
-        value: JSON.stringify(task.data_task.deliverableQuantities)
-      });
-    }
-  }
-  
-  // Handle legacy array format (backward compatibility)
-  if (task.data_task?.deliverables && Array.isArray(task.data_task.deliverables) && task.data_task.deliverables.length > 0 && deliverablesOptions) {
-    const deliverableData = task.data_task.deliverables[0];
-    const deliverableName = deliverableData.deliverableName;
-    const deliverableQuantities = deliverableData.deliverableQuantities || {};
-    const declinariQuantities = deliverableData.declinariQuantities || {};
-    const declinariDeliverables = deliverableData.declinariDeliverables || {};
-    
-    const deliverable = deliverablesOptions.find(d => d.value === deliverableName);
-    if (deliverable) {
-      const quantity = deliverableQuantities[deliverableName] || 1;
-      const calculatedTime = calculateSingleDeliverable(deliverable, quantity, declinariQuantities[deliverableName] || 0);
-      totalCalculatedTime = calculatedTime.totalTime;
-      
-      deliverablesData.push({
-        label: "Deliverable",
-        value: deliverable.label,
-        subValue: `${quantity}x${deliverable.label}${declinariQuantity > 0 ? ` + ${declinariQuantity} declinari` : ''}`
-      });
-      
-      if (deliverable.requiresQuantity) {
-        deliverablesData.push({
-          label: "Quantity",
-          value: `${quantity} units`
-        });
-      }
-      
-      // Add declinari information if present
-      const declinariQuantity = declinariQuantities[task.data_task.deliverables] || 0;
-      if (declinariQuantity > 0) {
-        deliverablesData.push({
-          label: "Declinari",
-          value: `${declinariQuantity} units (10 min/unit)`
-        });
-      }
-      
-      // Show time calculations only for admin users
-      if (isUserAdmin) {
-        deliverablesData.push({
-          label: "Time per Unit",
-          value: `${deliverable.timePerUnit} ${deliverable.timeUnit}`
-        });
-        
-        deliverablesData.push({
-          label: "Total Time",
-          value: `${calculatedTime.toFixed(1)} hours`
-        });
-        
-        // Calculate days (8 hours per day)
-        const days = calculatedTime / 8;
-        daysCalculation = `${days.toFixed(1)} days (${calculatedTime.toFixed(1)} hours ÷ 8 hours/day)`;
-        deliverablesData.push({
-          label: "Duration",
-          value: daysCalculation
-        });
-      }
-    }
-  }
-
-  // Calculate total hours properly
-  const taskHours = task.data_task?.timeInHours || 0;
-  const aiHours = task.data_task?.aiTime || 0;
-  const deliverablesHours = totalCalculatedTime;
-  const totalHours = taskHours + aiHours + deliverablesHours;
-
-  // Create time info data with conditional admin-only fields
-  const baseTimeInfoData = [
-    {
-      label: "Duration",
-      value: daysBetween
-    },
-    {
-      label: "Daily Breakdown",
-      value: daysCalculation || 'No deliverables calculated'
-    }
-  ];
-
-  const adminTimeInfoData = [
-    {
-      label: "Task Hours",
-      value: `${taskHours} hours`
-    },
-    {
-      label: "AI Hours", 
-      value: `${aiHours} hours`
-    },
-    {
-      label: "Deliverables Time",
-      value: `${deliverablesHours.toFixed(1)} hours`
-    },
-    {
-      label: "Total Hours",
-      value: `${totalHours.toFixed(1)} hours`
-    }
-  ];
-
-  const timeInfoData = isUserAdmin 
-    ? [...adminTimeInfoData, ...baseTimeInfoData]
-    : baseTimeInfoData;
-
-  const datesData = [
-    {
-      label: "Start Date",
-      value: task.data_task?.startDate 
-        ? formatDate(task.data_task.startDate, 'dd MMM yyyy', true)
-        : 'Not specified'
-    },
-    {
-      label: "End Date",
-      value: task.data_task?.endDate 
-        ? formatDate(task.data_task.endDate, 'dd MMM yyyy', true)
-        : 'Not specified'
-    },
-    {
-      label: "Duration",
-      value: daysBetween
-    },
-    {
-      label: "Created At",
-      value: task.createdAt 
-        ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true)
-        : 'Not specified'
-    },
-    {
-      label: "Created By",
-      value: task.createdByName || 'Not specified'
-    },
-    {
-      label: "Month",
-      value: task.monthId || 'Not specified'
-    }
-  ];
-
-  const aiData = [];
-  
-  // Add AI models if available
-  if (task.data_task?.aiModels && task.data_task.aiModels.length > 0) {
-    aiData.push({
-      label: "AI Models Used",
-      value: Array.isArray(task.data_task.aiModels) 
-        ? task.data_task.aiModels.join(', ') 
-        : task.data_task.aiModels
-    });
-  }
-  
-  // Add AI time if available
-  if (task.data_task?.aiTime && task.data_task.aiTime > 0) {
-    aiData.push({
-      label: "AI Time",
-      value: `${task.data_task.aiTime} hours`
-    });
-  }
-  
-  // Add AI enabled flag
-  if (task.data_task?.usedAIEnabled !== undefined) {
-    aiData.push({
-      label: "AI Enabled",
-      value: task.data_task.usedAIEnabled ? 'Yes' : 'No'
-    });
-  }
-
-  // Task status and additional information
-  const statusData = [
-    {
-      label: "Task Status",
-      value: task.isVip ? 'VIP Task' : 'Regular Task'
-    },
-    {
-      label: "Reworked",
-      value: task.reworked ? 'Yes' : 'No'
-    },
-    {
-      label: "Task ID",
-      value: task.id || 'Not specified'
-    },
-    {
-      label: "Month ID",
-      value: task.monthId || 'Not specified'
-    },
-    {
-      label: "User UID",
-      value: task.userUID || 'Not specified'
-    }
-  ];
-
-  
-  // Handle legacy single string format (backward compatibility)
-  if (task.data_task?.deliverables && typeof task.data_task.deliverables === 'string' && deliverablesOptions) {
-    const deliverable = deliverablesOptions.find(d => d.value === task.data_task.deliverables);
-    if (deliverable) {
-      const quantity = task.data_task.deliverableQuantities?.[task.data_task.deliverables] || 1;
-      const declinariQuantities = task.data_task.declinariQuantities || {};
-      const declinariDeliverables = task.data_task.declinariDeliverables || {};
-      const calculatedTime = calculateSingleDeliverable(deliverable, quantity, declinariQuantities[task.data_task.deliverables] || 0);
-      totalCalculatedTime = calculatedTime.totalTime;
-      
-      deliverablesData.push({
-        label: "Deliverable",
-        value: deliverable.label
-      });
-      
-      if (quantity > 1) {
-        deliverablesData.push({
-          label: "Quantity",
-          value: `${quantity}x`
-        });
-      }
-      
-      const declinariQuantity = declinariQuantities[task.data_task.deliverables] || 0;
-      if (declinariQuantity > 0) {
-        deliverablesData.push({
-          label: "Declinari Quantity",
-          value: `${declinariQuantity}x`
-        });
-      }
-      
-      if (calculatedTime > 0) {
-        deliverablesData.push({
-          label: "Time per Unit",
-          value: formatTimeEstimate(deliverable, 1)
-        });
-        
-        deliverablesData.push({
-          label: "Total Time",
-          value: `${calculatedTime.toFixed(1)} hours`
-        });
-        
-        const days = calculatedTime / 8;
-        daysCalculation = `${days.toFixed(1)} days`;
-        deliverablesData.push({
-          label: "Duration",
-          value: daysCalculation
-        });
-      }
-    }
-  }
-  
-  // Handle legacy array format deliverables (backward compatibility)
-  if (task.data_task?.deliverables && Array.isArray(task.data_task.deliverables) && !task.data_task.deliverables[0]?.deliverableName) {
-    deliverablesData.push({
-      label: "Deliverables",
-      value: task.data_task.deliverables.join(', ')
-    });
-    
-    // Show quantities if available
-    if (task.data_task.deliverableQuantities) {
-      const quantitiesText = Object.entries(task.data_task.deliverableQuantities)
-        .map(([deliverable, qty]) => `${deliverable}: ${qty}x`)
-        .join(', ');
-      deliverablesData.push({
-        label: "Quantities",
-        value: quantitiesText
-      });
-    }
-  }
-  
-  // Handle custom deliverables (when "others" is selected)
-  if (task.data_task?.customDeliverables && task.data_task.customDeliverables.length > 0) {
-    deliverablesData.push({
-      label: "Custom Deliverables",
-      value: Array.isArray(task.data_task.customDeliverables) 
-        ? task.data_task.customDeliverables.join(', ') 
-        : task.data_task.customDeliverables
-    });
-  }
+    return value || 'None';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -626,10 +93,10 @@ const TaskDetailPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <DynamicButton
                 onClick={handleGoBack}
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 iconName="arrowLeft"
                 iconPosition="left"
@@ -639,18 +106,18 @@ const TaskDetailPage = () => {
             </div>
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
               <h1 className="text-3xl font-bold">
-                {task.data_task?.taskName || 'Unnamed Task'}
+                {task?.data_task?.taskName || 'Unnamed Task'}
               </h1>
               <p className="text-blue-100 mt-2">
-                Task ID: {task.id}
+                Task ID: {task?.id}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
-                {task.isVip && (
+                {task?.isVip && (
                   <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                     VIP Task
                   </span>
                 )}
-                {task.reworked && (
+                {task?.reworked && (
                   <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                     Reworked
                   </span>
@@ -659,61 +126,224 @@ const TaskDetailPage = () => {
             </div>
           </div>
 
-          {/* Analytics Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Task Information Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
             {/* Basic Information Card */}
-            <AnalyticsCard
-              title="Basic Information"
-              icon={Icons.generic.task}
-              color="blue"
-              data={basicInfoData}
-            />
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg mr-3">
+                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Task Name:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.taskName || 'Unnamed Task'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Task ID:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.id || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Department:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatArrayValue(task?.data_task?.departments)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Products:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatArrayValue(task?.data_task?.products)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Markets:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatArrayValue(task?.data_task?.markets)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Reporter:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.reporterName || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">User:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.userName || task?.userName || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">User UID:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.userUID || 'Not specified'}</span>
+                </div>
+              </div>
+            </div>
 
             {/* Time Information Card */}
-            <AnalyticsCard
-              title="Time Information"
-              icon={Icons.generic.clock}
-              color="green"
-              data={timeInfoData}
-            />
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg mr-3">
+                  <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Time Information</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Duration:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{daysBetween}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Task Hours:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.timeInHours || 0} hours</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">AI Time:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.aiTime || 0} hours</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Hours:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{(task?.data_task?.timeInHours || 0) + (task?.data_task?.aiTime || 0)} hours</span>
+                </div>
+              </div>
+            </div>
 
-            {/* Dates Information Card */}
-            <AnalyticsCard
-              title="Dates & Timeline"
-              icon={Icons.generic.calendar}
-              color="purple"
-              data={datesData}
-            />
+            {/* AI Information Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg mr-3">
+                  <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Information</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">AI Models:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatArrayValue(task?.data_task?.aiModels)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">AI Time:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.aiTime || 0} hours</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">AI Enabled:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.data_task?.usedAIEnabled ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+            </div>
 
+            {/* Deliverables Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg mr-3">
+                  <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Deliverables</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Deliverables Used:</span>
+                  <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
+                    {formatJsonValue(task?.data_task?.deliverablesUsed)}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Custom Deliverables:</span>
+                  <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                    {formatArrayValue(task?.data_task?.customDeliverables)}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Deliverable Quantities:</span>
+                  <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
+                    {formatJsonValue(task?.data_task?.deliverableQuantities)}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            {/* Deliverables Card - Admin Only */}
-            {isUserAdmin && deliverablesData.length > 0 && (
-              <AnalyticsCard
-                title="Deliverables"
-                icon={Icons.generic.package}
-                color="yellow"
-                data={deliverablesData}
-              />
-            )}
+            {/* Dates & Timeline Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-pink-100 dark:bg-pink-900 rounded-lg mr-3">
+                  <svg className="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dates & Timeline</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Start Date:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {task?.data_task?.startDate ? formatDate(task.data_task.startDate, 'dd MMM yyyy', true) : 'Not specified'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">End Date:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {task?.data_task?.endDate ? formatDate(task.data_task.endDate, 'dd MMM yyyy', true) : 'Not specified'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Created At:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {task?.createdAt ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true) : 'Not specified'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Created By:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.createdByName || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Month ID:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.monthId || 'Not specified'}</span>
+                </div>
+              </div>
+            </div>
 
             {/* Task Status Card */}
-            <AnalyticsCard
-              title="Task Status"
-              icon={Icons.generic.info}
-              color="indigo"
-              data={statusData}
-            />
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg mr-3">
+                  <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Task Status</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Task Status:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.isVip ? 'VIP Task' : 'Regular Task'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Reworked:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.reworked ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Task ID:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.id || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Month ID:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{task?.monthId || 'Not specified'}</span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Jira Link Section */}
-          {task.data_task?.taskName && (
+          {task?.data_task?.taskName && (
             <div className="mt-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Jira Integration
                 </h3>
                 <a
-                  href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
+                  href={`https://gmrd.atlassian.net/browse/${task?.data_task?.taskName}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-lg"

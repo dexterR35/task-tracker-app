@@ -8,7 +8,7 @@ import { format, getDaysInMonth } from "date-fns";
 import { parseMonthId, getCurrentMonthId, normalizeTimestamp } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
 import { useAppData } from "@/hooks/useAppData";
-import { useGenerateMonthBoardMutation } from "@/features/tasks/tasksApi";
+import { useGenerateMonthBoardMutation } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
@@ -78,6 +78,37 @@ export const getMonthDateRange = (monthId) => {
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString()
   };
+};
+
+/**
+ * Get comprehensive month info for API usage (replaces getMonthInfo in tasksApi)
+ * @param {Date} date - Date object (defaults to current date)
+ * @returns {Object} Complete month information
+ */
+export const getMonthInfo = (date = new Date()) => {
+  const monthId = generateMonthId(date);
+  const [year] = monthId.split('-');
+  const yearId = year;
+  
+  const startDate = new Date(parseInt(year), parseInt(monthId.split('-')[1]) - 1, 1);
+  const endDate = new Date(parseInt(year), parseInt(monthId.split('-')[1]), 0);
+  
+  return {
+    monthId,
+    yearId,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    monthName: date.toLocaleString('default', { month: 'long' }),
+    daysInMonth: endDate.getDate(),
+  };
+};
+
+/**
+ * Get current year ID
+ * @returns {string} Current year as string
+ */
+export const getCurrentYear = () => {
+  return new Date().getFullYear().toString();
 };
 
 /**

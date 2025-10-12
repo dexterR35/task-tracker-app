@@ -9,7 +9,7 @@ import { TABLE_SYSTEM } from '@/constants';
 
 const columnHelper = createColumnHelper();
 
-// Note: createSelectionColumn moved to tableColumnFactory.jsx to avoid duplication
+// Note: createSelectionColumn is defined locally to avoid duplication
 // This function is no longer used since row selection is handled by clicking the row
 
 

@@ -895,14 +895,6 @@ src/
 - Permission validation
 - Cache management
 
-### `calculatorAnalytics.js`
-**Purpose**: Advanced analytics calculations
-**Key Features**:
-- Category totals
-- Time analytics
-- Market analytics
-- Export functionality
-
 ### `cardUtils.js`
 **Purpose**: Card utility functions
 **Key Features**:
@@ -911,12 +903,6 @@ src/
 - Card creation
 - Styling helpers
 
-### `chartUtils.js`
-**Purpose**: Chart utility functions
-**Key Features**:
-- Daily calculations
-- Chart data formatting
-- Color management
 - Responsive helpers
 
 ### `dateUtils.js`
