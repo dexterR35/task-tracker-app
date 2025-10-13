@@ -8,6 +8,8 @@ import Skeleton from "@/components/ui/Skeleton/Skeleton";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import { createUserDataCard } from "@/utils/cardUtils";
+import { normalizeTimestamp } from "@/utils/dateUtils";
+import { format } from "date-fns";
 
 
 const UserDataPage = () => {
@@ -302,8 +304,9 @@ const UserDataPage = () => {
       const startDate = task.data_task?.startDate;
       if (!startDate) return acc;
       
-      const date = new Date(startDate);
-      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const date = normalizeTimestamp(startDate);
+      if (!date) return acc;
+      const dayOfWeek = format(date, 'EEEE'); // Full weekday name
       
       if (!acc[dayOfWeek]) {
         acc[dayOfWeek] = {
@@ -335,7 +338,11 @@ const UserDataPage = () => {
 
     // Recent tasks (last 5)
     const recentTasks = userTasks
-      .sort((a, b) => new Date(b.data_task?.startDate || b.createdAt) - new Date(a.data_task?.startDate || a.createdAt))
+      .sort((a, b) => {
+        const dateA = normalizeTimestamp(b.data_task?.startDate || b.createdAt);
+        const dateB = normalizeTimestamp(a.data_task?.startDate || a.createdAt);
+        return dateA && dateB ? dateA.getTime() - dateB.getTime() : 0;
+      })
       .slice(0, 5);
 
     // Performance stats for selected month
@@ -745,7 +752,7 @@ const UserDataPage = () => {
                       {task.data_task?.taskName || 'Task'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {task.data_task?.startDate ? new Date(task.data_task.startDate).toLocaleDateString() : 'No date'}
+                      {task.data_task?.startDate ? format(normalizeTimestamp(task.data_task.startDate), 'MMM dd, yyyy') : 'No date'}
                     </p>
                   </div>
                 </div>

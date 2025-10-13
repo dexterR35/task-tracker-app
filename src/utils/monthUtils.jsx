@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo } from "react";
-import { format, getDaysInMonth } from "date-fns";
+import { format, getDaysInMonth, startOfMonth, endOfMonth, parseISO, isValid } from "date-fns";
 import { parseMonthId, getCurrentMonthId, normalizeTimestamp } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
 import { useAppData } from "@/hooks/useAppData";
@@ -12,6 +12,52 @@ import { useGenerateMonthBoardMutation } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+
+// ============================================================================
+// VALIDATION UTILITIES
+// ============================================================================
+
+/**
+ * Validate month ID format
+ * @param {string} monthId - Month ID to validate
+ * @returns {Object} Validation result with isValid and error message
+ */
+const validateMonthId = (monthId) => {
+  if (!monthId || typeof monthId !== 'string') {
+    return { isValid: false, error: 'Month ID must be a non-empty string' };
+  }
+  
+  const monthIdRegex = /^\d{4}-\d{2}$/;
+  if (!monthIdRegex.test(monthId)) {
+    return { isValid: false, error: 'Month ID must be in format YYYY-MM' };
+  }
+  
+  const [year, month] = monthId.split('-');
+  const yearNum = parseInt(year, 10);
+  const monthNum = parseInt(month, 10);
+  
+  if (yearNum < 1900 || yearNum > 2100) {
+    return { isValid: false, error: 'Year must be between 1900 and 2100' };
+  }
+  
+  if (monthNum < 1 || monthNum > 12) {
+    return { isValid: false, error: 'Month must be between 01 and 12' };
+  }
+  
+  return { isValid: true, error: null };
+};
+
+/**
+ * Safe date creation with timezone handling
+ * @param {number} year - Year
+ * @param {number} month - Month (1-12)
+ * @param {number} day - Day
+ * @returns {Date} Date object in local timezone
+ */
+const createLocalDate = (year, month, day) => {
+  // Create date in local timezone to avoid timezone shifts
+  return new Date(year, month - 1, day);
+};
 
 // ============================================================================
 // MONTH UTILITY FUNCTIONS
@@ -26,28 +72,21 @@ export const getCurrentMonthInfo = () => {
   const year = now.getFullYear();
   const month = now.getMonth() + 1; // getMonth() returns 0-11, we want 1-12
   
+  // Use date-fns for consistent date handling
+  const startDate = startOfMonth(now);
+  const endDate = endOfMonth(now);
+  
   return {
     monthId: `${year}-${String(month).padStart(2, '0')}`,
     monthName: now.toLocaleString('default', { month: 'long' }),
     year: year,
     month: month,
-    startDate: new Date(year, month - 1, 1),
-    endDate: new Date(year, month, 0), // Last day of current month
-    daysInMonth: new Date(year, month, 0).getDate()
+    startDate: startDate,
+    endDate: endDate,
+    daysInMonth: getDaysInMonth(now)
   };
 };
 
-/**
- * Generate month ID from date
- * @param {Date|string} date - Date object or date string
- * @returns {string} Month ID in format "YYYY-MM"
- */
-export const generateMonthId = (date) => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const year = dateObj.getFullYear();
-  const month = dateObj.getMonth() + 1;
-  return `${year}-${String(month).padStart(2, '0')}`;
-};
 
 /**
  * Get month boundaries for date restrictions
@@ -55,12 +94,24 @@ export const generateMonthId = (date) => {
  * @returns {Object} Min and max date strings for the month
  */
 export const getMonthBoundaries = (monthId) => {
+  // Validate input
+  const validation = validateMonthId(monthId);
+  if (!validation.isValid) {
+    logger.error('Invalid monthId in getMonthBoundaries:', validation.error);
+    throw new Error(validation.error);
+  }
+  
   const [year, month] = monthId.split('-');
-  const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+  const yearNum = parseInt(year, 10);
+  const monthNum = parseInt(month, 10);
+  
+  // Use date-fns for consistent date handling
+  const firstDay = createLocalDate(yearNum, monthNum, 1);
+  const lastDay = endOfMonth(firstDay);
   
   return {
-    min: `${year}-${String(parseInt(month)).padStart(2, '0')}-01`,
-    max: `${year}-${String(parseInt(month)).padStart(2, '0')}-${lastDay}`
+    min: format(firstDay, 'yyyy-MM-dd'),
+    max: format(lastDay, 'yyyy-MM-dd')
   };
 };
 
@@ -70,28 +121,48 @@ export const getMonthBoundaries = (monthId) => {
  * @returns {Object} Start and end dates for the month
  */
 export const getMonthDateRange = (monthId) => {
-  const [year, month] = monthId.split('-');
-  const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-  const endDate = new Date(parseInt(year), parseInt(month), 0);
+  // Validate input
+  const validation = validateMonthId(monthId);
+  if (!validation.isValid) {
+    logger.error('Invalid monthId in getMonthDateRange:', validation.error);
+    throw new Error(validation.error);
+  }
   
+  const [year, month] = monthId.split('-');
+  const yearNum = parseInt(year, 10);
+  const monthNum = parseInt(month, 10);
+  
+  // Use date-fns for consistent date handling
+  const firstDay = createLocalDate(yearNum, monthNum, 1);
+  const lastDay = endOfMonth(firstDay);
+  
+  // Return ISO strings for API compatibility, but ensure they represent the correct dates
   return {
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString()
+    startDate: firstDay.toISOString(),
+    endDate: lastDay.toISOString()
   };
 };
 
 /**
- * Get comprehensive month info for API usage (replaces getMonthInfo in tasksApi)
+ * Get comprehensive month info for API usage
  * @param {Date} date - Date object (defaults to current date)
  * @returns {Object} Complete month information
  */
 export const getMonthInfo = (date = new Date()) => {
-  const monthId = generateMonthId(date);
-  const [year] = monthId.split('-');
-  const yearId = year;
+  // Validate input date
+  if (!isValid(date)) {
+    logger.error('Invalid date provided to getMonthInfo');
+    throw new Error('Invalid date provided');
+  }
   
-  const startDate = new Date(parseInt(year), parseInt(monthId.split('-')[1]) - 1, 1);
-  const endDate = new Date(parseInt(year), parseInt(monthId.split('-')[1]), 0);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const monthId = `${year}-${String(month).padStart(2, '0')}`;
+  const yearId = year.toString();
+  
+  // Use date-fns for consistent date handling
+  const startDate = startOfMonth(date);
+  const endDate = endOfMonth(date);
   
   return {
     monthId,
@@ -99,22 +170,15 @@ export const getMonthInfo = (date = new Date()) => {
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     monthName: date.toLocaleString('default', { month: 'long' }),
-    daysInMonth: endDate.getDate(),
+    daysInMonth: getDaysInMonth(date),
   };
 };
 
-/**
- * Get current year ID
- * @returns {string} Current year as string
- */
-export const getCurrentYear = () => {
-  return new Date().getFullYear().toString();
-};
 
 /**
  * Calculate month progress
  * @param {string} monthId - Month ID
- * @param {number} daysInMonth - Total days in month
+ * @param {number} daysInMonth - Total days in month (fallback)
  * @returns {Object} Progress information
  */
 export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
@@ -122,15 +186,23 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
     return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
   }
   
+  // Validate monthId format
+  const validation = validateMonthId(monthId);
+  if (!validation.isValid) {
+    logger.error('Invalid monthId in calculateMonthProgress:', validation.error);
+    return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
+  }
+  
   // Calculate the actual number of days in this month using date-fns
   let totalDays;
-  const monthIdParts = monthId.split('-');
-  if (monthIdParts.length === 2) {
-    const year = parseInt(monthIdParts[0]);
-    const month = parseInt(monthIdParts[1]) - 1; // month is 0-indexed in Date constructor
-    const firstDayOfMonth = new Date(year, month, 1);
+  try {
+    const monthIdParts = monthId.split('-');
+    const year = parseInt(monthIdParts[0], 10);
+    const month = parseInt(monthIdParts[1], 10);
+    const firstDayOfMonth = createLocalDate(year, month, 1);
     totalDays = getDaysInMonth(firstDayOfMonth);
-  } else {
+  } catch (error) {
+    logger.error('Error calculating days in month:', error);
     // Fallback to daysInMonth prop if available
     totalDays = daysInMonth || 30;
   }

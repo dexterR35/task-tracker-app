@@ -8,6 +8,7 @@ import {
   endOfMonth,
 } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { DATE_TIME } from '@/constants';
 
 
 // Standalone date utility functions (can be used outside React components)
@@ -135,6 +136,15 @@ export const formatMonth = (monthId, useRomanianLocale = true) => {
   } catch {
     return 'Invalid Month';
   }
+};
+
+/**
+ * Get current year using proper timezone
+ */
+export const getCurrentYear = () => {
+  const now = new Date();
+  // Use the timezone from constants if needed
+  return now.getFullYear().toString();
 };
 
 /**

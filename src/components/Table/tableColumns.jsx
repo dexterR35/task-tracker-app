@@ -2,10 +2,11 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDate, normalizeTimestamp } from '@/utils/dateUtils';
 import { useDeliverableCalculation } from '@/hooks/useDeliverableCalculation';
 import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
 import { TABLE_SYSTEM } from '@/constants';
+import { differenceInDays } from 'date-fns';
 
 const columnHelper = createColumnHelper();
 
@@ -30,21 +31,18 @@ const getDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate) return null;
   
   try {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Use date utilities for consistent date handling
+    const start = normalizeTimestamp(startDate);
+    const end = normalizeTimestamp(endDate);
     
     // Check if dates are valid
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+    if (!start || !end) return null;
     
-    // Calculate duration from start to end (not absolute difference)
-    const diffTime = end - start;
+    // Use date-fns for accurate day calculation
+    const diffDays = differenceInDays(end, start);
     
     // If end is before start, return 0
-    if (diffTime < 0) return 0;
-    
-    // Calculate calendar days (24 hours per day)
-    // Convert milliseconds to days
-    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    if (diffDays < 0) return 0;
     
     // Return calendar days (including partial days)
     return Math.ceil(diffDays);

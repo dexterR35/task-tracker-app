@@ -32,11 +32,11 @@ import {
   getStartOfMonth,
   getEndOfMonth,
   formatDate,
+  getCurrentYear,
+  parseMonthId,
 } from "@/utils/dateUtils";
 import {
   getMonthInfo,
-  getCurrentYear,
-  generateMonthId,
 } from "@/utils/monthUtils.jsx";
 import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
 
@@ -101,7 +101,7 @@ export const monthsApi = createApi({
           let currentMonthBoard = null;
 
           // Get available months from the current year (2025) under departments/design
-          const yearId = getCurrentYear(); // This will be "2025"
+          const yearId = getCurrentYear(); // This will be the current year
           const monthsRef = getMonthsRef(yearId);
           const monthsSnapshot = await getDocs(monthsRef);
 
@@ -160,7 +160,7 @@ export const monthsApi = createApi({
           const availableMonths = [];
 
           // Get months from the current year under departments/design
-          const yearId = getCurrentYear(); // This will be "2025"
+          const yearId = getCurrentYear(); // This will be the current year
           const monthsRef = getMonthsRef(yearId);
           const monthsSnapshot = await getDocs(monthsRef);
 
@@ -169,9 +169,9 @@ export const monthsApi = createApi({
               const monthData = doc.data();
               const monthId = doc.id;
               
-              // Parse month ID to get readable month name
-              const monthDate = new Date(monthId + '-01');
-              const monthName = monthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+              // Parse month ID to get readable month name using month utilities
+              const monthDate = parseMonthId(monthId);
+              const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
               
               availableMonths.push({
                 monthId,

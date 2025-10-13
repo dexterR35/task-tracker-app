@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppData } from '@/hooks/useAppData';
-import { getMonthBoundaries } from '@/utils/monthUtils.jsx';
+import { getMonthBoundaries, getMonthInfo } from '@/utils/monthUtils.jsx';
+import { format, startOfMonth, endOfMonth, getDaysInMonth, addDays, startOfWeek, endOfWeek } from 'date-fns';
 
 const SimpleDateField = ({ 
   field, 
@@ -71,36 +72,31 @@ const SimpleDateField = ({
   };
 
   const generateCalendarDays = () => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    // Use month utilities for consistent date handling
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start week on Monday
     
     const days = [];
     const today = new Date();
-    // Remove date restrictions - allow any date selection
+    
+    // Use month boundaries for date restrictions
     const minDate = new Date(2020, 0, 1); // Allow dates from 2020 onwards
     const maxDate = new Date(2030, 11, 31); // Allow dates up to 2030
 
+    // Generate 42 days (6 weeks) starting from calendar start
     for (let i = 0; i < 42; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
+      const date = addDays(calendarStart, i);
       
-      const isCurrentMonth = date.getMonth() === month;
-      const isToday = date.toDateString() === today.toDateString();
+      const isCurrentMonth = date >= monthStart && date <= monthEnd;
+      const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
       
       // Create date string for comparison (avoid timezone issues)
-      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const dateStr = format(date, 'yyyy-MM-dd');
       const isSelected = selectedDate === dateStr;
       
       // Use proper date comparison with month boundaries
-      const dateStartOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const minDateStartOfDay = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
-      const maxDateStartOfDay = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
-      
-      const isDisabled = dateStartOfDay < minDateStartOfDay || dateStartOfDay > maxDateStartOfDay;
+      const isDisabled = date < minDate || date > maxDate;
       
       days.push({
         date,
@@ -115,11 +111,8 @@ const SimpleDateField = ({
   };
 
   // No month navigation - restricted to current month only
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  // Use date-fns for month name formatting
+  const currentMonthName = format(currentMonth, 'MMMM yyyy');
 
   return (
     <div className="field-wrapper">
@@ -184,7 +177,7 @@ const SimpleDateField = ({
                   </svg>
                 </button>
                 <h3 className="text-xl font-bold text-gray-800">
-                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                  {currentMonthName}
                 </h3>
                 <button
                   type="button"

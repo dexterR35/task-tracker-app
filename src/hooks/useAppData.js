@@ -16,6 +16,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
 import { logger } from "@/utils/logger";
 import { getCurrentMonthInfo, getMonthDateRange } from "@/utils/monthUtils.jsx";
+import { normalizeTimestamp } from "@/utils/dateUtils";
 
 
 export const useUserData = () => {
@@ -284,9 +285,9 @@ export const useAppData = (selectedUserId = null) => {
   const isLoading = userData.isLoading || reportersLoading || deliverablesLoading || currentMonthLoading || monthTasksLoading;
   
   
-  // Date objects
-  const memoizedStartDate = startDate ? new Date(startDate) : null;
-  const memoizedEndDate = endDate ? new Date(endDate) : null;
+  // Date objects - use date utilities for consistent handling
+  const memoizedStartDate = startDate ? normalizeTimestamp(startDate) : null;
+  const memoizedEndDate = endDate ? normalizeTimestamp(endDate) : null;
 
   // Return the data object
   const baseData = {

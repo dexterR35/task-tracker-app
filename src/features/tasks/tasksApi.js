@@ -35,12 +35,8 @@ import {
   getStartOfMonth,
   getEndOfMonth,
   formatDate,
-} from "@/utils/dateUtils";
-import {
-  getMonthInfo,
   getCurrentYear,
-  generateMonthId,
-} from "@/utils/monthUtils.jsx";
+} from "@/utils/dateUtils";
 import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
 
 // Month utility functions are now imported from monthUtils.jsx

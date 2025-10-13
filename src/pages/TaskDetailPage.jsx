@@ -4,7 +4,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppData } from '@/hooks/useAppData';
 import Loader from '@/components/ui/Loader/Loader';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDate, normalizeTimestamp } from '@/utils/dateUtils';
+import { differenceInDays } from 'date-fns';
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -39,11 +40,15 @@ const TaskDetailPage = () => {
     if (!startDate || !endDate) return 'Unknown';
     
     try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return `${diffDays} days`;
+      // Use date utilities for consistent date handling
+      const start = normalizeTimestamp(startDate);
+      const end = normalizeTimestamp(endDate);
+      
+      if (!start || !end) return 'Invalid dates';
+      
+      // Use date-fns for accurate day calculation
+      const diffDays = differenceInDays(end, start);
+      return `${Math.abs(diffDays)} days`;
     } catch {
       return 'Invalid dates';
     }
