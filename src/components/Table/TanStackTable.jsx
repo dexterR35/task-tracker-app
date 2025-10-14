@@ -447,13 +447,25 @@ const TanStackTable = forwardRef(({
   const selectedCount = getSelectedCount(rowSelection);
   const totalRows = table.getFilteredRowModel().rows.length;
 
-  // Show skeleton when loading or no data - but don't return early to avoid hook order issues
-  const shouldShowSkeleton = isLoading || !data.length;
+  // Show skeleton only when loading, show no data message when data is empty but not loading
+  const shouldShowSkeleton = isLoading;
+  const shouldShowNoData = !isLoading && (!data || data.length === 0);
 
   return (
     <div ref={tableRef} className={`space-y-4 ${className}`}>
       {shouldShowSkeleton ? (
         <SkeletonTable rows={5} />
+      ) : shouldShowNoData ? (
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+          <div className="text-4xl mb-4">📊</div>
+          <div className="text-lg font-medium mb-2">No Data Available</div>
+          <div className="text-sm text-center">
+            {tableType === "analytics" 
+              ? "No analytics data found for the selected criteria."
+              : "No data found for the current selection."
+            }
+          </div>
+        </div>
       ) : (
         <>
           {/* Table Controls - Only show if any controls are enabled */}

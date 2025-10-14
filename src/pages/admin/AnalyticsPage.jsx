@@ -349,8 +349,8 @@ const AnalyticsPage = () => {
       </div>
 
 
-      {/* Chart-based Analytics Cards - Only render when data is ready */}
-      {!isLoading && tasks && tasks.length > 0 && (
+      {/* Chart-based Analytics Cards */}
+      {!isLoading && (
         <div className="space-y-6">
           {/* Market User Breakdown Card */}
           <div className="relative">

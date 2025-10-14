@@ -14,8 +14,6 @@ import {
 } from "@/features/months/monthsApi";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
-import { logger } from "@/utils/logger";
-import { getCurrentMonthInfo, getMonthDateRange } from "@/utils/monthUtils.jsx";
 import { normalizeTimestamp } from "@/utils/dateUtils";
 
 
@@ -205,14 +203,18 @@ export const useAppData = (selectedUserId = null) => {
     data: reporters = [], 
     isLoading: reportersLoading, 
     error: reportersError
-  } = useGetReportersQuery();
+  } = useGetReportersQuery(undefined, {
+    skip: !user // Only fetch when user is authenticated
+  });
   
   // Fetch deliverables settings - global data, no dependencies
   const { 
     data: deliverablesData = null, 
     isLoading: deliverablesLoading, 
     error: deliverablesError
-  } = useGetSettingsTypeQuery({ settingsType: 'deliverables' });
+  } = useGetSettingsTypeQuery({ settingsType: 'deliverables' }, {
+    skip: !user // Only fetch when user is authenticated
+  });
   
   
   
@@ -222,11 +224,26 @@ export const useAppData = (selectedUserId = null) => {
   const [deleteTask] = useDeleteTaskMutation();
 
   
-  // Combine errors from all sources
-  const error = userData.error || reportersError || deliverablesError || currentMonthError || monthTasksError;
+  // Combine errors from all sources with proper error handling
+  const error = useMemo(() => {
+    const errors = [userData.error, reportersError, deliverablesError, currentMonthError, monthTasksError];
+    return errors.find(err => err) || null;
+  }, [userData.error, reportersError, deliverablesError, currentMonthError, monthTasksError]);
   
-  // Combined loading state
-  const isLoading = userData.isLoading || reportersLoading || deliverablesLoading || currentMonthLoading || monthTasksLoading;
+  // Combined loading state with proper memoization and granular loading states
+  const isLoading = useMemo(() => {
+    return userData.isLoading || reportersLoading || deliverablesLoading || currentMonthLoading || monthTasksLoading;
+  }, [userData.isLoading, reportersLoading, deliverablesLoading, currentMonthLoading, monthTasksLoading]);
+
+  // Granular loading states for better UX
+  const loadingStates = useMemo(() => ({
+    isInitialLoading: isInitialLoading,
+    isDataLoading: isLoading,
+    isMonthLoading: currentMonthLoading,
+    isTasksLoading: monthTasksLoading,
+    isReportersLoading: reportersLoading,
+    isDeliverablesLoading: deliverablesLoading
+  }), [isInitialLoading, isLoading, currentMonthLoading, monthTasksLoading, reportersLoading, deliverablesLoading]);
   
 
 
@@ -242,6 +259,7 @@ export const useAppData = (selectedUserId = null) => {
     deliverables: deliverablesData?.deliverables || [],
     tasks: tasksData || [],
     isLoading,
+    loadingStates,
     error,
     
     // Month data (with selection support) - with safety checks
@@ -267,7 +285,7 @@ export const useAppData = (selectedUserId = null) => {
   }), [
     createTask, updateTask, deleteTask,
     reporters, deliverablesData?.deliverables, tasksData,
-    isLoading, error,
+    isLoading, loadingStates, error,
     monthId, monthName, daysInMonth, startDate, endDate,
     boardExists, dropdownOptions,
     currentMonth, selectedMonth, isCurrentMonth,

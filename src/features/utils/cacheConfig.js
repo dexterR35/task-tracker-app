@@ -45,17 +45,17 @@ export const getCacheConfig = (volatility = DATA_VOLATILITY.MEDIUM) => {
  * Predefined cache configurations for common data types
  */
 export const CACHE_CONFIGS = {
-  // Tasks with real-time Firebase listeners - infinite cache for better performance
+  // Tasks with real-time Firebase listeners - long cache to prevent memory leaks
   TASKS: {
-    keepUnusedDataFor: CACHE_DURATIONS.INFINITE, // Keep cache forever - real-time listeners handle updates
+    keepUnusedDataFor: CACHE_DURATIONS.LONG, // Changed from INFINITE to prevent memory leaks
     refetchOnMountOrArgChange: false, // Don't refetch - real-time listeners handle updates
     refetchOnFocus: false, // Don't refetch on focus - real-time listeners handle updates
     refetchOnReconnect: true // Refetch on reconnect to ensure data consistency
   },
   
-  // User data - infinite cache since users don't change frequently
+  // User data - long cache since users don't change frequently
   USERS: {
-    keepUnusedDataFor: CACHE_DURATIONS.INFINITE, // Infinite - users rarely change
+    keepUnusedDataFor: CACHE_DURATIONS.LONG, // Changed from INFINITE to prevent memory leaks
     refetchOnMountOrArgChange: false, // Don't refetch - users are stable
     refetchOnFocus: false, // Don't refetch - users are stable
     refetchOnReconnect: false // Don't refetch - users are stable

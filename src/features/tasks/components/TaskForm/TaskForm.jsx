@@ -12,8 +12,7 @@ import {
   shouldShowField,
   isConditionallyRequired
 } from '@/features/tasks/config/useTaskForm';
-import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
-import { useDeliverablesByDepartment } from '@/hooks/useDeliverablesByDepartment';
+import { useDeliverablesOptions, useDeliverablesByDepartment } from '@/features/deliverables/DeliverablesManager';
 import { 
   TextField, 
   TextareaField,
@@ -113,7 +112,7 @@ const TaskForm = ({
     if (!currentQuantities || Object.keys(currentQuantities).length === 0) {
       setValue('deliverableQuantities', {});
     }
-  }, [register, setValue, watch]);
+  }, [register, setValue, watch]); // Keep dependencies as they are needed for proper initialization
 
   // Watch the selected department to filter deliverables
   const selectedDepartment = watch('departments');

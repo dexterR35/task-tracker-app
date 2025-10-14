@@ -32,7 +32,7 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
       logger.warn(`MultiSelectField: Unexpected non-array value for ${field.name}:`, watchedValue, 'Fixing to empty array');
       setValue(field.name, [], { shouldValidate: false });
     }
-  }, [watchedValue, field.name, setValue]);
+  }, [watchedValue, field.name]); // Removed setValue to prevent infinite loop
 
   return (
     <div className="field-wrapper">

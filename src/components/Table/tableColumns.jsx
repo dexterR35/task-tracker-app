@@ -3,8 +3,7 @@ import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
 import { formatDate, normalizeTimestamp } from '@/utils/dateUtils';
-import { useDeliverableCalculation } from '@/hooks/useDeliverableCalculation';
-import { useDeliverablesOptions } from '@/hooks/useDeliverablesOptions';
+import { useDeliverableCalculation, useDeliverablesOptions } from '@/features/deliverables/DeliverablesManager';
 import { TABLE_SYSTEM } from '@/constants';
 import { differenceInDays } from 'date-fns';
 

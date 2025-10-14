@@ -1,8 +1,76 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
+import { useAppData } from '@/hooks/useAppData';
 
 /**
- * Centralized deliverable calculation hook
- * Handles all deliverable time calculations with variations support
+ * Consolidated Deliverables Hooks
+ * Combines all deliverables-related functionality into a single file
+ */
+
+/**
+ * Get all deliverables from the database and transform them into form options
+ */
+export const useDeliverablesOptions = () => {
+  const { deliverables, isLoading, error } = useAppData();
+
+  const deliverablesOptions = useMemo(() => {
+    // Check if data exists and has the right structure
+    if (!deliverables || deliverables.length === 0) {
+      return [];
+    }
+
+    // Transform database data to form options format
+    const options = deliverables.map(deliverable => ({
+      value: deliverable.name,
+      label: deliverable.name,
+      department: deliverable.department,
+      timePerUnit: deliverable.timePerUnit,
+      timeUnit: deliverable.timeUnit,
+      requiresQuantity: deliverable.requiresQuantity,
+      variationsTime: deliverable.variationsTime,
+      variationsTimeUnit: deliverable.variationsTimeUnit || 'min'
+    }));
+    
+    return options;
+  }, [deliverables]);
+
+  return {
+    deliverablesOptions,
+    isLoading,
+    error
+  };
+};
+
+/**
+ * Filter deliverables by selected department
+ */
+export const useDeliverablesByDepartment = (selectedDepartment) => {
+  const { deliverablesOptions, isLoading, error } = useDeliverablesOptions();
+
+  const filteredDeliverables = useMemo(() => {
+    if (!selectedDepartment || !deliverablesOptions || deliverablesOptions.length === 0) {
+      return [];
+    }
+
+    // Handle both array and string department formats
+    const departmentToFilter = Array.isArray(selectedDepartment) 
+      ? selectedDepartment[0] 
+      : selectedDepartment;
+
+    // Filter deliverables by selected department
+    return deliverablesOptions.filter(deliverable => 
+      deliverable.department === departmentToFilter
+    );
+  }, [deliverablesOptions, selectedDepartment]);
+
+  return {
+    deliverablesOptions: filteredDeliverables,
+    isLoading,
+    error
+  };
+};
+
+/**
+ * Calculate time estimates for deliverables with variations support
  */
 export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions) => {
   return useMemo(() => {
@@ -204,3 +272,64 @@ export const formatTimeBreakdown = (totalTime) => {
     summary: `Total: ${totalTime.toFixed(1)}hr = ${(totalTime * 60).toFixed(0)}min = ${(totalTime / 8).toFixed(2)}days`
   };
 };
+
+// ===== FORMATTED DELIVERABLE CALCULATION COMPONENT =====
+const FormattedDeliverableCalculation = ({ 
+  deliverablesUsed, 
+  showDetailedCalculations = false, 
+  className = "" 
+}) => {
+  const { deliverablesOptions = [] } = useDeliverablesOptions();
+  const { deliverablesList } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
+  
+  if (!deliverablesList || deliverablesList.length === 0) {
+    return <span className={`text-gray-500 dark:text-gray-400 ${className}`}>No deliverables</span>;
+  }
+  
+  return (
+    <div className={`space-y-1 ${className}`}>
+      {deliverablesList.map((deliverable, index) => (
+        <div key={index} className="text-sm">
+          <div className="font-medium text-gray-900 dark:text-white">
+            {deliverable.quantity}x{deliverable.name}
+            {deliverable.variationsQuantity > 0 && (
+              <span className="text-orange-600 dark:text-orange-400"> + {deliverable.variationsQuantity} variations</span>
+            )}
+          </div>
+          
+          {showDetailedCalculations && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+              {deliverable.configured ? (
+                <div className="text-xs block">
+                  <div className="block">
+                    Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {deliverable.timeInHours * deliverable.quantity}h
+                    {deliverable.timeUnit === 'min' && <span> ({deliverable.timeInHours * deliverable.quantity * 60}min)</span>}
+                  </div>
+                  {deliverable.variationsQuantity > 0 && (
+                    <div className="block">
+                      variations: {deliverable.variationsQuantity}x{deliverable.variationsTime}{deliverable.variationsTimeUnit} = {deliverable.totalvariationsTime}h
+                      {deliverable.variationsTimeUnit === 'min' && <span> ({deliverable.totalvariationsTime * 60}min)</span>}
+                    </div>
+                  )}
+                  <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
+                    Total: {deliverable.time}h ({deliverable.time / 8} day)
+                  </div>
+                </div>
+              ) : deliverable.notConfigured ? (
+                <span className="text-amber-600 dark:text-amber-400">⚠️ Not configured in settings - Add to Settings → Deliverables</span>
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">No time configuration</span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ===== MAIN EXPORTS =====
+export { FormattedDeliverableCalculation };
+export { default as DeliverableTable } from './DeliverableTable';
+export { default as DeliverableForm } from './DeliverableForm';
+export { default as DeliverableFormModal } from './DeliverableFormModal';

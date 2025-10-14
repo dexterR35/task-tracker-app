@@ -139,7 +139,7 @@ export const SMALL_CARD_CONFIGS = {
             label: 'Select Reporter',
             required: false,
             options: data.reporters?.map((reporter) => ({
-              value: reporter.id || reporter.uid,
+              value: reporter.reporterUID || reporter.id || reporter.uid,
               label: reporter.name || reporter.reporterName
             })) || [],
             placeholder: 'Search reporters...'

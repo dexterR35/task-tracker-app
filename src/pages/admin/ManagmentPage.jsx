@@ -5,7 +5,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
-import DeliverableTable from "@/features/deliverables/components/DeliverableTable/DeliverableTable";
+import { DeliverableTable } from "@/features/deliverables/DeliverablesManager";
 import CalculationFormula from "@/components/ui/CalculationFormula/CalculationFormula";
 
 const AdminManagementPage = () => {

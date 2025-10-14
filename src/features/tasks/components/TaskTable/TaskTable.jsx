@@ -147,9 +147,20 @@ const TaskTable = ({
           const matchesUser =
             task.userUID === selectedUserId ||
             task.createbyUID === selectedUserId;
-          const matchesReporter =
-            task.reporters === selectedReporterId ||
-            task.data_task?.reporters === selectedReporterId;
+          
+          const taskReporterId = task.data_task?.reporters;
+          if (!taskReporterId) return false;
+          
+          // Find the reporter by reporterUID
+          const selectedReporter = reporters.find(r => 
+            r.reporterUID === selectedReporterId
+          );
+          
+          if (!selectedReporter) return false;
+          
+          // Compare task reporter ID with selected reporter's reporterUID
+          const matchesReporter = taskReporterId === selectedReporter.reporterUID;
+          
           return matchesUser && matchesReporter;
         }
 
@@ -163,10 +174,18 @@ const TaskTable = ({
 
         // If only reporter is selected, show tasks for that reporter
         if (selectedReporterId && !selectedUserId) {
-          return (
-            task.reporters === selectedReporterId ||
-            task.data_task?.reporters === selectedReporterId
+          const taskReporterId = task.data_task?.reporters;
+          if (!taskReporterId) return false;
+          
+          // Find the reporter by reporterUID
+          const selectedReporter = reporters.find(r => 
+            r.reporterUID === selectedReporterId
           );
+          
+          if (!selectedReporter) return false;
+          
+          // Compare task reporter ID with selected reporter's reporterUID
+          return taskReporterId === selectedReporter.reporterUID;
         }
 
         // If neither user nor reporter is selected, show tasks based on role

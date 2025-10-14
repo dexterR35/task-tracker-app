@@ -246,7 +246,7 @@ const UnifiedAnalyticsCard = ({
     }
   }, [tasks, users, cardType]);
 
-  // Calculate user by task data
+  // Calculate user by task data with proper memoization
   const userByTaskData = useMemo(() => {
     if (cardType === ANALYTICS_CARD_TYPES.MARKET_USER_BREAKDOWN && calculatedAnalyticsData.tableData) {
       // Extract user task data from the existing table data
@@ -254,7 +254,7 @@ const UnifiedAnalyticsCard = ({
         .filter(row => !row.bold) // Exclude grand total row
         .map(row => ({
           name: row.user,
-          value: row.total
+          value: row.totalTasks || row.total || 0 // Use totalTasks or fallback to total
         }))
         .sort((a, b) => b.value - a.value) // Sort by task count descending
         .slice(0, 10); // Show top 10 users
@@ -264,13 +264,14 @@ const UnifiedAnalyticsCard = ({
     return [];
   }, [cardType, calculatedAnalyticsData.tableData]);
 
-  const userByTaskColors = [
+  // Memoize colors to prevent unnecessary re-renders
+  const userByTaskColors = useMemo(() => [
     "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4",
     "#84cc16", "#f97316", "#ec4899", "#6b7280"
-  ];
+  ], []);
 
-  // Show skeleton if loading
-  if (isLoading || !tasks || tasks.length === 0) {
+  // Show skeleton only when loading
+  if (isLoading) {
     return (
       <AnalyticsCard
         title={finalProps.title}
@@ -284,8 +285,7 @@ const UnifiedAnalyticsCard = ({
     );
   }
 
-
-  // Default analytics card
+  // Default analytics card - always show the card, let the table handle no data
   return (
     <AnalyticsCard
       title={finalProps.title}

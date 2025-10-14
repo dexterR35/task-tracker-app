@@ -290,7 +290,7 @@ const AdminDashboardPage = () => {
               selectedReporterId={selectedReporterId}
               selectedMonthId={currentMonthId}
               error={error}
-              isLoading={isLoading || isInitialLoading}
+              isLoading={isLoading}
             />
           )}
         </div>

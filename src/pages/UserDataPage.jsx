@@ -15,6 +15,7 @@ import { format } from "date-fns";
 const UserDataPage = () => {
   const [searchParams] = useSearchParams();
   const selectedUserIdFromUrl = searchParams.get('userId');
+  const selectedReporterIdFromUrl = searchParams.get('reporter');
   
   const {
     user,

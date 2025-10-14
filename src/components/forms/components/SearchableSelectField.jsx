@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 
 const SearchableSelectField = ({ 
@@ -36,7 +36,7 @@ const SearchableSelectField = ({
         setSearchTerm('');
       }
     }
-  }, [currentValue, field.options, searchTerm]);
+  }, [currentValue, field.options]); // Removed searchTerm to prevent infinite loop
 
   // Handle case where options are loaded after component has a value
   useEffect(() => {
@@ -89,7 +89,7 @@ const SearchableSelectField = ({
     };
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setSearchTerm(value);
     setIsOpen(true);
@@ -106,9 +106,9 @@ const SearchableSelectField = ({
         trigger(field.name);
       }
     }
-  };
+  }, [field.options, field.name, setValue, trigger]);
 
-  const handleOptionSelect = (option) => {
+  const handleOptionSelect = useCallback((option) => {
     setValue(field.name, option.value);
     setSearchTerm('');
     setIsOpen(false);
@@ -120,7 +120,7 @@ const SearchableSelectField = ({
     if (trigger) {
       trigger(field.name);
     }
-  };
+  }, [field.name, setValue, clearErrors, trigger]);
 
   const handleInputFocus = () => {
     setIsOpen(true);
@@ -137,7 +137,7 @@ const SearchableSelectField = ({
     }
   };
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setValue(field.name, '');
     setSearchTerm('');
     setIsOpen(false);
@@ -150,7 +150,7 @@ const SearchableSelectField = ({
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  };
+  }, [field.name, setValue, trigger]);
 
   // Enhanced display logic with fallback
   const getDisplayValue = () => {
