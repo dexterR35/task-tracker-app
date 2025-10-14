@@ -42,7 +42,7 @@ const TaskForm = ({
   onSuccess, 
   className = "" 
 }) => {
-  const { createTask, updateTask, reporters = [], monthId: hookMonthId, user, refetchCurrentMonth, refetchMonthTasks } = useAppData();
+  const { createTask, updateTask, reporters = [], monthId: hookMonthId, user } = useAppData();
   
   // Use prop monthId if provided, otherwise fall back to hook monthId
   const monthId = propMonthId || hookMonthId;
@@ -79,8 +79,8 @@ const TaskForm = ({
       deliverables: '',
       customDeliverables: [],
       deliverableQuantities: {},
-      declinariQuantities: {},
-      declinariDeliverables: {},
+      variationsQuantities: {},
+      variationsDeliverables: {},
       _usedAIEnabled: false,
       aiModels: [],
       aiTime: 0,
@@ -104,8 +104,8 @@ const TaskForm = ({
   // Explicitly register deliverableQuantities field
   useEffect(() => {
     register('deliverableQuantities');
-    register('declinariQuantities');
-    register('declinariDeliverables');
+    register('variationsQuantities');
+    register('variationsDeliverables');
     
     // Initialize deliverableQuantities with empty object if not set
     const currentQuantities = watch('deliverableQuantities');
@@ -242,29 +242,29 @@ const TaskForm = ({
           }
           return quantities;
         })(),
-        declinariQuantities: (() => {
+        variationsQuantities: (() => {
           const quantities = {};
           if (taskData.deliverablesUsed?.length) {
             taskData.deliverablesUsed.forEach(deliverable => {
-              if (deliverable.name && deliverable.declinariCount) {
-                quantities[deliverable.name] = deliverable.declinariCount;
+              if (deliverable.name && deliverable.variationsCount) {
+                quantities[deliverable.name] = deliverable.variationsCount;
               }
             });
-          } else if (taskData.deliverables?.[0]?.declinariQuantities) {
-            return taskData.deliverables[0].declinariQuantities;
+          } else if (taskData.deliverables?.[0]?.variationsQuantities) {
+            return taskData.deliverables[0].variationsQuantities;
           }
           return quantities;
         })(),
-        declinariDeliverables: (() => {
+        variationsDeliverables: (() => {
           const enabled = {};
           if (taskData.deliverablesUsed?.length) {
             taskData.deliverablesUsed.forEach(deliverable => {
               if (deliverable.name) {
-                enabled[deliverable.name] = deliverable.declinariEnabled || false;
+                enabled[deliverable.name] = deliverable.variationsEnabled || false;
               }
             });
-          } else if (taskData.deliverables?.[0]?.declinariDeliverables) {
-            return taskData.deliverables[0].declinariDeliverables;
+          } else if (taskData.deliverables?.[0]?.variationsDeliverables) {
+            return taskData.deliverables[0].variationsDeliverables;
           }
           return enabled;
         })(),
@@ -387,13 +387,6 @@ const TaskForm = ({
         
         reset();
         
-        // Trigger real-time updates in background
-        try {
-          await refetchCurrentMonth?.();
-          await refetchMonthTasks?.();
-        } catch (error) {
-          // Silently handle refetch errors - they don't affect the main operation
-        }
       }
     }
   );

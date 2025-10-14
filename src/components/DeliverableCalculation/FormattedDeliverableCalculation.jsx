@@ -33,9 +33,9 @@ const FormattedDeliverableCalculation = ({
         <div key={index} className="text-sm">
           <div className="font-medium text-gray-900 dark:text-white">
             {deliverable.quantity}x{deliverable.name}
-            {deliverable.declinariQuantity > 0 && (
+            {deliverable.variationsQuantity > 0 && (
               <span className="text-orange-600 dark:text-orange-400">
-                {' '}+ {deliverable.declinariQuantity} declinari
+                {' '}+ {deliverable.variationsQuantity} variations
               </span>
             )}
           </div>
@@ -50,11 +50,11 @@ const FormattedDeliverableCalculation = ({
                       <span> ({formatMinutes(deliverable.timeInHours * deliverable.quantity * 60)}min)</span>
                     )}
                   </div>
-                  {deliverable.declinariQuantity > 0 && (
+                  {deliverable.variationsQuantity > 0 && (
                     <div className="block">
-                      Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {formatTime(deliverable.totalDeclinariTime)}h
-                      {deliverable.declinariTimeUnit === 'min' && (
-                        <span> ({formatMinutes(deliverable.totalDeclinariTime * 60)}min)</span>
+                      variations: {deliverable.variationsQuantity}x{deliverable.variationsTime}{deliverable.variationsTimeUnit} = {formatTime(deliverable.totalvariationsTime)}h
+                      {deliverable.variationsTimeUnit === 'min' && (
+                        <span> ({formatMinutes(deliverable.totalvariationsTime * 60)}min)</span>
                       )}
                     </div>
                   )}

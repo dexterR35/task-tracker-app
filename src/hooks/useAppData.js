@@ -64,32 +64,27 @@ export const useAppData = (selectedUserId = null) => {
   const userData = useUserData();
   const [selectedMonthId, setSelectedMonthId] = useState(null);
   
-  // Query parameters for current month
-  const currentMonthQueryParams = {
-    userId: userIsAdmin ? undefined : userUID,
-    role: userIsAdmin ? 'admin' : 'user',
-    userData: user
-  };
-  
   // Fetch current month data first
   const { 
     data: currentMonthData = {}, 
     isLoading: currentMonthLoading, 
-    error: currentMonthError,
-    refetch: refetchCurrentMonth
+    error: currentMonthError
   } = useGetCurrentMonthQuery(
-    currentMonthQueryParams,
+    {
+      userUID: userIsAdmin ? undefined : userUID,
+      role: userIsAdmin ? 'admin' : 'user',
+      userData: user
+    },
     {
       skip: !user // Skip query until user is authenticated
     }
   );
   
   // Extract current month data with memoization to prevent unnecessary re-renders
-  const { monthId, monthName, daysInMonth, startDate, endDate, boardExists, currentMonthTasks } = useMemo(() => {
+  const { monthId, monthName, daysInMonth, startDate, endDate, boardExists } = useMemo(() => {
     const { 
       currentMonth = {}, 
-      boardExists = false,
-      currentMonthTasks = []
+      boardExists = false
     } = currentMonthData;
 
     const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
@@ -100,16 +95,14 @@ export const useAppData = (selectedUserId = null) => {
       daysInMonth,
       startDate,
       endDate,
-      boardExists,
-      currentMonthTasks
+      boardExists
     };
   }, [currentMonthData]);
   
   // Fetch available months for dropdown
   const { 
     data: availableMonths = [], 
-    isLoading: availableMonthsLoading,
-    refetch: fetchAvailableMonths
+    isLoading: availableMonthsLoading
   } = useGetAvailableMonthsQuery(undefined, {
     skip: !user // Only skip if user is not authenticated
   });
@@ -144,10 +137,11 @@ export const useAppData = (selectedUserId = null) => {
   const targetMonthId = selectedMonthId || monthId;
   const isFetchingSelectedMonth = selectedMonthId && selectedMonthId !== monthId;
   
+  
   // Determine user filtering
-  const targetUserId = userIsAdmin 
-    ? (selectedUserId || undefined)  // Admin: use selectedUserId or all users
-    : userUID;                       // Regular user: only their data
+  const targetUserUID = userIsAdmin 
+    ? selectedUserId  // Admin: use selectedUserId (null means all users)
+    : userUID;        // Regular user: only their data
   
   // Fetch tasks for the target month with proper user filtering
   const shouldFetchTasks = targetMonthId && (userData?.userUID || userUID);
@@ -155,69 +149,24 @@ export const useAppData = (selectedUserId = null) => {
   const { 
     data: monthTasks = [], 
     isLoading: monthTasksLoading, 
-    error: monthTasksError,
-    refetch: refetchMonthTasks
+    error: monthTasksError
   } = useGetMonthTasksQuery(
     { 
       monthId: targetMonthId, 
-      userId: targetUserId,
+      userUID: targetUserUID,
       role: userIsAdmin ? 'admin' : 'user',
       userData: userIsAdmin ? userData.user : userData.userData
     },
     { skip: !shouldFetchTasks }
   );
   
-  // Get tasks for display with proper filtering - memoized for performance
-  const displayTasks = useMemo(() => {
-    // Always use monthTasks from getMonthTasks query for both current and selected months
-    console.log('🔍 useAppData - Task Debug:', {
-      targetMonthId,
-      selectedMonthId,
-      currentMonthId: monthId,
-      isFetchingSelectedMonth,
-      monthTasksCount: monthTasks?.length || 0,
-      shouldFetchTasks,
-      targetUserId,
-      userUID,
-      userDataUID: userData?.userUID,
-      userIsAdmin,
-      monthTasksLoading,
-      monthTasksError: monthTasksError?.message
-    });
-    return monthTasks || [];
-  }, [monthTasks, targetMonthId, selectedMonthId, monthId, isFetchingSelectedMonth, shouldFetchTasks, targetUserId, userUID, userData, userIsAdmin, monthTasksLoading, monthTasksError]);
+  // Tasks from selected or current month - memoized to prevent re-renders
+  const tasksData = useMemo(() => monthTasks || [], [monthTasks]);
   
   // Helper functions
-  const selectMonth = useCallback(async (newSelectedMonthId) => {
-    console.log('🔄 selectMonth called:', {
-      newSelectedMonthId,
-      currentMonthId: monthId,
-      previousSelectedMonthId: selectedMonthId
-    });
-    
+  const selectMonth = useCallback((newSelectedMonthId) => {
     setSelectedMonthId(newSelectedMonthId);
-    
-    // If selecting a different month and we haven't fetched available months yet, fetch them
-    if (newSelectedMonthId !== monthId && availableMonths.length === 0) {
-      console.log('📅 Fetching available months...');
-      fetchAvailableMonths();
-    }
-    
-    // Trigger immediate refetch for real-time updates
-    try {
-      if (newSelectedMonthId && newSelectedMonthId !== monthId) {
-        console.log('🔄 Refetching tasks for selected month:', newSelectedMonthId);
-        // Force refetch for selected month
-        await refetchMonthTasks?.();
-      } else if (newSelectedMonthId === monthId) {
-        console.log('🔄 Refetching current month data');
-        // Refetch current month data
-        await refetchCurrentMonth?.();
-      }
-    } catch (error) {
-      console.error('❌ Error in selectMonth:', error);
-    }
-  }, [monthId, selectedMonthId, availableMonths.length, refetchMonthTasks, refetchCurrentMonth]);
+  }, []);
   
   const resetToCurrentMonth = useCallback(() => {
     setSelectedMonthId(null);
@@ -255,16 +204,14 @@ export const useAppData = (selectedUserId = null) => {
   const { 
     data: reporters = [], 
     isLoading: reportersLoading, 
-    error: reportersError,
-    refetch: refetchReporters
+    error: reportersError
   } = useGetReportersQuery();
   
   // Fetch deliverables settings - global data, no dependencies
   const { 
     data: deliverablesData = null, 
     isLoading: deliverablesLoading, 
-    error: deliverablesError,
-    refetch: refetchDeliverables
+    error: deliverablesError
   } = useGetSettingsTypeQuery({ settingsType: 'deliverables' });
   
   
@@ -273,9 +220,6 @@ export const useAppData = (selectedUserId = null) => {
   const [createTask] = useCreateTaskMutation();
   const [updateTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
-  
-  // Tasks from selected or current month
-  const tasksData = displayTasks;
 
   
   // Combine errors from all sources
@@ -284,13 +228,10 @@ export const useAppData = (selectedUserId = null) => {
   // Combined loading state
   const isLoading = userData.isLoading || reportersLoading || deliverablesLoading || currentMonthLoading || monthTasksLoading;
   
-  
-  // Date objects - use date utilities for consistent handling
-  const memoizedStartDate = startDate ? normalizeTimestamp(startDate) : null;
-  const memoizedEndDate = endDate ? normalizeTimestamp(endDate) : null;
 
-  // Return the data object
-  const baseData = {
+
+  // Return the data object - memoized to prevent unnecessary re-renders
+  const baseData = useMemo(() => ({
     // Task mutations - available to all users
     createTask,
     updateTask,
@@ -307,8 +248,8 @@ export const useAppData = (selectedUserId = null) => {
     monthId: monthId || null,
     monthName: monthName || null,
     daysInMonth: daysInMonth || null,
-    startDate: memoizedStartDate,
-    endDate: memoizedEndDate,
+    startDate: startDate ? normalizeTimestamp(startDate) : null,
+    endDate: endDate ? normalizeTimestamp(endDate) : null,
     boardExists: boardExists || false,
     availableMonths: dropdownOptions || [],
     
@@ -323,27 +264,37 @@ export const useAppData = (selectedUserId = null) => {
     selectMonth: selectMonth,
     resetToCurrentMonth: resetToCurrentMonth,
     
-    // Refetch functions for real-time updates
-    refetchCurrentMonth: refetchCurrentMonth,
-    refetchReporters,
-    refetchDeliverables
-  };
+  }), [
+    createTask, updateTask, deleteTask,
+    reporters, deliverablesData?.deliverables, tasksData,
+    isLoading, error,
+    monthId, monthName, daysInMonth, startDate, endDate,
+    boardExists, dropdownOptions,
+    currentMonth, selectedMonth, isCurrentMonth,
+    isInitialLoading, isMonthDataReady,
+    selectMonth, resetToCurrentMonth
+  ]);
   
+  // Memoize the final return objects to prevent unnecessary re-renders
+  const adminData = useMemo(() => ({
+    ...baseData,
+    // Admin gets everything
+    user: userData.user, // Current user info from auth
+    users: userData.allUsers || [], // All users for management
+    isAdmin: true
+  }), [baseData, userData.user, userData.allUsers]);
+
+  const regularUserData = useMemo(() => ({
+    ...baseData,
+    // Regular user gets only their data
+    user: userData.userData, // Their user data from database
+    users: [], // Empty for regular users
+    isAdmin: false
+  }), [baseData, userData.userData]);
+
   if (userData.userIsAdmin) {
-    return {
-      ...baseData,
-      // Admin gets everything
-      user: userData.user, // Current user info from auth
-      users: userData.allUsers || [], // All users for management
-      isAdmin: true
-    };
+    return adminData;
   } else {
-    return {
-      ...baseData,
-      // Regular user gets only their data
-      user: userData.userData, // Their user data from database
-      users: [], // Empty for regular users
-      isAdmin: false
-    };
+    return regularUserData;
   }
 };

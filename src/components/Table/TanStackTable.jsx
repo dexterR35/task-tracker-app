@@ -307,7 +307,7 @@ const TanStackTable = forwardRef(({
       setRowSelection(newSelection);
       onRowSelectionChange?.(newSelection);
     }
-  }, [rowSelection, onRowSelectionChange]);
+  }, [onRowSelectionChange]); // Remove rowSelection from dependencies to prevent recreation
 
   // Memoized row click handler for selection
   const handleRowClick = useCallback((row) => {
@@ -456,20 +456,22 @@ const TanStackTable = forwardRef(({
         <SkeletonTable rows={5} />
       ) : (
         <>
-          {/* Table Controls */}
-          <TableControls
-            showFilters={showFilters}
-            showPagination={showPagination}
-            enablePagination={enablePagination}
-            showColumnToggle={showColumnToggle}
-            table={table}
-            tableType={tableType}
-            globalFilter={globalFilter}
-            setGlobalFilter={setGlobalFilter}
-            columns={columns}
-            handleCSVExport={handleCSVExport}
-            isExporting={isExporting}
-          />
+          {/* Table Controls - Only show if any controls are enabled */}
+          {(showFilters || (showPagination && enablePagination) || showColumnToggle) && (
+            <TableControls
+              showFilters={showFilters}
+              showPagination={showPagination}
+              enablePagination={enablePagination}
+              showColumnToggle={showColumnToggle}
+              table={table}
+              tableType={tableType}
+              globalFilter={globalFilter}
+              setGlobalFilter={setGlobalFilter}
+              columns={columns}
+              handleCSVExport={handleCSVExport}
+              isExporting={isExporting}
+            />
+          )}
 
           {/* Bulk Actions Bar */}
           <BulkActionsBar

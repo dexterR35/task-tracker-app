@@ -60,6 +60,7 @@ const AnalyticsPage = () => {
     isLoading
   }), [tasks, selectedMonth, users, reporters, isLoading]);
 
+
   // Card selection handlers
   const handleCardSelection = (cardId) => {
     setSelectedCards(prev => 
@@ -71,10 +72,7 @@ const AnalyticsPage = () => {
 
   const handleSelectAll = () => {
     const allCardIds = [
-      'market-user-breakdown-card',
-      'reporter-analytics-card', 
-      'user-analytics-card',
-      'marketing-analytics-card'
+      'market-user-breakdown-card'
     ];
     setSelectedCards(allCardIds);
   };
@@ -379,82 +377,11 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Reporter Analytics Card */}
-          <div className="relative">
-            <div id="reporter-analytics-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('reporter-analytics-card')}
-                      onChange={() => handleCardSelection('reporter-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <UnifiedAnalyticsCard 
-                  cardType={ANALYTICS_CARD_TYPES.REPORTER_ANALYTICS}
-                  {...analyticsData} 
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* User Analytics Card */}
-          <div className="relative">
-            <div id="user-analytics-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('user-analytics-card')}
-                      onChange={() => handleCardSelection('user-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <UnifiedAnalyticsCard 
-                  cardType={ANALYTICS_CARD_TYPES.USER_ANALYTICS}
-                  {...analyticsData} 
-                />
-              </div>
-            </div>
-          </div>
 
 
 
-          {/* Marketing Analytics Card */}
-          <div className="relative">
-            <div id="marketing-analytics-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('marketing-analytics-card')}
-                      onChange={() => handleCardSelection('marketing-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <UnifiedAnalyticsCard 
-                  cardType={ANALYTICS_CARD_TYPES.MARKETING_ANALYTICS}
-                  {...analyticsData} 
-                />
-              </div>
-            </div>
-          </div>
+
+
 
 
         </div>

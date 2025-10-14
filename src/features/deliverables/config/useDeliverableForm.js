@@ -72,11 +72,11 @@ export const DELIVERABLE_FORM_FIELDS = [
     }
   },
   {
-    name: "declinariTime",
+    name: "variationsTime",
     type: "number",
-    label: "Declinari Time",
+    label: "Variations Time",
     required: true,
-    placeholder: "Enter declinari time",
+    placeholder: "Enter variations time",
     min: 0,
     max: 999,
     step: 1,
@@ -84,12 +84,21 @@ export const DELIVERABLE_FORM_FIELDS = [
       required: VALIDATION.MESSAGES.REQUIRED,
       min: {
         value: 0,
-        message: "Declinari time must be at least 0"
+        message: "variations time must be at least 0"
       },
       max: {
         value: 999,
-        message: "Declinari time must be less than 999"
+        message: "variations time must be less than 999"
       }
+    }
+  },
+  {
+    name: "requiresQuantity",
+    type: "checkbox",
+    label: "Requires Quantity",
+    required: false,
+    validation: {
+      required: false
     }
   }
 ];
@@ -130,6 +139,12 @@ export const createDeliverableFormSchema = (fields) => {
         schemaShape[field.name] = yupField;
       } else if (field.type === 'select') {
         let yupField = Yup.string();
+        if (field.validation.required) {
+          yupField = yupField.required(field.validation.required);
+        }
+        schemaShape[field.name] = yupField;
+      } else if (field.type === 'checkbox') {
+        let yupField = Yup.boolean();
         if (field.validation.required) {
           yupField = yupField.required(field.validation.required);
         }
@@ -180,13 +195,13 @@ export const validateTimePerUnit = (timePerUnit) => {
   return null;
 };
 
-export const validateDeclinariTime = (declinariTime) => {
-  const time = parseInt(declinariTime);
+export const validateVariationsTime = (variationsTime) => {
+  const time = parseInt(variationsTime);
   if (isNaN(time) || time < 0) {
-    return "Declinari time must be at least 0";
+    return "variations time must be at least 0";
   }
   if (time > 999) {
-    return "Declinari time must be less than 999";
+    return "variations time must be less than 999";
   }
   return null;
 };

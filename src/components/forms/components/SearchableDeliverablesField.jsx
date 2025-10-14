@@ -14,8 +14,8 @@ const SearchableDeliverablesField = ({
   hideTimeInfo = false
 }) => {
   const [quantities, setQuantities] = useState({});
-  const [declinariQuantities, setDeclinariQuantities] = useState({});
-  const [declinariEnabled, setDeclinariEnabled] = useState({});
+  const [variationsQuantities, setvariationsQuantities] = useState({});
+  const [variationsEnabled, setvariationsEnabled] = useState({});
   
   const selectedDeliverable = watch('deliverables') || '';
   const selectedDepartment = watch('departments') || '';
@@ -48,27 +48,27 @@ const SearchableDeliverablesField = ({
     }
   }, [selectedDeliverable, selectedOption, quantities, setValue]);
   
-  // Initialize quantities and declinari from form data if editing
+  // Initialize quantities and variations from form data if editing
   useEffect(() => {
     if (formValues?.deliverableQuantities) {
       setQuantities(formValues.deliverableQuantities);
     }
-    if (formValues?.declinariQuantities) {
-      setDeclinariQuantities(formValues.declinariQuantities);
+    if (formValues?.variationsQuantities) {
+      setvariationsQuantities(formValues.variationsQuantities);
     }
-    if (formValues?.declinariDeliverables) {
-      setDeclinariEnabled(formValues.declinariDeliverables);
+    if (formValues?.variationsDeliverables) {
+      setvariationsEnabled(formValues.variationsDeliverables);
     }
-  }, [formValues?.deliverableQuantities, formValues?.declinariQuantities, formValues?.declinariDeliverables]);
+  }, [formValues?.deliverableQuantities, formValues?.variationsQuantities, formValues?.variationsDeliverables]);
 
   // Handle deliverable selection
   const handleDeliverableChange = (value) => {
     setValue('deliverables', value);
     
-    // Clear previous quantities and declinari
+    // Clear previous quantities and variations
     const newQuantities = {};
-    const newDeclinariQuantities = {};
-    const newDeclinariEnabled = {};
+    const newvariationsQuantities = {};
+    const newvariationsEnabled = {};
     
     // Set default quantity to 1 for deliverables that require quantity
     if (value) {
@@ -80,8 +80,8 @@ const SearchableDeliverablesField = ({
     
     // Update all states and form values
     updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
-    updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
-    updateStateAndForm(setDeclinariEnabled, 'declinariDeliverables', newDeclinariEnabled);
+    updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
+    updateStateAndForm(setvariationsEnabled, 'variationsDeliverables', newvariationsEnabled);
     
     // Trigger validation immediately
     trigger('deliverables');
@@ -103,30 +103,30 @@ const SearchableDeliverablesField = ({
     setValue(formField, newValue);
   };
 
-  const handleDeclinariToggle = (deliverableValue, enabled) => {
-    const newDeclinariEnabled = { ...declinariEnabled, [deliverableValue]: enabled };
-    updateStateAndForm(setDeclinariEnabled, 'declinariDeliverables', newDeclinariEnabled);
+  const handlevariationsToggle = (deliverableValue, enabled) => {
+    const newvariationsEnabled = { ...variationsEnabled, [deliverableValue]: enabled };
+    updateStateAndForm(setvariationsEnabled, 'variationsDeliverables', newvariationsEnabled);
     
     if (!enabled) {
-      // Clear declinari quantity when disabled
-      const newDeclinariQuantities = { ...declinariQuantities };
-      delete newDeclinariQuantities[deliverableValue];
-      updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
+      // Clear variations quantity when disabled
+      const newvariationsQuantities = { ...variationsQuantities };
+      delete newvariationsQuantities[deliverableValue];
+      updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
     } else {
-      // Set default declinari quantity to 1 when enabled
-      const newDeclinariQuantities = { ...declinariQuantities, [deliverableValue]: 1 };
-      updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
+      // Set default variations quantity to 1 when enabled
+      const newvariationsQuantities = { ...variationsQuantities, [deliverableValue]: 1 };
+      updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
     }
-    trigger('declinariDeliverables');
+    trigger('variationsDeliverables');
   };
 
-  const handleDeclinariQuantityChange = (deliverableValue, quantity) => {
-    const newDeclinariQuantities = { ...declinariQuantities, [deliverableValue]: parseInt(quantity) || 1 };
-    updateStateAndForm(setDeclinariQuantities, 'declinariQuantities', newDeclinariQuantities);
-    trigger('declinariQuantities');
+  const handlevariationsQuantityChange = (deliverableValue, quantity) => {
+    const newvariationsQuantities = { ...variationsQuantities, [deliverableValue]: parseInt(quantity) || 1 };
+    updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
+    trigger('variationsQuantities');
   };
 
-  // Filter out declinari deliverables from search options
+  // Filter out variations deliverables from search options
   const filteredOptions = useMemo(() => {
     // If has deliverables is checked but no department is selected, show empty options
     if (hasDeliverables && !selectedDepartment) {
@@ -137,10 +137,10 @@ const SearchableDeliverablesField = ({
       return [];
     }
     
-    // Filter out deliverables that contain "declinari" in the name (case insensitive)
+    // Filter out deliverables that contain "variations" in the name (case insensitive)
     return field.options.filter(option => {
       const name = option.name || option.label || option.value || '';
-      return !name.toLowerCase().includes('declinari');
+      return !name.toLowerCase().includes('variations');
     });
   }, [field.options, hasDeliverables, selectedDepartment]);
 
@@ -191,33 +191,33 @@ const SearchableDeliverablesField = ({
             </div>
           )}
           
-          {/* Declinari Toggle */}
+          {/* variations Toggle */}
           <div className="flex items-center space-x-2 min-w-[200px]">
             <input
               type="checkbox"
-              id={`declinari-${selectedDeliverable}`}
-              checked={declinariEnabled[selectedDeliverable] || false}
-              onChange={(e) => handleDeclinariToggle(selectedDeliverable, e.target.checked)}
+              id={`variations-${selectedDeliverable}`}
+              checked={variationsEnabled[selectedDeliverable] || false}
+              onChange={(e) => handlevariationsToggle(selectedDeliverable, e.target.checked)}
               className="form-checkbox h-4 w-4"
             />
-            <label htmlFor={`declinari-${selectedDeliverable}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Enable Declinari
+            <label htmlFor={`variations-${selectedDeliverable}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Enable variations
             </label>
           </div>
           
-          {/* Declinari Quantity (if enabled) */}
-          {declinariEnabled[selectedDeliverable] && (
+          {/* variations Quantity (if enabled) */}
+          {variationsEnabled[selectedDeliverable] && (
             <div className="flex-1 min-w-[200px] space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Declinari Quantity
+                variations Quantity
               </label>
               <input
                 type="number"
                 min="1"
-                value={declinariQuantities[selectedDeliverable] || 1}
-                onChange={(e) => handleDeclinariQuantityChange(selectedDeliverable, e.target.value)}
+                value={variationsQuantities[selectedDeliverable] || 1}
+                onChange={(e) => handlevariationsQuantityChange(selectedDeliverable, e.target.value)}
                 className="form-input text-sm py-2 px-3 h-10 w-full text-left [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="Enter declinari quantity"
+                placeholder="Enter variations quantity"
               />
             </div>
           )}
@@ -228,8 +228,8 @@ const SearchableDeliverablesField = ({
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Information</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 <div>Time per unit: {selectedOption.timePerUnit} {selectedOption.timeUnit}</div>
-                {selectedOption.declinariTime && (
-                  <div>Declinari time: {selectedOption.declinariTime} {selectedOption.declinariTimeUnit || 'min'}</div>
+                {selectedOption.variationsTime && (
+                  <div>variations time: {selectedOption.variationsTime} {selectedOption.variationsTimeUnit || 'min'}</div>
                 )}
               </div>
             </div>

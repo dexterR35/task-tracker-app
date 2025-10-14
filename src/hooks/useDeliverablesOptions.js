@@ -18,8 +18,8 @@ export const useDeliverablesOptions = () => {
       timePerUnit: deliverable.timePerUnit,
       timeUnit: deliverable.timeUnit,
       requiresQuantity: deliverable.requiresQuantity,
-      declinariTime: deliverable.declinariTime,
-      declinariTimeUnit: deliverable.declinariTimeUnit || 'min'
+      variationsTime: deliverable.variationsTime,
+      variationsTimeUnit: deliverable.variationsTimeUnit || 'min'
     }));
     
     return options;

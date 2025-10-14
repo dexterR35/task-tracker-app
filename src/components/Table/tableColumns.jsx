@@ -71,9 +71,9 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
         <div key={index} className="text-sm">
           <div className="font-medium text-gray-900 dark:text-white">
             {deliverable.quantity}x{deliverable.name}
-            {deliverable.declinariQuantity > 0 && (
+            {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
               <span className="text-orange-600 dark:text-orange-400">
-                {' '}+ {deliverable.declinariQuantity} declinari
+                {' '}+ {deliverable.variationsQuantity || deliverable.declinariQuantity} variations
               </span>
             )}
           </div>
@@ -87,11 +87,11 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
                       <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
                     )}
                   </div>
-                  {deliverable.declinariQuantity > 0 && (
+                  {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
                     <div className="block">
-                      Declinari: {deliverable.declinariQuantity}x{deliverable.declinariTime}{deliverable.declinariTimeUnit} = {deliverable.totalDeclinariTime.toFixed(1)}h
-                      {deliverable.declinariTimeUnit === 'min' && (
-                        <span> ({(deliverable.totalDeclinariTime * 60).toFixed(0)}min)</span>
+                      variations: {(deliverable.variationsQuantity || deliverable.declinariQuantity)}x{(deliverable.variationsTime || deliverable.declinariTime)}{(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit)} = {(deliverable.totalvariationsTime || deliverable.totaldeclinariTime || 0).toFixed(1)}h
+                      {(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit) === 'min' && (
+                        <span> ({((deliverable.totalvariationsTime || deliverable.totaldeclinariTime || 0) * 60).toFixed(0)}min)</span>
                       )}
                     </div>
                   )}

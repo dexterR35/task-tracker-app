@@ -94,7 +94,7 @@ export const monthsApi = createApi({
      * Enhanced getCurrentMonth - Fetches only current month data (optimized)
      */
     getCurrentMonth: builder.query({
-      async queryFn({ userId, role, userData }) {
+      async queryFn({ userUID, role, userData }) {
         try {
           let currentMonthInfo = getMonthInfo(); // Default to actual current month
           let boardExists = false;
@@ -189,7 +189,10 @@ export const monthsApi = createApi({
           // Sort by month ID (newest first)
           availableMonths.sort((a, b) => b.monthId.localeCompare(a.monthId));
 
-          return { data: availableMonths };
+          // Serialize timestamps for Redux store
+          const serializedMonths = serializeTimestampsForRedux(availableMonths);
+
+          return { data: serializedMonths };
         } catch (error) {
           logger.error("[getAvailableMonths] Error:", error);
           return { error: { message: error.message } };

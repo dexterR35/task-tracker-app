@@ -12,8 +12,8 @@ const CalculationExamples = ({ deliverables = [] }) => {
         timePerUnit: 1, // Always 1 per unit
         timeUnit: deliverable.timeUnit || 'hr',
         quantity: [2, 3, 4][index], // Example quantities: 2, 3, 4
-        declinariTime: Math.max(deliverable.declinariTime || 10, 10), // Minimum 10 minutes
-        declinariEnabled: true // Always show declinari
+        variationsTime: Math.max(deliverable.variationsTime || 10, 10), // Minimum 10 minutes
+        variationsEnabled: true // Always show variations
       }));
     }
     
@@ -24,24 +24,24 @@ const CalculationExamples = ({ deliverables = [] }) => {
         timePerUnit: 1,
         timeUnit: "hr",
         quantity: 3,
-        declinariTime: 10,
-        declinariEnabled: true
+        variationsTime: 10,
+        variationsEnabled: true
       },
       {
         deliverable: "Design Mockup",
         timePerUnit: 1,
         timeUnit: "hr",
         quantity: 2,
-        declinariTime: 15,
-        declinariEnabled: true
+        variationsTime: 15,
+        variationsEnabled: true
       },
       {
         deliverable: "Code Review",
         timePerUnit: 1,
         timeUnit: "days",
         quantity: 1,
-        declinariTime: 10,
-        declinariEnabled: true
+        variationsTime: 10,
+        variationsEnabled: true
       }
     ];
   };
@@ -113,15 +113,15 @@ const CalculationExamples = ({ deliverables = [] }) => {
           Time Calculation Examples
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Examples of how deliverable time calculations work with different units and declinari
+          Examples of how deliverable time calculations work with different units and variations
         </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {examples.map((example, index) => {
           const baseTime = calculateTime(example.timePerUnit, example.timeUnit, example.quantity);
-          const declinariTime = example.declinariEnabled ? (example.declinariTime * example.quantity) : 0;
-          const totalTime = baseTime + declinariTime;
+          const variationsTime = example.variationsEnabled ? (example.variationsTime * example.quantity) : 0;
+          const totalTime = baseTime + variationsTime;
           
           const cardColor = getDeliverableColor(example.deliverable, index);
           const cardColorHex = getCardColorHex(cardColor);
@@ -199,7 +199,7 @@ const CalculationExamples = ({ deliverables = [] }) => {
                       </div>
                     </div>
                     
-                    {example.declinariEnabled && (
+                    {example.variationsEnabled && (
                       <div 
                         className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
                         style={{ 
@@ -217,7 +217,7 @@ const CalculationExamples = ({ deliverables = [] }) => {
                                 background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
                               }}
                             ></div>
-                            <span className="text-xs text-gray-400">Declinari Count</span>
+                            <span className="text-xs text-gray-400">variations Count</span>
                           </div>
                           <span className="text-sm font-medium text-gray-300">
                             {example.quantity}
@@ -225,10 +225,10 @@ const CalculationExamples = ({ deliverables = [] }) => {
                         </div>
                         <div className="ml-4 mt-1">
                           <span className="text-xs text-gray-500">
-                            {example.quantity}×{example.declinariTime}min = +{formatTime(declinariTime)}
+                            {example.quantity}×{example.variationsTime}min = +{formatTime(variationsTime)}
                           </span>
                           <div className="text-xs text-gray-400 mt-1">
-                            {example.declinariTime} min = {(example.declinariTime / 60).toFixed(1)}h (min 10min/unit)
+                            {example.variationsTime} min = {(example.variationsTime / 60).toFixed(1)}h (min 10min/unit)
                           </div>
                         </div>
                       </div>
@@ -260,7 +260,7 @@ const CalculationExamples = ({ deliverables = [] }) => {
                       </div>
                       <div className="ml-4 mt-1">
                         <span className="text-xs text-gray-500">
-                          {formatTime(baseTime)} + {formatTime(declinariTime)} = {formatTime(totalTime)}
+                          {formatTime(baseTime)} + {formatTime(variationsTime)} = {formatTime(totalTime)}
                         </span>
                       </div>
                     </div>
@@ -274,7 +274,7 @@ const CalculationExamples = ({ deliverables = [] }) => {
       
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <p className="text-xs text-blue-700 dark:text-blue-300">
-          <strong>Note:</strong> Declinari time is added to the base deliverable time when enabled in task form,. 
+          <strong>Note:</strong> variations time is added to the base deliverable time when enabled in task form,. 
           Time units are automatically converted and displayed.
         </p>
       </div>

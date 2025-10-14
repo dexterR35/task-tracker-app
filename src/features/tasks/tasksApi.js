@@ -90,16 +90,15 @@ const validateTaskPermissions = (userData, operation) => {
 };
 
 // Helper function to build task query with user filtering
-  const buildTaskQuery = (tasksRef, role, userId) => {
-    if (role === "user" && userId) {
-      // TEMPORARY: For debugging, let's fetch all tasks and filter in the app
-      // This will help us see what userUID values are actually in the tasks
-      return fsQuery(tasksRef); // Remove the where clause temporarily
-    } else if (role === "admin" && userId) {
-      // Admin users: specific user's tasks when selected
-      return fsQuery(tasksRef, where("userUID", "==", userId));
+  const buildTaskQuery = (tasksRef, role, userUID) => {
+    if (role === "user") {
+      // Regular users: fetch only their own tasks
+      return fsQuery(tasksRef, where("userUID", "==", userUID));
+    } else if (role === "admin" && userUID) {
+      // Admin users: specific user's tasks when a user is selected
+      return fsQuery(tasksRef, where("userUID", "==", userUID));
     } else {
-      // Admin users: all tasks (no filtering)
+      // Admin users: all tasks when no specific user is selected
       return fsQuery(tasksRef);
     }
   };
@@ -145,14 +144,19 @@ export const tasksApi = createApi({
   endpoints: (builder) => ({
     // Real-time fetch for tasks - optimized for month changes and CRUD operations
     getMonthTasks: builder.query({
-      async queryFn({ monthId, userId, role, userData }) {
+      async queryFn({ monthId, userUID, role, userData }) {
         // Use consistent cache key for all users viewing the same month
         // This ensures cache invalidation works across different user sessions
         const cacheKey = `getMonthTasks_${monthId}`;
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-            console.log('🔍 getMonthTasks API called:', { monthId, userId, role });
+            console.log('🔍 getMonthTasks API called:', { 
+              monthId, 
+              userUID: userUID || 'ALL_USERS', 
+              role,
+              queryType: userUID ? 'SPECIFIC_USER' : 'ALL_USERS'
+            });
             
             if (!monthId) {
               console.log('❌ No monthId provided');
@@ -183,7 +187,7 @@ export const tasksApi = createApi({
           let tasksQuery = fsQuery(tasksRef);
 
           // Apply user filtering based on role using helper function
-          tasksQuery = buildTaskQuery(tasksRef, role, userId);
+          tasksQuery = buildTaskQuery(tasksRef, role, userUID);
 
           const tasksSnapshot = await getDocs(tasksQuery);
           const tasks = tasksSnapshot.docs.map((doc) => ({
@@ -195,8 +199,9 @@ export const tasksApi = createApi({
           console.log('📋 Tasks fetched:', { 
             monthId, 
             tasksCount: tasks.length,
-            userId,
+            userUID: userUID || 'ALL_USERS',
             role,
+            queryType: userUID ? 'SPECIFIC_USER' : 'ALL_USERS',
             tasks: tasks.map(t => ({ id: t.id, userUID: t.userUID }))
           });
 
@@ -241,11 +246,11 @@ export const tasksApi = createApi({
           const isValidRole = ["admin", "user"].includes(arg.role);
           const canAccessThisUser =
             isUserAdmin(arg.userData) ||
-            (arg.userId && arg.userId === currentUserUID);
+            (arg.userUID && arg.userUID === currentUserUID);
 
           if (
             !isValidRole ||
-            (!isUserAdmin(arg.userData) && !arg.userId) ||
+            (!isUserAdmin(arg.userData) && !arg.userUID) ||
             !canAccessThisUser
           ) {
             return;
@@ -289,9 +294,7 @@ export const tasksApi = createApi({
                   )
                   .filter((task) => task !== null);
 
-                console.log('Real-time update: tasks count:', tasks.length);
-                console.log('Real-time update: updating cache for monthId:', arg.monthId);
-                listenerManager.updateActivity();
+                // Update cache - Immer will handle structural sharing automatically
                 updateCachedData(() => tasks);
               },
               (error) => {

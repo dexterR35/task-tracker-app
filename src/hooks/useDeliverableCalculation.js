@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 /**
  * Centralized deliverable calculation hook
- * Handles all deliverable time calculations with declinari support
+ * Handles all deliverable time calculations with variations support
  */
 export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions) => {
   return useMemo(() => {
@@ -34,27 +34,27 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
         // Calculate time for this deliverable
         const timePerUnit = deliverableOption.timePerUnit || 1;
         const timeUnit = deliverableOption.timeUnit || 'hr';
-        const declinariTime = deliverableOption.declinariTime || 0;
-        const declinariTimeUnit = deliverableOption.declinariTimeUnit || 'min';
+        const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+        const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
         
         // Convert to hours
         let timeInHours = timePerUnit;
         if (timeUnit === 'min') timeInHours = timePerUnit / 60;
         if (timeUnit === 'days') timeInHours = timePerUnit * 8;
         
-        // Add declinari time if present
-        let declinariTimeInHours = 0;
-        if (declinariTime > 0) {
-          if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
-          else if (declinariTimeUnit === 'hr') declinariTimeInHours = declinariTime;
-          else if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
-          else declinariTimeInHours = declinariTime / 60; // Default to minutes
+        // Add variations time if present
+        let variationsTimeInHours = 0;
+        if (variationsTime > 0) {
+          if (variationsTimeUnit === 'min') variationsTimeInHours = variationsTime / 60;
+          else if (variationsTimeUnit === 'hr') variationsTimeInHours = variationsTime;
+          else if (variationsTimeUnit === 'days') variationsTimeInHours = variationsTime * 8;
+          else variationsTimeInHours = variationsTime / 60; // Default to minutes
         }
         
-        // Get declinari quantity for this deliverable (if available in the data)
-        const declinariQuantity = deliverable?.declinariQuantity || 0;
-        const totalDeclinariTime = declinariQuantity * declinariTimeInHours;
-        const calculatedTime = (timeInHours * quantity) + totalDeclinariTime;
+        // Get variations quantity for this deliverable (if available in the data)
+        const variationsQuantity = deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+        const totalvariationsTime = variationsQuantity * variationsTimeInHours;
+        const calculatedTime = (timeInHours * quantity) + totalvariationsTime;
         totalTime += calculatedTime;
         
         deliverablesList.push({
@@ -63,12 +63,12 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
           time: calculatedTime,
           timePerUnit: timePerUnit,
           timeUnit: timeUnit,
-          declinariTime: declinariTime,
-          declinariTimeUnit: declinariTimeUnit,
-          declinariQuantity: declinariQuantity,
+          variationsTime: variationsTime,
+          variationsTimeUnit: variationsTimeUnit,
+          variationsQuantity: variationsQuantity,
           timeInHours: timeInHours,
-          declinariTimeInHours: declinariTimeInHours,
-          totalDeclinariTime: totalDeclinariTime,
+          variationsTimeInHours: variationsTimeInHours,
+          totalvariationsTime: totalvariationsTime,
           configured: true
         });
       } else {
@@ -79,10 +79,10 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
           time: 0,
           timePerUnit: 0,
           timeUnit: 'hr',
-          declinariTime: 0,
-          declinariTimeUnit: 'min',
+          variationsTime: 0,
+          variationsTimeUnit: 'min',
           timeInHours: 0,
-          declinariTimeInHours: 0,
+          variationsTimeInHours: 0,
           notConfigured: true
         });
       }
@@ -98,14 +98,14 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
 };
 
 /**
- * Calculate single deliverable time with declinari
+ * Calculate single deliverable time with variations
  */
-export const calculateSingleDeliverable = (deliverableOption, quantity = 1, declinariQuantity = 0) => {
+export const calculateSingleDeliverable = (deliverableOption, quantity = 1, variationsQuantity = 0) => {
   if (!deliverableOption) {
     return {
       time: 0,
       timeInHours: 0,
-      declinariTimeInHours: 0,
+      variationsTimeInHours: 0,
       totalTime: 0,
       minutes: 0,
       days: 0
@@ -114,39 +114,39 @@ export const calculateSingleDeliverable = (deliverableOption, quantity = 1, decl
 
   const timePerUnit = deliverableOption.timePerUnit || 1;
   const timeUnit = deliverableOption.timeUnit || 'hr';
-  const declinariTime = deliverableOption.declinariTime || 0;
-  const declinariTimeUnit = deliverableOption.declinariTimeUnit || 'min';
+  const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+  const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
   
   // Convert to hours
   let timeInHours = timePerUnit;
   if (timeUnit === 'min') timeInHours = timePerUnit / 60;
   if (timeUnit === 'days') timeInHours = timePerUnit * 8;
   
-  // Add declinari time if present
-  let declinariTimeInHours = 0;
-  if (declinariTime > 0) {
-    if (declinariTimeUnit === 'min') declinariTimeInHours = declinariTime / 60;
-    else if (declinariTimeUnit === 'hr') declinariTimeInHours = declinariTime;
-    else if (declinariTimeUnit === 'days') declinariTimeInHours = declinariTime * 8;
-    else declinariTimeInHours = declinariTime / 60; // Default to minutes
+  // Add variations time if present
+  let variationsTimeInHours = 0;
+  if (variationsTime > 0) {
+    if (variationsTimeUnit === 'min') variationsTimeInHours = variationsTime / 60;
+    else if (variationsTimeUnit === 'hr') variationsTimeInHours = variationsTime;
+    else if (variationsTimeUnit === 'days') variationsTimeInHours = variationsTime * 8;
+    else variationsTimeInHours = variationsTime / 60; // Default to minutes
   }
   
-  const totalDeclinariTime = declinariQuantity * declinariTimeInHours;
-  const totalTime = (timeInHours * quantity) + totalDeclinariTime;
+  const totalvariationsTime = variationsQuantity * variationsTimeInHours;
+  const totalTime = (timeInHours * quantity) + totalvariationsTime;
   
   return {
     time: totalTime,
     timeInHours,
-    declinariTimeInHours,
-    totalDeclinariTime,
+    variationsTimeInHours,
+    totalvariationsTime,
     totalTime,
     minutes: totalTime * 60,
     days: totalTime / 8,
     timePerUnit,
     timeUnit,
-    declinariTime,
-    declinariTimeUnit,
-    declinariQuantity
+    variationsTime,
+    variationsTimeUnit,
+    variationsQuantity
   };
 };
 
@@ -160,35 +160,37 @@ export const formatDeliverableDisplay = (deliverable) => {
     return '⚠️ Not configured in settings - Add to Settings → Deliverables';
   }
   
-  // Calculate base time (without declinari)
+  // Calculate base time (without variations)
   const baseTime = deliverable.timeInHours * deliverable.quantity;
   
-  if (deliverable.declinariTime > 0) {
-    const declinariHours = deliverable.declinariTimeUnit === 'min' 
-      ? deliverable.declinariTime / 60 
-      : deliverable.declinariTimeUnit === 'hr' 
-        ? deliverable.declinariTime 
-        : deliverable.declinariTime * 8;
+  if ((deliverable.variationsTime || deliverable.declinariTime) > 0) {
+    const variationsTime = deliverable.variationsTime || deliverable.declinariTime;
+    const variationsTimeUnit = deliverable.variationsTimeUnit || deliverable.declinariTimeUnit;
+    const variationsHours = variationsTimeUnit === 'min' 
+      ? variationsTime / 60 
+      : variationsTimeUnit === 'hr' 
+        ? variationsTime 
+        : variationsTime * 8;
     
-    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h + ${declinariHours.toFixed(3)}h declinari = ${deliverable.time.toFixed(1)}h`;
+    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h + ${variationsHours.toFixed(3)}h variations = ${deliverable.time.toFixed(1)}h`;
   }
   
   return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h`;
 };
 
 /**
- * Format declinari display text
+ * Format variations display text
  */
-export const formatDeclinariDisplay = (declinariTime, declinariTimeUnit) => {
-  if (!declinariTime || declinariTime <= 0) return '';
+export const formatvariationsDisplay = (variationsTime, variationsTimeUnit) => {
+  if (!variationsTime || variationsTime <= 0) return '';
   
-  const declinariHours = declinariTimeUnit === 'min' 
-    ? declinariTime / 60 
-    : declinariTimeUnit === 'hr' 
-      ? declinariTime 
-      : declinariTime * 8;
+  const variationsHours = variationsTimeUnit === 'min' 
+    ? variationsTime / 60 
+    : variationsTimeUnit === 'hr' 
+      ? variationsTime 
+      : variationsTime * 8;
   
-  return `+ ${declinariHours.toFixed(3)}h declinari`;
+  return `+ ${variationsHours.toFixed(3)}h variations`;
 };
 
 /**

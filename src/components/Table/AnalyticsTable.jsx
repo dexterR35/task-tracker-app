@@ -39,6 +39,17 @@ const AnalyticsTable = ({
         className="text-xs"
         enableRowSelection={false}
         showBulkActions={false}
+        showFilters={false}
+        showPagination={false}
+        showColumnToggle={false}
+        enablePagination={false}
+        enableFiltering={false}
+        pageSize={data?.length || 10000}
+        initialState={{
+          pagination: {
+            pageSize: data?.length || 10000
+          }
+        }}
       />
     </div>
   );

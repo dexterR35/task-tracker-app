@@ -171,7 +171,6 @@ const TaskTable = ({
 
         // If neither user nor reporter is selected, show tasks based on role
         if (!isUserAdmin) {
-          const userUID = user?.uid || user?.userUID;
           const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
           const isReporterTask = task.reporters || task.data_task?.reporters;
           return isUserTask || isReporterTask;
@@ -180,21 +179,119 @@ const TaskTable = ({
         return true; // Admin sees all tasks
       });
     },
-    [isUserAdmin, userUID, user]
+    [isUserAdmin, userUID]
   );
 
-  // Get filtered tasks
+  // Get filtered tasks and sort by createdAt (newest first)
   const filteredTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
-    return getFilteredTasks(
+    const filtered = getFilteredTasks(
       tasks,
       selectedUserId,
       selectedReporterId,
       selectedMonthId
     );
+    
+    // Sort by createdAt in descending order (newest first)
+    const sorted = filtered.sort((a, b) => {
+      // Handle Firebase Timestamps and different date formats
+      let dateA, dateB;
+      
+      if (a.createdAt) {
+        // Handle Firebase Timestamp objects
+        if (a.createdAt.seconds) {
+          dateA = new Date(a.createdAt.seconds * 1000);
+        } else if (a.createdAt.toDate) {
+          dateA = a.createdAt.toDate();
+        } else {
+          dateA = new Date(a.createdAt);
+        }
+      } else {
+        dateA = new Date(0);
+      }
+      
+      if (b.createdAt) {
+        // Handle Firebase Timestamp objects
+        if (b.createdAt.seconds) {
+          dateB = new Date(b.createdAt.seconds * 1000);
+        } else if (b.createdAt.toDate) {
+          dateB = b.createdAt.toDate();
+        } else {
+          dateB = new Date(b.createdAt);
+        }
+      } else {
+        dateB = new Date(0);
+      }
+      
+      // Sort by timestamp (newest first)
+      
+      return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+    });
+    
+    // Return sorted tasks
+    
+    return sorted;
   }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, getFilteredTasks]);
+
+  // Memoized bulk actions to prevent recreation
+  const bulkActions = useMemo(() => [
+    {
+      label: "View Selected",
+      icon: "edit",
+      variant: "primary",
+      onClick: (selectedTasks) => {
+        if (selectedTasks.length === 1) {
+          const task = selectedTasks[0];
+          
+          // Navigate using React Router (no page reload!)
+          const params = new URLSearchParams();
+          if (task.monthId) params.set('monthId', task.monthId);
+          if (task.createdByName) params.set('user', task.createdByName);
+          
+          // Use React Router navigate for smooth navigation
+          navigate(`/task/${task.id}?${params.toString()}`);
+        } else {
+          showError("Please select only ONE task to view");
+        }
+      }
+    },
+    {
+      label: "Edit Selected",
+      icon: "edit",
+      variant: "edit",
+      onClick: (selectedTasks) => {
+        if (selectedTasks.length === 1) {
+          handleEditTask(selectedTasks[0]);
+          // Note: Success toast will be shown by TaskForm when edit completes
+        } else {
+          showError("Please select only ONE task to edit");
+        }
+      }
+    },
+    {
+      label: "Delete Selected",
+      icon: "delete",
+      variant: "danger",
+      onClick: async (selectedTasks) => {
+        if (selectedTasks.length === 1) {
+          handleDelete(selectedTasks[0]);
+        } else {
+          showError("Please select only ONE task to delete");
+        }
+      }
+    }
+  ], [navigate, handleEditTask, handleDelete]);
+
+  // Memoized initial column visibility to prevent recreation
+  const initialColumnVisibility = useMemo(() => ({
+    'isVip': false,        // Hide VIP column by default
+    'reworked': true,     // Hide Reworked column by default
+    'startDate': true,    // Hide Start Date column by default
+    'endDate': false,      // Hide End Date column by default
+    'observations': false  // Hide Observations column by default
+  }), []);
 
   // Notify parent component about count changes
   useEffect(() => {
@@ -220,60 +317,8 @@ const TaskTable = ({
         onDelete={handleDelete}
         enableRowSelection={true}
         showBulkActions={true}
-        bulkActions={[
-          {
-            label: "View Selected",
-            icon: "edit",
-            variant: "primary",
-            onClick: (selectedTasks) => {
-              if (selectedTasks.length === 1) {
-                const task = selectedTasks[0];
-                
-                // Navigate using React Router (no page reload!)
-                const params = new URLSearchParams();
-                if (task.monthId) params.set('monthId', task.monthId);
-                if (task.createdByName) params.set('user', task.createdByName);
-                
-                // Use React Router navigate for smooth navigation
-                navigate(`/task/${task.id}?${params.toString()}`);
-              } else {
-                showError("Please select only ONE task to view");
-              }
-            }
-          },
-          {
-            label: "Edit Selected",
-            icon: "edit",
-            variant: "edit",
-            onClick: (selectedTasks) => {
-              if (selectedTasks.length === 1) {
-                handleEditTask(selectedTasks[0]);
-                // Note: Success toast will be shown by TaskForm when edit completes
-              } else {
-                showError("Please select only ONE task to edit");
-              }
-            }
-          },
-          {
-            label: "Delete Selected",
-            icon: "delete",
-            variant: "danger",
-            onClick: async (selectedTasks) => {
-              if (selectedTasks.length === 1) {
-                handleDelete(selectedTasks[0]);
-              } else {
-                showError("Please select only ONE task to delete");
-              }
-            }
-          }
-        ]}
-        initialColumnVisibility={{
-          'isVip': false,        // Hide VIP column by default
-          'reworked': true,     // Hide Reworked column by default
-          'startDate': true,    // Hide Start Date column by default
-          'endDate': false,      // Hide End Date column by default
-          'observations': false  // Hide Observations column by default
-        }}
+        bulkActions={bulkActions}
+        initialColumnVisibility={initialColumnVisibility}
       />
 
 

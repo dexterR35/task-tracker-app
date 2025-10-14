@@ -196,7 +196,7 @@ src/
 **Purpose**: Complex deliverables selection field
 **Key Features**:
 - Multi-deliverable selection
-- Quantity and declinari support
+- Quantity and variations support
 - Time estimation display
 - Dynamic validation
 
@@ -546,7 +546,7 @@ src/
 **Key Features**:
 - Form validation
 - Time configuration
-- Declinari support
+- variations support
 - Success callbacks
 
 ##### `DeliverableFormModal.jsx`
@@ -752,7 +752,7 @@ src/
 **Purpose**: Deliverable time calculation hook
 **Key Features**:
 - Time calculations
-- Declinari support
+- variations support
 - Formatting utilities
 - Validation
 

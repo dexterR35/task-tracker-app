@@ -25,7 +25,7 @@ const DeliverableTable = ({
   const canManageDeliverables = isUserAdmin(user);
   
   // Use prop data if provided, otherwise fallback to global data
-  const { deliverables: globalDeliverables, isLoading: loadingSettings, error: settingsError, refetchDeliverables } = useAppData();
+  const { deliverables: globalDeliverables, isLoading: loadingSettings, error: settingsError } = useAppData();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
   
   // Use prop deliverables if provided, otherwise use global data
@@ -55,7 +55,7 @@ const DeliverableTable = ({
           d.department === deliverable.department &&
           d.timePerUnit === deliverable.timePerUnit &&
           d.timeUnit === deliverable.timeUnit &&
-          d.declinariTime === deliverable.declinariTime &&
+          d.variationsTime === deliverable.variationsTime &&
           d.requiresQuantity === deliverable.requiresQuantity
         );
       });
@@ -88,7 +88,6 @@ const DeliverableTable = ({
   } = useTableActions('deliverable', {
     deleteMutation: handleDeleteDeliverable,
     onDeleteSuccess: () => {
-      refetchDeliverables?.();
     }
   });
 
@@ -167,8 +166,8 @@ const DeliverableTable = ({
           size: 80,
         },
         {
-          accessorKey: 'declinariTime',
-          header: 'Declinari Time',
+          accessorKey: 'variationsTime',
+          header: 'Variations Time',
           cell: ({ getValue }) => (
             <span className="text-gray-700 dark:text-gray-300">
               {getValue() || 0} min
@@ -205,7 +204,6 @@ const DeliverableTable = ({
   // Handle form success
   const handleFormSuccess = () => {
     setShowCreateModal(false);
-    refetchDeliverables?.();
   };
 
   // Handle form cancel
@@ -303,7 +301,6 @@ const DeliverableTable = ({
                     await handleDeleteDeliverable(deliverable);
                   }
                   showSuccess(`Deleted ${selectedDeliverables.length} deliverables successfully!`);
-                  refetchDeliverables?.();
                 } catch (error) {
                   showError(`Failed to delete some deliverables: ${error.message}`);
                 }

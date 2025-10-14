@@ -105,7 +105,7 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
       value: true
     }
   },
-  // Hidden fields for deliverable quantities and declinari
+  // Hidden fields for deliverable quantities and variations
   {
     name: 'deliverableQuantities',
     type: 'hidden',
@@ -114,16 +114,16 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
     conditional: false
   },
   {
-    name: 'declinariQuantities',
+    name: 'variationsQuantities',
     type: 'hidden',
-    label: 'Declinari Quantities',
+    label: 'variations Quantities',
     required: false,
     conditional: false
   },
   {
-    name: 'declinariDeliverables',
+    name: 'variationsDeliverables',
     type: 'hidden',
-    label: 'Declinari Deliverables',
+    label: 'variations Deliverables',
     required: false,
     conditional: false
   },
@@ -391,8 +391,8 @@ export const prepareTaskFormData = (formData) => {
     deliverablesUsed: formData._hasDeliverables ? [{
       name: formData.deliverables || '',
       count: formData.deliverableQuantities?.[formData.deliverables] || 1,
-      declinariEnabled: formData.declinariDeliverables?.[formData.deliverables] || false,
-      declinariCount: formData.declinariQuantities?.[formData.deliverables] || 0
+      variationsEnabled: formData.variationsDeliverables?.[formData.deliverables] || false,
+      variationsCount: formData.variationsQuantities?.[formData.deliverables] || 0
     }] : [],
     departments: formData.departments ? [formData.departments] : [],
     markets: formData.markets || [], // Required field - validation ensures it's not empty

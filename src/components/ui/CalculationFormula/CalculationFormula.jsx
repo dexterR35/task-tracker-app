@@ -12,10 +12,10 @@ const CalculationFormula = ({ className = "" }) => {
             Calculation Formula
           </h3>
           <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-            <p><strong>Base Formula:</strong> Total Time = (Base Time × Quantity) + Declinari Time</p>
+            <p><strong>Base Formula:</strong> Total Time = (Base Time × Quantity) + variations Time</p>
             <p><strong>Work Day:</strong> 1 day = 8 hours (not 24 hours)</p>
             <p><strong>Time Conversion:</strong> Hours ÷ 8 = Days | Hours × 60 = Minutes</p>
-            <p><strong>Declinari:</strong> Additional time added per task (if configured)</p>
+            <p><strong>variations:</strong> Additional time added per task (if configured)</p>
           </div>
         </div>
       </div>

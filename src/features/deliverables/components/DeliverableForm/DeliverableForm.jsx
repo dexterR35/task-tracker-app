@@ -10,12 +10,13 @@ import {
   createDeliverableFormSchema,
   validateDeliverableName,
   validateTimePerUnit,
-  validateDeclinariTime
+  validateVariationsTime
 } from '@/features/deliverables/config/useDeliverableForm';
 import { 
   TextField, 
   NumberField, 
-  SelectField 
+  SelectField,
+  CheckboxField
 } from '@/components/forms/components/';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { useAppData } from '@/hooks/useAppData';
@@ -44,7 +45,8 @@ const DeliverableForm = ({
       department: deliverable?.department || '',
       timePerUnit: deliverable?.timePerUnit || 1,
       timeUnit: deliverable?.timeUnit || 'hr',
-      declinariTime: deliverable?.declinariTime || 10
+      variationsTime: deliverable?.variationsTime || deliverable?.declinariTime || 10,
+      requiresQuantity: deliverable?.requiresQuantity || false
     }
   });
   
@@ -60,7 +62,8 @@ const DeliverableForm = ({
         department: deliverable.department || '',
         timePerUnit: deliverable.timePerUnit || 1,
         timeUnit: deliverable.timeUnit || 'hr',
-        declinariTime: deliverable.declinariTime || 10
+        variationsTime: deliverable.variationsTime || deliverable.declinariTime || 10,
+        requiresQuantity: deliverable.requiresQuantity || false
       });
     }
   }, [deliverable, mode, reset]);
@@ -202,9 +205,19 @@ const DeliverableForm = ({
             formValues={formValues}
           />
 
-          {/* Declinari Time */}
+          {/* variations Time */}
           <NumberField
             field={DELIVERABLE_FORM_FIELDS[4]}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            trigger={trigger}
+            formValues={formValues}
+          />
+
+          {/* Requires Quantity */}
+          <CheckboxField
+            field={DELIVERABLE_FORM_FIELDS[5]}
             register={register}
             errors={errors}
             setValue={setValue}
