@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
@@ -132,7 +132,7 @@ const DeliverableForm = ({
 }) => {
   const { deliverables: existingDeliverables } = useAppData();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
-  const schema = useMemo(() => createFormSchema(CONFIG.FORM_FIELDS), []);
+  const schema = createFormSchema(CONFIG.FORM_FIELDS);
   
   const { 
     register, 

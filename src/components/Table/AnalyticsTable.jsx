@@ -28,8 +28,8 @@ const AnalyticsTable = ({
     );
   }, [columns]);
 
-  // Memoize table props to prevent unnecessary re-renders
-  const tableProps = useMemo(() => ({
+  // Table props
+  const tableProps = {
     data: data || [],
     columns: tableColumns,
     tableType: "analytics",
@@ -48,7 +48,7 @@ const AnalyticsTable = ({
         pageSize: data?.length || 10000
       }
     }
-  }), [data, tableColumns, isLoading]);
+  };
 
   return (
     <div className={`card-small ${className}`}>

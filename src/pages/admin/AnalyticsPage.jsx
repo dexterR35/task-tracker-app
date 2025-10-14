@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import UnifiedAnalyticsCard from "@/components/Cards/UnifiedAnalyticsCard";
 import { ANALYTICS_CARD_TYPES } from "@/components/Cards/analyticsCardConfig";
@@ -51,14 +51,14 @@ const AnalyticsPage = () => {
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Memoize analytics data to prevent unnecessary recalculations
-  const analyticsData = useMemo(() => ({
+  // Analytics data object
+  const analyticsData = {
     tasks,
     selectedMonth,
     users,
     reporters,
     isLoading
-  }), [tasks, selectedMonth, users, reporters, isLoading]);
+  };
 
 
   // Card selection handlers

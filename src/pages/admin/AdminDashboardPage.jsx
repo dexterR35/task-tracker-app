@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppData } from "@/hooks/useAppData";
 import { useAuth } from "@/features/auth/hooks/useAuth";
@@ -35,137 +35,157 @@ const AdminDashboardPage = () => {
     isInitialLoading,
     error,
     selectMonth,
-  } = useAppData();
+  } = useAppData(selectedUserId);
 
-  // Get selected user name for display
-  const selectedUser = users.find(
-    (u) => (u.userUID || u.id) === selectedUserId
-  );
-  const selectedUserName =
-    selectedUser?.name || selectedUser?.email || "Unknown User";
+  // Get selected user and reporter info - simplified without excessive memoization
+  const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
+  const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
+  
+  const selectedReporter = reporters.find((r) => (r.id || r.uid) === selectedReporterId);
+  const selectedReporterName = selectedReporter?.name || selectedReporter?.reporterName;
 
-  // Get selected reporter name for display
-  const selectedReporter = reporters.find(
-    (r) => (r.id || r.uid) === selectedReporterId
-  );
-  const selectedReporterName =
-    selectedReporter?.name || selectedReporter?.reporterName;
-
-  // Handle user selection with role-based access control
+  // Handle user selection with role-based access control and logging
   const handleUserSelect = useCallback(
     (userId) => {
       // Regular users can only select themselves
       if (!isUserAdmin && userId && userId !== user?.userUID) {
+        console.warn("🚫 User selection blocked: Regular user cannot select other users", {
+          userId,
+          currentUserUID: user?.userUID,
+          isUserAdmin
+        });
         return; // Prevent regular users from selecting other users
       }
       
       const currentParams = Object.fromEntries(searchParams.entries());
+      const previousUserId = currentParams.user;
+      
       if (!userId) {
         delete currentParams.user;
+        console.log("👤 User selection cleared", { previousUserId });
       } else {
         currentParams.user = userId;
+        const selectedUser = users.find(u => (u.userUID || u.id) === userId);
+        console.log("👤 User selected", {
+          userId,
+          userName: selectedUser?.name || selectedUser?.email || "Unknown",
+          previousUserId,
+          isUserAdmin
+        });
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams, isUserAdmin, user]
+    [setSearchParams, searchParams, isUserAdmin, user, users]
   );
 
-  // Handle reporter selection with role-based access control
+  // Handle reporter selection with role-based access control and logging
   const handleReporterSelect = useCallback(
     (reporterId) => {
       const currentParams = Object.fromEntries(searchParams.entries());
+      const previousReporterId = currentParams.reporter;
+      
       if (!reporterId) {
         delete currentParams.reporter;
+        console.log("📊 Reporter selection cleared", { previousReporterId });
       } else {
         currentParams.reporter = reporterId;
+        const selectedReporter = reporters.find(r => (r.id || r.uid) === reporterId);
+        console.log("📊 Reporter selected", {
+          reporterId,
+          reporterName: selectedReporter?.name || selectedReporter?.reporterName || "Unknown",
+          previousReporterId
+        });
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams]
+    [setSearchParams, searchParams, reporters]
   );
 
 
-  // Derive title based on context and role
-  const title = isUserAdmin
-    ? (() => {
-        if (selectedUserId && selectedReporterId) {
-          return `Tasks - ${selectedUserName} & ${selectedReporterName}`;
-        } else if (selectedUserId) {
-          return `Tasks - ${selectedUserName}`;
-        } else if (selectedReporterId) {
-          return `Tasks - ${selectedReporterName}`;
-        } else {
-          return "All Tasks - All Users";
-        }
-      })()
-    : "My Tasks";
+  // Derive title based on context and role - simplified
+  const title = (() => {
+    if (!isUserAdmin) return "My Tasks";
+    
+    if (selectedUserId && selectedReporterId) {
+      return `Tasks - ${selectedUserName} & ${selectedReporterName}`;
+    } else if (selectedUserId) {
+      return `Tasks - ${selectedUserName}`;
+    } else if (selectedReporterId) {
+      return `Tasks - ${selectedReporterName}`;
+    } else {
+      return "All Tasks - All Users";
+    }
+  })();
 
-  // Get current month ID for filtering
+  // Get current month ID for filtering - simplified
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
-  // Task creation is only allowed for current month with existing board
+  // Task creation is only allowed for current month with existing board - simplified
   const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
 
-  // Handle create task
-  const handleCreateTask = () => {
+  // Handle create task - memoized to prevent recreation
+  const handleCreateTask = useCallback(() => {
     if (!canCreateTasks) {
       showError("Create Task is not available for this month");
       return;
     }
     setShowCreateModal(true);
-  };
+  }, [canCreateTasks]);
 
-  // Common data for small cards
-  const commonCardData = {
+  // Add logging for combined selections and security checks
+  useEffect(() => {
+    if (selectedUserId && selectedReporterId) {
+      console.log("🔍 Combined selection active", {
+        selectedUserId,
+        selectedUserName,
+        selectedReporterId,
+        selectedReporterName,
+        currentMonthId,
+        totalTasks: tasks?.length || 0
+      });
+    }
+  }, [selectedUserId, selectedReporterId, selectedUserName, selectedReporterName, currentMonthId, tasks?.length]);
+
+  // Security logging for admin actions
+  useEffect(() => {
+    if (isUserAdmin && selectedUserId) {
+      console.log("🔐 Admin viewing user data", {
+        adminUserUID: user?.userUID,
+        viewingUserUID: selectedUserId,
+        viewingUserName: selectedUserName,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [isUserAdmin, selectedUserId, selectedUserName, user?.userUID]);
+
+  // Small cards data preparation - simplified without excessive memoization
+  const smallCardsData = {
     tasks, // ✅ Global tasks - never filtered
     reporters,
     users,
-    periodName:
-      selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
+    periodName: selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
     periodId: selectedMonth?.monthId || currentMonth?.monthId || "unknown",
     isCurrentMonth,
     isUserAdmin,
     currentUser: user,
+    selectedMonth,
+    currentMonth,
+    selectedUserId,
+    selectedUserName,
+    selectedReporterId,
+    selectedReporterName,
+    canCreateTasks,
+    handleCreateTask,
+    handleUserSelect,
+    handleReporterSelect,
+    selectMonth,
+    availableMonths,
   };
 
-  // Small cards data preparation
-  const smallCardsData = useMemo(
-    () => ({
-      ...commonCardData,
-      selectedMonth,
-      currentMonth,
-      selectedUserId,
-      selectedUserName,
-      selectedReporterId,
-      selectedReporterName,
-      canCreateTasks,
-      handleCreateTask,
-      handleUserSelect,
-      handleReporterSelect,
-      selectMonth,
-      availableMonths,
-    }),
-    [
-      commonCardData,
-      selectedMonth,
-      currentMonth,
-      selectedUserId,
-      selectedUserName,
-      selectedReporterId,
-      selectedReporterName,
-      canCreateTasks,
-      handleCreateTask,
-      handleUserSelect,
-      handleReporterSelect,
-      selectMonth,
-      availableMonths,
-    ]
-  );
-
-  // Create small cards
+  // Create small cards - only memoize if it's expensive
   const smallCards = useMemo(
     () => createSmallCards(smallCardsData),
-    [smallCardsData]
+    [smallCardsData.tasks, smallCardsData.selectedUserId, smallCardsData.selectedReporterId, smallCardsData.selectedMonth?.monthId, smallCardsData.currentMonth?.monthId]
   );
 
   if (error) {

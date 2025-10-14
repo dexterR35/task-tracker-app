@@ -117,8 +117,8 @@ const TaskTable = ({
   const taskColumns = useTaskColumns(selectedMonthId, reporters, user);
 
 
-  // Extract stable user values to prevent unnecessary re-renders
-  const userUID = useMemo(() => user?.userUID, [user?.userUID]);
+  // Extract stable user values
+  const userUID = user?.userUID;
   
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
@@ -126,6 +126,8 @@ const TaskTable = ({
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
+      
+      
       return tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
@@ -151,15 +153,8 @@ const TaskTable = ({
           const taskReporterId = task.data_task?.reporters;
           if (!taskReporterId) return false;
           
-          // Find the reporter by reporterUID
-          const selectedReporter = reporters.find(r => 
-            r.reporterUID === selectedReporterId
-          );
-          
-          if (!selectedReporter) return false;
-          
-          // Compare task reporter ID with selected reporter's reporterUID
-          const matchesReporter = taskReporterId === selectedReporter.reporterUID;
+          // Compare task reporter ID directly with selectedReporterId (case-insensitive)
+          const matchesReporter = taskReporterId?.toLowerCase() === selectedReporterId?.toLowerCase();
           
           return matchesUser && matchesReporter;
         }
@@ -177,15 +172,8 @@ const TaskTable = ({
           const taskReporterId = task.data_task?.reporters;
           if (!taskReporterId) return false;
           
-          // Find the reporter by reporterUID
-          const selectedReporter = reporters.find(r => 
-            r.reporterUID === selectedReporterId
-          );
-          
-          if (!selectedReporter) return false;
-          
-          // Compare task reporter ID with selected reporter's reporterUID
-          return taskReporterId === selectedReporter.reporterUID;
+          // Compare task reporter ID directly with selectedReporterId (case-insensitive)
+          return taskReporterId?.toLowerCase() === selectedReporterId?.toLowerCase();
         }
 
         // If neither user nor reporter is selected, show tasks based on role
@@ -303,14 +291,14 @@ const TaskTable = ({
     }
   ], [navigate, handleEditTask, handleDelete]);
 
-  // Memoized initial column visibility to prevent recreation
-  const initialColumnVisibility = useMemo(() => ({
+  // Initial column visibility
+  const initialColumnVisibility = {
     'isVip': false,        // Hide VIP column by default
     'reworked': true,     // Hide Reworked column by default
     'startDate': true,    // Hide Start Date column by default
     'endDate': false,      // Hide End Date column by default
     'observations': false  // Hide Observations column by default
-  }), []);
+  };
 
   // Notify parent component about count changes
   useEffect(() => {

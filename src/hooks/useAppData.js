@@ -78,24 +78,13 @@ export const useAppData = (selectedUserId = null) => {
     }
   );
   
-  // Extract current month data with memoization to prevent unnecessary re-renders
-  const { monthId, monthName, daysInMonth, startDate, endDate, boardExists } = useMemo(() => {
-    const { 
-      currentMonth = {}, 
-      boardExists = false
-    } = currentMonthData;
+  // Extract current month data
+  const { 
+    currentMonth: currentMonthFromData = {}, 
+    boardExists = false
+  } = currentMonthData;
 
-    const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonth;
-    
-    return {
-      monthId,
-      monthName,
-      daysInMonth,
-      startDate,
-      endDate,
-      boardExists
-    };
-  }, [currentMonthData]);
+  const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonthFromData;
   
   // Fetch available months for dropdown
   const { 
@@ -158,8 +147,8 @@ export const useAppData = (selectedUserId = null) => {
     { skip: !shouldFetchTasks }
   );
   
-  // Tasks from selected or current month - memoized to prevent re-renders
-  const tasksData = useMemo(() => monthTasks || [], [monthTasks]);
+  // Tasks from selected or current month
+  const tasksData = monthTasks || [];
   
   // Helper functions
   const selectMonth = useCallback((newSelectedMonthId) => {
@@ -176,8 +165,8 @@ export const useAppData = (selectedUserId = null) => {
   const isInitialLoading = currentMonthLoading && !monthId;
   const isMonthDataReady = monthId && monthName;
   
-  // Memoize currentMonth object to prevent unnecessary re-renders
-  const currentMonth = useMemo(() => ({
+  // Current month object
+  const currentMonth = {
     monthId,
     monthName,
     daysInMonth,
@@ -186,17 +175,14 @@ export const useAppData = (selectedUserId = null) => {
     boardExists,
     isCurrent: true,
     isReady: isMonthDataReady
-  }), [monthId, monthName, daysInMonth, startDate, endDate, boardExists, isMonthDataReady]);
+  };
 
-  // Memoize selectedMonth object to prevent unnecessary re-renders
-  const selectedMonth = useMemo(() => {
-    if (isCurrentMonth) return null;
-    return {
-      monthId: selectedMonthId,
-      monthName: dropdownOptions.find(m => m.monthId === selectedMonthId)?.monthName,
-      isCurrent: false
-    };
-  }, [isCurrentMonth, selectedMonthId, dropdownOptions]);
+  // Selected month object
+  const selectedMonth = isCurrentMonth ? null : {
+    monthId: selectedMonthId,
+    monthName: dropdownOptions.find(m => m.monthId === selectedMonthId)?.monthName,
+    isCurrent: false
+  };
   
   // Fetch all reporters - plain data, no dependencies
   const { 
@@ -225,25 +211,21 @@ export const useAppData = (selectedUserId = null) => {
 
   
   // Combine errors from all sources with proper error handling
-  const error = useMemo(() => {
-    const errors = [userData.error, reportersError, deliverablesError, currentMonthError, monthTasksError];
-    return errors.find(err => err) || null;
-  }, [userData.error, reportersError, deliverablesError, currentMonthError, monthTasksError]);
+  const errors = [userData.error, reportersError, deliverablesError, currentMonthError, monthTasksError];
+  const error = errors.find(err => err) || null;
   
-  // Combined loading state with proper memoization and granular loading states
-  const isLoading = useMemo(() => {
-    return userData.isLoading || reportersLoading || deliverablesLoading || currentMonthLoading || monthTasksLoading;
-  }, [userData.isLoading, reportersLoading, deliverablesLoading, currentMonthLoading, monthTasksLoading]);
+  // Combined loading state
+  const isLoading = userData.isLoading || reportersLoading || deliverablesLoading || currentMonthLoading || monthTasksLoading;
 
   // Granular loading states for better UX
-  const loadingStates = useMemo(() => ({
+  const loadingStates = {
     isInitialLoading: isInitialLoading,
     isDataLoading: isLoading,
     isMonthLoading: currentMonthLoading,
     isTasksLoading: monthTasksLoading,
     isReportersLoading: reportersLoading,
     isDeliverablesLoading: deliverablesLoading
-  }), [isInitialLoading, isLoading, currentMonthLoading, monthTasksLoading, reportersLoading, deliverablesLoading]);
+  };
   
 
 

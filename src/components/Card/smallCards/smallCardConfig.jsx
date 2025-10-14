@@ -262,26 +262,12 @@ export const SMALL_CARD_CONFIGS = {
       <div className="mb-6">
         <DynamicButton
           onClick={() => {
-            // Determine which user's data to view
-            let targetUserId = null;
-            let buttonText = "VIEW MY DATA";
-            
-            // If admin has selected a user, view that user's data
-            if (data.selectedUserId && data.currentUser?.role === 'admin') {
-              targetUserId = data.selectedUserId;
-              const selectedUser = data.users?.find(u => u.userUID === data.selectedUserId);
-              buttonText = selectedUser ? `VIEW ${selectedUser.name?.toUpperCase() || selectedUser.email?.toUpperCase() || 'USER'} DATA` : "VIEW USER DATA";
-            }
-            
-            // Build URL with user parameter if needed
-            const url = targetUserId ? `/view-my-data?userId=${targetUserId}` : '/view-my-data';
-            
-            // Use React Router navigation to prevent page refresh
+            // Navigate to coming soon page
             if (data.navigate) {
-              data.navigate(url);
+              data.navigate('/coming-soon');
             } else {
               // Fallback: use history API for client-side navigation
-              window.history.pushState({}, '', url);
+              window.history.pushState({}, '', '/coming-soon');
               window.dispatchEvent(new PopStateEvent('popstate'));
             }
           }}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppData } from '@/hooks/useAppData';
@@ -50,9 +50,7 @@ const TaskForm = ({
   // Debug logging for deliverables (removed for production)
   
   // Create dynamic schema with deliverables options
-  const dynamicSchema = useMemo(() => {
-    return createTaskFormSchema();
-  }, []);
+  const dynamicSchema = createTaskFormSchema();
   
   const {
     register,
@@ -119,9 +117,7 @@ const TaskForm = ({
   const { deliverablesOptions: filteredDeliverablesOptions } = useDeliverablesByDepartment(selectedDepartment);
 
   // Create dynamic form fields with deliverables options (after filteredDeliverablesOptions is defined)
-  const formFields = useMemo(() => {
-    return createTaskFormFields(filteredDeliverablesOptions);
-  }, [filteredDeliverablesOptions]);
+  const formFields = createTaskFormFields(filteredDeliverablesOptions);
 
   // Watch checkbox values to clear errors when unchecked
   const hasDeliverables = watch('_hasDeliverables');

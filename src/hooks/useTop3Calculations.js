@@ -144,15 +144,15 @@ export const useTop3Calculations = (data, options = {}) => {
     includeAllData = false // For selected user card that needs all products/markets
   } = options;
 
-  // Memoize the options object to prevent unnecessary recalculations
-  const memoizedOptions = useMemo(() => ({
+  // Options object
+  const memoizedOptions = {
     selectedUserId,
     selectedReporterId,
     selectedMonthId,
     department,
     limit,
     includeAllData
-  }), [selectedUserId, selectedReporterId, selectedMonthId, department, limit, includeAllData]);
+  };
 
   return useMemo(() => {
     const tasks = data.tasks || [];
@@ -195,8 +195,10 @@ export const useTop3Calculations = (data, options = {}) => {
         return false;
       }
       
-      // Filter by reporter ID
-      if (selectedReporterId && task.reporters !== selectedReporterId && task.data_task?.reporters !== selectedReporterId) {
+      // Filter by reporter ID (case-insensitive)
+      if (selectedReporterId && 
+          task.reporters?.toLowerCase() !== selectedReporterId?.toLowerCase() && 
+          task.data_task?.reporters?.toLowerCase() !== selectedReporterId?.toLowerCase()) {
         return false;
       }
       

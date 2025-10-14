@@ -417,9 +417,9 @@ export const prepareTaskFormData = (formData) => {
   delete formData._hasDeliverables;
   delete formData._usedAIEnabled;
   
-  // Apply lowercase transformation to string fields, but keep taskName uppercase
-  const fieldsToLowercase = ['products', 'observations', 'reporterName', 'departments', 'markets', 'reporters'];
-  const fieldsToKeepUppercase = ['taskName'];
+  // Apply lowercase transformation to string fields, but keep taskName and IDs uppercase
+  const fieldsToLowercase = ['products', 'observations', 'reporterName', 'departments', 'markets'];
+  const fieldsToKeepUppercase = ['taskName', 'reporters', 'userUID', 'reporterUID'];
   const lowercasedDataTask = prepareFormData(dataTask, {
     fieldsToLowercase,
     fieldsToKeepUppercase,

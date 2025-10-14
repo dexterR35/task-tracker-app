@@ -7,7 +7,6 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { isUserAuthenticated, isAuthLoading } from "@/features/utils/authUtils";
@@ -26,7 +25,6 @@ import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
-import UserDataPage from "@/pages/UserDataPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -80,14 +78,14 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { canAccess } = authState;
   const location = useLocation();
 
-  // Memoize the redirect state to prevent infinite re-renders
-  const redirectState = useMemo(() => ({
+  // Redirect state object
+  const redirectState = {
     from: location.pathname + location.search + location.hash
-  }), [location.pathname, location.search, location.hash]);
+  };
 
-  const errorState = useMemo(() => ({
+  const errorState = {
     error: authState.error
-  }), [authState.error]);
+  };
 
 
   // Handle authentication errors
@@ -219,12 +217,8 @@ const router = createBrowserRouter([
             element: <ComingSoonPage />,
           },
           {
-            path: "view-my-data",
-            element: (
-              <PageWrapper>
-                <UserDataPage />
-              </PageWrapper>
-            ),
+            path: "coming-soon",
+            element: <ComingSoonPage />,
           },
           {
             path: "task/:taskId",

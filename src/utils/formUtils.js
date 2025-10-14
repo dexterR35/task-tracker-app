@@ -161,8 +161,8 @@ export const prepareFormData = (data, options = {}) => {
     convertTypes = true,
     addMetadata = false,
     lowercaseStrings = true,
-    fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName', 'products', 'observations', 'reporterName', 'departments', 'markets', 'reporters'],
-    fieldsToKeepUppercase = ['taskName'] // Fields that should remain uppercase
+    fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName', 'products', 'observations', 'reporterName', 'departments', 'markets'],
+    fieldsToKeepUppercase = ['taskName', 'reporters', 'userUID', 'reporterUID'] // Fields that should remain uppercase
   } = options;
   
   let preparedData = { ...data };
