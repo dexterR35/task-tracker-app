@@ -117,18 +117,15 @@ src/
 - Top 3 calculations
 - Color-coded metrics
 
-#### `UnifiedAnalyticsCard.jsx`
-**Purpose**: Unified analytics card that combines multiple card types
-**Key Features**:
-- Dynamic card type switching
-- Multiple analytics calculations
-- Market user breakdown
-- Reporter and user analytics
-
 #### `analyticsCardConfig.js`
-**Purpose**: Configuration for analytics cards
+**Purpose**: Configuration and utility functions for analytics cards
 **Key Features**:
-- Card type definitions
+- Card type configurations and definitions
+- Analytics calculation functions
+- Market user breakdown calculations
+- User by task data calculations
+- Unified analytics data processing
+- Direct props generation for AnalyticsCard
 - Icon and color mappings
 - Chart type configurations
 - Category-based organization

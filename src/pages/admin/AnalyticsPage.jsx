@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
-import UnifiedAnalyticsCard from "@/components/Cards/UnifiedAnalyticsCard";
-import { ANALYTICS_CARD_TYPES } from "@/components/Cards/analyticsCardConfig";
+import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
+import { getMarketsByUsersCardProps } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
 import { exportAnalyticsToCSV } from "@/utils/exportData";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const AnalyticsPage = () => {
-  // Get real-time data from month selection (same as AdminDashboardPage)
-  const { user, users, reporters, error, isLoading: appDataLoading } = useAppData();
+  // Get real-time data from month selection
+  const { users, error } = useAppData();
   
   // Card selection state
   const [selectedCards, setSelectedCards] = useState([]);
@@ -22,23 +23,11 @@ const AnalyticsPage = () => {
     isCurrentMonth, // Boolean check
     isLoading, // Loading state for selected month
     isInitialLoading, // Loading state for initial month data
-    isMonthDataReady, // Flag indicating month data is ready
     error: monthError, // Error state
     selectMonth, // Function to select month
-    resetToCurrentMonth, // Function to reset
   } = useAppData();
 
-  // Debug logging for month data
-  console.log('AnalyticsPage month data:', {
-    availableMonths: availableMonths?.length || 0,
-    currentMonth: currentMonth?.monthId,
-    selectedMonth: selectedMonth?.monthId,
-    isCurrentMonth,
-    isLoading,
-    isInitialLoading,
-    isMonthDataReady,
-    tasks: tasks?.length || 0
-  });
+  // Debug logging removed for cleaner code
 
   // Export state
   const [isUnifiedExporting, setIsUnifiedExporting] = useState(false);
@@ -51,15 +40,13 @@ const AnalyticsPage = () => {
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Analytics data object
+  // Analytics data object (keeping for future use)
   const analyticsData = {
     tasks,
     selectedMonth,
     users,
-    reporters,
     isLoading
   };
-
 
   // Card selection handlers
   const handleCardSelection = (cardId) => {
@@ -70,16 +57,7 @@ const AnalyticsPage = () => {
     );
   };
 
-  const handleSelectAll = () => {
-    const allCardIds = [
-      'market-user-breakdown-card'
-    ];
-    setSelectedCards(allCardIds);
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedCards([]);
-  };
+  // Removed Select All and Deselect All handlers - keeping only individual card selection
 
   // Error handling function
   const showError = (message) => {
@@ -146,21 +124,50 @@ const AnalyticsPage = () => {
 
     setIsUnifiedExporting(true);
     setExportType('csv');
+    setExportProgress(0);
+    setExportStep('Preparing table data...');
     
     try {
-      const success = exportAnalyticsToCSV(tasks, 'analytics', {
-        filename: `analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`
+      // Get the Markets by Users card data
+      const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
+      
+      setExportProgress(50);
+      setExportStep('Generating CSV file...');
+      
+      // Export only the table data, not all database tasks
+      const success = exportAnalyticsToCSV(marketsByUsersData.analyticsByUserMarketsTableData, 'markets_by_users_table', {
+        filename: `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`
       });
       
+      setExportProgress(100);
+      setExportStep('CSV export completed successfully!');
+      
       if (success) {
+        setTimeout(() => {
+          setIsUnifiedExporting(false);
+          setExportType(null);
+          setExportProgress(0);
+          setExportStep('');
+        }, 1500);
       } else {
         console.error('Analytics CSV export failed');
+        setExportStep('CSV export failed');
+        setTimeout(() => {
+          setIsUnifiedExporting(false);
+          setExportType(null);
+          setExportProgress(0);
+          setExportStep('');
+        }, 2000);
       }
     } catch (error) {
       console.error('Analytics export error:', error);
-    } finally {
-      setIsUnifiedExporting(false);
-      setExportType(null);
+      setExportStep('Export failed: ' + error.message);
+      setTimeout(() => {
+        setIsUnifiedExporting(false);
+        setExportType(null);
+        setExportProgress(0);
+        setExportStep('');
+      }, 2000);
     }
   };
 
@@ -220,20 +227,8 @@ const AnalyticsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            {/* Card Selection Controls */}
+            {/* Card Selection Info */}
             <div className="flex items-center space-x-2">
-              <button
-                onClick={handleSelectAll}
-                className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-              >
-                Select All
-              </button>
-              <button
-                onClick={handleDeselectAll}
-                className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                Deselect All
-              </button>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {selectedCards.length} selected
               </span>
@@ -241,75 +236,39 @@ const AnalyticsPage = () => {
 
             {/* Export Buttons */}
             <div className="flex items-center space-x-2">
-              <button
+              <DynamicButton
                 onClick={handlePDFExport}
                 disabled={isUnifiedExporting || selectedCards.length === 0}
-                className={`px-4 py-2 text-white text-sm rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg ${
-                  selectedCards.length === 0
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : isUnifiedExporting
-                    ? 'bg-red-500 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700 hover:scale-105'
-                }`}
+                variant={selectedCards.length === 0 ? "disabled" : "danger"}
+                size="sm"
+                iconName={isUnifiedExporting ? "loading" : "download"}
+                iconPosition="left"
+                className={isUnifiedExporting ? "animate-pulse" : ""}
               >
-                {isUnifiedExporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Generating PDF...</span>
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  </>
-                ) : selectedCards.length === 0 ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Select Cards First</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Generate PDF</span>
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  </>
-                )}
-              </button>
+                {isUnifiedExporting 
+                  ? "Generating PDF..." 
+                  : selectedCards.length === 0 
+                    ? "Select Cards First" 
+                    : "Generate PDF"
+                }
+              </DynamicButton>
 
-              <button
+              <DynamicButton
                 onClick={handleCSVExport}
                 disabled={isUnifiedExporting || selectedCards.length === 0}
-                className={`px-4 py-2 text-white text-sm rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg ${
-                  selectedCards.length === 0
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : isUnifiedExporting
-                    ? 'bg-green-500 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 hover:scale-105'
-                }`}
+                variant={selectedCards.length === 0 ? "disabled" : "success"}
+                size="sm"
+                iconName={isUnifiedExporting ? "loading" : "download"}
+                iconPosition="left"
+                className={isUnifiedExporting ? "animate-pulse" : ""}
               >
-                {isUnifiedExporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Generating CSV...</span>
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  </>
-                ) : selectedCards.length === 0 ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Select Cards First</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Generate CSV</span>
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  </>
-                )}
-              </button>
+                {isUnifiedExporting 
+                  ? "Generating CSV..." 
+                  : selectedCards.length === 0 
+                    ? "Select Cards First" 
+                    : "Generate CSV"
+                }
+              </DynamicButton>
             </div>
             
             {/* Month Selector */}
@@ -369,9 +328,12 @@ const AnalyticsPage = () => {
                     </span>
                   </label>
                 </div>
-                <UnifiedAnalyticsCard 
-                  cardType={ANALYTICS_CARD_TYPES.MARKET_USER_BREAKDOWN}
-                  {...analyticsData} 
+                <MarketsByUsersCard 
+                  {...getMarketsByUsersCardProps(
+                    analyticsData.tasks,
+                    analyticsData.users,
+                    analyticsData.isLoading
+                  )}
                 />
               </div>
             </div>
