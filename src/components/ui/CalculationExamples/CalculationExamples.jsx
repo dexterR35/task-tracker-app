@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '@/components/icons';
+import { CARD_SYSTEM } from '@/constants';
 
 const CalculationExamples = ({ deliverables = [] }) => {
   
@@ -59,20 +60,6 @@ const CalculationExamples = ({ deliverables = [] }) => {
     return icons[index % icons.length];
   };
 
-  const getCardColorHex = (color) => {
-    const colorMap = {
-      "green": "#10b981",
-      "blue": "#3b82f6", 
-      "purple": "#8b5cf6",
-      "crimson": "#dc2626",
-      "amber": "#f59e0b",
-      "pink": "#ec4899",
-      "red": "#ef4444",
-      "yellow": "#f59e0b",
-      "gray": "#64748b",
-    };
-    return colorMap[color] || "#64748b";
-  };
 
   const calculateTime = (timePerUnit, timeUnit, quantity) => {
     let totalMinutes = 0;
@@ -124,7 +111,7 @@ const CalculationExamples = ({ deliverables = [] }) => {
           const totalTime = baseTime + variationsTime;
           
           const cardColor = getDeliverableColor(example.deliverable, index);
-          const cardColorHex = getCardColorHex(cardColor);
+          const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor] || "#64748b";
           const cardIcon = getDeliverableIcon(example.deliverable, index);
           
           return (

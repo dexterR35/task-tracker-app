@@ -1,15 +1,11 @@
 import React from "react";
 import { Icons } from "@/components/icons";
 import Badge from "@/components/ui/Badge/Badge";
-import { 
-  getCardColorHex, 
-  getStatusBadgeVariant, 
-  getStatusBadgeColor 
-} from "@/utils/cardUtils";
+import { CARD_SYSTEM } from "@/constants";
 
 // Dynamic Small Card Component
 const SmallCard = ({ card }) => {
-  const cardColorHex = getCardColorHex(card.color);
+  const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[card.color] || "#64748b";
 
 
   return (

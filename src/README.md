@@ -81,29 +81,7 @@ src/
 
 ### Analytics Components (`components/analytics/`)
 
-#### `AnalyticsChart.jsx`
-**Purpose**: Reusable analytics chart component
-**Key Features**:
-- Configurable chart types (pie, column, bar)
-- Data processing and formatting
-- Loading states and error handling
-- Responsive design
-
-#### `dataProcessor.js`
-**Purpose**: Data processing utilities for analytics
-**Key Features**:
-- Task data transformation
-- Category and market extraction
-- Summary data generation
-- Export formatting
-
-#### `DataTable.jsx`
-**Purpose**: Generic data table component
-**Key Features**:
-- Configurable columns and data
-- Summary row support
-- Responsive design
-- Custom styling options
+*Note: Analytics components have been consolidated into the main Cards system for better maintainability.*
 
 ### Card Components (`components/Card/` & `components/Cards/`)
 

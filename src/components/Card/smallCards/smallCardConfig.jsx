@@ -1,8 +1,34 @@
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { getCardColor, getBadgeColor } from "@/utils/cardUtils";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import { CARD_SYSTEM } from '@/constants';
+import { CARD_SYSTEM } from "@/constants";
+
+
+// Color mapping for different card types with better colors
+export const getCardColor = (cardType, data = {}) => {
+  switch (cardType) {
+
+
+    case "actions":
+      return "pink";
+
+    case "user-filter":
+      return "pink";
+
+    case "reporter-filter":
+      return "pink";
+
+    case "month-selection":
+      return "pink";
+
+      case "user-profile":
+        return "pink";
+
+    default:
+      return CARD_SYSTEM.COLORS.DEFAULT;
+  }
+};
+
 
 // Small Card Types
 export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
@@ -14,31 +40,34 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Months",
     icon: Icons.generic.clock,
-    color: (data) => getCardColor('month-selection', data),
+    color: (data) => getCardColor("month-selection", data),
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getContent: (data) => (
       <div className="mb-6">
         <SearchableSelectField
           field={{
-            name: 'selectedMonth',
-            type: 'select',
-            label: 'Select Month',
+            name: "selectedMonth",
+            type: "select",
+            label: "Select Month",
             required: false,
-            options: data.availableMonths?.map((month) => ({
-              value: month.monthId,
-              label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`
-            })) || [],
-            placeholder: 'Search months...'
+            options:
+              data.availableMonths?.map((month) => ({
+                value: month.monthId,
+                label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`,
+              })) || [],
+            placeholder: "Search months...",
           }}
           register={() => {}} // Not needed for this use case
           errors={{}}
           setValue={(fieldName, value) => {
-            if (fieldName === 'selectedMonth' && data.selectMonth) {
+            if (fieldName === "selectedMonth" && data.selectMonth) {
               data.selectMonth(value);
             }
           }}
-          watch={() => data.selectedMonth?.monthId || data.currentMonth?.monthId || ""}
+          watch={() =>
+            data.selectedMonth?.monthId || data.currentMonth?.monthId || ""
+          }
           trigger={() => {}}
           clearErrors={() => {}}
           formValues={{}}
@@ -60,7 +89,10 @@ export const SMALL_CARD_CONFIGS = {
       {
         icon: Icons.generic.clock,
         label: "Period",
-        value: data.selectedMonth?.monthName || data.currentMonth?.monthName || "None",
+        value:
+          data.selectedMonth?.monthName ||
+          data.currentMonth?.monthName ||
+          "None",
       },
     ],
   },
@@ -70,27 +102,28 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: (data) => getCardColor('user-filter', data),
+    color: (data) => getCardColor("user-filter", data),
     getValue: (data) => data.users?.length || 0,
     getStatus: (data) => (data.selectedUserId ? "Filtered" : "All Users"),
     getContent: (data) => (
       <div className="mb-6">
         <SearchableSelectField
           field={{
-            name: 'selectedUser',
-            type: 'select',
-            label: 'Select User',
+            name: "selectedUser",
+            type: "select",
+            label: "Select User",
             required: false,
-            options: data.users?.map((user) => ({
-              value: user.userUID || user.id,
-              label: user.name || user.email
-            })) || [],
-            placeholder: 'Search users...'
+            options:
+              data.users?.map((user) => ({
+                value: user.userUID || user.id,
+                label: user.name || user.email,
+              })) || [],
+            placeholder: "Search users...",
           }}
           register={() => {}} // Not needed for this use case
           errors={{}}
           setValue={(fieldName, value) => {
-            if (fieldName === 'selectedUser' && data.handleUserSelect) {
+            if (fieldName === "selectedUser" && data.handleUserSelect) {
               data.handleUserSelect(value);
             }
           }}
@@ -126,7 +159,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: (data) => getCardColor('reporter-filter', data),
+    color: (data) => getCardColor("reporter-filter", data),
     getValue: (data) => data.reporters?.length || 0,
     getStatus: (data) =>
       data.selectedReporterId ? "Filtered" : "All Reporters",
@@ -134,20 +167,21 @@ export const SMALL_CARD_CONFIGS = {
       <div className="mb-6">
         <SearchableSelectField
           field={{
-            name: 'selectedReporter',
-            type: 'select',
-            label: 'Select Reporter',
+            name: "selectedReporter",
+            type: "select",
+            label: "Select Reporter",
             required: false,
-            options: data.reporters?.map((reporter) => ({
-              value: reporter.reporterUID || reporter.id || reporter.uid,
-              label: reporter.name || reporter.reporterName
-            })) || [],
-            placeholder: 'Search reporters...'
+            options:
+              data.reporters?.map((reporter) => ({
+                value: reporter.reporterUID || reporter.id || reporter.uid,
+                label: reporter.name || reporter.reporterName,
+              })) || [],
+            placeholder: "Search reporters...",
           }}
           register={() => {}} // Not needed for this use case
           errors={{}}
           setValue={(fieldName, value) => {
-            if (fieldName === 'selectedReporter' && data.handleReporterSelect) {
+            if (fieldName === "selectedReporter" && data.handleReporterSelect) {
               data.handleReporterSelect(value);
             }
           }}
@@ -183,79 +217,102 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.USER_PROFILE]: {
     title: "User Profile",
     subtitle: "View All",
-    description:"Tasks",
+    description: "Tasks",
     icon: Icons.generic.user,
-    color: (data) => getCardColor('user-profile', data),
+    color: (data) => getCardColor("user-profile", data),
     getValue: (data) => {
       if (!data.tasks) return "0";
-      
+
       const selectedUserId = data.selectedUserId;
       const selectedReporterId = data.selectedReporterId;
-      const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
-      
+      const currentMonthId =
+        data.selectedMonth?.monthId || data.currentMonth?.monthId;
+
       // Filter tasks based on selections
-      const filteredTasks = data.tasks.filter(task => {
+      const filteredTasks = data.tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
-        
+
         // If both user and reporter are selected, show tasks that match BOTH
         if (selectedUserId && selectedReporterId) {
-          const matchesUser = task.userUID === selectedUserId || task.createbyUID === selectedUserId;
-          const matchesReporter = task.reporterUID === selectedReporterId || task.data_task?.reporterUID === selectedReporterId;
+          const matchesUser =
+            task.userUID === selectedUserId ||
+            task.createbyUID === selectedUserId;
+          const matchesReporter =
+            task.reporterUID === selectedReporterId ||
+            task.data_task?.reporterUID === selectedReporterId;
           return matchesUser && matchesReporter;
         }
-        
+
         // If only user is selected, show tasks for that user
         if (selectedUserId && !selectedReporterId) {
-          return task.userUID === selectedUserId || task.createbyUID === selectedUserId;
+          return (
+            task.userUID === selectedUserId ||
+            task.createbyUID === selectedUserId
+          );
         }
-        
+
         // If only reporter is selected, show tasks for that reporter
         if (selectedReporterId && !selectedUserId) {
-          return task.reporterUID === selectedReporterId || task.data_task?.reporterUID === selectedReporterId;
+          return (
+            task.reporterUID === selectedReporterId ||
+            task.data_task?.reporterUID === selectedReporterId
+          );
         }
-        
+
         // If no selections, show current user's tasks
         const userUID = data.currentUser?.userUID;
-        return userUID && (task.userUID === userUID || task.createbyUID === userUID);
+        return (
+          userUID && (task.userUID === userUID || task.createbyUID === userUID)
+        );
       });
-      
+
       return filteredTasks.length.toString();
     },
     getStatus: (data) => (data.currentUser?.role || "user").toLowerCase(),
     getDetails: (data) => {
       const details = [];
-      
+
       // Show selected user info if user is selected
       if (data.selectedUserId) {
-        const selectedUser = data.users?.find(u => (u.userUID || u.id) === data.selectedUserId);
+        const selectedUser = data.users?.find(
+          (u) => (u.userUID || u.id) === data.selectedUserId
+        );
         details.push({
           label: "Selected User",
           value: selectedUser?.name || selectedUser?.email || "Unknown User",
         });
       }
-      
+
       // Show selected reporter info if reporter is selected
       if (data.selectedReporterId) {
-        const selectedReporter = data.reporters?.find(r => (r.id || r.uid) === data.selectedReporterId);
+        const selectedReporter = data.reporters?.find(
+          (r) => (r.id || r.uid) === data.selectedReporterId
+        );
         details.push({
           label: "Selected Reporter",
-          value: selectedReporter?.name || selectedReporter?.reporterName || "Unknown Reporter",
+          value:
+            selectedReporter?.name ||
+            selectedReporter?.reporterName ||
+            "Unknown Reporter",
         });
       }
-      
+
       // Show current user info
       details.push({
         label: "Current User",
         value: data.currentUser?.name || data.currentUser?.email || "N/A",
       });
-      
+
       // Show filter status
       details.push({
         label: "Filter Status",
-        value: data.selectedUserId || data.selectedReporterId ? "Filtered" : "All Tasks",
+        value:
+          data.selectedUserId || data.selectedReporterId
+            ? "Filtered"
+            : "All Tasks",
       });
-      
+
       return details;
     },
     getContent: (data) => (
@@ -264,11 +321,11 @@ export const SMALL_CARD_CONFIGS = {
           onClick={() => {
             // Navigate to coming soon page
             if (data.navigate) {
-              data.navigate('/coming-soon');
+              data.navigate("/coming-soon");
             } else {
               // Fallback: use history API for client-side navigation
-              window.history.pushState({}, '', '/coming-soon');
-              window.dispatchEvent(new PopStateEvent('popstate'));
+              window.history.pushState({}, "", "/coming-soon");
+              window.dispatchEvent(new PopStateEvent("popstate"));
             }
           }}
           iconName="view"
@@ -276,9 +333,13 @@ export const SMALL_CARD_CONFIGS = {
         >
           {(() => {
             // Determine button text based on context
-            if (data.selectedUserId && data.currentUser?.role === 'admin') {
-              const selectedUser = data.users?.find(u => u.userUID === data.selectedUserId);
-              return selectedUser ? `VIEW ${selectedUser.name?.toUpperCase() || selectedUser.email?.toUpperCase() || 'USER'} DATA` : "VIEW USER DATA";
+            if (data.selectedUserId && data.currentUser?.role === "admin") {
+              const selectedUser = data.users?.find(
+                (u) => u.userUID === data.selectedUserId
+              );
+              return selectedUser
+                ? `VIEW ${selectedUser.name?.toUpperCase() || selectedUser.email?.toUpperCase() || "USER"} DATA`
+                : "VIEW USER DATA";
             }
             return "VIEW MY DATA";
           })()}
@@ -292,7 +353,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "------",
     icon: Icons.buttons.add,
-    color: (data) => getCardColor('actions', data),
+    color: (data) => getCardColor("actions", data),
     getValue: (data) => (data.canCreateTasks ? "1" : "0"),
     getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),
     getContent: (data) => (
@@ -303,7 +364,7 @@ export const SMALL_CARD_CONFIGS = {
           iconName="add"
           className={`w-full transition-colors uppercase ${
             data.canCreateTasks
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
+              ? "bg-btn-primary "
               : "bg-gray-600 text-gray-400 cursor-not-allowed"
           }`}
         >
@@ -322,11 +383,12 @@ export const SMALL_CARD_CONFIGS = {
         label: "Create Status",
         value: data.canCreateTasks ? "Enabled" : "Disabled",
       },
-      {
-        icon: Icons.generic.task,
-        label: "Action Type",
-        value: "Task Creation",
-      },
+      // {
+      //   icon: Icons.generic.task,
+      //   label: "Action Type",
+      //   value: "Task Creation",
+      // },
+      
     ],
   },
 };
