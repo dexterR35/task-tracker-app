@@ -82,7 +82,9 @@ export const calculatePercentage = (value, total, decimals = 1) => {
  * @returns {string} - Formatted string like "5 (25.0%)"
  */
 export const calculateCountWithPercentage = (count, total, decimals = 1) => {
-  const percentage = calculatePercentage(count, total, decimals);
+  if (total === 0) return `${count} (0%)`;
+  
+  const percentage = Math.round((count / total) * 100);
   return `${count} (${percentage}%)`;
 };
 
