@@ -5,6 +5,7 @@ import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { CARD_SYSTEM } from "@/constants";
 import { useAppData } from "@/hooks/useAppData";
 import { createAnalyticsCards, createDailyTaskCards } from "@/components/Card/smallCards/smallCardConfig";
+import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -323,10 +324,11 @@ const DynamicAnalyticsPage = () => {
   const monthId = searchParams.get('month') || 'current';
   
   // Use real data from useAppData hook
-  const { tasks, isLoading, error } = useAppData();
+  const { tasks, isLoading, error, loadingStates } = useAppData();
   
   // Generate real data based on parameters
   const analyticsData = useMemo(() => {
+    if (!tasks) return null;
     return generateRealData(tasks, userName, reporterName, monthId);
   }, [tasks, userName, reporterName, monthId]);
   
@@ -352,13 +354,42 @@ const DynamicAnalyticsPage = () => {
     return 'Analytics Overview';
   }, [userName, reporterName]);
   
-  // Show loading state
-  if (isLoading) {
+  // Show loading state with skeleton cards - wait for data to be fully ready
+  const shouldShowLoading = isLoading || loadingStates?.isInitialLoading || !tasks || !analyticsData;
+  
+  if (shouldShowLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading analytics data...</p>
+      <div className="min-h-screen bg-gray-900 text-white">
+        <div className="mx-auto px-4 py-6">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="h-8 bg-gray-700 rounded w-64 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-700 rounded w-96 animate-pulse"></div>
+              </div>
+              <div className="h-10 bg-gray-700 rounded w-24 animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Analytics Cards Grid Skeleton */}
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))}
+            </div>
+          </div>
+          
+          {/* Daily Task Cards Grid Skeleton */}
+          <div className="mb-8">
+            <div className="h-6 bg-gray-700 rounded w-80 mb-4 animate-pulse"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -6,6 +6,7 @@ import Badge from "@/components/ui/Badge/Badge";
 // Dynamic Small Card Component
 const SmallCard = ({ card }) => {
   const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[card.color] || "#64748b";
+  
 
 
   return (
@@ -40,7 +41,7 @@ const SmallCard = ({ card }) => {
                 className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded"
                 style={{ 
                   backgroundColor: cardColorHex,
-                  color: 'white'
+                  color: cardColorHex === '#f59e0b' ? '#374151' : 'white'
                 }}
               >
                 {card.badge.text}
@@ -105,17 +106,17 @@ const SmallCard = ({ card }) => {
                                 .sort(([,a], [,b]) => b - a)
                                 .slice(0, 5)
                                 .map(([market, count], badgeIndex) => (
-                                  <Badge
+                                  <span
                                     key={badgeIndex}
-                                    size="xs"
-                                    colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+                                    className="inline-flex items-center px-1 py-0.5 text-xs font-medium rounded"
                                     style={{
-                                      color: '#374151',
-                                      fontWeight: '500'
+                                      backgroundColor: cardColorHex,
+                                      color: cardColorHex === '#f59e0b' ? '#374151' : 'white',
+                                      fontWeight: '600'
                                     }}
                                   >
                                     {count}x{market.toUpperCase()}
-                                  </Badge>
+                                  </span>
                                 ))}
                             </div>
                           </div>

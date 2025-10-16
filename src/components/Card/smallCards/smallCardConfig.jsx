@@ -616,7 +616,7 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.ANALYTICS_MARKETING]: {
     title: 'Marketing',
     subtitle: 'Marketing Tasks',
-    description: 'Marketing Analysis',
+    description: 'CRM Tasks',
     icon: Icons.generic.target,
     color: (data) => getCardColor('analytics-marketing', data),
     getValue: (data) => (data.marketingData?.totalTasks || 0).toString(),
@@ -650,7 +650,7 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.ANALYTICS_ACQUISITION]: {
     title: 'Acquisition',
     subtitle: 'Acquisition Tasks',
-    description: 'Acquisition Analysis',
+    description: 'ACQ Task ',
     icon: Icons.generic.users,
     color: (data) => getCardColor('analytics-acquisition', data),
     getValue: (data) => (data.acquisitionData?.totalTasks || 0).toString(),

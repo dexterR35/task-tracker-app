@@ -38,10 +38,9 @@ const MarketsByUsersCard = ({
            {/* Markets Chart Div */}
            <div className="right-chart-container">
              <div className="mb-2">
-               {/* <span className="text-xs text-gray-600 dark:text-gray-400 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                 📈 <strong>Data Source:</strong> Raw tasks → Market totals by user task counts | 
-                 <strong> Formula:</strong> marketTotals[market] = sum of all user tasks per market
-               </span> */}
+               <span className="text-xs text-gray-600 dark:text-gray-400 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+                 📈 <strong>Markets Distribution:</strong> Task distribution across markets
+               </span>
              </div>
              <SimplePieChart
                data={marketsData}
@@ -53,10 +52,9 @@ const MarketsByUsersCard = ({
            {/* User by Task Chart Div */}
            <div className="flex flex-col items-center">
              <div className="mb-2">
-             {/* <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-                 👥 <strong>Data Source:</strong> Table data → User totals | 
-                 <strong> Formula:</strong> tableData.map(row =&gt; {`{name: row.user, value: row.total}`})
-               </span> */}
+               <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
+                 👥 <strong>Users by Tasks:</strong> Task distribution by users
+               </span>
              </div>
              <SimplePieChart
                data={userByTaskData}

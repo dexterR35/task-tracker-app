@@ -20,16 +20,51 @@ const Skeleton = ({
 
 // Predefined skeleton components for common use cases
 export const SkeletonCard = ({ className = '' }) => (
-  <div className={`card-small ${className}`}>
-    <div className="mb-4">
-      <Skeleton height="1.25rem" width="60%" className="mb-2" />
-      <Skeleton height="0.875rem" width="40%" />
-    </div>
-    <div className="space-y-2">
-      <Skeleton height="2.5rem" width="100%" />
-      <div className="flex items-center justify-between">
-        <Skeleton height="0.875rem" width="50%" />
-        <Skeleton height="1.5rem" width="1.5rem" rounded="full" />
+  <div className={`card-small p-4 ${className}`}>
+    <div className="h-auto">
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <Skeleton height="2.5rem" width="2.5rem" rounded="lg" />
+            <div className="leading-2">
+              <Skeleton height="0.875rem" width="4rem" className="mb-1" />
+              <Skeleton height="0.75rem" width="3rem" />
+            </div>
+          </div>
+          <Skeleton height="1.25rem" width="2rem" rounded="md" />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Main Value */}
+          <div className="mb-6">
+            <Skeleton height="2rem" width="3rem" className="mb-2" />
+            <Skeleton height="0.875rem" width="5rem" />
+          </div>
+
+          {/* Details */}
+          <div className="space-y-2">
+            <div className="p-2 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Skeleton height="0.375rem" width="0.375rem" rounded="full" />
+                  <Skeleton height="0.75rem" width="2rem" />
+                </div>
+                <Skeleton height="0.75rem" width="1.5rem" />
+              </div>
+            </div>
+            <div className="p-2 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Skeleton height="0.375rem" width="0.375rem" rounded="full" />
+                  <Skeleton height="0.75rem" width="2.5rem" />
+                </div>
+                <Skeleton height="0.75rem" width="1.5rem" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

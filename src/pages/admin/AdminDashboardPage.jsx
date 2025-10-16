@@ -9,6 +9,7 @@ import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
+import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -245,14 +246,7 @@ const AdminDashboardPage = () => {
           {/* Dynamic Small Cards */}
           {isInitialLoading
             ? Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="card-small p-4">
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                  </div>
-                </div>
+                <SkeletonCard key={index} />
               ))
             : smallCards.map((card) => <SmallCard key={card.id} card={card} />)}
         </div>

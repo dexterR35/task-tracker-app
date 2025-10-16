@@ -40,7 +40,7 @@ const Badge = ({
     yellow: 'bg-warning text-white'
   };
 
-  const baseClasses = 'inline-flex items-center font-medium rounded bg-amber-500';
+  const baseClasses = 'inline-flex items-center font-medium rounded ';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
   
   // If colorHex is provided, use inline styles; otherwise use classes

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
-import { getMarketsByUsersCardProps, getMarketingAnalyticsCardProps } from "@/components/Cards/analyticsCardConfig";
+import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
+import { getMarketsByUsersCardProps, getMarketingAnalyticsCardProps, getAcquisitionAnalyticsCardProps } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
@@ -360,6 +361,35 @@ const AnalyticsPage = () => {
                 </div>
                 <MarketingAnalyticsCard 
                   {...getMarketingAnalyticsCardProps(
+                    analyticsData.tasks,
+                    analyticsData.isLoading
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
+          <hr className="my-4 border-gray-200 dark:border-gray-700" />
+          
+          {/* Acquisition Analytics Card */}
+          <div className="relative">
+            <div id="acquisition-analytics-card">
+              <div className="relative">
+                <div className="absolute top-2 right-2 z-10">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCards.includes('acquisition-analytics-card')}
+                      onChange={() => handleCardSelection('acquisition-analytics-card')}
+                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                    />
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
+                      Export
+                    </span>
+                  </label>
+                </div>
+                <AcquisitionAnalyticsCard 
+                  {...getAcquisitionAnalyticsCardProps(
                     analyticsData.tasks,
                     analyticsData.isLoading
                   )}

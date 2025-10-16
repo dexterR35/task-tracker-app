@@ -310,7 +310,7 @@ export const BUTTON_SYSTEM = {
 
 export const TABLE_SYSTEM = {
   PAGE_SIZE_OPTIONS: [5, 10, 20, 30, 40, 50],
-  DEFAULT_PAGE_SIZE: 5,
+  DEFAULT_PAGE_SIZE: 10,
   SORT_ICONS: {
     ASC: '↑',
     DESC: '↓',
