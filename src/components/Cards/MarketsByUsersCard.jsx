@@ -21,7 +21,7 @@ const MarketsByUsersCard = ({
   }
 
   return (
-    <div id="markets-by-users-card" className={`card-large ${className} bg-gray-500`}>
+    <div id="markets-by-users-card" className={`card-large ${className}`}>
       <h2 className="card-title text-xl mb-6">{title}</h2>
 
       {/* Grid Container */}

@@ -324,3 +324,198 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
     isLoading
   };
 };
+
+// ============================================================================
+// MARKETING ANALYTICS CONFIGURATION
+// ============================================================================
+
+// Marketing-specific colors - using same colors as Markets by Users
+export const MARKETING_CHART_COLORS = {
+  CASINO: CHART_COLORS.DEFAULT,
+  SPORT: CHART_COLORS.DEFAULT
+};
+
+/**
+ * Calculate marketing analytics data for table and charts
+ * @param {Array} tasks - Array of task objects
+ * @returns {Object} Marketing analytics data object
+ */
+export const calculateMarketingAnalyticsData = (tasks) => {
+  if (!tasks || tasks.length === 0) {
+    return {
+      tableData: [],
+      tableColumns: [],
+      casinoMarketingData: [],
+      sportMarketingData: []
+    };
+  }
+
+  // Initialize data structures
+  const marketingData = {
+    casino: {},
+    sport: {},
+    poker: {},
+    lotto: {}
+  };
+  
+  const marketTotals = {};
+  const allMarkets = new Set();
+
+  // Process tasks to extract marketing data
+  tasks.forEach(task => {
+    const products = task.data_task?.products || task.products;
+    const markets = task.data_task?.markets || task.markets || [];
+    
+    if (!products || !Array.isArray(markets) || markets.length === 0) return;
+
+    // Check if it's a marketing task (products is a string)
+    if (typeof products === 'string' && products.includes('marketing')) {
+      // Determine marketing category
+      let category = null;
+      if (products.includes('casino')) category = 'casino';
+      else if (products.includes('sport')) category = 'sport';
+      else if (products.includes('poker')) category = 'poker';
+      else if (products.includes('lotto')) category = 'lotto';
+      
+      if (category) {
+        // Process each market for this task
+        markets.forEach(market => {
+          if (market) {
+            allMarkets.add(market);
+            
+            // Initialize data structures
+            if (!marketingData[category][market]) {
+              marketingData[category][market] = 0;
+            }
+            if (!marketTotals[market]) {
+              marketTotals[market] = 0;
+            }
+            
+            // Count tasks
+            marketingData[category][market]++;
+            marketTotals[market]++;
+          }
+        });
+      }
+    }
+  });
+
+  // Create table data
+  const tableData = [];
+  const sortedMarkets = Array.from(allMarkets).sort();
+  
+  // Add rows for each marketing category
+  Object.keys(marketingData).forEach(category => {
+    const categoryData = marketingData[category];
+    const categoryTotal = Object.values(categoryData).reduce((sum, count) => sum + count, 0);
+    
+    if (categoryTotal > 0) {
+      const row = {
+        category: category.charAt(0).toUpperCase() + category.slice(1),
+        total: categoryTotal
+      };
+      
+      // Add market columns with percentages
+      sortedMarkets.forEach(market => {
+        const marketCount = categoryData[market] || 0;
+        const percentage = categoryTotal > 0 ? Math.round((marketCount / categoryTotal) * 100) : 0;
+        row[market] = `${marketCount} (${percentage}%)`;
+      });
+      
+      tableData.push(row);
+    }
+  });
+
+  // Add grand total row
+  const grandTotal = Object.values(marketTotals).reduce((sum, count) => sum + count, 0);
+  if (grandTotal > 0) {
+    const grandTotalRow = {
+      category: "Grand Total",
+      total: grandTotal,
+      bold: true,
+      highlight: true
+    };
+    
+    sortedMarkets.forEach(market => {
+      const marketTotal = marketTotals[market] || 0;
+      const percentage = grandTotal > 0 ? Math.round((marketTotal / grandTotal) * 100) : 0;
+      grandTotalRow[market] = `${marketTotal} (${percentage}%)`;
+    });
+    
+    tableData.push(grandTotalRow);
+  }
+
+  // Create table columns
+  const tableColumns = [
+    { key: "category", header: "Marketing Category", align: "left" },
+    { key: "total", header: "Total Tasks", align: "center", highlight: true }
+  ];
+  
+  // Add market columns
+  sortedMarkets.forEach(market => {
+    tableColumns.push({
+      key: market,
+      header: market.toUpperCase(),
+      align: "center"
+    });
+  });
+
+  // Calculate totals for casino marketing
+  const casinoTotalTasks = Object.values(marketingData.casino).reduce((sum, count) => sum + count, 0);
+  const casinoTotalHours = tasks
+    .filter(task => {
+      const products = task.data_task?.products || task.products;
+      return typeof products === 'string' && products.includes('marketing') && products.includes('casino');
+    })
+    .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+
+  // Calculate totals for sport marketing
+  const sportTotalTasks = Object.values(marketingData.sport).reduce((sum, count) => sum + count, 0);
+  const sportTotalHours = tasks
+    .filter(task => {
+      const products = task.data_task?.products || task.products;
+      return typeof products === 'string' && products.includes('marketing') && products.includes('sport');
+    })
+    .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+
+  // Create chart data for casino marketing
+  const casinoMarketingData = sortedMarkets.map(market => ({
+    name: market.toUpperCase(),
+    value: marketingData.casino[market] || 0
+  })).filter(item => item.value > 0);
+
+  // Create chart data for sport marketing
+  const sportMarketingData = sortedMarkets.map(market => ({
+    name: market.toUpperCase(),
+    value: marketingData.sport[market] || 0
+  })).filter(item => item.value > 0);
+
+  return {
+    tableData,
+    tableColumns,
+    casinoMarketingData,
+    sportMarketingData,
+    casinoTotalTasks,
+    casinoTotalHours,
+    sportTotalTasks,
+    sportTotalHours
+  };
+};
+
+// Get marketing analytics card props for direct use with MarketingAnalyticsCard
+export const getMarketingAnalyticsCardProps = (tasks, isLoading = false) => {
+  const calculatedData = calculateMarketingAnalyticsData(tasks);
+  
+  return {
+    title: "Marketing Analytics",
+    marketingTableData: calculatedData.tableData,
+    marketingTableColumns: calculatedData.tableColumns,
+    casinoMarketingData: calculatedData.casinoMarketingData,
+    casinoMarketingTitle: `Casino Marketing by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
+    casinoMarketingColors: MARKETING_CHART_COLORS.CASINO,
+    sportMarketingData: calculatedData.sportMarketingData,
+    sportMarketingTitle: `Sport Marketing by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
+    sportMarketingColors: MARKETING_CHART_COLORS.SPORT,
+    isLoading
+  };
+};
