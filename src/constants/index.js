@@ -213,6 +213,20 @@ export const CARD_SYSTEM = {
     REPORTER_FILTER: 'reporter-filter',
     USER_PROFILE: 'user-profile',
     ACTIONS: 'actions',
+    // Analytics card types
+    ANALYTICS_TASK_OVERVIEW: 'analytics-task-overview',
+    ANALYTICS_DELIVERABLES: 'analytics-deliverables',
+    ANALYTICS_MARKETING: 'analytics-marketing',
+    ANALYTICS_ACQUISITION: 'analytics-acquisition',
+    ANALYTICS_EFFICIENCY: 'analytics-efficiency',
+    ANALYTICS_PRODUCT: 'analytics-product',
+    ANALYTICS_MISC: 'analytics-misc',
+    // Daily card types
+    ANALYTICS_DAILY_MONDAY: 'analytics-daily-monday',
+    ANALYTICS_DAILY_TUESDAY: 'analytics-daily-tuesday',
+    ANALYTICS_DAILY_WEDNESDAY: 'analytics-daily-wednesday',
+    ANALYTICS_DAILY_THURSDAY: 'analytics-daily-thursday',
+    ANALYTICS_DAILY_FRIDAY: 'analytics-daily-friday',
   },
   ANALYTICS_CARD_TYPES: {
     USER_ANALYTICS: 'user-analytics',

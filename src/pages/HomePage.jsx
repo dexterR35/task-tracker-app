@@ -2,6 +2,8 @@ import React from "react";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import netbetLogo from "@/assets/netbet-logo.png";
 import { Icons } from "@/components/icons";
+import { CARD_SYSTEM } from "@/constants";
+import { getCardColor } from "@/components/Card/smallCards/smallCardConfig";
 import {
   AreaChart,
   Area,
@@ -55,20 +57,10 @@ const ModernBarChart = ({ data, color = "#a99952" }) => (
   </ResponsiveContainer>
 );
 
-// Get color based on metric type using new Tailwind colors
+// Get color for different metric types using centralized color system
 const getMetricColor = (type) => {
-  switch (type) {
-    case "total-tasks":
-      return "#2fd181"; // green-success
-    case "total-hours":
-      return "#2a9df4"; // blue-default
-    case "ai-tasks":
-      return "#eb2743"; // red-error
-    case "design":
-      return "#eb2743"; // red-error
-    default:
-      return "#3d48c9"; // btn-primary
-  }
+  const colorName = getCardColor(`homepage-${type}`);
+  return CARD_SYSTEM.COLOR_HEX_MAP[colorName] || CARD_SYSTEM.COLOR_HEX_MAP.gray;
 };
 
 // Chart data for Design

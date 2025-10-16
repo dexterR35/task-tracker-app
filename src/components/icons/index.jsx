@@ -47,6 +47,8 @@ import {
   FiGlobe,
   FiLayers,
   FiBox,
+  FiAlertTriangle,
+  FiCalendar,
 } from "react-icons/fi";
 import {FcFlashOn,FcNfcSign,FcLock} from "react-icons/fc";
 import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
@@ -142,6 +144,9 @@ export const Icons = {
     product: withSize(FiBox),
     department: withSize(FiUsers),
     reporter: withSize(FiFileText),
+    warning: withSize(FiAlertTriangle),
+    calendar: withSize(FiCalendar),
+    check: withSize(IoCheckmarkSharp),
   },
   
   profile: {

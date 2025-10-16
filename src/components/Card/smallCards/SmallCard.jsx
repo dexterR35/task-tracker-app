@@ -1,7 +1,7 @@
 import React from "react";
 import { Icons } from "@/components/icons";
-import Badge from "@/components/ui/Badge/Badge";
 import { CARD_SYSTEM } from "@/constants";
+import Badge from "@/components/ui/Badge/Badge";
 
 // Dynamic Small Card Component
 const SmallCard = ({ card }) => {
@@ -34,11 +34,17 @@ const SmallCard = ({ card }) => {
               </div>
             </div>
             
-            {/* Status Badge */}
-            {card.status && (
-              <Badge variant="default" color={card.color}>
-                {card.status}
-              </Badge>
+            {/* Status Badge - Using card color from config */}
+            {card.badge && (
+              <span 
+                className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded"
+                style={{ 
+                  backgroundColor: cardColorHex,
+                  color: 'white'
+                }}
+              >
+                {card.badge.text}
+              </span>
             )}
           </div>
 
@@ -62,32 +68,90 @@ const SmallCard = ({ card }) => {
             {/* Enhanced Data */}
             {card.details && card.details.length > 0 && (
               <div className="space-y-1">
-                {card.details.map((detail, index) => (
-                  <div 
-                    key={index}
-                    className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
-                    style={{ 
-                      backgroundColor: `${cardColorHex}10`,
-                      borderColor: `${cardColorHex}20`
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
+                {card.details.map((detail, index) => {
+                  // Check if this is a subcategory detail (has badges)
+                  const isSubcategory = detail.badges && Object.keys(detail.badges).length > 0;
+                  
+                  if (isSubcategory) {
+                    // Subcategory layout: title (no bg), then markets label, then task count, then badges
+                    return (
+                      <div key={index} className="space-y-2">
+                        {/* Subcategory title - no background/padding */}
+                        <h4 className="text-sm font-semibold text-gray-200 capitalize">
+                          {detail.label}
+                        </h4>
+                        
+                        {/* Markets section with background */}
                         <div 
-                          className="w-1.5 h-1.5 rounded-full"
+                          className="p-2 rounded-lg border"
                           style={{ 
-                            backgroundColor: cardColorHex,
-                            background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
+                            backgroundColor: `${cardColorHex}10`,
+                            borderColor: `${cardColorHex}20`
                           }}
-                        ></div>
-                        <span className="text-xs text-gray-400">{detail.label}</span>
+                        >
+                          <div className="space-y-2">
+                            {/* Markets label */}
+                            <div className="flex items-center justify-between ">
+                            <p className="text-xs mb-2">Markets:</p>
+                            
+                            {/* Task count */}
+                            <div className="text-xs font-medium text-gray-300">
+                              {detail.value}
+                            </div>
+                            </div>
+                            {/* Market badges */}
+                            <div className="flex flex-wrap gap-1">
+                              {Object.entries(detail.badges || {})
+                                .sort(([,a], [,b]) => b - a)
+                                .slice(0, 5)
+                                .map(([market, count], badgeIndex) => (
+                                  <Badge
+                                    key={badgeIndex}
+                                    size="xs"
+                                    colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+                                    style={{
+                                      color: '#374151',
+                                      fontWeight: '500'
+                                    }}
+                                  >
+                                    {count}x{market.toUpperCase()}
+                                  </Badge>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-xs font-medium text-gray-300">
-                        {detail.value}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  } else {
+                    // Regular detail layout
+                    return (
+                      <div 
+                        key={index}
+                        className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
+                        style={{ 
+                          backgroundColor: `${cardColorHex}10`,
+                          borderColor: `${cardColorHex}20`
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <div 
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ 
+                                backgroundColor: cardColorHex,
+                                background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
+                              }}
+                            ></div>
+                            <span className="text-xs text-gray-400">{detail.label}</span>
+                          </div>
+                          <span className="text-xs font-medium text-gray-300">
+                            {detail.value}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
               </div>
             )}
 
@@ -95,13 +159,13 @@ const SmallCard = ({ card }) => {
             {card.badges && card.badges.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {card.badges.map((badge, index) => (
-                  <div
+                  <Badge
                     key={index}
-                    className="flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold text-white shadow-sm"
-                    style={{ backgroundColor: cardColorHex }}
+                    size="sm"
+                    colorHex={CARD_SYSTEM.COLOR_HEX_MAP[badge.color] || cardColorHex}
                   >
-                    <span>{badge.label}</span>
-                  </div>
+                    {badge.text}
+                  </Badge>
                 ))}
               </div>
             )}
