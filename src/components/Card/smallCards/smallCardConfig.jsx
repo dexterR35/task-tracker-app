@@ -7,8 +7,6 @@ import { CARD_SYSTEM } from "@/constants";
 // Color mapping for different card types with better colors
 export const getCardColor = (cardType, data = {}) => {
   switch (cardType) {
-
-
     case "actions":
       return "pink";
 

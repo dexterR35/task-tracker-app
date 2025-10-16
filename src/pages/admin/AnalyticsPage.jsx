@@ -336,10 +336,11 @@ const AnalyticsPage = () => {
                     analyticsData.isLoading
                   )}
                 />
+                
               </div>
             </div>
           </div>
-
+          <hr className="my-4 border-gray-200 dark:border-gray-700" />
           {/* Marketing Analytics Card */}
           <div className="relative">
             <div id="marketing-analytics-card">

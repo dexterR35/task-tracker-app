@@ -33,7 +33,7 @@ const MarketingAnalyticsCard = ({
             title="Marketing by Markets"
           />
         </div>
-        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+  
         {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Casino Marketing Chart */}
