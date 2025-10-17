@@ -327,23 +327,16 @@ const DynamicAnalyticsPage = () => {
   const { tasks, isLoading, error, loadingStates } = useAppData();
   
   // Generate real data based on parameters
-  const analyticsData = useMemo(() => {
-    if (!tasks) return null;
-    return generateRealData(tasks, userName, reporterName, monthId);
-  }, [tasks, userName, reporterName, monthId]);
+  const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, monthId);
   
   // Create analytics cards using centralized system
-  const analyticsCards = useMemo(() => {
-    return createAnalyticsCards({ ...analyticsData, userName, reporterName });
-  }, [analyticsData, userName, reporterName]);
+  const analyticsCards = createAnalyticsCards({ ...analyticsData, userName, reporterName });
   
   // Create daily task cards using centralized system
-  const dailyTaskCards = useMemo(() => {
-    return createDailyTaskCards(analyticsData);
-  }, [analyticsData]);
+  const dailyTaskCards = createDailyTaskCards(analyticsData);
   
   // Determine page title
-  const pageTitle = useMemo(() => {
+  const pageTitle = (() => {
     if (userName && reporterName) {
       return `Analytics: ${userName} & ${reporterName}`;
     } else if (userName) {
@@ -352,7 +345,7 @@ const DynamicAnalyticsPage = () => {
       return `Reporter Analytics: ${reporterName}`;
     }
     return 'Analytics Overview';
-  }, [userName, reporterName]);
+  })();
   
   // Show loading state with skeleton cards - wait for data to be fully ready
   const shouldShowLoading = isLoading || loadingStates?.isInitialLoading || !tasks || !analyticsData;

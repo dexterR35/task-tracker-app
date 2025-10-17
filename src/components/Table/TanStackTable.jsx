@@ -352,16 +352,13 @@ const TanStackTable = forwardRef(({
     clearSelection: handleClearSelection
   }), [handleClearSelection]);
 
-  // Memoize columns to prevent unnecessary re-renders
-  const memoizedColumns = useMemo(() => {
-    // Selection column removed - row selection now works by clicking anywhere on the row
-    return columns;
-  }, [columns]);
+  // Use columns directly - no need for memoization here
+  const tableColumns = columns;
 
   // Create table instance
   const table = useReactTable({
     data,
-    columns: memoizedColumns,
+    columns: tableColumns,
     getRowId: (row) => row.id, // Use the document ID as row ID
     state: {
       sorting,

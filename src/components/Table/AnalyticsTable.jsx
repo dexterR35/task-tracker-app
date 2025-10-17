@@ -11,22 +11,20 @@ const AnalyticsTable = ({
   className = "",
   isLoading = false
 }) => {
-  // Convert columns to TanStack format with proper memoization
-  const tableColumns = useMemo(() => {
-    return columns.map(column => 
-      columnHelper.accessor(column.key, {
-        header: column.header,
-        cell: ({ getValue, row }) => {
-          const value = getValue();
-          if (column.render) {
-            return column.render(value, row.original);
-          }
-          return value;
-        },
-        size: column.size || 100,
-      })
-    );
-  }, [columns]);
+  // Convert columns to TanStack format - simplified without memoization
+  const tableColumns = columns.map(column => 
+    columnHelper.accessor(column.key, {
+      header: column.header,
+      cell: ({ getValue, row }) => {
+        const value = getValue();
+        if (column.render) {
+          return column.render(value, row.original);
+        }
+        return value;
+      },
+      size: column.size || 100,
+    })
+  );
 
   // Table props
   const tableProps = {

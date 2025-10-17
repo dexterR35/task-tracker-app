@@ -94,7 +94,7 @@ export const useAppData = (selectedUserId = null) => {
     skip: !user // Only skip if user is not authenticated
   });
 
-  // Create dropdown options with current month first
+  // Create dropdown options with current month first - properly memoized
   const dropdownOptions = useMemo(() => {
     const options = [];
     
@@ -118,7 +118,7 @@ export const useAppData = (selectedUserId = null) => {
     }
     
     return options;
-  }, [availableMonths, monthId, monthName, boardExists]);
+  }, [monthId, monthName, boardExists, availableMonths]);
   
   // Determine which month to fetch data for
   const targetMonthId = selectedMonthId || monthId;
@@ -229,8 +229,8 @@ export const useAppData = (selectedUserId = null) => {
   
 
 
-  // Return the data object - memoized to prevent unnecessary re-renders
-  const baseData = useMemo(() => ({
+  // Return the data object - simplified without excessive memoization
+  const baseData = {
     // Task mutations - available to all users
     createTask,
     updateTask,
@@ -263,38 +263,24 @@ export const useAppData = (selectedUserId = null) => {
     // Month selection functions
     selectMonth: selectMonth,
     resetToCurrentMonth: resetToCurrentMonth,
-    
-  }), [
-    createTask, updateTask, deleteTask,
-    reporters, deliverablesData?.deliverables, tasksData,
-    isLoading, loadingStates, error,
-    monthId, monthName, daysInMonth, startDate, endDate,
-    boardExists, dropdownOptions,
-    currentMonth, selectedMonth, isCurrentMonth,
-    isInitialLoading, isMonthDataReady,
-    selectMonth, resetToCurrentMonth
-  ]);
+  };
   
-  // Memoize the final return objects to prevent unnecessary re-renders
-  const adminData = useMemo(() => ({
-    ...baseData,
-    // Admin gets everything
-    user: userData.user, // Current user info from auth
-    users: userData.allUsers || [], // All users for management
-    isAdmin: true
-  }), [baseData, userData.user, userData.allUsers]);
-
-  const regularUserData = useMemo(() => ({
-    ...baseData,
-    // Regular user gets only their data
-    user: userData.userData, // Their user data from database
-    users: [], // Empty for regular users
-    isAdmin: false
-  }), [baseData, userData.userData]);
-
+  // Return appropriate data based on user role
   if (userData.userIsAdmin) {
-    return adminData;
+    return {
+      ...baseData,
+      // Admin gets everything
+      user: userData.user, // Current user info from auth
+      users: userData.allUsers || [], // All users for management
+      isAdmin: true
+    };
   } else {
-    return regularUserData;
+    return {
+      ...baseData,
+      // Regular user gets only their data
+      user: userData.userData, // Their user data from database
+      users: [], // Empty for regular users
+      isAdmin: false
+    };
   }
 };

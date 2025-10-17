@@ -347,7 +347,7 @@ const calculateBiaxialBarData = (tasks) => {
 const calculateUsersBiaxialData = (tasks, users) => {
   if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
   
-  console.log('calculateUsersBiaxialData - tasks:', tasks.length, 'users:', users.length);
+  console.log('🔄 calculateUsersBiaxialData called - tasks:', tasks.length, 'users:', users.length);
   
   // Get all unique users from actual tasks
   const userStats = {};
@@ -372,12 +372,8 @@ const calculateUsersBiaxialData = (tasks, users) => {
       }
       userStats[userId].tasks += 1;
       userStats[userId].hours += taskHours;
-    } else {
-      console.log('No user ID found for task:', task);
     }
   });
-  
-  console.log('calculateUsersBiaxialData - userStats:', userStats);
   
   // Convert to array format for the chart with user names
   const result = Object.entries(userStats)
@@ -402,7 +398,6 @@ const calculateUsersBiaxialData = (tasks, users) => {
     })
     .sort((a, b) => b.tasks - a.tasks); // Sort by task count descending
     
-  console.log('calculateUsersBiaxialData - result:', result);
   return result;
 };
 
@@ -442,15 +437,32 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
   };
 };
 
-// Cached version of getMarketsByUsersCardProps
+// Properly cached version with memoization
+const marketsByUsersCache = new Map();
+
 export const getCachedMarketsByUsersCardProps = (tasks, users, month, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
-  return useAnalyticsCache(
-    CACHE_CONFIG.KEYS.MARKETS_BY_USERS,
-    (tasks, month, users) => getMarketsByUsersCardProps(tasks, users, isLoading, options),
-    tasks,
-    month,
-    users
-  );
+  // Create cache key based on data
+  const cacheKey = `${tasks?.length || 0}_${users?.length || 0}_${month?.monthId || 'current'}_${isLoading}`;
+  
+  // Check if we have cached result
+  if (marketsByUsersCache.has(cacheKey)) {
+    console.log('✅ MarketsByUsers CACHE HIT');
+    return marketsByUsersCache.get(cacheKey);
+  }
+  
+  console.log('❌ MarketsByUsers CACHE MISS - calculating...');
+  
+  // Calculate and cache result
+  const result = getMarketsByUsersCardProps(tasks, users, isLoading, options);
+  marketsByUsersCache.set(cacheKey, result);
+  
+  // Clean up cache if it gets too large
+  if (marketsByUsersCache.size > 10) {
+    const firstKey = marketsByUsersCache.keys().next().value;
+    marketsByUsersCache.delete(firstKey);
+  }
+  
+  return result;
 };
 
 // ============================================================================
@@ -702,15 +714,9 @@ export const getMarketingAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Cached version of getMarketingAnalyticsCardProps
+// Simplified version without excessive caching
 export const getCachedMarketingAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  return useAnalyticsCache(
-    CACHE_CONFIG.KEYS.MARKETING_ANALYTICS,
-    (tasks, month) => getMarketingAnalyticsCardProps(tasks, isLoading),
-    tasks,
-    month,
-    []
-  );
+  return getMarketingAnalyticsCardProps(tasks, isLoading);
 };
 
 // ============================================================================
@@ -962,15 +968,9 @@ export const getAcquisitionAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Cached version of getAcquisitionAnalyticsCardProps
+// Simplified version without excessive caching
 export const getCachedAcquisitionAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  return useAnalyticsCache(
-    CACHE_CONFIG.KEYS.ACQUISITION_ANALYTICS,
-    (tasks, month) => getAcquisitionAnalyticsCardProps(tasks, isLoading),
-    tasks,
-    month,
-    []
-  );
+  return getAcquisitionAnalyticsCardProps(tasks, isLoading);
 };
 
 // ============================================================================
@@ -995,8 +995,15 @@ export const calculateProductAnalyticsData = (tasks) => {
     return {
       tableData: [],
       tableColumns: [],
-      pieData: [],
-      barData: []
+      categoryPieData: [],
+      productPieData: [],
+      biaxialData: [],
+      categoryTotals: {
+        marketing: 0,
+        acquisition: 0,
+        product: 0,
+        misc: 0
+      }
     };
   }
 
@@ -1229,7 +1236,7 @@ export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
   const totalHours = tasks?.reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0) || 0;
   
   // Split biaxial data into two charts (categories and products)
-  const categoryBiaxialData = Object.entries(productData.categoryTotals)
+  const categoryBiaxialData = Object.entries(productData.categoryTotals || {})
     .filter(([_, count]) => count > 0)
     .map(([category, count], index) => {
       const categoryHours = tasks
@@ -1270,13 +1277,7 @@ export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Cached version of getProductAnalyticsCardProps
+// Simplified version without excessive caching
 export const getCachedProductAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  return useAnalyticsCache(
-    CACHE_CONFIG.KEYS.PRODUCT_ANALYTICS,
-    (tasks, month) => getProductAnalyticsCardProps(tasks, isLoading),
-    tasks,
-    month,
-    []
-  );
+  return getProductAnalyticsCardProps(tasks, isLoading);
 };

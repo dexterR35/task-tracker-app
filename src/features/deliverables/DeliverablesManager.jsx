@@ -12,26 +12,17 @@ import { useAppData } from '@/hooks/useAppData';
 export const useDeliverablesOptions = () => {
   const { deliverables, isLoading, error } = useAppData();
 
-  const deliverablesOptions = useMemo(() => {
-    // Check if data exists and has the right structure
-    if (!deliverables || deliverables.length === 0) {
-      return [];
-    }
-
-    // Transform database data to form options format
-    const options = deliverables.map(deliverable => ({
-      value: deliverable.name,
-      label: deliverable.name,
-      department: deliverable.department,
-      timePerUnit: deliverable.timePerUnit,
-      timeUnit: deliverable.timeUnit,
-      requiresQuantity: deliverable.requiresQuantity,
-      variationsTime: deliverable.variationsTime,
-      variationsTimeUnit: deliverable.variationsTimeUnit || 'min'
-    }));
-    
-    return options;
-  }, [deliverables]);
+  // Transform database data to form options format - simplified without memoization
+  const deliverablesOptions = !deliverables || deliverables.length === 0 ? [] : deliverables.map(deliverable => ({
+    value: deliverable.name,
+    label: deliverable.name,
+    department: deliverable.department,
+    timePerUnit: deliverable.timePerUnit,
+    timeUnit: deliverable.timeUnit,
+    requiresQuantity: deliverable.requiresQuantity,
+    variationsTime: deliverable.variationsTime,
+    variationsTimeUnit: deliverable.variationsTimeUnit || 'min'
+  }));
 
   return {
     deliverablesOptions,
@@ -46,11 +37,8 @@ export const useDeliverablesOptions = () => {
 export const useDeliverablesByDepartment = (selectedDepartment) => {
   const { deliverablesOptions, isLoading, error } = useDeliverablesOptions();
 
-  const filteredDeliverables = useMemo(() => {
-    if (!selectedDepartment || !deliverablesOptions || deliverablesOptions.length === 0) {
-      return [];
-    }
-
+  // Filter deliverables by selected department - simplified without memoization
+  const filteredDeliverables = !selectedDepartment || !deliverablesOptions || deliverablesOptions.length === 0 ? [] : (() => {
     // Handle both array and string department formats
     const departmentToFilter = Array.isArray(selectedDepartment) 
       ? selectedDepartment[0] 
@@ -60,7 +48,7 @@ export const useDeliverablesByDepartment = (selectedDepartment) => {
     return deliverablesOptions.filter(deliverable => 
       deliverable.department === departmentToFilter
     );
-  }, [deliverablesOptions, selectedDepartment]);
+  })();
 
   return {
     deliverablesOptions: filteredDeliverables,
@@ -73,96 +61,95 @@ export const useDeliverablesByDepartment = (selectedDepartment) => {
  * Calculate time estimates for deliverables with variations support
  */
 export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions) => {
-  return useMemo(() => {
-    if (!deliverablesUsed || !Array.isArray(deliverablesUsed) || deliverablesUsed.length === 0) {
-      return {
-        deliverablesList: [],
-        totalTime: 0,
-        totalMinutes: 0,
-        totalDays: 0
-      };
-    }
-
-    const deliverablesList = [];
-    let totalTime = 0;
-
-    deliverablesUsed.forEach((deliverable, index) => {
-      const deliverableName = deliverable?.name;
-      const quantity = deliverable?.count || 1;
-      
-      // Safety check for deliverableName
-      if (!deliverableName || typeof deliverableName !== 'string') {
-        return;
-      }
-      
-      // Find deliverable in settings with exact matching only
-      const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
-      
-      if (deliverableOption) {
-        // Calculate time for this deliverable
-        const timePerUnit = deliverableOption.timePerUnit || 1;
-        const timeUnit = deliverableOption.timeUnit || 'hr';
-        const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
-        const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
-        
-        // Convert to hours
-        let timeInHours = timePerUnit;
-        if (timeUnit === 'min') timeInHours = timePerUnit / 60;
-        if (timeUnit === 'days') timeInHours = timePerUnit * 8;
-        
-        // Add variations time if present
-        let variationsTimeInHours = 0;
-        if (variationsTime > 0) {
-          if (variationsTimeUnit === 'min') variationsTimeInHours = variationsTime / 60;
-          else if (variationsTimeUnit === 'hr') variationsTimeInHours = variationsTime;
-          else if (variationsTimeUnit === 'days') variationsTimeInHours = variationsTime * 8;
-          else variationsTimeInHours = variationsTime / 60; // Default to minutes
-        }
-        
-        // Get variations quantity for this deliverable (if available in the data)
-        const variationsQuantity = deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
-        const totalvariationsTime = variationsQuantity * variationsTimeInHours;
-        const calculatedTime = (timeInHours * quantity) + totalvariationsTime;
-        totalTime += calculatedTime;
-        
-        deliverablesList.push({
-          name: deliverableName,
-          quantity: quantity,
-          time: calculatedTime,
-          timePerUnit: timePerUnit,
-          timeUnit: timeUnit,
-          variationsTime: variationsTime,
-          variationsTimeUnit: variationsTimeUnit,
-          variationsQuantity: variationsQuantity,
-          timeInHours: timeInHours,
-          variationsTimeInHours: variationsTimeInHours,
-          totalvariationsTime: totalvariationsTime,
-          configured: true
-        });
-      } else {
-        // If deliverable not found in settings, show warning
-        deliverablesList.push({
-          name: deliverableName,
-          quantity: quantity,
-          time: 0,
-          timePerUnit: 0,
-          timeUnit: 'hr',
-          variationsTime: 0,
-          variationsTimeUnit: 'min',
-          timeInHours: 0,
-          variationsTimeInHours: 0,
-          notConfigured: true
-        });
-      }
-    });
-
+  // Calculate deliverable time estimates - simplified without memoization
+  if (!deliverablesUsed || !Array.isArray(deliverablesUsed) || deliverablesUsed.length === 0) {
     return {
-      deliverablesList,
-      totalTime,
-      totalMinutes: totalTime * 60,
-      totalDays: totalTime / 8
+      deliverablesList: [],
+      totalTime: 0,
+      totalMinutes: 0,
+      totalDays: 0
     };
-  }, [deliverablesUsed, deliverablesOptions]);
+  }
+
+  const deliverablesList = [];
+  let totalTime = 0;
+
+  deliverablesUsed.forEach((deliverable, index) => {
+    const deliverableName = deliverable?.name;
+    const quantity = deliverable?.count || 1;
+    
+    // Safety check for deliverableName
+    if (!deliverableName || typeof deliverableName !== 'string') {
+      return;
+    }
+    
+    // Find deliverable in settings with exact matching only
+    const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
+    
+    if (deliverableOption) {
+      // Calculate time for this deliverable
+      const timePerUnit = deliverableOption.timePerUnit || 1;
+      const timeUnit = deliverableOption.timeUnit || 'hr';
+      const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+      const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+      
+      // Convert to hours
+      let timeInHours = timePerUnit;
+      if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+      if (timeUnit === 'days') timeInHours = timePerUnit * 8;
+      
+      // Add variations time if present
+      let variationsTimeInHours = 0;
+      if (variationsTime > 0) {
+        if (variationsTimeUnit === 'min') variationsTimeInHours = variationsTime / 60;
+        else if (variationsTimeUnit === 'hr') variationsTimeInHours = variationsTime;
+        else if (variationsTimeUnit === 'days') variationsTimeInHours = variationsTime * 8;
+        else variationsTimeInHours = variationsTime / 60; // Default to minutes
+      }
+      
+      // Get variations quantity for this deliverable (if available in the data)
+      const variationsQuantity = deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+      const totalvariationsTime = variationsQuantity * variationsTimeInHours;
+      const calculatedTime = (timeInHours * quantity) + totalvariationsTime;
+      totalTime += calculatedTime;
+      
+      deliverablesList.push({
+        name: deliverableName,
+        quantity: quantity,
+        time: calculatedTime,
+        timePerUnit: timePerUnit,
+        timeUnit: timeUnit,
+        variationsTime: variationsTime,
+        variationsTimeUnit: variationsTimeUnit,
+        variationsQuantity: variationsQuantity,
+        timeInHours: timeInHours,
+        variationsTimeInHours: variationsTimeInHours,
+        totalvariationsTime: totalvariationsTime,
+        configured: true
+      });
+    } else {
+      // If deliverable not found in settings, show warning
+      deliverablesList.push({
+        name: deliverableName,
+        quantity: quantity,
+        time: 0,
+        timePerUnit: 0,
+        timeUnit: 'hr',
+        variationsTime: 0,
+        variationsTimeUnit: 'min',
+        timeInHours: 0,
+        variationsTimeInHours: 0,
+        notConfigured: true
+      });
+    }
+  });
+
+  return {
+    deliverablesList,
+    totalTime,
+    totalMinutes: totalTime * 60,
+    totalDays: totalTime / 8
+  };
 };
 
 /**

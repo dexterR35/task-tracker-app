@@ -44,7 +44,7 @@ export const useAuth = () => {
   const error = useSelector(selectAuthError);
 
   // Validate user object has all required properties - if missing, user is not authenticated
-  const safeUser = useMemo(() => {
+  const safeUser = (() => {
     if (!user) return null;
     
     // Use centralized user validation
@@ -58,16 +58,7 @@ export const useAuth = () => {
       ...user,
       permissions: Array.isArray(user.permissions) ? user.permissions : undefined
     };
-  }, [
-    user?.userUID,
-    user?.email, 
-    user?.name,
-    user?.role, 
-    user?.occupation,
-    user?.permissions,
-    user?.isActive,
-    user?.createdAt
-  ]);
+  })();
 
   // Auth actions
   const login = useCallback(async (credentials) => {
@@ -108,69 +99,69 @@ export const useAuth = () => {
   }, [dispatch]);
 
   // Enhanced access control with better consistency
-  const canAccess = useCallback((requiredRole) => {
+  const canAccess = (requiredRole) => {
     if (requiredRole === 'authenticated') {
       return !!user; // Check if the user object exists
     }
     return canAccessRole(user, requiredRole);
-  }, [user]);
+  };
 
   // Permission-based access control
-  const hasPermissionCallback = useCallback((permission) => {
+  const hasPermissionCallback = (permission) => {
     return hasPermission(safeUser, permission);
-  }, [safeUser]);
+  };
 
   // Check if user can generate charts/analytics
-  const canGenerate = useCallback(() => {
+  const canGenerate = () => {
     return canAccessCharts(safeUser);
-  }, [safeUser]);
+  };
 
   // Check if user can access task operations
-  const canAccessTasksCallback = useCallback(() => {
+  const canAccessTasksCallback = () => {
     return canAccessTasks(safeUser);
-  }, [safeUser]);
+  };
 
   // Comprehensive permission checking functions
-  const canCreateTaskCallback = useCallback(() => {
+  const canCreateTaskCallback = () => {
     return canCreateTask(safeUser);
-  }, [safeUser]);
+  };
 
-  const canUpdateTaskCallback = useCallback(() => {
+  const canUpdateTaskCallback = () => {
     return canUpdateTask(safeUser);
-  }, [safeUser]);
+  };
 
-  const canDeleteTaskCallback = useCallback(() => {
+  const canDeleteTaskCallback = () => {
     return canDeleteTask(safeUser);
-  }, [safeUser]);
+  };
 
-  const canViewTasksCallback = useCallback(() => {
+  const canViewTasksCallback = () => {
     return canViewTasks(safeUser);
-  }, [safeUser]);
+  };
 
-  const canCreateBoardCallback = useCallback(() => {
+  const canCreateBoardCallback = () => {
     return canCreateBoard(safeUser);
-  }, [safeUser]);
+  };
 
-  const canSubmitFormsCallback = useCallback(() => {
+  const canSubmitFormsCallback = () => {
     return canSubmitForms(safeUser);
-  }, [safeUser]);
+  };
 
-  const canPerformTaskCRUDCallback = useCallback(() => {
+  const canPerformTaskCRUDCallback = () => {
     return canPerformTaskCRUD(safeUser);
-  }, [safeUser]);
+  };
 
-  const hasAdminPermissionsCallback = useCallback(() => {
+  const hasAdminPermissionsCallback = () => {
     return hasAdminPermissions(safeUser);
-  }, [safeUser]);
+  };
 
-  const getUserPermissionSummaryCallback = useCallback(() => {
+  const getUserPermissionSummaryCallback = () => {
     return getUserPermissionSummary(safeUser);
-  }, [safeUser]);
+  };
 
   // Simplified auth status check
-  const isReady = useCallback(() => {
+  const isReady = () => {
     return !isAuthChecking && !isLoading;
-  }, [isAuthChecking, isLoading]);
+  };
 
   return {
     // Core state

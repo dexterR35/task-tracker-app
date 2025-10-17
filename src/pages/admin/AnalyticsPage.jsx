@@ -97,6 +97,36 @@ const AnalyticsPage = () => {
     isLoading
   }), [tasks, selectedMonth, users, isLoading]);
 
+  // Memoize card props to prevent unnecessary recalculations
+  const marketsByUsersCardProps = useMemo(() => 
+    getCachedMarketsByUsersCardProps(
+      analyticsData.tasks,
+      analyticsData.users,
+      analyticsData.isLoading
+    ), [analyticsData.tasks, analyticsData.users, analyticsData.isLoading]
+  );
+
+  const marketingAnalyticsCardProps = useMemo(() => 
+    getCachedMarketingAnalyticsCardProps(
+      analyticsData.tasks,
+      analyticsData.isLoading
+    ), [analyticsData.tasks, analyticsData.isLoading]
+  );
+
+  const acquisitionAnalyticsCardProps = useMemo(() => 
+    getCachedAcquisitionAnalyticsCardProps(
+      analyticsData.tasks,
+      analyticsData.isLoading
+    ), [analyticsData.tasks, analyticsData.isLoading]
+  );
+
+  const productAnalyticsCardProps = useMemo(() => 
+    getCachedProductAnalyticsCardProps(
+      analyticsData.tasks,
+      analyticsData.isLoading
+    ), [analyticsData.tasks, analyticsData.isLoading]
+  );
+
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection
 
@@ -433,11 +463,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <MarketsByUsersCard 
-                      {...getCachedMarketsByUsersCardProps(
-                        analyticsData.tasks,
-                        analyticsData.users,
-                        analyticsData.isLoading
-                      )}
+                      {...marketsByUsersCardProps}
                     />
                   </div>
                 </div>
@@ -460,10 +486,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <MarketingAnalyticsCard 
-                      {...getCachedMarketingAnalyticsCardProps(
-                        analyticsData.tasks,
-                        analyticsData.isLoading
-                      )}
+                      {...marketingAnalyticsCardProps}
                     />
                   </div>
                 </div>
@@ -486,10 +509,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <AcquisitionAnalyticsCard 
-                      {...getCachedAcquisitionAnalyticsCardProps(
-                        analyticsData.tasks,
-                        analyticsData.isLoading
-                      )}
+                      {...acquisitionAnalyticsCardProps}
                     />
                   </div>
                 </div>
@@ -512,10 +532,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <ProductAnalyticsCard 
-                      {...getCachedProductAnalyticsCardProps(
-                        analyticsData.tasks,
-                        analyticsData.isLoading
-                      )}
+                      {...productAnalyticsCardProps}
                     />
                   </div>
                 </div>

@@ -236,7 +236,7 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
  * Month Progress Bar Component
  */
 export const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDate, daysInMonth }) => {
-  const progressData = useMemo(() => calculateMonthProgress(monthId, daysInMonth), [monthId, daysInMonth]);
+  const progressData = calculateMonthProgress(monthId, daysInMonth);
 
   if (!monthId) {
     return null;

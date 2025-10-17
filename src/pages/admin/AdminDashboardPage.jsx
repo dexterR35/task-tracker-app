@@ -183,11 +183,8 @@ const AdminDashboardPage = () => {
     availableMonths,
   };
 
-  // Create small cards - only memoize if it's expensive
-  const smallCards = useMemo(
-    () => createSmallCards(smallCardsData),
-    [smallCardsData.tasks, smallCardsData.selectedUserId, smallCardsData.selectedReporterId, smallCardsData.selectedMonth?.monthId, smallCardsData.currentMonth?.monthId]
-  );
+  // Create small cards - simplified without excessive memoization
+  const smallCards = createSmallCards(smallCardsData);
 
   if (error) {
     return (

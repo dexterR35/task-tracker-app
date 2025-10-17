@@ -190,7 +190,7 @@ const TaskTable = ({
   );
 
   // Get filtered tasks and sort by createdAt (newest first)
-  const filteredTasks = useMemo(() => {
+  const filteredTasks = (() => {
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
@@ -240,10 +240,10 @@ const TaskTable = ({
     // Return sorted tasks
     
     return sorted;
-  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, getFilteredTasks]);
+  })();
 
-  // Memoized bulk actions to prevent recreation
-  const bulkActions = useMemo(() => [
+  // Bulk actions - simplified without memoization
+  const bulkActions = [
     {
       label: "View Selected",
       icon: "edit",
@@ -289,7 +289,7 @@ const TaskTable = ({
         }
       }
     }
-  ], [navigate, handleEditTask, handleDelete]);
+  ];
 
   // Initial column visibility
   const initialColumnVisibility = {
