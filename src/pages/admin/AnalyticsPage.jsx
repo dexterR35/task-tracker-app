@@ -97,36 +97,40 @@ const AnalyticsPage = () => {
     isLoading
   }), [tasks, selectedMonth, users, isLoading]);
 
-  // Memoize card props to prevent unnecessary recalculations
-  const marketsByUsersCardProps = useMemo(() => 
-    getCachedMarketsByUsersCardProps(
+  // Lazy load card props - only calculate active tab
+  const marketsByUsersCardProps = useMemo(() => {
+    if (activeTab !== 'markets-by-users') return null;
+    return getCachedMarketsByUsersCardProps(
       analyticsData.tasks,
       analyticsData.users,
       analyticsData.selectedMonth,
       analyticsData.isLoading
-    ), [analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]
-  );
+    );
+  }, [activeTab, analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]);
 
-  const marketingAnalyticsCardProps = useMemo(() => 
-    getCachedMarketingAnalyticsCardProps(
+  const marketingAnalyticsCardProps = useMemo(() => {
+    if (activeTab !== 'marketing-analytics') return null;
+    return getCachedMarketingAnalyticsCardProps(
       analyticsData.tasks,
       analyticsData.isLoading
-    ), [analyticsData.tasks, analyticsData.isLoading]
-  );
+    );
+  }, [activeTab, analyticsData.tasks, analyticsData.isLoading]);
 
-  const acquisitionAnalyticsCardProps = useMemo(() => 
-    getCachedAcquisitionAnalyticsCardProps(
+  const acquisitionAnalyticsCardProps = useMemo(() => {
+    if (activeTab !== 'acquisition-analytics') return null;
+    return getCachedAcquisitionAnalyticsCardProps(
       analyticsData.tasks,
       analyticsData.isLoading
-    ), [analyticsData.tasks, analyticsData.isLoading]
-  );
+    );
+  }, [activeTab, analyticsData.tasks, analyticsData.isLoading]);
 
-  const productAnalyticsCardProps = useMemo(() => 
-    getCachedProductAnalyticsCardProps(
+  const productAnalyticsCardProps = useMemo(() => {
+    if (activeTab !== 'product-analytics') return null;
+    return getCachedProductAnalyticsCardProps(
       analyticsData.tasks,
       analyticsData.isLoading
-    ), [analyticsData.tasks, analyticsData.isLoading]
-  );
+    );
+  }, [activeTab, analyticsData.tasks, analyticsData.isLoading]);
 
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection
@@ -463,9 +467,13 @@ const AnalyticsPage = () => {
                         </span>
                       </label>
                     </div>
-                    <MarketsByUsersCard 
-                      {...marketsByUsersCardProps}
-                    />
+                    {marketsByUsersCardProps ? (
+                      <MarketsByUsersCard 
+                        {...marketsByUsersCardProps}
+                      />
+                    ) : (
+                      <SkeletonAnalyticsCard />
+                    )}
                   </div>
                 </div>
               </div>
@@ -486,9 +494,13 @@ const AnalyticsPage = () => {
                         </span>
                       </label>
                     </div>
-                    <MarketingAnalyticsCard 
-                      {...marketingAnalyticsCardProps}
-                    />
+                    {marketingAnalyticsCardProps ? (
+                      <MarketingAnalyticsCard 
+                        {...marketingAnalyticsCardProps}
+                      />
+                    ) : (
+                      <SkeletonAnalyticsCard />
+                    )}
                   </div>
                 </div>
               </div>
@@ -509,9 +521,13 @@ const AnalyticsPage = () => {
                         </span>
                       </label>
                     </div>
-                    <AcquisitionAnalyticsCard 
-                      {...acquisitionAnalyticsCardProps}
-                    />
+                    {acquisitionAnalyticsCardProps ? (
+                      <AcquisitionAnalyticsCard 
+                        {...acquisitionAnalyticsCardProps}
+                      />
+                    ) : (
+                      <SkeletonAnalyticsCard />
+                    )}
                   </div>
                 </div>
               </div>
@@ -532,9 +548,13 @@ const AnalyticsPage = () => {
                         </span>
                       </label>
                     </div>
-                    <ProductAnalyticsCard 
-                      {...productAnalyticsCardProps}
-                    />
+                    {productAnalyticsCardProps ? (
+                      <ProductAnalyticsCard 
+                        {...productAnalyticsCardProps}
+                      />
+                    ) : (
+                      <SkeletonAnalyticsCard />
+                    )}
                   </div>
                 </div>
               </div>

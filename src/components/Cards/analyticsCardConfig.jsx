@@ -401,6 +401,30 @@ const calculateUsersBiaxialData = (tasks, users) => {
 
 // Get markets by users card props for direct use with MarketsByUsersCard
 export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
+  // Early return for empty data to prevent heavy calculations
+  if (!tasks || tasks.length === 0 || !users || users.length === 0) {
+    return {
+      title: "Markets by Users",
+      analyticsByUserMarketsTableData: [],
+      analyticsByUserMarketsTableColumns: [],
+      marketsData: [],
+      marketsTitle: "Markets Distribution (0 tasks, 0h)",
+      marketsColors: [],
+      userByTaskData: [],
+      userByTaskTitle: "Users by Task Count (0 tasks, 0h)",
+      userByTaskColors: CHART_COLORS.USER_BY_TASK,
+      biaxialBarData: [],
+      biaxialBarTitle: "Markets: Tasks & Hours (0 tasks, 0h)",
+      biaxialTasksColor: CHART_COLORS.DEFAULT[0],
+      biaxialHoursColor: CHART_COLORS.DEFAULT[1],
+      usersBiaxialData: [],
+      usersBiaxialTitle: "Users: Tasks & Hours (0 tasks, 0h)",
+      usersBiaxialTasksColor: CHART_COLORS.DEFAULT[2],
+      usersBiaxialHoursColor: CHART_COLORS.DEFAULT[3],
+      isLoading
+    };
+  }
+
   const calculatedData = calculateMarketsByUsersData(tasks, users, options);
   
   // Calculate total tasks and hours for chart titles
@@ -435,9 +459,44 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
   };
 };
 
-// Simplified version - let React's useMemo handle caching
+// Smart caching system for heavy calculations
+const calculationCache = new Map();
+
+// Generate cache key based on data content
+const generateCacheKey = (type, tasks, users, month, isLoading) => {
+  const tasksHash = tasks?.length ? 
+    tasks.map(t => `${t.id || t.taskId}_${t.updatedAt || t.createdAt || 0}`).sort().join(',') : 'empty';
+  const usersHash = users?.length ? 
+    users.map(u => `${u.uid || u.id}_${u.updatedAt || u.createdAt || 0}`).sort().join(',') : 'empty';
+  const monthHash = month?.monthId || 'current';
+  const loadingHash = isLoading ? 'loading' : 'loaded';
+  
+  return `${type}_${tasksHash}_${usersHash}_${monthHash}_${loadingHash}`;
+};
+
+// Smart cached version with persistent storage
 export const getCachedMarketsByUsersCardProps = (tasks, users, month, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
-  return getMarketsByUsersCardProps(tasks, users, isLoading, options);
+  const cacheKey = generateCacheKey('marketsByUsers', tasks, users, month, isLoading);
+  
+  // Check if we have cached result
+  if (calculationCache.has(cacheKey)) {
+    console.log('✅ MarketsByUsers CACHE HIT - using stored calculation');
+    return calculationCache.get(cacheKey);
+  }
+  
+  console.log('❌ MarketsByUsers CACHE MISS - calculating and storing...');
+  
+  // Calculate and store result
+  const result = getMarketsByUsersCardProps(tasks, users, isLoading, options);
+  calculationCache.set(cacheKey, result);
+  
+  // Clean up old cache entries (keep last 20)
+  if (calculationCache.size > 20) {
+    const firstKey = calculationCache.keys().next().value;
+    calculationCache.delete(firstKey);
+  }
+  
+  return result;
 };
 
 // ============================================================================
@@ -689,9 +748,21 @@ export const getMarketingAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Simplified version without excessive caching
+// Smart cached version for marketing analytics
 export const getCachedMarketingAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  return getMarketingAnalyticsCardProps(tasks, isLoading);
+  const cacheKey = generateCacheKey('marketingAnalytics', tasks, null, month, isLoading);
+  
+  if (calculationCache.has(cacheKey)) {
+    console.log('✅ MarketingAnalytics CACHE HIT - using stored calculation');
+    return calculationCache.get(cacheKey);
+  }
+  
+  console.log('❌ MarketingAnalytics CACHE MISS - calculating and storing...');
+  
+  const result = getMarketingAnalyticsCardProps(tasks, isLoading);
+  calculationCache.set(cacheKey, result);
+  
+  return result;
 };
 
 // ============================================================================
@@ -943,9 +1014,21 @@ export const getAcquisitionAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Simplified version without excessive caching
+// Smart cached version for acquisition analytics
 export const getCachedAcquisitionAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  return getAcquisitionAnalyticsCardProps(tasks, isLoading);
+  const cacheKey = generateCacheKey('acquisitionAnalytics', tasks, null, month, isLoading);
+  
+  if (calculationCache.has(cacheKey)) {
+    console.log('✅ AcquisitionAnalytics CACHE HIT - using stored calculation');
+    return calculationCache.get(cacheKey);
+  }
+  
+  console.log('❌ AcquisitionAnalytics CACHE MISS - calculating and storing...');
+  
+  const result = getAcquisitionAnalyticsCardProps(tasks, isLoading);
+  calculationCache.set(cacheKey, result);
+  
+  return result;
 };
 
 // ============================================================================
@@ -1252,7 +1335,44 @@ export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Simplified version without excessive caching
+// Smart cached version for product analytics
 export const getCachedProductAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  return getProductAnalyticsCardProps(tasks, isLoading);
+  const cacheKey = generateCacheKey('productAnalytics', tasks, null, month, isLoading);
+  
+  if (calculationCache.has(cacheKey)) {
+    console.log('✅ ProductAnalytics CACHE HIT - using stored calculation');
+    return calculationCache.get(cacheKey);
+  }
+  
+  console.log('❌ ProductAnalytics CACHE MISS - calculating and storing...');
+  
+  const result = getProductAnalyticsCardProps(tasks, isLoading);
+  calculationCache.set(cacheKey, result);
+  
+  return result;
+};
+
+// Cache management utilities
+export const getCacheStats = () => {
+  return {
+    size: calculationCache.size,
+    keys: Array.from(calculationCache.keys()),
+    maxSize: 20
+  };
+};
+
+export const clearAnalyticsCache = () => {
+  calculationCache.clear();
+  console.log('🧹 Analytics cache cleared');
+};
+
+export const clearCacheByType = (type) => {
+  const keysToDelete = [];
+  for (const [key, value] of calculationCache.entries()) {
+    if (key.startsWith(type)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => calculationCache.delete(key));
+  console.log(`🧹 Cleared ${keysToDelete.length} cache entries for ${type}`);
 };
