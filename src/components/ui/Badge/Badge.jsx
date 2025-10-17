@@ -34,6 +34,12 @@ const Badge = ({
     admin: 'bg-red-error text-white',
     reporter: 'bg-blue-default text-white',
     user: 'bg-green-success text-white',
+    // Main color variants with proper text colors
+    amber: 'bg-amber-500 text-gray-700',
+    crimson: 'bg-red-600 text-white',
+    blue: 'bg-blue-500 text-white',
+    purple: 'bg-purple-500 text-white',
+    green: 'bg-green-500 text-white',
     // Use constants for our main colors
     ...CARD_SYSTEM.BADGE_COLOR_CLASSES,
     // Legacy variants for backward compatibility
