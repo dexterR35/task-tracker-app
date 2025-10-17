@@ -17,6 +17,24 @@ const DocumentationPage = () => {
       icon: Icons.generic.calendar,
       description: 'Month-based organization system'
     },
+    {
+      id: 'deliverables',
+      name: 'Deliverables',
+      icon: Icons.generic.package,
+      description: 'Deliverables management system'
+    },
+    {
+      id: 'analytics',
+      name: 'Analytics',
+      icon: Icons.generic.chart,
+      description: 'Analytics and reporting architecture'
+    },
+    {
+      id: 'cards',
+      name: 'Cards',
+      icon: Icons.generic.deliverable,
+      description: 'Card components and layouts'
+    },
   ];
 
   const renderTabContent = () => {
@@ -25,6 +43,12 @@ const DocumentationPage = () => {
         return <TaskFormDocumentation />;
       case 'monthlogic':
         return <MonthLogicDocumentation />;
+      case 'deliverables':
+        return <DeliverablesDocumentation />;
+      case 'analytics':
+        return <AnalyticsDocumentation />;
+      case 'cards':
+        return <CardsDocumentation />;
       default:
         return <TaskFormDocumentation />;
     }
@@ -1106,6 +1130,562 @@ const MonthLogicDocumentation = () => {
                 { title: "Month ID Format", desc: "YYYY-MM format that's sortable and human-readable" },
                 { title: "Board Creation Process", desc: "Structured 5-step process for creating month boards" },
                 { title: "Visual Components", desc: "Progress bars and banners for better user experience" }
+              ].map((feature, index) => (
+                <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2">{feature.title}</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DeliverablesDocumentation = () => {
+  return (
+    <div className="p-8">
+      <div className="prose prose-lg max-w-none dark:prose-invert">
+        <h1 className="text-2xl font-bold mb-6">Deliverables Architecture</h1>
+        
+        <div className="mb-8">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            This document explains how Sync manages deliverables, including creation, organization, tracking, and integration with the task system. The deliverables system provides structured management of work outputs and their relationships to tasks.
+          </p>
+        </div>
+
+        <div className="space-y-8">
+          {/* Deliverables Management System */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Deliverables Management System</h2>
+            
+            <div className="space-y-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-4">Core Deliverables Features</h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+                  Sync provides a comprehensive deliverables management system that tracks work outputs and their relationships to tasks:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Deliverable Creation</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• <strong>Form-Based Creation:</strong> Structured forms for creating new deliverables</li>
+                      <li>• <strong>Department Filtering:</strong> Deliverables are filtered by department for relevance</li>
+                      <li>• <strong>Validation Rules:</strong> Ensures all required fields are completed</li>
+                      <li>• <strong>Duplicate Prevention:</strong> Prevents creation of duplicate deliverables</li>
+                      <li>• <strong>Auto-Generation:</strong> Automatically generates unique IDs and timestamps</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Deliverable Organization</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• <strong>Category Management:</strong> Organizes deliverables by type and purpose</li>
+                      <li>• <strong>Department Association:</strong> Links deliverables to specific departments</li>
+                      <li>• <strong>Hierarchical Structure:</strong> Supports parent-child relationships between deliverables</li>
+                      <li>• <strong>Tagging System:</strong> Flexible tagging for easy searching and filtering</li>
+                      <li>• <strong>Status Tracking:</strong> Tracks deliverable status throughout lifecycle</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-4">Task Integration</h3>
+                <p className="text-sm text-green-800 dark:text-green-200 mb-4">
+                  Deliverables are seamlessly integrated with the task system to provide complete work tracking:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Task-Deliverable Linking</h4>
+                    <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <li>• <strong>Multi-Select Integration:</strong> Tasks can be linked to multiple deliverables</li>
+                      <li>• <strong>Conditional Display:</strong> Deliverable fields appear based on checkbox selection</li>
+                      <li>• <strong>Quantity Tracking:</strong> Tracks quantities of deliverables per task</li>
+                      <li>• <strong>Variation Management:</strong> Handles different variations of the same deliverable</li>
+                      <li>• <strong>Real-time Updates:</strong> Changes are reflected immediately across the system</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Data Management</h4>
+                    <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <li>• <strong>Structured Storage:</strong> Deliverables stored as structured arrays with metadata</li>
+                      <li>• <strong>Relationship Tracking:</strong> Maintains relationships between tasks and deliverables</li>
+                      <li>• <strong>History Preservation:</strong> Keeps track of deliverable changes over time</li>
+                      <li>• <strong>Audit Trail:</strong> Complete audit trail of all deliverable operations</li>
+                      <li>• <strong>Data Integrity:</strong> Ensures data consistency across all operations</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Deliverables Components */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Deliverables Components</h2>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-4">DeliverableForm</h3>
+                <p className="text-sm text-purple-800 dark:text-purple-200 mb-4">
+                  A comprehensive form component for creating and editing deliverables:
+                </p>
+                
+                <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+                  <li>• <strong>Dynamic Fields:</strong> Form fields adapt based on deliverable type</li>
+                  <li>• <strong>Validation System:</strong> Real-time validation with clear error messages</li>
+                  <li>• <strong>Auto-Save:</strong> Automatically saves form data to prevent loss</li>
+                  <li>• <strong>Department Filtering:</strong> Shows only relevant deliverables for selected department</li>
+                  <li>• <strong>Modal Interface:</strong> Clean modal interface for form interaction</li>
+                </ul>
+              </div>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-4">DeliverableTable</h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
+                  A powerful table component for managing and viewing deliverables:
+                </p>
+                
+                <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                  <li>• <strong>Sortable Columns:</strong> All columns can be sorted for easy organization</li>
+                  <li>• <strong>Filtering Options:</strong> Advanced filtering by department, status, and type</li>
+                  <li>• <strong>Bulk Operations:</strong> Select and perform operations on multiple deliverables</li>
+                  <li>• <strong>Export Functionality:</strong> Export deliverable data in various formats</li>
+                  <li>• <strong>Responsive Design:</strong> Adapts to different screen sizes</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Key Features */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">What Makes Sync Deliverables Special</h2>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { title: "Form Integration", desc: "Seamlessly integrated with task forms and conditional logic" },
+                { title: "Department Filtering", desc: "Smart filtering based on department relevance" },
+                { title: "Quantity Tracking", desc: "Tracks quantities and variations of deliverables" },
+                { title: "Real-time Updates", desc: "Instant updates across all system components" },
+                { title: "Data Integrity", desc: "Maintains consistent data structure and relationships" },
+                { title: "Audit Trail", desc: "Complete history of all deliverable operations" },
+                { title: "Bulk Operations", desc: "Efficient management of multiple deliverables" },
+                { title: "Export Functionality", desc: "Export data in various formats for reporting" },
+                { title: "Responsive Design", desc: "Works seamlessly across all device sizes" }
+              ].map((feature, index) => (
+                <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2">{feature.title}</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AnalyticsDocumentation = () => {
+  return (
+    <div className="p-8">
+      <div className="prose prose-lg max-w-none dark:prose-invert">
+        <h1 className="text-2xl font-bold mb-6">Analytics Architecture</h1>
+        
+        <div className="mb-8">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            This document explains how Sync provides comprehensive analytics and reporting capabilities, including data visualization, performance metrics, and business intelligence features for tracking work progress and team productivity.
+          </p>
+        </div>
+
+        <div className="space-y-8">
+          {/* Analytics System Overview */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Analytics System Overview</h2>
+            
+            <div className="space-y-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-4">Core Analytics Features</h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+                  Sync provides powerful analytics capabilities to help teams understand their work patterns and improve productivity:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Data Collection</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• <strong>Real-time Tracking:</strong> Collects data in real-time as users work</li>
+                      <li>• <strong>Comprehensive Metrics:</strong> Tracks time, deliverables, AI usage, and more</li>
+                      <li>• <strong>User Behavior:</strong> Monitors user interactions and work patterns</li>
+                      <li>• <strong>Performance Data:</strong> Measures task completion rates and efficiency</li>
+                      <li>• <strong>Quality Metrics:</strong> Tracks rework rates and deliverable quality</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Data Processing</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• <strong>Aggregation:</strong> Combines data from multiple sources for analysis</li>
+                      <li>• <strong>Filtering:</strong> Filters data by time periods, departments, and users</li>
+                      <li>• <strong>Calculation:</strong> Performs complex calculations for metrics and KPIs</li>
+                      <li>• <strong>Trend Analysis:</strong> Identifies patterns and trends over time</li>
+                      <li>• <strong>Comparative Analysis:</strong> Compares performance across different periods</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-4">Visualization Components</h3>
+                <p className="text-sm text-green-800 dark:text-green-200 mb-4">
+                  Sync includes sophisticated visualization components to present analytics data in an intuitive way:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Chart Components</h4>
+                    <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <li>• <strong>Column Charts:</strong> Simple column charts for comparing values</li>
+                      <li>• <strong>Pie Charts:</strong> Pie charts for showing proportions and distributions</li>
+                      <li>• <strong>Line Charts:</strong> Line charts for showing trends over time</li>
+                      <li>• <strong>Bar Charts:</strong> Horizontal bar charts for category comparisons</li>
+                      <li>• <strong>Interactive Charts:</strong> Charts with hover effects and click interactions</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Analytics Cards</h4>
+                    <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <li>• <strong>Acquisition Analytics:</strong> Tracks user acquisition and engagement metrics</li>
+                      <li>• <strong>Marketing Analytics:</strong> Monitors marketing campaign effectiveness</li>
+                      <li>• <strong>Market Distribution:</strong> Shows market distribution and user demographics</li>
+                      <li>• <strong>Performance Metrics:</strong> Displays key performance indicators</li>
+                      <li>• <strong>Real-time Updates:</strong> Cards update automatically with new data</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Analytics Tables */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Analytics Tables</h2>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-4">AnalyticsTable</h3>
+                <p className="text-sm text-purple-800 dark:text-purple-200 mb-4">
+                  A comprehensive table component for displaying analytics data:
+                </p>
+                
+                <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+                  <li>• <strong>Data Sorting:</strong> Sort by any column in ascending or descending order</li>
+                  <li>• <strong>Advanced Filtering:</strong> Filter data by multiple criteria simultaneously</li>
+                  <li>• <strong>Pagination:</strong> Handle large datasets with efficient pagination</li>
+                  <li>• <strong>Export Options:</strong> Export data in CSV, Excel, and PDF formats</li>
+                  <li>• <strong>Responsive Design:</strong> Adapts to different screen sizes and orientations</li>
+                </ul>
+              </div>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-4">MarketDistributionTable</h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
+                  Specialized table for displaying market distribution data:
+                </p>
+                
+                <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                  <li>• <strong>Market Analysis:</strong> Shows distribution across different markets</li>
+                  <li>• <strong>User Demographics:</strong> Displays user distribution by market</li>
+                  <li>• <strong>Performance Metrics:</strong> Shows performance indicators per market</li>
+                  <li>• <strong>Trend Analysis:</strong> Tracks changes in market distribution over time</li>
+                  <li>• <strong>Interactive Features:</strong> Click to drill down into specific market data</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Analytics Helpers */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Analytics Helpers and Utilities</h2>
+            
+            <div className="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg">
+              <h3 className="font-semibold text-teal-900 dark:text-teal-100 mb-4">Analytics Helpers</h3>
+              <p className="text-sm text-teal-800 dark:text-teal-200 mb-4">
+                Sync includes utility functions and helpers to support analytics operations:
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-teal-900 dark:text-teal-100 mb-2">Data Processing</h4>
+                  <ul className="text-sm text-teal-800 dark:text-teal-200 space-y-1">
+                    <li>• <strong>Data Aggregation:</strong> Combines and summarizes data from multiple sources</li>
+                    <li>• <strong>Metric Calculations:</strong> Calculates KPIs, averages, and performance metrics</li>
+                    <li>• <strong>Date Range Processing:</strong> Handles date-based filtering and grouping</li>
+                    <li>• <strong>Statistical Analysis:</strong> Performs statistical calculations and analysis</li>
+                    <li>• <strong>Data Validation:</strong> Ensures data quality and consistency</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-teal-900 dark:text-teal-100 mb-2">Export and Reporting</h4>
+                  <ul className="text-sm text-teal-800 dark:text-teal-200 space-y-1">
+                    <li>• <strong>PDF Generation:</strong> Creates PDF reports with charts and tables</li>
+                    <li>• <strong>Data Export:</strong> Exports data in various formats (CSV, Excel, JSON)</li>
+                    <li>• <strong>Report Templates:</strong> Pre-built templates for common reports</li>
+                    <li>• <strong>Scheduled Reports:</strong> Automated report generation and delivery</li>
+                    <li>• <strong>Custom Dashboards:</strong> Allows users to create custom analytics dashboards</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Key Features */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">What Makes Sync Analytics Special</h2>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { title: "Real-time Analytics", desc: "Live data updates and real-time performance tracking" },
+                { title: "Interactive Visualizations", desc: "Engaging charts and graphs with interactive features" },
+                { title: "Comprehensive Metrics", desc: "Tracks all aspects of work from time to quality" },
+                { title: "Advanced Filtering", desc: "Powerful filtering options for detailed analysis" },
+                { title: "Export Functionality", desc: "Export data and reports in multiple formats" },
+                { title: "Performance Optimization", desc: "Efficient data processing and caching for fast analytics" },
+                { title: "Custom Dashboards", desc: "Flexible dashboard creation for different user needs" },
+                { title: "Trend Analysis", desc: "Identifies patterns and trends in work data" },
+                { title: "Comparative Analysis", desc: "Compare performance across different time periods" }
+              ].map((feature, index) => (
+                <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2">{feature.title}</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CardsDocumentation = () => {
+  return (
+    <div className="p-8">
+      <div className="prose prose-lg max-w-none dark:prose-invert">
+        <h1 className="text-2xl font-bold mb-6">Cards Architecture</h1>
+        
+        <div className="mb-8">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            This document explains how Sync uses card-based components to display information, metrics, and interactive elements. The card system provides a flexible, responsive way to organize and present data across the application.
+          </p>
+        </div>
+
+        <div className="space-y-8">
+          {/* Card System Overview */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Card System Overview</h2>
+            
+            <div className="space-y-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-4">Core Card Features</h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+                  Sync's card system provides a consistent, flexible way to display information and interactive elements:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Design System</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• <strong>Consistent Styling:</strong> Unified design language across all cards</li>
+                      <li>• <strong>Responsive Layout:</strong> Adapts to different screen sizes and orientations</li>
+                      <li>• <strong>Dark Mode Support:</strong> Full compatibility with light and dark themes</li>
+                      <li>• <strong>Accessibility:</strong> Proper ARIA labels and keyboard navigation</li>
+                      <li>• <strong>Animation Support:</strong> Smooth transitions and hover effects</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Flexibility</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• <strong>Modular Design:</strong> Cards can be combined and arranged flexibly</li>
+                      <li>• <strong>Customizable Content:</strong> Support for various content types and layouts</li>
+                      <li>• <strong>Interactive Elements:</strong> Buttons, links, and form elements within cards</li>
+                      <li>• <strong>Dynamic Sizing:</strong> Cards adjust size based on content and screen space</li>
+                      <li>• <strong>Grid System:</strong> Automatic grid layout with proper spacing</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-4">Card Types and Categories</h3>
+                <p className="text-sm text-green-800 dark:text-green-200 mb-4">
+                  Sync includes various types of cards designed for different purposes and data display needs:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Analytics Cards</h4>
+                    <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <li>• <strong>Acquisition Analytics:</strong> User acquisition and engagement metrics</li>
+                      <li>• <strong>Marketing Analytics:</strong> Marketing campaign performance data</li>
+                      <li>• <strong>Market Distribution:</strong> Market and user distribution information</li>
+                      <li>• <strong>Performance Metrics:</strong> Key performance indicators and KPIs</li>
+                      <li>• <strong>Real-time Data:</strong> Live updates and real-time information display</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Small Cards</h4>
+                    <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                      <li>• <strong>Compact Display:</strong> Space-efficient cards for quick information</li>
+                      <li>• <strong>Icon Integration:</strong> Visual icons to represent different data types</li>
+                      <li>• <strong>Quick Actions:</strong> Fast access to common actions and functions</li>
+                      <li>• <strong>Status Indicators:</strong> Visual status and progress indicators</li>
+                      <li>• <strong>Configurable Layout:</strong> Flexible configuration for different use cases</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Card Components */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Card Components</h2>
+            
+            <div className="space-y-6">
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-4">SmallCard Component</h3>
+                <p className="text-sm text-purple-800 dark:text-purple-200 mb-4">
+                  A versatile small card component for displaying compact information:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-purple-900 dark:text-purple-100 mb-2">Features</h4>
+                    <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+                      <li>• <strong>Dynamic Content:</strong> Supports various content types and layouts</li>
+                      <li>• <strong>Icon Support:</strong> Integrated icon system for visual representation</li>
+                      <li>• <strong>Responsive Design:</strong> Adapts to different screen sizes</li>
+                      <li>• <strong>Interactive Elements:</strong> Click handlers and hover effects</li>
+                      <li>• <strong>Theme Integration:</strong> Consistent with app's design system</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-purple-900 dark:text-purple-100 mb-2">Configuration</h4>
+                    <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+                      <li>• <strong>Configurable Props:</strong> Flexible props for customization</li>
+                      <li>• <strong>Size Variants:</strong> Different size options for various use cases</li>
+                      <li>• <strong>Color Schemes:</strong> Multiple color schemes and themes</li>
+                      <li>• <strong>Animation Options:</strong> Configurable animations and transitions</li>
+                      <li>• <strong>Accessibility:</strong> Built-in accessibility features</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-4">Analytics Card Components</h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
+                  Specialized card components for displaying analytics and metrics data:
+                </p>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">AcquisitionAnalyticsCard</h4>
+                    <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                      <li>• User acquisition metrics</li>
+                      <li>• Engagement tracking</li>
+                      <li>• Conversion rates</li>
+                      <li>• Growth indicators</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">MarketingAnalyticsCard</h4>
+                    <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                      <li>• Campaign performance</li>
+                      <li>• Marketing ROI</li>
+                      <li>• Channel effectiveness</li>
+                      <li>• Lead generation</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">MarketsByUsersCard</h4>
+                    <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                      <li>• Market distribution</li>
+                      <li>• User demographics</li>
+                      <li>• Geographic data</li>
+                      <li>• Market trends</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Card Configuration */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Card Configuration System</h2>
+            
+            <div className="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg">
+              <h3 className="font-semibold text-teal-900 dark:text-teal-100 mb-4">SmallCardConfig</h3>
+              <p className="text-sm text-teal-800 dark:text-teal-200 mb-4">
+                A comprehensive configuration system for managing small card layouts and content:
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-teal-900 dark:text-teal-100 mb-2">Configuration Features</h4>
+                  <ul className="text-sm text-teal-800 dark:text-teal-200 space-y-1">
+                    <li>• <strong>Layout Management:</strong> Defines card layouts and arrangements</li>
+                    <li>• <strong>Content Mapping:</strong> Maps data to card content and display</li>
+                    <li>• <strong>Style Configuration:</strong> Customizable styles and themes</li>
+                    <li>• <strong>Behavior Settings:</strong> Configures interactions and animations</li>
+                    <li>• <strong>Data Binding:</strong> Connects cards to data sources</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-teal-900 dark:text-teal-100 mb-2">Analytics Card Config</h4>
+                  <ul className="text-sm text-teal-800 dark:text-teal-200 space-y-1">
+                    <li>• <strong>Metric Definitions:</strong> Defines which metrics to display</li>
+                    <li>• <strong>Chart Configuration:</strong> Configures charts and visualizations</li>
+                    <li>• <strong>Data Processing:</strong> Handles data transformation and formatting</li>
+                    <li>• <strong>Update Intervals:</strong> Configures real-time update frequencies</li>
+                    <li>• <strong>Export Options:</strong> Defines export and sharing capabilities</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Key Features */}
+          <section>
+            <h2 className="text-xl font-semibold mb-4">What Makes Sync Cards Special</h2>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { title: "Consistent Design", desc: "Unified design language across all card components" },
+                { title: "Responsive Layout", desc: "Adapts seamlessly to all screen sizes and devices" },
+                { title: "Interactive Elements", desc: "Rich interactions with hover effects and animations" },
+                { title: "Flexible Configuration", desc: "Highly configurable for different use cases" },
+                { title: "Real-time Updates", desc: "Live data updates and real-time information display" },
+                { title: "Accessibility", desc: "Built-in accessibility features and keyboard navigation" },
+                { title: "Theme Support", desc: "Full support for light and dark mode themes" },
+                { title: "Performance Optimized", desc: "Efficient rendering and memory management" },
+                { title: "Modular Architecture", desc: "Reusable components that can be combined flexibly" }
               ].map((feature, index) => (
                 <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-4 rounded-lg">
                   <h3 className="font-semibold text-sm mb-2">{feature.title}</h3>
