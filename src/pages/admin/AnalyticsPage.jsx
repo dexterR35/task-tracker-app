@@ -359,7 +359,7 @@ const AnalyticsPage = () => {
         </div>
         
         {/* Month Progress Bar */}
-        <div className="mt-4">
+        <div className="mt-4 card">
           <MonthProgressBar 
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}

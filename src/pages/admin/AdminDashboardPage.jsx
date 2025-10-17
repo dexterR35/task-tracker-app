@@ -227,7 +227,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Month Progress Bar */}
-        <div className="my-6">
+        <div className="my-6 card">
           <MonthProgressBar
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}
