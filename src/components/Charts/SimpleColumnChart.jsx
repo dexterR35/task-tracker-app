@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 
-const SimpleColumnChart = ({ data = [], title = "Chart", colors = CHART_COLORS.DEFAULT, multiBar = false }) => {
+const SimpleColumnChart = React.memo(({ data = [], title = "Chart", colors = CHART_COLORS.DEFAULT, multiBar = false }) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -11,23 +11,38 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = CHART_COLORS.D
     );
   }
 
-  // Transform data for Recharts
-  const chartData = data.map((item, index) => {
-    const baseColor = colors[index] || colors[0] || '#3b82f6';
-    return {
-      name: item.name,
-      tasks: item.tasks || item.value || 0,
-      COM: item.COM || 0,
-      DE: item.DE || 0,
-      FI: item.FI || 0,
-      FR: item.FR || 0,
-      IE: item.IE || 0,
-      IT: item.IT || 0,
-      RO: item.RO || 0,
-      UK: item.UK || 0,
-      color: baseColor
-    };
-  });
+  // Transform data for Recharts - memoized to prevent unnecessary recalculations
+  const chartData = useMemo(() => {
+    return data.map((item, index) => {
+      const baseColor = colors[index] || colors[0] || '#3b82f6';
+      return {
+        name: item.name,
+        tasks: item.tasks || item.value || 0,
+        COM: item.COM || 0,
+        DE: item.DE || 0,
+        FI: item.FI || 0,
+        FR: item.FR || 0,
+        IE: item.IE || 0,
+        IT: item.IT || 0,
+        RO: item.RO || 0,
+        UK: item.UK || 0,
+        color: baseColor
+      };
+    });
+  }, [data, colors]);
+
+  // Memoized formatter functions to prevent re-renders
+  const tooltipFormatter = useCallback((value, name, props) => {
+    const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+    return [`${value} tasks (${percentage}%)`, 'Tasks'];
+  }, [chartData]);
+
+  const labelFormatter = useCallback((value, entry) => {
+    const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+    return `${value} (${percentage}%)`;
+  }, [chartData]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
@@ -60,11 +75,7 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = CHART_COLORS.D
                 borderRadius: '6px',
                 color: '#f9fafb'
               }}
-              formatter={(value, name, props) => {
-                const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
-                const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
-                return [`${value} tasks (${percentage}%)`, 'Tasks'];
-              }}
+              formatter={tooltipFormatter}
             />
             <Legend 
               layout="vertical" 
@@ -136,11 +147,7 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = CHART_COLORS.D
                 <LabelList 
                   dataKey="tasks" 
                   position="top" 
-                  formatter={(value, entry) => {
-                    const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
-                    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
-                    return `${value} (${percentage}%)`;
-                  }}
+                  formatter={labelFormatter}
                   style={{ fontSize: 11, fill: '#ffffff', fontWeight: 'medium' }}
                 />
               </Bar>
@@ -150,6 +157,8 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = CHART_COLORS.D
       </div>
     </div>
   );
-};
+});
+
+SimpleColumnChart.displayName = 'SimpleColumnChart';
 
 export default SimpleColumnChart;

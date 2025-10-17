@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
@@ -46,22 +46,22 @@ const AnalyticsPage = () => {
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Card selection handlers
-  const handleCardSelection = (cardId) => {
+  // Card selection handlers - memoized to prevent re-renders
+  const handleCardSelection = useCallback((cardId) => {
     setSelectedCards(prev => 
       prev.includes(cardId) 
         ? prev.filter(id => id !== cardId)
         : [...prev, cardId]
     );
-  };
+  }, []);
 
-  // Tab change handler
-  const handleTabChange = (tabId) => {
+  // Tab change handler - memoized to prevent re-renders
+  const handleTabChange = useCallback((tabId) => {
     setActiveTab(tabId);
-  };
+  }, []);
 
-  // Analytics tabs configuration
-  const analyticsTabs = [
+  // Analytics tabs configuration - memoized to prevent re-renders
+  const analyticsTabs = useMemo(() => [
     {
       id: 'markets-by-users',
       name: 'Markets by Users',
@@ -82,15 +82,15 @@ const AnalyticsPage = () => {
       name: 'Product Analytics',
       description: 'Product breakdown and analytics'
     },
-  ];
+  ], []);
 
-  // Analytics data object
-  const analyticsData = {
+  // Analytics data object - memoized to prevent unnecessary re-renders
+  const analyticsData = useMemo(() => ({
     tasks,
     selectedMonth,
     users,
     isLoading
-  };
+  }), [tasks, selectedMonth, users, isLoading]);
 
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection

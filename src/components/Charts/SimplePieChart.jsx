@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 
-const SimplePieChart = ({ 
+const SimplePieChart = React.memo(({ 
   data, 
   title, 
   colors = CHART_COLORS.DEFAULT,
@@ -143,6 +143,8 @@ const SimplePieChart = ({
       </div>
     </div>
   );
-};
+});
+
+SimplePieChart.displayName = 'SimplePieChart';
 
 export default SimplePieChart;

@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 
-const ProductColumnChart = ({ data = [], title = "Product Tasks", colors = CHART_COLORS.DEFAULT }) => {
+const ProductColumnChart = React.memo(({ data = [], title = "Product Tasks", colors = CHART_COLORS.DEFAULT }) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -11,15 +11,30 @@ const ProductColumnChart = ({ data = [], title = "Product Tasks", colors = CHART
     );
   }
 
-  // Transform data for Recharts with proper colors
-  const chartData = data.map((item, index) => {
-    const baseColor = item.color || colors[index] || colors[0] || '#3b82f6';
-    return {
-      name: item.name,
-      tasks: item.tasks || item.value || 0,
-      color: baseColor
-    };
-  });
+  // Transform data for Recharts with proper colors - memoized
+  const chartData = useMemo(() => {
+    return data.map((item, index) => {
+      const baseColor = item.color || colors[index] || colors[0] || '#3b82f6';
+      return {
+        name: item.name,
+        tasks: item.tasks || item.value || 0,
+        color: baseColor
+      };
+    });
+  }, [data, colors]);
+
+  // Memoized formatter functions
+  const tooltipFormatter = useCallback((value, name, props) => {
+    const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+    return [`${value} tasks (${percentage}%)`, 'Tasks'];
+  }, [chartData]);
+
+  const labelFormatter = useCallback((value, entry) => {
+    const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+    return `${value} (${percentage}%)`;
+  }, [chartData]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
@@ -52,11 +67,7 @@ const ProductColumnChart = ({ data = [], title = "Product Tasks", colors = CHART
                 borderRadius: '6px',
                 color: '#f9fafb'
               }}
-              formatter={(value, name, props) => {
-                const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
-                const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
-                return [`${value} tasks (${percentage}%)`, 'Tasks'];
-              }}
+              formatter={tooltipFormatter}
             />
             
             <Bar 
@@ -70,11 +81,7 @@ const ProductColumnChart = ({ data = [], title = "Product Tasks", colors = CHART
               <LabelList 
                 dataKey="tasks" 
                 position="top" 
-                formatter={(value, entry) => {
-                  const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
-                  const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
-                  return `${value} (${percentage}%)`;
-                }}
+                formatter={labelFormatter}
                 style={{ fontSize: 11, fill: '#ffffff', fontWeight: 'medium' }}
               />
             </Bar>
@@ -83,6 +90,8 @@ const ProductColumnChart = ({ data = [], title = "Product Tasks", colors = CHART
       </div>
     </div>
   );
-};
+});
+
+ProductColumnChart.displayName = 'ProductColumnChart';
 
 export default ProductColumnChart;
