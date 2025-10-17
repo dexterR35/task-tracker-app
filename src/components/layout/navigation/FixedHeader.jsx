@@ -21,6 +21,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return "Landing Pages";
       case "/users":
         return "User Management";
+      case "/documentation":
+        return "Documentation";
       default:
         return "Dashboard";
     }
@@ -37,6 +39,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return Icons.generic.document;
       case "/users":
         return Icons.admin.users;
+      case "/documentation":
+        return Icons.generic.document;
       default:
         return Icons.cards.home;
     }

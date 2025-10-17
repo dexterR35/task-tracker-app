@@ -26,6 +26,7 @@ import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
 import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
+import DocumentationPage from "@/pages/DocumentationPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -234,6 +235,14 @@ const router = createBrowserRouter([
             element: (
               <PageWrapper>
                 <DynamicAnalyticsPage />
+              </PageWrapper>
+            ),
+          },
+          {
+            path: "documentation",
+            element: (
+              <PageWrapper key="documentation">
+                <DocumentationPage />
               </PageWrapper>
             ),
           },

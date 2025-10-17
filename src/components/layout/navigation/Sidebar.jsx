@@ -49,6 +49,12 @@ const Sidebar = () => {
       adminOnly: true,
       description: "LP Management",
     },
+    {
+      name: "Documentation",
+      href: "/documentation",
+      icon: Icons.generic.document,
+      description: "System documentation",
+    },
   ];
 
   return (
