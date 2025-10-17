@@ -1,7 +1,8 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 
-const SimpleColumnChart = ({ data = [], title = "Chart", colors = [], multiBar = false }) => {
+const SimpleColumnChart = ({ data = [], title = "Chart", colors = CHART_COLORS.DEFAULT, multiBar = false }) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -46,7 +47,7 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = [], multiBar =
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="name" 
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#e5e7eb' }}
               angle={-45}
               textAnchor="end"
               height={80}
@@ -59,8 +60,18 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = [], multiBar =
                 borderRadius: '6px',
                 color: '#f9fafb'
               }}
+              formatter={(value, name, props) => {
+                const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+                return [`${value} tasks (${percentage}%)`, 'Tasks'];
+              }}
             />
-            <Legend />
+            <Legend 
+              layout="vertical" 
+              align="right" 
+              verticalAlign="middle"
+              wrapperStyle={{ paddingLeft: '20px' }}
+            />
             
             {multiBar ? (
               <>
@@ -117,9 +128,22 @@ const SimpleColumnChart = ({ data = [], title = "Chart", colors = [], multiBar =
               <Bar 
                 dataKey="tasks" 
                 name="Tasks" 
-                fill="#3b82f6"
                 radius={[2, 2, 0, 0]}
-              />
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color || colors[index % colors.length]} />
+                ))}
+                <LabelList 
+                  dataKey="tasks" 
+                  position="top" 
+                  formatter={(value, entry) => {
+                    const total = chartData.reduce((sum, item) => sum + item.tasks, 0);
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(0) : 0;
+                    return `${value} (${percentage}%)`;
+                  }}
+                  style={{ fontSize: 11, fill: '#ffffff', fontWeight: 'medium' }}
+                />
+              </Bar>
             )}
           </BarChart>
         </ResponsiveContainer>

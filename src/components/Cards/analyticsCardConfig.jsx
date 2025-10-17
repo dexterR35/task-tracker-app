@@ -718,3 +718,252 @@ export const getAcquisitionAnalyticsCardProps = (tasks, isLoading = false) => {
     isLoading
   };
 };
+
+// ============================================================================
+// PRODUCT ANALYTICS CONFIGURATION
+// ============================================================================
+
+// Product-specific colors - using same colors as Markets by Users
+export const PRODUCT_CHART_COLORS = {
+  MARKETING: CHART_COLORS.DEFAULT,
+  ACQUISITION: CHART_COLORS.DEFAULT,
+  PRODUCT: CHART_COLORS.DEFAULT,
+  MISC: CHART_COLORS.DEFAULT
+};
+
+/**
+ * Calculate product analytics data for table and charts
+ * @param {Array} tasks - Array of task objects
+ * @returns {Object} Product analytics data object
+ */
+export const calculateProductAnalyticsData = (tasks) => {
+  if (!tasks || tasks.length === 0) {
+    return {
+      tableData: [],
+      tableColumns: [],
+      pieData: [],
+      barData: []
+    };
+  }
+
+  // Initialize product counts
+  const productCounts = {
+    'marketing casino': 0,
+    'marketing sport': 0,
+    'marketing poker': 0,
+    'marketing lotto': 0,
+    'acquisition casino': 0,
+    'acquisition sport': 0,
+    'acquisition poker': 0,
+    'acquisition lotto': 0,
+    'product casino': 0,
+    'product sport': 0,
+    'product poker': 0,
+    'product lotto': 0,
+    'misc': 0
+  };
+
+  // Count tasks by product
+  tasks.forEach(task => {
+    const products = task.data_task?.products || task.products;
+    
+    if (!products) {
+      productCounts.misc++;
+      return;
+    }
+
+    const productsLower = products.toLowerCase().trim();
+    
+    // Check if the product exists in our counts
+    if (productCounts.hasOwnProperty(productsLower)) {
+      productCounts[productsLower]++;
+    } else {
+      productCounts.misc++;
+    }
+  });
+
+  const totalTasks = tasks.length;
+  
+  // Calculate total hours
+  const totalHours = tasks.reduce((sum, task) => {
+    return sum + (task.data_task?.timeInHours || task.timeInHours || 0);
+  }, 0);
+
+  // Calculate category totals
+  const categoryTotals = {
+    marketing: productCounts['marketing casino'] + productCounts['marketing sport'] + 
+               productCounts['marketing poker'] + productCounts['marketing lotto'],
+    acquisition: productCounts['acquisition casino'] + productCounts['acquisition sport'] + 
+                 productCounts['acquisition poker'] + productCounts['acquisition lotto'],
+    product: productCounts['product casino'] + productCounts['product sport'] + 
+             productCounts['product poker'] + productCounts['product lotto'],
+    misc: productCounts.misc
+  };
+
+  // Create table data
+  const tableData = [
+    {
+      category: 'Marketing',
+      total: categoryTotals.marketing,
+      totalHours: tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return products && products.toLowerCase().includes('marketing');
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
+      percentage: totalTasks > 0 ? Math.round((categoryTotals.marketing / totalTasks) * 100) : 0,
+      details: {
+        'marketing casino': productCounts['marketing casino'],
+        'marketing sport': productCounts['marketing sport'],
+        'marketing poker': productCounts['marketing poker'],
+        'marketing lotto': productCounts['marketing lotto']
+      }
+    },
+    {
+      category: 'Acquisition',
+      total: categoryTotals.acquisition,
+      totalHours: tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return products && products.toLowerCase().includes('acquisition');
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
+      percentage: totalTasks > 0 ? Math.round((categoryTotals.acquisition / totalTasks) * 100) : 0,
+      details: {
+        'acquisition casino': productCounts['acquisition casino'],
+        'acquisition sport': productCounts['acquisition sport'],
+        'acquisition poker': productCounts['acquisition poker'],
+        'acquisition lotto': productCounts['acquisition lotto']
+      }
+    },
+    {
+      category: 'Product',
+      total: categoryTotals.product,
+      totalHours: tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return products && products.toLowerCase().includes('product');
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
+      percentage: totalTasks > 0 ? Math.round((categoryTotals.product / totalTasks) * 100) : 0,
+      details: {
+        'product casino': productCounts['product casino'],
+        'product sport': productCounts['product sport'],
+        'product poker': productCounts['product poker'],
+        'product lotto': productCounts['product lotto']
+      }
+    },
+    {
+      category: 'Miscellaneous',
+      total: categoryTotals.misc,
+      totalHours: tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return !products || (!products.toLowerCase().includes('marketing') && 
+                               !products.toLowerCase().includes('acquisition') && 
+                               !products.toLowerCase().includes('product'));
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
+      percentage: totalTasks > 0 ? Math.round((categoryTotals.misc / totalTasks) * 100) : 0
+    },
+    {
+      category: 'Total Tasks',
+      total: totalTasks,
+      totalHours: totalHours,
+      percentage: 100
+    }
+  ];
+
+  // Create table columns
+  const tableColumns = [
+    {
+      key: 'category',
+      header: 'Product Category',
+      render: (value) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100">
+          {value}
+        </span>
+      )
+    },
+    {
+      key: 'total',
+      header: 'Task Count',
+      render: (value) => (
+        <span className="text-gray-700 dark:text-gray-300">
+          {value}
+        </span>
+      )
+    },
+    {
+      key: 'totalHours',
+      header: 'Total Hours',
+      render: (value) => (
+        <span className="text-gray-700 dark:text-gray-300">
+          {value}h
+        </span>
+      )
+    },
+    {
+      key: 'percentage',
+      header: 'Percentage',
+      render: (value) => (
+        <span className="text-gray-700 dark:text-gray-300">
+          {value}%
+        </span>
+      )
+    }
+  ];
+
+  // Create pie chart data (only categories with tasks)
+  const pieData = Object.entries(categoryTotals)
+    .filter(([_, count]) => count > 0)
+    .map(([category, count]) => ({
+      name: category.charAt(0).toUpperCase() + category.slice(1),
+      value: count,
+      percentage: totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0
+    }));
+
+  // Create bar chart data with individual products only (no Total Tasks)
+  const barData = Object.entries(productCounts)
+    .filter(([_, count]) => count > 0)
+    .map(([product, count], index) => ({
+      name: product.charAt(0).toUpperCase() + product.slice(1),
+      tasks: count,
+      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+    }));
+
+  return {
+    tableData,
+    tableColumns,
+    pieData,
+    barData
+  };
+};
+
+/**
+ * Get product analytics card props
+ * @param {Array} tasks - Array of task objects
+ * @param {boolean} isLoading - Loading state
+ * @returns {Object} Product analytics card props
+ */
+export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
+  const productData = calculateProductAnalyticsData(tasks);
+  
+  // Calculate totals for chart titles
+  const totalTasks = tasks?.length || 0;
+  const totalHours = tasks?.reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0) || 0;
+  
+  return {
+    title: "Product Analytics",
+    productTableData: productData.tableData,
+    productTableColumns: productData.tableColumns,
+    productPieData: productData.pieData,
+    productPieTitle: `Product Distribution (${totalTasks} tasks, ${totalHours}h)`,
+    productPieColors: CHART_COLORS.DEFAULT,
+    productBarData: productData.barData,
+    productBarTitle: `Product Tasks (${totalTasks} tasks, ${totalHours}h)`,
+    productBarColors: CHART_COLORS.DEFAULT,
+    className: "",
+    isLoading
+  };
+};

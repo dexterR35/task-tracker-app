@@ -1,10 +1,11 @@
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 
 const SimplePieChart = ({ 
   data, 
   title, 
-  colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"],
+  colors = CHART_COLORS.DEFAULT,
   className = "",
   showLeaderLines = true,
   leaderLineLength = 25,

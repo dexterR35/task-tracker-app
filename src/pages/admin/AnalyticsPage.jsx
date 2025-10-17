@@ -3,7 +3,8 @@ import { useAppData } from "@/hooks/useAppData";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
-import { getMarketsByUsersCardProps, getMarketingAnalyticsCardProps, getAcquisitionAnalyticsCardProps } from "@/components/Cards/analyticsCardConfig";
+import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
+import { getMarketsByUsersCardProps, getMarketingAnalyticsCardProps, getAcquisitionAnalyticsCardProps, getProductAnalyticsCardProps } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
@@ -75,7 +76,12 @@ const AnalyticsPage = () => {
       id: 'acquisition-analytics',
       name: 'Acquisition Analytics',
       description: 'Acquisition metrics and insights'
-    }
+    },
+    {
+      id: 'product-analytics',
+      name: 'Product Analytics',
+      description: 'Product breakdown and analytics'
+    },
   ];
 
   // Analytics data object
@@ -85,6 +91,7 @@ const AnalyticsPage = () => {
     users,
     isLoading
   };
+
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection
 
@@ -169,11 +176,15 @@ const AnalyticsPage = () => {
         const marketingData = getMarketingAnalyticsCardProps(tasks, false);
         exportData = marketingData.marketingTableData;
         filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-      } else if (selectedCards.includes('acquisition-analytics-card')) {
-        const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
-        exportData = acquisitionData.acquisitionTableData;
-        filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-      } else {
+          } else if (selectedCards.includes('acquisition-analytics-card')) {
+            const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
+            exportData = acquisitionData.acquisitionTableData;
+            filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+          } else if (selectedCards.includes('product-analytics-card')) {
+            const productData = getProductAnalyticsCardProps(tasks, false);
+            exportData = productData.productTableData;
+            filename = `product_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+          } else {
         // Fallback to current active tab
         if (activeTab === 'markets-by-users') {
           const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
@@ -187,7 +198,11 @@ const AnalyticsPage = () => {
           const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
           exportData = acquisitionData.acquisitionTableData;
           filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-        }
+        } else if (activeTab === 'product-analytics') {
+          const productData = getProductAnalyticsCardProps(tasks, false);
+          exportData = productData.productTableData;
+          filename = `product_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+          }
       }
       
       if (!exportData) {
@@ -467,6 +482,32 @@ const AnalyticsPage = () => {
                     </div>
                     <AcquisitionAnalyticsCard 
                       {...getAcquisitionAnalyticsCardProps(
+                        analyticsData.tasks,
+                        analyticsData.isLoading
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'product-analytics' ? (
+              <div className="relative">
+                <div id="product-analytics-card">
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCards.includes('product-analytics-card')}
+                          onChange={() => handleCardSelection('product-analytics-card')}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                        />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
+                          Export
+                        </span>
+                      </label>
+                    </div>
+                    <ProductAnalyticsCard 
+                      {...getProductAnalyticsCardProps(
                         analyticsData.tasks,
                         analyticsData.isLoading
                       )}

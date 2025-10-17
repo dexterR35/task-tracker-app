@@ -445,7 +445,7 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.ACTIONS]: {
     title: "Task Statistics",
     subtitle: "View All",
-    description: "Overview",
+    description: "Total Tasks",
     icon: Icons.buttons.add,
     color: (data) => getCardColor("actions", data),
     getBadge: (data) => ({
@@ -533,7 +533,7 @@ export const SMALL_CARD_CONFIGS = {
         },
         {
           icon: Icons.generic.warning,
-          label: "Declined Quantity",
+          label: "Variation Name",
           value: declinedQuantity.toString(),
         },
       ];
@@ -543,7 +543,7 @@ export const SMALL_CARD_CONFIGS = {
   // Analytics card configurations
   [SMALL_CARD_TYPES.ANALYTICS_TASK_OVERVIEW]: {
     title: 'Task Overview',
-    subtitle: (data) => data.userName || data.reporterName || 'Overview',
+    subtitle: (data) => data.userName || data.reporterName || 'Total Tasks',
     description: 'Total Tasks',
     icon: Icons.generic.task,
     color: (data) => getCardColor('analytics-task-overview', data),
@@ -650,7 +650,7 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.ANALYTICS_ACQUISITION]: {
     title: 'Acquisition',
     subtitle: 'Acquisition Tasks',
-    description: 'ACQ Task ',
+    description: 'ACQ Tasks ',
     icon: Icons.generic.users,
     color: (data) => getCardColor('analytics-acquisition', data),
     getValue: (data) => (data.acquisitionData?.totalTasks || 0).toString(),
