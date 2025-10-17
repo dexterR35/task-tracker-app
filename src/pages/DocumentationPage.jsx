@@ -15,7 +15,7 @@ const DocumentationPage = () => {
       id: 'monthlogic',
       name: 'Month Logic',
       icon: Icons.generic.calendar,
-      description: 'Month-based organization system'
+      description: 'Month-based organization system, permissions RBAC, generated board'
     },
     {
       id: 'deliverables',
@@ -27,13 +27,25 @@ const DocumentationPage = () => {
       id: 'analytics',
       name: 'Analytics',
       icon: Icons.generic.chart,
-      description: 'Analytics and reporting architecture'
+      description: 'Analytics and reporting architecture, calculation logic, flow, basic, calculation cards'
     },
     {
       id: 'cards',
       name: 'Cards',
       icon: Icons.generic.deliverable,
       description: 'Card components and layouts'
+    },
+    {
+      id: 'colorsystem',
+      name: 'Color System',
+      icon: Icons.generic.design,
+      description: 'Design system colors and theming'
+    },
+    {
+      id: 'architecture',
+      name: 'Architecture',
+      icon: Icons.generic.settings,
+      description: 'Database structure, Redux state management, system architecture'
     },
   ];
 
@@ -49,6 +61,10 @@ const DocumentationPage = () => {
         return <AnalyticsDocumentation />;
       case 'cards':
         return <CardsDocumentation />;
+      case 'colorsystem':
+        return <ColorSystemDocumentation />;
+      case 'architecture':
+        return <ArchitectureDocumentation />;
       default:
         return <TaskFormDocumentation />;
     }
@@ -1138,6 +1154,60 @@ const MonthLogicDocumentation = () => {
               ))}
             </div>
           </section>
+
+          {/* RBAC Permissions */}
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">RBAC Permissions System</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-3">User Roles</h3>
+                <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-2">
+                  <li><strong>Admin:</strong> Full system access and management</li>
+                  <li><strong>User:</strong> Standard user with limited permissions</li>
+                  <li><strong>Reporter:</strong> Can view and report on tasks</li>
+                  <li><strong>Viewer:</strong> Read-only access to data</li>
+                </ul>
+              </div>
+              
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3">Permission Levels</h3>
+                <ul className="text-sm text-green-800 dark:text-green-200 space-y-2">
+                  <li><strong>Create:</strong> Add new tasks and data</li>
+                  <li><strong>Read:</strong> View existing data</li>
+                  <li><strong>Update:</strong> Modify existing data</li>
+                  <li><strong>Delete:</strong> Remove data (admin only)</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Generated Board */}
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Generated Board System</h2>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg">
+              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-3">Month Board Generation</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">Automatic Generation</h4>
+                  <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                    <li>• Monthly board creation</li>
+                    <li>• Task organization by month</li>
+                    <li>• Progress tracking</li>
+                    <li>• Analytics generation</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">Board Features</h4>
+                  <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+                    <li>• Real-time updates</li>
+                    <li>• Export capabilities</li>
+                    <li>• Progress visualization</li>
+                    <li>• Team collaboration</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -1472,6 +1542,98 @@ const AnalyticsDocumentation = () => {
           </section>
         </div>
       </div>
+
+      {/* Calculation Logic */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Calculation Logic & Flow</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Basic Calculations</h3>
+            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+              <li><strong>Time Tracking:</strong> Task duration calculations</li>
+              <li><strong>Progress Metrics:</strong> Completion percentages</li>
+              <li><strong>Performance KPIs:</strong> Efficiency measurements</li>
+              <li><strong>Resource Allocation:</strong> Workload distribution</li>
+            </ul>
+          </div>
+          
+          <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+            <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3">Calculation Flow</h3>
+            <ul className="text-sm text-green-800 dark:text-green-200 space-y-2">
+              <li><strong>Data Collection:</strong> Gather task and time data</li>
+              <li><strong>Processing:</strong> Apply calculation algorithms</li>
+              <li><strong>Aggregation:</strong> Combine metrics by period</li>
+              <li><strong>Visualization:</strong> Display in charts and cards</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Calculation Cards Analytics */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Calculation Cards Analytics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+            <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Markets by Users</h3>
+            <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+              <li>• Market distribution analysis</li>
+              <li>• User performance metrics</li>
+              <li>• Geographic breakdown</li>
+              <li>• Market share calculations</li>
+            </ul>
+          </div>
+          
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+            <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Marketing Analytics</h3>
+            <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+              <li>• Campaign performance</li>
+              <li>• ROI calculations</li>
+              <li>• Conversion rates</li>
+              <li>• Channel effectiveness</li>
+            </ul>
+          </div>
+          
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+            <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">Acquisition Analytics</h3>
+            <ul className="text-sm text-red-800 dark:text-red-200 space-y-1">
+              <li>• User acquisition costs</li>
+              <li>• Growth metrics</li>
+              <li>• Retention rates</li>
+              <li>• Lifetime value</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Analytics Summary */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Analytics Summary</h2>
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Key Features</h3>
+              <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                <li>• Real-time data processing</li>
+                <li>• Interactive visualizations</li>
+                <li>• Export capabilities (CSV, PDF)</li>
+                <li>• Customizable dashboards</li>
+                <li>• Performance monitoring</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Data Sources</h3>
+              <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                <li>• Task completion data</li>
+                <li>• Time tracking metrics</li>
+                <li>• User activity logs</li>
+                <li>• Market performance data</li>
+                <li>• Deliverable metrics</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
@@ -1696,6 +1858,258 @@ const CardsDocumentation = () => {
           </section>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Color System Documentation Component
+const ColorSystemDocumentation = () => {
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Color System</h2>
+        <p className="text-gray-600 dark:text-gray-400">
+          Comprehensive design system with consistent colors, themes, and visual hierarchy.
+        </p>
+      </div>
+
+      {/* Primary Colors */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Primary Colors</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-blue-500 p-4 rounded-lg text-white text-center">
+            <div className="font-semibold">Blue</div>
+            <div className="text-sm opacity-90">Primary</div>
+          </div>
+          <div className="bg-green-500 p-4 rounded-lg text-white text-center">
+            <div className="font-semibold">Green</div>
+            <div className="text-sm opacity-90">Success</div>
+          </div>
+          <div className="bg-red-500 p-4 rounded-lg text-white text-center">
+            <div className="font-semibold">Red</div>
+            <div className="text-sm opacity-90">Error</div>
+          </div>
+          <div className="bg-yellow-500 p-4 rounded-lg text-white text-center">
+            <div className="font-semibold">Yellow</div>
+            <div className="text-sm opacity-90">Warning</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Theme Colors */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Theme Colors</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Light Theme</h4>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
+                <span className="text-sm">Background: white</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-gray-100 rounded"></div>
+                <span className="text-sm">Surface: gray-100</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-gray-900 rounded"></div>
+                <span className="text-sm">Text: gray-900</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <h4 className="font-semibold text-white mb-3">Dark Theme</h4>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-gray-800 border border-gray-600 rounded"></div>
+                <span className="text-sm text-white">Background: gray-800</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-gray-700 rounded"></div>
+                <span className="text-sm text-white">Surface: gray-700</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-white rounded"></div>
+                <span className="text-sm text-white">Text: white</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Component Colors */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Component Colors</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Cards & Surfaces</h4>
+            <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+              <li>• Card backgrounds</li>
+              <li>• Modal surfaces</li>
+              <li>• Dropdown menus</li>
+              <li>• Tooltip backgrounds</li>
+            </ul>
+          </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Interactive Elements</h4>
+            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+              <li>• Button states</li>
+              <li>• Link colors</li>
+              <li>• Focus indicators</li>
+              <li>• Hover effects</li>
+            </ul>
+          </div>
+          
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">Status Colors</h4>
+            <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+              <li>• Success states</li>
+              <li>• Error messages</li>
+              <li>• Warning alerts</li>
+              <li>• Info notifications</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// Architecture Documentation Component
+const ArchitectureDocumentation = () => {
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">System Architecture</h2>
+        <p className="text-gray-600 dark:text-gray-400">
+          Complete overview of database structure, Redux state management, and system architecture.
+        </p>
+      </div>
+
+      {/* Database Structure */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Database Structure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Firestore Collections</h4>
+            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+              <li><strong>users:</strong> User accounts and permissions</li>
+              <li><strong>reporters:</strong> Reporter profiles and assignments</li>
+              <li><strong>tasks:</strong> Task data and metadata</li>
+              <li><strong>deliverables:</strong> Deliverable configurations</li>
+              <li><strong>months:</strong> Month-based organization</li>
+              <li><strong>settings:</strong> Application settings</li>
+            </ul>
+          </div>
+          
+          <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+            <h4 className="font-semibold text-green-900 dark:text-green-100 mb-3">Data Relationships</h4>
+            <ul className="text-sm text-green-800 dark:text-green-200 space-y-2">
+              <li><strong>Tasks → Users:</strong> Many-to-one relationship</li>
+              <li><strong>Tasks → Reporters:</strong> Many-to-one relationship</li>
+              <li><strong>Tasks → Deliverables:</strong> Many-to-many relationship</li>
+              <li><strong>Users → Permissions:</strong> Role-based access</li>
+              <li><strong>Months → Tasks:</strong> Temporal organization</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Redux State Management */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Redux State Management</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Auth Slice</h4>
+            <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+              <li>• User authentication state</li>
+              <li>• Login/logout actions</li>
+              <li>• Permission management</li>
+              <li>• Role-based access</li>
+            </ul>
+          </div>
+          
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Data Slices</h4>
+            <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+              <li>• Tasks management</li>
+              <li>• Users data</li>
+              <li>• Reporters data</li>
+              <li>• Deliverables config</li>
+            </ul>
+          </div>
+          
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+            <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">UI State</h4>
+            <ul className="text-sm text-red-800 dark:text-red-200 space-y-1">
+              <li>• Modal states</li>
+              <li>• Loading states</li>
+              <li>• Form states</li>
+              <li>• Theme preferences</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* System Architecture */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">System Architecture</h3>
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Frontend Architecture</h4>
+              <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                <li><strong>React 18:</strong> Modern React with hooks</li>
+                <li><strong>Redux Toolkit:</strong> State management</li>
+                <li><strong>React Router:</strong> Client-side routing</li>
+                <li><strong>Tailwind CSS:</strong> Utility-first styling</li>
+                <li><strong>Vite:</strong> Fast build tool</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Backend Services</h4>
+              <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                <li><strong>Firebase:</strong> Backend-as-a-Service</li>
+                <li><strong>Firestore:</strong> NoSQL database</li>
+                <li><strong>Firebase Auth:</strong> Authentication</li>
+                <li><strong>Firebase Storage:</strong> File storage</li>
+                <li><strong>Firebase Functions:</strong> Serverless functions</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* API Structure */}
+      <section className="mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">API Structure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-lg">
+            <h4 className="font-semibold text-indigo-900 dark:text-indigo-100 mb-3">RTK Query APIs</h4>
+            <ul className="text-sm text-indigo-800 dark:text-indigo-200 space-y-2">
+              <li><strong>tasksApi:</strong> Task CRUD operations</li>
+              <li><strong>usersApi:</strong> User management</li>
+              <li><strong>reportersApi:</strong> Reporter operations</li>
+              <li><strong>deliverablesApi:</strong> Deliverable config</li>
+              <li><strong>monthsApi:</strong> Month management</li>
+            </ul>
+          </div>
+          
+          <div className="bg-pink-50 dark:bg-pink-900/20 p-6 rounded-lg">
+            <h4 className="font-semibold text-pink-900 dark:text-pink-100 mb-3">Data Flow</h4>
+            <ul className="text-sm text-pink-800 dark:text-pink-200 space-y-2">
+              <li><strong>Component → API:</strong> Direct API calls</li>
+              <li><strong>API → Firestore:</strong> Database operations</li>
+              <li><strong>Cache Management:</strong> Automatic caching</li>
+              <li><strong>Real-time Updates:</strong> Live data sync</li>
+              <li><strong>Error Handling:</strong> Centralized error management</li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
