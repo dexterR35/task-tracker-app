@@ -102,8 +102,9 @@ const AnalyticsPage = () => {
     getCachedMarketsByUsersCardProps(
       analyticsData.tasks,
       analyticsData.users,
+      analyticsData.selectedMonth,
       analyticsData.isLoading
-    ), [analyticsData.tasks, analyticsData.users, analyticsData.isLoading]
+    ), [analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]
   );
 
   const marketingAnalyticsCardProps = useMemo(() => 

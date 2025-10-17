@@ -5,7 +5,7 @@
  */
 
 import { CARD_SYSTEM } from '@/constants';
-import { useAnalyticsCache, CACHE_CONFIG } from '@/utils/analyticsCache';
+// Removed unused analytics cache import
 
 // Markets by Users Card Types
 export const MARKETS_BY_USERS_CARD_TYPES = CARD_SYSTEM.ANALYTICS_CARD_TYPES;
@@ -347,8 +347,6 @@ const calculateBiaxialBarData = (tasks) => {
 const calculateUsersBiaxialData = (tasks, users) => {
   if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
   
-  console.log('🔄 calculateUsersBiaxialData called - tasks:', tasks.length, 'users:', users.length);
-  
   // Get all unique users from actual tasks
   const userStats = {};
   
@@ -437,32 +435,9 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
   };
 };
 
-// Properly cached version with memoization
-const marketsByUsersCache = new Map();
-
+// Simplified version - let React's useMemo handle caching
 export const getCachedMarketsByUsersCardProps = (tasks, users, month, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
-  // Create cache key based on data
-  const cacheKey = `${tasks?.length || 0}_${users?.length || 0}_${month?.monthId || 'current'}_${isLoading}`;
-  
-  // Check if we have cached result
-  if (marketsByUsersCache.has(cacheKey)) {
-    console.log('✅ MarketsByUsers CACHE HIT');
-    return marketsByUsersCache.get(cacheKey);
-  }
-  
-  console.log('❌ MarketsByUsers CACHE MISS - calculating...');
-  
-  // Calculate and cache result
-  const result = getMarketsByUsersCardProps(tasks, users, isLoading, options);
-  marketsByUsersCache.set(cacheKey, result);
-  
-  // Clean up cache if it gets too large
-  if (marketsByUsersCache.size > 10) {
-    const firstKey = marketsByUsersCache.keys().next().value;
-    marketsByUsersCache.delete(firstKey);
-  }
-  
-  return result;
+  return getMarketsByUsersCardProps(tasks, users, isLoading, options);
 };
 
 // ============================================================================
