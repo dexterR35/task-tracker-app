@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
@@ -16,6 +16,9 @@ const AnalyticsPage = () => {
   
   // Card selection state
   const [selectedCards, setSelectedCards] = useState([]);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('markets-by-users');
   
   const {
     tasks, // Real-time tasks data (selected or current month)
@@ -42,14 +45,6 @@ const AnalyticsPage = () => {
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Analytics data object (keeping for future use)
-  const analyticsData = {
-    tasks,
-    selectedMonth,
-    users,
-    isLoading
-  };
-
   // Card selection handlers
   const handleCardSelection = (cardId) => {
     setSelectedCards(prev => 
@@ -57,6 +52,38 @@ const AnalyticsPage = () => {
         ? prev.filter(id => id !== cardId)
         : [...prev, cardId]
     );
+  };
+
+  // Tab change handler
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+  };
+
+  // Analytics tabs configuration
+  const analyticsTabs = [
+    {
+      id: 'markets-by-users',
+      name: 'Markets by Users',
+      description: 'Task breakdown by markets and users'
+    },
+    {
+      id: 'marketing-analytics',
+      name: 'Marketing Analytics',
+      description: 'Marketing performance and analytics'
+    },
+    {
+      id: 'acquisition-analytics',
+      name: 'Acquisition Analytics',
+      description: 'Acquisition metrics and insights'
+    }
+  ];
+
+  // Analytics data object
+  const analyticsData = {
+    tasks,
+    selectedMonth,
+    users,
+    isLoading
   };
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection
@@ -130,15 +157,50 @@ const AnalyticsPage = () => {
     setExportStep('Preparing table data...');
     
     try {
-      // Get the Markets by Users card data
-      const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
+      let exportData = null;
+      let filename = '';
+      
+      // Get data based on selected cards or current active tab
+      if (selectedCards.includes('market-user-breakdown-card')) {
+        const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
+        exportData = marketsByUsersData.analyticsByUserMarketsTableData;
+        filename = `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+      } else if (selectedCards.includes('marketing-analytics-card')) {
+        const marketingData = getMarketingAnalyticsCardProps(tasks, false);
+        exportData = marketingData.marketingTableData;
+        filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+      } else if (selectedCards.includes('acquisition-analytics-card')) {
+        const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
+        exportData = acquisitionData.acquisitionTableData;
+        filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+      } else {
+        // Fallback to current active tab
+        if (activeTab === 'markets-by-users') {
+          const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
+          exportData = marketsByUsersData.analyticsByUserMarketsTableData;
+          filename = `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+        } else if (activeTab === 'marketing-analytics') {
+          const marketingData = getMarketingAnalyticsCardProps(tasks, false);
+          exportData = marketingData.marketingTableData;
+          filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+        } else if (activeTab === 'acquisition-analytics') {
+          const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
+          exportData = acquisitionData.acquisitionTableData;
+          filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+        }
+      }
+      
+      if (!exportData) {
+        showError('No data available for export');
+        return;
+      }
       
       setExportProgress(50);
       setExportStep('Generating CSV file...');
       
-      // Export only the table data, not all database tasks
-      const success = exportAnalyticsToCSV(marketsByUsersData.analyticsByUserMarketsTableData, 'markets_by_users_table', {
-        filename: `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`
+      // Export the table data
+      const success = exportAnalyticsToCSV(exportData, 'analytics_table', {
+        filename: filename
       });
       
       setExportProgress(100);
@@ -309,102 +371,111 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-
-      {/* Chart-based Analytics Cards */}
+      {/* Analytics Tabs */}
       {!isLoading && (
         <div className="space-y-6">
-          {/* Market User Breakdown Card */}
-          <div className="relative">
-            <div id="market-user-breakdown-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('market-user-breakdown-card')}
-                      onChange={() => handleCardSelection('market-user-breakdown-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <MarketsByUsersCard 
-                  {...getMarketsByUsersCardProps(
-                    analyticsData.tasks,
-                    analyticsData.users,
-                    analyticsData.isLoading
-                  )}
-                />
-                
-              </div>
-            </div>
-          </div>
-          <hr className="my-4 border-gray-200 dark:border-gray-700" />
-          {/* Marketing Analytics Card */}
-          <div className="relative">
-            <div id="marketing-analytics-card">
-              <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('marketing-analytics-card')}
-                      onChange={() => handleCardSelection('marketing-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                    />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
-                </div>
-                <MarketingAnalyticsCard 
-                  {...getMarketingAnalyticsCardProps(
-                    analyticsData.tasks,
-                    analyticsData.isLoading
-                  )}
-                />
-              </div>
-            </div>
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex space-x-8">
+              {analyticsTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
           </div>
 
-          <hr className="my-4 border-gray-200 dark:border-gray-700" />
-          
-          {/* Acquisition Analytics Card */}
-          <div className="relative">
-            <div id="acquisition-analytics-card">
+          {/* Tab Content */}
+          <div>
+            {activeTab === 'markets-by-users' ? (
               <div className="relative">
-                <div className="absolute top-2 right-2 z-10">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCards.includes('acquisition-analytics-card')}
-                      onChange={() => handleCardSelection('acquisition-analytics-card')}
-                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                <div id="market-user-breakdown-card">
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCards.includes('market-user-breakdown-card')}
+                          onChange={() => handleCardSelection('market-user-breakdown-card')}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                        />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
+                          Export
+                        </span>
+                      </label>
+                    </div>
+                    <MarketsByUsersCard 
+                      {...getMarketsByUsersCardProps(
+                        analyticsData.tasks,
+                        analyticsData.users,
+                        analyticsData.isLoading
+                      )}
                     />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                      Export
-                    </span>
-                  </label>
+                  </div>
                 </div>
-                <AcquisitionAnalyticsCard 
-                  {...getAcquisitionAnalyticsCardProps(
-                    analyticsData.tasks,
-                    analyticsData.isLoading
-                  )}
-                />
               </div>
-            </div>
+            ) : activeTab === 'marketing-analytics' ? (
+              <div className="relative">
+                <div id="marketing-analytics-card">
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCards.includes('marketing-analytics-card')}
+                          onChange={() => handleCardSelection('marketing-analytics-card')}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                        />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
+                          Export
+                        </span>
+                      </label>
+                    </div>
+                    <MarketingAnalyticsCard 
+                      {...getMarketingAnalyticsCardProps(
+                        analyticsData.tasks,
+                        analyticsData.isLoading
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'acquisition-analytics' ? (
+              <div className="relative">
+                <div id="acquisition-analytics-card">
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCards.includes('acquisition-analytics-card')}
+                          onChange={() => handleCardSelection('acquisition-analytics-card')}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                        />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
+                          Export
+                        </span>
+                      </label>
+                    </div>
+                    <AcquisitionAnalyticsCard 
+                      {...getAcquisitionAnalyticsCardProps(
+                        analyticsData.tasks,
+                        analyticsData.isLoading
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
-
-
-
-
-
-
-
-
         </div>
       )}
 
@@ -477,6 +548,7 @@ const AnalyticsPage = () => {
           </div>
         </div>
       )}
+
 
     </div>
   );

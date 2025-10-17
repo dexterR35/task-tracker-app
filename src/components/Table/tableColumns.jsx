@@ -367,7 +367,7 @@ const createUserColumns = () => [
     header: 'Permissions',
     cell: ({ getValue }) => {
       const permissions = getValue();
-      if (!permissions?.length) {
+      if (!Array.isArray(permissions) || !permissions.length) {
         return <span className="text-gray-500">No permissions</span>;
       }
       

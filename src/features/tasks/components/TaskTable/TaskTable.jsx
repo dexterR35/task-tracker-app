@@ -326,6 +326,7 @@ const TaskTable = ({
         showBulkActions={true}
         bulkActions={bulkActions}
         initialColumnVisibility={initialColumnVisibility}
+        reporters={reporters}
       />
 
 

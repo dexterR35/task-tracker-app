@@ -416,12 +416,15 @@ const TanStackTable = forwardRef(({
         await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 300ms to 50ms
       }
 
-      // Perform actual export
+      // Perform actual export with reporters data for proper name resolution
       const success = exportToCSV(
         table.getFilteredRowModel().rows.map((row) => row.original),
         columns,
         tableType,
-        { filename: `${tableType}_export_${new Date().toISOString().split('T')[0]}.csv` }
+        { 
+          filename: `${tableType}_export_${new Date().toISOString().split('T')[0]}.csv`,
+          reporters: additionalProps?.reporters || []
+        }
       );
 
       if (success) {
@@ -441,7 +444,7 @@ const TanStackTable = forwardRef(({
       setExportProgress(0);
       setExportStep('');
     }
-  }, [table, columns, tableType]);
+  }, [table, columns, tableType, additionalProps?.reporters]);
 
   // Memoized values
   const selectedCount = getSelectedCount(rowSelection);

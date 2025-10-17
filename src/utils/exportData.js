@@ -37,22 +37,24 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
     return '-';
   }
   
-  // Handle date columns (excluding done)
+  // Handle date columns (excluding done) - use simple date format without nanoseconds
   const dateColumns = ['startDate', 'endDate', 'dateCreated', 'createdByName'];
   if (dateColumns.includes(columnId)) {
     const normalizedDate = normalizeTimestamp(value);
     if (normalizedDate) {
-      const formattedDate = formatDate(normalizedDate, 'dd MMM yyyy, HH:mm', true); // Romanian locale
+      // Use simple date format: YYYY-MM-DD HH:mm
+      const formattedDate = formatDate(normalizedDate, 'yyyy-MM-dd HH:mm', false);
       return formattedDate !== 'N/A' ? formattedDate : '-';
     }
     return '-';
   }
   
-  // Handle date created with Romanian format
+  // Handle date created with simple format
   if (columnId === 'createdAt') {
     const normalizedDate = normalizeTimestamp(value);
     if (normalizedDate) {
-      const formattedDate = formatDate(normalizedDate, 'dd MMM yyyy, HH:mm', true); // Romanian locale
+      // Use simple date format: YYYY-MM-DD HH:mm
+      const formattedDate = formatDate(normalizedDate, 'yyyy-MM-dd HH:mm', false);
       return formattedDate !== 'N/A' ? formattedDate : '-';
     }
     return '-';
@@ -103,6 +105,28 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
     return '-';
   }
   
+  // Handle Jira Link - make it a full clickable URL
+  if (columnId === 'taskName' || columnId === 'jiraLink') {
+    if (!value) return '-';
+    
+    // If it's already a full URL, return it
+    if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
+      return value;
+    }
+    
+    // If it's a Jira ticket number (like GIMODEAR-123), make it a full URL
+    if (typeof value === 'string' && value.match(/^[A-Z]+-\d+$/)) {
+      return `https://yourcompany.atlassian.net/browse/${value}`;
+    }
+    
+    // If it's just a number, assume it's a ticket number and add GIMODEAR prefix
+    if (typeof value === 'string' && value.match(/^\d+$/)) {
+      return `https://yourcompany.atlassian.net/browse/GIMODEAR-${value}`;
+    }
+    
+    return value;
+  }
+
   // Handle reporter - show name instead of UID/ID
   if (columnId === 'reporters') {
     // If it's already a name, return it
