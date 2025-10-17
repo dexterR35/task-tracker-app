@@ -1,10 +1,11 @@
 /**
  * Markets by Users Card Configuration
  * Essential configuration for markets by users table and charts
- * Includes calculation utilities
+ * Includes calculation utilities and caching
  */
 
 import { CARD_SYSTEM } from '@/constants';
+import { useAnalyticsCache, CACHE_CONFIG } from '@/utils/analyticsCache';
 
 // Markets by Users Card Types
 export const MARKETS_BY_USERS_CARD_TYPES = CARD_SYSTEM.ANALYTICS_CARD_TYPES;
@@ -307,6 +308,104 @@ export const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_
   };
 };
 
+// Helper function to calculate biaxial bar data
+const calculateBiaxialBarData = (tasks) => {
+  if (!tasks || tasks.length === 0) return [];
+  
+  // Get all unique markets from actual tasks
+  const marketStats = {};
+  
+  tasks.forEach(task => {
+    const taskMarkets = task.data_task?.markets || task.markets || [];
+    const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+    
+    taskMarkets.forEach(market => {
+      if (market) {
+        if (!marketStats[market]) {
+          marketStats[market] = {
+            tasks: 0,
+            hours: 0
+          };
+        }
+        marketStats[market].tasks += 1;
+        marketStats[market].hours += taskHours;
+      }
+    });
+  });
+  
+  // Convert to array format for the chart
+  return Object.entries(marketStats)
+    .map(([market, stats], index) => ({
+      name: market.toUpperCase(),
+      tasks: stats.tasks,
+      hours: Math.round(stats.hours * 100) / 100, // Round to 2 decimal places
+      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+    }))
+    .sort((a, b) => b.tasks - a.tasks); // Sort by task count descending
+};
+
+const calculateUsersBiaxialData = (tasks, users) => {
+  if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
+  
+  console.log('calculateUsersBiaxialData - tasks:', tasks.length, 'users:', users.length);
+  
+  // Get all unique users from actual tasks
+  const userStats = {};
+  
+  tasks.forEach(task => {
+    const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+    
+    // Try multiple possible user fields
+    const createdBy = task.data_task?.createdBy || task.createdBy || task.data_task?.createdByName || task.createdByName;
+    const assignedTo = task.data_task?.assignedTo || task.assignedTo || task.data_task?.assignedToName || task.assignedToName;
+    const reporter = task.data_task?.reporter || task.reporter || task.data_task?.reporterName || task.reporterName;
+    
+    // Use the first available user field
+    const userId = createdBy || assignedTo || reporter;
+    
+    if (userId) {
+      if (!userStats[userId]) {
+        userStats[userId] = {
+          tasks: 0,
+          hours: 0
+        };
+      }
+      userStats[userId].tasks += 1;
+      userStats[userId].hours += taskHours;
+    } else {
+      console.log('No user ID found for task:', task);
+    }
+  });
+  
+  console.log('calculateUsersBiaxialData - userStats:', userStats);
+  
+  // Convert to array format for the chart with user names
+  const result = Object.entries(userStats)
+    .map(([userId, stats], index) => {
+      // Find user name from users array - try multiple ID fields
+      const user = users.find(u => 
+        u.uid === userId || 
+        u.id === userId || 
+        u.email === userId ||
+        u.displayName === userId ||
+        u.name === userId
+      );
+      
+      const userName = user ? (user.displayName || user.name || user.email || `User ${userId}`) : `User ${userId}`;
+      
+      return {
+        name: userName,
+        tasks: stats.tasks,
+        hours: Math.round(stats.hours * 100) / 100, // Round to 2 decimal places
+        color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+      };
+    })
+    .sort((a, b) => b.tasks - a.tasks); // Sort by task count descending
+    
+  console.log('calculateUsersBiaxialData - result:', result);
+  return result;
+};
+
 // Get markets by users card props for direct use with MarketsByUsersCard
 export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
   const calculatedData = calculateMarketsByUsersData(tasks, users, options);
@@ -315,6 +414,12 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
   const totalTasks = tasks?.length || 0;
   const totalHours = tasks?.reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0) || 0;
   
+  // Prepare biaxial bar chart data (tasks and hours per market)
+  const biaxialBarData = calculateBiaxialBarData(tasks);
+  
+  // Prepare users biaxial bar chart data (tasks and hours per user)
+  const usersBiaxialData = calculateUsersBiaxialData(tasks, users);
+
   return {
     title: "Markets by Users",
     analyticsByUserMarketsTableData: calculatedData.tableData,
@@ -325,8 +430,27 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
     userByTaskData: calculatedData.userByTaskData,
     userByTaskTitle: `Users by Task Count (${totalTasks} tasks, ${totalHours}h)`,
     userByTaskColors: CHART_COLORS.USER_BY_TASK,
+    biaxialBarData: biaxialBarData,
+    biaxialBarTitle: `Markets: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+    biaxialTasksColor: CHART_COLORS.DEFAULT[0], // "#3b82f6" - first color from palette
+    biaxialHoursColor: CHART_COLORS.DEFAULT[1], // "#10b981" - second color from palette
+    usersBiaxialData: usersBiaxialData,
+    usersBiaxialTitle: `Users: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+    usersBiaxialTasksColor: CHART_COLORS.DEFAULT[2], // "#f59e0b" - third color from palette
+    usersBiaxialHoursColor: CHART_COLORS.DEFAULT[3], // "#ef4444" - fourth color from palette
     isLoading
   };
+};
+
+// Cached version of getMarketsByUsersCardProps
+export const getCachedMarketsByUsersCardProps = (tasks, users, month, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
+  return useAnalyticsCache(
+    CACHE_CONFIG.KEYS.MARKETS_BY_USERS,
+    (tasks, month, users) => getMarketsByUsersCardProps(tasks, users, isLoading, options),
+    tasks,
+    month,
+    users
+  );
 };
 
 // ============================================================================
@@ -494,11 +618,57 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     value: marketingData.sport[market] || 0
   })).filter(item => item.value > 0);
 
+  // Create biaxial chart data for casino marketing
+  const casinoBiaxialData = sortedMarkets.map(market => {
+    const marketTasks = marketingData.casino[market] || 0;
+    const marketHours = tasks
+      .filter(task => {
+        const products = task.data_task?.products || task.products;
+        const taskMarkets = task.data_task?.markets || task.markets || [];
+        return typeof products === 'string' && 
+               products.includes('marketing') && 
+               products.includes('casino') &&
+               taskMarkets.includes(market);
+      })
+      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+    
+    return {
+      name: market.toUpperCase(),
+      tasks: marketTasks,
+      hours: Math.round(marketHours * 100) / 100,
+      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
+    };
+  }).filter(item => item.tasks > 0);
+
+  // Create biaxial chart data for sport marketing
+  const sportBiaxialData = sortedMarkets.map(market => {
+    const marketTasks = marketingData.sport[market] || 0;
+    const marketHours = tasks
+      .filter(task => {
+        const products = task.data_task?.products || task.products;
+        const taskMarkets = task.data_task?.markets || task.markets || [];
+        return typeof products === 'string' && 
+               products.includes('marketing') && 
+               products.includes('sport') &&
+               taskMarkets.includes(market);
+      })
+      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+    
+    return {
+      name: market.toUpperCase(),
+      tasks: marketTasks,
+      hours: Math.round(marketHours * 100) / 100,
+      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
+    };
+  }).filter(item => item.tasks > 0);
+
   return {
     tableData,
     tableColumns,
     casinoMarketingData,
     sportMarketingData,
+    casinoBiaxialData,
+    sportBiaxialData,
     casinoTotalTasks,
     casinoTotalHours,
     sportTotalTasks,
@@ -520,8 +690,27 @@ export const getMarketingAnalyticsCardProps = (tasks, isLoading = false) => {
     sportMarketingData: calculatedData.sportMarketingData,
     sportMarketingTitle: `Sport Marketing by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
     sportMarketingColors: MARKETING_CHART_COLORS.SPORT,
+    casinoBiaxialData: calculatedData.casinoBiaxialData,
+    casinoBiaxialTitle: `Casino Marketing Tasks & Hours by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
+    casinoBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    casinoBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    sportBiaxialData: calculatedData.sportBiaxialData,
+    sportBiaxialTitle: `Sport Marketing Tasks & Hours by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
+    sportBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    sportBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     isLoading
   };
+};
+
+// Cached version of getMarketingAnalyticsCardProps
+export const getCachedMarketingAnalyticsCardProps = (tasks, month, isLoading = false) => {
+  return useAnalyticsCache(
+    CACHE_CONFIG.KEYS.MARKETING_ANALYTICS,
+    (tasks, month) => getMarketingAnalyticsCardProps(tasks, isLoading),
+    tasks,
+    month,
+    []
+  );
 };
 
 // ============================================================================
@@ -689,11 +878,57 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     value: acquisitionData.sport[market] || 0
   })).filter(item => item.value > 0);
 
+  // Create biaxial chart data for casino acquisition
+  const casinoBiaxialData = sortedMarkets.map(market => {
+    const marketTasks = acquisitionData.casino[market] || 0;
+    const marketHours = tasks
+      .filter(task => {
+        const products = task.data_task?.products || task.products;
+        const taskMarkets = task.data_task?.markets || task.markets || [];
+        return typeof products === 'string' && 
+               products.includes('acquisition') && 
+               products.includes('casino') &&
+               taskMarkets.includes(market);
+      })
+      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+    
+    return {
+      name: market.toUpperCase(),
+      tasks: marketTasks,
+      hours: Math.round(marketHours * 100) / 100,
+      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
+    };
+  }).filter(item => item.tasks > 0);
+
+  // Create biaxial chart data for sport acquisition
+  const sportBiaxialData = sortedMarkets.map(market => {
+    const marketTasks = acquisitionData.sport[market] || 0;
+    const marketHours = tasks
+      .filter(task => {
+        const products = task.data_task?.products || task.products;
+        const taskMarkets = task.data_task?.markets || task.markets || [];
+        return typeof products === 'string' && 
+               products.includes('acquisition') && 
+               products.includes('sport') &&
+               taskMarkets.includes(market);
+      })
+      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+    
+    return {
+      name: market.toUpperCase(),
+      tasks: marketTasks,
+      hours: Math.round(marketHours * 100) / 100,
+      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
+    };
+  }).filter(item => item.tasks > 0);
+
   return {
     tableData,
     tableColumns,
     casinoAcquisitionData,
     sportAcquisitionData,
+    casinoBiaxialData,
+    sportBiaxialData,
     casinoTotalTasks,
     casinoTotalHours,
     sportTotalTasks,
@@ -715,8 +950,27 @@ export const getAcquisitionAnalyticsCardProps = (tasks, isLoading = false) => {
     sportAcquisitionData: calculatedData.sportAcquisitionData,
     sportAcquisitionTitle: `Sport Acquisition by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
     sportAcquisitionColors: ACQUISITION_CHART_COLORS.SPORT,
+    casinoBiaxialData: calculatedData.casinoBiaxialData,
+    casinoBiaxialTitle: `Casino Acquisition Tasks & Hours by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
+    casinoBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    casinoBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    sportBiaxialData: calculatedData.sportBiaxialData,
+    sportBiaxialTitle: `Sport Acquisition Tasks & Hours by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
+    sportBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    sportBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     isLoading
   };
+};
+
+// Cached version of getAcquisitionAnalyticsCardProps
+export const getCachedAcquisitionAnalyticsCardProps = (tasks, month, isLoading = false) => {
+  return useAnalyticsCache(
+    CACHE_CONFIG.KEYS.ACQUISITION_ANALYTICS,
+    (tasks, month) => getAcquisitionAnalyticsCardProps(tasks, isLoading),
+    tasks,
+    month,
+    []
+  );
 };
 
 // ============================================================================
@@ -914,8 +1168,8 @@ export const calculateProductAnalyticsData = (tasks) => {
     }
   ];
 
-  // Create pie chart data (only categories with tasks)
-  const pieData = Object.entries(categoryTotals)
+  // Create first pie chart data (categories with tasks)
+  const categoryPieData = Object.entries(categoryTotals)
     .filter(([_, count]) => count > 0)
     .map(([category, count]) => ({
       name: category.charAt(0).toUpperCase() + category.slice(1),
@@ -923,20 +1177,41 @@ export const calculateProductAnalyticsData = (tasks) => {
       percentage: totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0
     }));
 
-  // Create bar chart data with individual products only (no Total Tasks)
-  const barData = Object.entries(productCounts)
+  // Create second pie chart data (individual products with tasks)
+  const productPieData = Object.entries(productCounts)
     .filter(([_, count]) => count > 0)
     .map(([product, count], index) => ({
       name: product.charAt(0).toUpperCase() + product.slice(1),
-      tasks: count,
+      value: count,
       color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
     }));
+
+  // Create biaxial chart data for product analytics
+  const biaxialData = Object.entries(productCounts)
+    .filter(([_, count]) => count > 0)
+    .map(([product, count], index) => {
+      const productHours = tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return products && products.toLowerCase().trim() === product;
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      return {
+        name: product.charAt(0).toUpperCase() + product.slice(1),
+        tasks: count,
+        hours: Math.round(productHours * 100) / 100,
+        color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+      };
+    });
 
   return {
     tableData,
     tableColumns,
-    pieData,
-    barData
+    categoryPieData,
+    productPieData,
+    biaxialData,
+    categoryTotals
   };
 };
 
@@ -953,17 +1228,55 @@ export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
   const totalTasks = tasks?.length || 0;
   const totalHours = tasks?.reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0) || 0;
   
+  // Split biaxial data into two charts (categories and products)
+  const categoryBiaxialData = Object.entries(productData.categoryTotals)
+    .filter(([_, count]) => count > 0)
+    .map(([category, count], index) => {
+      const categoryHours = tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return products && products.toLowerCase().includes(category);
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      return {
+        name: category.charAt(0).toUpperCase() + category.slice(1),
+        tasks: count,
+        hours: Math.round(categoryHours * 100) / 100,
+        color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+      };
+    });
+
   return {
     title: "Product Analytics",
     productTableData: productData.tableData,
     productTableColumns: productData.tableColumns,
-    productPieData: productData.pieData,
-    productPieTitle: `Product Distribution (${totalTasks} tasks, ${totalHours}h)`,
+    categoryPieData: productData.categoryPieData,
+    categoryPieTitle: `Product Categories (${totalTasks} tasks, ${totalHours}h)`,
+    categoryPieColors: CHART_COLORS.DEFAULT,
+    productPieData: productData.productPieData,
+    productPieTitle: `Individual Products (${totalTasks} tasks, ${totalHours}h)`,
     productPieColors: CHART_COLORS.DEFAULT,
-    productBarData: productData.barData,
-    productBarTitle: `Product Tasks (${totalTasks} tasks, ${totalHours}h)`,
-    productBarColors: CHART_COLORS.DEFAULT,
+    categoryBiaxialData: categoryBiaxialData,
+    categoryBiaxialTitle: `Product Categories Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+    categoryBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    categoryBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    productBiaxialData: productData.biaxialData,
+    productBiaxialTitle: `Individual Products Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+    productBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    productBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     className: "",
     isLoading
   };
+};
+
+// Cached version of getProductAnalyticsCardProps
+export const getCachedProductAnalyticsCardProps = (tasks, month, isLoading = false) => {
+  return useAnalyticsCache(
+    CACHE_CONFIG.KEYS.PRODUCT_ANALYTICS,
+    (tasks, month) => getProductAnalyticsCardProps(tasks, isLoading),
+    tasks,
+    month,
+    []
+  );
 };

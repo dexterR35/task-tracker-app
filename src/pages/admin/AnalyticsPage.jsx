@@ -4,7 +4,12 @@ import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
-import { getMarketsByUsersCardProps, getMarketingAnalyticsCardProps, getAcquisitionAnalyticsCardProps, getProductAnalyticsCardProps } from "@/components/Cards/analyticsCardConfig";
+import { 
+  getCachedMarketsByUsersCardProps, 
+  getCachedMarketingAnalyticsCardProps, 
+  getCachedAcquisitionAnalyticsCardProps, 
+  getCachedProductAnalyticsCardProps 
+} from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
@@ -169,37 +174,37 @@ const AnalyticsPage = () => {
       
       // Get data based on selected cards or current active tab
       if (selectedCards.includes('market-user-breakdown-card')) {
-        const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
+        const marketsByUsersData = getCachedMarketsByUsersCardProps(tasks, users, selectedMonth, false);
         exportData = marketsByUsersData.analyticsByUserMarketsTableData;
         filename = `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
       } else if (selectedCards.includes('marketing-analytics-card')) {
-        const marketingData = getMarketingAnalyticsCardProps(tasks, false);
+        const marketingData = getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, false);
         exportData = marketingData.marketingTableData;
         filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
           } else if (selectedCards.includes('acquisition-analytics-card')) {
-            const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
+            const acquisitionData = getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, false);
             exportData = acquisitionData.acquisitionTableData;
             filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
           } else if (selectedCards.includes('product-analytics-card')) {
-            const productData = getProductAnalyticsCardProps(tasks, false);
+            const productData = getCachedProductAnalyticsCardProps(tasks, selectedMonth, false);
             exportData = productData.productTableData;
             filename = `product_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
           } else {
         // Fallback to current active tab
         if (activeTab === 'markets-by-users') {
-          const marketsByUsersData = getMarketsByUsersCardProps(tasks, users, false);
+          const marketsByUsersData = getCachedMarketsByUsersCardProps(tasks, users, selectedMonth, false);
           exportData = marketsByUsersData.analyticsByUserMarketsTableData;
           filename = `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
         } else if (activeTab === 'marketing-analytics') {
-          const marketingData = getMarketingAnalyticsCardProps(tasks, false);
+          const marketingData = getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, false);
           exportData = marketingData.marketingTableData;
           filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
         } else if (activeTab === 'acquisition-analytics') {
-          const acquisitionData = getAcquisitionAnalyticsCardProps(tasks, false);
+          const acquisitionData = getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, false);
           exportData = acquisitionData.acquisitionTableData;
           filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
         } else if (activeTab === 'product-analytics') {
-          const productData = getProductAnalyticsCardProps(tasks, false);
+          const productData = getCachedProductAnalyticsCardProps(tasks, selectedMonth, false);
           exportData = productData.productTableData;
           filename = `product_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
           }
@@ -428,7 +433,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <MarketsByUsersCard 
-                      {...getMarketsByUsersCardProps(
+                      {...getCachedMarketsByUsersCardProps(
                         analyticsData.tasks,
                         analyticsData.users,
                         analyticsData.isLoading
@@ -455,7 +460,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <MarketingAnalyticsCard 
-                      {...getMarketingAnalyticsCardProps(
+                      {...getCachedMarketingAnalyticsCardProps(
                         analyticsData.tasks,
                         analyticsData.isLoading
                       )}
@@ -481,7 +486,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <AcquisitionAnalyticsCard 
-                      {...getAcquisitionAnalyticsCardProps(
+                      {...getCachedAcquisitionAnalyticsCardProps(
                         analyticsData.tasks,
                         analyticsData.isLoading
                       )}
@@ -507,7 +512,7 @@ const AnalyticsPage = () => {
                       </label>
                     </div>
                     <ProductAnalyticsCard 
-                      {...getProductAnalyticsCardProps(
+                      {...getCachedProductAnalyticsCardProps(
                         analyticsData.tasks,
                         analyticsData.isLoading
                       )}
