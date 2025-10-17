@@ -42,7 +42,6 @@ const MarketsByUsersCard = ({
             <AnalyticsTable
               data={analyticsByUserMarketsTableData}
               columns={analyticsByUserMarketsTableColumns}
-              title="Markets by Users"
             />
           </div>
         {/* Charts Container - 2 charts in a row */}

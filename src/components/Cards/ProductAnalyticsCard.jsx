@@ -39,7 +39,6 @@ const ProductAnalyticsCard = ({
           <AnalyticsTable
             data={productTableData}
             columns={productTableColumns}
-            title="Product Statistics"
           />
         </div>
         

@@ -39,7 +39,6 @@ const MarketingAnalyticsCard = ({
           <AnalyticsTable
             data={marketingTableData}
             columns={marketingTableColumns}
-            title="Marketing by Markets"
           />
         </div>
   

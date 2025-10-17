@@ -462,12 +462,11 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
 // Smart caching system for heavy calculations
 const calculationCache = new Map();
 
-// Generate cache key based on data content
+// Generate cache key based on data content - optimized for performance
 const generateCacheKey = (type, tasks, users, month, isLoading) => {
-  const tasksHash = tasks?.length ? 
-    tasks.map(t => `${t.id || t.taskId}_${t.updatedAt || t.createdAt || 0}`).sort().join(',') : 'empty';
-  const usersHash = users?.length ? 
-    users.map(u => `${u.uid || u.id}_${u.updatedAt || u.createdAt || 0}`).sort().join(',') : 'empty';
+  // Use simple length and timestamp for better performance
+  const tasksHash = tasks?.length ? `${tasks.length}_${tasks[0]?.updatedAt || tasks[0]?.createdAt || 0}` : 'empty';
+  const usersHash = users?.length ? `${users.length}_${users[0]?.updatedAt || users[0]?.createdAt || 0}` : 'empty';
   const monthHash = month?.monthId || 'current';
   const loadingHash = isLoading ? 'loading' : 'loaded';
   

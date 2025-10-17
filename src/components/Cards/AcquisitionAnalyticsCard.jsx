@@ -39,7 +39,6 @@ const AcquisitionAnalyticsCard = ({
           <AnalyticsTable
             data={acquisitionTableData}
             columns={acquisitionTableColumns}
-            title="Acquisition by Markets"
           />
         </div>
   

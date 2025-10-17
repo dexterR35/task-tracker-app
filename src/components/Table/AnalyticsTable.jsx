@@ -7,23 +7,24 @@ const columnHelper = createColumnHelper();
 const AnalyticsTable = ({ 
   data, 
   columns, 
-  title, 
   className = "",
   isLoading = false
 }) => {
-  // Convert columns to TanStack format - simplified without memoization
-  const tableColumns = columns.map(column => 
-    columnHelper.accessor(column.key, {
-      header: column.header,
-      cell: ({ getValue, row }) => {
-        const value = getValue();
-        if (column.render) {
-          return column.render(value, row.original);
-        }
-        return value;
-      },
-      size: column.size || 100,
-    })
+  // Convert columns to TanStack format - memoized to prevent re-renders
+  const tableColumns = useMemo(() => 
+    columns.map(column => 
+      columnHelper.accessor(column.key, {
+        header: column.header,
+        cell: ({ getValue, row }) => {
+          const value = getValue();
+          if (column.render) {
+            return column.render(value, row.original);
+          }
+          return value;
+        },
+        size: column.size || 100,
+      })
+    ), [columns]
   );
 
   // Table props
@@ -49,8 +50,7 @@ const AnalyticsTable = ({
   };
 
   return (
-    <div className={`card-small ${className}`}>
-      <h3 className="card-title text-base mb-4">{title}</h3>
+    <div className={`analytics-table ${className}`}>
       <TanStackTable {...tableProps} />
     </div>
   );

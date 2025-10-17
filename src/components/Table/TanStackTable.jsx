@@ -468,22 +468,20 @@ const TanStackTable = forwardRef(({
         </div>
       ) : (
         <>
-          {/* Table Controls - Only show if any controls are enabled */}
-          {(showFilters || (showPagination && enablePagination) || showColumnToggle) && (
-            <TableControls
-              showFilters={showFilters}
-              showPagination={showPagination}
-              enablePagination={enablePagination}
-              showColumnToggle={showColumnToggle}
-              table={table}
-              tableType={tableType}
-              globalFilter={globalFilter}
-              setGlobalFilter={setGlobalFilter}
-              columns={columns}
-              handleCSVExport={handleCSVExport}
-              isExporting={isExporting}
-            />
-          )}
+          {/* Table Controls - Always show export button, show other controls based on props */}
+          <TableControls
+            showFilters={showFilters}
+            showPagination={showPagination}
+            enablePagination={enablePagination}
+            showColumnToggle={showColumnToggle}
+            table={table}
+            tableType={tableType}
+            globalFilter={globalFilter}
+            setGlobalFilter={setGlobalFilter}
+            columns={columns}
+            handleCSVExport={handleCSVExport}
+            isExporting={isExporting}
+          />
 
           {/* Bulk Actions Bar */}
           <BulkActionsBar

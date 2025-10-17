@@ -13,7 +13,6 @@ import {
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
-import { exportAnalyticsToCSV } from "@/utils/exportData";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const AnalyticsPage = () => {
@@ -41,9 +40,7 @@ const AnalyticsPage = () => {
   // Debug logging removed for cleaner code
 
   // Export state
-  const [isUnifiedExporting, setIsUnifiedExporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [exportType, setExportType] = useState(null);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStep, setExportStep] = useState('');
 
@@ -112,25 +109,28 @@ const AnalyticsPage = () => {
     if (activeTab !== 'marketing-analytics') return null;
     return getCachedMarketingAnalyticsCardProps(
       analyticsData.tasks,
+      analyticsData.selectedMonth,
       analyticsData.isLoading
     );
-  }, [activeTab, analyticsData.tasks, analyticsData.isLoading]);
+  }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
 
   const acquisitionAnalyticsCardProps = useMemo(() => {
     if (activeTab !== 'acquisition-analytics') return null;
     return getCachedAcquisitionAnalyticsCardProps(
       analyticsData.tasks,
+      analyticsData.selectedMonth,
       analyticsData.isLoading
     );
-  }, [activeTab, analyticsData.tasks, analyticsData.isLoading]);
+  }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
 
   const productAnalyticsCardProps = useMemo(() => {
     if (activeTab !== 'product-analytics') return null;
     return getCachedProductAnalyticsCardProps(
       analyticsData.tasks,
+      analyticsData.selectedMonth,
       analyticsData.isLoading
     );
-  }, [activeTab, analyticsData.tasks, analyticsData.isLoading]);
+  }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
 
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection
@@ -150,7 +150,6 @@ const AnalyticsPage = () => {
     }
 
     setIsExporting(true);
-    setExportType('pdf');
     setExportProgress(0);
     setExportStep('Preparing PDF generation...');
 
@@ -186,109 +185,11 @@ const AnalyticsPage = () => {
       await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
     } finally {
       setIsExporting(false);
-      setExportType(null);
       setExportProgress(0);
       setExportStep('');
     }
   };
 
-  const handleCSVExport = async () => {
-    if (selectedCards.length === 0) {
-      showError('Please select at least one card to export');
-      return;
-    }
-
-    setIsUnifiedExporting(true);
-    setExportType('csv');
-    setExportProgress(0);
-    setExportStep('Preparing table data...');
-    
-    try {
-      let exportData = null;
-      let filename = '';
-      
-      // Get data based on selected cards or current active tab
-      if (selectedCards.includes('market-user-breakdown-card')) {
-        const marketsByUsersData = getCachedMarketsByUsersCardProps(tasks, users, selectedMonth, false);
-        exportData = marketsByUsersData.analyticsByUserMarketsTableData;
-        filename = `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-      } else if (selectedCards.includes('marketing-analytics-card')) {
-        const marketingData = getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, false);
-        exportData = marketingData.marketingTableData;
-        filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-          } else if (selectedCards.includes('acquisition-analytics-card')) {
-            const acquisitionData = getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, false);
-            exportData = acquisitionData.acquisitionTableData;
-            filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-          } else if (selectedCards.includes('product-analytics-card')) {
-            const productData = getCachedProductAnalyticsCardProps(tasks, selectedMonth, false);
-            exportData = productData.productTableData;
-            filename = `product_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-          } else {
-        // Fallback to current active tab
-        if (activeTab === 'markets-by-users') {
-          const marketsByUsersData = getCachedMarketsByUsersCardProps(tasks, users, selectedMonth, false);
-          exportData = marketsByUsersData.analyticsByUserMarketsTableData;
-          filename = `markets_by_users_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-        } else if (activeTab === 'marketing-analytics') {
-          const marketingData = getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, false);
-          exportData = marketingData.marketingTableData;
-          filename = `marketing_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-        } else if (activeTab === 'acquisition-analytics') {
-          const acquisitionData = getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, false);
-          exportData = acquisitionData.acquisitionTableData;
-          filename = `acquisition_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-        } else if (activeTab === 'product-analytics') {
-          const productData = getCachedProductAnalyticsCardProps(tasks, selectedMonth, false);
-          exportData = productData.productTableData;
-          filename = `product_analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-          }
-      }
-      
-      if (!exportData) {
-        showError('No data available for export');
-        return;
-      }
-      
-      setExportProgress(50);
-      setExportStep('Generating CSV file...');
-      
-      // Export the table data
-      const success = exportAnalyticsToCSV(exportData, 'analytics_table', {
-        filename: filename
-      });
-      
-      setExportProgress(100);
-      setExportStep('CSV export completed successfully!');
-      
-      if (success) {
-        setTimeout(() => {
-          setIsUnifiedExporting(false);
-          setExportType(null);
-          setExportProgress(0);
-          setExportStep('');
-        }, 1500);
-      } else {
-        console.error('Analytics CSV export failed');
-        setExportStep('CSV export failed');
-        setTimeout(() => {
-          setIsUnifiedExporting(false);
-          setExportType(null);
-          setExportProgress(0);
-          setExportStep('');
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Analytics export error:', error);
-      setExportStep('Export failed: ' + error.message);
-      setTimeout(() => {
-        setIsUnifiedExporting(false);
-        setExportType(null);
-        setExportProgress(0);
-        setExportStep('');
-      }, 2000);
-    }
-  };
 
   if (isLoading || isInitialLoading) {
     return (
@@ -353,39 +254,22 @@ const AnalyticsPage = () => {
               </span>
             </div>
 
-            {/* Export Buttons */}
+            {/* Export Button */}
             <div className="flex items-center space-x-2">
               <DynamicButton
                 onClick={handlePDFExport}
-                disabled={isUnifiedExporting || selectedCards.length === 0}
+                disabled={isExporting || selectedCards.length === 0}
                 variant={selectedCards.length === 0 ? "disabled" : "danger"}
                 size="sm"
-                iconName={isUnifiedExporting ? "loading" : "download"}
+                iconName={isExporting ? "loading" : "download"}
                 iconPosition="left"
-                className={isUnifiedExporting ? "animate-pulse" : ""}
+                className={isExporting ? "animate-pulse" : ""}
               >
-                {isUnifiedExporting 
+                {isExporting 
                   ? "Generating PDF..." 
                   : selectedCards.length === 0 
                     ? "Select Cards First" 
                     : "Generate PDF"
-                }
-              </DynamicButton>
-
-              <DynamicButton
-                onClick={handleCSVExport}
-                disabled={isUnifiedExporting || selectedCards.length === 0}
-                variant={selectedCards.length === 0 ? "disabled" : "success"}
-                size="sm"
-                iconName={isUnifiedExporting ? "loading" : "download"}
-                iconPosition="left"
-                className={isUnifiedExporting ? "animate-pulse" : ""}
-              >
-                {isUnifiedExporting 
-                  ? "Generating CSV..." 
-                  : selectedCards.length === 0 
-                    ? "Select Cards First" 
-                    : "Generate CSV"
                 }
               </DynamicButton>
             </div>
@@ -564,7 +448,7 @@ const AnalyticsPage = () => {
       )}
 
       {/* Loading Modal */}
-      {isUnifiedExporting && (
+      {isExporting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
             <div className="space-y-6">
@@ -576,7 +460,7 @@ const AnalyticsPage = () => {
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full animate-pulse"></div>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {exportType === 'pdf' ? 'Generating PDF Report' : 'Generating CSV Report'}
+                  Generating PDF Report
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   {exportStep}
@@ -603,14 +487,11 @@ const AnalyticsPage = () => {
               {/* Processing details */}
               <div className="space-y-2">
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  {exportType === 'pdf' 
-                    ? 'Processing selected cards and capturing screenshots...'
-                    : 'Extracting data from selected cards and formatting...'
-                  }
+                  Processing selected cards and capturing screenshots...
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
                   <div>• Selected cards: {selectedCards.length}</div>
-                  <div>• Export type: {exportType?.toUpperCase()}</div>
+                  <div>• Export type: PDF</div>
                   <div>• Month: {selectedMonthName}</div>
                   <div>• Quality: High</div>
                 </div>

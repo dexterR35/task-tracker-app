@@ -70,6 +70,11 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
       isLoading={isLoading}
       enableRowSelection={false}
       showBulkActions={false}
+      showFilters={false}
+      showPagination={false}
+      showColumnToggle={false}
+      enablePagination={false}
+      enableFiltering={false}
     />
   );
 };
