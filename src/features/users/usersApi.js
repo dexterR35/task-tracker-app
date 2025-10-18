@@ -42,7 +42,7 @@ export const fetchUserByUIDFromFirestore = async (userUID) => {
       orderBy: null, // No ordering needed for single user lookup
       limit: 1,
       useCache: true,
-      cacheKey: `getUserByUID_${userUID}`
+      cacheKey: cacheKey // Use the same cache key to avoid duplication
     });
     
     if (users.length === 0) {

@@ -98,7 +98,7 @@ const TaskForm = ({
   // Watch reporters field for form logic
   const selectedReporter = watch('reporters');
   
-  // Explicitly register deliverableQuantities field
+  // Register dynamic fields once on mount
   useEffect(() => {
     register('deliverableQuantities');
     register('variationsQuantities');
@@ -106,11 +106,10 @@ const TaskForm = ({
     
     // Initialize deliverableQuantities with empty object if not set
     const currentQuantities = watch('deliverableQuantities');
-    // Watch deliverableQuantities for form logic
     if (!currentQuantities || Object.keys(currentQuantities).length === 0) {
       setValue('deliverableQuantities', {});
     }
-  }, [register, setValue, watch]); // Keep dependencies as they are needed for proper initialization
+  }, []); // Empty dependency array - only run once on mount
 
   // Watch the selected department to filter deliverables
   const selectedDepartment = watch('departments');
@@ -289,52 +288,20 @@ const TaskForm = ({
       // Reset form immediately - no delays needed
       reset(formData);
       
-      // Force re-render of form components with minimal delay
-      setTimeout(() => {
-        setValue('reporters', formData.reporters);
-        setValue('deliverables', formData.deliverables);
-      }, 10); // Reduced from 250ms to 10ms
+      // Use useEffect to handle form state updates properly
+      // This prevents race conditions and ensures proper form initialization
       
       
     }
   }, [initialData, mode, reset]);
 
+  // Form state updates are now handled by the reset() call in the main useEffect
+  // No additional useEffect needed since react-hook-form handles the state properly
+
   // Create standardized form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
-      // Additional validation for conditional fields
-      if (data._hasDeliverables && !data.deliverables) {
-        throw new Error('Please select a deliverable when "Has Deliverables" is checked');
-      }
-      
-      // Validate custom deliverables when "others" is selected
-      if (data._hasDeliverables && data.deliverables === 'others') {
-        if (!data.customDeliverables || data.customDeliverables.length === 0) {
-          throw new Error('Please add at least one custom deliverable when "Others" is selected');
-        }
-      }
-      
-
-      if (data._hasDeliverables && data.deliverables && data.deliverables !== '') {
-        const deliverable = deliverablesOptions.find(d => d.value === data.deliverables);
-        if (deliverable && deliverable.requiresQuantity) {
-          const quantity = data.deliverableQuantities?.[data.deliverables];
-          
-          if (!quantity || quantity < 1) {
-            throw new Error(`Please enter a valid quantity for ${deliverable.label}`);
-          }
-        }
-      }
-      
-      if (data._usedAIEnabled) {
-        if (!data.aiModels || data.aiModels.length === 0) {
-          throw new Error('Please select at least one AI model when "AI Tools Used" is checked');
-        }
-        if (!data.aiTime || data.aiTime <= 0) {
-          throw new Error('Please enter a valid AI time when "AI Tools Used" is checked');
-        }
-      }
-      
+      // All validation is now handled by Yup schema - no redundant validation needed
       // Prepare form data for database
       const processedData = prepareTaskFormData(data, deliverablesOptions);
       

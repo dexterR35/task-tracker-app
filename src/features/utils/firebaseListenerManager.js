@@ -74,6 +74,37 @@ class FirebaseListenerManager {
   }
 
   /**
+   * Perform selective cleanup - only remove non-critical listeners
+   * This prevents memory leaks while preserving essential functionality
+   */
+  performSelectiveCleanup() {
+    const now = Date.now();
+    const listenersToRemove = [];
+    
+    for (const [key, unsubscribe] of this.listeners) {
+      // Only remove non-critical listeners (not auth, not real-time data)
+      if (!this.preservedListeners.has(key) && 
+          !key.includes('auth') && 
+          !key.includes('tasks') && 
+          !key.includes('realtime')) {
+        try {
+          unsubscribe();
+          listenersToRemove.push(key);
+        } catch (error) {
+          logger.error(`[ListenerManager] Error in selective cleanup of listener ${key}:`, error);
+        }
+      }
+    }
+    
+    // Remove cleaned up listeners
+    listenersToRemove.forEach(key => this.listeners.delete(key));
+    
+    if (listenersToRemove.length > 0) {
+      logger.info(`[ListenerManager] Selective cleanup removed ${listenersToRemove.length} non-critical listeners`);
+    }
+  }
+
+  /**
    * Add a listener with automatic deduplication and memory leak prevention
    * @param {string} key - Unique key for the listener
    * @param {Function} setupFn - Function that returns unsubscribe function
@@ -242,13 +273,14 @@ if (typeof window !== 'undefined') {
     listenerManager.destroy();
   });
   
-  // Handle visibility changes - preserve auth listeners
+  // Handle visibility changes - preserve critical listeners
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      // Only perform cleanup, don't remove preserved listeners
-      listenerManager.performCleanup();
+      // Only clean up non-critical listeners to prevent memory leaks
+      // while preserving essential real-time functionality
+      listenerManager.performSelectiveCleanup();
     } else {
-      // App became visible again - restore preserved listeners
+      // App became visible again - restore necessary listeners
       listenerManager.restorePreservedListeners();
     }
   });

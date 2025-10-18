@@ -27,23 +27,23 @@ const SearchableSelectField = ({
   if (field.name === 'reporters' && currentValue) {
   }
 
-  // Handle initial value when form is reset
+  // Handle initial value when form is reset - fixed infinite loop
   useEffect(() => {
     if (currentValue && field.options && field.options.length > 0) {
       const option = field.options.find(opt => opt.value === currentValue);
-      if (option && !searchTerm) {
-        // Set the search term to show the selected option
-        setSearchTerm('');
+      if (option && searchTerm === '') {
+        // Only update if we need to show the selected option
+        return; // No state update needed
       }
     }
-  }, [currentValue, field.options]); // Removed searchTerm to prevent infinite loop
+  }, [currentValue, field.options, searchTerm]);
 
-  // Handle case where options are loaded after component has a value
+  // Handle case where options are loaded after component has a value - optimized
   useEffect(() => {
     if (currentValue && field.options && field.options.length > 0) {
       const option = field.options.find(opt => opt.value === currentValue);
       if (option) {
-        // Force a re-render to update the display value
+        // No need to force re-render - React will handle it naturally
       }
     }
   }, [field.options, currentValue]);

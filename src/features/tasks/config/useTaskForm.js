@@ -257,8 +257,31 @@ export const createTaskFormSchema = () => Yup.object().shape({
         return value.name && value.name.trim() !== '';
       }
       return false;
+    }).test('custom-deliverables', 'Please add at least one custom deliverable when "Others" is selected', function(value) {
+      // Validate custom deliverables when "others" is selected
+      if (value === 'others') {
+        const customDeliverables = this.parent.customDeliverables;
+        return customDeliverables && customDeliverables.length > 0;
+      }
+      return true;
     }),
-    otherwise: (schema) => schema.notRequired().default('')
+    otherwise: (schema) => schema.notRequired()
+  }),
+
+  // Validate deliverable quantities when required
+  deliverableQuantities: Yup.object().when('_hasDeliverables', {
+    is: true,
+    then: (schema) => schema.test('quantity-validation', 'Please enter a valid quantity', function(value) {
+      const deliverables = this.parent.deliverables;
+      if (deliverables && deliverables !== '' && deliverables !== 'others') {
+        const quantity = value?.[deliverables];
+        if (quantity !== undefined && quantity !== null) {
+          return quantity >= 1;
+        }
+      }
+      return true;
+    }),
+    otherwise: (schema) => schema.notRequired()
   }),
   
   _usedAIEnabled: Yup.boolean(),
@@ -267,7 +290,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
   aiModels: Yup.array().when('_usedAIEnabled', {
     is: true,
     then: (schema) => schema.min(1, 'Please select at least one AI model when "AI Tools Used" is checked'),
-    otherwise: (schema) => schema.notRequired().default([])
+    otherwise: (schema) => schema.notRequired()
   }),
   
   aiTime: Yup.number().when('_usedAIEnabled', {
@@ -288,7 +311,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
         }
         return true;
       }),
-    otherwise: (schema) => schema.notRequired().default(0)
+    otherwise: (schema) => schema.notRequired()
   }),
   
   reporters: Yup.string()
@@ -334,56 +357,57 @@ const sanitizeTaskFormData = (formData) => {
 };
 
 // ===== TASK FORM DATA PROCESSING =====
-export const prepareTaskFormData = (formData) => {
-  if (!formData) {
-    return formData;
-  }
 
-
-  // Business logic: Extract task name from Jira URL
-  if (formData.jiraLink) {
-    const jiraMatch = formData.jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
-    if (jiraMatch) {
-      formData.taskName = jiraMatch[1].toUpperCase(); // e.g., "GIMODEAR-124124" - ensure uppercase
-    } else {
-      // If URL format is invalid, throw an error (validation should have caught this)
-      throw new Error('Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}');
-    }
-    delete formData.jiraLink; // Remove original URL
-  } else {
-    // If no jiraLink provided, throw an error (validation should have caught this)
+/**
+ * Extract task name from Jira URL
+ * @param {string} jiraLink - The Jira URL
+ * @returns {string} - Extracted task name
+ */
+const extractTaskNameFromJira = (jiraLink) => {
+  if (!jiraLink) {
     throw new Error('Jira link is required');
   }
   
-  // Handle conditional fields based on checkbox state
-  // When checkboxes are NOT checked: set empty arrays/zero values
-  // When checkboxes ARE checked: keep the user's input (validation should have ensured they're filled)
-  
-  if (!formData._hasDeliverables) {
-    formData.deliverables = []; // Empty array when checkbox is not checked
-    formData.customDeliverables = []; // Empty array when checkbox is not checked
+  const jiraMatch = jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
+  if (jiraMatch) {
+    return jiraMatch[1].toUpperCase(); // e.g., "GIMODEAR-124124" - ensure uppercase
   } else {
-    // If "others" is not selected, clear custom deliverables
-    if (formData.deliverables !== 'others') {
-      formData.customDeliverables = [];
-    }
-    
-    // Note: Deliverable time calculations are handled in the task table and detail page
+    throw new Error('Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}');
+  }
+};
+
+/**
+ * Process conditional fields based on checkbox states
+ * @param {Object} formData - The form data
+ * @returns {Object} - Processed form data
+ */
+const processConditionalFields = (formData) => {
+  const processedData = { ...formData };
+  
+  // Handle deliverables conditional logic
+  if (!processedData._hasDeliverables) {
+    processedData.deliverables = [];
+    processedData.customDeliverables = [];
+  } else if (processedData.deliverables !== 'others') {
+    processedData.customDeliverables = [];
   }
   
-  if (!formData._usedAIEnabled) {
-    formData.aiModels = []; // Empty array when checkbox is not checked
-    formData.aiTime = 0; // Zero when checkbox is not checked
+  // Handle AI tools conditional logic
+  if (!processedData._usedAIEnabled) {
+    processedData.aiModels = [];
+    processedData.aiTime = 0;
   }
-  // If checkbox is checked, keep aiModels and aiTime as-is (validation ensures they're filled)
   
-  // Apply sanitization using utility function
-  sanitizeTaskFormData(formData);
-  
-  
-  // Create the new data structure with data_task wrapper BEFORE deleting UI fields
-  const dataTask = {
-    // Include all fields with their values (empty if not provided)
+  return processedData;
+};
+
+/**
+ * Create the data_task structure for database storage
+ * @param {Object} formData - Processed form data
+ * @returns {Object} - Data task structure
+ */
+const createDataTaskStructure = (formData) => {
+  return {
     aiUsed: formData._usedAIEnabled ? [{
       aiModels: formData.aiModels || [],
       aiTime: formData.aiTime || 0
@@ -395,42 +419,61 @@ export const prepareTaskFormData = (formData) => {
       variationsCount: formData.variationsQuantities?.[formData.deliverables] || 0
     }] : [],
     departments: formData.departments ? [formData.departments] : [],
-    markets: formData.markets || [], // Required field - validation ensures it's not empty
-    endDate: formData.endDate, // Required field - validation ensures it's not empty
+    markets: formData.markets || [],
+    endDate: formData.endDate,
     isVip: formData.isVip || false,
     observations: formData.observations || '',
-    products: formData.products || '', // Required field - validation ensures it's not empty
-    reporterName: formData.reporterName || '', // Required field - validation ensures it's not empty
-    reporters: formData.reporters || '', // Required field - validation ensures it's not empty
+    products: formData.products || '',
+    reporterName: formData.reporterName || '',
+    reporters: formData.reporters || '',
     reworked: formData.reworked || false,
-    startDate: formData.startDate, // Required field - validation ensures it's not empty
+    startDate: formData.startDate,
     taskName: formData.taskName,
-    timeInHours: formData.timeInHours
+    timeInHours: formData.timeInHours,
+    ...(formData.monthId !== undefined && { monthId: formData.monthId })
   };
+};
 
-  // Only include monthId if it's provided and not undefined
-  if (formData.monthId !== undefined) {
-    dataTask.monthId = formData.monthId;
+/**
+ * Main function to prepare task form data for database storage
+ * @param {Object} formData - Raw form data
+ * @returns {Object} - Processed and serialized data for database
+ */
+export const prepareTaskFormData = (formData) => {
+  if (!formData) {
+    return formData;
   }
 
-  // Remove UI-only fields after creating data structure (these should never be saved to DB)
-  delete formData._hasDeliverables;
-  delete formData._usedAIEnabled;
+  // Step 1: Extract task name from Jira URL
+  const taskName = extractTaskNameFromJira(formData.jiraLink);
+  const processedData = { ...formData, taskName };
+  delete processedData.jiraLink; // Remove original URL
   
-  // Apply lowercase transformation to string fields, but keep taskName and IDs uppercase
+  // Step 2: Process conditional fields
+  const conditionalProcessedData = processConditionalFields(processedData);
+  
+  // Step 3: Apply sanitization
+  sanitizeTaskFormData(conditionalProcessedData);
+  
+  // Step 4: Create data task structure
+  const dataTask = createDataTaskStructure(conditionalProcessedData);
+  
+  // Step 5: Remove UI-only fields
+  delete conditionalProcessedData._hasDeliverables;
+  delete conditionalProcessedData._usedAIEnabled;
+  
+  // Step 6: Apply lowercase transformation
   const fieldsToLowercase = ['products', 'observations', 'reporterName', 'departments', 'markets'];
   const fieldsToKeepUppercase = ['taskName', 'reporters', 'userUID', 'reporterUID'];
   const lowercasedDataTask = prepareFormData(dataTask, {
     fieldsToLowercase,
     fieldsToKeepUppercase,
-    removeEmptyFields: false, // Don't remove empty fields as they're part of the data structure
-    convertTypes: false // Types are already converted
+    removeEmptyFields: false,
+    convertTypes: false
   });
   
-  // Serialize any Date objects to ISO strings for Redux compatibility using utility
-  const serializedDataTask = serializeTimestampsForRedux(lowercasedDataTask);
-  
-  return serializedDataTask;
+  // Step 7: Serialize for Redux compatibility
+  return serializeTimestampsForRedux(lowercasedDataTask);
 };
 
 // Default export for backward compatibility

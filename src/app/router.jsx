@@ -13,6 +13,7 @@ import { isUserAuthenticated, isAuthLoading } from "@/features/utils/authUtils";
 
 import AuthLayout from "@/components/layout/AuthLayout";
 import Loader from "@/components/ui/Loader/Loader";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 // Import static pages directly (no lazy loading needed)
 import HomePage from "@/pages/HomePage";
@@ -126,7 +127,7 @@ ProtectedRoute.displayName = "ProtectedRoute";
 
 
 
-// Root layout with global auth loading state
+// Root layout with global auth loading state and error boundary
 const RootLayout = () => {
   const authState = useAuth();
   
@@ -135,7 +136,11 @@ const RootLayout = () => {
     return <SimpleLoader />;
   }
   
-  return <Outlet />;
+  return (
+    <ErrorBoundary componentName="RootLayout">
+      <Outlet />
+    </ErrorBoundary>
+  );
 };
 
 const router = createBrowserRouter([
@@ -169,7 +174,9 @@ const router = createBrowserRouter([
       {
         element: (
           <ProtectedRoute>
-            <AuthLayout />
+            <ErrorBoundary componentName="AuthLayout">
+              <AuthLayout />
+            </ErrorBoundary>
           </ProtectedRoute>
         ),
         children: [
@@ -177,9 +184,11 @@ const router = createBrowserRouter([
           {
             path: "dashboard",
             element: (
-              <PageWrapper key="dashboard">
-                <AdminDashboardPage />
-              </PageWrapper>
+              <ErrorBoundary componentName="AdminDashboardPage">
+                <PageWrapper key="dashboard">
+                  <AdminDashboardPage />
+                </PageWrapper>
+              </ErrorBoundary>
             ),
           },
           
@@ -188,9 +197,11 @@ const router = createBrowserRouter([
             path: "analytics",
             element: (
               <AdminRoute>
-                <PageWrapper key="analytics">
-                  <AnalyticsPage />
-                </PageWrapper>
+                <ErrorBoundary componentName="AnalyticsPage">
+                  <PageWrapper key="analytics">
+                    <AnalyticsPage />
+                  </PageWrapper>
+                </ErrorBoundary>
               </AdminRoute>
             ),
           },

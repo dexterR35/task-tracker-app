@@ -229,8 +229,8 @@ export const useAppData = (selectedUserId = null) => {
   
 
 
-  // Return the data object - simplified without excessive memoization
-  const baseData = {
+  // Memoize expensive calculations to prevent unnecessary re-renders
+  const memoizedBaseData = useMemo(() => ({
     // Task mutations - available to all users
     createTask,
     updateTask,
@@ -263,12 +263,19 @@ export const useAppData = (selectedUserId = null) => {
     // Month selection functions
     selectMonth: selectMonth,
     resetToCurrentMonth: resetToCurrentMonth,
-  };
+  }), [
+    createTask, updateTask, deleteTask,
+    reporters, deliverablesData?.deliverables, tasksData,
+    isLoading, loadingStates, error,
+    monthId, monthName, daysInMonth, startDate, endDate, boardExists,
+    dropdownOptions, currentMonth, selectedMonth, isCurrentMonth,
+    isInitialLoading, isMonthDataReady, selectMonth, resetToCurrentMonth
+  ]);
   
   // Return appropriate data based on user role
   if (userData.userIsAdmin) {
     return {
-      ...baseData,
+      ...memoizedBaseData,
       // Admin gets everything
       user: userData.user, // Current user info from auth
       users: userData.allUsers || [], // All users for management
@@ -276,7 +283,7 @@ export const useAppData = (selectedUserId = null) => {
     };
   } else {
     return {
-      ...baseData,
+      ...memoizedBaseData,
       // Regular user gets only their data
       user: userData.userData, // Their user data from database
       users: [], // Empty for regular users

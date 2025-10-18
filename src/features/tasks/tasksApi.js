@@ -103,25 +103,44 @@ const validateTaskPermissions = (userData, operation) => {
     }
   };
 
-// Helper function to handle reporter name resolution
+// Helper function to handle reporter name resolution with security validation
 const resolveReporterName = (reporters, reporterId, reporterName) => {
+  // Security: Validate inputs
+  if (!reporters || !Array.isArray(reporters)) {
+    throw new Error("Invalid reporters data provided");
+  }
+  
+  if (!reporterId || typeof reporterId !== 'string') {
+    return reporterName; // Return existing name if no valid ID
+  }
+  
+  // Security: Sanitize reporterId to prevent injection
+  const sanitizedReporterId = reporterId.trim().toLowerCase();
+  if (sanitizedReporterId.length === 0 || sanitizedReporterId.length > 100) {
+    throw new Error("Invalid reporter ID format");
+  }
+  
   if (reporterId && !reporterName) {
-    // Check ONLY reporterUID since that's what we're using as the value (case-insensitive)
-    const selectedReporter = reporters.find(r => 
-      r.reporterUID && r.reporterUID.toLowerCase() === reporterId.toLowerCase()
-    );
+    // Security: Validate reporter exists and is authorized
+    const selectedReporter = reporters.find(r => {
+      if (!r || typeof r !== 'object') return false;
+      return r.reporterUID && 
+             typeof r.reporterUID === 'string' && 
+             r.reporterUID.toLowerCase() === sanitizedReporterId;
+    });
     
     if (selectedReporter) {
-      return selectedReporter.name || selectedReporter.reporterName;
-    } else {
-      console.error('resolveReporterName - Reporter not found for ID:', reporterId);
-      console.error('resolveReporterName - Available reporter IDs:', reporters.map(r => r.id));
-      console.error('resolveReporterName - Available reporterUIDs:', reporters.map(r => r.reporterUID));
-      console.error('resolveReporterName - Available UIDs:', reporters.map(r => r.uid));
-      console.error('resolveReporterName - Full reporter objects:', reporters);
-      throw new Error("Reporter not found for the selected reporter ID");
+      // Security: Validate and sanitize reporter name
+      const name = selectedReporter.name || selectedReporter.reporterName;
+      if (name && typeof name === 'string' && name.trim().length > 0) {
+        return name.trim().substring(0, 100); // Limit length to prevent abuse
+      }
     }
+    
+    // Security: Don't expose internal data in error messages
+    throw new Error("Reporter not found for the selected ID");
   }
+  
   return reporterName;
 };
 

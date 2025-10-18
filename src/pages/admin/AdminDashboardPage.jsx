@@ -133,7 +133,7 @@ const AdminDashboardPage = () => {
     setShowCreateModal(true);
   }, [canCreateTasks]);
 
-  // Add logging for combined selections and security checks
+  // Add logging for combined selections and security checks - optimized
   useEffect(() => {
     if (selectedUserId && selectedReporterId) {
       console.log("🔍 Combined selection active", {
@@ -145,7 +145,8 @@ const AdminDashboardPage = () => {
         totalTasks: tasks?.length || 0
       });
     }
-  }, [selectedUserId, selectedReporterId, selectedUserName, selectedReporterName, currentMonthId, tasks?.length]);
+  }, [selectedUserId, selectedReporterId, selectedUserName, selectedReporterName, currentMonthId]);
+  // Removed tasks?.length to prevent unnecessary re-renders
 
   // Security logging for admin actions
   useEffect(() => {
