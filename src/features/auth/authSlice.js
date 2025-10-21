@@ -530,8 +530,9 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state) => {
-        // Keep loading true until onAuthStateChanged updates the user
-        // Don't set isLoading = false here - let authStateChanged handle it
+        // Reset loading state immediately after successful login
+        // The authStateChanged will handle the user state update
+        state.isLoading = false;
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
