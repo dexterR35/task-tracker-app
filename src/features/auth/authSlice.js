@@ -292,8 +292,8 @@ export const setupAuthListener = (dispatch) => {
     SessionManager.clearSession();
   }
 
-  // Set initial auth checking state
-  dispatch(authSlice.actions.startAuthInit());
+  // Set initial auth checking state only if needed
+  // dispatch(authSlice.actions.startAuthInit()); // Commented out to prevent initial loader
 
   // Use the listener manager to preserve auth listener during app suspension
   authUnsubscribe = listenerManager.addListener(
@@ -490,7 +490,7 @@ export const logoutUser = createAsyncThunk(
 const initialState = {
   user: null,
   isLoading: false, // Only true during login/logout attempts
-  isAuthChecking: true, // Start as true to indicate we're checking auth on app load
+  isAuthChecking: false, // Start as false to prevent initial loader flash
   error: null,
 };
 

@@ -318,7 +318,7 @@ const TaskForm = ({
           taskId: initialData.id,
           updates: processedData,
           reporters,
-          userData: user
+          userData: user || {} // Ensure userData is never undefined
         });
       } else {
         // Create new task
@@ -335,7 +335,7 @@ const TaskForm = ({
         
         return await createTaskWithErrorHandling({
           task: taskWithMonthId,
-          userData: user,
+          userData: user || {}, // Ensure userData is never undefined
           reporters
         });
       }
