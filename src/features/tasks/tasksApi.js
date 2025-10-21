@@ -213,7 +213,7 @@ export const tasksApi = createApi({
         
         return await deduplicateRequest(cacheKey, async () => {
           try {
-            console.log('🔍 getMonthTasks API called:', { 
+            logger.log('🔍 getMonthTasks API called:', { 
               monthId, 
               userUID: userUID || 'ALL_USERS', 
               role,
@@ -221,7 +221,7 @@ export const tasksApi = createApi({
             });
             
             if (!monthId) {
-              console.log('❌ No monthId provided');
+              logger.warn('❌ No monthId provided');
               return { data: [] };
             }
 
@@ -232,14 +232,14 @@ export const tasksApi = createApi({
           const monthDocRef = getMonthRef(monthId);
           const monthDoc = await getDoc(monthDocRef);
 
-          console.log('📅 Month board check:', { 
+          logger.log('📅 Month board check:', { 
             monthId, 
             boardExists: monthDoc.exists(),
             yearId 
           });
 
           if (!monthDoc.exists()) {
-            console.log('❌ Month board does not exist for:', monthId);
+            logger.warn('❌ Month board does not exist for:', monthId);
             return { data: [] };
           }
 
@@ -258,7 +258,7 @@ export const tasksApi = createApi({
             ...serializeTimestampsForRedux(doc.data()),
           }));
 
-          console.log('📋 Tasks fetched:', { 
+          logger.log('📋 Tasks fetched:', { 
             monthId, 
             tasksCount: tasks.length,
             userUID: userUID || 'ALL_USERS',

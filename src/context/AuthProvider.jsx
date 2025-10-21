@@ -9,7 +9,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { cleanupAuthListener, setupAuthListener, setAuthTimeout } from "@/features/auth/authSlice";
+import { cleanupAuthListener, setupAuthListener } from "@/features/auth/authSlice";
 import { logger } from "@/utils/logger";
 
 /**
@@ -23,33 +23,39 @@ export const AuthProvider = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    let timeoutId;
-    
     try {
       logger.log("Initializing authentication provider");
+      
+      // Clear any stale session data that might cause conflicts
+      const sessionKey = 'task_tracker_auth_session';
+      const staleSession = localStorage.getItem(sessionKey);
+      if (staleSession) {
+        try {
+          const sessionData = JSON.parse(staleSession);
+          // If session is older than 24 hours, clear it
+          if (sessionData.timestamp && Date.now() - sessionData.timestamp > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem(sessionKey);
+            logger.log("Cleared stale session data");
+          }
+        } catch (error) {
+          // If session data is corrupted, clear it
+          localStorage.removeItem(sessionKey);
+          logger.log("Cleared corrupted session data");
+        }
+      }
       
       // Setup auth listener
       setupAuthListener(dispatch);
       setIsInitialized(true);
       
-      // Set a timeout to prevent infinite loading (10 seconds)
-      timeoutId = setTimeout(() => {
-        logger.warn("Authentication check timed out after 10 seconds");
-        dispatch(setAuthTimeout());
-      }, 10000);
-      
       logger.log("Authentication provider initialized successfully");
     } catch (error) {
       logger.error("Failed to initialize authentication provider:", error);
-      dispatch(setAuthTimeout());
     }
 
     // Cleanup on unmount
     return () => {
       try {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
         logger.log("Cleaning up authentication provider");
         cleanupAuthListener();
       } catch (error) {

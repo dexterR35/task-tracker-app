@@ -112,18 +112,17 @@ const SessionManager = {
    * Initialize browser tab synchronization
    */
   initTabSync: () => {
-    // Simple tab synchronization without activity tracking
-    // 2-hour fixed session is sufficient for most use cases
-    logger.log('Tab synchronization initialized - using 2-hour fixed session');
+    // Simple tab synchronization - just listen for storage changes
+    logger.log('Tab synchronization initialized');
 
     // Listen for storage changes (other tabs) - passive sync only
     window.addEventListener('storage', (e) => {
       if (e.key === SESSION_KEY) {
         if (e.newValue === null) {
-          // Session was cleared in another tab - just log, don't force logout
+          // Session was cleared in another tab - just log
           logger.log('Session cleared in another tab (passive sync)');
         } else if (e.newValue) {
-          // New session in another tab - just log, don't force logout
+          // New session in another tab - just log
           try {
             const newSession = JSON.parse(e.newValue);
             const currentUser = auth.currentUser;
@@ -137,9 +136,6 @@ const SessionManager = {
         }
       }
     });
-
-    // Page visibility changes - removed aggressive session checking
-    // Firebase auth persistence handles session management automatically
 
     logger.log('Tab synchronization initialized');
   }
@@ -305,27 +301,19 @@ export const setupAuthListener = (dispatch) => {
           try {
             // Check if user is already authenticated to prevent duplicate fetching
             const existingSession = SessionManager.getSession();
-            if (existingSession && existingSession.uid === user.uid) {
-              logger.log("User already authenticated, skipping duplicate fetch");
-              // Still dispatch to ensure state is consistent
+            if (existingSession && existingSession.uid === user.uid && existingSession.user) {
+              logger.log("User already authenticated, using cached data");
               dispatch(
                 authSlice.actions.authStateChanged({ 
-                  user: existingSession.user || null 
+                  user: existingSession.user 
                 })
               );
               return;
             }
 
-            // Check for session conflicts before proceeding
-            if (SessionManager.checkSessionConflict()) {
-              logger.warn("Session conflict detected during auth, signing out");
-              await signOut(auth);
-              return;
-            }
-
             logger.log("User authenticated, fetching user data");
             
-            // Get user data from Firestore (has all the data we need)
+            // Get user data from Firestore
             const firestoreData = await fetchUserByUIDFromFirestore(user.uid);
             
             if (!firestoreData) {
@@ -334,26 +322,19 @@ export const setupAuthListener = (dispatch) => {
 
             // Check if user is active
             if (firestoreData.isActive === false) {
-              throw new Error(
-                "Account is deactivated. Please contact administrator."
-              );
+              throw new Error("Account is deactivated. Please contact administrator.");
             }
 
             const normalizedUser = normalizeUser(user, firestoreData);
 
-            // Store session data (only if not already stored)
-            const currentSession = SessionManager.getSession();
-            if (!currentSession || currentSession.uid !== normalizedUser.uid) {
-              SessionManager.setSession({
-                uid: normalizedUser.uid,
-                email: normalizedUser.email,
-                role: normalizedUser.role,
-                user: normalizedUser, // Store user data in session
-                sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-              });
-            }
-
-            // Session timeout removed - sessions persist until explicit logout
+            // Store session data
+            SessionManager.setSession({
+              uid: normalizedUser.uid,
+              email: normalizedUser.email,
+              role: normalizedUser.role,
+              user: normalizedUser,
+              sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            });
 
             // Dispatch auth success action
             dispatch(
@@ -376,8 +357,8 @@ export const setupAuthListener = (dispatch) => {
             );
           }
         } else {
-          // User signed out - clean up listeners and clear user
-          logger.log("User signed out, cleaning up listeners");
+          // User signed out - clean up
+          logger.log("User signed out, cleaning up");
           SessionManager.clearSession();
           listenerManager.removeAllListeners();
           dispatch(authSlice.actions.authStateChanged({ user: null }));
@@ -499,7 +480,6 @@ const initialState = {
   isLoading: false, // Only true during login/logout attempts
   isAuthChecking: true, // Start as true to indicate we're checking auth on app load
   error: null,
-  authTimeout: false, // Track if auth check has timed out
 };
 
 const authSlice = createSlice({
@@ -528,13 +508,6 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.isAuthChecking = true; // Mark that we're checking auth
       state.error = null;
-      state.authTimeout = false;
-    },
-    // Add timeout action
-    setAuthTimeout: (state) => {
-      state.authTimeout = true;
-      state.isAuthChecking = false;
-      state.isLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -570,7 +543,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setLoading, authStateChanged, startAuthInit, setAuthTimeout } =
+export const { clearError, setLoading, authStateChanged, startAuthInit } =
   authSlice.actions;
 
 // Export session management functions

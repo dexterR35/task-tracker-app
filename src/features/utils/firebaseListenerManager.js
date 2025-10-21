@@ -85,6 +85,7 @@ class FirebaseListenerManager {
       // Only remove non-critical listeners (not auth, not real-time data)
       if (!this.preservedListeners.has(key) && 
           !key.includes('auth') && 
+          !key.includes('auth-state') &&
           !key.includes('tasks') && 
           !key.includes('realtime')) {
         try {
