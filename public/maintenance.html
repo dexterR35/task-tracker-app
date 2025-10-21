@@ -4,120 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maintenance - Task Tracker App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        .container {
-            text-align: center;
-            max-width: 600px;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        .icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.8;
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-        p {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-        }
-        .status {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 2rem;
-        }
-        .contact {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 15px;
-            margin-top: 2rem;
-        }
-        .contact h3 {
-            margin-top: 0;
-            margin-bottom: 1rem;
-        }
-        .contact p {
-            margin-bottom: 0.5rem;
-            font-size: 1rem;
-        }
-        .progress {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-        .progress-bar {
-            background: rgba(255, 255, 255, 0.3);
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-            height: 100%;
-            width: 75%;
-            border-radius: 4px;
-            animation: progress 2s ease-in-out infinite;
-        }
         @keyframes progress {
             0% { width: 0%; }
             50% { width: 75%; }
             100% { width: 75%; }
         }
+        .animate-progress {
+            animation: progress 2s ease-in-out infinite;
+        }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="icon">🚀</div>
-        <h1>System Update in Progress</h1>
-        <div class="status">MAINTENANCE MODE</div>
-        <p>
-            We're currently deploying the latest version of the Task Tracker App with enhanced features and improved performance.
-        </p>
-        
-        <div class="progress">
-            <p><strong>Deployment Progress</strong></p>
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
+<body class="min-h-screen flex-center bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
+    <div class="text-center max-w-4xl mx-auto px-6">
+        <!-- Main Container -->
+        <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+            <!-- Icon -->
+            <div class="text-6xl mb-6 opacity-90">🚀</div>
+            
+            <!-- Title -->
+            <h1 class="text-4xl font-bold text-white mb-4">Task Tracker App</h1>
+            
+            <!-- Status Badge -->
+            <div class="inline-block bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 rounded-full text-sm font-semibold text-white shadow-lg mb-6">
+                SYSTEM UPDATE IN PROGRESS
             </div>
-            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Updating database schema and optimizing performance...</p>
-        </div>
-        
-        <p>
-            The application will be back online shortly with all the latest improvements.
-        </p>
-        
-        <div class="contact">
-            <h3>What's New in This Update?</h3>
-            <p>✅ Enhanced task management features</p>
-            <p>✅ Improved user interface and performance</p>
-            <p>✅ Better data synchronization</p>
-            <p>✅ Enhanced security measures</p>
-            <p><strong>Expected Return:</strong> Within 15-30 minutes</p>
+            
+            <!-- Main Message -->
+            <p class="text-xl text-white/90 mb-8 leading-relaxed">
+                We're currently deploying the latest version with enhanced features, improved performance, and a redesigned user interface.
+            </p>
+            
+            <!-- Progress Section -->
+            <div class="bg-white/10 border border-white/20 rounded-2xl p-6 mb-8">
+                <p class="text-white font-semibold mb-4">Deployment Progress</p>
+                <div class="bg-white/30 h-2 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-400 to-blue-500 h-full w-3/4 rounded-full animate-progress"></div>
+                </div>
+                <p class="text-white/80 text-sm mt-3">Deploying new features and optimizing database performance...</p>
+            </div>
+            
+            <!-- Return Message -->
+            <p class="text-lg text-white/90 mb-8">
+                The application will be back online shortly with all the latest improvements.
+            </p>
+            
+            <!-- Features Section -->
+            <div class="bg-white/10 border border-white/20 rounded-2xl p-8 backdrop-blur-sm">
+                <h3 class="text-2xl font-bold text-white mb-6">🎨 What's New in This Update?</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">✨</span>
+                        <div>
+                            <p class="font-semibold text-white">Redesigned User Interface</p>
+                            <p class="text-white/80 text-sm">Modern, intuitive design with improved navigation</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">📱</span>
+                        <div>
+                            <p class="font-semibold text-white">Enhanced Mobile Experience</p>
+                            <p class="text-white/80 text-sm">Fully responsive design for all devices</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">⚡</span>
+                        <div>
+                            <p class="font-semibold text-white">Performance Optimizations</p>
+                            <p class="text-white/80 text-sm">Faster loading times and smoother interactions</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">🔐</span>
+                        <div>
+                            <p class="font-semibold text-white">Improved Security</p>
+                            <p class="text-white/80 text-sm">Enhanced authentication and data protection</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">📊</span>
+                        <div>
+                            <p class="font-semibold text-white">Better Analytics</p>
+                            <p class="text-white/80 text-sm">Enhanced reporting and data visualization</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">🎯</span>
+                        <div>
+                            <p class="font-semibold text-white">Task Management</p>
+                            <p class="text-white/80 text-sm">Streamlined task creation and editing workflow</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">🔄</span>
+                        <div>
+                            <p class="font-semibold text-white">Real-time Updates</p>
+                            <p class="text-white/80 text-sm">Instant synchronization across all devices</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3">
+                        <span class="text-2xl">🎨</span>
+                        <div>
+                            <p class="font-semibold text-white">Dark Mode</p>
+                            <p class="text-white/80 text-sm">Beautiful dark theme for better user experience</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Expected Return -->
+                <div class="mt-6 pt-6 border-t border-white/20">
+                    <p class="text-white font-semibold">
+                        <span class="text-blue-300">Expected Return:</span> Within 15-30 minutes
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </body>
