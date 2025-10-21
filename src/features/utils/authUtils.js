@@ -134,8 +134,7 @@ export const isUserAuthenticated = (authState) => {
  */
 export const isAuthLoading = (authState) => {
   if (!authState) return true;
-  // Only show loading during actual login/logout operations, not during auth state changes
-  return authState.isLoading;
+  return authState.isAuthChecking || authState.isLoading;
 };
 
 /**
