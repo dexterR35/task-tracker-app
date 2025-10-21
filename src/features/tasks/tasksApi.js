@@ -332,7 +332,7 @@ export const tasksApi = createApi({
           // Add throttling to prevent rapid re-renders and excessive updates
           let updateTimeout = null;
           let lastUpdate = 0;
-          const THROTTLE_MS = 2000; // 2 seconds between updates
+          const THROTTLE_MS = 1000; // 1 second between updates (faster but still throttled)
           
           const throttledUpdate = (tasks) => {
             const now = Date.now();
