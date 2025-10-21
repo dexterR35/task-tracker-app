@@ -54,13 +54,6 @@ const Sidebar = () => {
       description: "LP Management",
       color: "orange",
     },
-    {
-      name: "Documentation",
-      href: "/documentation",
-      icon: Icons.generic.document,
-      description: "System documentation",
-      color: "indigo",
-    },
   ];
 
   const getColorClasses = (color, isActive) => {

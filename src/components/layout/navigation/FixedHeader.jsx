@@ -50,8 +50,6 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return "Landing Pages";
       case "/users":
         return "User Management";
-      case "/documentation":
-        return "Documentation";
       default:
         return "Dashboard";
     }

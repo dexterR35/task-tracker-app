@@ -14,25 +14,13 @@ import listenerManager from "@/features/utils/firebaseListenerManager";
 import { fetchUserByUIDFromFirestore } from "@/features/users/usersApi";
 import { AUTH } from '@/constants';
 
-// --- Configuration & Constants ---
 const VALID_ROLES = AUTH.VALID_ROLES;
-
-// --- Internal State Management ---
 let authUnsubscribe = null;
 
-// Session management to ensure only one auth per user per browser
 const SESSION_KEY = 'task_tracker_auth_session';
-// Session timeout removed - sessions persist until explicit logout
 let isSessionActive = false;
 
-/**
- * Session management utilities
- */
 const SessionManager = {
-  /**
-   * Get current session data
-   * @returns {Object|null} - Session data or null
-   */
   getSession: () => {
     try {
       const sessionData = localStorage.getItem(SESSION_KEY);
@@ -43,10 +31,6 @@ const SessionManager = {
     }
   },
 
-  /**
-   * Set session data
-   * @param {Object} sessionData - Session data to store
-   */
   setSession: (sessionData) => {
     try {
       const session = {
@@ -62,14 +46,10 @@ const SessionManager = {
     }
   },
 
-  /**
-   * Clear session data
-   */
   clearSession: () => {
     try {
       localStorage.removeItem(SESSION_KEY);
       isSessionActive = false;
-      // Session timeout removed - no cleanup needed
       logger.log('Session data cleared');
     } catch (error) {
       logger.error('Failed to clear session data:', error);
