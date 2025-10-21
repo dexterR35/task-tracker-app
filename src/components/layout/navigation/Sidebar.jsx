@@ -85,7 +85,7 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
+    <div className="flex flex-col h-full bg-white dark:bg-smallCard border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
       {/* Header Section */}
       <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">

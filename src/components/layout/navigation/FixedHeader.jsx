@@ -59,7 +59,7 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
 
 
   return (
-    <div className="flex items-center justify-between h-full px-4 lg:px-8 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="flex items-center justify-between h-full px-4 lg:px-8 bg-white dark:bg-smallCard border-b border-gray-200 dark:border-gray-700 shadow-sm">
       {/* Left Section */}
       <div className="flex items-center space-x-4">
         {/* Sidebar Toggle */}

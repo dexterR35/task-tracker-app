@@ -67,7 +67,7 @@
 
 @theme {
   /* ===== BASE COLORS ===== */
-  --color-primary: #17181c;
+  --color-primary: #181826;
   --color-primary-80: #0a2470;
   --color-secondary: #1d1f23;
   --color-secondary-dark: #4949492b;
@@ -75,7 +75,7 @@
   --color-title: #0f3cd9;
   --color-focus: #aebfff;
   --color-soft: #3d48c9; /* blue-soft */
-  --color-smallCard: #202735;
+  --color-smallCard: #212134;
   --color-smallCard-white: #e8edff;
 
   /* ===== SPACING SCALE ===== */
