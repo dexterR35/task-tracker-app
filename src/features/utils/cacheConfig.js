@@ -50,7 +50,7 @@ export const CACHE_CONFIGS = {
     keepUnusedDataFor: CACHE_DURATIONS.LONG, // Changed from INFINITE to prevent memory leaks
     refetchOnMountOrArgChange: false, // Don't refetch - real-time listeners handle updates
     refetchOnFocus: false, // Don't refetch on focus - real-time listeners handle updates
-    refetchOnReconnect: true // Refetch on reconnect to ensure data consistency
+    refetchOnReconnect: false // Don't refetch on reconnect - prevent infinite loops
   },
   
   // User data - long cache since users don't change frequently

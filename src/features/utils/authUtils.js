@@ -134,6 +134,8 @@ export const isUserAuthenticated = (authState) => {
  */
 export const isAuthLoading = (authState) => {
   if (!authState) return true;
+  // Don't show loading if we've timed out
+  if (authState.authTimeout) return false;
   return authState.isAuthChecking || authState.isLoading;
 };
 

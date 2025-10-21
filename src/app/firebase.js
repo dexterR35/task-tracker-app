@@ -102,7 +102,12 @@ const setupAuthPersistence = async (maxRetries = 3) => {
  */
 const initializeAuthPersistence = async () => {
   try {
-    await setupAuthPersistence();
+    // Only set up persistence in browser environment
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      await setupAuthPersistence();
+    } else {
+      logger.log("Skipping auth persistence setup - not in browser environment");
+    }
   } catch (error) {
     // Log error but don't crash the app
     logger.error("Auth persistence initialization failed", error);
@@ -113,7 +118,9 @@ const initializeAuthPersistence = async () => {
   }
 };
 
-// Initialize auth persistence asynchronously
-initializeAuthPersistence();
+// Initialize auth persistence asynchronously only in browser
+if (typeof window !== 'undefined') {
+  initializeAuthPersistence();
+}
 
 export default appInstance;

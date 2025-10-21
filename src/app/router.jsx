@@ -50,6 +50,29 @@ const SimpleLoader = () => (
 );
 
 /**
+ * Timeout fallback component when auth takes too long
+ * @returns {JSX.Element} - Timeout component
+ */
+const AuthTimeoutFallback = () => (
+  <div className="min-h-screen flex-center">
+    <div className="text-center">
+      <div className="text-2xl font-bold text-gray-600 mb-4">
+        Authentication Timeout
+      </div>
+      <div className="text-gray-500 mb-6">
+        The authentication process is taking longer than expected.
+      </div>
+      <button 
+        onClick={() => window.location.reload()} 
+        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Retry
+      </button>
+    </div>
+  </div>
+);
+
+/**
  * Page wrapper with smooth transitions
  * @param {Object} props - Component props
  * @param {React.ReactNode} props.children - Child components to render
@@ -161,6 +184,11 @@ ProtectedRoute.displayName = "ProtectedRoute";
  */
 const RootLayout = () => {
   const authState = useAuth();
+  
+  // Show timeout fallback if auth has timed out
+  if (authState?.authTimeout) {
+    return <AuthTimeoutFallback />;
+  }
   
   // Show loading during initial auth check to prevent flash
   if (isAuthLoading(authState)) {

@@ -307,6 +307,12 @@ export const setupAuthListener = (dispatch) => {
             const existingSession = SessionManager.getSession();
             if (existingSession && existingSession.uid === user.uid) {
               logger.log("User already authenticated, skipping duplicate fetch");
+              // Still dispatch to ensure state is consistent
+              dispatch(
+                authSlice.actions.authStateChanged({ 
+                  user: existingSession.user || null 
+                })
+              );
               return;
             }
 
@@ -342,6 +348,7 @@ export const setupAuthListener = (dispatch) => {
                 uid: normalizedUser.uid,
                 email: normalizedUser.email,
                 role: normalizedUser.role,
+                user: normalizedUser, // Store user data in session
                 sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
               });
             }
@@ -492,6 +499,7 @@ const initialState = {
   isLoading: false, // Only true during login/logout attempts
   isAuthChecking: true, // Start as true to indicate we're checking auth on app load
   error: null,
+  authTimeout: false, // Track if auth check has timed out
 };
 
 const authSlice = createSlice({
@@ -520,6 +528,13 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.isAuthChecking = true; // Mark that we're checking auth
       state.error = null;
+      state.authTimeout = false;
+    },
+    // Add timeout action
+    setAuthTimeout: (state) => {
+      state.authTimeout = true;
+      state.isAuthChecking = false;
+      state.isLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -555,7 +570,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setLoading, authStateChanged, startAuthInit } =
+export const { clearError, setLoading, authStateChanged, startAuthInit, setAuthTimeout } =
   authSlice.actions;
 
 // Export session management functions

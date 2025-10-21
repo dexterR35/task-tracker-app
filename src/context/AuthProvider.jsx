@@ -9,7 +9,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { cleanupAuthListener, setupAuthListener } from "@/features/auth/authSlice";
+import { cleanupAuthListener, setupAuthListener, setAuthTimeout } from "@/features/auth/authSlice";
 import { logger } from "@/utils/logger";
 
 /**
@@ -23,6 +23,8 @@ export const AuthProvider = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    let timeoutId;
+    
     try {
       logger.log("Initializing authentication provider");
       
@@ -30,14 +32,24 @@ export const AuthProvider = ({ children }) => {
       setupAuthListener(dispatch);
       setIsInitialized(true);
       
+      // Set a timeout to prevent infinite loading (10 seconds)
+      timeoutId = setTimeout(() => {
+        logger.warn("Authentication check timed out after 10 seconds");
+        dispatch(setAuthTimeout());
+      }, 10000);
+      
       logger.log("Authentication provider initialized successfully");
     } catch (error) {
       logger.error("Failed to initialize authentication provider:", error);
+      dispatch(setAuthTimeout());
     }
 
     // Cleanup on unmount
     return () => {
       try {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         logger.log("Cleaning up authentication provider");
         cleanupAuthListener();
       } catch (error) {
