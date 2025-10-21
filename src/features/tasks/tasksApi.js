@@ -14,6 +14,7 @@ import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { getCurrentUserInfo } from "@/features/auth/authSlice";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
+import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
 import {
   collection,
   query as fsQuery,
@@ -252,6 +253,14 @@ export const tasksApi = createApi({
           tasksQuery = buildTaskQuery(tasksRef, role, userUID);
 
           const tasksSnapshot = await getDocs(tasksQuery);
+          
+          // Track Firestore usage - count actual documents read
+          const documentsRead = tasksSnapshot.docs.length;
+          firestoreUsageTracker.trackQuery(`tasks_${monthId}`, documentsRead);
+          
+          // Also track the month document read
+          firestoreUsageTracker.trackDocumentRead(`months/${monthId}`);
+          
           const tasks = tasksSnapshot.docs.map((doc) => ({
             id: doc.id,
             monthId: monthId,
@@ -354,6 +363,11 @@ export const tasksApi = createApi({
             return onSnapshot(
               query,
               (snapshot) => {
+                // Track real-time listener reads
+                if (snapshot && snapshot.docs) {
+                  firestoreUsageTracker.trackListener(`tasks_${arg.monthId}`, snapshot.docs.length);
+                }
+                
                 if (!snapshot || !snapshot.docs || snapshot.empty) {
                   throttledUpdate([]);
                   return;

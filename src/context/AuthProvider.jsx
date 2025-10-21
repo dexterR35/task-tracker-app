@@ -11,6 +11,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { cleanupAuthListener, setupAuthListener } from "@/features/auth/authSlice";
 import { logger } from "@/utils/logger";
+import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
 
 /**
  * AuthProvider component that manages authentication state
@@ -25,6 +26,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     try {
       logger.log("Initializing authentication provider");
+      
+      // Start Firestore usage tracking (with error handling)
+      try {
+        firestoreUsageTracker.startTracking();
+      } catch (error) {
+        logger.error('Failed to start Firestore usage tracker:', error);
+      }
       
       // Clear any stale session data that might cause conflicts
       const sessionKey = 'task_tracker_auth_session';

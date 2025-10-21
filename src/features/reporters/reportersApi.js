@@ -7,6 +7,7 @@ import {
 } from "@/utils/apiUtils";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { API_CONFIG } from "@/constants";
+import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
 
 /**
  * Reporters API - Refactored to use base API factory
@@ -51,6 +52,9 @@ export const reportersApi = createApi({
               useCache: true,
               cacheKey: 'getReporters'
             });
+            
+            // Track Firestore usage
+            firestoreUsageTracker.trackQuery('reporters', reporters.length);
           } catch (orderError) {
             // Fallback: fetch without ordering if createdAt field doesn't exist
             reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {

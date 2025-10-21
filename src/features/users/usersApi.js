@@ -19,6 +19,7 @@ import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { isUserAuthenticated as checkUserAuth } from "@/features/utils/authUtils";
 import { auth } from "@/app/firebase";
 import { API_CONFIG } from "@/constants";
+import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
 
 
 /**
@@ -97,6 +98,9 @@ export const usersApi = createApi({
               orderDirection: "desc",
               limit: API_CONFIG.REQUEST_LIMITS.USERS_PER_QUERY
             });
+            
+            // Track Firestore usage
+            firestoreUsageTracker.trackQuery('users', users.length);
 
             return { data: users };
           } catch (error) {

@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Icons } from "@/components/icons";
 import MidnightCountdown from "@/components/ui/MidnightCountdown/MidnightCountdown";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import FirestoreUsageMonitor from "@/components/ui/FirestoreUsageMonitor/FirestoreUsageMonitor";
 
 const Sidebar = () => {
   const { logout, clearError, canAccess, user } = useAuth();
@@ -175,6 +176,11 @@ const Sidebar = () => {
           </div>
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
         </div>
+      </div>
+
+      {/* Firestore Usage Monitor */}
+      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+        <FirestoreUsageMonitor />
       </div>
 
       {/* Bottom Section */}
