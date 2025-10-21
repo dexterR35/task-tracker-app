@@ -100,7 +100,7 @@ class FirebaseListenerManager {
     listenersToRemove.forEach(key => this.listeners.delete(key));
     
     if (listenersToRemove.length > 0) {
-      logger.info(`[ListenerManager] Selective cleanup removed ${listenersToRemove.length} non-critical listeners`);
+      logger.log(`[ListenerManager] Selective cleanup removed ${listenersToRemove.length} non-critical listeners`);
     }
   }
 

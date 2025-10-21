@@ -1,3 +1,11 @@
+/**
+ * Login Form Component
+ * 
+ * @fileoverview Authentication login form with validation and error handling
+ * @author Senior Developer
+ * @version 2.0.0
+ */
+
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -11,6 +19,13 @@ import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { logger } from '@/utils/logger';
 
 
+/**
+ * Login Form Component
+ * @param {Object} props - Component props
+ * @param {Function} props.onSuccess - Success callback function
+ * @param {string} props.className - Additional CSS classes
+ * @returns {JSX.Element} - Login form component
+ */
 const LoginForm = ({ onSuccess, className = "" }) => {
   const { login } = useAuth();
   
@@ -29,6 +44,10 @@ const LoginForm = ({ onSuccess, className = "" }) => {
     reValidateMode: 'onChange'
   });
 
+  /**
+   * Handle form submission with validation and error handling
+   * @param {Object} data - Form data object
+   */
   const onSubmit = async (data) => {
     try {
       // Prepare login data with lowercase enforcement for email

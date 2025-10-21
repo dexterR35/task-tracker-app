@@ -1,10 +1,15 @@
-// src/router.jsx
+/**
+ * Application Router Configuration
+ * 
+ * @fileoverview Main router configuration with route protection and layouts
+ * @author Senior Developer
+ * @version 2.0.0
+ */
+
 import {
   createBrowserRouter,
   Navigate,
   useLocation,
-  useNavigate,
-  Link,
   Outlet,
 } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -34,14 +39,22 @@ import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 
-// Simple loading component
+/**
+ * Simple loading component for app initialization
+ * @returns {JSX.Element} - Loading component
+ */
 const SimpleLoader = () => (
-  <div className="min-h-screen flex-center ">
+  <div className="min-h-screen flex-center">
     <Loader size="lg" text="Initializing app…" variant="spinner" />
   </div>
 );
 
-// Simple page wrapper with motion
+/**
+ * Page wrapper with smooth transitions
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render
+ * @returns {JSX.Element} - Page wrapper component
+ */
 const PageWrapper = ({ children }) => {
   const location = useLocation();
   
@@ -60,11 +73,15 @@ const PageWrapper = ({ children }) => {
 
 
 
-// Public route protection - redirects authenticated users to dashboard
+/**
+ * Public route protection component
+ * Redirects authenticated users to dashboard, allows unauthenticated users to access public pages
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render
+ * @returns {JSX.Element} - Public route component
+ */
 const PublicRoute = ({ children }) => {
   const authState = useAuth();
-  const location = useLocation();
-
 
   // If user is authenticated, redirect to dashboard
   if (isUserAuthenticated(authState)) {
@@ -75,13 +92,19 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// Route protection component
+/**
+ * Protected route component with authentication and role-based access control
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render
+ * @param {string|null} props.requiredRole - Required role for access (optional)
+ * @returns {JSX.Element} - Protected route component
+ */
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const authState = useAuth();
   const { canAccess } = authState;
   const location = useLocation();
 
-  // Redirect state object
+  // Redirect state object for post-login redirect
   const redirectState = {
     from: location.pathname + location.search + location.hash
   };
@@ -89,7 +112,6 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   const errorState = {
     error: authState.error
   };
-
 
   // Handle authentication errors
   if (authState.error) {
@@ -109,7 +131,13 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   return children;
 };
 
-// Admin-only route protection component (assumes user is already authenticated)
+/**
+ * Admin-only route protection component
+ * Assumes user is already authenticated by parent ProtectedRoute
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render
+ * @returns {JSX.Element} - Admin route component
+ */
 const AdminRoute = ({ children }) => {
   const authState = useAuth();
   const { canAccess } = authState;
@@ -127,7 +155,10 @@ ProtectedRoute.displayName = "ProtectedRoute";
 
 
 
-// Root layout with global auth loading state and error boundary
+/**
+ * Root layout with global auth loading state and error boundary
+ * @returns {JSX.Element} - Root layout component
+ */
 const RootLayout = () => {
   const authState = useAuth();
   
@@ -143,12 +174,18 @@ const RootLayout = () => {
   );
 };
 
+/**
+ * Main application router configuration
+ * Defines all routes with proper protection and layouts
+ */
 const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
     children: [
-      // Public routes (no layout needed)
+      // ========================================
+      // PUBLIC ROUTES (No authentication required)
+      // ========================================
       {
         path: "login",
         element: (
@@ -161,7 +198,6 @@ const router = createBrowserRouter([
         path: "unauthorized",
         element: <UnauthorizedPage />,
       },
-      // Homepage route (public, but redirects authenticated users)
       {
         index: true,
         element: (
@@ -170,7 +206,9 @@ const router = createBrowserRouter([
           </PublicRoute>
         ),
       },
-      // Protected routes with AuthLayout (sidebar navigation)
+      // ========================================
+      // PROTECTED ROUTES (Authentication required)
+      // ========================================
       {
         element: (
           <ProtectedRoute>
@@ -180,7 +218,9 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          // Dashboard route
+          // ========================================
+          // USER ROUTES (All authenticated users)
+          // ========================================
           {
             path: "dashboard",
             element: (
@@ -191,8 +231,26 @@ const router = createBrowserRouter([
               </ErrorBoundary>
             ),
           },
+          {
+            path: "task/:taskId",
+            element: (
+              <PageWrapper>
+                <TaskDetailPage />
+              </PageWrapper>
+            ),
+          },
+          {
+            path: "documentation",
+            element: (
+              <PageWrapper key="documentation">
+                <DocumentationPage />
+              </PageWrapper>
+            ),
+          },
           
-          // Admin-only routes (no /admin prefix)
+          // ========================================
+          // ADMIN-ONLY ROUTES (Admin role required)
+          // ========================================
           {
             path: "analytics",
             element: (
@@ -226,6 +284,20 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: "analytics-detail",
+            element: (
+              <AdminRoute>
+                <PageWrapper>
+                  <DynamicAnalyticsPage />
+                </PageWrapper>
+              </AdminRoute>
+            ),
+          },
+          
+          // ========================================
+          // UTILITY ROUTES (Coming soon pages)
+          // ========================================
+          {
             path: "preview/:monthId",
             element: <ComingSoonPage />,
           },
@@ -233,36 +305,14 @@ const router = createBrowserRouter([
             path: "coming-soon",
             element: <ComingSoonPage />,
           },
-          {
-            path: "task/:taskId",
-            element: (
-              <PageWrapper>
-                <TaskDetailPage />
-              </PageWrapper>
-            ),
-          },
-          {
-            path: "analytics-detail",
-            element: (
-              <PageWrapper>
-                <DynamicAnalyticsPage />
-              </PageWrapper>
-            ),
-          },
-          {
-            path: "documentation",
-            element: (
-              <PageWrapper key="documentation">
-                <DocumentationPage />
-              </PageWrapper>
-            ),
-          },
         ],
       },
     ],
   },
 
-  // Catch-all route
+  // ========================================
+  // ERROR ROUTES (Catch-all for 404s)
+  // ========================================
   {
     path: "*",
     element: <NotFoundPage />,

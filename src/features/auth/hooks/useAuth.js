@@ -98,65 +98,28 @@ export const useAuth = () => {
     dispatch(clearAuthError());
   }, [dispatch]);
 
-  // Enhanced access control with better consistency
-  const canAccess = (requiredRole) => {
-    if (requiredRole === 'authenticated') {
-      return !!user; // Check if the user object exists
-    }
-    return canAccessRole(user, requiredRole);
-  };
-
-  // Permission-based access control
-  const hasPermissionCallback = (permission) => {
-    return hasPermission(safeUser, permission);
-  };
-
-  // Check if user can generate charts/analytics
-  const canGenerate = () => {
-    return canAccessCharts(safeUser);
-  };
-
-  // Check if user can access task operations
-  const canAccessTasksCallback = () => {
-    return canAccessTasks(safeUser);
-  };
-
-  // Comprehensive permission checking functions
-  const canCreateTaskCallback = () => {
-    return canCreateTask(safeUser);
-  };
-
-  const canUpdateTaskCallback = () => {
-    return canUpdateTask(safeUser);
-  };
-
-  const canDeleteTaskCallback = () => {
-    return canDeleteTask(safeUser);
-  };
-
-  const canViewTasksCallback = () => {
-    return canViewTasks(safeUser);
-  };
-
-  const canCreateBoardCallback = () => {
-    return canCreateBoard(safeUser);
-  };
-
-  const canSubmitFormsCallback = () => {
-    return canSubmitForms(safeUser);
-  };
-
-  const canPerformTaskCRUDCallback = () => {
-    return canPerformTaskCRUD(safeUser);
-  };
-
-  const hasAdminPermissionsCallback = () => {
-    return hasAdminPermissions(safeUser);
-  };
-
-  const getUserPermissionSummaryCallback = () => {
-    return getUserPermissionSummary(safeUser);
-  };
+  // Memoized permission functions for better performance
+  const permissionFunctions = useMemo(() => ({
+    canAccess: (requiredRole) => {
+      if (requiredRole === 'authenticated') {
+        return !!user; // Check if the user object exists
+      }
+      return canAccessRole(user, requiredRole);
+    },
+    
+    hasPermission: (permission) => hasPermission(safeUser, permission),
+    canGenerate: () => canAccessCharts(safeUser),
+    canAccessTasks: () => canAccessTasks(safeUser),
+    canCreateTask: () => canCreateTask(safeUser),
+    canUpdateTask: () => canUpdateTask(safeUser),
+    canDeleteTask: () => canDeleteTask(safeUser),
+    canViewTasks: () => canViewTasks(safeUser),
+    canCreateBoard: () => canCreateBoard(safeUser),
+    canSubmitForms: () => canSubmitForms(safeUser),
+    canPerformTaskCRUD: () => canPerformTaskCRUD(safeUser),
+    hasAdminPermissions: () => hasAdminPermissions(safeUser),
+    getUserPermissionSummary: () => getUserPermissionSummary(safeUser)
+  }), [user, safeUser]);
 
   // Simplified auth status check
   const isReady = () => {
@@ -170,22 +133,8 @@ export const useAuth = () => {
     isAuthChecking,
     error,
     
-    // Access control
-    canAccess,
-    hasPermission: hasPermissionCallback,
-    canGenerate,
-    canAccessTasks: canAccessTasksCallback,
-    
-    // Detailed permission checking
-    canCreateTask: canCreateTaskCallback,
-    canUpdateTask: canUpdateTaskCallback,
-    canDeleteTask: canDeleteTaskCallback,
-    canViewTasks: canViewTasksCallback,
-    canCreateBoard: canCreateBoardCallback,
-    canSubmitForms: canSubmitFormsCallback,
-    canPerformTaskCRUD: canPerformTaskCRUDCallback,
-    hasAdminPermissions: hasAdminPermissionsCallback,
-    getUserPermissionSummary: getUserPermissionSummaryCallback,
+    // Permission functions (memoized for performance)
+    ...permissionFunctions,
     
     // Auth actions
     login,

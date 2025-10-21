@@ -87,28 +87,49 @@ const Sidebar = () => {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
       {/* Header Section */}
-      <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200 dark:border-gray-700">
-        <Link to="/dashboard" className="flex items-center space-x-3 group">
-          <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-              <span className="text-white font-bold text-xl">S</span>
+      <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <Link to="/dashboard" className="flex items-center space-x-3 group">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                <span className="text-white font-bold text-xl">S</span>
+              </div>
+            </div>
+            <div className="transition-all duration-300">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                SYNC
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                Task Tracker
+              </p>
+            </div>
+          </Link>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Icons.generic.settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          </button>
+        </div>
+        
+        {/* Date Display */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-3 border border-blue-200 dark:border-blue-700/30">
+          <div className="flex items-center space-x-2">
+            <Icons.generic.calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">
+                {new Date().getFullYear()}
+              </p>
             </div>
           </div>
-          <div className="transition-all duration-300">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-              SYNC
-            </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              Task Tracker
-            </p>
-          </div>
-        </Link>
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Icons.generic.settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-        </button>
+        </div>
       </div>
 
 

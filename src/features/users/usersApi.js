@@ -1,3 +1,11 @@
+/**
+ * Users API Slice
+ * 
+ * @fileoverview RTK Query API for user management with role-based access control
+ * @author Senior Developer
+ * @version 2.0.0
+ */
+
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
 import { 
@@ -12,7 +20,15 @@ import { isUserAuthenticated as checkUserAuth } from "@/features/utils/authUtils
 import { auth } from "@/app/firebase";
 
 
-// Create API endpoint factory for users
+/**
+ * ============================================================================
+ * API CONFIGURATION
+ * ============================================================================
+ */
+
+/**
+ * Create API endpoint factory for users
+ */
 const usersApiFactory = createApiEndpointFactory({
   collectionName: 'users',
   requiresAuth: true,
@@ -20,7 +36,12 @@ const usersApiFactory = createApiEndpointFactory({
   defaultOrderDirection: 'desc'
 });
 
-// Helper function for consistent error handling
+/**
+ * Helper function for consistent authentication error handling
+ * @param {Error} error - Error object
+ * @returns {Object} - Empty data object for auth errors
+ * @throws {Error} - Re-throws non-auth errors
+ */
 const handleAuthError = (error) => {
   if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
     return { data: [] };

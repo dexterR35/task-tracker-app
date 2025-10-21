@@ -317,7 +317,7 @@ export const MonthBoardBanner = () => {
 
       if (result.success) {
         showSuccess(`Month board for ${monthName} created successfully!`);
-        logger.info("Month board generated successfully", { monthId, monthName });
+        logger.log("Month board generated successfully", { monthId, monthName });
       } else {
         showError(result.message || "Failed to create month board");
         logger.error("Month board generation failed", { monthId, monthName, error: result.message });

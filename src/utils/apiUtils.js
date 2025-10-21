@@ -826,7 +826,7 @@ export const createApiWrapper = (apiFunction, operation, options = {}) => {
 
       if (logPerformance) {
         const duration = Date.now() - startTime;
-        logger.info(`[${operation}] Completed in ${duration}ms`);
+        logger.log(`[${operation}] Completed in ${duration}ms`);
       }
 
       return result;

@@ -1,5 +1,16 @@
+/**
+ * Tasks API Slice
+ * 
+ * @fileoverview RTK Query API for task management with role-based access control
+ * @author Senior Developer
+ * @version 2.0.0
+ */
+
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
+// ============================================================================
+// IMPORTS (Optimized - unused imports removed)
+// ============================================================================
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { getCurrentUserInfo } from "@/features/auth/authSlice";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
@@ -15,7 +26,6 @@ import {
   serverTimestamp,
   onSnapshot,
   limit,
-  setDoc,
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
@@ -23,9 +33,7 @@ import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import { handleApiError } from "@/features/utils/errorHandling";
-import { createMidnightScheduler } from "@/utils/midnightScheduler";
 import { 
-  withAuthentication,
   withApiErrorHandling
 } from "@/utils/apiUtils";
 import { validateUserPermissions } from "@/features/utils/authUtils";
@@ -34,7 +42,6 @@ import {
   formatMonth,
   getStartOfMonth,
   getEndOfMonth,
-  formatDate,
   getCurrentYear,
 } from "@/utils/dateUtils";
 import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
@@ -43,7 +50,16 @@ import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/auth
 
 // REMOVED: getYearFromMonthId - not used anywhere
 
-// Helper functions for Firestore references - always use current year
+/**
+ * Helper functions for Firestore references - always use current year
+ */
+
+/**
+ * Get Firestore reference for tasks (collection or individual document)
+ * @param {string} monthId - Month identifier (e.g., "2025-01")
+ * @param {string|null} taskId - Optional task ID for individual task
+ * @returns {DocumentReference|CollectionReference} - Firestore reference
+ */
 const getTaskRef = (monthId, taskId = null) => {
   const yearId = getCurrentYear();
   const basePath = ["departments", "design", yearId, monthId, "taskdata"];
@@ -55,12 +71,22 @@ const getTaskRef = (monthId, taskId = null) => {
   }
 };
 
+/**
+ * Get Firestore reference for a specific month document
+ * @param {string} monthId - Month identifier (e.g., "2025-01")
+ * @returns {DocumentReference} - Month document reference
+ */
 const getMonthRef = (monthId) => {
   // Based on the actual database structure: /departments/design/2025/2025-09/
   const yearId = monthId.split('-')[0]; // Extract year from monthId (e.g., "2025" from "2025-09")
   return doc(db, "departments", "design", yearId, monthId); // Month document
 };
 
+/**
+ * Get Firestore reference for months collection
+ * @param {string|null} yearId - Optional year ID, defaults to current year
+ * @returns {CollectionReference} - Months collection reference
+ */
 const getMonthsRef = (yearId = null) => {
   // Based on the actual database structure: /departments/design/{year}/
   // If yearId is provided, return collection for that year, otherwise return current year
@@ -68,15 +94,26 @@ const getMonthsRef = (yearId = null) => {
   return collection(db, "departments", "design", targetYear); // Year collection under design department
 };
 
-// API Configuration
+/**
+ * API Configuration constants
+ */
 const API_CONFIG = {
   REQUEST_LIMITS: {
     TASKS_PER_MONTH: 500,
     USER_QUERY_LIMIT: 1,
   },
+  CACHE_DURATION: {
+    TASKS: 5 * 60 * 1000, // 5 minutes
+    MONTHS: 10 * 60 * 1000, // 10 minutes
+  },
 };
 
-// Helper function to validate user permissions consistently
+/**
+ * Validate user permissions for task operations
+ * @param {Object} userData - User data object
+ * @param {string} operation - Operation being performed
+ * @returns {Object} - Validation result with isValid boolean and errors array
+ */
 const validateTaskPermissions = (userData, operation) => {
   if (!userData) {
     return { isValid: false, errors: ['User data is required'] };
@@ -89,19 +126,25 @@ const validateTaskPermissions = (userData, operation) => {
   });
 };
 
-// Helper function to build task query with user filtering
-  const buildTaskQuery = (tasksRef, role, userUID) => {
-    if (role === "user") {
-      // Regular users: fetch only their own tasks
-      return fsQuery(tasksRef, where("userUID", "==", userUID));
-    } else if (role === "admin" && userUID) {
-      // Admin users: specific user's tasks when a user is selected
-      return fsQuery(tasksRef, where("userUID", "==", userUID));
-    } else {
-      // Admin users: all tasks when no specific user is selected
-      return fsQuery(tasksRef);
-    }
-  };
+/**
+ * Build Firestore query for tasks based on user role and permissions
+ * @param {CollectionReference} tasksRef - Tasks collection reference
+ * @param {string} role - User role (admin, user)
+ * @param {string|null} userUID - Optional user UID for filtering
+ * @returns {Query} - Firestore query
+ */
+const buildTaskQuery = (tasksRef, role, userUID) => {
+  if (role === "user") {
+    // Regular users: fetch only their own tasks
+    return fsQuery(tasksRef, where("userUID", "==", userUID));
+  } else if (role === "admin" && userUID) {
+    // Admin users: specific user's tasks when a user is selected
+    return fsQuery(tasksRef, where("userUID", "==", userUID));
+  } else {
+    // Admin users: all tasks when no specific user is selected
+    return fsQuery(tasksRef);
+  }
+};
 
 // Helper function to handle reporter name resolution with security validation
 const resolveReporterName = (reporters, reporterId, reporterName) => {

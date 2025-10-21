@@ -1,3 +1,20 @@
+/**
+ * Password Field Component
+ * 
+ * @fileoverview Reusable password input field with validation and error handling
+ * @author Senior Developer
+ * @version 2.0.0
+ */
+
+/**
+ * Password Field Component
+ * @param {Object} props - Component props
+ * @param {Object} props.field - Field configuration object
+ * @param {Function} props.register - React Hook Form register function
+ * @param {Object} props.errors - Form errors object
+ * @param {Object} props.formValues - Current form values
+ * @returns {JSX.Element} - Password field component
+ */
 const PasswordField = ({ field, register, errors, formValues }) => {
   const fieldError = errors[field.name];
   

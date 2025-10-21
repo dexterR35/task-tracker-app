@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Icons } from "@/components/icons";
@@ -6,9 +6,37 @@ import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import Avatar from "@/components/ui/Avatar/Avatar";
 
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
-  const { user, canAccess } = useAuth();
+  const { user, canAccess, logout, clearError } = useAuth();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowUserMenu(false); // Close dropdown after logout
+    } catch (error) {
+      clearError();
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   // Get page title based on current route
   const getPageTitle = () => {
@@ -29,55 +57,6 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
     }
   };
 
-  const getPageIcon = () => {
-    const path = location.pathname;
-    switch (path) {
-      case "/dashboard":
-        return Icons.cards.home;
-      case "/analytics":
-        return Icons.cards.chart;
-      case "/landing-pages":
-        return Icons.generic.document;
-      case "/users":
-        return Icons.admin.users;
-      case "/documentation":
-        return Icons.generic.document;
-      default:
-        return Icons.cards.home;
-    }
-  };
-
-  const getPageColor = () => {
-    const path = location.pathname;
-    switch (path) {
-      case "/dashboard":
-        return "blue";
-      case "/analytics":
-        return "purple";
-      case "/landing-pages":
-        return "orange";
-      case "/users":
-        return "green";
-      case "/documentation":
-        return "indigo";
-      default:
-        return "blue";
-    }
-  };
-
-  const getColorClasses = (color) => {
-    const colorMap = {
-      blue: "bg-blue-500 text-white shadow-lg shadow-blue-500/25",
-      purple: "bg-purple-500 text-white shadow-lg shadow-purple-500/25",
-      green: "bg-green-500 text-white shadow-lg shadow-green-500/25",
-      orange: "bg-orange-500 text-white shadow-lg shadow-orange-500/25",
-      indigo: "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25",
-    };
-    return colorMap[color] || colorMap.blue;
-  };
-
-  const PageIcon = getPageIcon();
-  const pageColor = getPageColor();
 
   return (
     <div className="flex items-center justify-between h-full px-4 lg:px-8 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -92,24 +71,11 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
           <Icons.buttons.menu className="w-5 h-5" />
         </button>
 
-        {/* Page Title with Enhanced Design */}
-        <div className="flex items-center space-x-3">
-          <div className={`p-2.5 rounded-xl ${getColorClasses(pageColor)} transition-all duration-200`}>
-            <PageIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-              {getPageTitle()}
-            </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
+        {/* Page Title */}
+        <div className="flex items-center">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+            {getPageTitle()}
+          </h1>
         </div>
       </div>
 
@@ -127,7 +93,7 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         </div>
 
         {/* User Profile Dropdown */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
@@ -172,7 +138,10 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
                 </button>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 py-1">
-                <button className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <button 
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
                   <Icons.buttons.logout className="w-4 h-4 inline mr-3" />
                   Sign Out
                 </button>

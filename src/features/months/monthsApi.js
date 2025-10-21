@@ -1,21 +1,24 @@
 /**
- * Month API - Dedicated API for month-related operations
- * Handles month board management, month selection, and month data
+ * Months API Slice
+ * 
+ * @fileoverview RTK Query API for month board management and month data operations
+ * @author Senior Developer
+ * @version 2.0.0
  */
 
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+// ============================================================================
+// IMPORTS (Optimized - unused imports removed)
+// ============================================================================
+
 import { 
   collection, 
   doc, 
   getDoc, 
   getDocs, 
-  addDoc, 
   setDoc,
   updateDoc, 
-  query, 
-  orderBy,
-  limit,
+
   serverTimestamp 
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
@@ -24,21 +27,18 @@ import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { validateUserPermissions } from "@/features/utils/authUtils";
 import { getCurrentUserInfo } from "@/features/auth/authSlice";
 import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { deduplicateRequest } from "@/features/utils/requestDeduplication";
-import listenerManager from "@/features/utils/firebaseListenerManager";
 
+
+// Date and month utilities
 import {
   formatMonth,
-  getStartOfMonth,
-  getEndOfMonth,
-  formatDate,
   getCurrentYear,
   parseMonthId,
 } from "@/utils/dateUtils";
 import {
   getMonthInfo,
 } from "@/utils/monthUtils.jsx";
-import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
+
 
 // ============================================================================
 // FIRESTORE REFERENCE HELPERS
@@ -65,9 +65,14 @@ const getMonthsRef = (yearId = null) => {
 };
 
 // ============================================================================
-// CACHE TAGS
+// CACHE TAGS AND CONFIGURATION
 // ============================================================================
 
+/**
+ * Generate cache tags for month-related queries
+ * @param {string} monthId - Month identifier
+ * @returns {Array} - Array of cache tags
+ */
 const getMonthCacheTags = (monthId) => [
   { type: "CurrentMonth", id: "ENHANCED" },
   { type: "MonthBoards", id: monthId },
@@ -76,9 +81,13 @@ const getMonthCacheTags = (monthId) => [
 ];
 
 // ============================================================================
-// MONTH API
+// MONTHS API CONFIGURATION
 // ============================================================================
 
+/**
+ * Months API configuration with RTK Query
+ * Handles month board management, month selection, and month data operations
+ */
 export const monthsApi = createApi({
   reducerPath: "monthsApi",
   baseQuery: fakeBaseQuery(),
@@ -257,7 +266,7 @@ export const monthsApi = createApi({
 
           await setDoc(getMonthRef(monthId), monthMetadata);
 
-          logger.info(`Month board created successfully for ${monthId}`, {
+          logger.log(`Month board created successfully for ${monthId}`, {
             monthId,
             boardId,
             createdBy: currentUser.uid,
@@ -353,7 +362,7 @@ export const monthsApi = createApi({
 
           await updateDoc(boardRef, updatesWithTimestamp);
 
-          logger.info(`Month board updated successfully for ${monthId}`, {
+          logger.log(`Month board updated successfully for ${monthId}`, {
             monthId,
             updates,
             updatedBy: getCurrentUserInfo().uid,

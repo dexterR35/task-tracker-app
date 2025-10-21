@@ -1,6 +1,10 @@
 /**
  * Authentication utility functions
  * Centralized authentication state checking and user validation
+ * 
+ * @fileoverview Provides comprehensive authentication and authorization utilities
+ * @author Senior Developer
+ * @version 2.0.0
  */
 
 import { logger } from '@/utils/logger';
@@ -10,7 +14,7 @@ import { logger } from '@/utils/logger';
 // ============================================================================
 
 /**
- * Check if user is admin
+ * Check if user has admin role
  * @param {Object} user - User object
  * @returns {boolean} - True if user is admin
  */
@@ -33,6 +37,39 @@ export const getUserUID = (user) => {
 };
 
 /**
+ * Validates user object structure and completeness
+ * @param {Object} user - User object to validate
+ * @param {Object} options - Validation options
+ * @param {boolean} options.strict - Whether to use strict validation
+ * @returns {Object} - Validation result with isValid boolean and errors array
+ */
+export const validateUserStructure = (user, options = {}) => {
+  const { strict = false } = options;
+  
+  if (!user) {
+    return { isValid: false, errors: ['User object is required'] };
+  }
+  
+  const errors = [];
+  const requiredFields = ['uid', 'email', 'name', 'role'];
+  
+  if (strict) {
+    requiredFields.push('permissions', 'isActive');
+  }
+  
+  requiredFields.forEach(field => {
+    if (!user[field] && user[field] !== false) {
+      errors.push(`Missing required field: ${field}`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+/**
  * Check if user object is complete and valid
  * @param {Object} user - User object
  * @returns {boolean} - True if user is complete and valid
@@ -41,6 +78,34 @@ export const isUserComplete = (user) => {
   if (!user) return false;
   return !!(user.userUID || user.uid) && !!user.email && !!user.name && !!user.role;
 };
+
+/**
+ * Enhanced permission checking with caching
+ * @param {Object} user - User object
+ * @param {string} permission - Permission to check
+ * @returns {boolean} - True if user has permission
+ */
+export const hasPermissionCached = (() => {
+  const cache = new Map();
+  
+  return (user, permission) => {
+    if (!user || !permission) return false;
+    
+    const cacheKey = `${user.uid || user.userUID}_${permission}`;
+    
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey);
+    }
+    
+    const result = hasPermission(user, permission);
+    cache.set(cacheKey, result);
+    
+    // Clear cache after 5 minutes to prevent stale data
+    setTimeout(() => cache.delete(cacheKey), 5 * 60 * 1000);
+    
+    return result;
+  };
+})();
 
 // Internal function for getAuthStatus - strict validation
 const getUserDisplayName = (user) => {
@@ -161,53 +226,106 @@ export const hasPermission = (userData, permission) => {
 };
 
 /**
- * Complex permission checking functions
+ * ============================================================================
+ * ROLE-BASED PERMISSION FUNCTIONS
+ * ============================================================================
+ */
+
+/**
+ * Check if user can create tasks
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can create tasks
  */
 export const canCreateTask = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'create_task') || isAdmin(user);
+  return hasPermission(user, 'create_tasks') || isAdmin(user);
 };
 
+/**
+ * Check if user can update tasks
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can update tasks
+ */
 export const canUpdateTask = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'update_task') || isAdmin(user);
+  return hasPermission(user, 'update_tasks') || isAdmin(user);
 };
 
+/**
+ * Check if user can delete tasks
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can delete tasks
+ */
 export const canDeleteTask = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'delete_task') || isAdmin(user);
+  return hasPermission(user, 'delete_tasks') || isAdmin(user);
 };
 
+/**
+ * Check if user can view tasks
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can view tasks
+ */
 export const canViewTasks = (user) => {
   if (!user) return false;
   return hasPermission(user, 'view_tasks') || isAdmin(user);
 };
 
+/**
+ * Check if user can create boards
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can create boards
+ */
 export const canCreateBoard = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'create_board') || isAdmin(user);
+  return hasPermission(user, 'create_boards') || isAdmin(user);
 };
 
+/**
+ * Check if user can submit forms
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can submit forms
+ */
 export const canSubmitForms = (user) => {
   if (!user) return false;
   return isUserActive(user) && (user.role === 'user' || isAdmin(user));
 };
 
+/**
+ * Check if user can delete data (admin-only operation)
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can delete data
+ */
 export const canDeleteData = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'delete_data');
+  return hasPermission(user, 'delete_data') || isAdmin(user);
 };
 
+/**
+ * Check if user can perform all task CRUD operations
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user can perform all task operations
+ */
 export const canPerformTaskCRUD = (user) => {
   if (!user) return false;
   return canCreateTask(user) && canUpdateTask(user) && canDeleteTask(user);
 };
 
+/**
+ * Check if user has admin permissions
+ * @param {Object} user - User object
+ * @returns {boolean} - True if user has admin permissions
+ */
 export const hasAdminPermissions = (user) => {
   if (!user) return false;
   return isAdmin(user) && isUserActive(user);
 };
 
+/**
+ * Get comprehensive permission summary for a user
+ * @param {Object} user - User object
+ * @returns {Object} - Complete permission summary
+ */
 export const getUserPermissionSummary = (user) => {
   if (!user) {
     return {
@@ -220,6 +338,7 @@ export const getUserPermissionSummary = (user) => {
       canViewTasks: false,
       canCreateBoard: false,
       canSubmitForms: false,
+      canDeleteData: false,
       canPerformTaskCRUD: false,
       hasAdminPermissions: false
     };
@@ -235,6 +354,7 @@ export const getUserPermissionSummary = (user) => {
     canViewTasks: canViewTasks(user),
     canCreateBoard: canCreateBoard(user),
     canSubmitForms: canSubmitForms(user),
+    canDeleteData: canDeleteData(user),
     canPerformTaskCRUD: canPerformTaskCRUD(user),
     hasAdminPermissions: hasAdminPermissions(user)
   };
