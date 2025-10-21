@@ -1,11 +1,11 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/((?!api/).*)",
-      "destination": "/maintenance.html"
+      "source": "/((?!maintenance\\.html|assets/|api/).*)",
+      "destination": "/maintenance.html",
+      "permanent": false
     }
   ],
   "headers": [
