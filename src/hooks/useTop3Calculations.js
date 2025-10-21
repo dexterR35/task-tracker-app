@@ -1,4 +1,5 @@
 import { Icons } from "@/components/icons";
+import { API_CONFIG } from "@/constants";
 
 
 // Helper function to create "No data" entry
@@ -171,7 +172,7 @@ export const useTop3Calculations = (data, options = {}) => {
     };
   }
 
-  // Filter tasks based on options - optimized single pass filtering
+  // Filter tasks based on options - optimized single pass filtering with limit
   const filteredTasks = tasks.filter(task => {
     // Filter by month ID
     if (selectedMonthId && task.monthId !== selectedMonthId) {
@@ -205,7 +206,7 @@ export const useTop3Calculations = (data, options = {}) => {
     }
     
     return true;
-  });
+  }).slice(0, API_CONFIG.REQUEST_LIMITS.TOP_3_LIMIT);
 
   // Calculate total hours
   const totalHours = filteredTasks.reduce((sum, task) => 

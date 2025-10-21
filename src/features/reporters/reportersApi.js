@@ -6,6 +6,7 @@ import {
   checkDocumentExists
 } from "@/utils/apiUtils";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
+import { API_CONFIG } from "@/constants";
 
 /**
  * Reporters API - Refactored to use base API factory
@@ -46,6 +47,7 @@ export const reportersApi = createApi({
             reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {
               orderBy: 'createdAt', 
               orderDirection: 'desc',
+              limit: API_CONFIG.REQUEST_LIMITS.REPORTERS_PER_QUERY,
               useCache: true,
               cacheKey: 'getReporters'
             });
@@ -53,6 +55,7 @@ export const reportersApi = createApi({
             // Fallback: fetch without ordering if createdAt field doesn't exist
             reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {
               orderBy: null,
+              limit: API_CONFIG.REQUEST_LIMITS.REPORTERS_PER_QUERY,
               useCache: true,
               cacheKey: 'getReporters_no_order'
             });

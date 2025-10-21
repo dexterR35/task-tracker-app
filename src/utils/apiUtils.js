@@ -23,6 +23,7 @@ import { logger } from "@/utils/logger";
 import { parseFirebaseError } from "@/features/utils/errorHandling";
 import { serializeTimestampsForRedux } from "@/utils/dateUtils";
 import { transformDataToLowercase } from "@/utils/formUtils";
+import { API_CONFIG } from "@/constants";
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 
 /**
@@ -265,6 +266,9 @@ export const fetchCollectionFromFirestoreAdvanced = async (collectionName, optio
     useCache = true,
     cacheKey = null
   } = options;
+  
+  // Apply default limit if none specified to reduce Firestore reads
+  const effectiveLimit = limitCount || API_CONFIG.REQUEST_LIMITS.ANALYTICS_LIMIT;
 
   const executeQuery = async () => {
     try {
@@ -291,8 +295,8 @@ export const fetchCollectionFromFirestoreAdvanced = async (collectionName, optio
         q = query(q, orderBy(orderByField, orderDirection));
       }
       
-      if (limitCount) {
-        q = query(q, limit(limitCount));
+      if (effectiveLimit) {
+        q = query(q, limit(effectiveLimit));
       }
       
       const snapshot = await getDocs(q);

@@ -1081,33 +1081,39 @@ export const calculateProductAnalyticsData = (tasks) => {
     'misc': 0
   };
 
-  // Count tasks by product
+  // Count tasks by product - include all valid product categories
   tasks.forEach(task => {
     const products = task.data_task?.products || task.products;
     
     if (!products) {
-      productCounts.misc++;
-      return;
+      return; // Skip tasks without products
     }
 
     const productsLower = products.toLowerCase().trim();
     
-    // Check if the product exists in our counts
+    // Count tasks that match our specific product categories (including misc)
     if (productCounts.hasOwnProperty(productsLower)) {
       productCounts[productsLower]++;
-    } else {
-      productCounts.misc++;
     }
+    // Skip tasks that don't match our product categories
   });
 
-  const totalTasks = tasks.length;
+  // Calculate totals for all tasks with valid product categories (including misc)
+  const filteredTasks = tasks.filter(task => {
+    const products = task.data_task?.products || task.products;
+    if (!products) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productCounts.hasOwnProperty(productsLower);
+  });
   
-  // Calculate total hours
-  const totalHours = tasks.reduce((sum, task) => {
+  const totalTasks = filteredTasks.length;
+  
+  // Calculate total hours only for filtered tasks
+  const totalHours = filteredTasks.reduce((sum, task) => {
     return sum + (task.data_task?.timeInHours || task.timeInHours || 0);
   }, 0);
 
-  // Calculate category totals
+  // Calculate category totals (including misc)
   const categoryTotals = {
     marketing: productCounts['marketing casino'] + productCounts['marketing sport'] + 
                productCounts['marketing poker'] + productCounts['marketing lotto'],
@@ -1177,9 +1183,7 @@ export const calculateProductAnalyticsData = (tasks) => {
       totalHours: tasks
         .filter(task => {
           const products = task.data_task?.products || task.products;
-          return !products || (!products.toLowerCase().includes('marketing') && 
-                               !products.toLowerCase().includes('acquisition') && 
-                               !products.toLowerCase().includes('product'));
+          return products && products.toLowerCase().trim() === 'misc';
         })
         .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
       percentage: totalTasks > 0 ? Math.round((categoryTotals.misc / totalTasks) * 100) : 0
@@ -1232,27 +1236,27 @@ export const calculateProductAnalyticsData = (tasks) => {
     }
   ];
 
-  // Create first pie chart data (categories with tasks)
+  // Create first pie chart data (categories with tasks - including misc)
   const categoryPieData = Object.entries(categoryTotals)
-    .filter(([_, count]) => count > 0)
+    .filter(([category, count]) => count > 0)
     .map(([category, count]) => ({
       name: category.charAt(0).toUpperCase() + category.slice(1),
       value: count,
       percentage: totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0
     }));
 
-  // Create second pie chart data (individual products with tasks)
+  // Create second pie chart data (individual products with tasks - including misc)
   const productPieData = Object.entries(productCounts)
-    .filter(([_, count]) => count > 0)
+    .filter(([product, count]) => count > 0)
     .map(([product, count], index) => ({
       name: product.charAt(0).toUpperCase() + product.slice(1),
       value: count,
       color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
     }));
 
-  // Create biaxial chart data for product analytics
+  // Create biaxial chart data for product analytics (including misc)
   const biaxialData = Object.entries(productCounts)
-    .filter(([_, count]) => count > 0)
+    .filter(([product, count]) => count > 0)
     .map(([product, count], index) => {
       const productHours = tasks
         .filter(task => {
@@ -1288,13 +1292,13 @@ export const calculateProductAnalyticsData = (tasks) => {
 export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
   const productData = calculateProductAnalyticsData(tasks);
   
-  // Calculate totals for chart titles
-  const totalTasks = tasks?.length || 0;
-  const totalHours = tasks?.reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0) || 0;
+  // Use filtered totals from productData instead of all tasks
+  const totalTasks = productData.tableData.find(row => row.category === 'Total Tasks')?.total || 0;
+  const totalHours = productData.tableData.find(row => row.category === 'Total Tasks')?.totalHours || 0;
   
   // Split biaxial data into two charts (categories and products)
   const categoryBiaxialData = Object.entries(productData.categoryTotals || {})
-    .filter(([_, count]) => count > 0)
+    .filter(([category, count]) => count > 0)
     .map(([category, count], index) => {
       const categoryHours = tasks
         .filter(task => {

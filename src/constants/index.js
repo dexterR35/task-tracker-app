@@ -376,7 +376,7 @@ export const CACHE_CONFIG = {
     SHORT: 300,     // 5 minutes
     MEDIUM: 600,    // 10 minutes
     LONG: 1800,     // 30 minutes
-    VERY_LONG: 3600, // 1 hour
+    VERY_LONG: 7200, // 2 hours - increased to prevent excessive reads
     INFINITE: Infinity,
   },
   DATA_VOLATILITY: {
@@ -425,8 +425,15 @@ export const API_CONFIG = {
   BATCH_SIZE: 100,
   MAX_CONCURRENT_REQUESTS: 5,
   REQUEST_LIMITS: {
-    TASKS_PER_MONTH: 500,
+    TASKS_PER_MONTH: 100,        // Reduced from 500 to 100
+    TASKS_PER_QUERY: 50,          // New: Limit per query
+    USERS_PER_QUERY: 20,          // New: Limit users query
+    REPORTERS_PER_QUERY: 30,      // New: Limit reporters query
+    DELIVERABLES_PER_QUERY: 50,   // New: Limit deliverables query
+    SETTINGS_PER_QUERY: 10,        // New: Limit settings query
     USER_QUERY_LIMIT: 1,
+    ANALYTICS_LIMIT: 200,         // New: Limit for analytics queries
+    TOP_3_LIMIT: 10,              // New: Limit for top 3 calculations
   },
 };
 

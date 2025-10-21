@@ -18,6 +18,7 @@ import {
 import { deduplicateRequest } from "@/features/utils/requestDeduplication";
 import { isUserAuthenticated as checkUserAuth } from "@/features/utils/authUtils";
 import { auth } from "@/app/firebase";
+import { API_CONFIG } from "@/constants";
 
 
 /**
@@ -93,7 +94,8 @@ export const usersApi = createApi({
             
             const users = await usersApiFactory.getAll({
               orderBy: "createdAt",
-              orderDirection: "desc"
+              orderDirection: "desc",
+              limit: API_CONFIG.REQUEST_LIMITS.USERS_PER_QUERY
             });
 
             return { data: users };

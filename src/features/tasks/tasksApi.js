@@ -325,12 +325,29 @@ export const tasksApi = createApi({
           }
 
           const colRef = getTaskRef(arg.monthId);
-          const taskLimit =
-            arg.limitCount || API_CONFIG.REQUEST_LIMITS.TASKS_PER_MONTH;
-          // Build query - ALL users listen to ALL tasks for real-time updates
-          // Filtering happens in the UI, not in the Firestore query
-          const query = fsQuery(colRef, limit(taskLimit));
+          // OPTIMIZED: Very strict limit to prevent excessive reads
+          const query = fsQuery(colRef, limit(25)); // Reduced from 50 to 25
           const taskListenerKey = `tasks_${arg.monthId}_all`;
+          
+          // Add throttling to prevent rapid re-renders and excessive updates
+          let updateTimeout = null;
+          let lastUpdate = 0;
+          const THROTTLE_MS = 2000; // 2 seconds between updates
+          
+          const throttledUpdate = (tasks) => {
+            const now = Date.now();
+            if (now - lastUpdate < THROTTLE_MS) {
+              if (updateTimeout) clearTimeout(updateTimeout);
+              updateTimeout = setTimeout(() => {
+                updateCachedData(() => tasks);
+                lastUpdate = Date.now();
+              }, THROTTLE_MS - (now - lastUpdate));
+            } else {
+              updateCachedData(() => tasks);
+              lastUpdate = now;
+            }
+          };
+
           unsubscribe = listenerManager.addListener(taskListenerKey, () => {
             listenerManager.updateActivity();
 
@@ -338,7 +355,7 @@ export const tasksApi = createApi({
               query,
               (snapshot) => {
                 if (!snapshot || !snapshot.docs || snapshot.empty) {
-                  updateCachedData(() => []);
+                  throttledUpdate([]);
                   return;
                 }
 
@@ -356,11 +373,21 @@ export const tasksApi = createApi({
                   )
                   .filter((task) => task !== null);
 
-                // Update cache - Immer will handle structural sharing automatically
-                updateCachedData(() => tasks);
+                // Apply user filtering in the listener to reduce data processing
+                const filteredTasks = tasks.filter((task) => {
+                  if (arg.role === "user") {
+                    return task.userUID === arg.userUID;
+                  } else if (arg.role === "admin" && arg.userUID) {
+                    return task.userUID === arg.userUID;
+                  }
+                  return true; // Admin viewing all tasks
+                });
+
+                throttledUpdate(filteredTasks);
               },
               (error) => {
                 logger.error("Real-time subscription error:", error);
+                throttledUpdate([]);
               }
             );
           });
