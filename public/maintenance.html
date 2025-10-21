@@ -3,41 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Under Maintenance</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Maintenance - Task Tracker App</title>
     <style>
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
         }
-        .animate-spin {
-            animation: spin 1s linear infinite;
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        .status {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+        .contact {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+        }
+        .contact h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        .contact p {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        .progress {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            height: 100%;
+            width: 75%;
+            border-radius: 4px;
+            animation: progress 2s ease-in-out infinite;
+        }
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 75%; }
+            100% { width: 75%; }
         }
     </style>
 </head>
-<body class="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
-    <div class="text-center max-w-md mx-auto px-6">
-        <!-- Loading Spinner -->
-        <div class="mb-8">
-            <div class="w-12 h-12 mx-auto">
-                <div class="animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 w-12 h-12"></div>
+<body>
+    <div class="container">
+        <div class="icon">🚀</div>
+        <h1>System Update in Progress</h1>
+        <div class="status">MAINTENANCE MODE</div>
+        <p>
+            We're currently deploying the latest version of the Task Tracker App with enhanced features and improved performance.
+        </p>
+        
+        <div class="progress">
+            <p><strong>Deployment Progress</strong></p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
             </div>
+            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Updating database schema and optimizing performance...</p>
         </div>
-
-        <!-- Maintenance Message -->
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                App Maintenance
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 text-lg">
-                Will be available soon
-            </p>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-xs text-gray-400 dark:text-gray-500">
-            <p>Powered by NetBet</p>
+        
+        <p>
+            The application will be back online shortly with all the latest improvements.
+        </p>
+        
+        <div class="contact">
+            <h3>What's New in This Update?</h3>
+            <p>✅ Enhanced task management features</p>
+            <p>✅ Improved user interface and performance</p>
+            <p>✅ Better data synchronization</p>
+            <p>✅ Enhanced security measures</p>
+            <p><strong>Expected Return:</strong> Within 15-30 minutes</p>
         </div>
     </div>
-
 </body>
 </html>
