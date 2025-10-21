@@ -7,7 +7,8 @@ const DeliverableFormModal = ({
   onClose, 
   mode = 'create', 
   deliverable = null, 
-  onSuccess 
+  onSuccess,
+  user = null  // Add user prop
 }) => {
   const handleSuccess = () => { 
     onSuccess?.(); 
@@ -27,7 +28,8 @@ const DeliverableFormModal = ({
         mode={mode} 
         deliverable={deliverable} 
         onSuccess={handleSuccess} 
-        onCancel={handleCancel} 
+        onCancel={handleCancel}
+        user={user}  // Pass user prop
       />
     </Modal>
   );

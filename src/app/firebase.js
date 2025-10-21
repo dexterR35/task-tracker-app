@@ -19,51 +19,18 @@ import { logger } from "@/utils/logger";
  */
 
 /**
- * Validates and retrieves Firebase configuration from environment variables
- * @returns {FirebaseConfig} Validated Firebase configuration
- * @throws {Error} If required configuration is missing
+ * Firebase configuration with hardcoded credentials
+ * @returns {FirebaseConfig} Firebase configuration object
  */
 const getFirebaseConfig = () => {
-  const config = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  return {
+    apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
+    authDomain: "task-tracker-app-eb03e.firebaseapp.com",
+    projectId: "task-tracker-app-eb03e",
+    storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
+    messagingSenderId: "976694748809",
+    appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
   };
-
-  const requiredFields = ['apiKey', 'authDomain', 'projectId'];
-  const missingFields = requiredFields.filter(field => !config[field]);
-  
-  if (missingFields.length > 0) {
-    const errorMessage = `Missing required Firebase environment variables: ${missingFields.join(', ')}`;
-    logger.error(errorMessage);
-    
-    // Provide helpful instructions for setting up environment variables
-    console.error(`
-🚨 FIREBASE CONFIGURATION ERROR 🚨
-
-Missing environment variables: ${missingFields.join(', ')}
-
-Please check your .env file and ensure all Firebase variables are set correctly.
-
-Current .env file should contain:
-VITE_FIREBASE_API_KEY=AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI
-VITE_FIREBASE_AUTH_DOMAIN=task-tracker-app-eb03e.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=task-tracker-app-eb03e
-VITE_FIREBASE_STORAGE_BUCKET=task-tracker-app-eb03e.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=976694748809
-VITE_FIREBASE_APP_ID=1:976694748809:web:4a1d4c0a72ad588e2fc858
-
-If the .env file exists, restart your development server:
-npm run dev
-    `);
-    
-    throw new Error(errorMessage);
-  }
-
-  return config;
 };
 
 const firebaseConfig = getFirebaseConfig();

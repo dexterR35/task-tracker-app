@@ -48,7 +48,7 @@ const DeliverableTable = ({
       const updatedDeliverables = deliverablesData.filter(d => d.name !== deliverable.name);
       await updateSettings({
         deliverables: updatedDeliverables,
-        userData: { userUID: 'admin' }
+        userData: user  // Use actual user data instead of hardcoded admin
       }).unwrap();
       showSuccess(CONFIG.MESSAGES.DELETE_SUCCESS);
     } catch (error) {
@@ -221,6 +221,7 @@ const DeliverableTable = ({
         mode={editingDeliverable ? 'edit' : 'create'}
         deliverable={editingDeliverable}
         onSuccess={handleEditDeliverableSuccess}
+        user={user}  // Pass user prop
       />
 
       {/* Delete Confirmation Modal */}

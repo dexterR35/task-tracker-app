@@ -128,7 +128,8 @@ const DeliverableForm = ({
   deliverable = null, 
   onSuccess, 
   onCancel, 
-  className = "" 
+  className = "",
+  user = null  // Add user prop
 }) => {
   const { deliverables: existingDeliverables } = useAppData();
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
@@ -167,18 +168,18 @@ const DeliverableForm = ({
       if (mode === 'create') {
         await updateSettings({
           deliverables: [...(existingDeliverables || []), preparedData],
-          userData: { userUID: 'admin' }
+          userData: user  // Use actual user data instead of hardcoded admin
         }).unwrap();
-        showSuccess(CONFIG.MESSAGES.CREATE_SUCCESS);
+        // Note: Success toast is handled by createFormSubmissionHandler
       } else {
         const updatedDeliverables = (existingDeliverables || []).map(d => 
           d.name === deliverable.name ? { ...d, ...preparedData } : d
         );
         await updateSettings({
           deliverables: updatedDeliverables,
-          userData: { userUID: 'admin' }
+          userData: user  // Use actual user data instead of hardcoded admin
         }).unwrap();
-        showSuccess(CONFIG.MESSAGES.UPDATE_SUCCESS);
+        // Note: Success toast is handled by createFormSubmissionHandler
       }
       onSuccess?.();
     },

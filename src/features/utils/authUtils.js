@@ -392,7 +392,12 @@ export const validateUserPermissions = (userData, requiredPermissions, options =
     return { isValid: false, errors: [error] };
   }
 
-  // Check permissions
+  // Admin users bypass permission checks
+  if (isAdmin(userData)) {
+    return { isValid: true, errors: [] };
+  }
+
+  // Check permissions for non-admin users
   const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
   
   const hasRequiredPermission = permissions.some(permission => {
