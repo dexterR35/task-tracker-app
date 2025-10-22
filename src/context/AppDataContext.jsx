@@ -103,9 +103,6 @@ export const AppDataProvider = ({ children }) => {
     userIsAdmin ? null : userUID
   );
   
-  // Create context value - simplified without memoization
-  logger.log('🔍 [AppDataProvider] Creating context value');
-  
   // Combine errors
   const errors = [userError, usersError, reportersError, deliverablesError, currentMonthError, monthTasksError];
   const error = errors.find(err => err) || null;
@@ -144,47 +141,77 @@ export const AppDataProvider = ({ children }) => {
   
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
-  const contextValue = {
-    // Initialization state
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => {
+    logger.log('🔍 [AppDataProvider] Creating context value');
+    
+    return {
+      // Initialization state
+      isInitialized,
+      
+      // User data
+      user: userIsAdmin ? user : userData,
+      users: userIsAdmin ? allUsers : [],
+      isAdmin: userIsAdmin,
+      
+      // Common data - serialize timestamps for consistent API responses
+      reporters: serializeTimestamps(reporters),
+      deliverables: serializeTimestamps(deliverablesData || []),
+      tasks: serializeTimestamps(tasksData || []),
+      isLoading: isLoading || !isInitialized,
+      backgroundLoading,
+      error,
+      
+      // Month data
+      monthId: monthId || null,
+      monthName: monthName || null,
+      daysInMonth: daysInMonth || null,
+      startDate: startDate ? normalizeTimestamp(startDate) : null,
+      endDate: endDate ? normalizeTimestamp(endDate) : null,
+      boardExists: boardExists || false,
+      availableMonths: serializeTimestamps(availableMonths || []),
+      
+      // Month selection
+      currentMonth,
+      selectedMonth,
+      isCurrentMonth,
+      isInitialLoading: currentMonthLoading && !monthId,
+      isMonthDataReady: monthId && monthName,
+      
+      // Month selection functions
+      selectMonth,
+      resetToCurrentMonth,
+      
+      // Context specific
+      selectedUserId: globalSelectedUserId,
+      setSelectedUserId: setGlobalSelectedUserId,
+    };
+  }, [
     isInitialized,
-    
-    // User data
-    user: userIsAdmin ? user : userData,
-    users: userIsAdmin ? allUsers : [],
-    isAdmin: userIsAdmin,
-    
-    // Common data - serialize timestamps for consistent API responses
-    reporters: serializeTimestamps(reporters),
-    deliverables: serializeTimestamps(deliverablesData || []),
-    tasks: serializeTimestamps(tasksData || []),
-    isLoading: isLoading || !isInitialized,
+    userIsAdmin,
+    user,
+    userData,
+    allUsers,
+    reporters,
+    deliverablesData,
+    tasksData,
+    isLoading,
     backgroundLoading,
     error,
-    
-    // Month data
-    monthId: monthId || null,
-    monthName: monthName || null,
-    daysInMonth: daysInMonth || null,
-    startDate: startDate ? normalizeTimestamp(startDate) : null,
-    endDate: endDate ? normalizeTimestamp(endDate) : null,
-    boardExists: boardExists || false,
-    availableMonths: serializeTimestamps(availableMonths || []),
-    
-    // Month selection
+    monthId,
+    monthName,
+    daysInMonth,
+    startDate,
+    endDate,
+    boardExists,
+    availableMonths,
     currentMonth,
     selectedMonth,
     isCurrentMonth,
-    isInitialLoading: currentMonthLoading && !monthId,
-    isMonthDataReady: monthId && monthName,
-    
-    // Month selection functions
-    selectMonth,
-    resetToCurrentMonth,
-    
-    // Context specific
-    selectedUserId: globalSelectedUserId,
-    setSelectedUserId: setGlobalSelectedUserId,
-  };
+    currentMonthLoading,
+    globalSelectedUserId,
+    setGlobalSelectedUserId
+  ]);
 
   return (
     <AppDataContext.Provider value={contextValue}>
