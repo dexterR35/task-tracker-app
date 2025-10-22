@@ -153,4 +153,28 @@ export const SkeletonDashboardCard = ({ className = '' }) => (
   </div>
 );
 
+export const SkeletonHeader = ({ className = '' }) => (
+  <div className={`mb-8 ${className}`}>
+    {/* Navigation Buttons */}
+    <div className="flex items-center justify-between mb-6">
+      <Skeleton height="2rem" width="8rem" rounded="md" />
+      <Skeleton height="2rem" width="6rem" rounded="md" />
+    </div>
+    
+    {/* Header Card */}
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <Skeleton height="2rem" width="16rem" className="mb-2" />
+          <Skeleton height="1rem" width="8rem" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton height="1.5rem" width="4rem" rounded="full" />
+          <Skeleton height="1.5rem" width="5rem" rounded="full" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default Skeleton;
