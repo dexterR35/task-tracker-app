@@ -289,6 +289,46 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
 
 
 /**
+ * Check for duplicate tasks based on gimodear and name
+ * @param {CollectionReference} colRef - Tasks collection reference
+ * @param {Object} task - Task data to check
+ * @param {string} userUID - Current user UID
+ * @returns {Object} - Duplicate check result
+ */
+const checkForDuplicateTask = async (colRef, task, userUID) => {
+  try {
+    // Check if task has name for duplicate checking
+    if (!task.name) {
+      return { isDuplicate: false, message: '' };
+    }
+
+    // Query for existing tasks with same name for this user
+    const duplicateQuery = query(
+      colRef,
+      where("userUID", "==", userUID),
+      where("data_task.name", "==", task.name)
+    );
+
+    const duplicateSnapshot = await getDocs(duplicateQuery);
+    
+    if (!duplicateSnapshot.empty) {
+      const duplicateTask = duplicateSnapshot.docs[0].data();
+      return {
+        isDuplicate: true,
+        message: `A task with name "${task.name}" already exists`
+      };
+    }
+
+    return { isDuplicate: false, message: '' };
+  } catch (error) {
+    logger.error('Error checking for duplicate task:', error);
+    // If duplicate check fails, allow creation but log the error
+    return { isDuplicate: false, message: '' };
+  }
+};
+
+
+/**
  * Create Task Hook
  */
 export const useCreateTask = () => {
@@ -328,6 +368,12 @@ export const useCreateTask = () => {
       const currentUserName = userData.name;
       const createdAt = serverTimestamp();
       const updatedAt = createdAt;
+
+      // Check for duplicate tasks before creating
+      const duplicateCheck = await checkForDuplicateTask(colRef, task, currentUserUID);
+      if (duplicateCheck.isDuplicate) {
+        throw new Error(`Duplicate task found: ${duplicateCheck.message}`);
+      }
 
       // Auto-add reporter name if we have reporter ID but no name
       if (task.reporters && !task.reporterName) {
