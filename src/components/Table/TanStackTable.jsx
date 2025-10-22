@@ -38,36 +38,32 @@ const BulkActionsBar = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="bg-blue-50 dark:bg-smallCard card">
+    <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-md p-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium">
+        <div className="flex items-center space-x-3">
+          <span className="text-xs font-normal text-blue-700 dark:text-blue-300">
             {selectedCount} row selected
-            <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">
+            <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">
               (Single selection mode)
             </span>
           </span>
-          <DynamicButton
+          <button
             onClick={onClearSelection}
-            className="text-xs text-blue-200 dark:text-blue-300 dark:hover:text-blue-200 underline bg-transparent !p-0 !m-0 hover:bg-transparent"
+            className="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-200 bg-transparent border-none cursor-pointer"
           >
             Clear selection
-          </DynamicButton>
+          </button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
           {bulkActions.map((action, index) => (
-            <DynamicButton
+            <button
               key={index}
-              variant={action.variant || "outline"}
-              size="sm"
               onClick={() => onBulkAction(action, table)}
-              iconName={action.icon}
-              iconPosition="left"
-              className="font-semibold"
               disabled={selectedCount > 1}
+              className="px-2 py-1 text-xs font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {action.label}
-            </DynamicButton>
+            </button>
           ))}
         </div>
       </div>
@@ -89,7 +85,7 @@ const TableControls = ({
   handleCSVExport,
   isExporting
 }) => (
-  <div className="flex justify-between items-center">
+  <div className="flex justify-between items-center py-2">
     {/* Global Filter */}
     {showFilters && (
       <div className="flex-1 max-w-sm">
@@ -100,7 +96,7 @@ const TableControls = ({
           value={globalFilter ?? ""}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder={`Search ${tableType}...`}
-          className="text-sm font-medium"
+          className="text-xs font-normal px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
         />
       </div>
     )}
@@ -109,14 +105,14 @@ const TableControls = ({
       {/* Rows per page selector */}
       {showPagination && enablePagination && (
         <div className="flex items-center justify-center gap-2">
-          <label htmlFor="page-size-select" className="text-xs m-0">
-            Rows per page
+          <label htmlFor="page-size-select" className="text-xs text-gray-600 dark:text-gray-400 m-0">
+            Rows
           </label>
           <select
             id="page-size-select"
             value={table.getState().pagination.pageSize}
             onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-            className="h-full w-[80px] px-3 py-2 text-sm font-medium"
+            className="h-7 w-[60px] px-2 py-1 text-xs font-normal border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
             {PAGE_SIZE_OPTIONS.map((pageSize) => (
               <option key={pageSize} value={pageSize}>
@@ -130,24 +126,18 @@ const TableControls = ({
       {/* Column Toggle */}
       {showColumnToggle && (
         <div className="relative group">
-          <DynamicButton
-            variant="outline"
-            size="sm"
-            iconName="default"
-            iconPosition="left"
-            className="font-semibold"
-          >
+          <button className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             Columns
-          </DynamicButton>
-          <div className="absolute right-0 mt-2 w-fit dark:bg-primary bg-secondary card !p-0 !m-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-            <div className="py-2">
+          </button>
+          <div className="absolute right-0 mt-1 w-fit bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            <div className="py-1">
               {table
                 .getAllLeafColumns()
                 .filter((column) => column.getCanHide())
                 .map((column) => (
                   <label
                     key={column.id}
-                    className="flex items-center px-4 py-0.5 text-sm font-medium hover:bg-hover cursor-pointer transition-colors duration-150"
+                    className="flex items-center px-3 py-1 text-xs font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                   >
                     <input
                       name={`column-${column.id}`}
@@ -155,7 +145,7 @@ const TableControls = ({
                       type="checkbox"
                       checked={column.getIsVisible()}
                       onChange={column.getToggleVisibilityHandler()}
-                      className="mr-2"
+                      className="mr-2 w-3 h-3"
                     />
                     {column.columnDef.header || column.id}
                   </label>
@@ -165,17 +155,13 @@ const TableControls = ({
         </div>
       )}
       
-      <DynamicButton
-        variant="outline"
-        size="sm"
+      <button
         onClick={handleCSVExport}
         disabled={isExporting}
-        iconName={isExporting ? "loading" : "download"}
-        iconPosition="left"
-        className="font-semibold"
+        className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isExporting ? 'Exporting...' : 'Export CSV'}
-      </DynamicButton>
+      </button>
     </div>
   </div>
 );
@@ -191,33 +177,29 @@ const Pagination = ({
   if (!showPagination || !enablePagination) return null;
 
   return (
-    <div className="flex items-center justify-between space-x-3 py-4">
-      <div className="flex-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+    <div className="flex items-center justify-between space-x-3 py-2">
+      <div className="flex-1 text-xs font-normal text-gray-600 dark:text-gray-400">
         {selectedCount} of {totalRows} row(s) selected.
       </div>
-      <div className="flex items-center space-x-6">
-        <div className="flex w-[100px] items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+      <div className="flex items-center space-x-4">
+        <div className="flex w-[80px] items-center justify-center text-xs font-normal text-gray-600 dark:text-gray-400">
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>
-        <div className="flex items-center space-x-2">
-          <DynamicButton
-            variant="outline"
-            size="sm"
+        <div className="flex items-center space-x-1">
+          <button
             onClick={() => handlePageChange(table.getState().pagination.pageIndex - 1)}
             disabled={!table.getCanPreviousPage()}
-            iconName="chevronLeft"
-            iconPosition="center"
-            className="font-semibold text-xs"
-          />
-          <DynamicButton
-            variant="outline"
-            size="sm"
+            className="px-2 py-1 text-xs font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ←
+          </button>
+          <button
             onClick={() => handlePageChange(table.getState().pagination.pageIndex + 1)}
             disabled={!table.getCanNextPage()}
-            iconName="chevronRight"
-            iconPosition="center"
-            className="font-semibold text-xs"
-          />
+            className="px-2 py-1 text-xs font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            →
+          </button>
         </div>
       </div>
     </div>
@@ -514,15 +496,15 @@ const TanStackTable = forwardRef(({
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-btn-primary py-2 h-14">
+              <thead className="bg-gray-50 dark:bg-gray-800/50 py-1 h-10">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className={`px-4 py-2 text-start font-semibold !capitalize tracking-wider ${
+                        className={`px-3 py-1.5 text-start font-medium text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide ${
                           header.column.getCanSort()
-                            ? "cursor-pointer select-none hover:bg-hover"
+                            ? "cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-700/50"
                             : ""
                         } transition-colors duration-150`}
                         onClick={header.column.getToggleSortingHandler()}
@@ -533,7 +515,7 @@ const TanStackTable = forwardRef(({
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </span>
                           {header.column.getCanSort() && (
-                            <span className="text-gray-200">
+                            <span className="text-gray-400 dark:text-gray-500">
                               {SORT_ICONS[header.column.getIsSorted()] ?? SORT_ICONS.false}
                             </span>
                           )}
@@ -543,7 +525,7 @@ const TanStackTable = forwardRef(({
                   </tr>
                 ))}
               </thead>
-              <tbody className="bg-smallCard-white dark:bg-smallCard divide-y divide-gray-300 dark:divide-gray-600">
+              <tbody className="bg-white dark:bg-gray-900/50 divide-y divide-gray-200 dark:divide-gray-700/50">
                 {table.getRowModel().rows.map((row) => {
                   const rowKey = row.original?.id || row.id;
                   const isSelected = rowSelection[row.id];
@@ -551,15 +533,15 @@ const TanStackTable = forwardRef(({
                   return (
                     <tr
                       key={rowKey}
-                      className={`hover:bg-hover cursor-pointer transition-colors duration-150 ${
-                        isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer transition-colors duration-150 ${
+                        isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-blue-400' : ''
                       }`}
                       onClick={() => handleRowClick(row)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={`${row.original?.id || row.id}-${cell.column.id}`}
-                          className="px-4 py-2 h-16 whitespace-nowrap text-xs font-medium capitalize"
+                          className="px-3 py-2 h-12 whitespace-nowrap text-xs font-normal text-gray-700 dark:text-gray-300"
                           style={{ width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
