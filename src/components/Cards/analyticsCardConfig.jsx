@@ -5,6 +5,7 @@
  */
 
 import { CARD_SYSTEM } from '@/constants';
+import Badge from '@/components/ui/Badge/Badge';
 // Removed unused analytics cache import
 
 // Markets by Users Card Types
@@ -1380,9 +1381,60 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         { key: "aiUsedTasks", header: "AI Used Tasks", align: "center", highlight: true },
         { key: "aiTime", header: "AI Time (hrs)", align: "center", highlight: true },
         { key: "aiUsagePercentage", header: "AI Usage %", align: "center", highlight: true },
-        { key: "aiModels", header: "AI Models Used", align: "left" },
-        { key: "markets", header: "Markets", align: "left" },
-        { key: "products", header: "Products", align: "left" }
+        { 
+          key: "aiModels", 
+          header: "AI Models Used", 
+          align: "left",
+          render: (value, row) => {
+            if (!value || value === "No data available") return value;
+            const aiModels = value.split(', ').filter(m => m.trim());
+            return (
+              <div className="flex flex-wrap gap-1">
+                {aiModels.map((model, index) => (
+                  <Badge key={index} variant="purple" size="sm">
+                    {model}
+                  </Badge>
+                ))}
+              </div>
+            );
+          }
+        },
+        { 
+          key: "markets", 
+          header: "Markets", 
+          align: "left",
+          render: (value, row) => {
+            if (!value || value === "No data available") return value;
+            const markets = value.split(', ').filter(m => m.trim());
+            return (
+              <div className="flex flex-wrap gap-1">
+                {markets.map((market, index) => (
+                  <Badge key={index} variant="amber" size="sm">
+                    {market}
+                  </Badge>
+                ))}
+              </div>
+            );
+          }
+        },
+        { 
+          key: "products", 
+          header: "Products", 
+          align: "left",
+          render: (value, row) => {
+            if (!value || value === "No data available") return value;
+            const products = value.split(', ').filter(p => p.trim());
+            return (
+              <div className="flex flex-wrap gap-1">
+                {products.map((product, index) => (
+                  <Badge key={index} variant="blue" size="sm">
+                    {product}
+                  </Badge>
+                ))}
+              </div>
+            );
+          }
+        }
       ],
       aiModelsData: [{ name: "No data available", value: 0 }],
       usersAIData: [{ name: "No data available", value: 0 }],
@@ -1551,9 +1603,60 @@ export const calculateAIAnalyticsData = (tasks, users) => {
     { key: "aiUsedTasks", header: "AI Used Tasks", align: "center", highlight: true },
     { key: "aiTime", header: "AI Time (hrs)", align: "center", highlight: true },
     { key: "aiUsagePercentage", header: "AI Usage %", align: "center", highlight: true },
-    { key: "aiModels", header: "AI Models Used", align: "left" },
-    { key: "markets", header: "Markets", align: "left" },
-    { key: "products", header: "Products", align: "left" }
+    { 
+      key: "aiModels", 
+      header: "AI Models Used", 
+      align: "left",
+      render: (value, row) => {
+        if (!value || value === "No data available") return value;
+        const aiModels = value.split(', ').filter(m => m.trim());
+        return (
+          <div className="flex flex-wrap gap-1">
+            {aiModels.map((model, index) => (
+              <Badge key={index} variant="purple" size="sm">
+                {model}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+    },
+    { 
+      key: "markets", 
+      header: "Markets", 
+      align: "left",
+      render: (value, row) => {
+        if (!value || value === "No data available") return value;
+        const markets = value.split(', ').filter(m => m.trim());
+        return (
+          <div className="flex flex-wrap gap-1">
+            {markets.map((market, index) => (
+              <Badge key={index} variant="amber" size="sm">
+                {market}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+    },
+    { 
+      key: "products", 
+      header: "Products", 
+      align: "left",
+      render: (value, row) => {
+        if (!value || value === "No data available") return value;
+        const products = value.split(', ').filter(p => p.trim());
+        return (
+          <div className="flex flex-wrap gap-1">
+            {products.map((product, index) => (
+              <Badge key={index} variant="blue" size="sm">
+                {product}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+    }
   ];
 
   // Create AI models pie chart data
