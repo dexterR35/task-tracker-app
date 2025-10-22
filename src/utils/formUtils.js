@@ -24,40 +24,40 @@ export const createFormSubmissionHandler = (submitFn, options = {}) => {
 
   return async (data, formMethods = {}) => {
     const { reset, setError, clearErrors } = formMethods;
-    
+
     try {
-      
+
       const result = await submitFn(data);
-      
+
       if (result?.error) {
         throw new Error(result.error.message || `${operation} failed`);
       }
-      
-      
+
+
       // Show success toast
       if (showSuccessToast) {
         showOperationSuccess(operation, resource);
       }
-      
+
       // Reset form
       if (reset) {
         reset();
       }
-      
+
       // Call success callback
       if (onSuccess) {
         onSuccess(result);
       }
-      
+
       return result;
     } catch (error) {
       logger.error(`[Form] ${operation} error:`, error);
-      
+
       // Show error toast
       if (showErrorToast) {
         showOperationError(operation, resource, error.message);
       }
-      
+
       // Handle form-specific errors
       if (error.field && setError) {
         setError(error.field, { message: error.message });
@@ -67,12 +67,12 @@ export const createFormSubmissionHandler = (submitFn, options = {}) => {
           setError(field, { message: fieldError.message || fieldError });
         });
       }
-      
+
       // Call error callback
       if (onError) {
         onError(error);
       }
-      
+
       throw error;
     }
   };
@@ -86,7 +86,7 @@ export const createFormSubmissionHandler = (submitFn, options = {}) => {
  */
 export const handleFormValidation = (errors, formName = 'Form') => {
   const errorCount = Object.keys(errors).length;
-  
+
   if (errorCount > 0) {
     logger.warn(`[${formName}] Validation errors:`, errors);
     showValidationError(errors);
@@ -101,7 +101,7 @@ export const handleFormValidation = (errors, formName = 'Form') => {
  */
 export const createFormResetHandler = (formMethods, defaultValues = {}) => {
   const { reset, clearErrors } = formMethods;
-  
+
   return (newValues = {}) => {
     const valuesToReset = { ...defaultValues, ...newValues };
     reset(valuesToReset);
@@ -117,7 +117,7 @@ export const createFormResetHandler = (formMethods, defaultValues = {}) => {
  */
 export const createFieldChangeHandler = (formMethods, fieldName) => {
   const { setValue, trigger, clearErrors } = formMethods;
-  
+
   return (value) => {
     setValue(fieldName, value);
     trigger(fieldName);
@@ -133,19 +133,19 @@ export const createFieldChangeHandler = (formMethods, fieldName) => {
  */
 export const getConditionalFieldLogic = (watchedValues, conditions) => {
   const result = {};
-  
+
   Object.entries(conditions).forEach(([fieldName, condition]) => {
     const { dependsOn, showWhen, requiredWhen } = condition;
-    
+
     if (dependsOn && showWhen !== undefined) {
       result[`${fieldName}Visible`] = showWhen(watchedValues[dependsOn]);
     }
-    
+
     if (dependsOn && requiredWhen !== undefined) {
       result[`${fieldName}Required`] = requiredWhen(watchedValues[dependsOn]);
     }
   });
-  
+
   return result;
 };
 
@@ -164,14 +164,14 @@ export const prepareFormData = (data, options = {}) => {
     fieldsToLowercase = ['name', 'email', 'departament', 'country', 'channelName', 'products', 'observations', 'reporterName', 'departments', 'markets'],
     fieldsToKeepUppercase = ['taskName', 'reporters', 'userUID', 'reporterUID'] // Fields that should remain uppercase
   } = options;
-  
+
   let preparedData = { ...data };
-  
+
   // Apply lowercase transformation using consolidated function
   if (lowercaseStrings) {
     preparedData = transformDataToLowercase(preparedData, fieldsToLowercase, fieldsToKeepUppercase);
   }
-  
+
   // Remove empty fields
   if (removeEmptyFields) {
     preparedData = Object.fromEntries(
@@ -182,7 +182,7 @@ export const prepareFormData = (data, options = {}) => {
       })
     );
   }
-  
+
   // Convert types
   if (convertTypes) {
     Object.entries(preparedData).forEach(([key, value]) => {
@@ -198,12 +198,12 @@ export const prepareFormData = (data, options = {}) => {
       }
     });
   }
-  
+
   // Add metadata
   if (addMetadata) {
     preparedData.updatedAt = new Date().toISOString();
   }
-  
+
   return preparedData;
 };
 
@@ -242,7 +242,7 @@ export const getFormLoadingState = (isSubmitting, isLoading = false) => {
  */
 export const transformDataToLowercase = (data, fieldsToLowercase = [], fieldsToKeepUppercase = ['taskName']) => {
   const transformedData = { ...data };
-  
+
   // Handle top-level fields
   Object.entries(transformedData).forEach(([key, value]) => {
     if (typeof value === 'string' && value.trim() !== '') {
@@ -278,7 +278,7 @@ export const transformDataToLowercase = (data, fieldsToLowercase = [], fieldsToK
       });
     }
   });
-  
+
   return transformedData;
 };
 

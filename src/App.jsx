@@ -1,19 +1,18 @@
 
-import { Provider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import store from '@/app/store';
 import router from '@/app/router';
-import { AuthProvider } from '@/context/AuthProvider';
+import { AuthProvider } from '@/context/AuthContext';
 import { DarkModeProvider } from '@/context/DarkModeProvider';
+import { AppDataProvider } from '@/context/AppDataContext';
 import ErrorBoundary from '@/components/layout/ErrorBoundary';
 
 const App = () => (
   <ErrorBoundary>
-    <Provider store={store}>
-      <DarkModeProvider>
-        <AuthProvider>
+    <DarkModeProvider>
+      <AuthProvider>
+        <AppDataProvider>
           <RouterProvider router={router} />
           <ToastContainer 
             position="top-right"
@@ -28,9 +27,9 @@ const App = () => (
             theme="light"
             style={{ zIndex: 9999 }}
           />
-        </AuthProvider>
-      </DarkModeProvider>
-    </Provider>
+        </AppDataProvider>
+      </AuthProvider>
+    </DarkModeProvider>
   </ErrorBoundary>
 );
 

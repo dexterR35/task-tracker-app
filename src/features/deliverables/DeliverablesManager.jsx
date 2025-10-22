@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useAppData } from '@/hooks/useAppData';
+import { useAppDataContext } from '@/context/AppDataContext';
 
 /**
  * Consolidated Deliverables Hooks
@@ -10,7 +10,7 @@ import { useAppData } from '@/hooks/useAppData';
  * Get all deliverables from the database and transform them into form options
  */
 export const useDeliverablesOptions = () => {
-  const { deliverables, isLoading, error } = useAppData();
+  const { deliverables, isLoading, error } = useAppDataContext();
 
   // Transform database data to form options format - simplified without memoization
   const deliverablesOptions = !deliverables || deliverables.length === 0 ? [] : deliverables.map(deliverable => ({

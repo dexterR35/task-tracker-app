@@ -1,28 +1,31 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAppData } from "@/hooks/useAppData";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAppDataContext } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
-import { MonthProgressBar } from "@/utils/monthUtils.jsx";
+import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils/monthUtils.jsx";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showTable, setShowTable] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-
   // Get auth functions separately
   const { canAccess } = useAuth();
   const isUserAdmin = canAccess("admin");
   const selectedUserId = searchParams.get("user") || "";
   const selectedReporterId = searchParams.get("reporter") || "";
+  const selectedWeekParam = searchParams.get("week") || "";
+  
+  // Initialize selectedWeek from URL parameter
+  const [selectedWeek, setSelectedWeek] = useState(null);
 
-  // Get all data from useAppData hook
+  // Get all data from context with selectedUserId
   const {
     user,
     users,
@@ -36,7 +39,8 @@ const AdminDashboardPage = () => {
     isInitialLoading,
     error,
     selectMonth,
-  } = useAppData(selectedUserId);
+    setSelectedUserId,
+  } = useAppDataContext(selectedUserId);
 
   // Get selected user and reporter info - simplified without excessive memoization
   const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
@@ -58,6 +62,9 @@ const AdminDashboardPage = () => {
         return; // Prevent regular users from selecting other users
       }
       
+      // Update the context's selectedUserId
+      setSelectedUserId(userId || null);
+      
       const currentParams = Object.fromEntries(searchParams.entries());
       const previousUserId = currentParams.user;
       
@@ -76,7 +83,7 @@ const AdminDashboardPage = () => {
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams, isUserAdmin, user, users]
+    [setSearchParams, searchParams, isUserAdmin, user, users, setSelectedUserId]
   );
 
   // Handle reporter selection with role-based access control and logging
@@ -105,16 +112,18 @@ const AdminDashboardPage = () => {
 
   // Derive title based on context and role - simplified
   const title = (() => {
-    if (!isUserAdmin) return "My Tasks";
+    const weekInfo = selectedWeek ? ` - Week ${selectedWeek.weekNumber}` : "";
+    
+    if (!isUserAdmin) return `My Tasks${weekInfo}`;
     
     if (selectedUserId && selectedReporterId) {
-      return `Tasks - ${selectedUserName} & ${selectedReporterName}`;
+      return `Tasks - ${selectedUserName} & ${selectedReporterName}${weekInfo}`;
     } else if (selectedUserId) {
-      return `Tasks - ${selectedUserName}`;
+      return `Tasks - ${selectedUserName}${weekInfo}`;
     } else if (selectedReporterId) {
-      return `Tasks - ${selectedReporterName}`;
+      return `Tasks - ${selectedReporterName}${weekInfo}`;
     } else {
-      return "All Tasks - All Users";
+      return `All Tasks - All Users${weekInfo}`;
     }
   })();
 
@@ -132,6 +141,45 @@ const AdminDashboardPage = () => {
     }
     setShowCreateModal(true);
   }, [canCreateTasks]);
+
+  // Handle week selection
+  const handleWeekChange = useCallback((week) => {
+    // If week is null or empty, clear the selection (show all weeks)
+    setSelectedWeek(week);
+    
+    // Update URL parameters
+    const currentParams = Object.fromEntries(searchParams.entries());
+    if (!week) {
+      delete currentParams.week;
+    } else {
+      currentParams.week = week.weekNumber.toString();
+    }
+    setSearchParams(currentParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // Initialize selectedWeek from URL parameter
+  useEffect(() => {
+    if (selectedWeekParam) {
+      try {
+        const weekNumber = parseInt(selectedWeekParam);
+        if (!isNaN(weekNumber)) {
+          // Get weeks for the current month
+          const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
+          if (currentMonthId) {
+            const weeks = getWeeksInMonth(currentMonthId);
+            const week = weeks.find(w => w.weekNumber === weekNumber);
+            if (week) {
+              setSelectedWeek(week);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error parsing week parameter:', error);
+      }
+    } else {
+      setSelectedWeek(null);
+    }
+  }, [selectedWeekParam, selectedMonth?.monthId, currentMonth?.monthId]);
 
   // Add logging for combined selections and security checks - optimized
   useEffect(() => {
@@ -160,8 +208,8 @@ const AdminDashboardPage = () => {
     }
   }, [isUserAdmin, selectedUserId, selectedUserName, user?.userUID]);
 
-  // Small cards data preparation - simplified without excessive memoization
-  const smallCardsData = {
+  // Small cards data preparation - memoized to prevent unnecessary re-renders
+  const smallCardsData = useMemo(() => ({
     tasks, // ✅ Global tasks - never filtered
     reporters,
     users,
@@ -176,16 +224,23 @@ const AdminDashboardPage = () => {
     selectedUserName,
     selectedReporterId,
     selectedReporterName,
+    selectedWeek,
     canCreateTasks,
     handleCreateTask,
     handleUserSelect,
     handleReporterSelect,
+    handleWeekChange,
     selectMonth,
     availableMonths,
-  };
+  }), [
+    tasks, reporters, users, selectedMonth, currentMonth, isCurrentMonth,
+    isUserAdmin, user, selectedUserId, selectedUserName, selectedReporterId,
+    selectedReporterName, selectedWeek, canCreateTasks, handleCreateTask, handleUserSelect,
+    handleReporterSelect, handleWeekChange, selectMonth, availableMonths
+  ]);
 
-  // Create small cards - simplified without excessive memoization
-  const smallCards = createSmallCards(smallCardsData);
+  // Create small cards - memoized to prevent unnecessary re-renders
+  const smallCards = useMemo(() => createSmallCards(smallCardsData), [smallCardsData]);
 
   if (error) {
     return (
@@ -259,20 +314,22 @@ const AdminDashboardPage = () => {
             <div>
               <h3>
                 {(() => {
+                  const weekInfo = selectedWeek ? ` - Week ${selectedWeek.weekNumber}` : "";
+                  
                   // For regular users, show "My Tasks"
                   if (!isUserAdmin) {
-                    return `My Tasks - ${user?.name || user?.email || 'User'}`;
+                    return `My Tasks - ${user?.name || user?.email || 'User'}${weekInfo}`;
                   }
                   
                   // For admin users, show filtered titles
                   if (selectedUserId && selectedReporterId) {
-                    return `${selectedUserName} & ${selectedReporterName} Tasks`;
+                    return `${selectedUserName} & ${selectedReporterName} Tasks${weekInfo}`;
                   } else if (selectedUserId) {
-                    return `${selectedUserName} Tasks`;
+                    return `${selectedUserName} Tasks${weekInfo}`;
                   } else if (selectedReporterId) {
-                    return `${selectedReporterName} Tasks`;
+                    return `${selectedReporterName} Tasks${weekInfo}`;
                   } else {
-                    return "All Tasks";
+                    return `All Tasks${weekInfo}`;
                   }
                 })()}
               </h3>
@@ -301,6 +358,7 @@ const AdminDashboardPage = () => {
               selectedUserId={selectedUserId}
               selectedReporterId={selectedReporterId}
               selectedMonthId={currentMonthId}
+              selectedWeek={selectedWeek}
               error={error}
               isLoading={isLoading}
             />

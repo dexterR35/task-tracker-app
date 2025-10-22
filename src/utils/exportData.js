@@ -9,23 +9,23 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
   if (value === null || value === undefined) {
     return '-';
   }
-  
+
   // Handle Done column - calculate difference between start and end date
   if (columnId === 'done') {
     // If it's already a calculated number, return it
     if (typeof value === 'number') {
       return value === 0 ? 'Same day' : `${value} days`;
     }
-    
+
     // If it's an object with startDate and endDate, calculate the difference
     if (value && typeof value === 'object') {
       const startDate = value.startDate;
       const endDate = value.endDate;
-      
+
       if (startDate && endDate) {
         const normalizedStart = normalizeTimestamp(startDate);
         const normalizedEnd = normalizeTimestamp(endDate);
-        
+
         if (normalizedStart && normalizedEnd) {
           const diffTime = normalizedEnd.getTime() - normalizedStart.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -33,10 +33,10 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
         }
       }
     }
-    
+
     return '-';
   }
-  
+
   // Handle date columns (excluding done) - use simple date format without nanoseconds
   const dateColumns = ['startDate', 'endDate', 'dateCreated', 'createdByName'];
   if (dateColumns.includes(columnId)) {
@@ -48,7 +48,7 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
     }
     return '-';
   }
-  
+
   // Handle date created with simple format
   if (columnId === 'createdAt') {
     const normalizedDate = normalizeTimestamp(value);
@@ -59,41 +59,41 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
     }
     return '-';
   }
-  
+
   // Handle boolean columns (VIP, ReWorked)
   if (columnId === 'isVip' || columnId === 'reworked') {
     return value ? 'Yes' : 'No';
   }
-  
+
   // Handle AI Models array - join as single row
   if (columnId === 'aiModels' && Array.isArray(value)) {
     return value.length > 0 ? value.join(', ') : '-';
   }
-  
-  // Handle Markets array - join as single row  
+
+  // Handle Markets array - join as single row
   if (columnId === 'markets' && Array.isArray(value)) {
     return value.length > 0 ? value.join(', ') : '-';
   }
-  
+
   // Handle deliverables object - format with count and name (e.g., 2xgamepreview)
   if (columnId === 'deliverables' && typeof value === 'object') {
     if (Array.isArray(value)) {
       if (value.length === 0) return '-';
-      
+
       let deliverables = [];
-      
+
       value.forEach(item => {
         if (typeof item === 'object' && item.quantity && item.name) {
           // Format as "quantityxname" (e.g., 2xgamepreview)
           deliverables.push(`${item.quantity}x${item.name}`);
         }
       });
-      
+
       if (deliverables.length === 0) return '-';
-      
+
       return deliverables.join(', ');
     }
-    
+
     // Handle single deliverable object
     if (value && typeof value === 'object') {
       if (value.quantity && value.name) {
@@ -104,26 +104,26 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
     }
     return '-';
   }
-  
+
   // Handle Jira Link - make it a full clickable URL
   if (columnId === 'taskName' || columnId === 'jiraLink') {
     if (!value) return '-';
-    
+
     // If it's already a full URL, return it
     if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
       return value;
     }
-    
+
     // If it's a Jira ticket number (like GIMODEAR-123), make it a full URL
     if (typeof value === 'string' && value.match(/^[A-Z]+-\d+$/)) {
       return `https://yourcompany.atlassian.net/browse/${value}`;
     }
-    
+
     // If it's just a number, assume it's a ticket number and add GIMODEAR prefix
     if (typeof value === 'string' && value.match(/^\d+$/)) {
       return `https://yourcompany.atlassian.net/browse/GIMODEAR-${value}`;
     }
-    
+
     return value;
   }
 
@@ -135,37 +135,37 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
     }
     // If it's a UID/ID, look it up from the reporters data
     if (typeof value === 'string' && reporters.length > 0) {
-      const reporter = reporters.find(r => 
-        r.reporterUID?.toLowerCase() === value.toLowerCase() || 
-        r.uid?.toLowerCase() === value.toLowerCase() ||
-        r.id?.toLowerCase() === value.toLowerCase()
+      const reporter = reporters.find(r =>
+        r.reporterUID === value ||
+        r.uid === value ||
+        r.id === value
       );
       return reporter?.name || value;
     }
     return value || '-';
   }
-  
+
   // Handle observations
   if (columnId === 'observations') {
     return value && value.trim() ? value : '-';
   }
-  
+
   // Handle arrays
   if (Array.isArray(value)) {
     return value.length > 0 ? value.join('; ') : '-';
   }
-  
+
   // Handle objects
   if (typeof value === 'object') {
     return JSON.stringify(value);
   }
-  
+
   // Handle strings
   const stringValue = String(value);
   if (stringValue.trim() === '') {
     return '-';
   }
-  
+
   return stringValue;
 };
 
@@ -175,9 +175,9 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
  */
 export const exportToCSV = (data, columns, tableType, options = {}) => {
     try {
-      const { 
-        filename = null, 
-        includeHeaders = true, 
+      const {
+        filename = null,
+        includeHeaders = true,
         customHeaders = null,
         analyticsMode = false,
         reporters = []
@@ -189,12 +189,12 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       }
 
       // Get all columns (both visible and hidden) excluding only the select column
-      const allColumns = columns.filter(col => 
+      const allColumns = columns.filter(col =>
         col.id !== 'select' && col.id !== 'actions'
       );
-      
+
       // Debug logging removed
-  
+
       // Create headers
       const headers = allColumns.map(col => {
         // Handle different header types
@@ -207,7 +207,7 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       const rows = data.map(row => {
         return allColumns.map(col => {
           let value;
-          
+
           // Handle different accessor types
           if (typeof col.accessorFn === 'function') {
             // Function accessor: (row) => row.data_task?.departments
@@ -227,7 +227,7 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
           }
           // Format the value using our custom formatter
           const formattedValue = formatValueForCSV(value, col.id, reporters);
-          
+
           // Escape commas and quotes in string values
           if (formattedValue.includes(',') || formattedValue.includes('"') || formattedValue.includes('\n')) {
             return `"${formattedValue.replace(/"/g, '""')}"`;
@@ -235,26 +235,26 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
           return formattedValue;
         }).join(',');
       });
-  
+
       // Combine headers and rows
       const csvContent = [headers, ...rows].join('\n');
-  
+
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      
+
       // Use custom filename or generate default
       const exportFilename = filename || `${tableType}_export_${new Date().toISOString().split('T')[0]}.csv`;
       link.setAttribute('download', exportFilename);
-      
+
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-  
+
       return true;
     } catch (error) {
       logger.error('Error exporting CSV:', error);
@@ -272,9 +272,9 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
 export const exportAnalyticsToCSV = (data, tableType, options = {}) => {
   try {
     const { filename = null, includeHeaders = true } = options;
-    
+
     let csvContent = '';
-    
+
     // Handle different data structures
     if (Array.isArray(data)) {
       // Array of objects - create CSV from array
@@ -282,7 +282,7 @@ export const exportAnalyticsToCSV = (data, tableType, options = {}) => {
         csvContent = 'No data available';
       } else {
         const headers = Object.keys(data[0]);
-        const rows = data.map(item => 
+        const rows = data.map(item =>
           headers.map(header => {
             const value = item[header];
             if (value === null || value === undefined) return '';
@@ -296,7 +296,7 @@ export const exportAnalyticsToCSV = (data, tableType, options = {}) => {
             return stringValue;
           }).join(',')
         );
-        
+
         if (includeHeaders) {
           csvContent = [headers.join(','), ...rows].join('\n');
         } else {
@@ -308,12 +308,12 @@ export const exportAnalyticsToCSV = (data, tableType, options = {}) => {
       const entries = Object.entries(data);
       const rows = entries.map(([key, value]) => {
         const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        const escapedValue = stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') 
-          ? `"${stringValue.replace(/"/g, '""')}"` 
+        const escapedValue = stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')
+          ? `"${stringValue.replace(/"/g, '""')}"`
           : stringValue;
         return `${key},${escapedValue}`;
       });
-      
+
       if (includeHeaders) {
         csvContent = ['Key,Value', ...rows].join('\n');
       } else {
@@ -322,22 +322,22 @@ export const exportAnalyticsToCSV = (data, tableType, options = {}) => {
     } else {
       csvContent = 'Invalid data format';
     }
-    
+
     // Create and download file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    
+
     const exportFilename = filename || `${tableType}_analytics_${new Date().toISOString().split('T')[0]}.csv`;
     link.setAttribute('download', exportFilename);
-    
+
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
+
     return true;
   } catch (error) {
     logger.error('Error exporting analytics CSV:', error);

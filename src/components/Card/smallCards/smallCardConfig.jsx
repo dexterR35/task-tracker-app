@@ -1,6 +1,8 @@
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
+import WeekSelectField from "@/components/forms/components/WeekSelectField";
+import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
 
 
@@ -14,6 +16,7 @@ export const getCardColor = (cardType, data = {}) => {
   const colorMap = {
     // Dashboard cards
     'month-selection': 'blue',
+    'week-selector': 'green',
     'user-filter': 'green', 
     'reporter-filter': 'purple',
     'user-profile': 'amber',
@@ -118,6 +121,7 @@ export const SMALL_CARD_CONFIGS = {
       },
     ],
   },
+
 
   [SMALL_CARD_TYPES.USER_FILTER]: {
     title: "User Filter",
@@ -295,7 +299,7 @@ export const SMALL_CARD_CONFIGS = {
       color: getCardColor("user-profile", data)
     }),
     getValue: (data) => {
-      if (!data.tasks) return "0";
+      if (!data.tasks || !Array.isArray(data.tasks)) return "0";
 
       const selectedUserId = data.selectedUserId;
       const selectedReporterId = data.selectedReporterId;
@@ -393,49 +397,94 @@ export const SMALL_CARD_CONFIGS = {
       <div className="mb-6">
         <DynamicButton
           onClick={() => {
-            // Navigate to dynamic analytics page with user parameter
+            // Build URL parameters based on current selections
+            const params = new URLSearchParams();
+            
+            // Handle user selection
             if (data.selectedUserId && data.currentUser?.role === "admin") {
+              // Admin viewing specific user
               const selectedUser = data.users?.find(
                 (u) => u.userUID === data.selectedUserId
               );
               const userName = selectedUser?.name || selectedUser?.email || 'Unknown';
-              const url = `/analytics-detail?user=${encodeURIComponent(userName)}`;
-              
-            if (data.navigate) {
-                data.navigate(url);
-              } else {
-                // Use React Router navigation instead of window.location.href
-                window.history.pushState({}, '', url);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }
-            } else {
-              // For regular users, show their own data
+              params.set('user', userName);
+            } else if (!data.selectedUserId) {
+              // No user selected - show current user's data
               const userName = data.currentUser?.name || data.currentUser?.email || 'My Data';
-              const url = `/analytics-detail?user=${encodeURIComponent(userName)}`;
-              
-              if (data.navigate) {
-                data.navigate(url);
-              } else {
-                // Use React Router navigation instead of window.location.href
-                window.history.pushState({}, '', url);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }
+              params.set('user', userName);
+            }
+            
+            // Handle reporter selection
+            if (data.selectedReporterId) {
+              const selectedReporter = data.reporters?.find(
+                (r) => (r.id || r.uid) === data.selectedReporterId
+              );
+              const reporterName = selectedReporter?.name || selectedReporter?.reporterName || 'Unknown Reporter';
+              params.set('reporter', reporterName);
+            }
+            
+            // Handle week selection
+            if (data.selectedWeek) {
+              params.set('week', data.selectedWeek.weekNumber.toString());
+            }
+            
+            // Handle month selection
+            if (data.selectedMonth?.monthId) {
+              params.set('month', data.selectedMonth.monthId);
+            } else if (data.currentMonth?.monthId) {
+              params.set('month', data.currentMonth.monthId);
+            }
+            
+            const url = `/analytics-detail?${params.toString()}`;
+            
+            if (data.navigate) {
+              data.navigate(url);
+            } else {
+              // Use React Router navigation instead of window.location.href
+              window.history.pushState({}, '', url);
+              window.dispatchEvent(new PopStateEvent('popstate'));
             }
           }}
           iconName="view"
           className="w-full transition-colors uppercase bg-blue-600 hover:bg-blue-700 text-white"
         >
           {(() => {
-            // Determine button text based on context
+            // Determine button text based on context and selections
+            const parts = [];
+            
+            // User part
             if (data.selectedUserId && data.currentUser?.role === "admin") {
               const selectedUser = data.users?.find(
                 (u) => u.userUID === data.selectedUserId
               );
-              return selectedUser
-                ? `VIEW ${selectedUser.name?.toUpperCase() || selectedUser.email?.toUpperCase() || "USER"} DATA`
-                : "VIEW USER DATA";
+              const userName = selectedUser?.name?.toUpperCase() || selectedUser?.email?.toUpperCase() || "USER";
+              parts.push(userName);
+            } else if (!data.selectedUserId) {
+              parts.push("MY");
             }
-            return "VIEW MY DATA";
+            
+            // Reporter part
+            if (data.selectedReporterId) {
+              const selectedReporter = data.reporters?.find(
+                (r) => (r.id || r.uid) === data.selectedReporterId
+              );
+              const reporterName = selectedReporter?.name?.toUpperCase() || selectedReporter?.reporterName?.toUpperCase() || "REPORTER";
+              parts.push(reporterName);
+            }
+            
+            // Week part
+            if (data.selectedWeek) {
+              parts.push(`WEEK ${data.selectedWeek.weekNumber}`);
+            }
+            
+            // Build final text
+            if (parts.length === 0) {
+              return "VIEW DATA";
+            } else if (parts.length === 1) {
+              return `VIEW ${parts[0]} DATA`;
+            } else {
+              return `VIEW ${parts.join(" + ")} DATA`;
+            }
           })()}
         </DynamicButton>
       </div>
@@ -453,7 +502,7 @@ export const SMALL_CARD_CONFIGS = {
       color: getCardColor("actions", data)
     }),
     getValue: (data) => {
-      if (!data.tasks) return "0";
+      if (!data.tasks || !Array.isArray(data.tasks)) return "0";
       
       const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
       
@@ -467,33 +516,126 @@ export const SMALL_CARD_CONFIGS = {
       return filteredTasks.length.toString();
     },
     getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),
-    getContent: (data) => (
-      <div className="mb-6">
-        <DynamicButton
-          onClick={data.handleCreateTask}
-          disabled={!data.canCreateTasks}
-          iconName="add"
-          className={`w-full transition-colors uppercase ${
-            data.canCreateTasks
-              ? "bg-btn-primary "
-              : "bg-gray-600 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {data.canCreateTasks ? "ADD TASK" : "CREATE DISABLED"}
-        </DynamicButton>
-      </div>
-    ),
+    getContent: (data) => {
+      // Get weeks for the current month
+      const monthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
+      let weekOptions = [];
+      
+      if (monthId) {
+        try {
+          const weeks = getWeeksInMonth(monthId);
+          weekOptions = weeks.map((week) => ({
+            value: week.weekNumber.toString(),
+            label: `Week ${week.weekNumber}`,
+          }));
+        } catch (error) {
+          console.warn('Error getting weeks for month:', error);
+        }
+      }
+
+      return (
+        <div className="mb-6">
+          <SearchableSelectField
+            field={{
+              name: "selectedWeek",
+              type: "select",
+              label: "Filter by Week",
+              required: false,
+              options: weekOptions,
+              placeholder: "Search weeks...",
+            }}
+            register={() => {}} // Not needed for this use case
+            errors={{}}
+            setValue={(fieldName, value) => {
+              if (fieldName === "selectedWeek" && data.handleWeekChange) {
+                if (!value) {
+                  data.handleWeekChange(null);
+                } else {
+                  const weekNumber = parseInt(value);
+                  const weeks = getWeeksInMonth(monthId);
+                  const week = weeks.find(w => w.weekNumber === weekNumber);
+                  data.handleWeekChange(week || null);
+                }
+              }
+            }}
+            watch={() => data.selectedWeek?.weekNumber?.toString() || ""}
+            trigger={() => {}}
+            clearErrors={() => {}}
+            formValues={{}}
+            noOptionsMessage="No weeks available"
+          />
+        </div>
+      );
+    },
     getDetails: (data) => {
-      if (!data.tasks) return [];
+      if (!data.tasks || !Array.isArray(data.tasks)) return [];
       
       const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
       
-      // Always show ALL tasks for the selected month (no user/reporter filtering)
-      const filteredTasks = data.tasks.filter((task) => {
-        // Only filter by month, never by user or reporter
+      // Filter tasks by month first
+      let filteredTasks = data.tasks.filter((task) => {
         if (currentMonthId && task.monthId !== currentMonthId) return false;
         return true;
       });
+      
+      // If a week is selected, filter by week; otherwise show all tasks for the month
+      if (data.selectedWeek && data.selectedWeek.days) {
+        const weekTasks = [];
+        data.selectedWeek.days.forEach(day => {
+          try {
+            const dayDate = day instanceof Date ? day : new Date(day);
+            if (isNaN(dayDate.getTime())) return;
+            
+            const dayStr = dayDate.toISOString().split('T')[0];
+            const dayTasks = filteredTasks.filter(task => {
+              if (!task.createdAt) return false;
+              
+              // Handle Firestore Timestamp
+              let taskDate;
+              if (task.createdAt && typeof task.createdAt === 'object' && task.createdAt.seconds) {
+                taskDate = new Date(task.createdAt.seconds * 1000);
+              } else if (task.createdAt && typeof task.createdAt === 'object' && task.createdAt.toDate) {
+                taskDate = task.createdAt.toDate();
+              } else {
+                taskDate = new Date(task.createdAt);
+              }
+              
+              if (isNaN(taskDate.getTime())) return false;
+              const taskDateStr = taskDate.toISOString().split('T')[0];
+              return taskDateStr === dayStr;
+            });
+            weekTasks.push(...dayTasks);
+          } catch (error) {
+            console.warn('Error processing day:', error, day);
+          }
+        });
+        filteredTasks = weekTasks;
+      }
+      // If no week selected (selectedWeek is null), show all tasks for the month
+      
+      // Apply user and reporter filtering if specified
+      if (data.selectedUserId || data.selectedReporterId) {
+        filteredTasks = filteredTasks.filter((task) => {
+          // If both user and reporter are selected, show tasks that match BOTH
+          if (data.selectedUserId && data.selectedReporterId) {
+            const matchesUser = task.userUID === data.selectedUserId || task.createbyUID === data.selectedUserId;
+            const matchesReporter = task.reporterUID === data.selectedReporterId || task.data_task?.reporterUID === data.selectedReporterId;
+            return matchesUser && matchesReporter;
+          }
+          
+          // If only user is selected, show tasks for that user
+          if (data.selectedUserId && !data.selectedReporterId) {
+            return task.userUID === data.selectedUserId || task.createbyUID === data.selectedUserId;
+          }
+          
+          // If only reporter is selected, show tasks for that reporter
+          if (data.selectedReporterId && !data.selectedUserId) {
+            return task.reporterUID === data.selectedReporterId || task.data_task?.reporterUID === data.selectedReporterId;
+          }
+          
+          return true;
+        });
+      }
       
       // Calculate statistics
       const totalTasks = filteredTasks.length;

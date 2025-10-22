@@ -22,18 +22,26 @@ const SearchableDeliverablesField = ({
   const hasDeliverables = watch('_hasDeliverables') || false;
   const selectedOption = field.options?.find(option => option.value === selectedDeliverable);
   
-  // Debug logging for deliverables field
-  if (selectedDeliverable) {
-  }
+  // Debug logging for deliverables field (removed for production)
 
   // Handle initial value when form is reset
   useEffect(() => {
     if (selectedDeliverable && field.options && field.options.length > 0) {
       const option = field.options.find(opt => opt.value === selectedDeliverable);
       if (option) {
+        // Option found and matched successfully
+      } else {
+        // No matching option found - this is expected for custom deliverables
       }
     }
   }, [selectedDeliverable, field.options]);
+  
+  // Handle case where deliverable value is set after component mounts
+  useEffect(() => {
+    if (formValues?.deliverables && !selectedDeliverable && field.options?.length > 0) {
+      setValue('deliverables', formValues.deliverables);
+    }
+  }, [formValues?.deliverables, selectedDeliverable, field.options, setValue]);
   
   // Ensure default quantity is set when deliverable is selected
   useEffect(() => {

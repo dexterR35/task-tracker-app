@@ -23,8 +23,8 @@ export const createErrorResponse = (type, message, details = null, severity = ER
         // Only include primitive values and plain objects, handle circular references
         serializableDetails = JSON.parse(JSON.stringify(details, (key, value) => {
           // Skip HTML elements and other non-serializable objects
-          if (value instanceof HTMLElement || 
-              value instanceof Node || 
+          if (value instanceof HTMLElement ||
+              value instanceof Node ||
               typeof value === 'function' ||
               (typeof value === 'object' && value.constructor && value.constructor.name === 'FiberNode')) {
             return '[Circular Reference]';
@@ -106,8 +106,8 @@ export const parseFirebaseError = (error) => {
   }
 
   // Handle generic permission errors (including "Missing or insufficient permissions")
-  if (errorMessage?.includes('Missing or insufficient permissions') || 
-      errorMessage?.includes('permission') || 
+  if (errorMessage?.includes('Missing or insufficient permissions') ||
+      errorMessage?.includes('permission') ||
       errorCode === 'permission-denied') {
     return createErrorResponse(ERROR_TYPES.AUTHORIZATION, 'You do not have permission to perform this action.', { code: errorCode }, ERROR_SEVERITY.HIGH);
   }
@@ -135,9 +135,9 @@ export const parseFirebaseError = (error) => {
  */
 export const handleApiError = (error, operation = 'API operation', options = {}) => {
   const { showToast = true, logError = true } = options;
-  
+
   const errorResponse = parseFirebaseError(error);
-  
+
   if (logError) {
     logger.error(`[${operation}] Error:`, {
       error: errorResponse,
@@ -145,11 +145,11 @@ export const handleApiError = (error, operation = 'API operation', options = {})
       operation
     });
   }
-  
+
   if (showToast) {
     showError(errorResponse.message);
   }
-  
+
   return errorResponse;
 };
 
@@ -161,7 +161,7 @@ export const handleApiError = (error, operation = 'API operation', options = {})
  */
 export const handleValidationError = (errors, formName = 'form') => {
   const errorFields = Object.keys(errors);
-  
+
   // Safely extract error messages, avoiding circular references
   const errorMessages = errorFields.map(field => {
     const error = errors[field];
@@ -171,16 +171,16 @@ export const handleValidationError = (errors, formName = 'form') => {
     }
     return error || 'Validation error';
   });
-  
+
   const errorResponse = createErrorResponse(
     ERROR_TYPES.VALIDATION,
     `Validation failed for ${errorFields.length} field(s)`,
     { fields: errorFields, messages: errorMessages },
     ERROR_SEVERITY.LOW
   );
-  
+
   logger.warn(`[${formName}] Validation errors:`, errorResponse);
-  
+
   return errorResponse;
 };
 
@@ -199,9 +199,9 @@ export const handleSuccess = (message, data = null, operation = 'operation') => 
     timestamp: new Date().toISOString(),
     operation
   };
-  
+
   showSuccess(message);
-  
+
   return successResponse;
 };
 
@@ -233,11 +233,11 @@ export const withMutationErrorHandling = (mutationFn, options = {}) => {
     try {
       const result = await mutationFn(arg).unwrap();
       const { successMessage, operationName = 'mutation' } = options;
-      
+
       if (successMessage) {
         handleSuccess(successMessage, result, operationName);
       }
-      
+
       return result;
     } catch (error) {
       const { operationName = 'mutation', showToast = true, logError = true } = options;
@@ -254,13 +254,13 @@ export const withMutationErrorHandling = (mutationFn, options = {}) => {
  */
 export const getErrorBoundaryInfo = (error, componentName = 'Component') => {
   const errorResponse = parseFirebaseError(error);
-  
+
   logger.error(`[${componentName}] Error boundary caught error:`, {
     error: errorResponse,
     componentName,
     stack: error.stack
   });
-  
+
   return {
     title: 'Something went wrong',
     message: errorResponse.message,

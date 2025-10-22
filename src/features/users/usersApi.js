@@ -1,161 +1,299 @@
 /**
- * Users API Slice
- * 
- * @fileoverview RTK Query API for user management with role-based access control
+ * Users API (Direct Firestore with Snapshots)
+ *
+ * @fileoverview Direct Firestore hooks for users with real-time updates
  * @author Senior Developer
- * @version 2.0.0
+ * @version 3.0.0
  */
 
-import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { 
-  fetchCollectionFromFirestoreAdvanced,
-  fetchDocumentById,
-  withAuthentication,
-  createApiEndpointFactory,
-  withApiErrorHandling
-} from "@/utils/apiUtils";
-import { deduplicateRequest } from "@/features/utils/requestDeduplication";
-import { isUserAuthenticated as checkUserAuth } from "@/features/utils/authUtils";
-import { auth } from "@/app/firebase";
-import { API_CONFIG } from "@/constants";
-import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
-
+import { useState, useEffect, useCallback } from "react";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  where,
+  getDocs,
+  getDoc
+} from "firebase/firestore";
+import { db } from "@/app/firebase";
+import { logger } from "@/utils/logger";
+import dataCache from "@/utils/dataCache";
 
 /**
- * ============================================================================
- * API CONFIGURATION
- * ============================================================================
+ * Check if user email already exists
+ * @param {string} email - Email to check
+ * @returns {Promise<boolean>} - True if email exists
  */
-
-/**
- * Create API endpoint factory for users
- */
-const usersApiFactory = createApiEndpointFactory({
-  collectionName: 'users',
-  requiresAuth: true,
-  defaultOrderBy: 'createdAt',
-  defaultOrderDirection: 'desc'
-});
-
-/**
- * Helper function for consistent authentication error handling
- * @param {Error} error - Error object
- * @returns {Object} - Empty data object for auth errors
- * @throws {Error} - Re-throws non-auth errors
- */
-const handleAuthError = (error) => {
-  if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
-    return { data: [] };
+const checkUserEmailExists = async (email) => {
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', email.toLowerCase().trim()));
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  } catch (error) {
+    logger.error('Error checking user email:', error);
+    return false;
   }
-  throw error;
 };
 
 /**
- * Fetch a single user by UID from Firestore with caching
- * @param {string} userUID - The user UID to fetch
+ * Users Hook (One-time fetch - Users are relatively static data)
+ */
+export const useUsers = () => {
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const cacheKey = 'users_list';
+
+        // Check cache first
+        const cachedData = dataCache.get(cacheKey);
+        if (cachedData) {
+          logger.log('🔍 [useUsers] Using cached users data');
+          setUsers(cachedData);
+          setIsLoading(false);
+          setError(null);
+          return;
+        }
+
+        logger.log('🔍 [useUsers] Fetching users from Firestore');
+        setIsLoading(true);
+        setError(null);
+
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, orderBy('createdAt', 'desc'));
+
+        const snapshot = await getDocs(q);
+        const usersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Cache the data indefinitely (users are manually managed and never change)
+        dataCache.set(cacheKey, usersData, Infinity);
+
+        setUsers(usersData);
+        setIsLoading(false);
+        setError(null);
+        logger.log('✅ [useUsers] Users fetched and cached:', usersData.length);
+      } catch (err) {
+        logger.error('❌ [useUsers] Fetch error:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Create user
+  const createUser = useCallback(async (userData, adminUserData) => {
+    try {
+      // Check if email already exists
+      const emailExists = await checkUserEmailExists(userData.email);
+      if (emailExists) {
+        throw new Error("User with this email already exists");
+      }
+
+      const usersRef = collection(db, 'users');
+      const newUser = {
+        ...userData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: adminUserData?.uid,
+        createdByName: adminUserData?.name
+      };
+
+      const docRef = await addDoc(usersRef, newUser);
+
+      // Invalidate cache when data changes
+      dataCache.delete('users_list');
+
+      logger.log('User created successfully:', docRef.id);
+      return { success: true, id: docRef.id };
+    } catch (err) {
+      logger.error('Error creating user:', err);
+      throw err;
+    }
+  }, []);
+
+  // Update user
+  const updateUser = useCallback(async (userId, updateData, adminUserData) => {
+    try {
+      // Check if email is being updated and if it already exists
+      if (updateData.email) {
+        const emailExists = await checkUserEmailExists(updateData.email);
+        if (emailExists) {
+          throw new Error("User with this email already exists");
+        }
+      }
+
+      const userRef = doc(db, 'users', userId);
+      const updates = {
+        ...updateData,
+        updatedAt: serverTimestamp(),
+        updatedBy: adminUserData?.uid,
+        updatedByName: adminUserData?.name
+      };
+
+      await updateDoc(userRef, updates);
+
+      // Invalidate cache when data changes
+      dataCache.delete('users_list');
+
+      logger.log('User updated successfully:', userId);
+      return { success: true };
+    } catch (err) {
+      logger.error('Error updating user:', err);
+      throw err;
+    }
+  }, []);
+
+  // Delete user
+  const deleteUser = useCallback(async (userId, adminUserData) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await deleteDoc(userRef);
+
+      // Invalidate cache when data changes
+      dataCache.delete('users_list');
+
+      logger.log('User deleted successfully:', userId);
+      return { success: true };
+    } catch (err) {
+      logger.error('Error deleting user:', err);
+      throw err;
+    }
+  }, []);
+
+  return {
+    // Data
+    users,
+    isLoading,
+    error,
+
+    // CRUD Operations
+    createUser,
+    updateUser,
+    deleteUser
+  };
+};
+
+/**
+ * User by UID Hook (Direct Firestore with Snapshots)
+ */
+export const useUserByUID = (userUID) => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!userUID) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    let unsubscribe = null;
+
+    const setupListener = () => {
+      setIsLoading(true);
+      setError(null);
+
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('userUID', '==', userUID));
+
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (snapshot.empty) {
+            setUser(null);
+          } else {
+            const userData = snapshot.docs[0].data();
+            setUser({
+              id: snapshot.docs[0].id,
+              ...userData
+            });
+          }
+          setIsLoading(false);
+          setError(null);
+        },
+        (err) => {
+          logger.error('User by UID real-time error:', err);
+          setError(err);
+          setIsLoading(false);
+        }
+      );
+    };
+
+    setupListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [userUID]);
+
+  return { user, isLoading, error };
+};
+
+// Export hooks for backward compatibility
+export const useGetUsersQuery = useUsers;
+export const useGetUserByUIDQuery = useUserByUID;
+export const useCreateUserMutation = () => {
+  const { createUser } = useUsers();
+  return [createUser];
+};
+export const useUpdateUserMutation = () => {
+  const { updateUser } = useUsers();
+  return [updateUser];
+};
+export const useDeleteUserMutation = () => {
+  const { deleteUser } = useUsers();
+  return [deleteUser];
+};
+
+/**
+ * Fetch user by UID from Firestore (direct function for AuthContext)
+ * @param {string} userUID - User UID to fetch
  * @returns {Promise<Object|null>} - User data or null if not found
  */
 export const fetchUserByUIDFromFirestore = async (userUID) => {
-  const cacheKey = `getUserByUID_${userUID}`;
-  
-  return await deduplicateRequest(cacheKey, async () => {
-    const users = await fetchCollectionFromFirestoreAdvanced("users", {
-      where: { field: "userUID", operator: "==", value: userUID },
-      orderBy: null, // No ordering needed for single user lookup
-      limit: 1,
-      useCache: true,
-      cacheKey: cacheKey // Use the same cache key to avoid duplication
-    });
-    
-    if (users.length === 0) {
+  try {
+    if (!userUID) {
+      logger.error('fetchUserByUIDFromFirestore: userUID is required');
       return null;
     }
-    
-    return users[0];
-  });
-};
 
-export const usersApi = createApi({
-  reducerPath: "usersApi",
-  baseQuery: fakeBaseQuery(),
-  tagTypes: ["Users"],
-  ...getCacheConfigByType("USERS"),
-  endpoints: (builder) => ({
-    getUsers: builder.query({
-      async queryFn() {
-        const cacheKey = `getUsers`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
-          try {
-            // Check if user is authenticated before proceeding
-            if (!checkUserAuth({ user: auth.currentUser, isAuthChecking: false, isLoading: false })) {
-              return { data: [] };
-            }
-            
-            const users = await usersApiFactory.getAll({
-              orderBy: "createdAt",
-              orderDirection: "desc",
-              limit: API_CONFIG.REQUEST_LIMITS.USERS_PER_QUERY
-            });
-            
-            // Track Firestore usage
-            firestoreUsageTracker.trackQuery('users', users.length);
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('userUID', '==', userUID));
+    const snapshot = await getDocs(q);
 
-            return { data: users };
-          } catch (error) {
-            return handleAuthError(error);
-          }
-        });
-      },
-      providesTags: ["Users"]
-    }),
+    if (snapshot.empty) {
+      logger.log('fetchUserByUIDFromFirestore: No user found with UID:', userUID);
+      return null;
+    }
 
-    // Get single user by UID (for regular users)
-    getUserByUID: builder.query({
-      async queryFn({ userUID }) {
-        const cacheKey = `getUserByUID_${userUID}`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
-          try {
-            // Check if user is authenticated before proceeding
-            if (!checkUserAuth({ user: auth.currentUser, isAuthChecking: false, isLoading: false })) {
-              return { data: null };
-            }
-            
-            const user = await fetchUserByUIDFromFirestore(userUID);
+    const userData = snapshot.docs[0].data();
+    const user = {
+      id: snapshot.docs[0].id,
+      ...userData
+    };
 
-            if (!user) {
-              return { error: { message: 'User not found', code: 'USER_NOT_FOUND' } };
-            }
-
-            return { data: user };
-          } catch (error) {
-            if (error.message === 'AUTH_REQUIRED' || error.message.includes('Authentication required')) {
-              return { data: null };
-            }
-            throw error; // Let base API handle the error
-          }
-        });
-      },
-      providesTags: (result, error, { userUID }) => [
-        { type: "Users", id: userUID }
-      ]
-    })
-  })
-});
-
-export const {
-  useGetUsersQuery,
-  useGetUserByUIDQuery,
-} = usersApi;
-
-// Utility function for manual cache invalidation
-export const invalidateUsersCache = (dispatch) => {
-  dispatch(usersApi.util.invalidateTags(['Users']));
-};
-
-// Utility function to reset all users API state
-export const resetUsersApiState = (dispatch) => {
-  dispatch(usersApi.util.resetApiState());
+    logger.log('fetchUserByUIDFromFirestore: User found:', user.id);
+    return user;
+  } catch (error) {
+    logger.error('fetchUserByUIDFromFirestore: Error fetching user:', error);
+    return null;
+  }
 };

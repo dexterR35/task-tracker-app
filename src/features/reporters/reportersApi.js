@@ -1,26 +1,28 @@
-import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { getCacheConfigByType } from "@/features/utils/cacheConfig";
-import { 
-  createApiEndpointFactory,
-  fetchCollectionFromFirestoreAdvanced,
-  checkDocumentExists
-} from "@/utils/apiUtils";
-import { deduplicateRequest } from "@/features/utils/requestDeduplication";
-import { API_CONFIG } from "@/constants";
-import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
-
 /**
- * Reporters API - Refactored to use base API factory
- * Eliminates duplicate patterns and standardizes error handling
+ * Reporters API (Direct Firestore with Snapshots)
+ *
+ * @fileoverview Direct Firestore hooks for reporters with real-time updates
+ * @author Senior Developer
+ * @version 3.0.0
  */
 
-// Create API endpoint factory for reporters
-const reportersApiFactory = createApiEndpointFactory({
-  collectionName: 'reporters',
-  requiresAuth: true,
-  defaultOrderBy: 'createdAt',
-  defaultOrderDirection: 'desc'
-});
+import { useState, useEffect, useCallback } from "react";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  where,
+  getDocs
+} from "firebase/firestore";
+import { db } from "@/app/firebase";
+import { logger } from "@/utils/logger";
+import dataCache from "@/utils/dataCache";
 
 /**
  * Check if reporter email already exists
@@ -28,234 +30,191 @@ const reportersApiFactory = createApiEndpointFactory({
  * @returns {Promise<boolean>} - True if email exists
  */
 const checkReporterEmailExists = async (email) => {
-  return await checkDocumentExists("reporters", "email", email.toLowerCase().trim());
+  try {
+    // Validate email parameter
+    if (!email || typeof email !== 'string') {
+      logger.warn('Invalid email provided to checkReporterEmailExists:', email);
+      return false;
+    }
+
+    const reportersRef = collection(db, 'reporters');
+    const q = query(reportersRef, where('email', '==', email.toLowerCase().trim()));
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  } catch (error) {
+    logger.error('Error checking reporter email:', error);
+    return false;
+  }
 };
 
-export const reportersApi = createApi({
-  reducerPath: "reportersApi",
-  baseQuery: fakeBaseQuery(),
-  tagTypes: ["Reporter"],
-  ...getCacheConfigByType("REPORTERS"),
-  endpoints: (builder) => ({
-    // Get all reporters - Public data, no authentication required
-    getReporters: builder.query({
-      async queryFn() {
-        try {
-          // Fetch reporters with proper ordering by createdAt
-          // If createdAt field doesn't exist, fallback to no ordering
-          let reporters;
-          try {
-            reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {
-              orderBy: 'createdAt', 
-              orderDirection: 'desc',
-              limit: API_CONFIG.REQUEST_LIMITS.REPORTERS_PER_QUERY,
-              useCache: true,
-              cacheKey: 'getReporters'
-            });
-            
-            // Track Firestore usage
-            firestoreUsageTracker.trackQuery('reporters', reporters.length);
-          } catch (orderError) {
-            // Fallback: fetch without ordering if createdAt field doesn't exist
-            reporters = await fetchCollectionFromFirestoreAdvanced("reporters", {
-              orderBy: null,
-              limit: API_CONFIG.REQUEST_LIMITS.REPORTERS_PER_QUERY,
-              useCache: true,
-              cacheKey: 'getReporters_no_order'
-            });
-          }
+/**
+ * Reporters Hook (One-time fetch - Reporters are static data)
+ */
+export const useReporters = () => {
+  const [reporters, setReporters] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-          return { data: reporters };
-        } catch (error) {
-          throw error; // Let base API handle the error
+  useEffect(() => {
+    const fetchReporters = async () => {
+      try {
+        const cacheKey = 'reporters_list';
+
+        // Check cache first
+        const cachedData = dataCache.get(cacheKey);
+        if (cachedData) {
+          logger.log('🔍 [useReporters] Using cached reporters data');
+          setReporters(cachedData);
+          setIsLoading(false);
+          setError(null);
+          return;
         }
-      },
-      providesTags: ["Reporter"],
-    }),
 
-    // Create reporter
-    createReporter: builder.mutation({
-      async queryFn({ reporter, userData }) {
-        const cacheKey = `createReporter_${userData?.uid}`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
-          try {
-            // Check if reporter email already exists
-            if (reporter.email) {
-              const emailExists = await checkReporterEmailExists(reporter.email);
-              if (emailExists) {
-                return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
-              }
-            }
+        logger.log('🔍 [useReporters] Fetching reporters from Firestore');
+        setIsLoading(true);
+        setError(null);
 
-            // Clean the reporter data - remove any undefined fields
-            const cleanReporterData = Object.fromEntries(
-              Object.entries(reporter).filter(([_, value]) => value !== undefined)
-            );
+        const reportersRef = collection(db, 'reporters');
+        const q = query(reportersRef, orderBy('createdAt', 'desc'));
 
-            // Use the API factory for creation
-            const createdReporter = await reportersApiFactory.create(
-              {
-                ...cleanReporterData,
-                reporterUID: null, // Will be set after creation
-                createdBy: userData.userUID || userData.uid,
-                createdByName: userData.name,
-              },
-              userData,
-              {
-                addMetadata: true, // Add createdAt and updatedAt fields
-                useServerTimestamp: true, // Use server timestamp for consistency
-                lowercaseStrings: true,
-                fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
-              }
-            );
+        const snapshot = await getDocs(q);
+        const reportersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-            // Update with the generated reporterUID
-            const updatedReporter = await reportersApiFactory.update(
-              createdReporter.id,
-              { reporterUID: createdReporter.id },
-              userData,
-              {
-                addMetadata: true, // Add updatedAt field
-                useServerTimestamp: true, // Use server timestamp for consistency
-                lowercaseStrings: false // Don't lowercase the reporterUID
-              }
-            );
+        // Cache the data indefinitely (reporters are manually managed and never change)
+        dataCache.set(cacheKey, reportersData, Infinity);
 
-            return { data: updatedReporter };
-          } catch (error) {
-            throw error; // Let base API handle the error
-          }
-        }, 'ReportersAPI');
-      },
-      invalidatesTags: ["Reporter"],
-      // Optimistic update for immediate UI feedback
-      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
-        const patchResult = dispatch(
-          reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const tempId = `temp-${Date.now()}`;
-            const now = new Date().toISOString();
-            // Add the new reporter optimistically with proper field mapping
-            draft.unshift({
-              id: tempId, // Temporary ID
-              reporterUID: tempId, // Same temporary ID
-              name: arg.reporter.name,
-              email: arg.reporter.email,
-              departament: arg.reporter.departament,
-              country: arg.reporter.country,
-              channelName: arg.reporter.channelName,
-              createdBy: arg.userData.userUID || arg.userData.uid,
-              createdByName: arg.userData.name,
-              createdAt: now,
-            });
-          })
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
+        setReporters(reportersData);
+        setIsLoading(false);
+        setError(null);
+        logger.log('✅ [useReporters] Reporters fetched and cached:', reportersData.length);
+      } catch (err) {
+        logger.error('❌ [useReporters] Fetch error:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    };
+
+    fetchReporters();
+  }, []);
+
+  // Create reporter
+  const createReporter = useCallback(async (reporterData, userData = null) => {
+    try {
+      // Validate reporter data
+      if (!reporterData || !reporterData.email) {
+        throw new Error("Reporter email is required");
+      }
+
+      // Check if email already exists
+      const emailExists = await checkReporterEmailExists(reporterData.email);
+      if (emailExists) {
+        throw new Error("Reporter with this email already exists");
+      }
+
+      const reportersRef = collection(db, 'reporters');
+      const newReporter = {
+        ...reporterData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        // Only add user info if user is authenticated (optional)
+        ...(userData && userData.uid && {
+          createdBy: userData.uid,
+          createdByName: userData.name || 'Unknown User'
+        })
+      };
+
+      const docRef = await addDoc(reportersRef, newReporter);
+
+      // Invalidate cache when data changes
+      dataCache.delete('reporters_list');
+
+      logger.log('Reporter created successfully:', docRef.id);
+      return { success: true, id: docRef.id };
+    } catch (err) {
+      logger.error('Error creating reporter:', err);
+      throw err;
+    }
+  }, []);
+
+  // Update reporter
+  const updateReporter = useCallback(async (reporterId, updateData, userData = null) => {
+    try {
+      // Check if email is being updated and if it already exists
+      if (updateData.email) {
+        const emailExists = await checkReporterEmailExists(updateData.email);
+        if (emailExists) {
+          throw new Error("Reporter with this email already exists");
         }
-      },
-    }),
+      }
 
-    // Update reporter
-    updateReporter: builder.mutation({
-      async queryFn({ id, updates, userData }) {
-        const cacheKey = `updateReporter_${id}_${userData?.uid}`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
-          try {
-            // Check if email is being updated and if it already exists for another reporter
-            if (updates.email) {
-              const emailExists = await checkReporterEmailExists(updates.email);
-              if (emailExists) {
-                // Check if the email belongs to the current reporter being updated
-                const currentReporter = await fetchCollectionFromFirestoreAdvanced("reporters", { 
-                  where: { field: "__name__", operator: "==", value: id },
-                  limit: 1
-                });
-                
-                if (currentReporter.length === 0 || currentReporter[0].email !== updates.email.toLowerCase().trim()) {
-                  return { error: { message: "A reporter with this email address already exists. Please use a different email." } };
-                }
-              }
-            }
+      const reporterRef = doc(db, 'reporters', reporterId);
+      const updates = {
+        ...updateData,
+        updatedAt: serverTimestamp(),
+        // Only add user info if user is authenticated (optional)
+        ...(userData && userData.uid && {
+          updatedBy: userData.uid,
+          updatedByName: userData.name || 'Unknown User'
+        })
+      };
 
-            const updatedReporter = await reportersApiFactory.update(
-              id,
-              updates,
-              userData,
-              {
-                addMetadata: true, // Add updatedAt field
-                useServerTimestamp: true, // Use server timestamp for consistency
-                lowercaseStrings: true,
-                fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName']
-              }
-            );
+      await updateDoc(reporterRef, updates);
 
-            return { data: updatedReporter };
-          } catch (error) {
-            throw error; // Let base API handle the error
-          }
-        }, 'ReportersAPI');
-      },
-      invalidatesTags: ["Reporter"],
-      // Optimistic update for immediate UI feedback
-      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
-        const patchResult = dispatch(
-          reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const reporter = draft.find((r) => r.id === arg.id);
-            if (reporter) {
-              Object.assign(reporter, arg.updates);
-            }
-          })
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
-        }
-      },
-    }),
+      // Invalidate cache when data changes
+      dataCache.delete('reporters_list');
 
-    // Delete reporter
-    deleteReporter: builder.mutation({
-      async queryFn({ id, userData }) {
-        const cacheKey = `deleteReporter_${id}_${userData?.uid}`;
-        
-        return await deduplicateRequest(cacheKey, async () => {
-          try {
-            const result = await reportersApiFactory.delete(id, userData);
-            return { data: result };
-          } catch (error) {
-            throw error; // Let base API handle the error
-          }
-        }, 'ReportersAPI');
-      },
-      invalidatesTags: ["Reporter"],
-      // Optimistic update to remove from cache immediately
-      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
-        const patchResult = dispatch(
-          reportersApi.util.updateQueryData("getReporters", {}, (draft) => {
-            const index = draft.findIndex((reporter) => reporter.id === arg);
-            if (index !== -1) {
-              draft.splice(index, 1);
-            }
-          })
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
-        }
-      },
-    }),
-  }),
-});
+      logger.log('Reporter updated successfully:', reporterId);
+      return { success: true };
+    } catch (err) {
+      logger.error('Error updating reporter:', err);
+      throw err;
+    }
+  }, []);
 
-export const {
-  useGetReportersQuery,
-  useCreateReporterMutation,
-  useUpdateReporterMutation,
-  useDeleteReporterMutation,
-} = reportersApi;
+  // Delete reporter
+  const deleteReporter = useCallback(async (reporterId, userData = null) => {
+    try {
+      const reporterRef = doc(db, 'reporters', reporterId);
+      await deleteDoc(reporterRef);
+
+      // Invalidate cache when data changes
+      dataCache.delete('reporters_list');
+
+      logger.log('Reporter deleted successfully:', reporterId);
+      return { success: true };
+    } catch (err) {
+      logger.error('Error deleting reporter:', err);
+      throw err;
+    }
+  }, []);
+
+  return {
+    // Data
+    reporters,
+    isLoading,
+    error,
+
+    // CRUD Operations
+    createReporter,
+    updateReporter,
+    deleteReporter
+  };
+};
+
+// Export hooks for backward compatibility
+export const useGetReportersQuery = useReporters;
+export const useCreateReporterMutation = () => {
+  const { createReporter } = useReporters();
+  return [createReporter];
+};
+export const useUpdateReporterMutation = () => {
+  const { updateReporter } = useReporters();
+  return [updateReporter];
+};
+export const useDeleteReporterMutation = () => {
+  const { deleteReporter } = useReporters();
+  return [deleteReporter];
+};

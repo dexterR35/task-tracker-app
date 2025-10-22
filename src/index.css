@@ -72,14 +72,12 @@
   --color-secondary: #1d1f23;
   --color-secondary-dark: #4949492b;
   --color-hover: #c10f29;
-  --color-title: #0f3cd9;
   --color-focus: #aebfff;
   --color-soft: #3d48c9; /* blue-soft */
   --color-smallCard: #212134;
   --color-smallCard-white: #e8edff;
 
   /* ===== SPACING SCALE ===== */
-  --spacing: 0.25rem; /* 4px base unit */
 
   /* ===== TYPOGRAPHY SCALE ===== */
   --font-size-xs: 0.75rem;
@@ -91,29 +89,11 @@
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
 
-  /* ===== LINE HEIGHTS ===== */
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
 
-  /* ===== BORDER RADIUS ===== */
-  --radius-sm: 0.125rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
 
+  
   /* ===== GRAY SCALE ===== */
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e8edff;
-  --color-gray-300: #c2ccd8;
-  --color-gray-400: #a8b2c0;
-  --color-gray-500: #747e90;
-  --color-gray-600: #727e90;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
-
+ 
   /* ===== STATUS COLORS ===== */
   --color-red-error: #FF204E;
   --color-red-500: #c10f29;
@@ -182,33 +162,8 @@
   --color-border-focus: #aebfff;
 
   /* ===== GRADIENTS ===== */
-  --color-gradient-start: #0a1225;
-  --color-gradient-end: #010718;
-  --color-gradient-primary: linear-gradient(135deg, #131b30 0%, #0a2470 100%);
-  --color-gradient-success: linear-gradient(135deg, #2fd181 0%, #0a9952 100%);
-  --color-gradient-warning: linear-gradient(135deg, #eb2743 0%, #c10f29 100%);
-  --color-gradient-error: linear-gradient(135deg, #eb2743 0%, #c10f29 100%);
-  --color-gradient-info: linear-gradient(135deg, #2a9df4 0%, #538cff 100%);
 }
 
-/* Registered custom properties for better performance and animation support */
-@property --tw-gradient-from {
-  syntax: "<color>";
-  inherits: false;
-  initial-value: transparent;
-}
-
-@property --tw-gradient-to {
-  syntax: "<color>";
-  inherits: false;
-  initial-value: transparent;
-}
-
-@property --tw-gradient-stops {
-  syntax: "<color>";
-  inherits: false;
-  initial-value: transparent;
-}
 
 /* ---------------- Base layer ---------------- */
 @layer base {

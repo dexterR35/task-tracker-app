@@ -1,7 +1,7 @@
 /**
  * Authentication utility functions
  * Centralized authentication state checking and user validation
- * 
+ *
  * @fileoverview Provides comprehensive authentication and authorization utilities
  * @author Senior Developer
  * @version 2.0.0
@@ -45,24 +45,24 @@ export const getUserUID = (user) => {
  */
 export const validateUserStructure = (user, options = {}) => {
   const { strict = false } = options;
-  
+
   if (!user) {
     return { isValid: false, errors: ['User object is required'] };
   }
-  
+
   const errors = [];
   const requiredFields = ['uid', 'email', 'name', 'role'];
-  
+
   if (strict) {
     requiredFields.push('permissions', 'isActive');
   }
-  
+
   requiredFields.forEach(field => {
     if (!user[field] && user[field] !== false) {
       errors.push(`Missing required field: ${field}`);
     }
   });
-  
+
   return {
     isValid: errors.length === 0,
     errors
@@ -85,27 +85,7 @@ export const isUserComplete = (user) => {
  * @param {string} permission - Permission to check
  * @returns {boolean} - True if user has permission
  */
-export const hasPermissionCached = (() => {
-  const cache = new Map();
-  
-  return (user, permission) => {
-    if (!user || !permission) return false;
-    
-    const cacheKey = `${user.uid || user.userUID}_${permission}`;
-    
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey);
-    }
-    
-    const result = hasPermission(user, permission);
-    cache.set(cacheKey, result);
-    
-    // Clear cache after 5 minutes to prevent stale data
-    setTimeout(() => cache.delete(cacheKey), 5 * 60 * 1000);
-    
-    return result;
-  };
-})();
+// Removed cached version - using direct hasPermission for real-time updates
 
 // Internal function for getAuthStatus - strict validation
 const getUserDisplayName = (user) => {
@@ -166,15 +146,15 @@ export const getUserRole = (user) => {
  */
 export const canAccessRole = (user, requiredRole) => {
   if (!user) return false;
-  
+
   if (requiredRole === "admin") {
     return isAdmin(user);
   }
-  
+
   if (requiredRole === "user") {
     return user.role === 'user' || isAdmin(user); // Admins can access user routes
   }
-  
+
   return false;
 };
 
@@ -219,7 +199,7 @@ export const hasPermission = (userData, permission) => {
   if (!isUserActive(userData)) {
     return false;
   }
-  
+
   // All users (including admins) must have explicit permissions
   if (!userData || !userData.permissions || !Array.isArray(userData.permissions)) {
     return false;
@@ -370,10 +350,10 @@ export const getUserPermissionSummary = (user) => {
  * @returns {Object} - Validation result
  */
 export const validateUserPermissions = (userData, requiredPermissions, options = {}) => {
-  const { 
-    operation = 'unknown', 
+  const {
+    operation = 'unknown',
     logWarnings = true,
-    requireActive = true 
+    requireActive = true
   } = options;
 
   // Check if user data is provided
@@ -401,7 +381,7 @@ export const validateUserPermissions = (userData, requiredPermissions, options =
 
   // Check permissions for non-admin users
   const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
-  
+
   const hasRequiredPermission = permissions.some(permission => {
     return hasPermission(userData, permission);
   });

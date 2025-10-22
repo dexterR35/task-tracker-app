@@ -4,6 +4,7 @@
  * @fileoverview Main router configuration with route protection and layouts
  * @author Senior Developer
  * @version 2.0.0
+ * Updated: Removed WeekViewPage references
  */
 
 import React from "react";
@@ -14,8 +15,8 @@ import {
   Outlet,
 } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useAuth } from "@/features/auth/hooks/useAuth";
-import { isUserAuthenticated, isAuthLoading } from "@/features/utils/authUtils";
+import { useAuth } from "@/context/AuthContext";
+// Removed authUtils imports - using auth context directly
 
 import AuthLayout from "@/components/layout/AuthLayout";
 import Loader from "@/components/ui/Loader/Loader";
@@ -33,6 +34,7 @@ import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
 import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -85,7 +87,7 @@ const PublicRoute = ({ children }) => {
   const authState = useAuth();
 
   // If user is authenticated, redirect to dashboard
-  if (isUserAuthenticated(authState)) {
+  if (authState.user) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -120,7 +122,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   }
 
   // Check if user is authenticated
-  if (!isUserAuthenticated(authState)) {
+  if (!authState.user) {
     return <Navigate to="/login" replace state={redirectState} />;
   }
 
@@ -164,7 +166,7 @@ const RootLayout = () => {
   const authState = useAuth();
   
   // Show loading during initial auth check to prevent flash
-  if (isAuthLoading(authState)) {
+  if (authState.isLoading || authState.isAuthChecking) {
     return <SimpleLoader />;
   }
   
@@ -235,9 +237,21 @@ const router = createBrowserRouter([
           {
             path: "task/:taskId",
             element: (
-              <PageWrapper>
-                <TaskDetailPage />
-              </PageWrapper>
+              <ErrorBoundary componentName="TaskDetailPage">
+                <PageWrapper>
+                  <TaskDetailPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "profile",
+            element: (
+              <ErrorBoundary componentName="ProfilePage">
+                <PageWrapper>
+                  <ProfilePage />
+                </PageWrapper>
+              </ErrorBoundary>
             ),
           },
           
@@ -260,9 +274,11 @@ const router = createBrowserRouter([
             path: "landing-pages",
             element: (
               <AdminRoute>
-                <PageWrapper key="landing-pages">
-                  <LandingPages />
-                </PageWrapper>
+                <ErrorBoundary componentName="LandingPages">
+                  <PageWrapper key="landing-pages">
+                    <LandingPages />
+                  </PageWrapper>
+                </ErrorBoundary>
               </AdminRoute>
             ),
           },
@@ -270,9 +286,11 @@ const router = createBrowserRouter([
             path: "users",
             element: (
               <AdminRoute>
-                <PageWrapper>
-                  <AdminManagementPage />
-                </PageWrapper>
+                <ErrorBoundary componentName="AdminManagementPage">
+                  <PageWrapper>
+                    <AdminManagementPage />
+                  </PageWrapper>
+                </ErrorBoundary>
               </AdminRoute>
             ),
           },
@@ -280,9 +298,11 @@ const router = createBrowserRouter([
             path: "analytics-detail",
             element: (
               <AdminRoute>
-                <PageWrapper>
-                  <DynamicAnalyticsPage />
-                </PageWrapper>
+                <ErrorBoundary componentName="DynamicAnalyticsPage">
+                  <PageWrapper>
+                    <DynamicAnalyticsPage />
+                  </PageWrapper>
+                </ErrorBoundary>
               </AdminRoute>
             ),
           },

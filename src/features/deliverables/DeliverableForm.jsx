@@ -2,8 +2,8 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
-import { useAppData } from '@/hooks/useAppData';
+import { useDeliverablesApi } from './useDeliverablesApi';
+import { useAuth } from '@/context/AuthContext';
 import { handleValidationError } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, prepareFormData } from '@/utils/formUtils';
 import { showSuccess } from '@/utils/toast';
@@ -131,8 +131,9 @@ const DeliverableForm = ({
   className = "",
   user = null  // Add user prop
 }) => {
-  const { deliverables: existingDeliverables } = useAppData();
-  const [updateSettings, { isLoading: saving }] = useUpdateSettingsTypeMutation();
+  const { user: authUser } = useAuth();
+  const { createDeliverable, updateDeliverable } = useDeliverablesApi();
+  const [saving, setSaving] = React.useState(false);
   const schema = createFormSchema(CONFIG.FORM_FIELDS);
   
   const { 
@@ -163,25 +164,25 @@ const DeliverableForm = ({
 
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
-      const preparedData = prepareFormData(data);
-      
-      if (mode === 'create') {
-        await updateSettings({
-          deliverables: [...(existingDeliverables || []), preparedData],
-          userData: user  // Use actual user data instead of hardcoded admin
-        }).unwrap();
-        // Note: Success toast is handled by createFormSubmissionHandler
-      } else {
-        const updatedDeliverables = (existingDeliverables || []).map(d => 
-          d.name === deliverable.name ? { ...d, ...preparedData } : d
-        );
-        await updateSettings({
-          deliverables: updatedDeliverables,
-          userData: user  // Use actual user data instead of hardcoded admin
-        }).unwrap();
-        // Note: Success toast is handled by createFormSubmissionHandler
+      setSaving(true);
+      try {
+        const preparedData = prepareFormData(data);
+        const userData = user || authUser;
+        
+        if (mode === 'create') {
+          await createDeliverable(preparedData, userData);
+        } else {
+          await updateDeliverable(deliverable.name, preparedData, userData);
+        }
+        
+        onSuccess?.();
+        // No need to refetch - real-time listener will update automatically
+      } catch (error) {
+        console.error('Error saving deliverable:', error);
+        throw error;
+      } finally {
+        setSaving(false);
       }
-      onSuccess?.();
     },
     { 
       setError, 

@@ -19,10 +19,27 @@ import { logger } from "@/utils/logger";
  */
 
 /**
- * Firebase configuration with hardcoded credentials
+ * Firebase configuration with automatic environment detection
  * @returns {FirebaseConfig} Firebase configuration object
  */
 const getFirebaseConfig = () => {
+  const isDevelopment = import.meta.env.MODE === "development";
+
+  // Use development Firebase project in development mode
+  if (isDevelopment) {
+    logger.log("🔧 Using Development Firebase Project");
+    return {
+      apiKey: "AIzaSyBKCRN8f7dOaNrzjhOGIUpB__jQs-PX6MU",
+      authDomain: "track-app-stage.firebaseapp.com",
+      projectId: "track-app-stage",
+      storageBucket: "track-app-stage.firebasestorage.app",
+      messagingSenderId: "236939384499",
+      appId: "1:236939384499:web:5767e2dcbcebd67ed882c6",
+    };
+  }
+
+  // Use production Firebase project in production (Vercel)
+  logger.log("🚀 Using Production Firebase Project");
   return {
     apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
     authDomain: "task-tracker-app-eb03e.firebaseapp.com",
@@ -82,13 +99,13 @@ const setupAuthPersistence = async (maxRetries = 3) => {
       return;
     } catch (error) {
       const isLastAttempt = attempt === maxRetries;
-      
+
       if (isLastAttempt) {
         const errorMessage = `Failed to set auth persistence after ${maxRetries} attempts`;
         logger.error(errorMessage, error);
         throw new Error(`${errorMessage}: ${error.message}`);
       }
-      
+
       const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff
       logger.warn(`Persistence setup attempt ${attempt} failed, retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -111,7 +128,7 @@ const initializeAuthPersistence = async () => {
   } catch (error) {
     // Log error but don't crash the app
     logger.error("Auth persistence initialization failed", error);
-    
+
     if (import.meta.env.MODE === "development") {
       console.warn("Firebase auth persistence is not available. Some features may not work correctly.");
     }

@@ -1,15 +1,15 @@
 import * as Yup from 'yup';
-import { serializeTimestampsForRedux } from '@/utils/dateUtils';
+import { serializeTimestampsForContext } from '@/utils/dateUtils';
 import { prepareFormData } from '@/utils/formUtils';
 import { VALIDATION, FORM_OPTIONS } from '@/constants';
 
 // ===== CONDITIONAL FIELD LOGIC =====
 export const shouldShowField = (field, formValues) => {
   if (!field.conditional) return true;
-  
+
   const { field: conditionalField, value: conditionalValue } = field.conditional;
   const conditionalFieldValue = formValues[conditionalField];
-  
+
   return conditionalFieldValue === conditionalValue;
 };
 
@@ -17,11 +17,11 @@ export const isConditionallyRequired = (field, formValues) => {
   if (!field.required) {
     return false;
   }
-  
+
   if (field.conditional) {
     return shouldShowField(field, formValues);
   }
-  
+
   return field.required;
 };
 
@@ -73,7 +73,7 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
     conditional: false
   },
   {
-    name: 'endDate', 
+    name: 'endDate',
     type: 'date',
     label: 'End Date',
     required: true,
@@ -193,17 +193,17 @@ export const createTaskFormSchema = () => Yup.object().shape({
     .required(VALIDATION.MESSAGES.REQUIRED)
     .matches(VALIDATION.PATTERNS.JIRA_URL_ONLY, VALIDATION.MESSAGES.JIRA_URL_FORMAT)
     .max(200, VALIDATION.MESSAGES.MAX_LENGTH(200)),
-  
+
   products: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   departments: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   markets: Yup.array()
     .min(1, VALIDATION.MESSAGES.SELECT_ONE)
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   timeInHours: Yup.number()
     .typeError('Please enter a valid number')
     .required(VALIDATION.MESSAGES.REQUIRED)
@@ -220,7 +220,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
       }
       return true;
     }),
-  
+
   startDate: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED)
     .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
@@ -229,7 +229,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
       const date = new Date(value + 'T00:00:00.000Z');
       return !isNaN(date.getTime());
     }),
-  
+
   endDate: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED)
     .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
@@ -243,9 +243,9 @@ export const createTaskFormSchema = () => Yup.object().shape({
       if (!value || !startDate) return true;
       return new Date(value + 'T00:00:00.000Z') >= new Date(startDate + 'T00:00:00.000Z');
     }),
-  
+
   _hasDeliverables: Yup.boolean(),
-  
+
   deliverables: Yup.mixed().when('_hasDeliverables', {
     is: true,
     then: (schema) => schema.test('deliverable-required', 'Please select an option', function(value) {
@@ -283,7 +283,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
     }),
     otherwise: (schema) => schema.notRequired()
   }),
-  
+
   _usedAIEnabled: Yup.boolean(),
   isVip: Yup.boolean(),
   reworked: Yup.boolean(),
@@ -292,7 +292,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
     then: (schema) => schema.min(1, 'Please select at least one AI model when "AI Tools Used" is checked'),
     otherwise: (schema) => schema.notRequired()
   }),
-  
+
   aiTime: Yup.number().when('_usedAIEnabled', {
     is: true,
     then: (schema) => schema
@@ -313,10 +313,10 @@ export const createTaskFormSchema = () => Yup.object().shape({
       }),
     otherwise: (schema) => schema.notRequired()
   }),
-  
+
   reporters: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   observations: Yup.string()
     .optional()
     .max(300, VALIDATION.MESSAGES.MAX_LENGTH(300))
@@ -334,7 +334,7 @@ const sanitizeTaskFormData = (formData) => {
   } else {
     delete formData.observations;
   }
-  
+
   // Sanitize and convert date strings to ISO strings for proper storage
   if (formData.startDate && typeof formData.startDate === 'string') {
     const sanitizedStartDate = formData.startDate.trim();
@@ -352,7 +352,7 @@ const sanitizeTaskFormData = (formData) => {
       throw new Error('Invalid end date format');
     }
   }
-  
+
   return formData;
 };
 
@@ -367,7 +367,7 @@ const extractTaskNameFromJira = (jiraLink) => {
   if (!jiraLink) {
     throw new Error('Jira link is required');
   }
-  
+
   const jiraMatch = jiraLink.match(/\/browse\/([A-Z]+-\d+)/);
   if (jiraMatch) {
     return jiraMatch[1].toUpperCase(); // e.g., "GIMODEAR-124124" - ensure uppercase
@@ -383,7 +383,7 @@ const extractTaskNameFromJira = (jiraLink) => {
  */
 const processConditionalFields = (formData) => {
   const processedData = { ...formData };
-  
+
   // Handle deliverables conditional logic
   if (!processedData._hasDeliverables) {
     processedData.deliverables = [];
@@ -391,13 +391,13 @@ const processConditionalFields = (formData) => {
   } else if (processedData.deliverables !== 'others') {
     processedData.customDeliverables = [];
   }
-  
+
   // Handle AI tools conditional logic
   if (!processedData._usedAIEnabled) {
     processedData.aiModels = [];
     processedData.aiTime = 0;
   }
-  
+
   return processedData;
 };
 
@@ -448,20 +448,20 @@ export const prepareTaskFormData = (formData) => {
   const taskName = extractTaskNameFromJira(formData.jiraLink);
   const processedData = { ...formData, taskName };
   delete processedData.jiraLink; // Remove original URL
-  
+
   // Step 2: Process conditional fields
   const conditionalProcessedData = processConditionalFields(processedData);
-  
+
   // Step 3: Apply sanitization
   sanitizeTaskFormData(conditionalProcessedData);
-  
+
   // Step 4: Create data task structure
   const dataTask = createDataTaskStructure(conditionalProcessedData);
-  
+
   // Step 5: Remove UI-only fields
   delete conditionalProcessedData._hasDeliverables;
   delete conditionalProcessedData._usedAIEnabled;
-  
+
   // Step 6: Apply lowercase transformation
   const fieldsToLowercase = ['products', 'observations', 'reporterName', 'departments', 'markets'];
   const fieldsToKeepUppercase = ['taskName', 'reporters', 'userUID', 'reporterUID'];
@@ -471,9 +471,9 @@ export const prepareTaskFormData = (formData) => {
     removeEmptyFields: false,
     convertTypes: false
   });
-  
-  // Step 7: Serialize for Redux compatibility
-  return serializeTimestampsForRedux(lowercasedDataTask);
+
+  // Step 7: Serialize for Context compatibility
+  return serializeTimestampsForContext(lowercasedDataTask);
 };
 
 // Default export for backward compatibility

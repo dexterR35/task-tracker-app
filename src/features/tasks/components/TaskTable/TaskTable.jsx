@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppData } from "@/hooks/useAppData";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAppDataContext } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import TanStackTable from "@/components/Table/TanStackTable";
 import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
 import { useTableActions } from "@/hooks/useTableActions";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
+import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 
 const TaskTable = ({
@@ -14,6 +15,7 @@ const TaskTable = ({
   selectedUserId = "",
   selectedReporterId = "",
   selectedMonthId = null,
+  selectedWeek = null,
   error: tasksError = null,
   isLoading = false,
   onCountChange = null,
@@ -36,8 +38,11 @@ const TaskTable = ({
   const {
     tasks,
     reporters,
-    deleteTask,
-  } = useAppData();
+    user: userData,
+  } = useAppDataContext();
+
+  // Get delete task hook
+  const [deleteTask] = useDeleteTask();
 
   // Delete wrapper - simplified since useTableActions now handles permission errors
   const handleTaskDeleteMutation = async (task) => {
@@ -46,11 +51,11 @@ const TaskTable = ({
     }
     
     try {
-      await deleteTask({ 
-        monthId: task.monthId,  // Always use task's own monthId
-        taskId: task.id,
-        userData: user  // Pass user data for permission validation
-      });
+      await deleteTask(
+        task.monthId,  // Always use task's own monthId
+        task.id,
+        userData || {}  // Pass user data for permission validation
+      );
       // Note: Success toast is already shown by useTableActions hook
     } catch (error) {
       showError(`Failed to delete task: ${error.message}`);
@@ -122,13 +127,13 @@ const TaskTable = ({
   
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId) => {
+    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek) => {
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
       
-      
-      return tasks.filter((task) => {
+      // First apply month, user, and reporter filtering
+      let filteredTasks = tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
 
@@ -153,8 +158,8 @@ const TaskTable = ({
           const taskReporterId = task.data_task?.reporters;
           if (!taskReporterId) return false;
           
-          // Compare task reporter ID directly with selectedReporterId (case-insensitive)
-          const matchesReporter = taskReporterId?.toLowerCase() === selectedReporterId?.toLowerCase();
+          // Compare task reporter ID directly with selectedReporterId (exact case)
+          const matchesReporter = taskReporterId === selectedReporterId;
           
           return matchesUser && matchesReporter;
         }
@@ -172,8 +177,8 @@ const TaskTable = ({
           const taskReporterId = task.data_task?.reporters;
           if (!taskReporterId) return false;
           
-          // Compare task reporter ID directly with selectedReporterId (case-insensitive)
-          return taskReporterId?.toLowerCase() === selectedReporterId?.toLowerCase();
+          // Compare task reporter ID directly with selectedReporterId (exact case)
+          return taskReporterId === selectedReporterId;
         }
 
         // If neither user nor reporter is selected, show tasks based on role
@@ -185,6 +190,42 @@ const TaskTable = ({
 
         return true; // Admin sees all tasks
       });
+
+      // If a week is selected, filter by week
+      if (selectedWeek && selectedWeek.days) {
+        const weekTasks = [];
+        selectedWeek.days.forEach(day => {
+          try {
+            const dayDate = day instanceof Date ? day : new Date(day);
+            if (isNaN(dayDate.getTime())) return;
+            
+            const dayStr = dayDate.toISOString().split('T')[0];
+            const dayTasks = filteredTasks.filter(task => {
+              if (!task.createdAt) return false;
+              
+              // Handle Firestore Timestamp
+              let taskDate;
+              if (task.createdAt && typeof task.createdAt === 'object' && task.createdAt.seconds) {
+                taskDate = new Date(task.createdAt.seconds * 1000);
+              } else if (task.createdAt && typeof task.createdAt === 'object' && task.createdAt.toDate) {
+                taskDate = task.createdAt.toDate();
+              } else {
+                taskDate = new Date(task.createdAt);
+              }
+              
+              if (isNaN(taskDate.getTime())) return false;
+              const taskDateStr = taskDate.toISOString().split('T')[0];
+              return taskDateStr === dayStr;
+            });
+            weekTasks.push(...dayTasks);
+          } catch (error) {
+            console.warn('Error processing day:', error, day);
+          }
+        });
+        filteredTasks = weekTasks;
+      }
+
+      return filteredTasks;
     },
     [isUserAdmin, userUID]
   );
@@ -198,7 +239,8 @@ const TaskTable = ({
       tasks,
       selectedUserId,
       selectedReporterId,
-      selectedMonthId
+      selectedMonthId,
+      selectedWeek
     );
     
     // Sort by createdAt in descending order (newest first)

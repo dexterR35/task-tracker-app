@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import MidnightCountdown from "@/components/ui/MidnightCountdown/MidnightCountdown";
 import DynamicButton from "@/components/ui/Button/DynamicButton";

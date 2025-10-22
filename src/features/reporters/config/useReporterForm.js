@@ -1,26 +1,23 @@
 import * as Yup from 'yup';
 import { VALIDATION, FORM_OPTIONS } from '@/constants';
 
-// ===== DYNAMIC REPORTER FORM OPTIONS =====
-// These functions generate options from actual database data
-export const getReporterDepartmentOptions = (reporters = []) => {
-  const departments = [...new Set(reporters.map(r => r.departament).filter(Boolean))];
-  return departments.map(dept => ({ value: dept, label: dept }));
+// ===== STATIC REPORTER FORM OPTIONS =====
+// Use predefined constants from FORM_OPTIONS
+export const getReporterDepartmentOptions = () => {
+  return FORM_OPTIONS.REPORTER_DEPARTMENTS;
 };
 
-export const getReporterChannelOptions = (reporters = []) => {
-  const channels = [...new Set(reporters.map(r => r.channelName).filter(Boolean))];
-  return channels.map(channel => ({ value: channel, label: channel }));
+export const getReporterChannelOptions = () => {
+  return FORM_OPTIONS.REPORTER_CHANNELS;
 };
 
-export const getReporterCountryOptions = (reporters = []) => {
-  const countries = [...new Set(reporters.map(r => r.country).filter(Boolean))];
-  return countries.map(country => ({ value: country, label: country }));
+export const getReporterCountryOptions = () => {
+  return FORM_OPTIONS.REPORTER_COUNTRIES;
 };
 
 // ===== REPORTER FORM FIELD CONFIGURATION =====
-// This function creates form fields with dynamic options based on existing data
-export const createReporterFormFields = (reporters = []) => [
+// This function creates form fields with static options from constants
+export const createReporterFormFields = () => [
   {
     name: 'name',
     type: 'text',
@@ -54,43 +51,49 @@ export const createReporterFormFields = (reporters = []) => [
     type: 'select',
     label: 'Department',
     required: true,
-    options: getReporterDepartmentOptions(reporters)
+    options: getReporterDepartmentOptions(),
+    allowCustom: true,
+    placeholder: 'Select or type department name'
   },
   {
     name: 'country',
     type: 'select',
     label: 'Country',
     required: true,
-    options: getReporterCountryOptions(reporters)
+    options: getReporterCountryOptions(),
+    allowCustom: true,
+    placeholder: 'Select or type country name'
   },
   {
     name: 'channelName',
     type: 'select',
     label: 'Channel Name',
     required: true,
-    options: getReporterChannelOptions(reporters)
+    options: getReporterChannelOptions(),
+    allowCustom: true,
+    placeholder: 'Select or type channel name'
   }
 ];
 
 // ===== BACKWARD COMPATIBILITY =====
 // For components that still expect the old static form fields
-export const REPORTER_FORM_FIELDS = createReporterFormFields([]);
+export const REPORTER_FORM_FIELDS = createReporterFormFields();
 
 // ===== REPORTER FORM VALIDATION SCHEMA =====
 export const reporterFormSchema = Yup.object().shape({
   name: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   email: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED)
     .email(VALIDATION.MESSAGES.EMAIL),
-  
+
   departament: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   country: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED),
-  
+
   channelName: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED)
 });

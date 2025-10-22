@@ -1,5 +1,5 @@
 import React from "react";
-import { useAppData } from "@/hooks/useAppData";
+import { useAppDataContext } from "@/context/AppDataContext";
 
 const MonthSelector = ({ 
   selectedUserId = null,
@@ -15,7 +15,7 @@ const MonthSelector = ({
     availableMonths,
     selectMonth,
     isLoading
-  } = useAppData(selectedUserId);
+  } = useAppDataContext(selectedUserId);
 
   const handleChange = (e) => {
     const monthId = e.target.value;

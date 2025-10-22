@@ -25,7 +25,7 @@ class FirebaseListenerManager {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
-    
+
     this.cleanupInterval = setInterval(() => {
       this.performCleanup();
     }, this.cleanupIntervalMs);
@@ -54,20 +54,20 @@ class FirebaseListenerManager {
   performCleanup() {
     const listenerCount = this.listeners.size;
     const timeSinceLastActivity = Date.now() - this.lastActivity;
-    
+
     // Force cleanup if too many listeners
     if (listenerCount > this.maxListeners) {
       logger.warn(`[ListenerManager] Too many listeners (${listenerCount}), performing cleanup`);
       this.removeAllListeners();
       return;
     }
-    
+
     // Cleanup if idle for too long (for infrequent data usage)
     if (listenerCount > 0 && timeSinceLastActivity > this.idleTimeoutMs) {
       this.removeAllListeners();
       return;
     }
-    
+
     // Log current listener status (less frequently)
     if (listenerCount > 0 && timeSinceLastActivity < 300000) { // Only log if active in last 5 minutes
     }
@@ -80,13 +80,13 @@ class FirebaseListenerManager {
   performSelectiveCleanup() {
     const now = Date.now();
     const listenersToRemove = [];
-    
+
     for (const [key, unsubscribe] of this.listeners) {
       // Only remove non-critical listeners (not auth, not real-time data)
-      if (!this.preservedListeners.has(key) && 
-          !key.includes('auth') && 
+      if (!this.preservedListeners.has(key) &&
+          !key.includes('auth') &&
           !key.includes('auth-state') &&
-          !key.includes('tasks') && 
+          !key.includes('tasks') &&
           !key.includes('realtime')) {
         try {
           unsubscribe();
@@ -96,10 +96,10 @@ class FirebaseListenerManager {
         }
       }
     }
-    
+
     // Remove cleaned up listeners
     listenersToRemove.forEach(key => this.listeners.delete(key));
-    
+
     if (listenersToRemove.length > 0) {
       logger.log(`[ListenerManager] Selective cleanup removed ${listenersToRemove.length} non-critical listeners`);
     }
@@ -134,28 +134,28 @@ class FirebaseListenerManager {
     let unsubscribe;
     try {
       unsubscribe = setupFn();
-      
+
       // Validate unsubscribe function
       if (typeof unsubscribe !== 'function') {
         throw new Error('Setup function must return an unsubscribe function');
       }
-      
+
       // Store the unsubscribe function
       this.listeners.set(key, unsubscribe);
-      
+
       // If this listener should be preserved, store it separately
       if (preserve) {
         this.preservedListeners.set(key, { setupFn, unsubscribe });
       }
-      
+
       // Update activity timestamp
       this.updateActivity();
-      
+
     } catch (error) {
       logger.error(`[ListenerManager] Error setting up listener ${key}:`, error);
       throw error;
     }
-    
+
     return unsubscribe;
   }
 
@@ -180,20 +180,20 @@ class FirebaseListenerManager {
    */
   removeAllListeners() {
     const listenerCount = this.listeners.size;
-    
+
     for (const [key, unsubscribe] of this.listeners) {
       // Skip preserved listeners
       if (this.preservedListeners.has(key)) {
         continue;
       }
-      
+
       try {
         unsubscribe();
       } catch (error) {
         logger.error(`[ListenerManager] Error removing listener ${key}:`, error);
       }
     }
-    
+
     // Clear only non-preserved listeners
     for (const [key] of this.listeners) {
       if (!this.preservedListeners.has(key)) {
@@ -215,7 +215,7 @@ class FirebaseListenerManager {
           logger.error(`[ListenerManager] Error cleaning up old listener ${key}:`, error);
         }
       }
-      
+
       // Set up new listener
       try {
         const newUnsubscribe = setupFn();
@@ -273,7 +273,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     listenerManager.destroy();
   });
-  
+
   // Handle visibility changes - preserve critical listeners
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -285,7 +285,7 @@ if (typeof window !== 'undefined') {
       listenerManager.restorePreservedListeners();
     }
   });
-  
+
   // Clean up on page focus loss (additional safety) - but preserve critical listeners
   window.addEventListener('blur', () => {
     listenerManager.performCleanup();

@@ -15,7 +15,7 @@ export const toastConfig = {
 // Generic toast function that accepts an object with type, title, message, and duration
 export const showToast = ({ type = 'info', title, message, duration = 3000, ...options } = {}) => {
   const toastMessage = title ? `${title}: ${message}` : message;
-  
+
   switch (type.toLowerCase()) {
     case 'success':
       return toast.success(toastMessage, { ...toastConfig, autoClose: duration, ...options });
@@ -69,8 +69,8 @@ export const showAuthError = (message) => {
 
 export const showWelcomeMessage = (userName) => {
   const message = `Welcome, ${userName}! 👋`;
-  
-  return showSuccess(message, { 
+
+  return showSuccess(message, {
     autoClose: 3000, // Longer duration for welcome message
     position: "top-center",
     pauseOnHover: false // Ensure it doesn't pause
@@ -109,8 +109,8 @@ export const showPermissionError = (action, resource = 'resource') => {
 };
 
 export const showNetworkError = () => {
-  return showError("Network error: Please check your connection and try again", { 
-    autoClose: 6000 
+  return showError("Network error: Please check your connection and try again", {
+    autoClose: 6000
   });
 };
 

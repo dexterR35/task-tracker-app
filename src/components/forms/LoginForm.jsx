@@ -8,7 +8,7 @@
 
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { prepareFormData } from '@/utils/formUtils';

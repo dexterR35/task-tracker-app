@@ -9,7 +9,7 @@
  */
 export const calculateMarketBadges = (tasks) => {
   const marketCounts = {};
-  
+
   tasks.forEach(task => {
     const markets = task.data_task?.markets || task.markets;
     if (markets && Array.isArray(markets)) {
@@ -77,42 +77,42 @@ export const calculateAnalyticsData = (tasks) => {
  * @returns {Array} Table data array
  */
 export const generateProductTableData = (analyticsData) => [
-  { 
-    product: "Casino", 
-    acquisition: analyticsData.acquisition.casino, 
-    product_dev: analyticsData.product.casino, 
-    marketing: analyticsData.marketing.casino, 
-    total: analyticsData.acquisition.casino + analyticsData.product.casino + analyticsData.marketing.casino 
+  {
+    product: "Casino",
+    acquisition: analyticsData.acquisition.casino,
+    product_dev: analyticsData.product.casino,
+    marketing: analyticsData.marketing.casino,
+    total: analyticsData.acquisition.casino + analyticsData.product.casino + analyticsData.marketing.casino
   },
-  { 
-    product: "Sport", 
-    acquisition: analyticsData.acquisition.sport, 
-    product_dev: analyticsData.product.sport, 
-    marketing: analyticsData.marketing.sport, 
-    total: analyticsData.acquisition.sport + analyticsData.product.sport + analyticsData.marketing.sport 
+  {
+    product: "Sport",
+    acquisition: analyticsData.acquisition.sport,
+    product_dev: analyticsData.product.sport,
+    marketing: analyticsData.marketing.sport,
+    total: analyticsData.acquisition.sport + analyticsData.product.sport + analyticsData.marketing.sport
   },
-  { 
-    product: "Poker", 
-    acquisition: analyticsData.acquisition.poker, 
-    product_dev: analyticsData.product.poker, 
-    marketing: analyticsData.marketing.poker, 
-    total: analyticsData.acquisition.poker + analyticsData.product.poker + analyticsData.marketing.poker 
+  {
+    product: "Poker",
+    acquisition: analyticsData.acquisition.poker,
+    product_dev: analyticsData.product.poker,
+    marketing: analyticsData.marketing.poker,
+    total: analyticsData.acquisition.poker + analyticsData.product.poker + analyticsData.marketing.poker
   },
-  { 
-    product: "Lotto", 
-    acquisition: analyticsData.acquisition.lotto, 
-    product_dev: analyticsData.product.lotto, 
-    marketing: analyticsData.marketing.lotto, 
-    total: analyticsData.acquisition.lotto + analyticsData.product.lotto + analyticsData.marketing.lotto 
+  {
+    product: "Lotto",
+    acquisition: analyticsData.acquisition.lotto,
+    product_dev: analyticsData.product.lotto,
+    marketing: analyticsData.marketing.lotto,
+    total: analyticsData.acquisition.lotto + analyticsData.product.lotto + analyticsData.marketing.lotto
   },
-  { 
-    product: "Grand Total", 
-    acquisition: analyticsData.acquisition.total, 
-    product_dev: analyticsData.product.total, 
-    marketing: analyticsData.marketing.total, 
-    total: analyticsData.grandTotal, 
-    bold: true, 
-    highlight: true 
+  {
+    product: "Grand Total",
+    acquisition: analyticsData.acquisition.total,
+    product_dev: analyticsData.product.total,
+    marketing: analyticsData.marketing.total,
+    total: analyticsData.grandTotal,
+    bold: true,
+    highlight: true
   }
 ];
 
@@ -122,39 +122,39 @@ export const generateProductTableData = (analyticsData) => [
  * @returns {Array} Table data array
  */
 export const generateCategoryTableData = (analyticsData) => [
-  { 
-    category: "Acquisition", 
-    casino: analyticsData.acquisition.casino, 
-    sport: analyticsData.acquisition.sport, 
-    poker: analyticsData.acquisition.poker, 
-    lotto: analyticsData.acquisition.lotto, 
-    total: analyticsData.acquisition.total 
+  {
+    category: "Acquisition",
+    casino: analyticsData.acquisition.casino,
+    sport: analyticsData.acquisition.sport,
+    poker: analyticsData.acquisition.poker,
+    lotto: analyticsData.acquisition.lotto,
+    total: analyticsData.acquisition.total
   },
-  { 
-    category: "Product", 
-    casino: analyticsData.product.casino, 
-    sport: analyticsData.product.sport, 
-    poker: analyticsData.product.poker, 
-    lotto: analyticsData.product.lotto, 
-    total: analyticsData.product.total 
+  {
+    category: "Product",
+    casino: analyticsData.product.casino,
+    sport: analyticsData.product.sport,
+    poker: analyticsData.product.poker,
+    lotto: analyticsData.product.lotto,
+    total: analyticsData.product.total
   },
-  { 
-    category: "Marketing", 
-    casino: analyticsData.marketing.casino, 
-    sport: analyticsData.marketing.sport, 
-    poker: analyticsData.marketing.poker, 
-    lotto: analyticsData.marketing.lotto, 
-    total: analyticsData.marketing.total 
+  {
+    category: "Marketing",
+    casino: analyticsData.marketing.casino,
+    sport: analyticsData.marketing.sport,
+    poker: analyticsData.marketing.poker,
+    lotto: analyticsData.marketing.lotto,
+    total: analyticsData.marketing.total
   },
-  { 
-    category: "Grand Total", 
-    casino: analyticsData.acquisition.casino + analyticsData.product.casino + analyticsData.marketing.casino, 
-    sport: analyticsData.acquisition.sport + analyticsData.product.sport + analyticsData.marketing.sport, 
-    poker: analyticsData.acquisition.poker + analyticsData.product.poker + analyticsData.marketing.poker, 
-    lotto: analyticsData.acquisition.lotto + analyticsData.product.lotto + analyticsData.marketing.lotto, 
-    total: analyticsData.grandTotal, 
-    bold: true, 
-    highlight: true 
+  {
+    category: "Grand Total",
+    casino: analyticsData.acquisition.casino + analyticsData.product.casino + analyticsData.marketing.casino,
+    sport: analyticsData.acquisition.sport + analyticsData.product.sport + analyticsData.marketing.sport,
+    poker: analyticsData.acquisition.poker + analyticsData.product.poker + analyticsData.marketing.poker,
+    lotto: analyticsData.acquisition.lotto + analyticsData.product.lotto + analyticsData.marketing.lotto,
+    total: analyticsData.grandTotal,
+    bold: true,
+    highlight: true
   }
 ];
 

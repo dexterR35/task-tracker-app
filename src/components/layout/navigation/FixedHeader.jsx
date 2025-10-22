@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import Avatar from "@/components/ui/Avatar/Avatar";
@@ -8,6 +8,7 @@ import Avatar from "@/components/ui/Avatar/Avatar";
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const { user, canAccess, logout, clearError } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -50,6 +51,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return "Landing Pages";
       case "/users":
         return "User Management";
+      case "/profile":
+        return "Profile Settings";
       default:
         return "Dashboard";
     }
@@ -122,7 +125,13 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
                 </p>
               </div>
               <div className="py-1">
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button 
+                  onClick={() => {
+                    navigate('/profile');
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
                   <Icons.generic.user className="w-4 h-4 inline mr-3" />
                   Profile Settings
                 </button>

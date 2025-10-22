@@ -1,11 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Icons } from "@/components/icons";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { CARD_SYSTEM } from "@/constants";
-import { useAppData } from "@/hooks/useAppData";
+import { useAppDataContext } from "@/context/AppDataContext";
 import { createAnalyticsCards, createDailyTaskCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
+import { getWeeksInMonth } from "@/utils/monthUtils";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -17,7 +18,7 @@ const HARDCODED_EFFICIENCY_DATA = {
 };
 
 // Generate real data from useAppData
-const generateRealData = (tasks, userName, reporterName, monthId) => {
+const generateRealData = (tasks, userName, reporterName, monthId, weekParam = null) => {
   if (!tasks || tasks.length === 0) {
     return {
       totalTasksThisMonth: 0,
@@ -56,10 +57,59 @@ const generateRealData = (tasks, userName, reporterName, monthId) => {
       const reporterMatch = (
         task.data_task?.reporterName === reporterName ||
         task.reporterName === reporterName ||
-        (task.data_task?.reporters && task.data_task.reporters.includes(reporterName)) ||
-        (task.reporterUID && task.reporterUID.includes(reporterName))
+        (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
+        (task.reporterUID && task.reporterUID === reporterName)
       );
       if (!reporterMatch) return false;
+    }
+    
+    // Filter by week if specified
+    if (weekParam) {
+      try {
+        const weekNumber = parseInt(weekParam);
+        if (!isNaN(weekNumber)) {
+          // Get weeks for the current month
+          const weeks = getWeeksInMonth(monthId);
+          const week = weeks.find(w => w.weekNumber === weekNumber);
+          
+          if (week && week.days) {
+            // Check if task was created on any day of this week
+            const taskDate = task.createdAt;
+            if (!taskDate) return false;
+            
+            // Handle Firestore Timestamp
+            let taskDateObj;
+            if (taskDate && typeof taskDate === 'object' && taskDate.seconds) {
+              taskDateObj = new Date(taskDate.seconds * 1000);
+            } else if (taskDate && typeof taskDate === 'object' && taskDate.toDate) {
+              taskDateObj = taskDate.toDate();
+            } else {
+              taskDateObj = new Date(taskDate);
+            }
+            
+            if (isNaN(taskDateObj.getTime())) return false;
+            
+            const taskDateStr = taskDateObj.toISOString().split('T')[0];
+            
+            // Check if task date matches any day in the week
+            const isInWeek = week.days.some(day => {
+              try {
+                const dayDate = day instanceof Date ? day : new Date(day);
+                if (isNaN(dayDate.getTime())) return false;
+                const dayStr = dayDate.toISOString().split('T')[0];
+                return dayStr === taskDateStr;
+              } catch (error) {
+                console.warn('Error processing week day:', error, day);
+                return false;
+              }
+            });
+            
+            if (!isInWeek) return false;
+          }
+        }
+      } catch (error) {
+        console.warn('Error processing week filter:', error);
+      }
     }
     
     return true;
@@ -261,21 +311,6 @@ const generateRealData = (tasks, userName, reporterName, monthId) => {
   // Round daily hours to 1 decimal for display
   const roundedDailyHours = dailyHours.map(hours => Math.round(hours * 10) / 10);
 
-  console.log('🔍 Weekly Data Debug:', {
-    totalTasks: tasks.length,
-    filteredTasks: filteredTasks.length,
-    userName,
-    reporterName,
-    monthId,
-    weeklyTasks: weeklyTasks,
-    dailyHours: roundedDailyHours,
-    sampleTaskDates: filteredTasks.slice(0, 3).map(task => ({
-      startDate: task.data_task?.startDate,
-      endDate: task.data_task?.endDate,
-      createdAt: task.createdAt,
-      timestamp: task.timestamp
-    }))
-  });
 
   // Latest 5 tasks with Jira links
   const latestTasks = filteredTasks
@@ -322,29 +357,65 @@ const DynamicAnalyticsPage = () => {
   const userName = searchParams.get('user');
   const reporterName = searchParams.get('reporter');
   const monthId = searchParams.get('month') || 'current';
+  const weekParam = searchParams.get('week');
   
-  // Use real data from useAppData hook
-  const { tasks, isLoading, error, loadingStates } = useAppData();
+  
+  // Use real data from context
+  const { tasks, isLoading, error, loadingStates, monthId: contextMonthId } = useAppDataContext();
+  
+  // Use actual monthId from context if 'current' is specified
+  const actualMonthId = monthId === 'current' ? contextMonthId : monthId;
   
   // Generate real data based on parameters
-  const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, monthId);
+  const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam);
   
   // Create analytics cards using centralized system
-  const analyticsCards = createAnalyticsCards({ ...analyticsData, userName, reporterName });
+  const analyticsCards = createAnalyticsCards({ 
+    ...analyticsData, 
+    userName, 
+    reporterName,
+    monthId: actualMonthId,
+    tasks,
+  });
   
   // Create daily task cards using centralized system
   const dailyTaskCards = createDailyTaskCards(analyticsData);
   
+  // Helper function to convert Firestore Timestamp to Date
+  const convertToDate = (timestamp) => {
+    if (!timestamp) return null;
+    
+    try {
+      // Handle Firestore Timestamp objects
+      if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
+        // Firestore Timestamp: {seconds: number, nanoseconds: number}
+        return new Date(timestamp.seconds * 1000);
+      } else if (timestamp && typeof timestamp === 'object' && timestamp.toDate) {
+        // Firestore Timestamp with toDate method
+        return timestamp.toDate();
+      } else {
+        // Regular Date string or Date object
+        return new Date(timestamp);
+      }
+    } catch (error) {
+      console.warn('Error converting timestamp to date:', error, timestamp);
+      return null;
+    }
+  };
+
+  
   // Determine page title
   const pageTitle = (() => {
+    const weekInfo = weekParam ? ` - Week ${weekParam}` : "";
+    
     if (userName && reporterName) {
-      return `Analytics: ${userName} & ${reporterName}`;
+      return `Analytics: ${userName} & ${reporterName}${weekInfo}`;
     } else if (userName) {
-      return `User Analytics: ${userName}`;
+      return `User Analytics: ${userName}${weekInfo}`;
     } else if (reporterName) {
-      return `Reporter Analytics: ${reporterName}`;
+      return `Reporter Analytics: ${reporterName}${weekInfo}`;
     }
-    return 'Analytics Overview';
+    return `Analytics Overview${weekInfo}`;
   })();
   
   // Show loading state with skeleton cards - wait for data to be fully ready
@@ -447,6 +518,8 @@ const DynamicAnalyticsPage = () => {
         {/* Daily Task Cards Grid */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Weekly Task Distribution (Monday-Friday)</h2>
+          
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {dailyTaskCards.map((card) => (
               <SmallCard key={card.id} card={card} />
@@ -454,68 +527,141 @@ const DynamicAnalyticsPage = () => {
           </div>
         </div>
         
-        {/* Latest Tasks Section */}
-        {analyticsData.latestTasks.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Latest 5 Tasks Added</h2>
-            <div className="bg-gray-800 rounded-lg p-6">
-              <div className="space-y-3">
-                {analyticsData.latestTasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{
-                          backgroundColor: task.status === 'completed' ? '#f59e0b' : // amber
-                                        task.status === 'reworked' ? '#dc2626' : // crimson
-                                        '#64748b' // gray
-                        }}
-                      ></div>
-                      <div className="flex flex-col">
-                        {(() => {
-                          const jiraLink = task.jiraLink || (task.name && task.name.match(/GIMODEAR-\d+/))?.[0];
-                          const fullJiraUrl = jiraLink ? 
-                            (jiraLink.startsWith('http') ? jiraLink : `https://gmrd.atlassian.net/browse/${jiraLink}`) : 
-                            null;
-                          
-                          return fullJiraUrl ? (
-                            <a
-                              href={fullJiraUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-medium text-blue-400 hover:text-blue-300 underline"
-                            >
-                              {task.name}
-                            </a>
-                          ) : (
-                            <span className="font-medium">{task.name}</span>
-                          );
-                        })()}
-                        <div className="flex items-center space-x-2 text-xs text-gray-400">
-                          <span>Reporter: {task.reporter || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-400">{task.hours}h</span>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        task.status === 'completed' ? 'text-gray-700 font-medium' :
-                        task.status === 'reworked' ? 'text-red-100' : '!text-gray-700'
-                      }`}
-                      style={{
-                        backgroundColor: task.status === 'completed' ? '#f59e0b' : // amber
-                                      task.status === 'reworked' ? '#dc2626' : // crimson
-                                      '#64748b' // gray
-                      }}>
-                        {task.status}
-                      </span>
+        {/* Tasks by Week Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Tasks by Week</h2>
+          <div className="space-y-6">
+            {(() => {
+              if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+                return (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">
+                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <p className="text-lg font-medium mb-1">No Tasks</p>
+                      <p className="text-sm">No tasks found for this month</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                );
+              }
+
+              // Get weeks for the current month
+              const weeks = getWeeksInMonth(actualMonthId);
+              if (!weeks || weeks.length === 0) {
+                return (
+                  <div className="text-center py-4">
+                    <p className="text-gray-400">No weeks available for this month</p>
+                  </div>
+                );
+              }
+
+              return weeks.map((week) => {
+                // Get tasks for this week
+                const weekTasks = [];
+                week.days.forEach(day => {
+                  try {
+                    const dayDate = day instanceof Date ? day : new Date(day);
+                    if (isNaN(dayDate.getTime())) return;
+                    
+                    const dayStr = dayDate.toISOString().split('T')[0];
+                    const dayTasks = tasks.filter(task => {
+                      if (!task.createdAt) return false;
+                      
+                      const taskDate = convertToDate(task.createdAt);
+                      if (!taskDate || isNaN(taskDate.getTime())) return false;
+                      
+                      const taskDateStr = taskDate.toISOString().split('T')[0];
+                      return taskDateStr === dayStr;
+                    });
+                    weekTasks.push(...dayTasks);
+                  } catch (error) {
+                    console.warn('Error processing day:', error, day);
+                  }
+                });
+
+                return (
+                  <div key={week.weekNumber} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
+                        <p className="text-sm text-gray-400">
+                          {(() => {
+                            try {
+                              const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
+                              const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
+                              return `${startDate} - ${endDate}`;
+                            } catch (error) {
+                              console.warn('Error formatting week dates:', error, week);
+                              return 'Invalid dates';
+                            }
+                          })()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
+                        <div className="text-sm text-gray-400">tasks</div>
+                      </div>
+                    </div>
+                    
+                    {weekTasks.length > 0 ? (
+                      <div className="space-y-3">
+                        {weekTasks.map((task, index) => (
+                          <div key={task.id || index} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor: task.data_task?.reworked ? '#dc2626' : // crimson for reworked
+                                                task.data_task?.completed ? '#f59e0b' : // amber for completed
+                                                '#10b981' // green for active
+                                }}
+                              ></div>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-white">
+                                  {task.data_task?.taskName || task.data_task?.title || 'Untitled Task'}
+                                </span>
+                                <div className="flex items-center space-x-2 text-xs text-gray-400">
+                                  <span>Reporter: {task.data_task?.reporters || task.reporterName || 'N/A'}</span>
+                                  <span>•</span>
+                                  <span>Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                              <div className="text-right">
+                                <div className="text-sm font-medium text-white">
+                                  {task.createdByName || task.userName || 'Unknown User'}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {(() => {
+                                    if (!task.createdAt) return 'No date';
+                                    const date = convertToDate(task.createdAt);
+                                    if (!date || isNaN(date.getTime())) return 'Invalid date';
+                                    return date.toLocaleDateString();
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <div className="text-gray-400">
+                          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          <p className="text-sm">No tasks for this week</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
-        )}
+        </div>
         
         {/* Debug Information */}
         <div className="mt-8 p-4 bg-gray-800 rounded-lg">

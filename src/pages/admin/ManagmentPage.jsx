@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useAppData } from "@/hooks/useAppData";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAppDataContext } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
 import UserTable from "@/features/users/components/UserTable/UserTable";
@@ -9,8 +9,8 @@ import { DeliverableTable } from "@/features/deliverables/DeliverablesManager";
 import CalculationFormula from "@/components/ui/CalculationFormula/CalculationFormula";
 
 const AdminManagementPage = () => {
-  // Get all data directly from useAppData hook (RTK Query handles caching)
-  const { monthId, monthName, users, reporters, deliverables, error, isLoading } = useAppData();
+  // Get all data directly from context
+  const { monthId, monthName, users, reporters, deliverables, error, isLoading } = useAppDataContext();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
   const [showCreateModal, setShowCreateModal] = useState(false);

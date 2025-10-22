@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useUpdateSettingsTypeMutation } from '@/features/settings/settingsApi';
-import { useAppData } from '@/hooks/useAppData';
+import { useDeliverablesApi } from './useDeliverablesApi';
 import { isUserAdmin } from '@/features/utils/authUtils';
 import { showError, showSuccess } from '@/utils/toast';
 import TanStackTable from '@/components/Table/TanStackTable';
@@ -30,12 +29,15 @@ const DeliverableTable = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDeliverable, setEditingDeliverable] = useState(null);
   const canManageDeliverables = isUserAdmin(user);
-  const { deliverables: globalDeliverables, isLoading: loadingSettings } = useAppData();
-  const [updateSettings] = useUpdateSettingsTypeMutation();
+  const { deliverables: globalDeliverables, isLoading: loadingSettings, deleteDeliverable } = useDeliverablesApi();
   
   // Table ref for clearing selection
   const tableRef = useRef(null);
   
+
+  // Real-time listener is handled by useDeliverablesApi hook
+
+  // Use data directly from Firebase (already sorted in real-time listener)
   const deliverablesData = propDeliverables || globalDeliverables || [];
 
   useEffect(() => {
@@ -45,12 +47,9 @@ const DeliverableTable = ({
   // Delete wrapper for useTableActions
   const handleDeleteDeliverable = async (deliverable) => {
     try {
-      const updatedDeliverables = deliverablesData.filter(d => d.name !== deliverable.name);
-      await updateSettings({
-        deliverables: updatedDeliverables,
-        userData: user  // Use actual user data instead of hardcoded admin
-      }).unwrap();
+      await deleteDeliverable(deliverable.name, user);
       showSuccess(CONFIG.MESSAGES.DELETE_SUCCESS);
+      // Real-time listener will automatically update the UI
     } catch (error) {
       showError(CONFIG.MESSAGES.DELETE_ERROR);
       throw error; // Re-throw to maintain error handling in bulk operations

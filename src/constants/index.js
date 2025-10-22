@@ -14,8 +14,9 @@ export const APP_CONFIG = {
   DESCRIPTION: 'Task tracking and analytics application for NetBet',
   COMPANY: 'NetBet',
   SUPPORT_EMAIL: 'support@netbet.ro',
-  DEFAULT_LOCALE: 'en-US',
-  DEFAULT_TIMEZONE: 'Europe/Bucharest',
+  DEFAULT_LOCALE: 'en-US', // US language
+  DEFAULT_TIMEZONE: 'Europe/Bucharest', // Romanian timezone
+  CALENDAR_WEEK_START: 1, // Monday (Romanian calendar behavior)
 };
 
 // ============================================================================
@@ -181,18 +182,18 @@ export const CARD_SYSTEM = {
     ADMIN: 'crimson',
     USER: 'purple',
     REPORTER: 'blue',
-    
+
     // Status-based colors
     ACTIVE: 'green',
     INACTIVE: 'gray',
     WARNING: 'amber',
-    
+
     // Feature-based colors
     FILTER: 'blue',
     ACTIONS: 'amber',
     PROFILE: 'purple',
     MONTH: 'crimson',
-    
+
     // Default fallback
     DEFAULT: 'gray',
   },
@@ -209,6 +210,7 @@ export const CARD_SYSTEM = {
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',
+    WEEK_SELECTOR: 'week-selector',
     USER_FILTER: 'user-filter',
     REPORTER_FILTER: 'reporter-filter',
     USER_PROFILE: 'user-profile',
@@ -367,32 +369,7 @@ export const ERROR_SYSTEM = {
   },
 };
 
-// ============================================================================
-// CACHE CONFIGURATION
-// ============================================================================
-
-export const CACHE_CONFIG = {
-  DURATIONS: {
-    SHORT: 300,     // 5 minutes
-    MEDIUM: 600,    // 10 minutes
-    LONG: 1800,     // 30 minutes
-    VERY_LONG: 7200, // 2 hours - increased to prevent excessive reads
-    INFINITE: Infinity,
-  },
-  DATA_VOLATILITY: {
-    HIGH: 'HIGH',
-    MEDIUM: 'MEDIUM',
-    LOW: 'LOW',
-    STATIC: 'STATIC',
-  },
-  TTL_CONFIG: {
-    TASKS: 600,        // 10 minutes
-    USERS: 1800,       // 30 minutes
-    REPORTERS: 1800,   // 30 minutes
-    DELIVERABLES: 3600, // 1 hour
-    SETTINGS: 3600,    // 1 hour
-  },
-};
+// Cache configuration removed for simplicity
 
 // ============================================================================
 // ROUTING CONSTANTS
@@ -403,7 +380,7 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   UNAUTHORIZED: '/unauthorized',
-  
+
   // Protected routes
   DASHBOARD: '/dashboard',
   ANALYTICS: '/analytics',
@@ -471,8 +448,9 @@ export const DATE_TIME = {
     TIME: 'HH:mm',
     ISO: 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'',
   },
-  LOCALE: 'en-US',
-  TIMEZONE: 'Europe/Bucharest',
+  LOCALE: 'en-US', // US language for display
+  TIMEZONE: 'Europe/Bucharest', // Romanian timezone
+  WEEK_START: 1, // Monday (Romanian calendar behavior)
   WORKING_HOURS: {
     START: 9,
     END: 17,
@@ -491,15 +469,6 @@ export const DATE_TIME = {
 export const EXPORT_CONFIG = {
   CSV_DELIMITER: ',',
   CSV_ENCODING: 'utf-8',
-  PDF_OPTIONS: {
-    format: 'A4',
-    margin: {
-      top: 20,
-      right: 20,
-      bottom: 20,
-      left: 20,
-    },
-  },
   MAX_EXPORT_ROWS: 10000,
 };
 
@@ -573,7 +542,6 @@ export default {
   BUTTON_SYSTEM,
   TABLE_SYSTEM,
   ERROR_SYSTEM,
-  CACHE_CONFIG,
   ROUTES,
   API_CONFIG,
   UI_CONFIG,

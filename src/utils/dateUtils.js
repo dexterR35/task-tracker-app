@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { 
-  format, 
-  formatDistanceToNow, 
-  parseISO, 
+import {
+  format,
+  formatDistanceToNow,
+  parseISO,
   isValid,
   startOfMonth,
   endOfMonth,
@@ -19,22 +19,22 @@ import { DATE_TIME } from '@/constants';
  */
 export const normalizeTimestamp = (value) => {
   if (!value) return null;
-  
+
   // If it's already a Date object
   if (value instanceof Date) {
     return value;
   }
-  
+
   // If it's a Firestore timestamp
   if (value && typeof value.toDate === 'function') {
     return value.toDate();
   }
-  
+
   // If it's a number (milliseconds)
   if (typeof value === 'number') {
     return new Date(value);
   }
-  
+
   // If it's a string, try to parse it
   if (typeof value === 'string') {
     const parsed = new Date(value);
@@ -42,13 +42,13 @@ export const normalizeTimestamp = (value) => {
       return parsed;
     }
   }
-  
+
   // If it's an object with seconds/nanoseconds (Firestore timestamp)
   if (value && typeof value === 'object' && 'seconds' in value) {
     const milliseconds = value.seconds * 1000 + (value.nanoseconds || 0) / 1000000;
     return new Date(milliseconds);
   }
-  
+
   return null;
 };
 
@@ -63,23 +63,23 @@ export const toMs = (value) => {
       const d = value.toDate();
       return isValid(d) ? d.getTime() : null;
     }
-    
+
     // Firestore Timestamp - check for seconds/nanoseconds structure
     if (value && typeof value === 'object' && 'seconds' in value) {
       const milliseconds = value.seconds * 1000 + (value.nanoseconds || 0) / 1000000;
       return Number.isFinite(milliseconds) ? milliseconds : null;
     }
-    
+
     // JS Date
     if (value instanceof Date) {
       return isValid(value) ? value.getTime() : null;
     }
-    
+
     // Number (assumed ms)
     if (typeof value === 'number') {
       return Number.isFinite(value) ? value : null;
     }
-    
+
     // ISO or date-like string
     if (typeof value === 'string') {
       const parsed = parseISO(value);
@@ -92,32 +92,30 @@ export const toMs = (value) => {
 };
 
 /**
- * Format date using a pattern with Romanian locale
+ * Format date using a pattern with US language
  */
-export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm', useRomanianLocale = true) => {
+export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm', useRomanianTimezone = true) => {
   const ms = toMs(value);
   if (!ms) return 'N/A';
   try {
     const date = new Date(ms);
-    const options = useRomanianLocale ? { locale: ro } : {};
-    return format(date, pattern, options);
+    // Keep original functionality but remove Romanian locale
+    return format(date, pattern);
   } catch {
     return 'Invalid Date';
   }
 };
 
 /**
- * Format date as "time ago" with Romanian locale
+ * Format date as "time ago" with US language
  */
-export const fromNow = (value, useRomanianLocale = true) => {
+export const fromNow = (value, useRomanianTimezone = true) => {
   const ms = toMs(value);
   if (!ms) return 'N/A';
   try {
     const date = new Date(ms);
     const options = { addSuffix: true };
-    if (useRomanianLocale) {
-      options.locale = ro;
-    }
+    // Keep US language for time ago display
     return formatDistanceToNow(date, options);
   } catch {
     return 'N/A';
@@ -125,14 +123,14 @@ export const fromNow = (value, useRomanianLocale = true) => {
 };
 
 /**
- * Format month ID to readable format with Romanian locale
+ * Format month ID to readable format with US language
  */
-export const formatMonth = (monthId, useRomanianLocale = true) => {
+export const formatMonth = (monthId, useRomanianTimezone = true) => {
   if (!monthId) return 'N/A';
   try {
     const date = parseISO(monthId + '-01');
-    const options = useRomanianLocale ? { locale: ro } : {};
-    return format(date, 'MMMM yyyy', options);
+    // Keep US language for month display
+    return format(date, 'MMMM yyyy');
   } catch {
     return 'Invalid Month';
   }
@@ -182,20 +180,20 @@ export const getEndOfMonth = (date = new Date()) => {
 
 
 /**
- * Serialize timestamps for Redux store
- * Converts all timestamp fields to ISO strings for serialization
+ * Serialize timestamps for JSON serialization
+ * Converts all timestamp fields to ISO strings for API responses
  */
-export const serializeTimestampsForRedux = (data) => {
+export const serializeTimestamps = (data) => {
   if (!data || typeof data !== 'object') {
     return data;
   }
-  
+
   const serialized = Array.isArray(data) ? [] : {};
-  
+
   for (const [key, value] of Object.entries(data)) {
     if (value && typeof value === 'object') {
       // Recursively serialize nested objects
-      serialized[key] = serializeTimestampsForRedux(value);
+      serialized[key] = serializeTimestamps(value);
     } else if (value && typeof value.toDate === 'function') {
       // Convert Firestore timestamp to ISO string
       serialized[key] = value.toDate().toISOString();
@@ -207,21 +205,24 @@ export const serializeTimestampsForRedux = (data) => {
       serialized[key] = value;
     }
   }
-  
+
   return serialized;
 };
 
+// Backward compatibility alias
+export const serializeTimestampsForContext = serializeTimestamps;
+
 // React hook for date formatting (combines all the above utilities)
 export const useFormat = () => {
-  return { 
-    toMs, 
-    format: formatDate, 
-    fromNow, 
+  return {
+    toMs,
+    format: formatDate,
+    fromNow,
     formatMonth,
     getCurrentMonthId,
     parseMonthId,
     normalizeTimestamp,
-    serializeTimestampsForRedux
+    serializeTimestampsForContext
   };
 };
 

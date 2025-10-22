@@ -21,12 +21,12 @@ const calculateTop3WithNoData = (counts, icon, noDataLabel, limit = 3) => {
       value: `${count} task${count !== 1 ? 's' : ''}`,
       subValue: ""
     }));
-  
+
   // Add "No data" if no items
   if (items.length === 0) {
     items.push(createNoDataEntry(icon, noDataLabel));
   }
-  
+
   return items;
 };
 
@@ -44,7 +44,7 @@ const getTaskArrayField = (task, field) => {
 // Reusable function to calculate top 3 entities with task counts and markets
 const calculateTop3Entities = (tasks = [], entities = [], entityIdField, entityNameField) => {
   const entityTaskCounts = {};
-  
+
   // Initialize all entities with 0 tasks
   entities.forEach(entity => {
     const entityId = entity.id || entity.uid;
@@ -56,11 +56,11 @@ const calculateTop3Entities = (tasks = [], entities = [], entityIdField, entityN
       };
     }
   });
-  
+
   // Count tasks per entity
   tasks.forEach(task => {
     let entityId;
-    
+
     // Handle different field structures
     if (entityIdField === 'reporters') {
       // For reporters, check both root level and data_task level
@@ -69,23 +69,23 @@ const calculateTop3Entities = (tasks = [], entities = [], entityIdField, entityN
       // For users, check both userUID and createbyUID
       entityId = task[entityIdField] || task.createbyUID;
     }
-    
+
     if (entityId && entityTaskCounts[entityId]) {
       entityTaskCounts[entityId].taskCount++;
-      
+
       // Count markets for this entity
       const taskMarkets = task.markets || task.data_task?.markets || [];
       if (Array.isArray(taskMarkets)) {
         taskMarkets.forEach(market => {
           if (market) {
-            entityTaskCounts[entityId].marketCounts[market] = 
+            entityTaskCounts[entityId].marketCounts[market] =
               (entityTaskCounts[entityId].marketCounts[market] || 0) + 1;
           }
         });
       }
     }
   });
-  
+
   // Get top 3 entities by task count
   return Object.values(entityTaskCounts)
     .sort((a, b) => b.taskCount - a.taskCount)
@@ -93,7 +93,7 @@ const calculateTop3Entities = (tasks = [], entities = [], entityIdField, entityN
     .map(entityData => {
       const entity = entities.find(e => e.id === entityData.entityId || e.uid === entityData.entityId);
       const entityName = entity?.[entityNameField] || entity?.name || entity?.email || `Entity ${entityData.entityId}`;
-      
+
       // Format market counts as badges
       const marketEntries = Object.entries(entityData.marketCounts)
         .sort(([,a], [,b]) => b - a)
@@ -105,7 +105,7 @@ const calculateTop3Entities = (tasks = [], entities = [], entityIdField, entityN
           }
         })
         .join(' ');
-      
+
       return {
         icon: Icons.generic.user,
         label: entityName,
@@ -178,23 +178,23 @@ export const useTop3Calculations = (data, options = {}) => {
     if (selectedMonthId && task.monthId !== selectedMonthId) {
       return false;
     }
-    
+
     // Filter by user ID
     if (selectedUserId && task.userUID !== selectedUserId && task.createbyUID !== selectedUserId) {
       return false;
     }
-    
-    // Filter by reporter ID (case-insensitive)
-    if (selectedReporterId && 
-        task.reporters?.toLowerCase() !== selectedReporterId?.toLowerCase() && 
-        task.data_task?.reporters?.toLowerCase() !== selectedReporterId?.toLowerCase()) {
+
+    // Filter by reporter ID (exact case)
+    if (selectedReporterId &&
+        task.reporters !== selectedReporterId &&
+        task.data_task?.reporters !== selectedReporterId) {
       return false;
     }
-    
+
     // Filter by department
     if (department) {
       const taskDepartment = task.data_task?.departments || task.departments;
-      
+
       // Handle both array and string formats
       if (Array.isArray(taskDepartment)) {
         if (!taskDepartment.some(dept => dept === department)) {
@@ -204,15 +204,15 @@ export const useTop3Calculations = (data, options = {}) => {
         return false;
       }
     }
-    
+
     return true;
   }).slice(0, API_CONFIG.REQUEST_LIMITS.TOP_3_LIMIT);
 
   // Calculate total hours
-  const totalHours = filteredTasks.reduce((sum, task) => 
+  const totalHours = filteredTasks.reduce((sum, task) =>
     sum + (task.timeInHours || task.data_task?.timeInHours || 0), 0
   );
-  const totalAIHours = filteredTasks.reduce((sum, task) => 
+  const totalAIHours = filteredTasks.reduce((sum, task) =>
     sum + (task.aiTime || task.data_task?.aiTime || 0), 0
   );
 
@@ -249,8 +249,8 @@ export const useTop3Calculations = (data, options = {}) => {
   });
 
   const top3AIModels = calculateTop3WithNoData(
-    aiModelCounts, 
-    Icons.generic.cpu, 
+    aiModelCounts,
+    Icons.generic.cpu,
     "No AI models used",
     3 // Limit to top 3 AI models
   );
@@ -265,8 +265,8 @@ export const useTop3Calculations = (data, options = {}) => {
   });
 
   const top3Products = calculateTop3WithNoData(
-    productCounts, 
-    Icons.generic.package, 
+    productCounts,
+    Icons.generic.package,
     "No products worked on",
     3 // Limit to top 3 products
   );
@@ -285,16 +285,16 @@ export const useTop3Calculations = (data, options = {}) => {
         };
       }
       userTaskCounts[userId].taskCount++;
-      
+
       // Add hours for this task
       const taskHours = task.timeInHours || task.data_task?.timeInHours || 0;
       userTaskCounts[userId].totalHours += taskHours;
-      
+
       // Count markets for this user
       const taskMarkets = getTaskArrayField(task, 'markets');
       taskMarkets.forEach(market => {
         if (market) {
-          userTaskCounts[userId].marketCounts[market] = 
+          userTaskCounts[userId].marketCounts[market] =
             (userTaskCounts[userId].marketCounts[market] || 0) + 1;
         }
       });
@@ -311,7 +311,7 @@ export const useTop3Calculations = (data, options = {}) => {
     .map(userData => {
       const user = usersWithTasks.find(u => u.id === userData.userId || u.uid === userData.userId);
       const userName = user?.name || user?.email || `User ${userData.userId}`;
-      
+
       // Format market counts
       const marketEntries = Object.entries(userData.marketCounts)
         .sort(([,a], [,b]) => b - a)
@@ -323,7 +323,7 @@ export const useTop3Calculations = (data, options = {}) => {
           }
         })
         .join(' ');
-      
+
       return {
         icon: Icons.generic.user,
         label: userName,
@@ -346,12 +346,12 @@ export const useTop3Calculations = (data, options = {}) => {
         };
       }
       reporterTaskCounts[reporterId].taskCount++;
-      
+
       // Count markets for this reporter
       const taskMarkets = getTaskArrayField(task, 'markets');
       taskMarkets.forEach(market => {
         if (market) {
-          reporterTaskCounts[reporterId].marketCounts[market] = 
+          reporterTaskCounts[reporterId].marketCounts[market] =
             (reporterTaskCounts[reporterId].marketCounts[market] || 0) + 1;
         }
       });
@@ -368,7 +368,7 @@ export const useTop3Calculations = (data, options = {}) => {
     .map(reporterData => {
       const reporter = reportersWithTasks.find(r => r.id === reporterData.reporterId || r.uid === reporterData.reporterId);
       const reporterName = reporter?.name || reporter?.reporterName || `Reporter ${reporterData.reporterId}`;
-      
+
       // Format market counts
       const marketEntries = Object.entries(reporterData.marketCounts)
         .sort(([,a], [,b]) => b - a)
@@ -380,7 +380,7 @@ export const useTop3Calculations = (data, options = {}) => {
           }
         })
         .join(' ');
-      
+
       return {
         icon: Icons.admin.reporters,
         label: reporterName,
@@ -438,7 +438,7 @@ export const useTop3Calculations = (data, options = {}) => {
       },
       {
         icon: Icons.generic.ai,
-        label: "Total AI Hours", 
+        label: "Total AI Hours",
         value: `${totalAIHours}h`,
         subValue: ""
       }
@@ -547,10 +547,10 @@ export const useTop3Calculations = (data, options = {}) => {
     top3Reporters,
     departmentMetrics,
     productMarketCombinations, // For selected user card
-    
+
     // Formatted sections ready for cards
     sections,
-    
+
     // Helper functions for custom combinations
     createNoDataEntry,
     calculateTop3WithNoData,

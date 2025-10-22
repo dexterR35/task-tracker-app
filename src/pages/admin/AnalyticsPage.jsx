@@ -1,23 +1,24 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useAppData } from "@/hooks/useAppData";
+import { useAppDataContext } from "@/context/AppDataContext";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
+import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import { 
   getCachedMarketsByUsersCardProps, 
   getCachedMarketingAnalyticsCardProps, 
   getCachedAcquisitionAnalyticsCardProps, 
-  getCachedProductAnalyticsCardProps 
+  getCachedProductAnalyticsCardProps,
+  getCachedAIAnalyticsCardProps
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
-import { generateAnalyticsPDF } from "@/utils/pdfGenerator";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection
-  const { users, error } = useAppData();
+  const { users, error } = useAppDataContext();
   
   // Card selection state
   const [selectedCards, setSelectedCards] = useState([]);
@@ -35,14 +36,10 @@ const AnalyticsPage = () => {
     isInitialLoading, // Loading state for initial month data
     error: monthError, // Error state
     selectMonth, // Function to select month
-  } = useAppData();
+  } = useAppDataContext();
 
   // Debug logging removed for cleaner code
 
-  // Export state
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
-  const [exportStep, setExportStep] = useState('');
 
   // Get current month name for display
   const currentMonthName = currentMonth?.monthName || "Current Month";
@@ -83,6 +80,11 @@ const AnalyticsPage = () => {
       id: 'product-analytics',
       name: 'Product Analytics',
       description: 'Product breakdown and analytics'
+    },
+    {
+      id: 'ai-analytics',
+      name: 'AI Analytics',
+      description: 'AI usage analytics by users and models'
     },
   ], []);
 
@@ -132,6 +134,16 @@ const AnalyticsPage = () => {
     );
   }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
 
+  const aiAnalyticsCardProps = useMemo(() => {
+    if (activeTab !== 'ai-analytics') return null;
+    return getCachedAIAnalyticsCardProps(
+      analyticsData.tasks,
+      analyticsData.users,
+      analyticsData.selectedMonth,
+      analyticsData.isLoading
+    );
+  }, [activeTab, analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]);
+
 
   // Removed Select All and Deselect All handlers - keeping only individual card selection
 
@@ -142,53 +154,6 @@ const AnalyticsPage = () => {
     alert(message);
   };
 
-  // Export handlers
-  const handlePDFExport = async () => {
-    if (selectedCards.length === 0) {
-      showError('Please select at least one card to export');
-      return;
-    }
-
-    setIsExporting(true);
-    setExportProgress(0);
-    setExportStep('Preparing PDF generation...');
-
-    try {
-      // Simulate progress steps
-      const progressSteps = [
-        { step: 'Preparing data...', progress: 10 },
-        { step: 'Capturing card screenshots...', progress: 30 },
-        { step: 'Processing images...', progress: 50 },
-        { step: 'Generating PDF layout...', progress: 70 },
-        { step: 'Finalizing document...', progress: 90 },
-        { step: 'Saving PDF...', progress: 100 }
-      ];
-
-      // Process each step quickly
-      for (const { step, progress } of progressSteps) {
-        setExportStep(step);
-        setExportProgress(progress);
-        await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms to 100ms
-      }
-
-      await generateAnalyticsPDF(selectedCards, {
-        filename: `analytics_${selectedMonth?.monthName || currentMonth?.monthName || 'export'}_${new Date().toISOString().split('T')[0]}.pdf`,
-        title: `Analytics Report - ${selectedMonthName}`,
-        includeTitle: true
-      });
-
-      setExportStep('PDF generated successfully!');
-      await new Promise(resolve => setTimeout(resolve, 200)); // Reduced from 1000ms to 200ms
-
-    } catch (error) {
-      setExportStep('PDF generation failed. Please try again.');
-      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
-    } finally {
-      setIsExporting(false);
-      setExportProgress(0);
-      setExportStep('');
-    }
-  };
 
 
   if (isLoading || isInitialLoading) {
@@ -254,25 +219,6 @@ const AnalyticsPage = () => {
               </span>
             </div>
 
-            {/* Export Button */}
-            <div className="flex items-center space-x-2">
-              <DynamicButton
-                onClick={handlePDFExport}
-                disabled={isExporting || selectedCards.length === 0}
-                variant={selectedCards.length === 0 ? "disabled" : "danger"}
-                size="sm"
-                iconName={isExporting ? "loading" : "download"}
-                iconPosition="left"
-                className={isExporting ? "animate-pulse" : ""}
-              >
-                {isExporting 
-                  ? "Generating PDF..." 
-                  : selectedCards.length === 0 
-                    ? "Select Cards First" 
-                    : "Generate PDF"
-                }
-              </DynamicButton>
-            </div>
             
             {/* Month Selector */}
             <select
@@ -442,77 +388,38 @@ const AnalyticsPage = () => {
                   </div>
                 </div>
               </div>
+            ) : activeTab === 'ai-analytics' ? (
+              <div className="relative">
+                <div id="ai-analytics-card">
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCards.includes('ai-analytics-card')}
+                          onChange={() => handleCardSelection('ai-analytics-card')}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
+                        />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
+                          Export
+                        </span>
+                      </label>
+                    </div>
+                    {aiAnalyticsCardProps ? (
+                      <AIAnalyticsCard 
+                        {...aiAnalyticsCardProps}
+                      />
+                    ) : (
+                      <SkeletonAnalyticsCard />
+                    )}
+                  </div>
+                </div>
+              </div>
             ) : null}
           </div>
         </div>
       )}
 
-      {/* Loading Modal */}
-      {isExporting && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="text-center">
-                <div className="relative inline-block mb-4">
-                  {/* Animated loading icon */}
-                  <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full animate-pulse"></div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Generating PDF Report
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {exportStep}
-                </p>
-              </div>
-              
-              {/* Progress bar */}
-              <div className="space-y-2">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                  <div 
-                    className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${exportProgress}%` }}
-                  ></div>
-                </div>
-                
-                {/* Progress percentage */}
-                <div className="text-center">
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {exportProgress}% complete
-                  </span>
-                </div>
-              </div>
-              
-              {/* Processing details */}
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  Processing selected cards and capturing screenshots...
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <div>• Selected cards: {selectedCards.length}</div>
-                  <div>• Export type: PDF</div>
-                  <div>• Month: {selectedMonthName}</div>
-                  <div>• Quality: High</div>
-                </div>
-              </div>
-              
-              {/* Success/Error message */}
-              {(exportStep.includes('successfully') || exportStep.includes('failed')) && (
-                <div className="text-center">
-                  <p className={`text-sm font-medium ${
-                    exportStep.includes('successfully') 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {exportStep.includes('successfully') ? '✅' : '❌'} {exportStep}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
 
     </div>

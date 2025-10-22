@@ -1,6 +1,6 @@
 /**
  * Login Form Configuration
- * 
+ *
  * @fileoverview Form field configuration and validation schema for login form
  * @author Senior Developer
  * @version 2.0.0

@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useAppData } from '@/hooks/useAppData';
+import { useAppDataContext } from '@/context/AppDataContext';
+import { useCreateTask, useUpdateTask } from '@/features/tasks/tasksApi';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
+import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { 
   createTaskFormSchema, 
@@ -41,7 +42,9 @@ const TaskForm = ({
   onSuccess, 
   className = "" 
 }) => {
-  const { createTask, updateTask, reporters = [], monthId: hookMonthId, user } = useAppData();
+  const { reporters = [], monthId: hookMonthId, user: userData } = useAppDataContext();
+  const [createTask] = useCreateTask();
+  const [updateTask] = useUpdateTask();
   
   // Use prop monthId if provided, otherwise fall back to hook monthId
   const monthId = propMonthId || hookMonthId;
@@ -135,11 +138,13 @@ const TaskForm = ({
 
   // Clear deliverables selection when department changes
   useEffect(() => {
-    if (selectedDepartment) {
+    // Only clear deliverables when department changes in create mode
+    // Don't clear when editing existing tasks
+    if (selectedDepartment && mode === 'create') {
       setValue('deliverables', '');
       clearErrors('deliverables');
     }
-  }, [selectedDepartment, setValue, clearErrors]);
+  }, [selectedDepartment, setValue, clearErrors, mode]);
 
   useEffect(() => {
     if (!usedAIEnabled) {
@@ -207,20 +212,30 @@ const TaskForm = ({
         deliverables: (() => {
           // Get the first deliverable from deliverablesUsed
           const firstDeliverable = taskData.deliverablesUsed?.[0];
+          console.log('🔍 [TaskForm] Deliverables debug:', {
+            taskData: taskData,
+            deliverablesUsed: taskData.deliverablesUsed,
+            firstDeliverable: firstDeliverable,
+            filteredDeliverablesOptions: filteredDeliverablesOptions
+          });
+          
           if (!firstDeliverable?.name) return null;
           
           // Find the matching option in filtered deliverables options
           const matchingOption = filteredDeliverablesOptions.find(opt => opt.value === firstDeliverable.name);
           if (matchingOption) {
+            console.log('🔍 [TaskForm] Found matching option:', matchingOption);
             return firstDeliverable.name;
           }
           
           // If no exact match, check if it's a custom deliverable
           if (firstDeliverable.customDeliverables?.length > 0) {
+            console.log('🔍 [TaskForm] Custom deliverable detected');
             return 'others';
           }
           
           // Return the original name as fallback
+          console.log('🔍 [TaskForm] Using fallback name:', firstDeliverable.name);
           return firstDeliverable.name;
         })(),
         deliverableQuantities: (() => {
@@ -276,7 +291,7 @@ const TaskForm = ({
           return taskData.customDeliverables || null;
         })(),
         _usedAIEnabled: !!(taskData.aiUsed?.[0]?.aiModels?.length || taskData.aiModels?.length),
-        aiModels: taskData.aiUsed?.[0]?.aiModels || taskData.aiModels || null,
+        aiModels: taskData.aiUsed?.[0]?.aiModels || taskData.aiModels || [],
         aiTime: taskData.aiUsed?.[0]?.aiTime || taskData.aiTime || 0,
         reporters: taskData.reporters || null,
         isVip: taskData.isVip || false,
@@ -286,6 +301,11 @@ const TaskForm = ({
       
       
       // Reset form immediately - no delays needed
+      console.log('🔍 [TaskForm] Resetting form with data:', {
+        deliverables: formData.deliverables,
+        _hasDeliverables: formData._hasDeliverables,
+        deliverableQuantities: formData.deliverableQuantities
+      });
       reset(formData);
       
       // Use useEffect to handle form state updates properly
@@ -307,19 +327,13 @@ const TaskForm = ({
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task
-        const updateTaskWithErrorHandling = withMutationErrorHandling(updateTask, {
-          operation: 'Update Task',
-          showToast: false,
-          logError: true
-        });
-        
-        return await updateTaskWithErrorHandling({
-          monthId: initialData.monthId || initialData.data_task?.monthId || monthId,
-          taskId: initialData.id,
-          updates: processedData,
-          reporters,
-          userData: user || {} // Ensure userData is never undefined
-        });
+          return await updateTask(
+            initialData.monthId || initialData.data_task?.monthId || monthId,
+            initialData.id,
+            processedData,
+            reporters,
+            userData || {}
+          );
       } else {
         // Create new task
         const taskWithMonthId = {
@@ -327,17 +341,11 @@ const TaskForm = ({
           monthId: monthId
         };
         
-        const createTaskWithErrorHandling = withMutationErrorHandling(createTask, {
-          operation: 'Create Task',
-          showToast: false,
-          logError: true
-        });
-        
-        return await createTaskWithErrorHandling({
-          task: taskWithMonthId,
-          userData: user || {}, // Ensure userData is never undefined
+        return await createTask(
+          taskWithMonthId,
+          userData || {},
           reporters
-        });
+        );
       }
     },
     {
@@ -427,7 +435,7 @@ const TaskForm = ({
   const fieldsWithOptions = formFields.map(field => {
     if (field.name === 'reporters') {
       const reporterOptions = reporters?.map(reporter => ({
-        value: reporter.reporterUID, // Use ONLY reporterUID since that's your primary field
+        value: reporter.id || reporter.uid, // Use document ID or uid field
         label: reporter.name, // Just the name for display
         name: reporter.name,
         email: reporter.email

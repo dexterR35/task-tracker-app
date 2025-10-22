@@ -214,13 +214,23 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: 'reporters',
     header: 'Reporter',
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
+      // First try to get reporterName if it exists
+      const reporterName = row.original?.data_task?.reporterName;
+      if (reporterName) {
+        return reporterName;
+      }
+      
+      // Fallback to resolving reporter ID
       const reporterId = getValue();
       if (!reporterId) return '-';
       
-      const reporter = stableReporters.find(r => 
-        r.reporterUID?.toLowerCase() === reporterId.toLowerCase()
-      );
+      const reporter = stableReporters.find(r => {
+        const reporterIdField = r.id || r.uid || r.reporterUID;
+        return reporterIdField && 
+               typeof reporterIdField === 'string' &&
+               reporterIdField.toLowerCase() === reporterId.toLowerCase();
+      });
       return reporter?.name || reporterId;
     },
     size: 120,
@@ -247,7 +257,32 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Date created',
-    cell: createDateCell(DATE_FORMATS.LONG),
+    cell: ({ getValue }) => {
+      const value = getValue();
+      if (!value) return '-';
+      
+      try {
+        const date = normalizeTimestamp(value);
+        if (!date) return '-';
+        
+        // Format date and time separately
+        const dateStr = formatDate(date, 'MMM dd, yyyy', false);
+        const timeStr = formatDate(date, 'HH:mm a', false);
+        
+        return (
+          <div className="text-center">
+            <div className="text-sm font-medium text-gray-900 dark:text-white">
+              {dateStr}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {timeStr}
+            </div>
+          </div>
+        );
+      } catch {
+        return '-';
+      }
+    },
     size: 150,
   }),
 

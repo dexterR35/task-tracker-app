@@ -138,11 +138,20 @@ export const CALCULATION_OPTIONS = {
 export const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
   if (!tasks || tasks.length === 0) {
     return { 
-      tableData: [], 
-      tableColumns: [], 
-      chartData: [], 
-      colors: [],
-      userByTaskData: []
+      tableData: [{
+        user: "No data available",
+        totalTasks: 0,
+        totalHours: "0h",
+        noData: true
+      }], 
+      tableColumns: [
+        { key: "user", header: "User", align: "left" },
+        { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+        { key: "totalHours", header: "Total Hours", align: "center", highlight: true }
+      ], 
+      chartData: [{ name: "No data available", value: 0 }], 
+      colors: ["#6b7280"],
+      userByTaskData: [{ name: "No data available", value: 0 }]
     };
   }
 
@@ -459,43 +468,11 @@ export const getMarketsByUsersCardProps = (tasks, users, isLoading = false, opti
   };
 };
 
-// Smart caching system for heavy calculations
-const calculationCache = new Map();
+// Removed caching system for simplicity
 
-// Generate cache key based on data content - optimized for performance
-const generateCacheKey = (type, tasks, users, month, isLoading) => {
-  // Use simple length and timestamp for better performance
-  const tasksHash = tasks?.length ? `${tasks.length}_${tasks[0]?.updatedAt || tasks[0]?.createdAt || 0}` : 'empty';
-  const usersHash = users?.length ? `${users.length}_${users[0]?.updatedAt || users[0]?.createdAt || 0}` : 'empty';
-  const monthHash = month?.monthId || 'current';
-  const loadingHash = isLoading ? 'loading' : 'loaded';
-  
-  return `${type}_${tasksHash}_${usersHash}_${monthHash}_${loadingHash}`;
-};
-
-// Smart cached version with persistent storage
+// Simplified version without caching
 export const getCachedMarketsByUsersCardProps = (tasks, users, month, isLoading = false, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
-  const cacheKey = generateCacheKey('marketsByUsers', tasks, users, month, isLoading);
-  
-  // Check if we have cached result
-  if (calculationCache.has(cacheKey)) {
-    console.log('✅ MarketsByUsers CACHE HIT - using stored calculation');
-    return calculationCache.get(cacheKey);
-  }
-  
-  console.log('❌ MarketsByUsers CACHE MISS - calculating and storing...');
-  
-  // Calculate and store result
-  const result = getMarketsByUsersCardProps(tasks, users, isLoading, options);
-  calculationCache.set(cacheKey, result);
-  
-  // Clean up old cache entries (keep last 20)
-  if (calculationCache.size > 20) {
-    const firstKey = calculationCache.keys().next().value;
-    calculationCache.delete(firstKey);
-  }
-  
-  return result;
+  return getMarketsByUsersCardProps(tasks, users, isLoading, options);
 };
 
 // ============================================================================
@@ -516,10 +493,23 @@ export const MARKETING_CHART_COLORS = {
 export const calculateMarketingAnalyticsData = (tasks) => {
   if (!tasks || tasks.length === 0) {
     return {
-      tableData: [],
-      tableColumns: [],
-      casinoMarketingData: [],
-      sportMarketingData: []
+      tableData: [{
+        category: "No data available",
+        total: 0,
+        noData: true
+      }],
+      tableColumns: [
+        { key: "category", header: "Marketing Category", align: "left" },
+        { key: "total", header: "Total Tasks", align: "center", highlight: true }
+      ],
+      casinoMarketingData: [{ name: "No data available", value: 0 }],
+      sportMarketingData: [{ name: "No data available", value: 0 }],
+      casinoBiaxialData: [{ name: "No data available", tasks: 0, hours: 0, color: "#6b7280" }],
+      sportBiaxialData: [{ name: "No data available", tasks: 0, hours: 0, color: "#6b7280" }],
+      casinoTotalTasks: 0,
+      casinoTotalHours: 0,
+      sportTotalTasks: 0,
+      sportTotalHours: 0
     };
   }
 
@@ -747,21 +737,9 @@ export const getMarketingAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Smart cached version for marketing analytics
+// Simplified version without caching
 export const getCachedMarketingAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  const cacheKey = generateCacheKey('marketingAnalytics', tasks, null, month, isLoading);
-  
-  if (calculationCache.has(cacheKey)) {
-    console.log('✅ MarketingAnalytics CACHE HIT - using stored calculation');
-    return calculationCache.get(cacheKey);
-  }
-  
-  console.log('❌ MarketingAnalytics CACHE MISS - calculating and storing...');
-  
-  const result = getMarketingAnalyticsCardProps(tasks, isLoading);
-  calculationCache.set(cacheKey, result);
-  
-  return result;
+  return getMarketingAnalyticsCardProps(tasks, isLoading);
 };
 
 // ============================================================================
@@ -782,10 +760,23 @@ export const ACQUISITION_CHART_COLORS = {
 export const calculateAcquisitionAnalyticsData = (tasks) => {
   if (!tasks || tasks.length === 0) {
     return {
-      tableData: [],
-      tableColumns: [],
-      casinoAcquisitionData: [],
-      sportAcquisitionData: []
+      tableData: [{
+        category: "No data available",
+        total: 0,
+        noData: true
+      }],
+      tableColumns: [
+        { key: "category", header: "Acquisition Category", align: "left" },
+        { key: "total", header: "Total Tasks", align: "center", highlight: true }
+      ],
+      casinoAcquisitionData: [{ name: "No data available", value: 0 }],
+      sportAcquisitionData: [{ name: "No data available", value: 0 }],
+      casinoBiaxialData: [{ name: "No data available", tasks: 0, hours: 0, color: "#6b7280" }],
+      sportBiaxialData: [{ name: "No data available", tasks: 0, hours: 0, color: "#6b7280" }],
+      casinoTotalTasks: 0,
+      casinoTotalHours: 0,
+      sportTotalTasks: 0,
+      sportTotalHours: 0
     };
   }
 
@@ -1013,21 +1004,9 @@ export const getAcquisitionAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Smart cached version for acquisition analytics
+// Simplified version without caching
 export const getCachedAcquisitionAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  const cacheKey = generateCacheKey('acquisitionAnalytics', tasks, null, month, isLoading);
-  
-  if (calculationCache.has(cacheKey)) {
-    console.log('✅ AcquisitionAnalytics CACHE HIT - using stored calculation');
-    return calculationCache.get(cacheKey);
-  }
-  
-  console.log('❌ AcquisitionAnalytics CACHE MISS - calculating and storing...');
-  
-  const result = getAcquisitionAnalyticsCardProps(tasks, isLoading);
-  calculationCache.set(cacheKey, result);
-  
-  return result;
+  return getAcquisitionAnalyticsCardProps(tasks, isLoading);
 };
 
 // ============================================================================
@@ -1050,11 +1029,22 @@ export const PRODUCT_CHART_COLORS = {
 export const calculateProductAnalyticsData = (tasks) => {
   if (!tasks || tasks.length === 0) {
     return {
-      tableData: [],
-      tableColumns: [],
-      categoryPieData: [],
-      productPieData: [],
-      biaxialData: [],
+      tableData: [{
+        category: "No data available",
+        total: 0,
+        totalHours: 0,
+        percentage: 0,
+        noData: true
+      }],
+      tableColumns: [
+        { key: "category", header: "Product Category", align: "left" },
+        { key: "total", header: "Task Count", align: "center", highlight: true },
+        { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+        { key: "percentage", header: "Percentage", align: "center", highlight: true }
+      ],
+      categoryPieData: [{ name: "No data available", value: 0, percentage: 0 }],
+      productPieData: [{ name: "No data available", value: 0, color: "#6b7280" }],
+      biaxialData: [{ name: "No data available", tasks: 0, hours: 0, color: "#6b7280" }],
       categoryTotals: {
         marketing: 0,
         acquisition: 0,
@@ -1081,7 +1071,7 @@ export const calculateProductAnalyticsData = (tasks) => {
     'misc': 0
   };
 
-  // Count tasks by product - include all valid product categories
+  // Count tasks by product - only include "product" category tasks
   tasks.forEach(task => {
     const products = task.data_task?.products || task.products;
     
@@ -1091,19 +1081,21 @@ export const calculateProductAnalyticsData = (tasks) => {
 
     const productsLower = products.toLowerCase().trim();
     
-    // Count tasks that match our specific product categories (including misc)
-    if (productCounts.hasOwnProperty(productsLower)) {
-      productCounts[productsLower]++;
+    // Only count tasks that start with "product" (product casino, product sport, etc.)
+    if (productsLower.startsWith('product ')) {
+      if (productCounts.hasOwnProperty(productsLower)) {
+        productCounts[productsLower]++;
+      }
     }
-    // Skip tasks that don't match our product categories
+    // Skip marketing, acquisition, and other categories
   });
 
-  // Calculate totals for all tasks with valid product categories (including misc)
+  // Calculate totals for only "product" category tasks
   const filteredTasks = tasks.filter(task => {
     const products = task.data_task?.products || task.products;
     if (!products) return false;
     const productsLower = products.toLowerCase().trim();
-    return productCounts.hasOwnProperty(productsLower);
+    return productsLower.startsWith('product ');
   });
   
   const totalTasks = filteredTasks.length;
@@ -1113,88 +1105,95 @@ export const calculateProductAnalyticsData = (tasks) => {
     return sum + (task.data_task?.timeInHours || task.timeInHours || 0);
   }, 0);
 
-  // Calculate category totals (including misc)
+  // Calculate category totals (only product categories)
   const categoryTotals = {
-    marketing: productCounts['marketing casino'] + productCounts['marketing sport'] + 
-               productCounts['marketing poker'] + productCounts['marketing lotto'],
-    acquisition: productCounts['acquisition casino'] + productCounts['acquisition sport'] + 
-                 productCounts['acquisition poker'] + productCounts['acquisition lotto'],
-    product: productCounts['product casino'] + productCounts['product sport'] + 
-             productCounts['product poker'] + productCounts['product lotto'],
-    misc: productCounts.misc
+    'product casino': productCounts['product casino'],
+    'product sport': productCounts['product sport'],
+    'product poker': productCounts['product poker'],
+    'product lotto': productCounts['product lotto']
   };
 
-  // Create table data
-  const tableData = [
-    {
-      category: 'Marketing',
-      total: categoryTotals.marketing,
+  // Create table data for product categories only (only show categories with data)
+  const tableData = [];
+  
+  // Only add categories that have actual data
+  if (categoryTotals['product casino'] > 0) {
+    tableData.push({
+      category: 'Product Casino',
+      total: categoryTotals['product casino'],
       totalHours: tasks
         .filter(task => {
           const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().includes('marketing');
+          return products && products.toLowerCase().trim() === 'product casino';
         })
         .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
-      percentage: totalTasks > 0 ? Math.round((categoryTotals.marketing / totalTasks) * 100) : 0,
+      percentage: totalTasks > 0 ? Math.round((categoryTotals['product casino'] / totalTasks) * 100) : 0,
       details: {
-        'marketing casino': productCounts['marketing casino'],
-        'marketing sport': productCounts['marketing sport'],
-        'marketing poker': productCounts['marketing poker'],
-        'marketing lotto': productCounts['marketing lotto']
+        'product casino': productCounts['product casino']
       }
-    },
-    {
-      category: 'Acquisition',
-      total: categoryTotals.acquisition,
+    });
+  }
+  
+  if (categoryTotals['product sport'] > 0) {
+    tableData.push({
+      category: 'Product Sport',
+      total: categoryTotals['product sport'],
       totalHours: tasks
         .filter(task => {
           const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().includes('acquisition');
+          return products && products.toLowerCase().trim() === 'product sport';
         })
         .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
-      percentage: totalTasks > 0 ? Math.round((categoryTotals.acquisition / totalTasks) * 100) : 0,
+      percentage: totalTasks > 0 ? Math.round((categoryTotals['product sport'] / totalTasks) * 100) : 0,
       details: {
-        'acquisition casino': productCounts['acquisition casino'],
-        'acquisition sport': productCounts['acquisition sport'],
-        'acquisition poker': productCounts['acquisition poker'],
-        'acquisition lotto': productCounts['acquisition lotto']
+        'product sport': productCounts['product sport']
       }
-    },
-    {
-      category: 'Product',
-      total: categoryTotals.product,
+    });
+  }
+  
+  if (categoryTotals['product poker'] > 0) {
+    tableData.push({
+      category: 'Product Poker',
+      total: categoryTotals['product poker'],
       totalHours: tasks
         .filter(task => {
           const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().includes('product');
+          return products && products.toLowerCase().trim() === 'product poker';
         })
         .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
-      percentage: totalTasks > 0 ? Math.round((categoryTotals.product / totalTasks) * 100) : 0,
+      percentage: totalTasks > 0 ? Math.round((categoryTotals['product poker'] / totalTasks) * 100) : 0,
       details: {
-        'product casino': productCounts['product casino'],
-        'product sport': productCounts['product sport'],
-        'product poker': productCounts['product poker'],
+        'product poker': productCounts['product poker']
+      }
+    });
+  }
+  
+  if (categoryTotals['product lotto'] > 0) {
+    tableData.push({
+      category: 'Product Lotto',
+      total: categoryTotals['product lotto'],
+      totalHours: tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          return products && products.toLowerCase().trim() === 'product lotto';
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
+      percentage: totalTasks > 0 ? Math.round((categoryTotals['product lotto'] / totalTasks) * 100) : 0,
+      details: {
         'product lotto': productCounts['product lotto']
       }
-    },
-    {
-      category: 'Miscellaneous',
-      total: categoryTotals.misc,
-      totalHours: tasks
-        .filter(task => {
-          const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().trim() === 'misc';
-        })
-        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0),
-      percentage: totalTasks > 0 ? Math.round((categoryTotals.misc / totalTasks) * 100) : 0
-    },
-    {
+    });
+  }
+  
+  // Add Total Tasks row only if there are any product tasks
+  if (totalTasks > 0) {
+    tableData.push({
       category: 'Total Tasks',
       total: totalTasks,
       totalHours: totalHours,
       percentage: 100
-    }
-  ];
+    });
+  }
 
   // Create table columns
   const tableColumns = [
@@ -1338,44 +1337,408 @@ export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
   };
 };
 
-// Smart cached version for product analytics
+// Simplified version without caching
 export const getCachedProductAnalyticsCardProps = (tasks, month, isLoading = false) => {
-  const cacheKey = generateCacheKey('productAnalytics', tasks, null, month, isLoading);
-  
-  if (calculationCache.has(cacheKey)) {
-    console.log('✅ ProductAnalytics CACHE HIT - using stored calculation');
-    return calculationCache.get(cacheKey);
-  }
-  
-  console.log('❌ ProductAnalytics CACHE MISS - calculating and storing...');
-  
-  const result = getProductAnalyticsCardProps(tasks, isLoading);
-  calculationCache.set(cacheKey, result);
-  
-  return result;
+  return getProductAnalyticsCardProps(tasks, isLoading);
 };
 
-// Cache management utilities
-export const getCacheStats = () => {
+// Cache management utilities removed for simplicity
+
+// ============================================================================
+// AI ANALYTICS CONFIGURATION
+// ============================================================================
+
+// AI-specific colors
+export const AI_CHART_COLORS = {
+  MODELS: CHART_COLORS.DEFAULT,
+  USERS: CHART_COLORS.USER_BY_TASK
+};
+
+/**
+ * Calculate AI analytics data for table and charts
+ * @param {Array} tasks - Array of task objects
+ * @param {Array} users - Array of user objects
+ * @returns {Object} AI analytics data object
+ */
+export const calculateAIAnalyticsData = (tasks, users) => {
+  if (!tasks || tasks.length === 0) {
+    return {
+      tableData: [{
+        user: "No data available",
+        totalTasks: 0,
+        aiUsedTasks: 0,
+        aiTime: 0,
+        aiModels: "No data available",
+        markets: "No data available",
+        products: "No data available",
+        aiUsagePercentage: 0,
+        noData: true
+      }],
+      tableColumns: [
+        { key: "user", header: "User", align: "left" },
+        { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+        { key: "aiUsedTasks", header: "AI Used Tasks", align: "center", highlight: true },
+        { key: "aiTime", header: "AI Time (hrs)", align: "center", highlight: true },
+        { key: "aiUsagePercentage", header: "AI Usage %", align: "center", highlight: true },
+        { key: "aiModels", header: "AI Models Used", align: "left" },
+        { key: "markets", header: "Markets", align: "left" },
+        { key: "products", header: "Products", align: "left" }
+      ],
+      aiModelsData: [{ name: "No data available", value: 0 }],
+      usersAIData: [{ name: "No data available", value: 0 }],
+      usersBiaxialData: [{ name: "No data available", aiTime: 0, aiTasks: 0, color: "#6b7280" }],
+      marketsAIData: [{ name: "No data available", value: 0 }],
+      productsAIData: [{ name: "No data available", value: 0 }],
+      marketsBiaxialData: [{ name: "No data available", aiTime: 0, aiTasks: 0, color: "#6b7280" }],
+      productsBiaxialData: [{ name: "No data available", aiTime: 0, aiTasks: 0, color: "#6b7280" }]
+    };
+  }
+
+  // Initialize data structures
+  const userAIData = {};
+  const aiModelCounts = {};
+  const marketAICounts = {};
+  const productAICounts = {};
+  const allUsers = new Set();
+  const allAIModels = new Set();
+  const allMarkets = new Set();
+  const allProducts = new Set();
+
+  // Check if there are any tasks with AI usage
+  const hasAIUsage = tasks.some(task => {
+    const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+    return aiUsed && aiUsed.length > 0;
+  });
+
+  if (!hasAIUsage) {
+    return {
+      tableData: [{
+        user: "No AI usage data available",
+        totalTasks: tasks.length,
+        aiUsedTasks: 0,
+        aiTime: 0,
+        aiModels: "No AI usage found",
+        markets: "No AI usage found",
+        products: "No AI usage found",
+        aiUsagePercentage: 0,
+        noData: true
+      }],
+      tableColumns: [
+        { key: "user", header: "User", align: "left" },
+        { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+        { key: "aiUsedTasks", header: "AI Used Tasks", align: "center", highlight: true },
+        { key: "aiTime", header: "AI Time (hrs)", align: "center", highlight: true },
+        { key: "aiUsagePercentage", header: "AI Usage %", align: "center", highlight: true },
+        { key: "aiModels", header: "AI Models Used", align: "left" },
+        { key: "markets", header: "Markets", align: "left" },
+        { key: "products", header: "Products", align: "left" }
+      ],
+      aiModelsData: [{ name: "No AI usage found", value: 0 }],
+      usersAIData: [{ name: "No AI usage found", value: 0 }],
+      usersBiaxialData: [{ name: "No AI usage found", aiTime: 0, aiTasks: 0, color: "#6b7280" }],
+      marketsAIData: [{ name: "No AI usage found", value: 0 }],
+      productsAIData: [{ name: "No AI usage found", value: 0 }],
+      marketsBiaxialData: [{ name: "No AI usage found", aiTime: 0, aiTasks: 0, color: "#6b7280" }],
+      productsBiaxialData: [{ name: "No AI usage found", aiTime: 0, aiTasks: 0, color: "#6b7280" }]
+    };
+  }
+
+  // Process tasks to extract AI usage data
+  tasks.forEach(task => {
+    const userId = task.userUID || task.createbyUID;
+    const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+    const markets = task.data_task?.markets || task.markets || [];
+    const products = task.data_task?.products || task.products || '';
+    
+    if (!userId || !aiUsed || aiUsed.length === 0) return;
+
+    allUsers.add(userId);
+    
+    // Initialize user data if not exists
+    if (!userAIData[userId]) {
+      userAIData[userId] = {
+        totalTasks: 0,
+        totalAITime: 0,
+        aiModels: new Set(),
+        aiUsedCount: 0,
+        markets: new Set(),
+        products: new Set()
+      };
+    }
+
+    // Count tasks with AI usage
+    userAIData[userId].totalTasks += 1;
+    userAIData[userId].aiUsedCount += aiUsed.length;
+
+    // Add markets and products to user's sets and global sets
+    if (Array.isArray(markets)) {
+      markets.forEach(market => {
+        if (market) {
+          allMarkets.add(market);
+          userAIData[userId].markets.add(market);
+        }
+      });
+    }
+
+    if (products && typeof products === 'string') {
+      allProducts.add(products);
+      userAIData[userId].products.add(products);
+    }
+
+    // Process each AI usage entry
+    aiUsed.forEach(ai => {
+      const aiTime = ai.aiTime || 0;
+      const aiModels = ai.aiModels || [];
+      
+      userAIData[userId].totalAITime += aiTime;
+      
+      // Add AI models to user's set
+      aiModels.forEach(model => {
+        allAIModels.add(model);
+        userAIData[userId].aiModels.add(model);
+        aiModelCounts[model] = (aiModelCounts[model] || 0) + 1;
+      });
+    });
+  });
+
+  // Create table data
+  const tableData = Array.from(allUsers).map(userId => {
+    const user = users.find(u => (u.id || u.uid || u.userUID) === userId);
+    const userName = user?.name || user?.email || `User ${userId.slice(0, 8)}`;
+    const userData = userAIData[userId];
+    
+    return {
+      user: userName,
+      totalTasks: userData.totalTasks,
+      aiUsedTasks: userData.aiUsedCount,
+      aiTime: Math.round(userData.totalAITime * 100) / 100,
+      aiModels: Array.from(userData.aiModels).join(', '),
+      markets: Array.from(userData.markets).join(', '),
+      products: Array.from(userData.products).join(', '),
+      aiUsagePercentage: userData.totalTasks > 0 ? 
+        Math.round((userData.aiUsedCount / userData.totalTasks) * 100) : 0
+    };
+  });
+
+  // Sort by AI time descending
+  tableData.sort((a, b) => b.aiTime - a.aiTime);
+
+  // Add grand total row
+  const grandTotal = {
+    user: "Grand Total",
+    totalTasks: tableData.reduce((sum, row) => sum + row.totalTasks, 0),
+    aiUsedTasks: tableData.reduce((sum, row) => sum + row.aiUsedTasks, 0),
+    aiTime: Math.round(tableData.reduce((sum, row) => sum + row.aiTime, 0) * 100) / 100,
+    aiModels: Array.from(allAIModels).join(', '),
+    markets: Array.from(allMarkets).join(', '),
+    products: Array.from(allProducts).join(', '),
+    aiUsagePercentage: 0,
+    bold: true,
+    highlight: true
+  };
+
+  // Calculate grand total percentage
+  if (grandTotal.totalTasks > 0) {
+    grandTotal.aiUsagePercentage = Math.round((grandTotal.aiUsedTasks / grandTotal.totalTasks) * 100);
+  }
+
+  tableData.push(grandTotal);
+
+  // Create table columns
+  const tableColumns = [
+    { key: "user", header: "User", align: "left" },
+    { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+    { key: "aiUsedTasks", header: "AI Used Tasks", align: "center", highlight: true },
+    { key: "aiTime", header: "AI Time (hrs)", align: "center", highlight: true },
+    { key: "aiUsagePercentage", header: "AI Usage %", align: "center", highlight: true },
+    { key: "aiModels", header: "AI Models Used", align: "left" },
+    { key: "markets", header: "Markets", align: "left" },
+    { key: "products", header: "Products", align: "left" }
+  ];
+
+  // Create AI models pie chart data
+  const aiModelsData = Array.from(allAIModels).map(model => ({
+    name: model,
+    value: aiModelCounts[model] || 0
+  })).sort((a, b) => b.value - a.value);
+
+  // Create users AI usage pie chart data
+  const usersAIData = tableData
+    .filter(row => !row.bold) // Exclude grand total row
+    .map(row => ({
+      name: row.user,
+      value: row.aiTime
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10); // Show top 10 users
+
+  // Create users biaxial chart data (AI time vs AI tasks)
+  const usersBiaxialData = tableData
+    .filter(row => !row.bold) // Exclude grand total row
+    .map((row, index) => ({
+      name: row.user,
+      tasks: row.aiUsedTasks,
+      hours: row.aiTime,
+      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+    }))
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 10); // Show top 10 users
+
+  // Create markets AI usage pie chart data
+  const marketsAIData = Array.from(allMarkets).map(market => {
+    // Count tasks that have AI usage and include this market
+    const marketAICount = tasks.filter(task => {
+      const taskMarkets = task.data_task?.markets || task.markets || [];
+      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+      return taskMarkets.includes(market) && aiUsed.length > 0;
+    }).length;
+    
+    return {
+      name: market,
+      value: marketAICount
+    };
+  }).filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  // Create products AI usage pie chart data
+  const productsAIData = Array.from(allProducts).map(product => {
+    // Count tasks that have AI usage and match this product
+    const productAICount = tasks.filter(task => {
+      const taskProducts = task.data_task?.products || task.products || '';
+      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+      return taskProducts === product && aiUsed.length > 0;
+    }).length;
+    
+    return {
+      name: product,
+      value: productAICount
+    };
+  }).filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  // Create markets biaxial chart data (AI usage by market)
+  const marketsBiaxialData = Array.from(allMarkets).map((market, index) => {
+    // Count tasks that have AI usage and include this market
+    const marketAICount = tasks.filter(task => {
+      const taskMarkets = task.data_task?.markets || task.markets || [];
+      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+      return taskMarkets.includes(market) && aiUsed.length > 0;
+    }).length;
+    
+    // Calculate total AI time for this market
+    const marketAITime = tasks
+      .filter(task => {
+        const taskMarkets = task.data_task?.markets || task.markets || [];
+        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+        return taskMarkets.includes(market) && aiUsed.length > 0;
+      })
+      .reduce((sum, task) => {
+        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+        return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
+      }, 0);
+
+    return {
+      name: market,
+      tasks: marketAICount,
+      hours: Math.round(marketAITime * 100) / 100,
+      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+    };
+  }).filter(item => item.tasks > 0)
+    .sort((a, b) => b.tasks - a.tasks);
+
+  // Create products biaxial chart data (AI usage by product)
+  const productsBiaxialData = Array.from(allProducts).map((product, index) => {
+    // Count tasks that have AI usage and match this product
+    const productAICount = tasks.filter(task => {
+      const taskProducts = task.data_task?.products || task.products || '';
+      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+      return taskProducts === product && aiUsed.length > 0;
+    }).length;
+    
+    // Calculate total AI time for this product
+    const productAITime = tasks
+      .filter(task => {
+        const taskProducts = task.data_task?.products || task.products || '';
+        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+        return taskProducts === product && aiUsed.length > 0;
+      })
+      .reduce((sum, task) => {
+        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+        return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
+      }, 0);
+
+    return {
+      name: product,
+      tasks: productAICount,
+      hours: Math.round(productAITime * 100) / 100,
+      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
+    };
+  }).filter(item => item.tasks > 0)
+    .sort((a, b) => b.tasks - a.tasks);
+
   return {
-    size: calculationCache.size,
-    keys: Array.from(calculationCache.keys()),
-    maxSize: 20
+    tableData,
+    tableColumns,
+    aiModelsData,
+    usersAIData,
+    usersBiaxialData,
+    marketsAIData,
+    productsAIData,
+    marketsBiaxialData,
+    productsBiaxialData
   };
 };
 
-export const clearAnalyticsCache = () => {
-  calculationCache.clear();
-  console.log('🧹 Analytics cache cleared');
+/**
+ * Get AI analytics card props for direct use with AIAnalyticsCard
+ * @param {Array} tasks - Array of task objects
+ * @param {Array} users - Array of user objects
+ * @param {boolean} isLoading - Loading state
+ * @returns {Object} AI analytics card props
+ */
+export const getAIAnalyticsCardProps = (tasks, users, isLoading = false) => {
+  const calculatedData = calculateAIAnalyticsData(tasks, users);
+  
+  // Calculate totals for chart titles
+  const totalTasks = tasks?.length || 0;
+  const totalAITime = tasks?.reduce((sum, task) => {
+    const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+    return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
+  }, 0) || 0;
+  
+  return {
+    title: "AI Usage Analytics",
+    aiTableData: calculatedData.tableData,
+    aiTableColumns: calculatedData.tableColumns,
+    aiModelsData: calculatedData.aiModelsData,
+    aiModelsTitle: `AI Models Usage (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    aiModelsColors: AI_CHART_COLORS.MODELS,
+    usersAIData: calculatedData.usersAIData,
+    usersAITitle: `Users by AI Time (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    usersAIColors: AI_CHART_COLORS.USERS,
+    usersBiaxialData: calculatedData.usersBiaxialData,
+    usersBiaxialTitle: `Users: AI Time & AI Tasks (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    usersBiaxialTimeColor: CHART_COLORS.DEFAULT[0],
+    usersBiaxialTasksColor: CHART_COLORS.DEFAULT[1],
+    marketsAIData: calculatedData.marketsAIData,
+    marketsAITitle: `Markets AI Usage (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    marketsAIColors: CHART_COLORS.DEFAULT,
+    productsAIData: calculatedData.productsAIData,
+    productsAITitle: `Products AI Usage (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    productsAIColors: CHART_COLORS.DEFAULT,
+    marketsBiaxialData: calculatedData.marketsBiaxialData,
+    marketsBiaxialTitle: `Markets: AI Tasks & AI Time (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    marketsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    marketsBiaxialTimeColor: CHART_COLORS.DEFAULT[1],
+    productsBiaxialData: calculatedData.productsBiaxialData,
+    productsBiaxialTitle: `Products: AI Tasks & AI Time (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
+    productsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    productsBiaxialTimeColor: CHART_COLORS.DEFAULT[1],
+    isLoading
+  };
 };
 
-export const clearCacheByType = (type) => {
-  const keysToDelete = [];
-  for (const [key, value] of calculationCache.entries()) {
-    if (key.startsWith(type)) {
-      keysToDelete.push(key);
-    }
-  }
-  keysToDelete.forEach(key => calculationCache.delete(key));
-  console.log(`🧹 Cleared ${keysToDelete.length} cache entries for ${type}`);
+// Simplified version without caching
+export const getCachedAIAnalyticsCardProps = (tasks, users, month, isLoading = false) => {
+  return getAIAnalyticsCardProps(tasks, users, isLoading);
 };

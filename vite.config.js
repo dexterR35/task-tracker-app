@@ -1,20 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from '@tailwindcss/vite';
-import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
 export default defineConfig({
   base: "/",
   plugins: [
     react(), 
-    tailwindcss(),
-    visualizer({
-      filename: 'dist/stats.html',
-      open: true,
-      gzipSize: true,
-      brotliSize: true,
-    })
+    tailwindcss()
   ],
   resolve: {
     alias: {
@@ -41,7 +34,6 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
-          redux: ['@reduxjs/toolkit', 'react-redux'],
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
         },
         
@@ -68,8 +60,6 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      '@reduxjs/toolkit',
-      'react-redux',
       'yup',
       'firebase/app',
       'firebase/auth',

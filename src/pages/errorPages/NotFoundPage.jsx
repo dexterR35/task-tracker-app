@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 
 const NotFoundPage = () => {

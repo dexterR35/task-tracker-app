@@ -21,11 +21,11 @@ export const getMillisecondsUntilMidnight = () => {
  */
 export const scheduleMidnightCallback = (callback) => {
   const msUntilMidnight = getMillisecondsUntilMidnight();
-  
+
   return setTimeout(() => {
     // Execute the callback
     callback();
-    
+
     // Schedule the next midnight callback (recursive)
     scheduleMidnightCallback(callback);
   }, msUntilMidnight);
@@ -62,43 +62,43 @@ export const createMidnightScheduler = (onDateChange, onSchedule = null, options
   const { showAlert = false, alertMessage = "It's midnight! New day has begun." } = options;
   let timeoutId = null;
   let lastCheckedDate = getCurrentDateString();
-  
+
   const scheduleNext = () => {
     const msUntilMidnight = getMillisecondsUntilMidnight();
-    
+
     if (onSchedule) {
       onSchedule(msUntilMidnight);
     }
-    
+
     timeoutId = setTimeout(() => {
       const currentDate = getCurrentDateString();
-      
+
       // Show alert at midnight if enabled
       if (showAlert) {
         // Alert message removed - use toast notifications instead
       }
-      
+
       if (hasDateChanged(lastCheckedDate)) {
         lastCheckedDate = currentDate;
         onDateChange(currentDate);
       }
-      
+
       // Schedule next check
       scheduleNext();
     }, msUntilMidnight);
   };
-  
+
   const start = () => {
     scheduleNext();
   };
-  
+
   const stop = () => {
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
   };
-  
+
   return {
     start,
     stop,

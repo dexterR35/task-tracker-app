@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAppData } from '@/hooks/useAppData';
+import { useAppDataContext } from '@/context/AppDataContext';
 import { getMonthBoundaries, getMonthInfo } from '@/utils/monthUtils.jsx';
 import { format, startOfMonth, endOfMonth, getDaysInMonth, addDays, startOfWeek, endOfWeek } from 'date-fns';
 
@@ -13,7 +13,7 @@ const SimpleDateField = ({
   clearErrors,
   formValues 
 }) => {
-  const { monthId, monthName } = useAppData();
+  const { monthId, monthName } = useAppDataContext();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date(monthId));
@@ -64,10 +64,12 @@ const SimpleDateField = ({
     const [year, month, day] = dateStr.split('-').map(Number);
     const dateObj = new Date(year, month - 1, day); // month - 1 because Date constructor expects 0-11
     
+    // Use US language for display but keep Romanian calendar behavior
     return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'Europe/Bucharest' // Use Romanian timezone
     });
   };
 
@@ -137,8 +139,8 @@ const SimpleDateField = ({
           className={`
             w-full px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200
             ${error 
-              ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500' 
-              : 'border-gray-300 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-blue-500'
+              ? 'border-red-error bg-red-50 focus:border-red-error focus:ring-red-error' 
+              : 'border-gray-300 bg-transparent  hover:border-blue-default focus:border-blue-500 focus:ring-blue-500'
             }
             focus:ring-2 focus:ring-opacity-20
           `}
@@ -164,7 +166,7 @@ const SimpleDateField = ({
             />
             
             {/* Calendar */}
-            <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl p-6 w-96 max-w-full">
+            <div className="absolute z-50 mt-2 bg-smallCard border border-gray-200 rounded-xl shadow-2xl p-6 w-96 max-w-full">
               {/* Calendar Header - With Navigation */}
               <div className="flex items-center justify-between mb-6">
                 <button
@@ -190,9 +192,9 @@ const SimpleDateField = ({
                 </button>
               </div>
 
-              {/* Day Headers */}
+              {/* Day Headers - Romanian calendar starts with Monday */}
               <div className="grid grid-cols-7 gap-2 mb-4">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                   <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
                     {day}
                   </div>

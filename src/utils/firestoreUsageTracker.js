@@ -24,7 +24,7 @@ class FirestoreUsageTracker {
     } catch (error) {
       console.error('Error loading persisted usage:', error);
     }
-    
+
     // Return default if no valid data
     return {
       reads: 0,
@@ -50,13 +50,13 @@ class FirestoreUsageTracker {
     try {
       if (this.isTracking) return;
       this.isTracking = true;
-      
+
       // Track Firestore operations
       this.trackFirestoreOperations();
-      
+
       // Reset usage daily
       this.resetDailyUsage();
-      
+
       console.log('🔍 Firestore Usage Tracker started');
     } catch (error) {
       console.error('Error starting Firestore usage tracker:', error);
@@ -74,7 +74,7 @@ class FirestoreUsageTracker {
     this.trackGetDoc();
     this.trackOnSnapshot();
     this.trackQuery();
-    
+
     // Also track through module interception
     this.interceptFirebaseModules();
   }
@@ -85,7 +85,7 @@ class FirestoreUsageTracker {
     console.log = (...args) => {
       if (this.isTracking) {
         const message = args.join(' ');
-        if (message.includes('📋 Tasks fetched:') || 
+        if (message.includes('📋 Tasks fetched:') ||
             message.includes('🔍 getMonthTasks API called:') ||
             message.includes('📅 Month board check:')) {
           // These are our app's Firestore operations
@@ -189,7 +189,7 @@ class FirestoreUsageTracker {
     const now = new Date();
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     const timeUntilMidnight = midnight.getTime() - now.getTime();
-    
+
     setTimeout(() => {
       this.resetUsage();
       this.resetDailyUsage(); // Schedule next reset
@@ -282,7 +282,7 @@ const firestoreUsageTracker = new FirestoreUsageTracker();
 // Make it available globally for manual sync
 if (typeof window !== 'undefined') {
   window.firestoreUsageTracker = firestoreUsageTracker;
-  
+
   // Add global function to sync from Firebase dashboard
   window.syncFirestoreUsage = (reads, writes = 0, deletes = 0) => {
     firestoreUsageTracker.setUsageFromDashboard({ reads, writes, deletes });

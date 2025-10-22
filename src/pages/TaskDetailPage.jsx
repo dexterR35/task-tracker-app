@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useAppData } from '@/hooks/useAppData';
+import { useAuth } from '@/context/AuthContext';
+import { useAppDataContext } from '@/context/AppDataContext';
 import Loader from '@/components/ui/Loader/Loader';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { formatDate, normalizeTimestamp } from '@/utils/dateUtils';
@@ -13,7 +13,7 @@ const TaskDetailPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isUserAdmin = user?.role === 'admin';
-  const { tasks, isLoading } = useAppData();
+  const { tasks, isLoading } = useAppDataContext();
   
   // Get query parameters
   const userId = searchParams.get('user');

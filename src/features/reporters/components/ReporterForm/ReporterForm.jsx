@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
-import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess, withMutationErrorHandling } from '@/features/utils/errorHandling';
+import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { reporterFormSchema, createReporterFormFields } from '@/features/reporters/config/useReporterForm';
 import { TextField, SelectField } from '@/components/forms/components';
@@ -26,8 +26,8 @@ const ReporterForm = ({
   const [createReporter] = useCreateReporterMutation();
   const [updateReporter] = useUpdateReporterMutation();
   
-  // Generate dynamic form fields based on existing reporter data
-  const formFields = createReporterFormFields(reporters);
+  // Generate static form fields from constants
+  const formFields = createReporterFormFields();
   
   const {
     register,
@@ -68,34 +68,15 @@ const ReporterForm = ({
       // Prepare reporter data with lowercase enforcement
       const transformedData = prepareFormData(data, {
         fieldsToLowercase: ['name', 'email', 'departament', 'country', 'channelName'],
-        fieldsToKeepUppercase: []
+        fieldsToKeepUppercase: [] // Convert all fields to lowercase
       });
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing reporter
-        const updateReporterWithErrorHandling = withMutationErrorHandling(updateReporter, {
-          operation: 'Update Reporter',
-          showToast: false,
-          logError: true
-        });
-        
-        return await updateReporterWithErrorHandling({
-          id: initialData.id,
-          updates: transformedData,
-          userData: user
-        });
+        return await updateReporter(initialData.id, transformedData, user);
       } else {
         // Create new reporter
-        const createReporterWithErrorHandling = withMutationErrorHandling(createReporter, {
-          operation: 'Create Reporter',
-          showToast: false,
-          logError: true
-        });
-        
-        return await createReporterWithErrorHandling({
-          reporter: transformedData,
-          userData: user
-        });
+        return await createReporter(transformedData, user);
       }
     },
     {

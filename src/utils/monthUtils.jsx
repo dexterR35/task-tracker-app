@@ -3,15 +3,135 @@
  * All month-related functionality in one place
  */
 
-import React, { useMemo } from "react";
-import { format, getDaysInMonth, startOfMonth, endOfMonth, parseISO, isValid } from "date-fns";
+import React, { useMemo, useState } from "react";
+import { format, getDaysInMonth, startOfMonth, endOfMonth, parseISO, isValid, startOfWeek, endOfWeek, eachDayOfInterval, isWeekend, addWeeks, subWeeks } from "date-fns";
 import { parseMonthId, getCurrentMonthId, normalizeTimestamp } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
-import { useAppData } from "@/hooks/useAppData";
-import { useGenerateMonthBoardMutation } from "@/features/months/monthsApi";
+import { useAppDataContext } from "@/context/AppDataContext";
+import { useCreateMonthBoard } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+
+// ============================================================================
+// WEEK UTILITIES
+// ============================================================================
+
+/**
+ * Get all weeks in a month (Monday-Friday only)
+ * @param {string|Date} monthId - Month ID or date
+ * @returns {Array} Array of week objects with start/end dates and week number
+ */
+export const getWeeksInMonth = (monthId) => {
+  const date = typeof monthId === 'string' ? parseMonthId(monthId) : monthId;
+  if (!isValid(date)) {
+    logger.error('Invalid date provided to getWeeksInMonth');
+    return [];
+  }
+
+  const monthStart = startOfMonth(date);
+  const monthEnd = endOfMonth(date);
+  
+  const weeks = [];
+  let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
+  
+  // Adjust if week starts before month
+  if (currentWeekStart < monthStart) {
+    currentWeekStart = addWeeks(currentWeekStart, 1);
+  }
+  
+  let weekNumber = 1;
+  
+  while (currentWeekStart <= monthEnd) {
+    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 }); // Sunday
+    
+    // Get week days (Monday-Friday only)
+    const weekDays = eachDayOfInterval({
+      start: currentWeekStart,
+      end: weekEnd
+    }).filter(day => !isWeekend(day) && day >= monthStart && day <= monthEnd);
+    
+    if (weekDays.length > 0) {
+      weeks.push({
+        weekNumber,
+        startDate: currentWeekStart,
+        endDate: weekEnd,
+        days: weekDays,
+        startDateStr: format(currentWeekStart, 'yyyy-MM-dd'),
+        endDateStr: format(weekEnd, 'yyyy-MM-dd'),
+        label: `Week ${weekNumber} (${format(currentWeekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd')})`
+      });
+    }
+    
+    currentWeekStart = addWeeks(currentWeekStart, 1);
+    weekNumber++;
+  }
+  
+  return weeks;
+};
+
+/**
+ * Get tasks for a specific week
+ * @param {Array} tasks - All tasks for the month
+ * @param {Object} week - Week object with start/end dates
+ * @returns {Object} Tasks grouped by day
+ */
+export const getTasksForWeek = (tasks, week) => {
+  if (!tasks || !Array.isArray(tasks) || !week) {
+    return {};
+  }
+  
+  const weekTasks = {};
+  
+  // Initialize each day with empty array
+  week.days.forEach(day => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    weekTasks[dayStr] = [];
+  });
+  
+  // Filter and group tasks by day
+  tasks.forEach(task => {
+    if (!task.data_task?.startDate) return;
+    
+    const taskStartDate = new Date(task.data_task.startDate);
+    const taskEndDate = task.data_task.endDate ? new Date(task.data_task.endDate) : taskStartDate;
+    
+    // Check if task falls within this week
+    if (taskStartDate >= week.startDate && taskStartDate <= week.endDate) {
+      const dayStr = format(taskStartDate, 'yyyy-MM-dd');
+      if (weekTasks[dayStr]) {
+        weekTasks[dayStr].push(task);
+      }
+    }
+  });
+  
+  return weekTasks;
+};
+
+/**
+ * Get current week number in the month
+ * @param {string|Date} monthId - Month ID or date
+ * @returns {number} Current week number (1-based)
+ */
+export const getCurrentWeekNumber = (monthId) => {
+  const date = typeof monthId === 'string' ? parseMonthId(monthId) : monthId;
+  if (!isValid(date)) return 1;
+  
+  const today = new Date();
+  const monthStart = startOfMonth(date);
+  
+  // If today is not in this month, return first week
+  if (today < monthStart || today > endOfMonth(date)) {
+    return 1;
+  }
+  
+  const weeks = getWeeksInMonth(monthId);
+  const currentWeek = weeks.find(week => 
+    today >= week.startDate && today <= week.endDate
+  );
+  
+  return currentWeek ? currentWeek.weekNumber : 1;
+};
 
 // ============================================================================
 // VALIDATION UTILITIES
@@ -167,6 +287,8 @@ export const getMonthInfo = (date = new Date()) => {
   return {
     monthId,
     yearId,
+    year: year, // Add year field for month board creation
+    month: month, // Add month field for month board creation
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     monthName: date.toLocaleString('default', { month: 'long' }),
@@ -279,8 +401,9 @@ export const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate
  * Month Board Banner Component
  */
 export const MonthBoardBanner = () => {
-  const appData = useAppData();
-  const [generateMonthBoard, { isLoading: isGenerating }] = useGenerateMonthBoardMutation();
+  const appData = useAppDataContext();
+  const [generateMonthBoard] = useCreateMonthBoard();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Extract month data
   const {
@@ -306,14 +429,9 @@ export const MonthBoardBanner = () => {
   }
 
   const handleGenerateBoard = async () => {
+    setIsGenerating(true);
     try {
-      const result = await generateMonthBoard({
-        monthId,
-        monthName,
-        startDate: startDateStr,
-        endDate: endDateStr,
-        daysInMonth,
-      }).unwrap();
+      const result = await generateMonthBoard(monthId, appData.user);
 
       if (result.success) {
         showSuccess(`Month board for ${monthName} created successfully!`);
@@ -323,9 +441,11 @@ export const MonthBoardBanner = () => {
         logger.error("Month board generation failed", { monthId, monthName, error: result.message });
       }
     } catch (error) {
-      const errorMessage = error?.data?.message || error?.message || "Failed to create month board";
+      const errorMessage = error?.message || "Failed to create month board";
       showError(errorMessage);
       logger.error("Month board generation error", { monthId, monthName, error });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
