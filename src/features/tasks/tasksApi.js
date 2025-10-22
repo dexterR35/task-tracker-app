@@ -297,15 +297,16 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
  */
 const checkForDuplicateTask = async (colRef, task, userUID) => {
   try {
-    // Check if task has name for duplicate checking
-    if (!task.name) {
+    // Check if task has gimodear and name for duplicate checking
+    if (!task.gimodear || !task.name) {
       return { isDuplicate: false, message: '' };
     }
 
-    // Query for existing tasks with same name for this user
+    // Query for existing tasks with same gimodear and name for this user
     const duplicateQuery = query(
       colRef,
       where("userUID", "==", userUID),
+      where("data_task.gimodear", "==", task.gimodear),
       where("data_task.name", "==", task.name)
     );
 
@@ -315,7 +316,7 @@ const checkForDuplicateTask = async (colRef, task, userUID) => {
       const duplicateTask = duplicateSnapshot.docs[0].data();
       return {
         isDuplicate: true,
-        message: `A task with name "${task.name}" already exists`
+        message: `A task with gimodear "${task.gimodear}" and name "${task.name}" already exists`
       };
     }
 
@@ -326,7 +327,6 @@ const checkForDuplicateTask = async (colRef, task, userUID) => {
     return { isDuplicate: false, message: '' };
   }
 };
-
 
 /**
  * Create Task Hook
