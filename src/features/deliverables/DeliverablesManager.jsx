@@ -32,6 +32,30 @@ export const useDeliverablesOptions = () => {
 };
 
 /**
+ * Context-independent version of useDeliverablesOptions
+ * Accepts deliverables as props to avoid context dependency
+ */
+export const useDeliverablesOptionsFromProps = (deliverables = []) => {
+  // Transform database data to form options format
+  const deliverablesOptions = !deliverables || deliverables.length === 0 ? [] : deliverables.map(deliverable => ({
+    value: deliverable.name,
+    label: deliverable.name,
+    department: deliverable.department,
+    timePerUnit: deliverable.timePerUnit,
+    timeUnit: deliverable.timeUnit,
+    requiresQuantity: deliverable.requiresQuantity,
+    variationsTime: deliverable.variationsTime,
+    variationsTimeUnit: deliverable.variationsTimeUnit || 'min'
+  }));
+
+  return {
+    deliverablesOptions,
+    isLoading: false,
+    error: null
+  };
+};
+
+/**
  * Filter deliverables by selected department
  */
 export const useDeliverablesByDepartment = (selectedDepartment) => {

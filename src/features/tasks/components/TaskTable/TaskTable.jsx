@@ -17,12 +17,17 @@ const TaskTable = ({
   selectedMonthId = null,
   selectedWeek = null,
   error: tasksError = null,
-  isLoading = false,
+  isLoading: initialLoading = false,
   onCountChange = null,
+  enablePagination = true,
+  pageSize = 20,
 }) => {
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  
+  // Page size state for TanStack pagination
+  const [pageSizeState, setPageSizeState] = useState(pageSize);
   
   // Table ref for clearing selection
   const tableRef = useRef(null);
@@ -36,10 +41,17 @@ const TaskTable = ({
 
   // Get data from useAppData hook
   const {
-    tasks,
+    tasks: contextTasks,
     reporters,
+    deliverables,
     user: userData,
   } = useAppDataContext();
+
+  // Use context tasks with TanStack pagination
+  const tasks = contextTasks || [];
+  const isLoading = initialLoading;
+  const error = tasksError;
+
 
   // Get delete task hook
   const [deleteTask] = useDeleteTask();
@@ -119,7 +131,12 @@ const TaskTable = ({
   };
 
   // Get task columns for the table
-  const taskColumns = useTaskColumns(selectedMonthId, reporters, user);
+  const taskColumns = useTaskColumns(selectedMonthId, reporters, user, deliverables);
+
+  // Page size change handler for TanStack pagination
+  const handlePageSizeChange = useCallback((newPageSize) => {
+    setPageSizeState(newPageSize);
+  }, []);
 
 
   // Extract stable user values
@@ -359,7 +376,7 @@ const TaskTable = ({
         data={filteredTasks}
         columns={taskColumns}
         tableType="tasks"
-        error={tasksError}
+        error={error}
         isLoading={isLoading}
         onSelect={handleSelect}
         onEdit={handleEditTask}
@@ -369,6 +386,10 @@ const TaskTable = ({
         bulkActions={bulkActions}
         initialColumnVisibility={initialColumnVisibility}
         reporters={reporters}
+        // TanStack pagination configuration
+        enablePagination={enablePagination}
+        showPagination={enablePagination}
+        pageSize={pageSizeState}
       />
 
 

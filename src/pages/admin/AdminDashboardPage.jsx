@@ -10,6 +10,7 @@ import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
 import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils/monthUtils.jsx";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
+import Loader from "@/components/ui/Loader/Loader";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +27,8 @@ const AdminDashboardPage = () => {
   const [selectedWeek, setSelectedWeek] = useState(null);
 
   // Get all data from context with selectedUserId
+  const appData = useAppDataContext(selectedUserId);
+  
   const {
     user,
     users,
@@ -40,7 +43,7 @@ const AdminDashboardPage = () => {
     error,
     selectMonth,
     setSelectedUserId,
-  } = useAppDataContext(selectedUserId);
+  } = appData || {};
 
   // Get selected user and reporter info - simplified without excessive memoization
   const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
@@ -241,6 +244,15 @@ const AdminDashboardPage = () => {
 
   // Create small cards - memoized to prevent unnecessary re-renders
   const smallCards = useMemo(() => createSmallCards(smallCardsData), [smallCardsData]);
+
+  // Safety check to prevent errors during initialization - moved after all hooks
+  if (!appData || !appData.isInitialized) {
+    return (
+      <div className="min-h-screen flex-center">
+        <Loader size="lg" text="Initializing application data..." variant="spinner" />
+      </div>
+    );
+  }
 
   if (error) {
     return (

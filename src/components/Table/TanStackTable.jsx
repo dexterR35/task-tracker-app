@@ -115,7 +115,7 @@ const TableControls = ({
           <select
             id="page-size-select"
             value={table.getState().pagination.pageSize}
-            onChange={(e) => table.setPageSize(Number(e.target.value))}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
             className="h-full w-[80px] px-3 py-2 text-sm font-medium"
           >
             {PAGE_SIZE_OPTIONS.map((pageSize) => (
@@ -180,13 +180,13 @@ const TableControls = ({
   </div>
 );
 
-// Pagination component
+// Pagination component - TanStack pagination
 const Pagination = ({ 
   showPagination, 
   enablePagination, 
   table, 
   selectedCount, 
-  totalRows 
+  totalRows
 }) => {
   if (!showPagination || !enablePagination) return null;
 
@@ -203,7 +203,7 @@ const Pagination = ({
           <DynamicButton
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
+            onClick={() => handlePageChange(table.getState().pagination.pageIndex - 1)}
             disabled={!table.getCanPreviousPage()}
             iconName="chevronLeft"
             iconPosition="center"
@@ -212,7 +212,7 @@ const Pagination = ({
           <DynamicButton
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
+            onClick={() => handlePageChange(table.getState().pagination.pageIndex + 1)}
             disabled={!table.getCanNextPage()}
             iconName="chevronRight"
             iconPosition="center"
@@ -255,6 +255,11 @@ const TanStackTable = forwardRef(({
   // Bulk actions
   showBulkActions = false,
   bulkActions = [],
+
+  // Pagination props
+  pagination = null,
+  onPageChange = null,
+  onPageSizeChange = null,
 
   // Additional props
   ...additionalProps
@@ -355,7 +360,7 @@ const TanStackTable = forwardRef(({
   // Use columns directly - no need for memoization here
   const tableColumns = columns;
 
-  // Create table instance
+  // Create table instance first
   const table = useReactTable({
     data,
     columns: tableColumns,
@@ -366,6 +371,11 @@ const TanStackTable = forwardRef(({
       columnFilters,
       columnVisibility,
       rowSelection,
+      // Use TanStack pagination
+      pagination: {
+        pageIndex: 0,
+        pageSize: pageSize,
+      }
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -375,10 +385,10 @@ const TanStackTable = forwardRef(({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: getPaginationRowModel(), // Use TanStack pagination
     enableSorting,
     enableFiltering,
-    enablePagination,
+    enablePagination: true, // Enable TanStack pagination
     enableColumnResizing,
     enableRowSelection,
     initialState: {
@@ -387,6 +397,15 @@ const TanStackTable = forwardRef(({
       },
     },
   });
+
+  // Handle TanStack pagination
+  const handlePageChange = useCallback((newPage) => {
+    table.setPageIndex(newPage);
+  }, [table]);
+
+  const handlePageSizeChange = useCallback((newPageSize) => {
+    table.setPageSize(newPageSize);
+  }, [table]);
 
   // Export handler with progress simulation
   const handleCSVExport = useCallback(async () => {
@@ -553,7 +572,7 @@ const TanStackTable = forwardRef(({
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - TanStack pagination */}
           <Pagination
             showPagination={showPagination}
             enablePagination={enablePagination}

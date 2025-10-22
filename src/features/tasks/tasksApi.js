@@ -28,9 +28,6 @@ import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { getCurrentYear } from "@/utils/dateUtils";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
-import { validateUserPermissions } from "@/features/utils/authUtils";
-// Removed apiUtils import - using direct error handling
-import { isUserAdmin, canAccessTasks, isUserActive } from "@/features/utils/authUtils";
 
 /**
  * Get Firestore reference for tasks (collection or individual document)
@@ -226,8 +223,9 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
           return;
         }
 
-        unsubscribe = listenerManager.addListener(listenerKey, () => {
-          return onSnapshot(
+        unsubscribe = listenerManager.addListener(
+          listenerKey, 
+          () => onSnapshot(
             tasksQuery,
             (snapshot) => {
               if (snapshot && snapshot.docs) {
@@ -263,8 +261,11 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
               setError(err);
               setIsLoading(false);
             }
-          );
-        });
+          ),
+          true, // preserve - tasks need real-time updates
+          'tasks', // category
+          'tasks' // page
+        );
 
       } catch (err) {
         logger.error('Error setting up tasks listener:', err);
@@ -288,7 +289,7 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
 };
 
 /**
- * Paginated Tasks Hook
+ * Paginated Tasks Hook with Real-time Updates
  */
 export const usePaginatedTasks = (monthId, role = 'user', userUID = null, page = 1, pageSize = 20) => {
   const [tasks, setTasks] = useState([]);
@@ -303,7 +304,10 @@ export const usePaginatedTasks = (monthId, role = 'user', userUID = null, page =
       return;
     }
 
-    const fetchPaginatedTasks = async () => {
+    logger.log('🔍 [usePaginatedTasks] Starting paginated tasks fetch', { monthId, role, userUID, page, pageSize });
+    let unsubscribe = null;
+
+    const setupListener = async () => {
       try {
         setIsLoading(true);
         setError(null);
@@ -320,45 +324,103 @@ export const usePaginatedTasks = (monthId, role = 'user', userUID = null, page =
         }
 
         const tasksRef = getTaskRef(monthId);
-        let tasksQuery = buildTaskQuery(tasksRef, role, userUID);
+        
+        // Use the same query structure as useTasks to avoid composite index issues
+        // We'll sort and paginate in memory instead of using Firestore ordering
+        const tasksQuery = buildTaskQuery(tasksRef, role, userUID);
 
-        // Add pagination
-        const offset = (page - 1) * pageSize;
-        tasksQuery = query(tasksQuery, orderBy('createdAt', 'desc'), limit(pageSize + 1));
+        const listenerKey = `tasks_paginated_${monthId}_${role}_${userUID || 'all'}_${page}_${pageSize}`;
 
-        const tasksSnapshot = await getDocs(tasksQuery);
-        const allTasks = tasksSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          monthId: monthId,
-          ...serializeTimestampsForContext(doc.data()),
-        }));
+        // Check if listener already exists
+        if (listenerManager.hasListener(listenerKey)) {
+          logger.log('Paginated listener already exists, skipping duplicate setup for:', listenerKey);
+          setIsLoading(false);
+          return;
+        }
 
-        // Check if there are more pages
-        const hasMore = allTasks.length > pageSize;
-        const tasksData = hasMore ? allTasks.slice(0, pageSize) : allTasks;
+        unsubscribe = listenerManager.addListener(
+          listenerKey, 
+          () => onSnapshot(
+            tasksQuery,
+            (snapshot) => {
+              if (snapshot && snapshot.docs) {
+                firestoreUsageTracker.trackListener(`tasks_paginated_${monthId}`, snapshot.docs.length);
+              }
 
-        // Track Firestore usage
-        firestoreUsageTracker.trackQuery(`tasks_paginated_${monthId}`, tasksData.length);
-        firestoreUsageTracker.trackDocumentRead(`months/${monthId}`);
+              if (!snapshot || !snapshot.docs || snapshot.empty) {
+                setTasks([]);
+                setPagination({
+                  page,
+                  limit: pageSize,
+                  total: 0,
+                  hasMore: false,
+                  nextPage: null
+                });
+                setIsLoading(false);
+                return;
+              }
 
-        setTasks(tasksData);
-        setPagination({
-          page,
-          limit: pageSize,
-          total: tasksData.length,
-          hasMore,
-          nextPage: hasMore ? page + 1 : null
-        });
-        setIsLoading(false);
+              const validDocs = snapshot.docs.filter(
+                (doc) => doc && doc.exists() && doc.data() && doc.id
+              );
+
+              const allTasks = validDocs.map((doc) => ({
+                id: doc.id,
+                monthId: monthId,
+                ...serializeTimestampsForContext(doc.data()),
+              }));
+
+              // Sort by createdAt in memory (newest first)
+              const sortedTasks = allTasks.sort((a, b) => {
+                const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+                const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+                return bTime.getTime() - aTime.getTime();
+              });
+
+              // Calculate pagination
+              const startIndex = (page - 1) * pageSize;
+              const endIndex = startIndex + pageSize;
+              const tasksData = sortedTasks.slice(startIndex, endIndex);
+              const hasMore = sortedTasks.length > endIndex;
+
+              setTasks(tasksData);
+              setPagination({
+                page,
+                limit: pageSize,
+                total: sortedTasks.length,
+                hasMore,
+                nextPage: hasMore ? page + 1 : null
+              });
+              setIsLoading(false);
+              setError(null);
+            },
+            (err) => {
+              logger.error('Paginated tasks real-time error:', err);
+              setError(err);
+              setIsLoading(false);
+            }
+          ),
+          true, // preserve - tasks need real-time updates
+          'tasks', // category
+          'tasks' // page
+        );
 
       } catch (err) {
-        logger.error('Error fetching paginated tasks:', err);
+        logger.error('Error setting up paginated tasks listener:', err);
         setError(err);
         setIsLoading(false);
       }
     };
 
-    fetchPaginatedTasks();
+    setupListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      const listenerKey = `tasks_paginated_${monthId}_${role}_${userUID || 'all'}_${page}_${pageSize}`;
+      listenerManager.removeListener(listenerKey);
+    };
   }, [monthId, role, userUID, page, pageSize]);
 
   return { tasks, pagination, isLoading, error };

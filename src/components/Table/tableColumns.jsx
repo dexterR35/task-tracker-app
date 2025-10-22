@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
 import { formatDate, normalizeTimestamp } from '@/utils/dateUtils';
-import { useDeliverableCalculation, useDeliverablesOptions } from '@/features/deliverables/DeliverablesManager';
+import { useDeliverableCalculation, useDeliverablesOptionsFromProps } from '@/features/deliverables/DeliverablesManager';
 import { TABLE_SYSTEM } from '@/constants';
 import { differenceInDays } from 'date-fns';
 
@@ -56,8 +56,8 @@ const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => format
 const createBooleanCell = (trueText = "✓", falseText = "-") => ({ getValue }) => getValue() ? trueText : falseText;
 
 // Optimized DeliverableCalculationCell component
-const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
-  const { deliverablesOptions = [] } = useDeliverablesOptions();
+const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverables = [] }) => {
+  const { deliverablesOptions = [] } = useDeliverablesOptionsFromProps(deliverables);
   const { deliverablesList, totalTime } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
   
   if (!deliverablesList?.length) {
@@ -116,7 +116,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin }) => {
 };
 
 // Task column definitions
-const createTaskColumns = (isUserAdmin, stableReporters) => [
+const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   columnHelper.accessor('data_task.taskName', {
     header: 'Jira Link',
     cell: ({ getValue, row }) => {
@@ -207,6 +207,7 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
       <DeliverableCalculationCell 
         deliverablesUsed={getValue() || row.original?.data_task}
         isUserAdmin={isUserAdmin}
+        deliverables={deliverables}
       />
     ),
     size: 150,
@@ -360,11 +361,11 @@ const createTaskColumns = (isUserAdmin, stableReporters) => [
 ];
 
 // Tasks Table Columns - Memoized to prevent re-renders
-export const useTaskColumns = (monthId = null, reporters = [], user = null) => {
+export const useTaskColumns = (monthId = null, reporters = [], user = null, deliverables = []) => {
   const stableReporters = Array.isArray(reporters) ? reporters : [];
   const isUserAdmin = user?.role === 'admin';
   
-  return useMemo(() => createTaskColumns(isUserAdmin, stableReporters), [monthId, stableReporters, isUserAdmin]);
+  return useMemo(() => createTaskColumns(isUserAdmin, stableReporters, deliverables), [monthId, stableReporters, isUserAdmin, deliverables]);
 };
 
 // User column definitions

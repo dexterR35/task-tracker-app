@@ -8,6 +8,8 @@ class DataCache {
     this.cache = new Map();
     this.cacheExpiry = new Map();
     this.defaultTTL = 5 * 60 * 1000; // 5 minutes default TTL
+    this.monthCacheTTL = 30 * 24 * 60 * 60 * 1000; // 30 days for months (change once per month)
+    this.staticDataTTL = Infinity; // Infinite cache for static data (users, reporters, deliverables, tasks)
   }
 
   /**
@@ -19,6 +21,75 @@ class DataCache {
   set(key, data, ttl = this.defaultTTL) {
     this.cache.set(key, data);
     this.cacheExpiry.set(key, Date.now() + ttl);
+  }
+
+  /**
+   * Set month data with extended TTL (30 days - changes once per month)
+   * @param {string} key - Cache key
+   * @param {any} data - Month data to cache
+   */
+  setMonthData(key, data) {
+    this.set(key, data, this.monthCacheTTL);
+  }
+
+  /**
+   * Set static data with infinite cache (users, reporters, deliverables, tasks)
+   * @param {string} key - Cache key
+   * @param {any} data - Static data to cache
+   */
+  setStaticData(key, data) {
+    this.set(key, data, this.staticDataTTL);
+  }
+
+  /**
+   * Set tasks data with infinite cache (only changes when you add/edit/remove tasks)
+   * @param {string} key - Cache key
+   * @param {any} data - Tasks data to cache
+   */
+  setTasksData(key, data) {
+    this.set(key, data, this.staticDataTTL);
+  }
+
+  /**
+   * Force clear static data cache (when users/reporters/deliverables change)
+   * @param {string} key - Cache key to clear
+   */
+  clearStaticData(key) {
+    this.delete(key);
+  }
+
+  /**
+   * Force clear tasks data cache (when tasks are added/edited/removed)
+   * @param {string} key - Cache key to clear
+   */
+  clearTasksData(key) {
+    this.delete(key);
+  }
+
+  /**
+   * Force clear month data cache (when month changes)
+   * @param {string} key - Cache key to clear
+   */
+  clearMonthData(key) {
+    this.delete(key);
+  }
+
+  /**
+   * Get month data with extended cache
+   * @param {string} key - Cache key
+   * @returns {any|null} Cached month data or null if expired/not found
+   */
+  getMonthData(key) {
+    return this.get(key);
+  }
+
+  /**
+   * Get static data with extended cache
+   * @param {string} key - Cache key
+   * @returns {any|null} Cached static data or null if expired/not found
+   */
+  getStaticData(key) {
+    return this.get(key);
   }
 
   /**

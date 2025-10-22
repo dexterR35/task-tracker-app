@@ -38,15 +38,6 @@ const SearchableSelectField = ({
     }
   }, [currentValue, field.options, searchTerm]);
 
-  // Handle case where options are loaded after component has a value - optimized
-  useEffect(() => {
-    if (currentValue && field.options && field.options.length > 0) {
-      const option = field.options.find(opt => opt.value === currentValue);
-      if (option) {
-        // No need to force re-render - React will handle it naturally
-      }
-    }
-  }, [field.options, currentValue]);
 
   // Trigger validation when value changes
   useEffect(() => {

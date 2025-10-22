@@ -34,11 +34,19 @@ export const useAppDataContext = (selectedUserId = null) => {
 export const AppDataProvider = ({ children }) => {
   const [globalSelectedUserId, setGlobalSelectedUserId] = useState(null);
   const [selectedMonthId, setSelectedMonthId] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Get auth data
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const userUID = getUserUID(user);
   const userIsAdmin = isUserAdmin(user);
+  
+  // Initialize the provider once auth is ready
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      setIsInitialized(true);
+    }
+  }, [authLoading, user]);
   
   // Get user data - only fetch if not admin to reduce unnecessary calls
   const { 
@@ -137,6 +145,9 @@ export const AppDataProvider = ({ children }) => {
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
   const contextValue = {
+    // Initialization state
+    isInitialized,
+    
     // User data
     user: userIsAdmin ? user : userData,
     users: userIsAdmin ? allUsers : [],
@@ -146,7 +157,7 @@ export const AppDataProvider = ({ children }) => {
     reporters: serializeTimestamps(reporters),
     deliverables: serializeTimestamps(deliverablesData || []),
     tasks: serializeTimestamps(tasksData || []),
-    isLoading,
+    isLoading: isLoading || !isInitialized,
     backgroundLoading,
     error,
     

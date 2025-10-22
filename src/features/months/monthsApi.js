@@ -83,10 +83,10 @@ export const useCurrentMonth = (userUID = null, role = 'user', userData = null) 
 
         const cacheKey = `months_${yearId}`;
 
-        // Check cache first
-        const cachedData = dataCache.get(cacheKey);
+        // Check cache first with extended TTL for months (30 days)
+        const cachedData = dataCache.getMonthData(cacheKey);
         if (cachedData) {
-          logger.log('🔍 [useCurrentMonth] Using cached months data');
+          logger.log('🔍 [useCurrentMonth] Using cached months data (30-day cache)');
           setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
           setBoardExists(cachedData.boardExists);
           setCurrentMonthBoard(cachedData.currentMonthBoard);
@@ -116,12 +116,12 @@ export const useCurrentMonth = (userUID = null, role = 'user', userData = null) 
           }
         }
 
-        // Cache the result for 1 month (months change once per month)
+        // Cache the result with extended TTL for months (30 days - changes once per month)
         const cacheData = {
           boardExists: boardExistsResult,
           currentMonthBoard: currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null
         };
-        dataCache.set(cacheKey, cacheData, 30 * 24 * 60 * 60 * 1000); // 30 days
+        dataCache.setMonthData(cacheKey, cacheData);
 
         logger.log('🔍 [useCurrentMonth] Setting current month data:', {
           monthId: currentMonthInfo.monthId,
