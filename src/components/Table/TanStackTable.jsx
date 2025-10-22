@@ -329,36 +329,36 @@ const TanStackTable = forwardRef(({
     handleRowSelectionChange(newSelection);
   }, [enableRowSelection, rowSelection, handleRowSelectionChange]);
 
-  // Handle click outside table to clear selection
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (tableRef.current && !tableRef.current.contains(event.target)) {
-        // Only clear if there's a selection and we're not clicking on a modal or dropdown
-        const isModal = event.target.closest('[role="dialog"]') || 
-                       event.target.closest('.modal') || 
-                       event.target.closest('[data-modal]') ||
-                       event.target.closest('.dropdown') ||
-                       event.target.closest('[data-dropdown]');
-        
-        if (Object.keys(rowSelection).length > 0 && !isModal) {
-          handleClearSelection();
-        }
+  // Handle click outside table to clear selection - Memoized to prevent excessive re-renders
+  const handleClickOutside = useCallback((event) => {
+    if (tableRef.current && !tableRef.current.contains(event.target)) {
+      // Only clear if there's a selection and we're not clicking on a modal or dropdown
+      const isModal = event.target.closest('[role="dialog"]') || 
+                     event.target.closest('.modal') || 
+                     event.target.closest('[data-modal]') ||
+                     event.target.closest('.dropdown') ||
+                     event.target.closest('[data-dropdown]');
+      
+      if (Object.keys(rowSelection).length > 0 && !isModal) {
+        handleClearSelection();
       }
-    };
+    }
+  }, [rowSelection, handleClearSelection]);
 
+  useEffect(() => {
     if (enableRowSelection) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [enableRowSelection, rowSelection, handleClearSelection]);
+  }, [enableRowSelection, handleClickOutside]);
 
   // Expose clear selection function to parent components
   useImperativeHandle(ref, () => ({
     clearSelection: handleClearSelection
   }), [handleClearSelection]);
 
-  // Use columns directly - no need for memoization here
-  const tableColumns = columns;
+  // Memoize columns to prevent unnecessary re-renders
+  const tableColumns = useMemo(() => columns, [columns]);
 
   // Create table instance first
   const table = useReactTable({

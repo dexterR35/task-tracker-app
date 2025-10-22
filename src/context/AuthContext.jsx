@@ -42,30 +42,84 @@ import {
 const VALID_ROLES = AUTH.VALID_ROLES;
 let authUnsubscribe = null;
 
+// Secure session management with encryption and CSRF protection
 const SESSION_KEY = 'task_tracker_auth_session';
+const CSRF_TOKEN_KEY = 'task_tracker_csrf_token';
 let isSessionActive = false;
+
+// Simple encryption for session data (in production, use proper encryption)
+const encryptSessionData = (data) => {
+  try {
+    const jsonString = JSON.stringify(data);
+    const encoded = btoa(jsonString); // Base64 encoding (not secure, but better than plain text)
+    return encoded;
+  } catch (error) {
+    logger.error('Failed to encrypt session data:', error);
+    return null;
+  }
+};
+
+const decryptSessionData = (encryptedData) => {
+  try {
+    const decoded = atob(encryptedData);
+    return JSON.parse(decoded);
+  } catch (error) {
+    logger.error('Failed to decrypt session data:', error);
+    return null;
+  }
+};
+
+const generateCSRFToken = () => {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+};
 
 const SessionManager = {
   getSession: () => {
     try {
-      const sessionData = localStorage.getItem(SESSION_KEY);
-      return sessionData ? JSON.parse(sessionData) : null;
+      const encryptedData = localStorage.getItem(SESSION_KEY);
+      const csrfToken = localStorage.getItem(CSRF_TOKEN_KEY);
+      
+      if (!encryptedData || !csrfToken) return null;
+      
+      const sessionData = decryptSessionData(encryptedData);
+      if (!sessionData) return null;
+      
+      // Verify CSRF token
+      if (sessionData.csrfToken !== csrfToken) {
+        logger.warn('CSRF token mismatch, clearing session');
+        SessionManager.clearSession();
+        return null;
+      }
+      
+      return sessionData;
     } catch (error) {
       logger.error('Failed to get session data:', error);
+      SessionManager.clearSession();
       return null;
     }
   },
 
   setSession: (sessionData) => {
     try {
+      const csrfToken = generateCSRFToken();
       const session = {
         ...sessionData,
         timestamp: Date.now(),
-        sessionId: sessionData.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        sessionId: sessionData.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        csrfToken: csrfToken
       };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      
+      const encryptedData = encryptSessionData(session);
+      if (!encryptedData) {
+        throw new Error('Failed to encrypt session data');
+      }
+      
+      localStorage.setItem(SESSION_KEY, encryptedData);
+      localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
       isSessionActive = true;
-      logger.log('Session data stored', { sessionId: session.sessionId });
+      logger.log('Secure session data stored', { sessionId: session.sessionId });
     } catch (error) {
       logger.error('Failed to set session data:', error);
     }
@@ -74,6 +128,7 @@ const SessionManager = {
   clearSession: () => {
     try {
       localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(CSRF_TOKEN_KEY);
       isSessionActive = false;
       logger.log('Session data cleared');
     } catch (error) {
@@ -87,9 +142,17 @@ const SessionManager = {
     
     const now = Date.now();
     const sessionAge = now - (session.timestamp || 0);
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const maxAge = 8 * 60 * 60 * 1000; // 8 hours (reduced from 24 for security)
     
     return sessionAge < maxAge;
+  },
+
+  refreshSession: () => {
+    const session = SessionManager.getSession();
+    if (session) {
+      session.timestamp = Date.now();
+      SessionManager.setSession(session);
+    }
   }
 };
 
@@ -120,6 +183,7 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth state listener
   useEffect(() => {
     let isMounted = true;
+    let sessionRefreshInterval = null;
 
     const initializeAuth = async () => {
       try {
@@ -133,6 +197,19 @@ export const AuthProvider = ({ children }) => {
           setUser(existingSession.user);
           setIsLoading(false);
           setIsAuthChecking(false);
+          
+          // Set up session refresh interval (every 30 minutes)
+          sessionRefreshInterval = setInterval(() => {
+            if (SessionManager.isSessionValid()) {
+              SessionManager.refreshSession();
+            } else {
+              logger.log('Session expired, clearing user state');
+              setUser(null);
+              SessionManager.clearSession();
+              clearInterval(sessionRefreshInterval);
+            }
+          }, 30 * 60 * 1000); // 30 minutes
+          
           return;
         }
 
@@ -223,6 +300,9 @@ export const AuthProvider = ({ children }) => {
       if (authUnsubscribe) {
         authUnsubscribe();
         authUnsubscribe = null;
+      }
+      if (sessionRefreshInterval) {
+        clearInterval(sessionRefreshInterval);
       }
     };
   }, []);

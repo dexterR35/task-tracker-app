@@ -1,11 +1,33 @@
-import React from "react";
+import React, { useMemo, memo } from "react";
 import { Icons } from "@/components/icons";
 import { CARD_SYSTEM } from "@/constants";
 import Badge from "@/components/ui/Badge/Badge";
 
-// Dynamic Small Card Component
-const SmallCard = ({ card }) => {
-  const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[card.color] || "#64748b";
+// Dynamic Small Card Component - Memoized for performance
+const SmallCard = memo(({ card }) => {
+  // Memoize color calculation to prevent re-computation
+  const cardColorHex = useMemo(() => 
+    CARD_SYSTEM.COLOR_HEX_MAP[card.color] || "#64748b",
+    [card.color]
+  );
+
+  // Memoize style objects to prevent re-creation
+  const iconBgStyle = useMemo(() => ({
+    backgroundColor: `${cardColorHex}20`
+  }), [cardColorHex]);
+
+  const iconStyle = useMemo(() => ({
+    color: cardColorHex
+  }), [cardColorHex]);
+
+  const badgeStyle = useMemo(() => ({
+    backgroundColor: cardColorHex,
+    color: cardColorHex === '#f59e0b' ? '#374151' : 'white'
+  }), [cardColorHex]);
+
+  const valueStyle = useMemo(() => ({
+    color: cardColorHex
+  }), [cardColorHex]);
   
 
 
@@ -18,11 +40,11 @@ const SmallCard = ({ card }) => {
             <div className="flex items-center space-x-3">
               <div
                 className="icon-bg"
-                style={{ backgroundColor: `${cardColorHex}20` }}
+                style={iconBgStyle}
               >
                 <card.icon
                   className="w-6 h-6"
-                  style={{ color: cardColorHex }}
+                  style={iconStyle}
                 />
               </div>
               <div className="leading-2">
@@ -39,10 +61,7 @@ const SmallCard = ({ card }) => {
             {card.badge && (
               <span 
                 className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded"
-                style={{ 
-                  backgroundColor: cardColorHex,
-                  color: cardColorHex === '#f59e0b' ? '#374151' : 'white'
-                }}
+                style={badgeStyle}
               >
                 {card.badge.text}
               </span>
@@ -53,7 +72,7 @@ const SmallCard = ({ card }) => {
           <div className="flex-1">
             {/* Main Value */}
             <div className="mb-6">
-              <p className="text-3xl font-bold mb-2" style={{ color: cardColorHex }}>
+              <p className="text-3xl font-bold mb-2" style={valueStyle}>
                 {card.value}
               </p>
               <p className="text-sm text-gray-400">{card.description}</p>
@@ -175,7 +194,18 @@ const SmallCard = ({ card }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  return (
+    prevProps.card.id === nextProps.card.id &&
+    prevProps.card.color === nextProps.card.color &&
+    prevProps.card.value === nextProps.card.value &&
+    prevProps.card.title === nextProps.card.title &&
+    prevProps.card.subtitle === nextProps.card.subtitle &&
+    JSON.stringify(prevProps.card.details) === JSON.stringify(nextProps.card.details)
+  );
+});
 
+SmallCard.displayName = 'SmallCard';
 
 export default SmallCard;

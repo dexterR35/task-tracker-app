@@ -210,10 +210,10 @@ class FirebaseListenerManager {
    * @returns {Function} - Unsubscribe function
    */
   addListener(key, setupFn, preserve = false, category = 'general', page = 'unknown') {
-    // Check for excessive listeners
+    // Check for excessive listeners - use selective cleanup instead of removing all
     if (this.listeners.size >= this.maxListeners) {
-      logger.warn(`[ListenerManager] Maximum listeners reached (${this.maxListeners}), cleaning up`);
-      this.removeAllListeners();
+      logger.warn(`[ListenerManager] Maximum listeners reached (${this.maxListeners}), performing selective cleanup`);
+      this.performSelectiveCleanup();
     }
 
     // Clean up existing listener if it exists
@@ -538,10 +538,21 @@ if (typeof window !== 'undefined') {
     }
   });
 
-  // Clean up on page focus loss (additional safety) - but preserve critical listeners
-  window.addEventListener('blur', () => {
-    listenerManager.performCleanup();
-  });
+    // Clean up on page focus loss (additional safety) - but preserve critical listeners
+    window.addEventListener('blur', () => {
+      listenerManager.performSelectiveCleanup();
+    });
+
+    // Add memory pressure detection
+    if ('memory' in performance) {
+      setInterval(() => {
+        const memory = performance.memory;
+        if (memory.usedJSHeapSize > memory.jsHeapSizeLimit * 0.8) {
+          logger.warn('[ListenerManager] High memory usage detected, performing cleanup');
+          listenerManager.performGranularCleanup();
+        }
+      }, 30000); // Check every 30 seconds
+    }
 }
 
 export default listenerManager;

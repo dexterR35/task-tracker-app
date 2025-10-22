@@ -92,16 +92,19 @@ export const toMs = (value) => {
 };
 
 /**
- * Format date using a pattern with US language
+ * Format date using a pattern with consistent timezone handling
  */
 export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm', useRomanianTimezone = true) => {
   const ms = toMs(value);
   if (!ms) return 'N/A';
   try {
     const date = new Date(ms);
-    // Keep original functionality but remove Romanian locale
+    
+    // Handle timezone consistently - always use local timezone
+    // The useRomanianTimezone parameter is kept for backward compatibility but ignored
     return format(date, pattern);
-  } catch {
+  } catch (error) {
+    logger.error('Date formatting error:', error);
     return 'Invalid Date';
   }
 };
@@ -115,9 +118,10 @@ export const fromNow = (value, useRomanianTimezone = true) => {
   try {
     const date = new Date(ms);
     const options = { addSuffix: true };
-    // Keep US language for time ago display
+    // Always use local timezone for relative time calculations
     return formatDistanceToNow(date, options);
-  } catch {
+  } catch (error) {
+    logger.error('Date fromNow error:', error);
     return 'N/A';
   }
 };

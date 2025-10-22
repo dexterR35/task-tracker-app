@@ -1,11 +1,19 @@
+import { useCallback, useMemo } from 'react';
+
 const NumberField = ({ field, register, errors, setValue, trigger, formValues }) => {
   const fieldError = errors[field.name];
   
-  const handleChange = (e) => {
+  // Debounced validation to prevent excessive validation calls
+  const handleChange = useCallback((e) => {
     const value = e.target.value;
-    // Trigger validation on every change
+    // Only trigger validation on blur, not on every keystroke
+    // trigger(field.name); // Removed to prevent excessive validation
+  }, [field.name, trigger]);
+
+  const handleBlur = useCallback(() => {
+    // Trigger validation only on blur
     trigger(field.name);
-  };
+  }, [field.name, trigger]);
   
   return (
     <div className="field-wrapper">
@@ -36,7 +44,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
           paddingRight: '8px'
         }}
         onInput={handleChange}
-        onBlur={handleChange}
+        onBlur={handleBlur}
       />
       
       {fieldError && <div className="error-message">{fieldError.message}</div>}

@@ -225,14 +225,19 @@ export const getMonthBoundaries = (monthId) => {
   const yearNum = parseInt(year, 10);
   const monthNum = parseInt(month, 10);
   
-  // Use date-fns for consistent date handling
-  const firstDay = createLocalDate(yearNum, monthNum, 1);
-  const lastDay = endOfMonth(firstDay);
-  
-  return {
-    min: format(firstDay, 'yyyy-MM-dd'),
-    max: format(lastDay, 'yyyy-MM-dd')
-  };
+  try {
+    // Use date-fns for consistent date handling with proper timezone
+    const firstDay = createLocalDate(yearNum, monthNum, 1);
+    const lastDay = endOfMonth(firstDay);
+    
+    return {
+      min: format(firstDay, 'yyyy-MM-dd'),
+      max: format(lastDay, 'yyyy-MM-dd')
+    };
+  } catch (error) {
+    logger.error('Error in getMonthBoundaries:', error);
+    throw new Error(`Failed to get month boundaries: ${error.message}`);
+  }
 };
 
 /**
