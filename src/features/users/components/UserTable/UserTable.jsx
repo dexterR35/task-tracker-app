@@ -23,13 +23,13 @@ const UserTable = ({
   } = useTableActions('user', {
     getItemDisplayName: (user) => user?.name || user?.email || 'Unknown User',
     onSelectSuccess: (user) => {
-      showError('You don\'t have superpower for that!');
+      // Error toast is handled by useTableActions hook
     },
     onEditSuccess: (user) => {
-      showError('You don\'t have superpower for that!');
+      // Error toast is handled by useTableActions hook
     },
     onDeleteSuccess: (user) => {
-      showError('You don\'t have superpower for that!');
+      // Error toast is handled by useTableActions hook
     },
   });
 

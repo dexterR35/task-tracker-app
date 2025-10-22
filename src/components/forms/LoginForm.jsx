@@ -62,7 +62,7 @@ const LoginForm = ({ onSuccess, className = "" }) => {
       onSuccess?.(result);
     } catch (error) {
       logger.error('❌ Login failed:', error);
-      showError(error.message || 'Login failed. Please check your credentials.');
+      // Error toast is already handled in AuthContext.login()
     }
   };
 

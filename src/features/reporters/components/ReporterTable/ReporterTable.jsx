@@ -44,7 +44,7 @@ const ReporterTable = ({
     getItemDisplayName: (reporter) => reporter?.name,
     deleteMutation: handleReporterDeleteMutation,
     onSelectSuccess: (reporter) => {
-      showError('You don\'t have superpower for that!');
+      // Error toast is handled by useTableActions hook
     },
   });
 

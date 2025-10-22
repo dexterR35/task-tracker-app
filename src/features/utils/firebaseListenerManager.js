@@ -12,7 +12,7 @@ class FirebaseListenerManager {
     this.isInitialized = false;
     this.cleanupInterval = null;
     this.maxListeners = 50; // Prevent excessive listeners
-    this.cleanupIntervalMs = 600000; // Clean up every 10 minutes (for infrequent data usage)
+    this.cleanupIntervalMs = 7200000; // Clean up every 2 hours (for better performance)
     this.idleTimeoutMs = 1800000; // 30 minutes of inactivity before cleanup
     this.lastActivity = Date.now();
     
