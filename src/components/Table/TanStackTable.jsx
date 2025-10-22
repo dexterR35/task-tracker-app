@@ -83,7 +83,8 @@ const TableControls = ({
   setGlobalFilter,
   columns,
   handleCSVExport,
-  isExporting
+  isExporting,
+  onPageSizeChange
 }) => (
   <div className="flex justify-between items-center py-2">
     {/* Global Filter */}
@@ -111,7 +112,7 @@ const TableControls = ({
           <select
             id="page-size-select"
             value={table.getState().pagination.pageSize}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
             className="h-7 w-[60px] px-2 py-1 text-xs font-normal border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
             {PAGE_SIZE_OPTIONS.map((pageSize) => (
@@ -172,7 +173,8 @@ const Pagination = ({
   enablePagination, 
   table, 
   selectedCount, 
-  totalRows
+  totalRows,
+  onPageChange
 }) => {
   if (!showPagination || !enablePagination) return null;
 
@@ -187,14 +189,14 @@ const Pagination = ({
         </div>
         <div className="flex items-center space-x-1">
           <button
-            onClick={() => handlePageChange(table.getState().pagination.pageIndex - 1)}
+            onClick={() => onPageChange(table.getState().pagination.pageIndex - 1)}
             disabled={!table.getCanPreviousPage()}
             className="px-2 py-1 text-xs font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ←
           </button>
           <button
-            onClick={() => handlePageChange(table.getState().pagination.pageIndex + 1)}
+            onClick={() => onPageChange(table.getState().pagination.pageIndex + 1)}
             disabled={!table.getCanNextPage()}
             className="px-2 py-1 text-xs font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -239,7 +241,7 @@ const TanStackTable = forwardRef(({
   bulkActions = [],
 
   // Pagination props
-  pagination = null,
+  paginationProps = null,
   onPageChange = null,
   onPageSizeChange = null,
 
@@ -253,6 +255,10 @@ const TanStackTable = forwardRef(({
   const [columnVisibility, setColumnVisibility] = useState(initialColumnVisibility);
   const [rowSelection, setRowSelection] = useState({});
   const [rowActionId, setRowActionId] = useState(null);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: pageSize,
+  });
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState(null);
@@ -353,17 +359,14 @@ const TanStackTable = forwardRef(({
       columnFilters,
       columnVisibility,
       rowSelection,
-      // Use TanStack pagination
-      pagination: {
-        pageIndex: 0,
-        pageSize: pageSize,
-      }
+      pagination,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: handleRowSelectionChange,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -373,11 +376,6 @@ const TanStackTable = forwardRef(({
     enablePagination: true, // Enable TanStack pagination
     enableColumnResizing,
     enableRowSelection,
-    initialState: {
-      pagination: {
-        pageSize,
-      },
-    },
   });
 
   // Handle TanStack pagination
@@ -387,6 +385,7 @@ const TanStackTable = forwardRef(({
 
   const handlePageSizeChange = useCallback((newPageSize) => {
     table.setPageSize(newPageSize);
+    table.setPageIndex(0); // Reset to first page when changing page size
   }, [table]);
 
   // Export handler with progress simulation
@@ -482,6 +481,7 @@ const TanStackTable = forwardRef(({
             columns={columns}
             handleCSVExport={handleCSVExport}
             isExporting={isExporting}
+            onPageSizeChange={handlePageSizeChange}
           />
 
           {/* Bulk Actions Bar */}
@@ -561,6 +561,7 @@ const TanStackTable = forwardRef(({
             table={table}
             selectedCount={selectedCount}
             totalRows={totalRows}
+            onPageChange={handlePageChange}
           />
         </>
       )}

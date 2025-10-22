@@ -52,7 +52,15 @@ const getDurationDays = (startDate, endDate) => {
 
 // Common column cell helpers
 const createSimpleCell = (fallback = '-') => ({ getValue }) => getValue() || fallback;
-const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => formatDateCell(getValue(), format);
+const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => {
+  const value = getValue();
+  if (!value) return '-';
+  return (
+    <span className="text-xs font-normal text-gray-700 dark:text-gray-300">
+      {formatDateCell(value, format)}
+    </span>
+  );
+};
 const createBooleanCell = (trueText = "✓", falseText = "-") => ({ getValue }) => getValue() ? trueText : falseText;
 
 // Optimized DeliverableCalculationCell component
@@ -272,10 +280,10 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         
         return (
           <div className="text-center">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <div className="text-xs font-normal text-gray-700 dark:text-gray-300">
               {dateStr}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
               {timeStr}
             </div>
           </div>
