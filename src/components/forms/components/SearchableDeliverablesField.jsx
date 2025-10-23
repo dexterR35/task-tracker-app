@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
+import NumberField from './NumberField';
 import Badge from '@/components/ui/Badge/Badge';
 
 const SearchableDeliverablesField = ({ 
@@ -97,8 +98,12 @@ const SearchableDeliverablesField = ({
   };
 
   const handleQuantityChange = (deliverableValue, quantity) => {
-    const newQuantities = { ...quantities, [deliverableValue]: parseInt(quantity) || 1 };
+    const numQuantity = parseInt(quantity) || 1;
+    const newQuantities = { ...quantities, [deliverableValue]: numQuantity };
     updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
+    
+    // Clear any quantity-related errors
+    clearErrors('deliverableQuantities');
     
     // Trigger validation immediately
     trigger('deliverableQuantities');
@@ -182,19 +187,36 @@ const SearchableDeliverablesField = ({
       {selectedDeliverable && selectedOption && (
         <div className="flex flex-wrap gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
           
+          {/* Debug info */}
+          <div className="w-full text-xs text-gray-500 mb-2">
+            Debug: Selected: {selectedDeliverable} | Requires Quantity: {selectedOption.requiresQuantity ? 'Yes' : 'No'} | Department: {selectedOption.department}
+          </div>
+          
           {/* Quantity Field (if required) */}
           {selectedOption.requiresQuantity && (
             <div className="flex-1 min-w-[200px] space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Quantity
               </label>
-              <input
-                type="number"
-                min="1"
-                value={quantities[selectedDeliverable] || 1}
-                onChange={(e) => handleQuantityChange(selectedDeliverable, e.target.value)}
-                className="form-input text-sm py-2 px-3 h-10 w-full text-left [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="Enter quantity"
+              <NumberField
+                field={{
+                  name: `quantity_${selectedDeliverable}`,
+                  type: "number",
+                  label: "",
+                  required: true,
+                  min: 1,
+                  step: 1,
+                  placeholder: "Enter quantity",
+                  validation: {
+                    required: "Quantity is required",
+                    min: { value: 1, message: "Quantity must be at least 1" }
+                  }
+                }}
+                register={() => {}}
+                errors={errors}
+                setValue={(fieldName, value) => handleQuantityChange(selectedDeliverable, value)}
+                trigger={() => {}}
+                formValues={{ [`quantity_${selectedDeliverable}`]: quantities[selectedDeliverable] || 1 }}
               />
             </div>
           )}
@@ -219,13 +241,24 @@ const SearchableDeliverablesField = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 variations Quantity
               </label>
-              <input
-                type="number"
-                min="1"
-                value={variationsQuantities[selectedDeliverable] || 1}
-                onChange={(e) => handlevariationsQuantityChange(selectedDeliverable, e.target.value)}
-                className="form-input text-sm py-2 px-3 h-10 w-full text-left [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="Enter variations quantity"
+              <NumberField
+                field={{
+                  name: `variations_quantity_${selectedDeliverable}`,
+                  type: "number",
+                  label: "",
+                  required: false,
+                  min: 1,
+                  step: 1,
+                  placeholder: "Enter variations quantity",
+                  validation: {
+                    min: { value: 1, message: "Variations quantity must be at least 1" }
+                  }
+                }}
+                register={() => {}}
+                errors={errors}
+                setValue={(fieldName, value) => handlevariationsQuantityChange(selectedDeliverable, value)}
+                trigger={() => {}}
+                formValues={{ [`variations_quantity_${selectedDeliverable}`]: variationsQuantities[selectedDeliverable] || 1 }}
               />
             </div>
           )}

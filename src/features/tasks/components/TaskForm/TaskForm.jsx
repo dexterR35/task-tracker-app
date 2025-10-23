@@ -77,7 +77,6 @@ const TaskForm = ({
       endDate: '',
       _hasDeliverables: false,
       deliverables: '',
-      customDeliverables: [],
       deliverableQuantities: {},
       variationsQuantities: {},
       variationsDeliverables: {},
@@ -129,10 +128,8 @@ const TaskForm = ({
   useEffect(() => {
     if (!hasDeliverables) {
       clearErrors('deliverables');
-      clearErrors('customDeliverables');
       // Uncheck all deliverables when "Has Deliverables" is unchecked
       setValue('deliverables', []);
-      setValue('customDeliverables', []);
     }
   }, [hasDeliverables, clearErrors, setValue]);
 
@@ -228,11 +225,6 @@ const TaskForm = ({
             return firstDeliverable.name;
           }
           
-          // If no exact match, check if it's a custom deliverable
-          if (firstDeliverable.customDeliverables?.length > 0) {
-            console.log('🔍 [TaskForm] Custom deliverable detected');
-            return 'others';
-          }
           
           // Return the original name as fallback
           console.log('🔍 [TaskForm] Using fallback name:', firstDeliverable.name);
@@ -276,19 +268,6 @@ const TaskForm = ({
             return taskData.deliverables[0].variationsDeliverables;
           }
           return enabled;
-        })(),
-        customDeliverables: (() => {
-          if (taskData.deliverablesUsed?.length) {
-            // Extract custom deliverables from all deliverablesUsed
-            const customDeliverables = [];
-            taskData.deliverablesUsed.forEach(deliverable => {
-              if (deliverable.customDeliverables?.length) {
-                customDeliverables.push(...deliverable.customDeliverables);
-              }
-            });
-            return customDeliverables;
-          }
-          return taskData.customDeliverables || null;
         })(),
         _usedAIEnabled: !!(taskData.aiUsed?.[0]?.aiModels?.length || taskData.aiModels?.length),
         aiModels: taskData.aiUsed?.[0]?.aiModels || taskData.aiModels || [],

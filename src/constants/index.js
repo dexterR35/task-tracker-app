@@ -146,27 +146,46 @@ export const FORM_OPTIONS = {
     { value: 'days', label: 'Days' },
   ],
   REPORTER_DEPARTMENTS: [
-    { value: 'video', label: 'Video Production' },
-    { value: 'design', label: 'Design' },
-    { value: 'developer', label: 'Development' },
+    { value: 'acq', label: 'acq' },
+    { value: 'crm', label: 'crm' },
+    { value: 'games team', label: 'GAMES TEAM' },
+    { value: 'other', label: 'other' },
+    { value: 'product', label: 'product' },
+    { value: 'vip', label: 'vip' },
+    { value: 'content', label: 'content' },
+    { value: 'pml', label: 'pml' },
+    { value: 'misc', label: 'misc' },
+    { value: 'hr', label: 'hr' }
   ],
   REPORTER_CHANNELS: [
-    { value: 'slack', label: 'Slack' },
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Phone' },
-    { value: 'teams', label: 'Microsoft Teams' },
+    { value: 'acq', label: 'acq' },
+    { value: 'acq social media', label: 'acq social media' },
+    { value: 'acq social media paid', label: 'acq social media paid' },
+    { value: 'acq social media organic', label: 'acq social media organic' },
+    { value: 'games team', label: 'games team' },
+    { value: 'product', label: 'product' },
+    { value: 'other', label: 'other' },
+    { value: 'brand mgmt', label: 'brand mgmt' },
+    { value: 'pml', label: 'pml' },
+    { value: 'hr', label: 'hr' },
+    { value: 'content', label: 'content' },
+    { value: 'misc', label: 'misc' },
+    { value: 'vip', label: 'vip' },
+    { value: 'seo', label: 'seo' },
+    { value: 'crm', label: 'crm' }
   ],
   REPORTER_COUNTRIES: [
-    { value: 'ro', label: 'Romania' },
-    { value: 'uk', label: 'United Kingdom' },
-    { value: 'ie', label: 'Ireland' },
-    { value: 'fi', label: 'Finland' },
-    { value: 'dk', label: 'Denmark' },
-    { value: 'de', label: 'Germany' },
-    { value: 'at', label: 'Austria' },
-    { value: 'it', label: 'Italy' },
-    { value: 'gr', label: 'Greece' },
-    { value: 'fr', label: 'France' },
+    { value: 'ro', label: 'ro' },
+    { value: 'com', label: 'com' },
+    { value: 'uk', label: 'uk' },
+    { value: 'ie', label: 'ie' },
+    { value: 'fi', label: 'fi' },
+    { value: 'dk', label: 'dk' },
+    { value: 'de', label: 'de' },
+    { value: 'at', label: 'at' },
+    { value: 'it', label: 'it' },
+    { value: 'gr', label: 'gr' },
+    { value: 'fr', label: 'fr' }
   ],
   // Note: Reporter departments, channels, and countries are now loaded dynamically from the database
   // This ensures the form options are always up-to-date with actual data
@@ -202,7 +221,7 @@ export const CARD_SYSTEM = {
     blue: '#2563eb',       // Blue-600 - Professional, trust
     purple: '#7c3aed',     // Purple-600 - Premium, personal
     crimson: '#e11d48',    // Rose-600 - Authority, admin
-    amber: '#FFEE58',      // Amber-600 - Energy, action
+    amber: '#FFC107',      // Amber-600 - Energy, action
     pink: '#db2777',       // Pink-600 - Calendar, time
     red: '#dc2626',        // Red-600 - Error
     yellow: '#ca8a04',     // Yellow-600 - Warning

@@ -53,7 +53,7 @@ const BulkActionsBar = ({
           </div>
           <button
             onClick={onClearSelection}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 bg-transparent border-none cursor-pointer transition-colors duration-200 underline decoration-dotted underline-offset-2"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 bg-transparent border-none cursor-pointer  duration-200 underline decoration-dotted underline-offset-2"
           >
             Clear selection
           </button>
@@ -64,7 +64,7 @@ const BulkActionsBar = ({
               key={index}
               onClick={() => onBulkAction(action, table)}
               disabled={selectedCount > 1}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-md bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-md bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
             >
               {action.label}
             </button>
@@ -126,7 +126,7 @@ const TableControls = ({
             id="page-size-select"
             value={table.getState().pagination.pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 transition-all duration-200 backdrop-blur-sm"
+            className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400  backdrop-blur-sm"
           >
             {PAGE_SIZE_OPTIONS.map((pageSize) => (
               <option key={pageSize} value={pageSize}>
@@ -140,10 +140,10 @@ const TableControls = ({
       {/* Column Toggle */}
       {showColumnToggle && (
         <div className="relative group">
-          <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-all duration-200 backdrop-blur-sm">
+          <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  backdrop-blur-sm">
             Columns
           </button>
-          <div className="absolute right-0 mt-2 w-fit bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 backdrop-blur-sm">
+          <div className="absolute right-0 mt-2 w-fit bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible  z-10 backdrop-blur-sm">
             <div className="py-2">
               {table
                 .getAllLeafColumns()
@@ -151,7 +151,7 @@ const TableControls = ({
                 .map((column) => (
                   <label
                     key={column.id}
-                    className="flex items-center px-4 py-2 text-sm font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    className="flex items-center px-4 py-2 text-sm font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 cursor-pointer "
                   >
                     <input
                       name={`column-${column.id}`}
@@ -172,7 +172,7 @@ const TableControls = ({
       <button
         onClick={handleCSVExport}
         disabled={isExporting}
-        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
       >
         {isExporting ? 'Exporting...' : 'Export CSV'}
       </button>
@@ -204,14 +204,14 @@ const Pagination = ({
           <button
             onClick={() => onPageChange(table.getState().pagination.pageIndex - 1)}
             disabled={!table.getCanPreviousPage()}
-            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
           >
             ←
           </button>
           <button
             onClick={() => onPageChange(table.getState().pagination.pageIndex + 1)}
             disabled={!table.getCanNextPage()}
-            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
           >
             →
           </button>
@@ -519,7 +519,7 @@ const TanStackTable = forwardRef(({
                           header.column.getCanSort()
                             ? "cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50"
                             : ""
-                        } transition-all duration-200 first:rounded-tl-lg last:rounded-tr-lg`}
+                        }  first:rounded-tl-lg last:rounded-tr-lg`}
                         onClick={header.column.getToggleSortingHandler()}
                         style={{ width: header.getSize() }}
                       >
@@ -528,7 +528,7 @@ const TanStackTable = forwardRef(({
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </span>
                           {header.column.getCanSort() && (
-                            <span className="text-gray-400 dark:text-gray-500 transition-colors">
+                            <span className="text-gray-400 dark:text-gray-500 ">
                               {SORT_ICONS[header.column.getIsSorted()] ?? SORT_ICONS.false}
                             </span>
                           )}
@@ -546,7 +546,7 @@ const TanStackTable = forwardRef(({
                   return (
                     <tr
                       key={rowKey}
-                      className={`group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 cursor-pointer transition-all duration-200 ${
+                      className={`group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 cursor-pointer ${
                         isSelected 
                           ? 'bg-blue-50/80 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400' 
                           : 'hover:border-l-2 hover:border-gray-200 dark:hover:border-gray-600'
@@ -556,7 +556,7 @@ const TanStackTable = forwardRef(({
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={`${row.original?.id || row.id}-${cell.column.id}`}
-                          className="px-4 py-3 text-sm font-normal text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors"
+                          className="px-4 py-3 text-sm font-normal text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100"
                           style={{ width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -605,7 +605,7 @@ const TanStackTable = forwardRef(({
               <div className="space-y-2">
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                   <div 
-                    className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out"
+                    className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full  ease-out"
                     style={{ width: `${exportProgress}%` }}
                   ></div>
                 </div>

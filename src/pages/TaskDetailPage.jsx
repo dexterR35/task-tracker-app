@@ -197,10 +197,6 @@ const TaskDetailPage = () => {
             value: task?.data_task?.deliverablesUsed?.length || 0
           },
           {
-            label: 'Custom Deliverables',
-            value: formatArrayValue(task?.data_task?.customDeliverables)
-          },
-          {
             label: 'Deliverable Quantities',
             value: task?.data_task?.deliverableQuantities ? 'Configured' : 'Not set'
           }

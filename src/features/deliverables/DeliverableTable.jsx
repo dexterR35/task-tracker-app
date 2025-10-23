@@ -48,7 +48,7 @@ const DeliverableTable = ({
   const handleDeleteDeliverable = async (deliverable) => {
     try {
       await deleteDeliverable(deliverable.name, user);
-      showSuccess(CONFIG.MESSAGES.DELETE_SUCCESS);
+      // Success toast is handled by useTableActions hook
       // Real-time listener will automatically update the UI
     } catch (error) {
       showError(CONFIG.MESSAGES.DELETE_ERROR);

@@ -175,6 +175,9 @@ const DeliverableForm = ({
           await updateDeliverable(deliverable.name, preparedData, userData);
         }
         
+        // Show success toast manually to avoid double toast
+        showSuccess(mode === 'create' ? CONFIG.MESSAGES.CREATE_SUCCESS : CONFIG.MESSAGES.UPDATE_SUCCESS);
+        
         onSuccess?.();
         // No need to refetch - real-time listener will update automatically
       } catch (error) {
@@ -189,7 +192,8 @@ const DeliverableForm = ({
       clearErrors, 
       reset,
       operation: mode === 'create' ? 'create' : 'update', 
-      resource: 'deliverable' 
+      resource: 'deliverable',
+      showSuccessToast: false  // Disable automatic success toast
     }
   );
 

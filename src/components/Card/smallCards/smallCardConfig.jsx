@@ -377,7 +377,7 @@ export const SMALL_CARD_CONFIGS = {
             // Build URL parameters based on current selections
             const params = new URLSearchParams();
             
-            // Handle user selection
+            // Handle user selection - always show current user's data by default
             if (data.selectedUserId && data.currentUser?.role === "admin") {
               // Admin viewing specific user
               const selectedUser = data.users?.find(
@@ -385,8 +385,8 @@ export const SMALL_CARD_CONFIGS = {
               );
               const userName = selectedUser?.name || selectedUser?.email || 'Unknown';
               params.set('user', userName);
-            } else if (!data.selectedUserId && !data.selectedReporterId) {
-              // No user or reporter selected - show current user's data
+            } else {
+              // Always show current user's data by default
               const userName = data.currentUser?.name || data.currentUser?.email || 'My Data';
               params.set('user', userName);
             }
@@ -431,25 +431,16 @@ export const SMALL_CARD_CONFIGS = {
             // Determine button text based on context and selections
             const parts = [];
             
-            // User part - show user info if available
-            if (data.selectedUserId) {
+            // User part - always show current user data
+            if (data.selectedUserId && data.currentUser?.role === "admin") {
+              // Admin viewing specific user
               const selectedUser = data.users?.find(
                 (u) => u.userUID === data.selectedUserId
               );
               const userName = selectedUser?.name?.toUpperCase() || selectedUser?.email?.toUpperCase() || "USER";
               parts.push(userName);
-            } else if (data.selectedReporterId && !data.selectedUserId) {
-              // If only reporter is selected (no user), show reporter name
-              const selectedReporter = data.reporters?.find(
-                (r) => (r.id || r.uid) === data.selectedReporterId
-              );
-              const reporterName = selectedReporter?.name?.toUpperCase() || selectedReporter?.reporterName?.toUpperCase() || "REPORTER";
-              parts.push(reporterName);
-            } else if (data.currentUser?.role === "admin") {
-              // Admin with no user or reporter selected
-              parts.push("ALL USERS");
             } else {
-              // Regular user with no selection
+              // Always show current user data
               const currentUserName = data.currentUser?.name?.toUpperCase() || data.currentUser?.email?.toUpperCase() || "MY";
               parts.push(currentUserName);
             }
@@ -477,6 +468,31 @@ export const SMALL_CARD_CONFIGS = {
               return `VIEW ${parts.join(" + ")} DATA`;
             }
           })()}
+        </DynamicButton>
+        
+        {/* Second button for all data tasks - no filters */}
+        <DynamicButton
+          onClick={() => {
+            // Build URL parameters for ALL data tasks (no filters at all)
+            const params = new URLSearchParams();
+            
+            // Don't set any parameters - this will show all data from all months/weeks/users/reporters
+            // This will show all tasks in the system without any filtering
+            
+            const url = `/analytics-detail?${params.toString()}`;
+            
+            if (data.navigate) {
+              data.navigate(url);
+            } else {
+              // Use React Router navigation instead of window.location.href
+              window.history.pushState({}, '', url);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          }}
+          iconName="users"
+          className="w-full mt-2 transition-colors uppercase bg-green-600 hover:bg-green-700 text-white"
+        >
+          VIEW ALL DATA
         </DynamicButton>
       </div>
     ),

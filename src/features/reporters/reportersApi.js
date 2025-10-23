@@ -18,7 +18,8 @@ import {
   doc,
   serverTimestamp,
   where,
-  getDocs
+  getDocs,
+  getDoc
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
@@ -142,11 +143,24 @@ export const useReporters = () => {
   // Update reporter
   const updateReporter = useCallback(async (reporterId, updateData, userData = null) => {
     try {
-      // Check if email is being updated and if it already exists
+      // Check if email is being updated and if it already exists (excluding current reporter)
       if (updateData.email) {
-        const emailExists = await checkReporterEmailExists(updateData.email);
-        if (emailExists) {
-          throw new Error("Reporter with this email already exists");
+        // First get the current reporter to check if email is actually changing
+        const currentReporterRef = doc(db, 'reporters', reporterId);
+        const currentReporterDoc = await getDoc(currentReporterRef);
+        
+        if (currentReporterDoc.exists()) {
+          const currentData = currentReporterDoc.data();
+          const currentEmail = currentData.email?.toLowerCase().trim();
+          const newEmail = updateData.email.toLowerCase().trim();
+          
+          // Only check for email conflicts if the email is actually changing
+          if (currentEmail !== newEmail) {
+            const emailExists = await checkReporterEmailExists(updateData.email);
+            if (emailExists) {
+              throw new Error("Reporter with this email already exists");
+            }
+          }
         }
       }
 

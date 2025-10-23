@@ -107,8 +107,10 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
       return;
     }
     
-    // Find deliverable in settings with exact matching only
-    const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => d.value === deliverableName) : null;
+    // Find deliverable in settings with case-insensitive matching
+    const deliverableOption = deliverablesOptions ? deliverablesOptions.find(d => 
+      d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+    ) : null;
     
     if (deliverableOption) {
       // Calculate time for this deliverable

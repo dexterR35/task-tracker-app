@@ -23,7 +23,7 @@ const ReporterTable = ({
   
   // Custom delete mutation wrapper for reporters - simplified since useTableActions now handles permission errors
   const handleReporterDeleteMutation = async (reporter) => {
-    return await deleteReporter({ id: reporter.id, userData: user });
+    return await deleteReporter(reporter.id, user);
   };
 
   // Use table actions hook

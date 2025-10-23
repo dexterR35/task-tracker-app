@@ -257,13 +257,6 @@ export const createTaskFormSchema = () => Yup.object().shape({
         return value.name && value.name.trim() !== '';
       }
       return false;
-    }).test('custom-deliverables', 'Please add at least one custom deliverable when "Others" is selected', function(value) {
-      // Validate custom deliverables when "others" is selected
-      if (value === 'others') {
-        const customDeliverables = this.parent.customDeliverables;
-        return customDeliverables && customDeliverables.length > 0;
-      }
-      return true;
     }),
     otherwise: (schema) => schema.notRequired()
   }),
@@ -387,9 +380,6 @@ const processConditionalFields = (formData) => {
   // Handle deliverables conditional logic
   if (!processedData._hasDeliverables) {
     processedData.deliverables = [];
-    processedData.customDeliverables = [];
-  } else if (processedData.deliverables !== 'others') {
-    processedData.customDeliverables = [];
   }
 
   // Handle AI tools conditional logic
