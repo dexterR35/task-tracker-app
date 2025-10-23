@@ -3,6 +3,8 @@ import { CARD_SYSTEM } from '@/constants';
 
 // Badge variant helpers for different data types
 
+// Use the same color system as small cards
+
 // Reusable Badge Component
 const Badge = ({ 
   children, 
@@ -21,63 +23,24 @@ const Badge = ({
     lg: 'px-2.5 py-1.5 text-sm'
   };
 
-  // Color variants using constants
-  const variantClasses = {
-    default: 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-300',
-    primary: 'bg-btn-primary text-white',
-    success: 'bg-green-success text-white',
-    warning: 'bg-warning text-white',
-    error: 'bg-red-error text-white',
-    info: 'bg-blue-default text-white',
-    secondary: 'bg-secondary text-white',
-    // Role variants
-    admin: 'bg-red-error text-white',
-    reporter: 'bg-blue-default text-white',
-    user: 'bg-green-success text-white',
-    // Main color variants with proper text colors
-    amber: 'bg-amber-500 text-gray-700',
-    crimson: 'bg-red-600 text-white',
-    blue: 'bg-blue-500 text-white',
-    purple: 'bg-purple-500 text-white',
-    green: 'bg-green-500 text-white',
-    // Use constants for our main colors
-    ...CARD_SYSTEM.BADGE_COLOR_CLASSES,
-    // Legacy variants for backward compatibility
-    yellow: 'bg-warning text-white'
-  };
+  // Default fallback color
+  const defaultColorHex = '#64748b';
 
   const baseClasses = 'inline-flex items-center font-medium rounded ';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
   
-  // If colorHex is provided, use inline styles; otherwise use classes
-  if (colorHex) {
-    return (
-      <span 
-        className={`${baseClasses} ${sizeClass} ${className}`}
-        style={{ 
-          backgroundColor: colorHex,
-          color: 'white',
-          fontWeight: '600'
-        }}
-        {...props}
-      >
-        {children}
-      </span>
-    );
-  }
+  // Get colorHex from colorHex prop, color prop using CARD_SYSTEM (like small cards), or fallback
+  const finalColorHex = colorHex || CARD_SYSTEM.COLOR_HEX_MAP[color] || defaultColorHex;
   
-  // Get the final variant class - prioritize color over variant
-  const getVariantClass = () => {
-    // If color is provided, use it; otherwise use variant
-    const colorKey = color || variant;
-    return variantClasses[colorKey] || variantClasses.default;
-  };
-  
-  const variantClass = getVariantClass();
-
   return (
     <span 
-      className={`${baseClasses} ${sizeClass} ${variantClass} ${className}`}
+      className={`${baseClasses} ${sizeClass} ${className}`}
+      style={{ 
+        backgroundColor: `${finalColorHex}30`,
+        color: finalColorHex,
+        border: `1px solid ${finalColorHex}40`,
+        fontWeight: '600'
+      }}
       {...props}
     >
       {children}

@@ -132,7 +132,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge variant="amber" size="sm" className="font-mono">
+        <Badge color="amber" size="sm" className="font-mono">
           {taskName}
         </Badge>
       );
@@ -171,7 +171,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} variant="amber" size="sm">
+            <Badge key={index} color="amber" size="sm">
               {market}
             </Badge>
           ))}
@@ -193,7 +193,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} variant="amber" size="sm">
+              <Badge key={index} color="amber" size="sm">
                 {model}
               </Badge>
             ))}
@@ -257,7 +257,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge variant="blue" size="sm">
+        <Badge color="blue" size="sm">
           {value}h
         </Badge>
       );
@@ -340,14 +340,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       
       if (days === 0) {
         return (
-          <Badge variant="amber" size="sm">
+          <Badge color="amber" size="sm">
             Same day
           </Badge>
         );
       }
 
       return (
-        <Badge variant="crimson" size="sm">
+        <Badge color="red" size="sm">
           {days} days
         </Badge>
       );
@@ -400,7 +400,10 @@ const createUserColumns = () => [
     cell: ({ getValue }) => {
       const role = getValue() || 'user';
       return (
-        <Badge variant={role} size="sm">
+        <Badge 
+          color={role === 'admin' ? 'red' : role === 'reporter' ? 'blue' : 'green'} 
+          size="sm"
+        >
           {role}
         </Badge>
       );
@@ -420,7 +423,7 @@ const createUserColumns = () => [
           {permissions.map((permission, index) => (
             <Badge 
               key={index} 
-              variant="blue" 
+              color="blue" 
               size="xs"
               className="text-xs"
             >

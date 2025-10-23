@@ -11,23 +11,25 @@ const SmallCard = memo(({ card }) => {
     [card.color]
   );
 
-  // Memoize style objects to prevent re-creation
-  const iconBgStyle = useMemo(() => ({
-    backgroundColor: `${cardColorHex}20`
-  }), [cardColorHex]);
+  // Style objects
+  const iconBgStyle = {
+    backgroundColor: `${cardColorHex}90`
+  };
 
-  const iconStyle = useMemo(() => ({
+  const iconStyle = {
     color: cardColorHex
-  }), [cardColorHex]);
+  };
 
-  const badgeStyle = useMemo(() => ({
-    backgroundColor: cardColorHex,
-    color: cardColorHex === '#f59e0b' ? '#374151' : 'white'
-  }), [cardColorHex]);
+  const badgeStyle = {
+    backgroundColor: `${cardColorHex}30`,
+    color: cardColorHex,
+    border: `1px solid ${cardColorHex}40`,
+    fontWeight: '600'
+  };
 
-  const valueStyle = useMemo(() => ({
+  const valueStyle = {
     color: cardColorHex
-  }), [cardColorHex]);
+  };
   
 
 
@@ -129,8 +131,9 @@ const SmallCard = memo(({ card }) => {
                                     key={badgeIndex}
                                     className="inline-flex items-center px-1 py-0.5 text-xs font-medium rounded"
                                     style={{
-                                      backgroundColor: cardColorHex,
-                                      color: cardColorHex === '#f59e0b' ? '#374151' : 'white',
+                                      backgroundColor: `${cardColorHex}30`,
+                                      color: cardColorHex,
+                                      border: `1px solid ${cardColorHex}40`,
                                       fontWeight: '600'
                                     }}
                                   >
