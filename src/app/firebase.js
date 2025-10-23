@@ -29,12 +29,12 @@ const getFirebaseConfig = () => {
   if (isDevelopment) {
     logger.log("🔧 Using Development Firebase Project");
     return {
-      apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
-      authDomain: "task-tracker-app-eb03e.firebaseapp.com",
-      projectId: "task-tracker-app-eb03e",
-      storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
-      messagingSenderId: "976694748809",
-      appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
+      apiKey: "AIzaSyBKCRN8f7dOaNrzjhOGIUpB__jQs-PX6MU",
+      authDomain: "track-app-stage.firebaseapp.com",
+      projectId: "track-app-stage",
+      storageBucket: "track-app-stage.firebasestorage.app",
+      messagingSenderId: "236939384499",
+      appId: "1:236939384499:web:5767e2dcbcebd67ed882c6",
     };
   }
 
