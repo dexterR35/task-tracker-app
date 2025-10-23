@@ -129,12 +129,12 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'Jira Link',
     cell: ({ getValue, row }) => {
       const taskName = getValue() || row.original?.data_task?.taskName;
-      if (!taskName) return 'No Link';
+      if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <span className="font-mono text-blue-600 dark:text-blue-400">
+        <Badge variant="amber" size="sm" className="font-mono">
           {taskName}
-        </span>
+        </Badge>
       );
     },
     size: 120,

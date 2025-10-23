@@ -9,6 +9,8 @@ import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
+import { CheckboxField } from '@/components/forms/components';
+import './TaskTable.css';
 
 const TaskTable = ({
   className = "",
@@ -22,6 +24,15 @@ const TaskTable = ({
   enablePagination = true,
   pageSize = 20,
 }) => {
+  // Filter states
+  const [filters, setFilters] = useState({
+    aiUsed: false,
+    marketing: false,
+    acquisition: false,
+    product: false,
+    deliverables: false
+  });
+
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -144,7 +155,7 @@ const TaskTable = ({
   
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek) => {
+    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, activeFilters) => {
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
@@ -208,6 +219,55 @@ const TaskTable = ({
         return true; // Admin sees all tasks
       });
 
+      // Apply category filters
+      if (activeFilters && Object.values(activeFilters).some(filter => filter)) {
+        console.log('Applying filters:', activeFilters);
+        filteredTasks = filteredTasks.filter((task) => {
+          const taskData = task.data_task || task;
+          
+          console.log('Task data:', {
+            taskName: taskData.taskName,
+            products: taskData.products,
+            aiUsed: taskData.aiUsed,
+            isVip: taskData.isVip,
+            reworked: taskData.reworked
+          });
+          
+          // AI Used filter
+          if (activeFilters.aiUsed && !taskData.aiUsed?.length) {
+            console.log('Filtered out - no AI used');
+            return false;
+          }
+          
+          // Marketing filter
+          if (activeFilters.marketing && !taskData.products?.includes('marketing')) {
+            console.log('Filtered out - not marketing');
+            return false;
+          }
+          
+          // Acquisition filter
+          if (activeFilters.acquisition && !taskData.products?.includes('acquisition')) {
+            console.log('Filtered out - not acquisition');
+            return false;
+          }
+          
+          // Product filter
+          if (activeFilters.product && !taskData.products?.includes('product')) {
+            console.log('Filtered out - not product');
+            return false;
+          }
+          
+          // Deliverables filter
+          if (activeFilters.deliverables && !taskData.deliverablesUsed?.length) {
+            console.log('Filtered out - no deliverables');
+            return false;
+          }
+          
+          console.log('Task passed filters');
+          return true;
+        });
+      }
+
       // If a week is selected, filter by week
       if (selectedWeek && selectedWeek.days) {
         const weekTasks = [];
@@ -257,7 +317,8 @@ const TaskTable = ({
       selectedUserId,
       selectedReporterId,
       selectedMonthId,
-      selectedWeek
+      selectedWeek,
+      filters
     );
     
     // Sort by createdAt in descending order (newest first)
@@ -367,8 +428,155 @@ const TaskTable = ({
   }, [filteredTasks?.length, onCountChange]);
 
 
+  // Handle filter changes
+  const handleFilterChange = (filterName) => {
+    console.log('Filter change:', filterName, 'Current filters:', filters);
+    
+    setFilters(prev => {
+      // If the same filter is clicked, toggle it off
+      if (prev[filterName]) {
+        console.log('Toggling off filter:', filterName);
+        return {
+          aiUsed: false,
+          marketing: false,
+          acquisition: false,
+          product: false,
+          deliverables: false
+        };
+      }
+      
+      // Otherwise, select only this filter and deselect others
+      console.log('Selecting only filter:', filterName);
+      return {
+        aiUsed: filterName === 'aiUsed',
+        marketing: filterName === 'marketing',
+        acquisition: filterName === 'acquisition',
+        product: filterName === 'product',
+        deliverables: filterName === 'deliverables'
+      };
+    });
+  };
+
   return (
     <div className={`task-table ${className}`}>
+      {/* Filter Checkboxes - Above table */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Filters</h3>
+          </div>
+          <button
+            onClick={() => setFilters({
+              aiUsed: false,
+              marketing: false,
+              acquisition: false,
+              product: false,
+              deliverables: false
+            })}
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            Clear all
+          </button>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <div className="minimal-filter-item">
+            <CheckboxField
+              field={{
+                name: 'aiUsed',
+                label: 'AI Used',
+                required: false
+              }}
+              register={() => ({})}
+              errors={{}}
+              setValue={(name, value) => {
+              // Force single selection by calling handleFilterChange
+              handleFilterChange(name);
+            }}
+              trigger={() => {}}
+              clearErrors={() => {}}
+              formValues={filters}
+            />
+          </div>
+          
+          <div className="minimal-filter-item">
+            <CheckboxField
+              field={{
+                name: 'marketing',
+                label: 'Marketing',
+                required: false
+              }}
+              register={() => ({})}
+              errors={{}}
+              setValue={(name, value) => {
+              // Force single selection by calling handleFilterChange
+              handleFilterChange(name);
+            }}
+              trigger={() => {}}
+              clearErrors={() => {}}
+              formValues={filters}
+            />
+          </div>
+          
+          <div className="minimal-filter-item">
+            <CheckboxField
+              field={{
+                name: 'acquisition',
+                label: 'Acquisition',
+                required: false
+              }}
+              register={() => ({})}
+              errors={{}}
+              setValue={(name, value) => {
+              // Force single selection by calling handleFilterChange
+              handleFilterChange(name);
+            }}
+              trigger={() => {}}
+              clearErrors={() => {}}
+              formValues={filters}
+            />
+          </div>
+          
+          <div className="minimal-filter-item">
+            <CheckboxField
+              field={{
+                name: 'product',
+                label: 'Product',
+                required: false
+              }}
+              register={() => ({})}
+              errors={{}}
+              setValue={(name, value) => {
+              // Force single selection by calling handleFilterChange
+              handleFilterChange(name);
+            }}
+              trigger={() => {}}
+              clearErrors={() => {}}
+              formValues={filters}
+            />
+          </div>
+          
+          <div className="minimal-filter-item">
+            <CheckboxField
+              field={{
+                name: 'deliverables',
+                label: 'Deliverables',
+                required: false
+              }}
+              register={() => ({})}
+              errors={{}}
+              setValue={(name, value) => {
+                // Force single selection by calling handleFilterChange
+                handleFilterChange(name);
+              }}
+              trigger={() => {}}
+              clearErrors={() => {}}
+              formValues={filters}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Table */}
       <TanStackTable
@@ -391,7 +599,6 @@ const TaskTable = ({
         showPagination={enablePagination}
         pageSize={pageSizeState}
       />
-
 
       {/* Edit Task Modal */}
       <TaskFormModal

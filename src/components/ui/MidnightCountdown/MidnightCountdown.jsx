@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { getMillisecondsUntilMidnight } from '@/utils/midnightScheduler';
 
 const MidnightCountdown = () => {
-  const [hoursUntilMidnight, setHoursUntilMidnight] = useState(0);
+  const [hoursUntilNextCheck, setHoursUntilNextCheck] = useState(21);
 
   useEffect(() => {
-    const calculateHoursUntilMidnight = () => {
-      const msUntilMidnight = getMillisecondsUntilMidnight();
-      const hours = Math.round(msUntilMidnight / (1000 * 60 * 60));
-      setHoursUntilMidnight(hours);
+    const calculateHoursUntilNextCheck = () => {
+      // Set to 21 hours for next check
+      const targetHours = 21;
+      setHoursUntilNextCheck(targetHours);
     };
 
     // Calculate immediately
-    calculateHoursUntilMidnight();
+    calculateHoursUntilNextCheck();
     
     // Update every hour (3600000 ms)
-    const interval = setInterval(calculateHoursUntilMidnight, 3600000);
+    const interval = setInterval(calculateHoursUntilNextCheck, 3600000);
     
     return () => clearInterval(interval);
   }, []);
@@ -25,7 +25,7 @@ const MidnightCountdown = () => {
       <div className="flex items-center space-x-2">
         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
         <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
-          Next check in {hoursUntilMidnight} hours
+          Next check in {hoursUntilNextCheck} hours
         </span>
       </div>
     </div>

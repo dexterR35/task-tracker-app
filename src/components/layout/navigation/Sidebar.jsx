@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
-import MidnightCountdown from "@/components/ui/MidnightCountdown/MidnightCountdown";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import FirestoreUsageMonitor from "@/components/ui/FirestoreUsageMonitor/FirestoreUsageMonitor";
 
@@ -28,7 +27,6 @@ const Sidebar = () => {
       name: "Dashboard",
       href: "/dashboard",
       icon: Icons.generic.home,
-      description: "Task management",
       color: "blue",
     },
     {
@@ -36,7 +34,6 @@ const Sidebar = () => {
       href: "/analytics",
       icon: Icons.generic.chart,
       adminOnly: true,
-      description: "Data insights",
       color: "purple",
     },
     {
@@ -44,7 +41,6 @@ const Sidebar = () => {
       href: "/users",
       icon: Icons.generic.settings,
       adminOnly: true,
-      description: "Settings management",
       color: "green",
     },
     {
@@ -52,7 +48,6 @@ const Sidebar = () => {
       href: "/landing-pages",
       icon: Icons.generic.document,
       adminOnly: true,
-      description: "LP Management",
       color: "orange",
     },
   ];
@@ -79,56 +74,28 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-smallCard border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
+    <div className={`flex flex-col h-full bg-white dark:bg-smallCard border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header Section */}
-      <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <Link to="/dashboard" className="flex items-center space-x-3 group">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                <span className="text-white font-bold text-xl">S</span>
-              </div>
-            </div>
-            <div className="transition-all duration-300">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                SYNC
-              </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                Task Tracker
-              </p>
-            </div>
-          </Link>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Icons.generic.settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-          </button>
-        </div>
+      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         
-        {/* Date Display */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-3 border border-blue-200 dark:border-blue-700/30">
-          <div className="flex items-center space-x-2">
-            <Icons.generic.calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <div>
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                {new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-300">
-                {new Date().getFullYear()}
-              </p>
+        {/* Design department */}
+        {!isCollapsed && (
+          <div className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-700/30">
+            <div className="p-2 rounded-lg bg-blue-500 text-white shadow-md">
+              <Icons.generic.settings className="w-4 h-4" />
             </div>
+            <div className="ml-2.5 flex-1">
+              <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Design</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300 font-medium">Department</p>
+            </div>
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
           </div>
-        </div>
+        )}
       </div>
 
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => {
           if (item.adminOnly && !canAccess("admin")) return null;
 
@@ -139,54 +106,38 @@ const Sidebar = () => {
             <Link
               key={item.name}
               to={item.href}
-              className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02] ${
+              className={`group flex items-center px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] ${
                 active
                   ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
               }`}
             >
               <div
-                className={`p-2.5 rounded-xl transition-all duration-200 ${getColorClasses(item.color, active)}`}
+                className={`p-2 rounded-lg transition-all duration-200 ${getColorClasses(item.color, active)}`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-4 h-4" />
               </div>
-              <div className="ml-3 flex-1">
-                <p className="font-semibold">{item.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {item.description}
-                </p>
-              </div>
+              {!isCollapsed && (
+                <div className="ml-2.5 flex-1">
+                  <p className="font-medium text-sm">{item.name}</p>
+                </div>
+              )}
               {active && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Department Section */}
-      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-700/30">
-          <div className="p-2.5 rounded-xl bg-blue-500 text-white shadow-lg">
-            <Icons.generic.settings className="w-5 h-5" />
-          </div>
-          <div className="ml-3 flex-1">
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Department</p>
-            <p className="text-xs text-blue-600 dark:text-blue-300 font-medium">Design</p>
-          </div>
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-        </div>
-      </div>
 
       {/* Firebase Usage Monitor (includes Firestore + Listeners) */}
-      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-        <FirestoreUsageMonitor />
-      </div>
+      {!isCollapsed && (
+        <div className="px-3 py-3 border-t border-gray-200 dark:border-gray-700">
+          <FirestoreUsageMonitor />
+        </div>
+      )}
 
-      {/* Bottom Section */}
-      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-        <MidnightCountdown />
-      </div>
     </div>
   );
 };

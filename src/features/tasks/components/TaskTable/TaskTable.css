@@ -1,0 +1,62 @@
+/* Minimal Filter Styles for TaskTable */
+.minimal-filter-item .field-wrapper {
+  margin: 0;
+}
+
+.minimal-filter-item .checkbox-field {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.minimal-filter-item .checkbox-field:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.minimal-filter-item .checkbox-field input[type="checkbox"]:checked + label {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.minimal-filter-item .checkbox-field input[type="checkbox"]:checked {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.minimal-filter-item .checkbox-field label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.minimal-filter-item .checkbox-field input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  accent-color: #3b82f6;
+}
+
+/* Dark mode styles */
+.dark .minimal-filter-item .checkbox-field {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .minimal-filter-item .checkbox-field:hover {
+  border-color: #3b82f6;
+  background: #111827;
+}
+
+.dark .minimal-filter-item .checkbox-field label {
+  color: #9ca3af;
+}
