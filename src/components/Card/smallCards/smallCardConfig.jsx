@@ -64,10 +64,15 @@ export const SMALL_CARD_CONFIGS = {
     color: (data) => getCardColor("month-selection", data),
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
-    getBadge: (data) => ({
-      text: data.isCurrentMonth ? "Current" : "History",
-      color: getCardColor("month-selection", data)
-    }),
+    getBadge: (data) => {
+      const cardColor = getCardColor("month-selection", data);
+      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
+      return {
+        text: data.isCurrentMonth ? "Current" : "History",
+        color: cardColor,
+        colorHex: colorHex
+      };
+    },
     getContent: (data) => (
       <div className="mb-6">
         <SearchableSelectField
@@ -139,10 +144,15 @@ export const SMALL_CARD_CONFIGS = {
       }
       return "All Users";
     },
-    getBadge: (data) => ({
-      text: data.selectedUserId ? "Filtered" : "All Users",
-      color: getCardColor("user-filter", data)
-    }),
+    getBadge: (data) => {
+      const cardColor = getCardColor("user-filter", data);
+      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
+      return {
+        text: data.selectedUserId ? "Filtered" : "All Users",
+        color: cardColor,
+        colorHex: colorHex
+      };
+    },
     getContent: (data) => (
       <div className="mb-6 space-y-3">
         <SearchableSelectField
@@ -171,27 +181,6 @@ export const SMALL_CARD_CONFIGS = {
           formValues={{}}
           noOptionsMessage="No users found"
         />
-        {data.selectedUserId && (
-          <DynamicButton
-            onClick={() => {
-              const selectedUser = data.users?.find(u => (u.userUID || u.id) === data.selectedUserId);
-              const userName = selectedUser?.name || selectedUser?.email || 'Unknown';
-              const url = `/analytics-detail?user=${encodeURIComponent(userName)}`;
-              if (data.navigate) {
-                data.navigate(url);
-              } else {
-                // Use React Router navigation instead of window.location.href
-                window.history.pushState({}, '', url);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }
-            }}
-            variant="primary"
-            iconName="view"
-            className="w-full uppercase"
-          >
-            VIEW USER ANALYTICS
-          </DynamicButton>
-        )}
       </div>
     ),
     getDetails: (data) => [
@@ -204,11 +193,6 @@ export const SMALL_CARD_CONFIGS = {
         icon: Icons.generic.users,
         label: "Total Users",
         value: `${data.users?.length || 0} users`,
-      },
-      {
-        icon: Icons.buttons.filter,
-        label: "Filter Status",
-        value: data.selectedUserId ? "Active" : "Inactive",
       },
     ],
   },
@@ -229,10 +213,15 @@ export const SMALL_CARD_CONFIGS = {
       }
       return "All Reporters";
     },
-    getBadge: (data) => ({
-      text: data.selectedReporterId ? "Filtered" : "All Reporters",
-      color: getCardColor("reporter-filter", data)
-    }),
+    getBadge: (data) => {
+      const cardColor = getCardColor("reporter-filter", data);
+      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
+      return {
+        text: data.selectedReporterId ? "Filtered" : "All Reporters",
+        color: cardColor,
+        colorHex: colorHex
+      };
+    },
     getContent: (data) => (
       <div className="mb-6 space-y-3">
         <SearchableSelectField
@@ -261,27 +250,6 @@ export const SMALL_CARD_CONFIGS = {
           formValues={{}}
           noOptionsMessage="No reporters found"
         />
-        {data.selectedReporterId && (
-          <DynamicButton
-            onClick={() => {
-              const selectedReporter = data.reporters?.find(r => (r.id || r.uid) === data.selectedReporterId);
-              const reporterName = selectedReporter?.name || selectedReporter?.reporterName || 'Unknown';
-              const url = `/analytics-detail?reporter=${encodeURIComponent(reporterName)}`;
-              if (data.navigate) {
-                data.navigate(url);
-              } else {
-                // Use React Router navigation instead of window.location.href
-                window.history.pushState({}, '', url);
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }
-            }}
-            variant="primary"
-            iconName="view"
-            className="w-full uppercase"
-          >
-            VIEW REPORTER ANALYTICS
-          </DynamicButton>
-        )}
       </div>
     ),
     getDetails: (data) => [
@@ -297,11 +265,6 @@ export const SMALL_CARD_CONFIGS = {
         label: "Total Reporters",
         value: `${data.reporters?.length || 0} reporters`,
       },
-      {
-        icon: Icons.buttons.filter,
-        label: "Filter Status",
-        value: data.selectedReporterId ? "Active" : "Inactive",
-      },
     ],
   },
 
@@ -311,10 +274,15 @@ export const SMALL_CARD_CONFIGS = {
     description: "Tasks",
     icon: Icons.generic.user,
     color: (data) => getCardColor("user-profile", data),
-    getBadge: (data) => ({
-      text: (data.currentUser?.role || "user").toLowerCase(),
-      color: getCardColor("user-profile", data)
-    }),
+    getBadge: (data) => {
+      const cardColor = getCardColor("user-profile", data);
+      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
+      return {
+        text: (data.currentUser?.role || "user").toLowerCase(),
+        color: cardColor,
+        colorHex: colorHex
+      };
+    },
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
 
@@ -399,14 +367,6 @@ export const SMALL_CARD_CONFIGS = {
         value: data.currentUser?.name || data.currentUser?.email || "N/A",
       });
 
-      // Show filter status
-      details.push({
-        label: "Filter Status",
-        value:
-          data.selectedUserId || data.selectedReporterId
-            ? "Filtered"
-            : "All Tasks",
-      });
 
       return details;
     },
@@ -425,11 +385,12 @@ export const SMALL_CARD_CONFIGS = {
               );
               const userName = selectedUser?.name || selectedUser?.email || 'Unknown';
               params.set('user', userName);
-            } else if (!data.selectedUserId) {
-              // No user selected - show current user's data
+            } else if (!data.selectedUserId && !data.selectedReporterId) {
+              // No user or reporter selected - show current user's data
               const userName = data.currentUser?.name || data.currentUser?.email || 'My Data';
               params.set('user', userName);
             }
+            // If only reporter is selected (no user), don't set user parameter
             
             // Handle reporter selection
             if (data.selectedReporterId) {
@@ -440,10 +401,11 @@ export const SMALL_CARD_CONFIGS = {
               params.set('reporter', reporterName);
             }
             
-            // Handle week selection
+            // Handle week selection - only set week parameter if a specific week is selected
             if (data.selectedWeek) {
               params.set('week', data.selectedWeek.weekNumber.toString());
             }
+            // If no week selected (All Weeks), don't set week parameter
             
             // Handle month selection
             if (data.selectedMonth?.monthId) {
@@ -469,19 +431,31 @@ export const SMALL_CARD_CONFIGS = {
             // Determine button text based on context and selections
             const parts = [];
             
-            // User part
-            if (data.selectedUserId && data.currentUser?.role === "admin") {
+            // User part - show user info if available
+            if (data.selectedUserId) {
               const selectedUser = data.users?.find(
                 (u) => u.userUID === data.selectedUserId
               );
               const userName = selectedUser?.name?.toUpperCase() || selectedUser?.email?.toUpperCase() || "USER";
               parts.push(userName);
-            } else if (!data.selectedUserId) {
-              parts.push("MY");
+            } else if (data.selectedReporterId && !data.selectedUserId) {
+              // If only reporter is selected (no user), show reporter name
+              const selectedReporter = data.reporters?.find(
+                (r) => (r.id || r.uid) === data.selectedReporterId
+              );
+              const reporterName = selectedReporter?.name?.toUpperCase() || selectedReporter?.reporterName?.toUpperCase() || "REPORTER";
+              parts.push(reporterName);
+            } else if (data.currentUser?.role === "admin") {
+              // Admin with no user or reporter selected
+              parts.push("ALL USERS");
+            } else {
+              // Regular user with no selection
+              const currentUserName = data.currentUser?.name?.toUpperCase() || data.currentUser?.email?.toUpperCase() || "MY";
+              parts.push(currentUserName);
             }
             
-            // Reporter part
-            if (data.selectedReporterId) {
+            // Reporter part - only add if both user and reporter are selected
+            if (data.selectedReporterId && data.selectedUserId) {
               const selectedReporter = data.reporters?.find(
                 (r) => (r.id || r.uid) === data.selectedReporterId
               );
@@ -489,15 +463,15 @@ export const SMALL_CARD_CONFIGS = {
               parts.push(reporterName);
             }
             
-            // Week part
+            // Week part - show week if selected, otherwise show "ALL WEEKS"
             if (data.selectedWeek) {
               parts.push(`WEEK ${data.selectedWeek.weekNumber}`);
+            } else {
+              parts.push("ALL WEEKS");
             }
             
             // Build final text
-            if (parts.length === 0) {
-              return "VIEW DATA";
-            } else if (parts.length === 1) {
+            if (parts.length === 1) {
               return `VIEW ${parts[0]} DATA`;
             } else {
               return `VIEW ${parts.join(" + ")} DATA`;
@@ -514,10 +488,15 @@ export const SMALL_CARD_CONFIGS = {
     description: "Total Tasks",
     icon: Icons.buttons.add,
     color: (data) => getCardColor("actions", data),
-    getBadge: (data) => ({
-      text: data.canCreateTasks ? "Active" : "Disabled",
-      color: getCardColor("actions", data)
-    }),
+    getBadge: (data) => {
+      const cardColor = getCardColor("actions", data);
+      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
+      return {
+        text: data.selectedWeek ? `Week ${data.selectedWeek.weekNumber}` : "All Weeks",
+        color: cardColor,
+        colorHex: colorHex
+      };
+    },
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
       
@@ -541,10 +520,14 @@ export const SMALL_CARD_CONFIGS = {
       if (monthId) {
         try {
           const weeks = getWeeksInMonth(monthId);
-          weekOptions = weeks.map((week) => ({
-            value: week.weekNumber.toString(),
-            label: `Week ${week.weekNumber}`,
-          }));
+          // Add "All Weeks" option at the beginning
+          weekOptions = [
+            { value: "", label: "All Weeks" },
+            ...weeks.map((week) => ({
+              value: week.weekNumber.toString(),
+              label: `Week ${week.weekNumber}`,
+            }))
+          ];
         } catch (error) {
           console.warn('Error getting weeks for month:', error);
         }
@@ -565,17 +548,26 @@ export const SMALL_CARD_CONFIGS = {
             errors={{}}
             setValue={(fieldName, value) => {
               if (fieldName === "selectedWeek" && data.handleWeekChange) {
-                if (!value) {
+                if (!value || value === "") {
+                  // Clear week selection - show all weeks
                   data.handleWeekChange(null);
                 } else {
+                  // Select specific week
                   const weekNumber = parseInt(value);
                   const weeks = getWeeksInMonth(monthId);
                   const week = weeks.find(w => w.weekNumber === weekNumber);
-                  data.handleWeekChange(week || null);
+                  if (week) {
+                    data.handleWeekChange(week);
+                  }
                 }
               }
             }}
-            watch={() => data.selectedWeek?.weekNumber?.toString() || ""}
+            watch={() => {
+              if (data.selectedWeek) {
+                return data.selectedWeek.weekNumber.toString();
+              }
+              return ""; // Return empty string when no week is selected
+            }}
             trigger={() => {}}
             clearErrors={() => {}}
             formValues={{}}
@@ -675,11 +667,6 @@ export const SMALL_CARD_CONFIGS = {
       }, 0);
       
       return [
-        {
-          icon: Icons.generic.task,
-          label: "Total Tasks",
-          value: totalTasks.toString(),
-        },
         {
           icon: Icons.generic.clock,
           label: "Total Hours",
@@ -1133,11 +1120,12 @@ export const SMALL_CARD_CONFIGS = {
 export const createSmallCards = (data) => {
   const cardTypes = [
     SMALL_CARD_TYPES.MONTH_SELECTION,
+    SMALL_CARD_TYPES.ACTIONS, // Task Statistics after month
+    SMALL_CARD_TYPES.WEEK_SELECTOR,
     // Show filters based on user role
     ...(data.isUserAdmin
-      ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER] // Admin sees all filters
+      ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER] // Admin sees user first, then reporter
       : [SMALL_CARD_TYPES.REPORTER_FILTER]), // Regular users see only reporter filter
-    SMALL_CARD_TYPES.ACTIONS,
     SMALL_CARD_TYPES.USER_PROFILE,
   ];
 

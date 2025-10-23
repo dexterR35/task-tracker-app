@@ -1,5 +1,21 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
+import { CARD_SYSTEM } from '@/constants';
+
+// Function to get badge color based on field name using CARD_SYSTEM colors
+const getFieldBadgeColor = (fieldName) => {
+  const colorMap = {
+    'selectedUser': 'green',
+    'selectedReporter': 'purple', 
+    'selectedWeek': 'crimson',
+    'selectedMonth': 'blue',
+    'selectedDeliverable': 'amber',
+    'selectedMarket': 'pink',
+    'selectedDepartment': 'yellow'
+  };
+  
+  return colorMap[fieldName] || 'gray';
+};
 
 const SearchableSelectField = ({ 
   field, 
@@ -23,27 +39,6 @@ const SearchableSelectField = ({
   const currentValue = watch(field.name);
   const selectedOption = field.options?.find(option => option.value === currentValue);
   
-  // Debug logging to understand the issue
-  if (field.name === 'selectedUser' && currentValue) {
-    console.log('🔍 User field debug:', {
-      fieldName: field.name,
-      currentValue,
-      hasSelectedOption: !!selectedOption,
-      optionsCount: field.options?.length || 0,
-      selectedOptionLabel: selectedOption?.label || selectedOption?.name
-    });
-  }
-  
-  // Debug logging for reporter field
-  if (field.name === 'selectedReporter' && currentValue) {
-    console.log('🔍 Reporter field debug:', {
-      fieldName: field.name,
-      currentValue,
-      hasSelectedOption: !!selectedOption,
-      optionsCount: field.options?.length || 0,
-      selectedOptionLabel: selectedOption?.label || selectedOption?.name
-    });
-  }
 
   // Handle initial value when form is reset - fixed infinite loop
   useEffect(() => {
@@ -167,6 +162,11 @@ const SearchableSelectField = ({
       return searchTerm;
     }
     
+    // Special case for empty value - show "All Weeks" for week field
+    if (!currentValue && field.name === "selectedWeek") {
+      return "All Weeks";
+    }
+    
     // First try to use selectedOption if it exists
     if (selectedOption) {
       return selectedOption.name || selectedOption.label || '';
@@ -261,10 +261,11 @@ const SearchableSelectField = ({
         />
 
         {/* Badge display for selected value */}
-        {currentValue && displayValue && (
+        {displayValue && (
           <div className="mt-2">
             <Badge
-              variant="crimson"
+              color={getFieldBadgeColor(field.name)}
+              colorHex={CARD_SYSTEM.COLOR_HEX_MAP[getFieldBadgeColor(field.name)]}
               size="sm"
               className="inline-flex items-center gap-1 px-2 py-1 rounded-md"
             >
@@ -323,4 +324,13 @@ const SearchableSelectField = ({
   );
 };
 
-export default SearchableSelectField;
+// Memoize the component to prevent unnecessary re-renders
+export default memo(SearchableSelectField, (prevProps, nextProps) => {
+  // Only re-render if essential props change
+  return (
+    prevProps.field.name === nextProps.field.name &&
+    prevProps.field.options === nextProps.field.options &&
+    prevProps.watch(prevProps.field.name) === nextProps.watch(nextProps.field.name) &&
+    prevProps.errors === nextProps.errors
+  );
+});

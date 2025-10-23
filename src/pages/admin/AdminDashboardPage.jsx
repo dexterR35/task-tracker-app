@@ -52,48 +52,47 @@ const AdminDashboardPage = () => {
   const selectedReporter = reporters.find((r) => (r.id || r.uid) === selectedReporterId);
   const selectedReporterName = selectedReporter?.name || selectedReporter?.reporterName;
 
-  // Handle user selection with role-based access control and logging
+  // Handle user selection - completely independent from reporter selection
   const handleUserSelect = useCallback(
     (userId) => {
       // Regular users can only select themselves
       if (!isUserAdmin && userId && userId !== user?.userUID) {
-        console.warn("🚫 User selection blocked: Regular user cannot select other users", {
-          userId,
-          currentUserUID: user?.userUID,
-          isUserAdmin
-        });
-        return; // Prevent regular users from selecting other users
+        return;
       }
       
-      const currentParams = Object.fromEntries(searchParams.entries());
+      // Get current URL parameters
+      const currentParams = new URLSearchParams(window.location.search);
+      const paramsObj = Object.fromEntries(currentParams.entries());
       
-      if (!userId) {
-        delete currentParams.user;
+      // Only modify the user parameter, leave everything else untouched
+      if (!userId || userId === '') {
+        delete paramsObj.user;
       } else {
-        currentParams.user = userId;
-        // Clear reporter selection when user is selected
-        delete currentParams.reporter;
+        paramsObj.user = userId;
       }
-      setSearchParams(currentParams, { replace: true });
+      
+      setSearchParams(paramsObj, { replace: true });
     },
-    [setSearchParams, searchParams, isUserAdmin, user, users]
+    [setSearchParams, isUserAdmin, user]
   );
 
-  // Handle reporter selection with role-based access control and logging
+  // Handle reporter selection - completely independent from user selection
   const handleReporterSelect = useCallback(
     (reporterId) => {
-      const currentParams = Object.fromEntries(searchParams.entries());
+      // Get current URL parameters
+      const currentParams = new URLSearchParams(window.location.search);
+      const paramsObj = Object.fromEntries(currentParams.entries());
       
-      if (!reporterId) {
-        delete currentParams.reporter;
+      // Only modify the reporter parameter, leave everything else untouched
+      if (!reporterId || reporterId === '') {
+        delete paramsObj.reporter;
       } else {
-        currentParams.reporter = reporterId;
-        // Clear user selection when reporter is selected
-        delete currentParams.user;
+        paramsObj.reporter = reporterId;
       }
-      setSearchParams(currentParams, { replace: true });
+      
+      setSearchParams(paramsObj, { replace: true });
     },
-    [setSearchParams, searchParams, reporters]
+    [setSearchParams]
   );
 
 
@@ -129,20 +128,24 @@ const AdminDashboardPage = () => {
     setShowCreateModal(true);
   }, [canCreateTasks]);
 
-  // Handle week selection
+  // Handle week selection - independent from user and reporter selections
   const handleWeekChange = useCallback((week) => {
     // If week is null or empty, clear the selection (show all weeks)
     setSelectedWeek(week);
     
-    // Update URL parameters
-    const currentParams = Object.fromEntries(searchParams.entries());
+    // Get current URL parameters and preserve existing ones
+    const currentParams = new URLSearchParams(window.location.search);
+    const paramsObj = Object.fromEntries(currentParams.entries());
+    
+    // Only modify the week parameter, leave everything else untouched
     if (!week) {
-      delete currentParams.week;
+      delete paramsObj.week;
     } else {
-      currentParams.week = week.weekNumber.toString();
+      paramsObj.week = week.weekNumber.toString();
     }
-    setSearchParams(currentParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+    
+    setSearchParams(paramsObj, { replace: true });
+  }, [setSearchParams]);
 
   // Initialize selectedWeek from URL parameter
   useEffect(() => {
@@ -195,9 +198,9 @@ const AdminDashboardPage = () => {
     }
   }, [isUserAdmin, selectedUserId, selectedUserName, user?.userUID]);
 
-  // Small cards data preparation - memoized to prevent unnecessary re-renders
-  const smallCardsData = useMemo(() => ({
-    tasks, // ✅ Global tasks - never filtered
+  // Create small cards - optimized memoization to prevent re-renders
+  const smallCards = useMemo(() => createSmallCards({
+    tasks,
     reporters,
     users,
     periodName: selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
@@ -220,14 +223,12 @@ const AdminDashboardPage = () => {
     selectMonth,
     availableMonths,
   }), [
+    // Only include data that actually affects card content
     tasks, reporters, users, selectedMonth, currentMonth, isCurrentMonth,
     isUserAdmin, user, selectedUserId, selectedUserName, selectedReporterId,
-    selectedReporterName, selectedWeek, canCreateTasks, handleCreateTask, handleUserSelect,
-    handleReporterSelect, handleWeekChange, selectMonth, availableMonths
+    selectedReporterName, selectedWeek, canCreateTasks, selectMonth, availableMonths
+    // Excluded handler functions to prevent cross-contamination
   ]);
-
-  // Create small cards - memoized to prevent unnecessary re-renders
-  const smallCards = useMemo(() => createSmallCards(smallCardsData), [smallCardsData]);
 
   // Safety check to prevent errors during initialization - moved after all hooks
   if (!appData || !appData.isInitialized) {

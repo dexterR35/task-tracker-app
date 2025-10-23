@@ -63,6 +63,7 @@ const SmallCard = memo(({ card }) => {
             {card.badge && (
               <Badge 
                 color={card.badge.color}
+                colorHex={card.badge.colorHex}
                 size="sm"
                 className="text-xs"
               >
