@@ -202,7 +202,7 @@ export const CARD_SYSTEM = {
     blue: '#2563eb',       // Blue-600 - Professional, trust
     purple: '#7c3aed',     // Purple-600 - Premium, personal
     crimson: '#e11d48',    // Rose-600 - Authority, admin
-    amber: '#d97706',      // Amber-600 - Energy, action
+    amber: '#f5c451',      // Amber-600 - Energy, action
     pink: '#db2777',       // Pink-600 - Calendar, time
     red: '#dc2626',        // Red-600 - Error
     yellow: '#ca8a04',     // Yellow-600 - Warning

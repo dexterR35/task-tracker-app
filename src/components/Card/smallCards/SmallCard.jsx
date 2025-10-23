@@ -28,7 +28,7 @@ const SmallCard = memo(({ card }) => {
   };
 
   const valueStyle = {
-    color: cardColorHex
+    color: '#d1d5db' // gray-300
   };
   
 

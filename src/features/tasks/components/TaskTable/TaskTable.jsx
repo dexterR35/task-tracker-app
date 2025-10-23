@@ -30,7 +30,11 @@ const TaskTable = ({
     marketing: false,
     acquisition: false,
     product: false,
-    deliverables: false
+    vip: false,
+    reworked: false,
+    highPriority: false,
+    completed: false,
+    inProgress: false
   });
 
   // Modal states
@@ -257,9 +261,33 @@ const TaskTable = ({
             return false;
           }
           
-          // Deliverables filter
-          if (activeFilters.deliverables && !taskData.deliverablesUsed?.length) {
-            console.log('Filtered out - no deliverables');
+          // VIP filter
+          if (activeFilters.vip && !taskData.isVip) {
+            console.log('Filtered out - not VIP');
+            return false;
+          }
+          
+          // Reworked filter
+          if (activeFilters.reworked && !taskData.reworked) {
+            console.log('Filtered out - not reworked');
+            return false;
+          }
+          
+          // High Priority filter
+          if (activeFilters.highPriority && !taskData.highPriority) {
+            console.log('Filtered out - not high priority');
+            return false;
+          }
+          
+          // Completed filter
+          if (activeFilters.completed && !taskData.completed) {
+            console.log('Filtered out - not completed');
+            return false;
+          }
+          
+          // In Progress filter
+          if (activeFilters.inProgress && !taskData.inProgress) {
+            console.log('Filtered out - not in progress');
             return false;
           }
           
@@ -438,73 +466,220 @@ const TaskTable = ({
 
   return (
     <div className={`task-table ${className}`}>
-      {/* Filter Checkboxes - Above table */}
-      <div className="mb-8">
+      {/* Filter Mini Cards */}
+      <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Filters</h3>
         </div>
         
-        <div className="flex flex-wrap gap-2">
-          <div className="minimal-filter-item">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.aiUsed}
-                onChange={() => handleFilterChange('aiUsed')}
-                className="form-checkbox"
-              />
-              <span className="text-sm">AI Used</span>
-            </label>
-          </div>
-          
-          <div className="minimal-filter-item">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.marketing}
-                onChange={() => handleFilterChange('marketing')}
-                className="form-checkbox"
-              />
-              <span className="text-sm">Marketing</span>
-            </label>
-          </div>
-          
-          <div className="minimal-filter-item">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.acquisition}
-                onChange={() => handleFilterChange('acquisition')}
-                className="form-checkbox"
-              />
-              <span className="text-sm">Acquisition</span>
-            </label>
-          </div>
-          
-          <div className="minimal-filter-item">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.product}
-                onChange={() => handleFilterChange('product')}
-                className="form-checkbox"
-              />
-              <span className="text-sm">Product</span>
-            </label>
-          </div>
-          
-          <div className="minimal-filter-item">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.deliverables}
-                onChange={() => handleFilterChange('deliverables')}
-                className="form-checkbox"
-              />
-              <span className="text-sm">Deliverables</span>
-            </label>
-          </div>
+        <div className="flex items-center space-x-3 flex-wrap gap-2">
+          {/* AI Used Filter */}
+          <button
+            onClick={() => handleFilterChange('aiUsed')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.aiUsed 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.aiUsed 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.aiUsed 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              AI Used
+            </span>
+          </button>
+
+          {/* Marketing Filter */}
+          <button
+            onClick={() => handleFilterChange('marketing')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.marketing 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.marketing 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.marketing 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              Marketing
+            </span>
+          </button>
+
+          {/* Acquisition Filter */}
+          <button
+            onClick={() => handleFilterChange('acquisition')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.acquisition 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.acquisition 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.acquisition 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              Acquisition
+            </span>
+          </button>
+
+          {/* Product Filter */}
+          <button
+            onClick={() => handleFilterChange('product')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.product 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.product 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.product 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              Product
+            </span>
+          </button>
+
+          {/* VIP Filter */}
+          <button
+            onClick={() => handleFilterChange('vip')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.vip 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.vip 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.vip 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              VIP
+            </span>
+          </button>
+
+          {/* Reworked Filter */}
+          <button
+            onClick={() => handleFilterChange('reworked')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.reworked 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.reworked 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.reworked 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              Reworked
+            </span>
+          </button>
+
+          {/* High Priority Filter */}
+          <button
+            onClick={() => handleFilterChange('highPriority')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.highPriority 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.highPriority 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.highPriority 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              High Priority
+            </span>
+          </button>
+
+          {/* Completed Filter */}
+          <button
+            onClick={() => handleFilterChange('completed')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.completed 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.completed 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.completed 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              Completed
+            </span>
+          </button>
+
+          {/* In Progress Filter */}
+          <button
+            onClick={() => handleFilterChange('inProgress')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
+              filters.inProgress 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              filters.inProgress 
+                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
+                : 'bg-red-500 dark:bg-red-400 shadow-sm'
+            }`}></div>
+            <span className={`text-sm font-medium transition-colors duration-200 ${
+              filters.inProgress 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              In Progress
+            </span>
+          </button>
         </div>
       </div>
 

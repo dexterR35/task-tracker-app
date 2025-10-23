@@ -12,7 +12,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
 import { exportToCSV } from "@/utils/exportData";
 import { TABLE_SYSTEM } from '@/constants';
-import { CheckboxField } from '@/components/forms/components';
+import { CheckboxField, TextField } from '@/components/forms/components';
 
 // Constants
 const PAGE_SIZE_OPTIONS = TABLE_SYSTEM.PAGE_SIZE_OPTIONS;
@@ -88,117 +88,31 @@ const TableControls = ({
   columns,
   handleCSVExport,
   isExporting,
-  onPageSizeChange,
-  // Filter props
-  filters = {},
-  onFilterChange = null
+  onPageSizeChange
 }) => (
   <div className="flex justify-between items-center py-4">
     {/* Left Section - Search and Filters */}
-    <div className="flex items-center space-x-6 flex-1">
+    <div className="flex items-center space-x-6 flex-1 bg-red-500">
       {/* Global Filter */}
       {showFilters && (
         <div className="max-w-sm">
-          <input
-            name={`${tableType}-search`}
-            id={`${tableType}-search`}
-            type="text"
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder={`Search ${tableType}...`}
-            className="w-full px-4 py-2.5 text-sm font-normal border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 transition-all duration-200 backdrop-blur-sm"
+          <TextField
+            field={{
+              name: `${tableType}-search`,
+              label: `Search ${tableType}...`,
+              required: false,
+              placeholder: `Search ${tableType}...`
+            }}
+            register={() => ({})}
+            errors={{}}
+            setValue={(name, value) => setGlobalFilter(value)}
+            trigger={() => {}}
+            clearErrors={() => {}}
+            formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
           />
         </div>
       )}
       
-      {/* Filter Checkboxes */}
-      {onFilterChange && (
-        <div className="flex items-center space-x-4">
-          <CheckboxField
-            field={{
-              name: 'aiUsed',
-              label: 'AI Used',
-              required: false
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => onFilterChange(name)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={filters}
-          />
-          
-          <CheckboxField
-            field={{
-              name: 'marketing',
-              label: 'Marketing',
-              required: false
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => onFilterChange(name)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={filters}
-          />
-          
-          <CheckboxField
-            field={{
-              name: 'acquisition',
-              label: 'Acquisition',
-              required: false
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => onFilterChange(name)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={filters}
-          />
-          
-          <CheckboxField
-            field={{
-              name: 'product',
-              label: 'Product',
-              required: false
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => onFilterChange(name)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={filters}
-          />
-          
-          <CheckboxField
-            field={{
-              name: 'vip',
-              label: 'VIP',
-              required: false
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => onFilterChange(name)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={filters}
-          />
-          
-          <CheckboxField
-            field={{
-              name: 'reworked',
-              label: 'Reworked',
-              required: false
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => onFilterChange(name)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={filters}
-          />
-        </div>
-      )}
     </div>
     
     <div className="flex items-center space-x-3">
@@ -343,10 +257,6 @@ const TanStackTable = forwardRef(({
   paginationProps = null,
   onPageChange = null,
   onPageSizeChange = null,
-
-  // Filter props
-  filters = {},
-  onFilterChange = null,
 
   // Additional props
   ...additionalProps
@@ -585,8 +495,6 @@ const TanStackTable = forwardRef(({
             handleCSVExport={handleCSVExport}
             isExporting={isExporting}
             onPageSizeChange={handlePageSizeChange}
-            filters={filters}
-            onFilterChange={onFilterChange}
           />
 
           {/* Bulk Actions Bar */}

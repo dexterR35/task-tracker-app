@@ -26,7 +26,6 @@ import { logger } from "@/utils/logger";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { getCurrentYear } from "@/utils/dateUtils";
 import listenerManager from "@/features/utils/firebaseListenerManager";
-import firestoreUsageTracker from "@/utils/firestoreUsageTracker";
 
 /**
  * Get Firestore reference for tasks (collection or individual document)
@@ -228,7 +227,6 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
             tasksQuery,
             (snapshot) => {
               if (snapshot && snapshot.docs) {
-                firestoreUsageTracker.trackListener(`tasks_${monthId}`, snapshot.docs.length);
               }
 
               if (!snapshot || !snapshot.docs || snapshot.empty) {

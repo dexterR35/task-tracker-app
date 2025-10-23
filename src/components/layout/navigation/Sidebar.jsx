@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import FirestoreUsageMonitor from "@/components/ui/FirestoreUsageMonitor/FirestoreUsageMonitor";
 
 const Sidebar = () => {
   const { logout, clearError, canAccess, user } = useAuth();
@@ -131,12 +130,6 @@ const Sidebar = () => {
       </nav>
 
 
-      {/* Firebase Usage Monitor (includes Firestore + Listeners) */}
-      {!isCollapsed && (
-        <div className="px-3 py-3 border-t border-gray-200 dark:border-gray-700">
-          <FirestoreUsageMonitor />
-        </div>
-      )}
 
     </div>
   );
