@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import Avatar from "@/components/ui/Avatar/Avatar";
+import logo from "@/assets/logo.webp";
 
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const { user, canAccess, logout, clearError } = useAuth();
@@ -74,9 +75,11 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
 
         {/* SYNC Logo */}
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-sm">S</span>
-          </div>
+          <img 
+            src={logo} 
+            alt="SYNC Logo" 
+            className="w-8 h-8 object-contain"
+          />
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">
             SYNC
           </h1>

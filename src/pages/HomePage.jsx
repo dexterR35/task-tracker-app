@@ -1,6 +1,7 @@
 import React from "react";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import netbetLogo from "@/assets/netbet-logo.png";
+import logo from "@/assets/logo.webp";
 import { Icons } from "@/components/icons";
 import { CARD_SYSTEM } from "@/constants";
 import { getCardColor } from "@/components/Card/smallCards/smallCardConfig";
@@ -284,10 +285,17 @@ const HomePage = () => {
       <div className="max-w-[90%] w-full mx-auto px-4 relative pt-10">
         {/* Hero Section */}
         <div className="mb-5">
-          <h1 className="mb-2 text-center text-6xl">
-            <span >Welcome to </span>
-            <span className="text-red-error ">SYNC</span>
-          </h1>
+          <div className="flex justify-center items-center mb-4">
+            <img 
+              src={logo} 
+              alt="SYNC Logo" 
+              className="w-16 h-16 object-contain mr-4"
+            />
+            <h1 className="text-6xl">
+              <span >Welcome to </span>
+              <span className="text-red-error ">SYNC</span>
+            </h1>
+          </div>
           <p className="md:text-lg max-w-xl mx-auto text-center mb-10">
             The task management platform designed for teams that prioritize{" "}
            <span className="text-red-error">calculate monthly reports</span> and <span className="text-blue-default">analyze performance</span>

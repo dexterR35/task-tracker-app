@@ -23,8 +23,26 @@ const SearchableSelectField = ({
   const currentValue = watch(field.name);
   const selectedOption = field.options?.find(option => option.value === currentValue);
   
-  // Debug logging for edit mode
-  if (field.name === 'reporters' && currentValue) {
+  // Debug logging to understand the issue
+  if (field.name === 'selectedUser' && currentValue) {
+    console.log('🔍 User field debug:', {
+      fieldName: field.name,
+      currentValue,
+      hasSelectedOption: !!selectedOption,
+      optionsCount: field.options?.length || 0,
+      selectedOptionLabel: selectedOption?.label || selectedOption?.name
+    });
+  }
+  
+  // Debug logging for reporter field
+  if (field.name === 'selectedReporter' && currentValue) {
+    console.log('🔍 Reporter field debug:', {
+      fieldName: field.name,
+      currentValue,
+      hasSelectedOption: !!selectedOption,
+      optionsCount: field.options?.length || 0,
+      selectedOptionLabel: selectedOption?.label || selectedOption?.name
+    });
   }
 
   // Handle initial value when form is reset - fixed infinite loop
@@ -163,10 +181,21 @@ const SearchableSelectField = ({
       }
     }
     
-    // Last resort: if we have a currentValue but no matching option found,
-    // it might be a timing issue - return empty string to avoid showing the UID
+    // If we have a currentValue but no matching option found,
+    // it might be a timing issue - try to preserve the display value
     if (currentValue) {
-      return ''; // Return empty to avoid showing the UID
+      // Don't return empty - this causes the selection to disappear
+      // Instead, try to find the option one more time with a more flexible search
+      const flexibleOption = field.options?.find(opt => 
+        opt.value === currentValue || 
+        opt.label === currentValue || 
+        opt.name === currentValue
+      );
+      if (flexibleOption) {
+        return flexibleOption.name || flexibleOption.label || '';
+      }
+      // If still no match, return empty to avoid showing the UID
+      return '';
     }
     
     return '';

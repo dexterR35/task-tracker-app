@@ -198,15 +198,15 @@ export const CARD_SYSTEM = {
     DEFAULT: 'gray',
   },
   COLOR_HEX_MAP: {
-    green: '#10b981',      // Emerald-500 - Fresh, growth
-    blue: '#3b82f6',       // Blue-500 - Professional, trust
-    purple: '#8b5cf6',     // Purple-500 - Premium, personal
-    crimson: '#dc2626',    // Red-600 - Authority, admin
-    amber: '#f59e0b',      // Amber-500 - Energy, action
-    pink: '#ec4899',       // Pink-500 - Calendar, time
-    red: '#ef4444',        // Red-500 - Error
-    yellow: '#f59e0b',     // Amber-500 - Warning
-    gray: '#64748b',       // Slate-500 - Disabled
+    green: '#22c55e',      // Green-500 - Fresh, growth
+    blue: '#2563eb',       // Blue-600 - Professional, trust
+    purple: '#7c3aed',     // Purple-600 - Premium, personal
+    crimson: '#e11d48',    // Rose-600 - Authority, admin
+    amber: '#d97706',      // Amber-600 - Energy, action
+    pink: '#db2777',       // Pink-600 - Calendar, time
+    red: '#dc2626',        // Red-600 - Error
+    yellow: '#ca8a04',     // Yellow-600 - Warning
+    gray: '#6b7280',       // Gray-500 - Disabled
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',
@@ -333,6 +333,7 @@ export const TABLE_SYSTEM = {
     SHORT: 'MM/dd/yyyy',
     LONG: 'MMMM dd, yyyy',
     DATETIME: 'MM/dd/yyyy HH:mm',
+    DATETIME_LONG: 'MMM dd, yyyy HH:mm',
     TIME: 'HH:mm',
     ISO: 'yyyy-MM-dd',
   },

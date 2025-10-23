@@ -229,7 +229,7 @@ const TaskDetailPage = () => {
           },
           {
             label: 'Created At',
-            value: task?.createdAt ? formatDate(task.createdAt, 'dd MMM yyyy, HH:mm', true) : 'Not specified'
+            value: task?.createdAt ? formatDate(task.createdAt, 'MMM dd, yyyy HH:mm', true) : 'Not specified'
           },
           {
             label: 'Created By',

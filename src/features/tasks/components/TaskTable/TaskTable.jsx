@@ -447,86 +447,63 @@ const TaskTable = ({
         
         <div className="flex flex-wrap gap-2">
           <div className="minimal-filter-item">
-            <CheckboxField
-              field={{
-                name: 'aiUsed',
-                label: 'AI Used',
-                required: false
-              }}
-              register={() => ({})}
-              errors={{}}
-              setValue={(name, value) => handleFilterChange(name)}
-              trigger={() => {}}
-              clearErrors={() => {}}
-              formValues={filters}
-            />
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.aiUsed}
+                onChange={() => handleFilterChange('aiUsed')}
+                className="form-checkbox"
+              />
+              <span className="text-sm">AI Used</span>
+            </label>
           </div>
           
           <div className="minimal-filter-item">
-            <CheckboxField
-              field={{
-                name: 'marketing',
-                label: 'Marketing',
-                required: false
-              }}
-              register={() => ({})}
-              errors={{}}
-              setValue={(name, value) => handleFilterChange(name)}
-              trigger={() => {}}
-              clearErrors={() => {}}
-              formValues={filters}
-            />
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.marketing}
+                onChange={() => handleFilterChange('marketing')}
+                className="form-checkbox"
+              />
+              <span className="text-sm">Marketing</span>
+            </label>
           </div>
           
           <div className="minimal-filter-item">
-            <CheckboxField
-              field={{
-                name: 'acquisition',
-                label: 'Acquisition',
-                required: false
-              }}
-              register={() => ({})}
-              errors={{}}
-              setValue={(name, value) => handleFilterChange(name)}
-              trigger={() => {}}
-              clearErrors={() => {}}
-              formValues={filters}
-            />
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.acquisition}
+                onChange={() => handleFilterChange('acquisition')}
+                className="form-checkbox"
+              />
+              <span className="text-sm">Acquisition</span>
+            </label>
           </div>
           
           <div className="minimal-filter-item">
-            <CheckboxField
-              field={{
-                name: 'product',
-                label: 'Product',
-                required: false
-              }}
-              register={() => ({})}
-              errors={{}}
-              setValue={(name, value) => handleFilterChange(name)}
-              trigger={() => {}}
-              clearErrors={() => {}}
-              formValues={filters}
-            />
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.product}
+                onChange={() => handleFilterChange('product')}
+                className="form-checkbox"
+              />
+              <span className="text-sm">Product</span>
+            </label>
           </div>
           
           <div className="minimal-filter-item">
-            <CheckboxField
-              field={{
-                name: 'deliverables',
-                label: 'Deliverables',
-                required: false
-              }}
-              register={() => ({})}
-              errors={{}}
-              setValue={(name, value) => {
-                // Force single selection by calling handleFilterChange
-                handleFilterChange(name);
-              }}
-              trigger={() => {}}
-              clearErrors={() => {}}
-              formValues={filters}
-            />
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.deliverables}
+                onChange={() => handleFilterChange('deliverables')}
+                className="form-checkbox"
+              />
+              <span className="text-sm">Deliverables</span>
+            </label>
           </div>
         </div>
       </div>

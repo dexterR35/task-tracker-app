@@ -251,8 +251,8 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'D CREATED',
-    cell: createDateCell(DATE_FORMATS.LONG),
-    size: 120,
+    cell: createDateCell(DATE_FORMATS.DATETIME_LONG),
+    size: 150,
   }),
 
   columnHelper.accessor((row) => row.data_task?.observations, {
@@ -417,8 +417,8 @@ const createUserColumns = () => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'CREATED',
-    cell: createDateCell(),
-    size: 120,
+    cell: createDateCell(DATE_FORMATS.DATETIME_LONG),
+    size: 150,
   }),
 ];
 
@@ -458,8 +458,8 @@ const createReporterColumns = () => [
   }),
   columnHelper.accessor('createdAt', {
     header: 'CREATED',
-    cell: createDateCell(),
-    size: 120,
+    cell: createDateCell(DATE_FORMATS.DATETIME_LONG),
+    size: 150,
   }),
 ];
 

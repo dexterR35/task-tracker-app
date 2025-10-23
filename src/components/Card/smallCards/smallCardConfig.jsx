@@ -129,8 +129,16 @@ export const SMALL_CARD_CONFIGS = {
     description: "Users",
     icon: Icons.generic.user,
     color: (data) => getCardColor("user-filter", data),
-    getValue: (data) => data.users?.length || 0,
-    getStatus: (data) => (data.selectedUserId ? "Filtered" : "All Users"),
+    getValue: (data) => {
+      // Show total number of users, not tasks
+      return (data.users?.length || 0).toString();
+    },
+    getStatus: (data) => {
+      if (data.selectedUserId) {
+        return data.selectedUserName;
+      }
+      return "All Users";
+    },
     getBadge: (data) => ({
       text: data.selectedUserId ? "Filtered" : "All Users",
       color: getCardColor("user-filter", data)
@@ -177,8 +185,9 @@ export const SMALL_CARD_CONFIGS = {
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }
             }}
+            variant="primary"
             iconName="view"
-            className="w-full transition-colors uppercase bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full uppercase"
           >
             VIEW USER ANALYTICS
           </DynamicButton>
@@ -210,9 +219,16 @@ export const SMALL_CARD_CONFIGS = {
     description: "Reporters",
     icon: Icons.admin.reporters,
     color: (data) => getCardColor("reporter-filter", data),
-    getValue: (data) => data.reporters?.length || 0,
-    getStatus: (data) =>
-      data.selectedReporterId ? "Filtered" : "All Reporters",
+    getValue: (data) => {
+      // Show total number of reporters, not tasks
+      return (data.reporters?.length || 0).toString();
+    },
+    getStatus: (data) => {
+      if (data.selectedReporterId) {
+        return data.selectedReporterName;
+      }
+      return "All Reporters";
+    },
     getBadge: (data) => ({
       text: data.selectedReporterId ? "Filtered" : "All Reporters",
       color: getCardColor("reporter-filter", data)
@@ -259,8 +275,9 @@ export const SMALL_CARD_CONFIGS = {
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }
             }}
+            variant="primary"
             iconName="view"
-            className="w-full transition-colors uppercase bg-green-600 hover:bg-green-700 text-white"
+            className="w-full uppercase"
           >
             VIEW REPORTER ANALYTICS
           </DynamicButton>
@@ -506,13 +523,13 @@ export const SMALL_CARD_CONFIGS = {
       
       const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
       
-      // Always show ALL tasks for the selected month (no user/reporter filtering)
+      // Show ALL tasks for the selected month (no user/reporter filtering)
       const filteredTasks = data.tasks.filter((task) => {
         // Only filter by month, never by user or reporter
         if (currentMonthId && task.monthId !== currentMonthId) return false;
         return true;
       });
-      
+
       return filteredTasks.length.toString();
     },
     getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),

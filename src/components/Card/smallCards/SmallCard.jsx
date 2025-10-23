@@ -59,14 +59,15 @@ const SmallCard = memo(({ card }) => {
               </div>
             </div>
             
-            {/* Status Badge - Using card color from config */}
+            {/* Status Badge - Using Badge component */}
             {card.badge && (
-              <span 
-                className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded"
-                style={badgeStyle}
+              <Badge 
+                color={card.badge.color}
+                size="sm"
+                className="text-xs"
               >
                 {card.badge.text}
-              </span>
+              </Badge>
             )}
           </div>
 

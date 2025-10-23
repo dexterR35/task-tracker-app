@@ -26,8 +26,8 @@ const AdminDashboardPage = () => {
   // Initialize selectedWeek from URL parameter
   const [selectedWeek, setSelectedWeek] = useState(null);
 
-  // Get all data from context with selectedUserId
-  const appData = useAppDataContext(selectedUserId);
+  // Get all data from context
+  const appData = useAppDataContext();
   
   const {
     user,
@@ -65,47 +65,27 @@ const AdminDashboardPage = () => {
         return; // Prevent regular users from selecting other users
       }
       
-      // Update the context's selectedUserId
-      setSelectedUserId(userId || null);
-      
       const currentParams = Object.fromEntries(searchParams.entries());
-      const previousUserId = currentParams.user;
       
       if (!userId) {
         delete currentParams.user;
-        console.log("👤 User selection cleared", { previousUserId });
       } else {
         currentParams.user = userId;
-        const selectedUser = users.find(u => (u.userUID || u.id) === userId);
-        console.log("👤 User selected", {
-          userId,
-          userName: selectedUser?.name || selectedUser?.email || "Unknown",
-          previousUserId,
-          isUserAdmin
-        });
       }
       setSearchParams(currentParams, { replace: true });
     },
-    [setSearchParams, searchParams, isUserAdmin, user, users, setSelectedUserId]
+    [setSearchParams, searchParams, isUserAdmin, user, users]
   );
 
   // Handle reporter selection with role-based access control and logging
   const handleReporterSelect = useCallback(
     (reporterId) => {
       const currentParams = Object.fromEntries(searchParams.entries());
-      const previousReporterId = currentParams.reporter;
       
       if (!reporterId) {
         delete currentParams.reporter;
-        console.log("📊 Reporter selection cleared", { previousReporterId });
       } else {
         currentParams.reporter = reporterId;
-        const selectedReporter = reporters.find(r => (r.id || r.uid) === reporterId);
-        console.log("📊 Reporter selected", {
-          reporterId,
-          reporterName: selectedReporter?.name || selectedReporter?.reporterName || "Unknown",
-          previousReporterId
-        });
       }
       setSearchParams(currentParams, { replace: true });
     },
