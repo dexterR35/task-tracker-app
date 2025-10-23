@@ -71,6 +71,8 @@ const AdminDashboardPage = () => {
         delete currentParams.user;
       } else {
         currentParams.user = userId;
+        // Clear reporter selection when user is selected
+        delete currentParams.reporter;
       }
       setSearchParams(currentParams, { replace: true });
     },
@@ -86,6 +88,8 @@ const AdminDashboardPage = () => {
         delete currentParams.reporter;
       } else {
         currentParams.reporter = reporterId;
+        // Clear user selection when reporter is selected
+        delete currentParams.user;
       }
       setSearchParams(currentParams, { replace: true });
     },

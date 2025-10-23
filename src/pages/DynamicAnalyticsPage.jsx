@@ -572,7 +572,31 @@ const DynamicAnalyticsPage = () => {
                       if (!taskDate || isNaN(taskDate.getTime())) return false;
                       
                       const taskDateStr = taskDate.toISOString().split('T')[0];
-                      return taskDateStr === dayStr;
+                      const dateMatch = taskDateStr === dayStr;
+                      
+                      // Also filter by user if userName is specified
+                      if (userName && dateMatch) {
+                        const userMatch = (
+                          task.createdByName === userName ||
+                          task.userName === userName ||
+                          (task.userUID && task.userUID.includes(userName)) ||
+                          (task.createbyUID && task.createbyUID.includes(userName))
+                        );
+                        if (!userMatch) return false;
+                      }
+                      
+                      // Also filter by reporter if reporterName is specified
+                      if (reporterName && dateMatch) {
+                        const reporterMatch = (
+                          task.data_task?.reporterName === reporterName ||
+                          task.reporterName === reporterName ||
+                          (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
+                          (task.reporterUID && task.reporterUID === reporterName)
+                        );
+                        if (!reporterMatch) return false;
+                      }
+                      
+                      return dateMatch;
                     });
                     weekTasks.push(...dayTasks);
                   } catch (error) {
