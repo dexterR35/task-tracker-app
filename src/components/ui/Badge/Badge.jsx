@@ -17,8 +17,8 @@ const Badge = ({
 }) => {
   // Size variants
   const sizeClasses = {
-    xs: 'px-1 py-0.5 text-xs',
-    sm: 'px-1.5 py-0.5 text-xs',
+    xs: 'px-1 py-0.5 text-sm',
+    sm: 'px-1.5 py-0.5 text-sm',
     md: 'px-2 py-1 text-sm',
     lg: 'px-2.5 py-1.5 text-sm'
   };
@@ -26,7 +26,7 @@ const Badge = ({
   // Default fallback color
   const defaultColorHex = '#64748b';
 
-  const baseClasses = 'inline-flex items-center font-medium rounded-md transition-all duration-200 ';
+  const baseClasses = 'inline-flex items-center font-medium rounded-md ';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
   
   // Get colorHex from colorHex prop, color prop using CARD_SYSTEM (like small cards), or fallback
@@ -44,7 +44,7 @@ const Badge = ({
   
   return (
     <span 
-      className={`${baseClasses} ${sizeClass} ${className} hover:scale-105 hover:shadow-md`}
+      className={`${baseClasses} ${sizeClass} ${className}`}
       style={badgeStyle}
       {...props}
     >

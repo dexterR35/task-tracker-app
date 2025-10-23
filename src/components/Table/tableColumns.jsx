@@ -56,7 +56,7 @@ const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => {
   const value = getValue();
   if (!value) return '-';
   return (
-    <span className="text-xs font-normal text-gray-700 dark:text-gray-300">
+    <span className="text-sm font-normal text-gray-700 dark:text-gray-300">
       {formatDateCell(value, format)}
     </span>
   );
@@ -85,9 +85,9 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
             )}
           </div>
           {isUserAdmin && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+            <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
               {deliverable.configured ? (
-                <div className="text-xs block">
+                <div className="text-sm block">
                   <div className="block">
                     Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
                     {deliverable.timeUnit === 'min' && (
@@ -132,7 +132,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge color="green" size="sm" className="font-mono">
+        <Badge color="amber" size="sm" className="font-mono">
           {taskName}
         </Badge>
       );
@@ -144,14 +144,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'DEPARTMENT',
     cell: ({ getValue, row }) => {
       if (!row.original?.data_task) {
-        return <span className="text-red-500 text-xs">❌ No data_task</span>;
+        return <span className="text-red-500 text-sm">❌ No data_task</span>;
       }
       
       const value = getValue();
       if (Array.isArray(value)) {
-        return value.length > 0 ? value.join(', ') : <span className="text-red-500 text-xs">❌ Missing</span>;
+        return value.length > 0 ? value.join(', ') : <span className="text-red-500 text-sm">❌ Missing</span>;
       }
-      return value || <span className="text-red-500 text-xs">❌ Missing</span>;
+      return value || <span className="text-red-500 text-sm">❌ Missing</span>;
     },
     size: 100,
   }),
@@ -199,7 +199,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
             ))}
           </div>
           {aiTime > 0 && (
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Total: {aiTime}h
             </div>
           )}
@@ -218,7 +218,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         deliverables={deliverables}
       />
     ),
-    size: 150,
+    size: 200,
   }),
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: 'reporters',
@@ -376,7 +376,7 @@ const createUserColumns = () => [
       const role = getValue() || 'user';
       return (
         <Badge 
-          color={role === 'admin' ? 'red' : role === 'reporter' ? 'blue' : 'green'} 
+          color={role === 'admin' ? 'red' : role === 'reporter' ? 'blue' : 'amber'} 
           size="sm"
         >
           {role}
@@ -400,7 +400,7 @@ const createUserColumns = () => [
               key={index} 
               color="blue" 
               size="xs"
-              className="text-xs"
+              className="text-sm"
             >
               {permission.replace(/_/g, ' ')}
             </Badge>

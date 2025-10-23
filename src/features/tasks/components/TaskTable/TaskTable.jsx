@@ -10,6 +10,7 @@ import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import { CheckboxField } from '@/components/forms/components';
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 import './TaskTable.css';
 
 const TaskTable = ({
@@ -24,18 +25,8 @@ const TaskTable = ({
   enablePagination = true,
   pageSize = 20,
 }) => {
-  // Filter states
-  const [filters, setFilters] = useState({
-    aiUsed: false,
-    marketing: false,
-    acquisition: false,
-    product: false,
-    vip: false,
-    reworked: false,
-    highPriority: false,
-    completed: false,
-    inProgress: false
-  });
+  // Filter state - single selection only
+  const [selectedFilter, setSelectedFilter] = useState(null);
 
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -159,7 +150,7 @@ const TaskTable = ({
   
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, activeFilters) => {
+    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, selectedFilter) => {
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
@@ -223,9 +214,9 @@ const TaskTable = ({
         return true; // Admin sees all tasks
       });
 
-      // Apply category filters
-      if (activeFilters && Object.values(activeFilters).some(filter => filter)) {
-        console.log('Applying filters:', activeFilters);
+      // Apply single filter selection
+      if (selectedFilter) {
+        console.log('Applying filter:', selectedFilter);
         filteredTasks = filteredTasks.filter((task) => {
           const taskData = task.data_task || task;
           
@@ -237,62 +228,25 @@ const TaskTable = ({
             reworked: taskData.reworked
           });
           
-          // AI Used filter
-          if (activeFilters.aiUsed && !taskData.aiUsed?.length) {
-            console.log('Filtered out - no AI used');
-            return false;
+          // Apply the selected filter
+          switch (selectedFilter) {
+            case 'aiUsed':
+              return taskData.aiUsed?.length > 0;
+            case 'marketing':
+              return taskData.products?.includes('marketing');
+            case 'acquisition':
+              return taskData.products?.includes('acquisition');
+            case 'product':
+              return taskData.products?.includes('product');
+            case 'vip':
+              return taskData.isVip;
+            case 'reworked':
+              return taskData.reworked;
+            case 'observation':
+              return taskData.observation;
+            default:
+              return true;
           }
-          
-          // Marketing filter
-          if (activeFilters.marketing && !taskData.products?.includes('marketing')) {
-            console.log('Filtered out - not marketing');
-            return false;
-          }
-          
-          // Acquisition filter
-          if (activeFilters.acquisition && !taskData.products?.includes('acquisition')) {
-            console.log('Filtered out - not acquisition');
-            return false;
-          }
-          
-          // Product filter
-          if (activeFilters.product && !taskData.products?.includes('product')) {
-            console.log('Filtered out - not product');
-            return false;
-          }
-          
-          // VIP filter
-          if (activeFilters.vip && !taskData.isVip) {
-            console.log('Filtered out - not VIP');
-            return false;
-          }
-          
-          // Reworked filter
-          if (activeFilters.reworked && !taskData.reworked) {
-            console.log('Filtered out - not reworked');
-            return false;
-          }
-          
-          // High Priority filter
-          if (activeFilters.highPriority && !taskData.highPriority) {
-            console.log('Filtered out - not high priority');
-            return false;
-          }
-          
-          // Completed filter
-          if (activeFilters.completed && !taskData.completed) {
-            console.log('Filtered out - not completed');
-            return false;
-          }
-          
-          // In Progress filter
-          if (activeFilters.inProgress && !taskData.inProgress) {
-            console.log('Filtered out - not in progress');
-            return false;
-          }
-          
-          console.log('Task passed filters');
-          return true;
         });
       }
 
@@ -346,7 +300,7 @@ const TaskTable = ({
       selectedReporterId,
       selectedMonthId,
       selectedWeek,
-      filters
+      selectedFilter
     );
     
     // Sort by createdAt in descending order (newest first)
@@ -413,6 +367,38 @@ const TaskTable = ({
       }
     },
     {
+      label: "View Jira Link",
+      icon: "external-link",
+      variant: "warning",
+      onClick: (selectedTasks) => {
+        if (selectedTasks.length === 1) {
+          const task = selectedTasks[0];
+          const jiraUrl = task.data_task?.jiraUrl;
+          const jiraTicket = task.data_task?.jiraTicket;
+          
+          let fullJiraUrl = null;
+          
+          // If full URL is provided, use it
+          if (jiraUrl) {
+            fullJiraUrl = jiraUrl;
+          }
+          // If only ticket number is provided, construct the full URL
+          else if (jiraTicket) {
+            fullJiraUrl = `https://gmrd.atlassian.net/browse/${jiraTicket}`;
+          }
+          
+          if (fullJiraUrl) {
+            // Open Jira link in new tab
+            window.open(fullJiraUrl, '_blank', 'noopener,noreferrer');
+          } else {
+            showError("No Jira ticket or URL available for this task");
+          }
+        } else {
+          showError("Please select only ONE task to view Jira link");
+        }
+      }
+    },
+    {
       label: "Edit Selected",
       icon: "edit",
       variant: "edit",
@@ -456,230 +442,111 @@ const TaskTable = ({
   }, [filteredTasks?.length, onCountChange]);
 
 
-  // Handle filter changes
+  // Handle filter changes - single selection only
   const handleFilterChange = (filterName) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterName]: !prev[filterName]
-    }));
+    // If clicking the same filter, deselect it
+    if (selectedFilter === filterName) {
+      setSelectedFilter(null);
+    } else {
+      // Select the new filter
+      setSelectedFilter(filterName);
+    }
   };
 
   return (
     <div className={`task-table ${className}`}>
-      {/* Filter Mini Cards */}
-      <div className="mb-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Filters</h3>
+      {/* Filter Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-2 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Task Filters</h3>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedFilter ? `Filtering by: ${selectedFilter}` : 'All tasks shown'}
+            </div>
+          </div>
+          {selectedFilter && (
+            <DynamicButton
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedFilter(null)}
+              className="text-gray-600 dark:text-gray-400"
+            >
+              Clear Filter
+            </DynamicButton>
+          )}
         </div>
         
-        <div className="flex items-center space-x-3 flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {/* AI Used Filter */}
-          <button
+          <DynamicButton
+            variant={selectedFilter === 'aiUsed' ? 'success' : 'outline'}
+            size="sm"
             onClick={() => handleFilterChange('aiUsed')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.aiUsed 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.aiUsed 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.aiUsed 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              AI Used
-            </span>
-          </button>
+            AI Used
+          </DynamicButton>
 
           {/* Marketing Filter */}
-          <button
+          <DynamicButton
+            variant={selectedFilter === 'marketing' ? 'success' : 'outline'}
+            size="sm"
             onClick={() => handleFilterChange('marketing')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.marketing 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.marketing 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.marketing 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              Marketing
-            </span>
-          </button>
+            Marketing
+          </DynamicButton>
 
           {/* Acquisition Filter */}
-          <button
+          <DynamicButton
+            variant={selectedFilter === 'acquisition' ? 'success' : 'outline'}
+            size="sm"
             onClick={() => handleFilterChange('acquisition')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.acquisition 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.acquisition 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.acquisition 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              Acquisition
-            </span>
-          </button>
+            Acquisition
+          </DynamicButton>
 
           {/* Product Filter */}
-          <button
+          <DynamicButton
+            variant={selectedFilter === 'product' ? 'success' : 'outline'}
+            size="sm"
             onClick={() => handleFilterChange('product')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.product 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.product 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.product 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              Product
-            </span>
-          </button>
+            Product
+          </DynamicButton>
 
           {/* VIP Filter */}
-          <button
+          <DynamicButton
+            variant={selectedFilter === 'vip' ? 'success' : 'outline'}
+            size="sm"
             onClick={() => handleFilterChange('vip')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.vip 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.vip 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.vip 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              VIP
-            </span>
-          </button>
+            VIP
+          </DynamicButton>
 
           {/* Reworked Filter */}
-          <button
+          <DynamicButton
+            variant={selectedFilter === 'reworked' ? 'success' : 'outline'}
+            size="sm"
             onClick={() => handleFilterChange('reworked')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.reworked 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.reworked 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.reworked 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              Reworked
-            </span>
-          </button>
+            Reworked
+          </DynamicButton>
 
-          {/* High Priority Filter */}
-          <button
-            onClick={() => handleFilterChange('highPriority')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.highPriority 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
+          {/* Observation Filter */}
+          <DynamicButton
+            variant={selectedFilter === 'observation' ? 'success' : 'outline'}
+            size="sm"
+            onClick={() => handleFilterChange('observation')}
+            className="w-full justify-center py-2"
           >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.highPriority 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.highPriority 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              High Priority
-            </span>
-          </button>
-
-          {/* Completed Filter */}
-          <button
-            onClick={() => handleFilterChange('completed')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.completed 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
-          >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.completed 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.completed 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              Completed
-            </span>
-          </button>
-
-          {/* In Progress Filter */}
-          <button
-            onClick={() => handleFilterChange('inProgress')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filters.inProgress 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 shadow-md' 
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-            }`}
-          >
-            <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
-              filters.inProgress 
-                ? 'bg-green-500 dark:bg-green-400 shadow-sm' 
-                : 'bg-red-500 dark:bg-red-400 shadow-sm'
-            }`}></div>
-            <span className={`text-sm font-medium transition-colors duration-200 ${
-              filters.inProgress 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              In Progress
-            </span>
-          </button>
+            Observation
+          </DynamicButton>
         </div>
       </div>
 
