@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
+import { CARD_SYSTEM } from '@/constants';
 
 const SimplePieChart = React.memo(({ 
   data, 

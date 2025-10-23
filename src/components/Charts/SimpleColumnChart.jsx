@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
+import { CARD_SYSTEM } from '@/constants';
 
 const SimpleColumnChart = React.memo(({ data = [], title = "Chart", colors = CHART_COLORS.DEFAULT, multiBar = false }) => {
   if (!data || data.length === 0) {
@@ -14,7 +15,7 @@ const SimpleColumnChart = React.memo(({ data = [], title = "Chart", colors = CHA
   // Transform data for Recharts - memoized to prevent unnecessary recalculations
   const chartData = useMemo(() => {
     return data.map((item, index) => {
-      const baseColor = colors[index] || colors[0] || '#3b82f6';
+      const baseColor = colors[index] || colors[0] || CARD_SYSTEM.COLOR_HEX_MAP.blue;
       return {
         name: item.name,
         tasks: item.tasks || item.value || 0,

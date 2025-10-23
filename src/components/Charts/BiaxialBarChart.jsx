@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
+import { CARD_SYSTEM } from '@/constants';
 
 const BiaxialBarChart = React.memo(({ 
   data = [], 

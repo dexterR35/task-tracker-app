@@ -11,16 +11,10 @@ import Badge from '@/components/ui/Badge/Badge';
 // Markets by Users Card Types
 export const MARKETS_BY_USERS_CARD_TYPES = CARD_SYSTEM.ANALYTICS_CARD_TYPES;
 
-// Color configurations
+// Color configurations - using CARD_SYSTEM.COLOR_HEX_MAP
 export const CHART_COLORS = {
-  DEFAULT: [
-    "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4",
-    "#84cc16", "#f97316", "#ec4899", "#6b7280", "#14b8a6", "#a855f7"
-  ],
-  USER_BY_TASK: [
-    "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4",
-    "#84cc16", "#f97316", "#ec4899", "#6b7280"
-  ]
+  DEFAULT: Object.values(CARD_SYSTEM.COLOR_HEX_MAP),
+  USER_BY_TASK: Object.values(CARD_SYSTEM.COLOR_HEX_MAP).slice(0, 10)
 };
 
 // ============================================================================

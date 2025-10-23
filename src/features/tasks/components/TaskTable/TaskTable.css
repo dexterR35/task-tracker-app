@@ -9,7 +9,7 @@
   padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  background: white;
+  background: transparent !important;
   transition: all 0.2s ease;
   cursor: pointer;
   min-width: 80px;

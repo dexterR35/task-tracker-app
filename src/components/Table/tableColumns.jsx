@@ -132,7 +132,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge color="amber" size="sm" className="font-mono">
+        <Badge color="green" size="sm" className="font-mono">
           {taskName}
         </Badge>
       );
@@ -193,7 +193,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} color="amber" size="sm">
+              <Badge key={index} color="purple" size="sm">
                 {model}
               </Badge>
             ))}
