@@ -430,54 +430,19 @@ const TaskTable = ({
 
   // Handle filter changes
   const handleFilterChange = (filterName) => {
-    console.log('Filter change:', filterName, 'Current filters:', filters);
-    
-    setFilters(prev => {
-      // If the same filter is clicked, toggle it off
-      if (prev[filterName]) {
-        console.log('Toggling off filter:', filterName);
-        return {
-          aiUsed: false,
-          marketing: false,
-          acquisition: false,
-          product: false,
-          deliverables: false
-        };
-      }
-      
-      // Otherwise, select only this filter and deselect others
-      console.log('Selecting only filter:', filterName);
-      return {
-        aiUsed: filterName === 'aiUsed',
-        marketing: filterName === 'marketing',
-        acquisition: filterName === 'acquisition',
-        product: filterName === 'product',
-        deliverables: filterName === 'deliverables'
-      };
-    });
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: !prev[filterName]
+    }));
   };
 
   return (
     <div className={`task-table ${className}`}>
       {/* Filter Checkboxes - Above table */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Filters</h3>
-          </div>
-          <button
-            onClick={() => setFilters({
-              aiUsed: false,
-              marketing: false,
-              acquisition: false,
-              product: false,
-              deliverables: false
-            })}
-            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            Clear all
-          </button>
+        <div className="flex items-center space-x-2 mb-4">
+          <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Filters</h3>
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -490,10 +455,7 @@ const TaskTable = ({
               }}
               register={() => ({})}
               errors={{}}
-              setValue={(name, value) => {
-              // Force single selection by calling handleFilterChange
-              handleFilterChange(name);
-            }}
+              setValue={(name, value) => handleFilterChange(name)}
               trigger={() => {}}
               clearErrors={() => {}}
               formValues={filters}
@@ -509,10 +471,7 @@ const TaskTable = ({
               }}
               register={() => ({})}
               errors={{}}
-              setValue={(name, value) => {
-              // Force single selection by calling handleFilterChange
-              handleFilterChange(name);
-            }}
+              setValue={(name, value) => handleFilterChange(name)}
               trigger={() => {}}
               clearErrors={() => {}}
               formValues={filters}
@@ -528,10 +487,7 @@ const TaskTable = ({
               }}
               register={() => ({})}
               errors={{}}
-              setValue={(name, value) => {
-              // Force single selection by calling handleFilterChange
-              handleFilterChange(name);
-            }}
+              setValue={(name, value) => handleFilterChange(name)}
               trigger={() => {}}
               clearErrors={() => {}}
               formValues={filters}
@@ -547,10 +503,7 @@ const TaskTable = ({
               }}
               register={() => ({})}
               errors={{}}
-              setValue={(name, value) => {
-              // Force single selection by calling handleFilterChange
-              handleFilterChange(name);
-            }}
+              setValue={(name, value) => handleFilterChange(name)}
               trigger={() => {}}
               clearErrors={() => {}}
               formValues={filters}

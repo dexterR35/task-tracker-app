@@ -126,7 +126,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
 // Task column definitions
 const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   columnHelper.accessor('data_task.taskName', {
-    header: 'Jira Link',
+    header: 'JIRA LINK',
     cell: ({ getValue, row }) => {
       const taskName = getValue() || row.original?.data_task?.taskName;
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
@@ -141,7 +141,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.departments, {
     id: 'departments',
-    header: 'Department',
+    header: 'DEPARTMENT',
     cell: ({ getValue, row }) => {
       if (!row.original?.data_task) {
         return <span className="text-red-500 text-xs">❌ No data_task</span>;
@@ -157,13 +157,13 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.products, {
     id: 'products',
-    header: 'Product',
+    header: 'PRODUCT',
     cell: createSimpleCell(),
     size: 100,
   }),
   columnHelper.accessor((row) => row.data_task?.markets, {
     id: 'markets',
-    header: 'Markets',
+    header: 'MARKETS',
     cell: ({ getValue }) => {
       const markets = getValue();
       if (!markets?.length) return '-';
@@ -182,7 +182,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.aiUsed?.[0]?.aiModels, {
     id: 'aiModels',
-    header: 'AI Models',
+    header: 'AI MODELS',
     cell: ({ getValue, row }) => {
       const aiModels = getValue();
       const aiTime = row.original?.data_task?.aiUsed?.[0]?.aiTime;
@@ -210,7 +210,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.deliverablesUsed, {
     id: 'deliverables',
-    header: 'Deliverables',
+    header: 'LIVRABLES',
     cell: ({ getValue, row }) => (
       <DeliverableCalculationCell 
         deliverablesUsed={getValue() || row.original?.data_task}
@@ -222,7 +222,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: 'reporters',
-    header: 'Reporter',
+    header: 'REPORTER',
     cell: ({ getValue, row }) => {
       // First try to get reporterName if it exists
       const reporterName = row.original?.data_task?.reporterName;
@@ -245,59 +245,19 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     size: 120,
   }),
   columnHelper.accessor('createdByName', {
-    header: 'Created',
+    header: 'CREATED BY',
     cell: createSimpleCell(),
-    size: 120,
-  }),
-  columnHelper.accessor((row) => row.data_task?.timeInHours, {
-    id: 'timeInHours',
-    header: 'Task Hr',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return '-';
-      
-      return (
-        <Badge color="blue" size="sm">
-          {value}h
-        </Badge>
-      );
-    },
-    size: 80,
+    size: 150,
   }),
   columnHelper.accessor('createdAt', {
-    header: 'Date created',
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return '-';
-      
-      try {
-        const date = normalizeTimestamp(value);
-        if (!date) return '-';
-        
-        // Format date and time separately
-        const dateStr = formatDate(date, 'MMM dd, yyyy', false);
-        const timeStr = formatDate(date, 'HH:mm a', false);
-        
-        return (
-          <div className="text-center">
-            <div className="text-xs font-normal text-gray-700 dark:text-gray-300">
-              {dateStr}
-            </div>
-            <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
-              {timeStr}
-            </div>
-          </div>
-        );
-      } catch {
-        return '-';
-      }
-    },
-    size: 150,
+    header: 'D CREATED',
+    cell: createDateCell(DATE_FORMATS.LONG),
+    size: 120,
   }),
 
   columnHelper.accessor((row) => row.data_task?.observations, {
     id: 'observations',
-    header: 'Observations',
+    header: 'OBSERVATIONS',
     cell: ({ getValue }) => {
       const value = getValue();
       if (!value) return '-';
@@ -319,19 +279,19 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   // Additional task data columns (hidden by default)
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: 'startDate',
-    header: 'Start Date',
+    header: 'START DATE',
     cell: createDateCell(DATE_FORMATS.LONG),
     size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.endDate, {
     id: 'endDate',
-    header: 'End Date',
+    header: 'END DATE',
     cell: createDateCell(DATE_FORMATS.LONG),
     size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: 'done',
-    header: 'Done',
+    header: 'DONE',
     cell: ({ getValue, row }) => {
       const startDate = getValue();
       const endDate = row.original?.data_task?.endDate;
@@ -352,7 +312,22 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         </Badge>
       );
     },
-    size: 80,
+    size: 100,
+  }),
+  columnHelper.accessor((row) => row.data_task?.timeInHours, {
+    id: 'timeInHours',
+    header: 'TASK HR',
+    cell: ({ getValue }) => {
+      const value = getValue();
+      if (!value) return '-';
+      
+      return (
+        <Badge color="blue" size="sm">
+          {value}h
+        </Badge>
+      );
+    },
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.isVip, {
     id: 'isVip',
@@ -362,9 +337,9 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.reworked, {
     id: 'reworked',
-    header: 'ReWorked',
+    header: 'REWORKED',
     cell: createBooleanCell(),
-    size: 50,
+    size: 40,
   }),
 ];
 
@@ -379,7 +354,7 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null, deli
 // User column definitions
 const createUserColumns = () => [
   columnHelper.accessor('name', {
-    header: 'User',
+    header: 'USER',
     cell: ({ row }) => (
       <Avatar 
         user={row.original}
@@ -391,12 +366,12 @@ const createUserColumns = () => [
     size: 200,
   }),
   columnHelper.accessor('email', {
-    header: 'Email',
+    header: 'EMAIL',
     cell: createSimpleCell(),
     size: 200,
   }),
   columnHelper.accessor('role', {
-    header: 'Role',
+    header: 'ROLE',
     cell: ({ getValue }) => {
       const role = getValue() || 'user';
       return (
@@ -411,7 +386,7 @@ const createUserColumns = () => [
     size: 100,
   }),
   columnHelper.accessor('permissions', {
-    header: 'Permissions',
+    header: 'PERMISSIONS',
     cell: ({ getValue }) => {
       const permissions = getValue();
       if (!Array.isArray(permissions) || !permissions.length) {
@@ -436,12 +411,12 @@ const createUserColumns = () => [
     size: 200,
   }),
   columnHelper.accessor('occupation', {
-    header: 'Department',
+    header: 'DEPARTMENT',
     cell: createSimpleCell(),
     size: 150,
   }),
   columnHelper.accessor('createdAt', {
-    header: 'Created',
+    header: 'CREATED',
     cell: createDateCell(),
     size: 120,
   }),
@@ -450,7 +425,7 @@ const createUserColumns = () => [
 // Reporter column definitions
 const createReporterColumns = () => [
   columnHelper.accessor('name', {
-    header: 'Reporter',
+    header: 'REPORTER',
     cell: ({ row }) => (
       <Avatar 
         user={row.original}
@@ -467,22 +442,22 @@ const createReporterColumns = () => [
     size: 200,
   }),
   columnHelper.accessor('departament', {
-    header: 'Department',
+    header: 'DEPARTMENT',
     cell: createSimpleCell(),
     size: 150,
   }),
   columnHelper.accessor('country', {
-    header: 'Country',
+    header: 'COUNTRY',
     cell: createSimpleCell(),
     size: 100,
   }),
   columnHelper.accessor('channelName', {
-    header: 'Channel',
+    header: 'CHANNEL',
     cell: createSimpleCell(),
     size: 120,
   }),
   columnHelper.accessor('createdAt', {
-    header: 'Created',
+    header: 'CREATED',
     cell: createDateCell(),
     size: 120,
   }),

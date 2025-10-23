@@ -26,21 +26,26 @@ const Badge = ({
   // Default fallback color
   const defaultColorHex = '#64748b';
 
-  const baseClasses = 'inline-flex items-center font-medium rounded ';
+  const baseClasses = 'inline-flex items-center font-medium rounded-md transition-all duration-200 ';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
   
   // Get colorHex from colorHex prop, color prop using CARD_SYSTEM (like small cards), or fallback
   const finalColorHex = colorHex || CARD_SYSTEM.COLOR_HEX_MAP[color] || defaultColorHex;
   
+  // Enhanced styling for better dark mode support
+  const badgeStyle = {
+    backgroundColor: `${finalColorHex}15`,
+    color: finalColorHex,
+    border: `1px solid ${finalColorHex}30`,
+    fontWeight: '600',
+    boxShadow: `0 1px 3px ${finalColorHex}20`,
+    backdropFilter: 'blur(4px)'
+  };
+  
   return (
     <span 
-      className={`${baseClasses} ${sizeClass} ${className}`}
-      style={{ 
-        backgroundColor: `${finalColorHex}30`,
-        color: finalColorHex,
-        border: `1px solid ${finalColorHex}40`,
-        fontWeight: '600'
-      }}
+      className={`${baseClasses} ${sizeClass} ${className} hover:scale-105 hover:shadow-md`}
+      style={badgeStyle}
       {...props}
     >
       {children}
