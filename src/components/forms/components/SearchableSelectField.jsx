@@ -267,9 +267,9 @@ const SearchableSelectField = ({
               color={getFieldBadgeColor(field.name)}
               colorHex={CARD_SYSTEM.COLOR_HEX_MAP[getFieldBadgeColor(field.name)]}
               size="sm"
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm"
             >
-              <span className='text-inherit text-xs'>{displayValue}</span>
+              <span className='text-inherit'>{displayValue}</span>
               <button
                 type="button"
                 onClick={handleClear}
