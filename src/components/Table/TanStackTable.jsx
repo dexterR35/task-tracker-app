@@ -61,7 +61,13 @@ const BulkActionsBar = ({
               key={index}
               onClick={() => onBulkAction(action, table)}
               disabled={selectedCount > 1}
-              className="px-2 py-1 text-xs font-normal text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-2 py-1 text-xs font-normal rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                action.variant === 'danger' 
+                  ? 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                  : action.variant === 'edit'
+                  ? 'text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                  : 'text-green-600 dark:text-green-400 border border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30'
+              }`}
             >
               {action.label}
             </button>
