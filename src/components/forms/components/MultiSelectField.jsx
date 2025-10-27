@@ -74,14 +74,8 @@ const MultiSelectField = ({ field, register, setValue, watch, errors, trigger, f
                 const option = field.options?.find(opt => opt.value === item);
                 const label = option?.label || item;
                 
-                // Get variant based on field type
-                const getBadgeVariant = () => {
-                  if (field.name === 'markets') return 'crimson'; // Amber for markets
-                  if (field.name === 'aiModels') return 'crimson'; // Green for AI models
-                  return 'default'; // Gray default
-                };
-                
-                const badgeVariant = getBadgeVariant();
+                // Use select_badge for all selected badges
+                const badgeVariant = 'select_badge';
                 
                 return (
                   <Badge

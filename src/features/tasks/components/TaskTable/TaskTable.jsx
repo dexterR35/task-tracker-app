@@ -11,6 +11,7 @@ import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import { CheckboxField } from '@/components/forms/components';
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { CARD_SYSTEM } from '@/constants';
 import './TaskTable.css';
 
 const TaskTable = ({
@@ -39,8 +40,11 @@ const TaskTable = ({
   const tableRef = useRef(null);
 
   // Get auth functions separately
-  const { canAccess, user } = useAuth();
+  const { canAccess, user, canDeleteTask, canUpdateTask, canViewTasks } = useAuth();
   const isUserAdmin = canAccess("admin");
+  const userCanDeleteTasks = canDeleteTask();
+  const userCanUpdateTasks = canUpdateTask();
+  const userCanViewTasks = canViewTasks();
   
   // Get navigate function for React Router navigation
   const navigate = useNavigate();
@@ -52,6 +56,7 @@ const TaskTable = ({
     deliverables,
     user: userData,
   } = useAppDataContext();
+
 
   // Use context tasks with TanStack pagination
   const tasks = contextTasks || [];
@@ -116,6 +121,12 @@ const TaskTable = ({
 
   // Handle edit task
   const handleEditTask = (task) => {
+    // Check permissions before opening edit modal
+    if (!userCanUpdateTasks) {
+      showAuthError("You do not have permission to edit tasks");
+      return;
+    }
+    
     setEditingTask(task);
     setShowEditModal(true);
   };
@@ -289,8 +300,8 @@ const TaskTable = ({
     [isUserAdmin, userUID]
   );
 
-  // Get filtered tasks and sort by createdAt (newest first)
-  const filteredTasks = (() => {
+  // Get filtered tasks and sort by createdAt (newest first) - memoized for performance
+  const filteredTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
@@ -304,7 +315,7 @@ const TaskTable = ({
     );
     
     // Sort by createdAt in descending order (newest first)
-    const sorted = filtered.sort((a, b) => {
+    return filtered.sort((a, b) => {
       // Handle Firebase Timestamps and different date formats
       let dateA, dateB;
       
@@ -334,39 +345,36 @@ const TaskTable = ({
         dateB = new Date(0);
       }
       
-      // Sort by timestamp (newest first)
-      
       return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
     });
-    
-    // Return sorted tasks
-    
-    return sorted;
-  })();
+  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, selectedWeek, selectedFilter]);
 
-  // Bulk actions - simplified without memoization
-  const bulkActions = [
-    {
-      label: "View Selected",
-      icon: "edit",
-      variant: "primary",
-      onClick: (selectedTasks) => {
-        if (selectedTasks.length === 1) {
-          const task = selectedTasks[0];
-          
-          // Navigate using React Router (no page reload!)
-          const params = new URLSearchParams();
-          if (task.monthId) params.set('monthId', task.monthId);
-          if (task.createdByName) params.set('user', task.createdByName);
-          
-          // Use React Router navigate for smooth navigation
-          navigate(`/task/${task.id}?${params.toString()}`);
-        } else {
-          showError("Please select only ONE task to view");
+  // Bulk actions - build array efficiently without re-creation
+  const bulkActions = useMemo(() => {
+    const actions = [];
+    
+    // Add view action if user has permission
+    if (userCanViewTasks) {
+      actions.push({
+        label: "View Selected",
+        icon: "edit",
+        variant: "primary",
+        onClick: (selectedTasks) => {
+          if (selectedTasks.length === 1) {
+            const task = selectedTasks[0];
+            const params = new URLSearchParams();
+            if (task.monthId) params.set('monthId', task.monthId);
+            if (task.createdByName) params.set('user', task.createdByName);
+            navigate(`/task/${task.id}?${params.toString()}`);
+          } else {
+            showError("Please select only ONE task to view");
+          }
         }
-      }
-    },
-    {
+      });
+    }
+    
+    // Always add Jira link action
+    actions.push({
       label: "View Jira Link",
       icon: "external-link",
       variant: "warning",
@@ -377,18 +385,13 @@ const TaskTable = ({
           const jiraTicket = task.data_task?.jiraTicket;
           
           let fullJiraUrl = null;
-          
-          // If full URL is provided, use it
           if (jiraUrl) {
             fullJiraUrl = jiraUrl;
-          }
-          // If only ticket number is provided, construct the full URL
-          else if (jiraTicket) {
+          } else if (jiraTicket) {
             fullJiraUrl = `https://gmrd.atlassian.net/browse/${jiraTicket}`;
           }
           
           if (fullJiraUrl) {
-            // Open Jira link in new tab
             window.open(fullJiraUrl, '_blank', 'noopener,noreferrer');
           } else {
             showError("No Jira ticket or URL available for this task");
@@ -397,33 +400,42 @@ const TaskTable = ({
           showError("Please select only ONE task to view Jira link");
         }
       }
-    },
-    {
-      label: "Edit Selected",
-      icon: "edit",
-      variant: "edit",
-      onClick: (selectedTasks) => {
-        if (selectedTasks.length === 1) {
-          handleEditTask(selectedTasks[0]);
-          // Note: Success toast will be shown by TaskForm when edit completes
-        } else {
-          showError("Please select only ONE task to edit");
+    });
+    
+    // Add edit action if user has permission
+    if (userCanUpdateTasks) {
+      actions.push({
+        label: "Edit Selected",
+        icon: "edit",
+        variant: "edit",
+        onClick: (selectedTasks) => {
+          if (selectedTasks.length === 1) {
+            handleEditTask(selectedTasks[0]);
+          } else {
+            showError("Please select only ONE task to edit");
+          }
         }
-      }
-    },
-    {
-      label: "Delete Selected",
-      icon: "delete",
-      variant: "danger",
-      onClick: async (selectedTasks) => {
-        if (selectedTasks.length === 1) {
-          handleDelete(selectedTasks[0]);
-        } else {
-          showError("Please select only ONE task to delete");
-        }
-      }
+      });
     }
-  ];
+    
+    // Add delete action if user has permission
+    if (userCanDeleteTasks) {
+      actions.push({
+        label: "Delete Selected",
+        icon: "delete",
+        variant: "danger",
+        onClick: async (selectedTasks) => {
+          if (selectedTasks.length === 1) {
+            handleDelete(selectedTasks[0]);
+          } else {
+            showError("Please select only ONE task to delete");
+          }
+        }
+      });
+    }
+    
+    return actions;
+  }, [userCanViewTasks, userCanUpdateTasks, userCanDeleteTasks, navigate, handleEditTask, handleDelete]);
 
   // Initial column visibility
   const initialColumnVisibility = {
@@ -455,98 +467,224 @@ const TaskTable = ({
 
   return (
     <div className={`task-table  ${className}`}>
-      {/* Filter Section */}
-      <div className="mb-4 card !bg-smallCard">
-        <div className="flex items-center justify-between mb-6 ">
+      {/* Modern Filter Section */}
+      <div className="mb-6 card !bg-smallCard border border-gray-200 dark:border-gray-700">
+        {/* Filter Header */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-        
-            <h3 >Task Filters</h3>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {selectedFilter ? `Filtering by: ${selectedFilter}` : 'All tasks shown'}
+            <div className="flex items-center space-x-2">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Task Filters</h3>
+            </div>
+            <div className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {selectedFilter ? `${selectedFilter.charAt(0).toUpperCase() + selectedFilter.slice(1)} Tasks` : 'All Tasks'}
+              </span>
             </div>
           </div>
+          
           {selectedFilter && (
-            <DynamicButton
-              variant="outline"
-              size="sm"
+            <button
               onClick={() => setSelectedFilter(null)}
-              className="text-gray-600 dark:text-gray-400"
+              className="flex items-center space-x-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
             >
-              Clear Filter
-            </DynamicButton>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Clear</span>
+            </button>
           )}
         </div>
         
+        {/* Filter Buttons Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {/* AI Used Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'aiUsed' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('aiUsed')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'aiUsed' ? CARD_SYSTEM.COLOR_HEX_MAP.pink : undefined,
+              color: selectedFilter === 'aiUsed' ? 'white' : undefined,
+              borderColor: selectedFilter === 'aiUsed' ? CARD_SYSTEM.COLOR_HEX_MAP.pink : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'aiUsed' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            AI Used
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'aiUsed' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.pink
+                }}
+              ></div>
+              <span>AI Used</span>
+            </div>
+          </button>
 
           {/* Marketing Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'marketing' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('marketing')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'marketing' ? CARD_SYSTEM.COLOR_HEX_MAP.blue : undefined,
+              color: selectedFilter === 'marketing' ? 'white' : undefined,
+              borderColor: selectedFilter === 'marketing' ? CARD_SYSTEM.COLOR_HEX_MAP.blue : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'marketing' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            Marketing
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'marketing' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.blue
+                }}
+              ></div>
+              <span>Marketing</span>
+            </div>
+          </button>
 
           {/* Acquisition Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'acquisition' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('acquisition')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'acquisition' ? CARD_SYSTEM.COLOR_HEX_MAP.green : undefined,
+              color: selectedFilter === 'acquisition' ? 'white' : undefined,
+              borderColor: selectedFilter === 'acquisition' ? CARD_SYSTEM.COLOR_HEX_MAP.green : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'acquisition' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            Acquisition
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'acquisition' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.green
+                }}
+              ></div>
+              <span>Acquisition</span>
+            </div>
+          </button>
 
           {/* Product Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'product' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('product')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'product' ? CARD_SYSTEM.COLOR_HEX_MAP.orange : undefined,
+              color: selectedFilter === 'product' ? 'white' : undefined,
+              borderColor: selectedFilter === 'product' ? CARD_SYSTEM.COLOR_HEX_MAP.orange : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'product' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            Product
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'product' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.orange
+                }}
+              ></div>
+              <span>Product</span>
+            </div>
+          </button>
 
           {/* VIP Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'vip' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('vip')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'vip' ? CARD_SYSTEM.COLOR_HEX_MAP.yellow : undefined,
+              color: selectedFilter === 'vip' ? 'white' : undefined,
+              borderColor: selectedFilter === 'vip' ? CARD_SYSTEM.COLOR_HEX_MAP.yellow : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'vip' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            VIP
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'vip' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.yellow
+                }}
+              ></div>
+              <span>VIP</span>
+            </div>
+          </button>
 
           {/* Reworked Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'reworked' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('reworked')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'reworked' ? CARD_SYSTEM.COLOR_HEX_MAP.purple : undefined,
+              color: selectedFilter === 'reworked' ? 'white' : undefined,
+              borderColor: selectedFilter === 'reworked' ? CARD_SYSTEM.COLOR_HEX_MAP.purple : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'reworked' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            Reworked
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'reworked' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.purple
+                }}
+              ></div>
+              <span>Reworked</span>
+            </div>
+          </button>
 
           {/* Observation Filter */}
-          <DynamicButton
-            variant={selectedFilter === 'observation' ? 'success' : 'outline'}
-            size="sm"
+          <button
             onClick={() => handleFilterChange('observation')}
-            className="w-full justify-center py-2"
+            style={{
+              backgroundColor: selectedFilter === 'observation' ? CARD_SYSTEM.COLOR_HEX_MAP.gray : undefined,
+              color: selectedFilter === 'observation' ? 'white' : undefined,
+              borderColor: selectedFilter === 'observation' ? CARD_SYSTEM.COLOR_HEX_MAP.gray : undefined,
+            }}
+            className={`
+              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
+              ${selectedFilter === 'observation' 
+                ? 'text-white shadow-lg' 
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
+              }
+            `}
           >
-            Observation
-          </DynamicButton>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: selectedFilter === 'observation' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
+                }}
+              ></div>
+              <span>Observation</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -559,8 +697,8 @@ const TaskTable = ({
         error={error}
         isLoading={isLoading}
         onSelect={handleSelect}
-        onEdit={handleEditTask}
-        onDelete={handleDelete}
+        onEdit={userCanUpdateTasks ? handleEditTask : null}
+        onDelete={userCanDeleteTasks ? handleDelete : null}
         enableRowSelection={true}
         showBulkActions={true}
         bulkActions={bulkActions}

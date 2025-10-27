@@ -29,8 +29,8 @@ const Badge = ({
   const baseClasses = 'inline-flex items-center font-medium rounded-md ';
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
   
-  // Get colorHex from colorHex prop, color prop using CARD_SYSTEM (like small cards), or fallback
-  const finalColorHex = colorHex || CARD_SYSTEM.COLOR_HEX_MAP[color] || defaultColorHex;
+  // Get colorHex from colorHex prop, color prop using CARD_SYSTEM (like small cards), variant prop, or fallback
+  const finalColorHex = colorHex || CARD_SYSTEM.COLOR_HEX_MAP[color] || CARD_SYSTEM.COLOR_HEX_MAP[variant] || defaultColorHex;
   
   // Enhanced styling for better dark mode support
   const badgeStyle = {

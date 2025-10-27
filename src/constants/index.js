@@ -192,40 +192,64 @@ export const FORM_OPTIONS = {
 };
 
 // ============================================================================
-// CARD SYSTEM CONSTANTS
+// NAVIGATION CONFIGURATION
+// ============================================================================
+
+export const NAVIGATION_CONFIG = {
+  ITEMS: [
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: "home",
+      color: "blue",
+      adminOnly: false,
+    },
+    {
+      name: "Analytics",
+      href: "/analytics",
+      icon: "chart",
+      color: "purple",
+      adminOnly: true,
+    },
+    {
+      name: "Management",
+      href: "/users",
+      icon: "settings",
+      color: "green",
+      adminOnly: true,
+    },
+    {
+      name: "Landing Pages",
+      href: "/landing-pages",
+      icon: "document",
+      color: "orange",
+      adminOnly: true,
+    },
+  ],
+  DEPARTMENT: {
+    name: "Design",
+    subtitle: "Department",
+    icon: "settings",
+    color: "color_default",
+  },
+};
+
 // ============================================================================
 
 export const CARD_SYSTEM = {
-  COLORS: {
-    // Role-based colors
-    ADMIN: 'crimson',
-    USER: 'purple',
-    REPORTER: 'blue',
-
-    // Status-based colors
-    ACTIVE: 'green',
-    INACTIVE: 'gray',
-    WARNING: 'amber',
-
-    // Feature-based colors
-    FILTER: 'blue',
-    ACTIONS: 'amber',
-    PROFILE: 'purple',
-    MONTH: 'crimson',
-
-    // Default fallback
-    DEFAULT: 'gray',
-  },
   COLOR_HEX_MAP: {
-    green: '#22c55e',      // Green-500 - Fresh, growth
-    blue: '#2563eb',       // Blue-600 - Professional, trust
-    purple: '#7c3aed',     // Purple-600 - Premium, personal
-    crimson: '#e11d48',    // Rose-600 - Authority, admin
-    amber: '#FFC107',      // Amber-600 - Energy, action
-    pink: '#db2777',       // Pink-600 - Calendar, time
-    red: '#dc2626',        // Red-600 - Error
-    yellow: '#ca8a04',     // Yellow-600 - Warning
+    green: '#80B3FF',      // Green-500 - Fresh, growth
+    blue: '#C2E2FA',       // Blue-600 - Professional, trust
+    purple: '#db2777',     // Pink-600 - Changed from purple to pink
+    crimson: '#C2E2FA',    // Rose-600 - Authority, admin
+    amber: '#DD0303',      // Amber-600 - Changed from yellow to amber-600
+    pink: '#ec4899',       // Pink-500 - AI models
+    red: '#C2E2FA',        // Red-600 - Error
+    yellow: '#d97706',     // Amber-600 - Changed from yellow to amber-600
     gray: '#6b7280',       // Gray-500 - Disabled
+    orange: '#f97316',     // Orange-500 - Product, warning
+    select_badge: '#C2E2FA', // Red-500 - Selected badges in cards and forms
+    color_default: '#3d48c9', // Primary blue - Default color for UI elements
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',
@@ -558,6 +582,7 @@ export default {
   AUTH,
   VALIDATION,
   FORM_OPTIONS,
+  NAVIGATION_CONFIG,
   CARD_SYSTEM,
   BUTTON_SYSTEM,
   TABLE_SYSTEM,

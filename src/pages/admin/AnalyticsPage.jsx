@@ -5,23 +5,24 @@ import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
 import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
+import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import { 
   getCachedMarketsByUsersCardProps, 
   getCachedMarketingAnalyticsCardProps, 
   getCachedAcquisitionAnalyticsCardProps, 
   getCachedProductAnalyticsCardProps,
-  getCachedAIAnalyticsCardProps
+  getCachedAIAnalyticsCardProps,
+  getCachedReporterAnalyticsCardProps
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { CARD_SYSTEM } from '@/constants';
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection
-  const { users, error } = useAppDataContext();
+  const { users, reporters, error } = useAppDataContext();
   
-  // Card selection state
-  const [selectedCards, setSelectedCards] = useState([]);
   
   // Tab state
   const [activeTab, setActiveTab] = useState('markets-by-users');
@@ -45,14 +46,6 @@ const AnalyticsPage = () => {
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Card selection handlers - memoized to prevent re-renders
-  const handleCardSelection = useCallback((cardId) => {
-    setSelectedCards(prev => 
-      prev.includes(cardId) 
-        ? prev.filter(id => id !== cardId)
-        : [...prev, cardId]
-    );
-  }, []);
 
   // Tab change handler - memoized to prevent re-renders
   const handleTabChange = useCallback((tabId) => {
@@ -84,7 +77,12 @@ const AnalyticsPage = () => {
     {
       id: 'ai-analytics',
       name: 'AI Analytics',
-      description: 'AI usage analytics by users and models'
+      description: 'AI analytics by users and models'
+    },
+    {
+      id: 'reporter-analytics',
+      name: 'Reporter Analytics',
+      description: 'Reporter metrics with tasks, hours, markets, and products'
     },
   ], []);
 
@@ -93,10 +91,21 @@ const AnalyticsPage = () => {
     tasks,
     selectedMonth,
     users,
+    reporters,
     isLoading
-  }), [tasks, selectedMonth, users, isLoading]);
+  }), [tasks, selectedMonth, users, reporters, isLoading]);
 
   // Lazy load card props - only calculate active tab
+  const reporterAnalyticsCardProps = useMemo(() => {
+    if (activeTab !== 'reporter-analytics') return null;
+    return getCachedReporterAnalyticsCardProps(
+      analyticsData.tasks,
+      analyticsData.reporters,
+      analyticsData.selectedMonth,
+      analyticsData.isLoading
+    );
+  }, [activeTab, analyticsData.tasks, analyticsData.reporters, analyticsData.selectedMonth, analyticsData.isLoading]);
+
   const marketsByUsersCardProps = useMemo(() => {
     if (activeTab !== 'markets-by-users') return null;
     return getCachedMarketsByUsersCardProps(
@@ -145,7 +154,6 @@ const AnalyticsPage = () => {
   }, [activeTab, analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]);
 
 
-  // Removed Select All and Deselect All handlers - keeping only individual card selection
 
   // Error handling function
   const showError = (message) => {
@@ -212,12 +220,6 @@ const AnalyticsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            {/* Card Selection Info */}
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {selectedCards.length} selected
-              </span>
-            </div>
 
             
             {/* Month Selector */}
@@ -244,7 +246,7 @@ const AnalyticsPage = () => {
         </div>
         
         {/* Month Progress Bar */}
-        <div className="mt-4 card">
+        <div className="mt-4 mb-8 card">
           <MonthProgressBar 
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}
@@ -266,11 +268,14 @@ const AnalyticsPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`py-2 px-1 border-b-2 font-medium text-base transition-colors ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      ? 'text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
+                  style={{
+                    borderBottomColor: activeTab === tab.id ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
+                  }}
                 >
                   {tab.name}
                 </button>
@@ -280,23 +285,24 @@ const AnalyticsPage = () => {
 
           {/* Tab Content */}
           <div>
-            {activeTab === 'markets-by-users' ? (
+            {activeTab === 'reporter-analytics' ? (
+              <div className="relative">
+                <div id="reporter-analytics-card">
+                  <div className="relative">
+                    {reporterAnalyticsCardProps ? (
+                      <ReporterAnalyticsCard 
+                        {...reporterAnalyticsCardProps}
+                      />
+                    ) : (
+                      <SkeletonAnalyticsCard />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'markets-by-users' ? (
               <div className="relative">
                 <div id="market-user-breakdown-card">
                   <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCards.includes('market-user-breakdown-card')}
-                          onChange={() => handleCardSelection('market-user-breakdown-card')}
-                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                        />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                          Export
-                        </span>
-                      </label>
-                    </div>
                     {marketsByUsersCardProps ? (
                       <MarketsByUsersCard 
                         {...marketsByUsersCardProps}
@@ -311,19 +317,6 @@ const AnalyticsPage = () => {
               <div className="relative">
                 <div id="marketing-analytics-card">
                   <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCards.includes('marketing-analytics-card')}
-                          onChange={() => handleCardSelection('marketing-analytics-card')}
-                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                        />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                          Export
-                        </span>
-                      </label>
-                    </div>
                     {marketingAnalyticsCardProps ? (
                       <MarketingAnalyticsCard 
                         {...marketingAnalyticsCardProps}
@@ -338,19 +331,6 @@ const AnalyticsPage = () => {
               <div className="relative">
                 <div id="acquisition-analytics-card">
                   <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCards.includes('acquisition-analytics-card')}
-                          onChange={() => handleCardSelection('acquisition-analytics-card')}
-                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                        />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                          Export
-                        </span>
-                      </label>
-                    </div>
                     {acquisitionAnalyticsCardProps ? (
                       <AcquisitionAnalyticsCard 
                         {...acquisitionAnalyticsCardProps}
@@ -365,19 +345,6 @@ const AnalyticsPage = () => {
               <div className="relative">
                 <div id="product-analytics-card">
                   <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCards.includes('product-analytics-card')}
-                          onChange={() => handleCardSelection('product-analytics-card')}
-                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                        />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                          Export
-                        </span>
-                      </label>
-                    </div>
                     {productAnalyticsCardProps ? (
                       <ProductAnalyticsCard 
                         {...productAnalyticsCardProps}
@@ -392,19 +359,6 @@ const AnalyticsPage = () => {
               <div className="relative">
                 <div id="ai-analytics-card">
                   <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCards.includes('ai-analytics-card')}
-                          onChange={() => handleCardSelection('ai-analytics-card')}
-                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shadow-md"
-                        />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border">
-                          Export
-                        </span>
-                      </label>
-                    </div>
                     {aiAnalyticsCardProps ? (
                       <AIAnalyticsCard 
                         {...aiAnalyticsCardProps}

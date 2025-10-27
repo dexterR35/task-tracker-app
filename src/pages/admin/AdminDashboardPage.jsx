@@ -17,7 +17,7 @@ const AdminDashboardPage = () => {
   const [showTable, setShowTable] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   // Get auth functions separately
-  const { canAccess } = useAuth();
+  const { canAccess, canCreateTask } = useAuth();
   const isUserAdmin = canAccess("admin");
   const selectedUserId = searchParams.get("user") || "";
   const selectedReporterId = searchParams.get("reporter") || "";
@@ -116,17 +116,26 @@ const AdminDashboardPage = () => {
   // Get current month ID for filtering - simplified
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
-  // Task creation is only allowed for current month with existing board - simplified
-  const canCreateTasks = isCurrentMonth && currentMonth.boardExists;
+  // Task creation requires both month/board availability AND user permissions
+  const canCreateTasks = isCurrentMonth && currentMonth.boardExists && canCreateTask();
 
   // Handle create task - memoized to prevent recreation
   const handleCreateTask = useCallback(() => {
     if (!canCreateTasks) {
-      showError("Create Task is not available for this month");
+      // Check if it's a permission issue or month/board issue
+      if (!canCreateTask()) {
+        showAuthError("You do not have permission to create tasks");
+      } else if (!isCurrentMonth) {
+        showError("Create Task is only available for the current month");
+      } else if (!currentMonth.boardExists) {
+        showError("Create Task is not available - month board not found");
+      } else {
+        showError("Create Task is not available for this month");
+      }
       return;
     }
     setShowCreateModal(true);
-  }, [canCreateTasks]);
+  }, [canCreateTasks, canCreateTask, isCurrentMonth, currentMonth.boardExists]);
 
   // Handle week selection - independent from user and reporter selections
   const handleWeekChange = useCallback((week) => {
@@ -277,7 +286,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Month Progress Bar */}
-        <div className="my-6 card">
+        <div className="mt-6 mb-8 card">
           <MonthProgressBar
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}
@@ -336,7 +345,7 @@ const AdminDashboardPage = () => {
             </div>
             <DynamicButton
               onClick={() => setShowTable(!showTable)}
-              variant="outline"
+              variant="primary"
               size="md"
               iconName={showTable ? "hide" : "show"}
               iconPosition="left"

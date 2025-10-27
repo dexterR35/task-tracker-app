@@ -10,9 +10,20 @@ import CalculationFormula from "@/components/ui/CalculationFormula/CalculationFo
 
 const AdminManagementPage = () => {
   // Get all data directly from context
-  const { monthId, monthName, users, reporters, deliverables, error, isLoading } = useAppDataContext();
+  const { 
+    monthId, 
+    monthName, 
+    users, 
+    reporters, 
+    deliverables, 
+    error, 
+    isLoading,
+    canManageReporters,
+    canManageDeliverables,
+    canManageUsers
+  } = useAppDataContext();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables', 'ai', 'general'
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables'
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   // Show error state
@@ -36,32 +47,33 @@ const AdminManagementPage = () => {
     setShowCreateModal(true);
   };
 
-  const tabs = [
+  // Filter tabs based on permissions
+  const allTabs = [
     {
       id: 'users',
       name: 'Users',
       count: users?.length || 0,
-      description: 'Manage user accounts and permissions'
+      description: 'Manage user accounts and permissions',
+      permission: canManageUsers
     },
     {
       id: 'reporters',
       name: 'Reporters',
       count: reporters?.length || 0,
-      description: 'Manage reporter profiles and assignments'
+      description: 'Manage reporter profiles and assignments',
+      permission: canManageReporters
     },
     {
       id: 'deliverables',
       name: 'Deliverables',
       count: deliverables?.length || 0,
-      description: 'Manage deliverables and time settings'
-    },
-    {
-      id: 'general',
-      name: 'General',
-      count: 0,
-      description: 'General application settings'
+      description: 'Manage deliverables and time settings',
+      permission: canManageDeliverables
     }
   ];
+  
+  // Filter tabs based on user permissions
+  const tabs = allTabs.filter(tab => tab.permission);
 
   return (
     <div>
@@ -113,8 +125,7 @@ const AdminManagementPage = () => {
             <h2 className="text-lg font-medium">
               {activeTab === 'users' ? 'User Management' : 
                activeTab === 'reporters' ? 'Reporter Management' :
-               activeTab === 'deliverables' ? 'Deliverables Management' :
-               activeTab === 'general' ? 'General Settings' : 'Management'}
+               activeTab === 'deliverables' ? 'Deliverables Management' : 'Management'}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {tabs.find(tab => tab.id === activeTab)?.description}
@@ -122,7 +133,7 @@ const AdminManagementPage = () => {
           </div>
           
           {/* Action Buttons */}
-          {activeTab === 'reporters' && (
+          {activeTab === 'reporters' && canManageReporters(user) && (
             <div className="flex gap-2">
               <DynamicButton
                 onClick={handleCreate}
@@ -140,7 +151,7 @@ const AdminManagementPage = () => {
 
         {/* Content Section */}
         <div>
-          {activeTab === 'users' ? (
+          {activeTab === 'users' && canManageUsers(user) ? (
             <UserTable
               users={users}
               monthId={monthId}
@@ -148,7 +159,7 @@ const AdminManagementPage = () => {
               isLoading={isLoading}
               className="rounded-lg"
             />
-          ) : activeTab === 'reporters' ? (
+          ) : activeTab === 'reporters' && canManageReporters(user) ? (
             <ReporterTable
               reporters={reporters}
               error={error}
@@ -156,7 +167,7 @@ const AdminManagementPage = () => {
               isLoading={isLoading}
               className="rounded-lg"
             />
-          ) : activeTab === 'deliverables' ? (
+          ) : activeTab === 'deliverables' && canManageDeliverables(user) ? (
             <div className="space-y-6">
               {/* Calculation Formula Card */}
               <CalculationFormula />
@@ -170,18 +181,23 @@ const AdminManagementPage = () => {
                 deliverables={deliverables}
               />
             </div>
-          ) : activeTab === 'general' ? (
+          ) : (
             <div className="py-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                General settings will be available soon.
-              </p>
+              <div className="text-center">
+                <div className="text-red-500 dark:text-red-400 text-lg font-medium mb-2">
+                  Access Denied
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  You don't have permission to access this section.
+                </p>
+              </div>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
 
       {/* Reporter Form Modal - Only show for reporters tab */}
-      {activeTab === 'reporters' && (
+      {activeTab === 'reporters' && canManageReporters(user) && (
         <ReporterFormModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}

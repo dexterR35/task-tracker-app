@@ -4,7 +4,7 @@ import Badge from '@/components/ui/Badge/Badge';
 import Avatar from '@/components/ui/Avatar/Avatar';
 import { formatDate, normalizeTimestamp } from '@/utils/dateUtils';
 import { useDeliverableCalculation, useDeliverablesOptionsFromProps } from '@/features/deliverables/DeliverablesManager';
-import { TABLE_SYSTEM } from '@/constants';
+import { TABLE_SYSTEM, CARD_SYSTEM } from '@/constants';
 import { differenceInDays } from 'date-fns';
 
 const columnHelper = createColumnHelper();
@@ -79,7 +79,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
           <div className="font-medium text-gray-900 dark:text-white">
             {deliverable.quantity}x{deliverable.name}
             {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
-              <span className="text-orange-600 dark:text-orange-400">
+              <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
                 {' '}+ {deliverable.variationsQuantity || deliverable.declinariQuantity} variations
               </span>
             )}
@@ -102,12 +102,12 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
                       )}
                     </div>
                   )}
-                  <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
+                  <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.yellow }}>
                     Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
                   </div>
                 </div>
               ) : deliverable.notConfigured ? (
-                <span className="text-amber-600 dark:text-amber-400">
+                <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
                   ⚠️ Not configured in settings - Add to Settings → Deliverables
                 </span>
               ) : (
@@ -132,7 +132,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge color="amber" size="sm" className="font-mono">
+        <Badge color="green" size="xs" className="font-mono">
           {taskName}
         </Badge>
       );
@@ -144,14 +144,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'DEPARTMENT',
     cell: ({ getValue, row }) => {
       if (!row.original?.data_task) {
-        return <span className="text-red-500 text-sm">❌ No data_task</span>;
+        return <span className="text-sm" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ No data_task</span>;
       }
       
       const value = getValue();
       if (Array.isArray(value)) {
-        return value.length > 0 ? value.join(', ') : <span className="text-red-500 text-sm">❌ Missing</span>;
+        return value.length > 0 ? value.join(', ') : <span className="text-sm" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
       }
-      return value || <span className="text-red-500 text-sm">❌ Missing</span>;
+      return value || <span className="text-sm" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
     },
     size: 100,
   }),
@@ -171,7 +171,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} color="amber" size="sm">
+            <Badge key={index} color="blue" size="xs">
               {market}
             </Badge>
           ))}
@@ -193,7 +193,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} color="purple" size="sm">
+              <Badge key={index} color="pink" size="xs">
                 {model}
               </Badge>
             ))}
@@ -300,14 +300,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       
       if (days === 0) {
         return (
-          <Badge color="amber" size="sm">
+          <Badge color="green" size="xs">
             Same day
           </Badge>
         );
       }
 
       return (
-        <Badge color="red" size="sm">
+        <Badge color="red" size="xs">
           {days} days
         </Badge>
       );
@@ -322,7 +322,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge color="blue" size="sm">
+        <Badge color="blue" size="xs">
           {value}h
         </Badge>
       );
@@ -377,7 +377,7 @@ const createUserColumns = () => [
       return (
         <Badge 
           color={role === 'admin' ? 'red' : role === 'reporter' ? 'blue' : 'amber'} 
-          size="sm"
+          size="xs"
         >
           {role}
         </Badge>
@@ -390,7 +390,7 @@ const createUserColumns = () => [
     cell: ({ getValue }) => {
       const permissions = getValue();
       if (!Array.isArray(permissions) || !permissions.length) {
-        return <span className="text-gray-500">No permissions</span>;
+        return <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.gray }}>No permissions</span>;
       }
       
       return (

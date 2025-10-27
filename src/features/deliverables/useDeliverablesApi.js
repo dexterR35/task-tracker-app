@@ -76,6 +76,14 @@ export const useDeliverablesApi = () => {
   // Create deliverable
   const createDeliverable = useCallback(async (deliverableData, userData) => {
     try {
+      // Validate user permissions - Role-based
+      if (userData) {
+        // Check for admin role or has_permission (universal admin permission)
+        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
+          throw new Error('Only admin users can manage deliverables');
+        }
+      }
+
       const deliverablesRef = getDeliverablesRef();
       const existingDoc = await getDoc(deliverablesRef);
 
@@ -110,6 +118,14 @@ export const useDeliverablesApi = () => {
   // Update deliverable
   const updateDeliverable = useCallback(async (deliverableName, deliverableData, userData) => {
     try {
+      // Validate user permissions - Role-based
+      if (userData) {
+        // Check for admin role or has_permission (universal admin permission)
+        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
+          throw new Error('Only admin users can manage deliverables');
+        }
+      }
+
       const deliverablesRef = getDeliverablesRef();
       const existingDoc = await getDoc(deliverablesRef);
 
@@ -144,6 +160,14 @@ export const useDeliverablesApi = () => {
   // Delete deliverable
   const deleteDeliverable = useCallback(async (deliverableName, userData) => {
     try {
+      // Validate user permissions - Role-based
+      if (userData) {
+        // Check for admin role or has_permission (universal admin permission)
+        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
+          throw new Error('Only admin users can manage deliverables');
+        }
+      }
+
       const deliverablesRef = getDeliverablesRef();
       const existingDoc = await getDoc(deliverablesRef);
 

@@ -104,6 +104,14 @@ export const useReporters = () => {
   // Create reporter
   const createReporter = useCallback(async (reporterData, userData = null) => {
     try {
+      // Validate user permissions - Role-based
+      if (userData) {
+        // Check for admin role or has_permission (universal admin permission)
+        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
+          throw new Error('Only admin users can manage reporters');
+        }
+      }
+
       // Validate reporter data
       if (!reporterData || !reporterData.email) {
         throw new Error("Reporter email is required");
@@ -143,6 +151,14 @@ export const useReporters = () => {
   // Update reporter
   const updateReporter = useCallback(async (reporterId, updateData, userData = null) => {
     try {
+      // Validate user permissions - Role-based
+      if (userData) {
+        // Check for admin role or has_permission (universal admin permission)
+        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
+          throw new Error('Only admin users can manage reporters');
+        }
+      }
+
       // Check if email is being updated and if it already exists (excluding current reporter)
       if (updateData.email) {
         // First get the current reporter to check if email is actually changing
@@ -191,6 +207,14 @@ export const useReporters = () => {
   // Delete reporter
   const deleteReporter = useCallback(async (reporterId, userData = null) => {
     try {
+      // Validate user permissions - Role-based
+      if (userData) {
+        // Check for admin role or has_permission (universal admin permission)
+        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
+          throw new Error('Only admin users can manage reporters');
+        }
+      }
+
       const reporterRef = doc(db, 'reporters', reporterId);
       await deleteDoc(reporterRef);
 

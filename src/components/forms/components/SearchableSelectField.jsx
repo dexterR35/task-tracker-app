@@ -2,19 +2,9 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import { CARD_SYSTEM } from '@/constants';
 
-// Function to get badge color based on field name using CARD_SYSTEM colors
+// Function to get badge color - use select_badge for all selected badges
 const getFieldBadgeColor = (fieldName) => {
-  const colorMap = {
-    'selectedUser': 'green',
-    'selectedReporter': 'purple', 
-    'selectedWeek': 'crimson',
-    'selectedMonth': 'blue',
-    'selectedDeliverable': 'amber',
-    'selectedMarket': 'pink',
-    'selectedDepartment': 'yellow'
-  };
-  
-  return colorMap[fieldName] || 'gray';
+  return 'select_badge';
 };
 
 const SearchableSelectField = ({ 

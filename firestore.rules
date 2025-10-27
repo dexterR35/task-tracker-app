@@ -4,25 +4,27 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Global collections (users, reporters)
     match /users/{userId} {
-      allow read, write, create, update, delete: if true;
+      allow read, write, create, update, delete: if request.auth != null;
     }
     
     match /reporters/{reporterId} {
-      allow read, write, create, update, delete: if true;
+      allow read, write, create, update, delete: if request.auth != null;
     }
     
     // Department-based tasks structure
+    // Allow authenticated users to access - application handles specific permissions
     match /departments/{departmentId}/{yearId}/{monthId} {
-      allow read, write, create, update, delete: if true;
+      allow read, write, create, update, delete: if request.auth != null;
       
       match /taskdata/{taskId} {
-        allow read, write, create, update, delete: if true;
+        // Allow authenticated users - application enforces permissions based on user.permissions array
+        allow read, write, create, update, delete: if request.auth != null;
       }
     }
     
     // Fallback for any other documents
     match /{document=**} {
-      allow read, write, create, update, delete: if true;
+      allow read, write, create, update, delete: if request.auth != null;
     }
   }
 }

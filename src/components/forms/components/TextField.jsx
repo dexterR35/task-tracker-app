@@ -54,7 +54,7 @@ const TextField = ({ field, register, errors, formValues, watch, setValue }) => 
       {currentValue && field.name === 'jiraLink' && (
         <div className="mt-2">
           <Badge
-            variant="crimson"
+            variant="select_badge"
             size="sm"
             className="inline-flex items-center gap-1"
           >

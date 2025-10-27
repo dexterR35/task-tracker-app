@@ -10,9 +10,10 @@ import { useDeliverablesApi } from '@/features/deliverables/useDeliverablesApi';
 import { useTasks } from "@/features/tasks/tasksApi";
 import { useCurrentMonth, useAvailableMonths } from "@/features/months/monthsApi";
 import { useAuth } from "@/context/AuthContext";
-import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
+import { getUserUID, isUserAdmin, hasPermission } from "@/features/utils/authUtils";
 import { normalizeTimestamp, serializeTimestamps } from "@/utils/dateUtils";
 import { logger } from '@/utils/logger';
+import { AUTH } from '@/constants';
 
 const AppDataContext = createContext();
 
@@ -141,10 +142,39 @@ export const AppDataProvider = ({ children }) => {
   
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
+  // Permission checking functions - Role-based instead of explicit permissions
+  const canManageReporters = (userData) => {
+    // If user has explicit permissions array, use it
+    if (userData?.permissions && Array.isArray(userData.permissions)) {
+      // Check for has_permission (universal admin permission) or admin role
+      return userData.permissions.includes('has_permission') || userData.role === 'admin';
+    }
+    // Otherwise, use role-based permissions (admin can manage everything)
+    return userData?.role === 'admin' && isUserActive(userData);
+  };
+  
+  const canManageDeliverables = (userData) => {
+    // If user has explicit permissions array, use it
+    if (userData?.permissions && Array.isArray(userData.permissions)) {
+      // Check for has_permission (universal admin permission) or admin role
+      return userData.permissions.includes('has_permission') || userData.role === 'admin';
+    }
+    // Otherwise, use role-based permissions (admin can manage everything)
+    return userData?.role === 'admin' && isUserActive(userData);
+  };
+  
+  const canManageUsers = (userData) => {
+    // If user has explicit permissions array, use it
+    if (userData?.permissions && Array.isArray(userData.permissions)) {
+      // Check for has_permission (universal admin permission) or admin role
+      return userData.permissions.includes('has_permission') || userData.role === 'admin';
+    }
+    // Otherwise, use role-based permissions (admin can manage everything)
+    return userData?.role === 'admin' && isUserActive(userData);
+  };
+  
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => {
-    logger.log('🔍 [AppDataProvider] Creating context value');
-    
     return {
       // Initialization state
       isInitialized,
@@ -185,8 +215,14 @@ export const AppDataProvider = ({ children }) => {
       // Context specific
       selectedUserId: globalSelectedUserId,
       setSelectedUserId: setGlobalSelectedUserId,
+      
+      // Permission functions
+      canManageReporters,
+      canManageDeliverables,
+      canManageUsers,
     };
   }, [
+    // Only include essential dependencies that actually change
     isInitialized,
     userIsAdmin,
     user,
@@ -205,12 +241,11 @@ export const AppDataProvider = ({ children }) => {
     endDate,
     boardExists,
     availableMonths,
-    currentMonth,
-    selectedMonth,
-    isCurrentMonth,
+    selectedMonthId, // Use selectedMonthId instead of derived objects
     currentMonthLoading,
-    globalSelectedUserId,
-    setGlobalSelectedUserId
+    globalSelectedUserId
+    // Removed: currentMonth, selectedMonth, isCurrentMonth, setGlobalSelectedUserId
+    // These are derived values that don't need to be dependencies
   ]);
 
   return (

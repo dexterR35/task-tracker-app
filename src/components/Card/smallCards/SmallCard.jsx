@@ -11,19 +11,22 @@ const SmallCard = memo(({ card }) => {
     [card.color]
   );
 
+  // Unified background color for all cards
+  const unifiedBgColor = "#475569"; // Slate-600 - Modern, professional
+
   // Style objects
   const iconBgStyle = {
-    backgroundColor: `${cardColorHex}90`
+    backgroundColor: `${unifiedBgColor}90`
   };
 
   const iconStyle = {
-    color: cardColorHex
+    color: cardColorHex // Keep original icon colors
   };
 
   const badgeStyle = {
-    backgroundColor: `${cardColorHex}30`,
-    color: cardColorHex,
-    border: `1px solid ${cardColorHex}40`,
+    backgroundColor: `${unifiedBgColor}30`,
+    color: unifiedBgColor,
+    border: `1px solid ${unifiedBgColor}40`,
     fontWeight: '600'
   };
 
@@ -109,8 +112,8 @@ const SmallCard = memo(({ card }) => {
                         <div 
                           className="p-2 rounded-lg border"
                           style={{ 
-                            backgroundColor: `${cardColorHex}10`,
-                            borderColor: `${cardColorHex}20`
+                            backgroundColor: `${unifiedBgColor}10`,
+                            borderColor: `${unifiedBgColor}20`
                           }}
                         >
                           <div className="space-y-2">
@@ -154,8 +157,8 @@ const SmallCard = memo(({ card }) => {
                         key={index}
                         className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
                         style={{ 
-                          backgroundColor: `${cardColorHex}10`,
-                          borderColor: `${cardColorHex}20`
+                          backgroundColor: `${unifiedBgColor}10`,
+                          borderColor: `${unifiedBgColor}20`
                         }}
                       >
                         <div className="flex items-center justify-between">
@@ -187,7 +190,7 @@ const SmallCard = memo(({ card }) => {
                   <Badge
                     key={index}
                     size="sm"
-                    colorHex={CARD_SYSTEM.COLOR_HEX_MAP[badge.color] || cardColorHex}
+                    colorHex={cardColorHex}
                   >
                     {badge.text}
                   </Badge>

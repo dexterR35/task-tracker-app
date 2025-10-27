@@ -1,5 +1,6 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { Icons } from "@/components/icons";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { CARD_SYSTEM } from "@/constants";
@@ -7,6 +8,7 @@ import { useAppDataContext } from "@/context/AppDataContext";
 import { createAnalyticsCards, createDailyTaskCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { getWeeksInMonth } from "@/utils/monthUtils";
+import SelectField from "@/components/forms/components/SelectField";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -352,6 +354,17 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
 const DynamicAnalyticsPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [isDataReady, setIsDataReady] = useState(false);
+  
+  // Set up form with React Hook Form
+  const { register, setValue, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      weekSelect: '' // Default to "All Weeks"
+    }
+  });
+  
+  // Watch the week selection
+  const selectedWeekValue = watch('weekSelect');
   
   // Extract URL parameters
   const userName = searchParams.get('user');
@@ -362,6 +375,19 @@ const DynamicAnalyticsPage = () => {
   
   // Use real data from context
   const { tasks, isLoading, error, loadingStates, monthId: contextMonthId } = useAppDataContext();
+  
+  // Manage data ready state to prevent flickering
+  useEffect(() => {
+    if (!isLoading && !loadingStates?.isInitialLoading && tasks) {
+      // Small delay to ensure data is fully processed
+      const timer = setTimeout(() => {
+        setIsDataReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setIsDataReady(false);
+    }
+  }, [isLoading, loadingStates?.isInitialLoading, tasks]);
   
   // Use actual monthId from context if 'current' is specified
   const actualMonthId = monthId === 'current' ? contextMonthId : monthId;
@@ -418,8 +444,8 @@ const DynamicAnalyticsPage = () => {
     return `Analytics Overview${weekInfo}`;
   })();
   
-  // Show loading state with skeleton cards - wait for data to be fully ready
-  const shouldShowLoading = isLoading || loadingStates?.isInitialLoading || !tasks || !analyticsData;
+  // Show loading state with skeleton cards - use data ready state to prevent flickering
+  const shouldShowLoading = !isDataReady;
   
   if (shouldShowLoading) {
     return (
@@ -529,7 +555,28 @@ const DynamicAnalyticsPage = () => {
         
         {/* Tasks by Week Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Tasks by Week</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Tasks by Week</h2>
+            <div className="w-64">
+              <SelectField
+                field={{
+                  name: 'weekSelect',
+                  label: '',
+                  options: [
+                    { value: '', label: 'All Weeks' },
+                    ...getWeeksInMonth(actualMonthId).map(week => ({
+                      value: week.weekNumber.toString(),
+                      label: `Week ${week.weekNumber}`
+                    }))
+                  ]
+                }}
+                register={register}
+                setValue={setValue}
+                watch={watch}
+                errors={errors}
+              />
+            </div>
+          </div>
           <div className="space-y-6">
             {(() => {
               if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
@@ -556,7 +603,120 @@ const DynamicAnalyticsPage = () => {
                 );
               }
 
-              return weeks.map((week) => {
+              // If no week is selected (All Weeks), show all weeks
+              if (!selectedWeekValue || selectedWeekValue === '') {
+                // Show all weeks
+                return weeks.map((week) => {
+                  // Get tasks for this week
+                  const weekTasks = [];
+                  week.days.forEach(day => {
+                    try {
+                      const dayDate = day instanceof Date ? day : new Date(day);
+                      if (isNaN(dayDate.getTime())) return;
+                      
+                      const dayStr = dayDate.toISOString().split('T')[0];
+                      const dayTasks = tasks.filter(task => {
+                        if (!task.createdAt) return false;
+                        
+                        const taskDate = convertToDate(task.createdAt);
+                        if (!taskDate || isNaN(taskDate.getTime())) return false;
+                        
+                        const taskDateStr = taskDate.toISOString().split('T')[0];
+                        const dateMatch = taskDateStr === dayStr;
+                        
+                        // Also filter by user if userName is specified
+                        const userMatch = !userName || 
+                          (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
+                          (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()));
+                        
+                        // Also filter by reporter if reporterName is specified
+                        const reporterMatch = !reporterName || 
+                          (task.data_task?.reporterName && task.data_task.reporterName.toLowerCase().includes(reporterName.toLowerCase()));
+                        
+                        return dateMatch && userMatch && reporterMatch;
+                      });
+                      
+                      weekTasks.push(...dayTasks);
+                    } catch (error) {
+                      console.warn('Error processing day:', error, day);
+                    }
+                  });
+
+                  return (
+                    <div key={week.weekNumber} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
+                          <p className="text-sm text-gray-400">
+                            {(() => {
+                              try {
+                                const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
+                                const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
+                                return `${startDate} - ${endDate}`;
+                              } catch (error) {
+                                console.warn('Error formatting week dates:', error, week);
+                                return 'Invalid dates';
+                              }
+                            })()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
+                          <div className="text-sm text-gray-400">tasks</div>
+                        </div>
+                      </div>
+                      
+                      {weekTasks.length > 0 ? (
+                        <div className="space-y-3">
+                          {weekTasks.map((task, index) => (
+                            <div key={index} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-white">
+                                    {task.data_task?.taskName || 'Unnamed Task'}
+                                  </h4>
+                                  <p className="text-sm text-gray-300">
+                                    {task.data_task?.departments ? 
+                                      (Array.isArray(task.data_task.departments) ? 
+                                        task.data_task.departments.join(', ') : 
+                                        task.data_task.departments) : 
+                                      'No department'
+                                    }
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    Created: {convertToDate(task.createdAt)?.toLocaleDateString() || 'Unknown date'}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium text-blue-400">
+                                    {task.data_task?.timeInHours || 0}h
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    {task.data_task?.markets?.length || 0} markets
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-gray-400 mb-2">
+                            <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p className="text-sm">No tasks for this week</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              }
+
+              // Show only the selected week
+              const weekNumber = parseInt(selectedWeekValue);
+              const week = weeks.find(w => w.weekNumber === weekNumber);
                 // Get tasks for this week
                 const weekTasks = [];
                 week.days.forEach(day => {
@@ -682,7 +842,6 @@ const DynamicAnalyticsPage = () => {
                     )}
                   </div>
                 );
-              });
             })()}
           </div>
         </div>

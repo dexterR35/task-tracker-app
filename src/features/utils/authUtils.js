@@ -165,7 +165,7 @@ export const canAccessRole = (user, requiredRole) => {
  */
 export const canAccessTasks = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'view_tasks') || isAdmin(user);
+  return hasPermission(user, 'view_tasks');
 };
 
 /**
@@ -175,7 +175,7 @@ export const canAccessTasks = (user) => {
  */
 export const canAccessCharts = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'generate_charts') || isAdmin(user);
+  return hasPermission(user, 'generate_charts');
 };
 
 /**
@@ -200,11 +200,29 @@ export const hasPermission = (userData, permission) => {
     return false;
   }
 
-  // All users (including admins) must have explicit permissions
-  if (!userData || !userData.permissions || !Array.isArray(userData.permissions)) {
-    return false;
+  // If user has explicit permissions array, use it
+  if (userData?.permissions && Array.isArray(userData.permissions)) {
+    return userData.permissions.includes(permission);
   }
-  return userData.permissions.includes(permission);
+
+  // Otherwise, use role-based permissions
+  if (userData?.role === 'admin') {
+    // Admin has all permissions
+    return true;
+  }
+
+  // Check if user has has_permission (universal admin permission)
+  if (userData?.permissions?.includes('has_permission')) {
+    return true;
+  }
+
+  // For regular users, allow task-related permissions
+  const taskPermissions = ['create_tasks', 'update_tasks', 'delete_tasks', 'view_tasks'];
+  if (taskPermissions.includes(permission)) {
+    return true;
+  }
+
+  return false;
 };
 
 /**
@@ -220,7 +238,7 @@ export const hasPermission = (userData, permission) => {
  */
 export const canCreateTask = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'create_tasks') || isAdmin(user);
+  return hasPermission(user, 'create_tasks');
 };
 
 /**
@@ -230,7 +248,7 @@ export const canCreateTask = (user) => {
  */
 export const canUpdateTask = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'update_tasks') || isAdmin(user);
+  return hasPermission(user, 'update_tasks');
 };
 
 /**
@@ -240,7 +258,7 @@ export const canUpdateTask = (user) => {
  */
 export const canDeleteTask = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'delete_tasks') || isAdmin(user);
+  return hasPermission(user, 'delete_tasks');
 };
 
 /**
@@ -250,7 +268,7 @@ export const canDeleteTask = (user) => {
  */
 export const canViewTasks = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'view_tasks') || isAdmin(user);
+  return hasPermission(user, 'view_tasks');
 };
 
 /**
@@ -260,7 +278,7 @@ export const canViewTasks = (user) => {
  */
 export const canCreateBoard = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'create_boards') || isAdmin(user);
+  return hasPermission(user, 'create_boards');
 };
 
 /**
@@ -270,7 +288,7 @@ export const canCreateBoard = (user) => {
  */
 export const canSubmitForms = (user) => {
   if (!user) return false;
-  return isUserActive(user) && (user.role === 'user' || isAdmin(user));
+  return isUserActive(user) && hasPermission(user, 'submit_forms');
 };
 
 /**
@@ -280,7 +298,7 @@ export const canSubmitForms = (user) => {
  */
 export const canDeleteData = (user) => {
   if (!user) return false;
-  return hasPermission(user, 'delete_data') || isAdmin(user);
+  return hasPermission(user, 'delete_data');
 };
 
 /**
@@ -374,12 +392,7 @@ export const validateUserPermissions = (userData, requiredPermissions, options =
     return { isValid: false, errors: [error] };
   }
 
-  // Admin users bypass permission checks
-  if (isAdmin(userData)) {
-    return { isValid: true, errors: [] };
-  }
-
-  // Check permissions for non-admin users
+  // Check permissions for ALL users (no admin bypass)
   const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
 
   const hasRequiredPermission = permissions.some(permission => {

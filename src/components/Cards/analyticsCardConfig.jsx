@@ -1645,7 +1645,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return (
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} color="purple" size="sm">
+              <Badge key={index} color="purple" size="xs">
                 {model}
               </Badge>
             ))}
@@ -1663,7 +1663,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return (
           <div className="flex flex-wrap gap-1">
             {markets.map((market, index) => (
-              <Badge key={index} color="amber" size="sm">
+              <Badge key={index} color="amber" size="xs">
                 {market}
               </Badge>
             ))}
@@ -1681,7 +1681,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return (
           <div className="flex flex-wrap gap-1">
             {products.map((product, index) => (
-              <Badge key={index} color="blue" size="sm">
+              <Badge key={index} color="blue" size="xs">
                 {product}
               </Badge>
             ))}
@@ -1894,4 +1894,224 @@ export const getAIAnalyticsCardProps = (tasks, users, isLoading = false) => {
 // Simplified version without caching
 export const getCachedAIAnalyticsCardProps = (tasks, users, month, isLoading = false) => {
   return getAIAnalyticsCardProps(tasks, users, isLoading);
+};
+
+// ============================================================================
+// REPORTER ANALYTICS CONFIGURATION
+// ============================================================================
+
+/**
+ * Calculate reporter analytics data for table and charts
+ * @param {Array} tasks - Array of task objects
+ * @param {Array} reporters - Array of reporter objects
+ * @returns {Object} Reporter analytics data object
+ */
+export const calculateReporterAnalyticsData = (tasks, reporters) => {
+  if (!tasks || tasks.length === 0) {
+    return {
+      reporterTableData: [{
+        reporter: "No data available",
+        totalTasks: 0,
+        totalHours: 0,
+        markets: "No data available",
+        products: "No data available",
+        noData: true
+      }],
+      reporterTableColumns: [
+        { key: "reporter", header: "Reporter", align: "left" },
+        { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+        { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+        { key: "markets", header: "Markets", align: "left" },
+        { key: "products", header: "Products", align: "left" }
+      ],
+      reporterPieData: [{ name: "No data available", value: 0 }],
+      reporterBiaxialData: [{ name: "No data available", tasks: 0, hours: 0, color: "#6b7280" }]
+    };
+  }
+
+  // Initialize data structures
+  const reporterData = {};
+  const allReporters = new Set();
+
+  // Process tasks to extract reporter data
+  tasks.forEach(task => {
+    // Check for reporter name and reporterUID in task data
+    const reporterName = task.reporterName || task.data_task?.reporterName;
+    const reporterUID = task.reporterUID || task.data_task?.reporterUID;
+    const markets = task.data_task?.markets || task.markets || [];
+    const products = task.data_task?.products || task.products || '';
+    const timeInHours = task.data_task?.timeInHours || task.timeInHours || 0;
+
+    // Use reporterUID as primary key, fallback to reporterName
+    const reporterKey = reporterUID || reporterName;
+    if (!reporterKey) return;
+
+    allReporters.add(reporterKey);
+
+    // Initialize reporter data
+    if (!reporterData[reporterKey]) {
+      reporterData[reporterKey] = {
+        reporterName: reporterName || `Reporter ${reporterKey.slice(0, 8)}`,
+        totalTasks: 0,
+        totalHours: 0,
+        markets: new Set(),
+        products: new Set()
+      };
+    }
+
+    reporterData[reporterKey].totalTasks += 1;
+    reporterData[reporterKey].totalHours += timeInHours;
+
+    // Process markets
+    if (Array.isArray(markets)) {
+      markets.forEach(market => {
+        if (market) {
+          reporterData[reporterKey].markets.add(market);
+        }
+      });
+    }
+
+    // Process products
+    if (products && typeof products === 'string') {
+      reporterData[reporterKey].products.add(products);
+    }
+  });
+
+  // Create reporter table data
+  const reporterTableData = Array.from(allReporters).map(reporterKey => {
+    const data = reporterData[reporterKey];
+
+    return {
+      reporter: data.reporterName,
+      totalTasks: data.totalTasks,
+      totalHours: Math.round(data.totalHours * 100) / 100,
+      markets: Array.from(data.markets).join(', '),
+      products: Array.from(data.products).join(', ')
+    };
+  });
+
+  // Sort by total tasks descending
+  reporterTableData.sort((a, b) => b.totalTasks - a.totalTasks);
+
+  // Add grand total row
+  const grandTotal = {
+    reporter: "Grand Total",
+    totalTasks: reporterTableData.reduce((sum, row) => sum + row.totalTasks, 0),
+    totalHours: Math.round(reporterTableData.reduce((sum, row) => sum + row.totalHours, 0) * 100) / 100,
+    markets: "All Markets",
+    products: "All Products",
+    bold: true,
+    highlight: true
+  };
+  reporterTableData.push(grandTotal);
+
+  // Create table columns
+  const reporterTableColumns = [
+    { key: "reporter", header: "Reporter", align: "left" },
+    { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+    { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+    { 
+      key: "markets", 
+      header: "Markets", 
+      align: "left",
+      render: (value, row) => {
+        if (!value || value === "No data available" || value === "All Markets") return value;
+        const markets = value.split(', ').filter(m => m.trim());
+        return (
+          <div className="flex flex-wrap gap-1">
+            {markets.map((market, index) => (
+              <Badge key={index} color="blue" size="xs">
+                {market}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+    },
+    { 
+      key: "products", 
+      header: "Products", 
+      align: "left",
+      render: (value, row) => {
+        if (!value || value === "No data available" || value === "All Products") return value;
+        const products = value.split(', ').filter(p => p.trim());
+        return (
+          <div className="flex flex-wrap gap-1">
+            {products.map((product, index) => (
+              <Badge key={index} color="orange" size="xs">
+                {product}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+    }
+  ];
+
+  // Create chart data
+  const reporterPieData = addConsistentColors(
+    reporterTableData
+      .filter(row => !row.bold) // Exclude grand total row
+      .map(row => ({
+        name: row.reporter,
+        value: row.totalTasks
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10), // Show top 10 reporters
+    'reporter'
+  );
+
+  const reporterBiaxialData = addConsistentColors(
+    reporterTableData
+      .filter(row => !row.bold) // Exclude grand total row
+      .map(row => ({
+        name: row.reporter,
+        tasks: row.totalTasks,
+        hours: row.totalHours
+      }))
+      .sort((a, b) => b.tasks - a.tasks)
+      .slice(0, 10), // Show top 10 reporters
+    'reporter'
+  );
+
+  return {
+    reporterTableData,
+    reporterTableColumns,
+    reporterPieData,
+    reporterBiaxialData
+  };
+};
+
+/**
+ * Get reporter analytics card props for direct use with ReporterAnalyticsCard
+ * @param {Array} tasks - Array of task objects
+ * @param {Array} reporters - Array of reporter objects
+ * @param {boolean} isLoading - Loading state
+ * @returns {Object} Reporter analytics card props
+ */
+export const getReporterAnalyticsCardProps = (tasks, reporters, isLoading = false) => {
+  const calculatedData = calculateReporterAnalyticsData(tasks, reporters);
+  
+  // Calculate totals for chart titles
+  const totalTasks = tasks?.length || 0;
+  const totalHours = tasks?.reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0) || 0;
+  
+  return {
+    title: "Reporter Analytics",
+    reporterTableData: calculatedData.reporterTableData,
+    reporterTableColumns: calculatedData.reporterTableColumns,
+    reporterPieData: calculatedData.reporterPieData,
+    reporterPieTitle: `Reporter Metrics (${totalTasks} tasks, ${totalHours}h)`,
+    reporterPieColors: calculatedData.reporterPieData.map(item => item.color),
+    reporterBiaxialData: calculatedData.reporterBiaxialData,
+    reporterBiaxialTitle: `Reporter Metrics: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+    reporterBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
+    reporterBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    isLoading
+  };
+};
+
+// Simplified version without caching
+export const getCachedReporterAnalyticsCardProps = (tasks, reporters, month, isLoading = false) => {
+  return getReporterAnalyticsCardProps(tasks, reporters, isLoading);
 };

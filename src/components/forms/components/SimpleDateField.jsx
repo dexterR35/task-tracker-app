@@ -140,14 +140,14 @@ const SimpleDateField = ({
             w-full px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200
             ${error 
               ? 'border-red-error bg-red-50 focus:border-red-error focus:ring-red-error' 
-              : 'border-gray-300 bg-transparent  hover:border-blue-default focus:border-blue-500 focus:ring-blue-500'
+              : 'border-gray-300 dark:border-gray-600 bg-transparent hover:border-blue-default focus:border-blue-default focus:ring-blue-default'
             }
             focus:ring-2 focus:ring-opacity-20
           `}
           onClick={() => setIsOpen(!isOpen)}
         >
           <div className="flex items-center justify-between">
-            <span className={`text-sm ${selectedDate ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-sm ${selectedDate ? 'text-gray-200 font-medium' : 'text-gray-500'}`}>
               {selectedDate ? formatDate(selectedDate) : 'Select a date'}
             </span>
             <svg className="w-5 h-5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +178,7 @@ const SimpleDateField = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h3 className="text-xl font-bold text-gray-800">
+                <h3 className="text-xl font-bold text-white">
                   {currentMonthName}
                 </h3>
                 <button
@@ -195,7 +195,7 @@ const SimpleDateField = ({
               {/* Day Headers - Romanian calendar starts with Monday */}
               <div className="grid grid-cols-7 gap-2 mb-4">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+                  <div key={day} className="text-center text-sm font-semibold text-white py-2">
                     {day}
                   </div>
                 ))}
@@ -211,7 +211,7 @@ const SimpleDateField = ({
                     disabled={day.isDisabled}
                     className={`
                       w-10 h-10 text-sm rounded-lg font-medium transition-all duration-200
-                      ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
+                      ${day.isCurrentMonth ? 'text-white' : 'text-gray-400'}
                       ${day.isToday ? 'bg-blue-500 text-white font-bold shadow-lg' : ''}
                       ${day.isSelected ? 'bg-blue-600 text-white font-bold shadow-lg' : ''}
                       ${day.isDisabled ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50 hover:text-blue-700'}

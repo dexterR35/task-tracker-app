@@ -7,12 +7,12 @@ import { CARD_SYSTEM } from "@/constants";
 
 
 
-// Systematic color assignment for all cards - ensures unique colors
+// Color assignment for icons - keeps 5 different colors for visual variety
 export const getCardColor = (cardType, data = {}) => {
-  // Define the 5 colors in a specific order
+  // Define the 5 colors for icons
   const colors = ["blue", "green", "purple", "amber", "crimson"];
   
-  // Create a deterministic color map for each card type
+  // Create a deterministic color map for each card type (for icons only)
   const colorMap = {
     // Dashboard cards
     'month-selection': 'blue',
@@ -46,7 +46,7 @@ export const getCardColor = (cardType, data = {}) => {
     'homepage-design': 'green',
   };
   
-  // Return the mapped color or fallback to a hash-based assignment
+  // Return the mapped color for icons or fallback to a hash-based assignment
   return colorMap[cardType] || colors[Math.abs(cardType.length) % colors.length];
 };
 
@@ -425,7 +425,9 @@ export const SMALL_CARD_CONFIGS = {
             }
           }}
           iconName="view"
-          className="w-full transition-colors uppercase bg-blue-600 hover:bg-blue-700 text-white"
+          variant="primary"
+          size="sm"
+          className="w-full uppercase"
         >
           {(() => {
             // Determine button text based on context and selections
@@ -490,7 +492,9 @@ export const SMALL_CARD_CONFIGS = {
             }
           }}
           iconName="users"
-          className="w-full mt-2 transition-colors uppercase bg-green-600 hover:bg-green-700 text-white"
+          variant="primary"
+          size="sm"
+          className="w-full mt-2 uppercase"
         >
           VIEW ALL DATA
         </DynamicButton>

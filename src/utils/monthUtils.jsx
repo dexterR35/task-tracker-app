@@ -12,6 +12,7 @@ import { useCreateMonthBoard } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { CARD_SYSTEM } from '@/constants';
 
 // ============================================================================
 // WEEK UTILITIES
@@ -387,10 +388,15 @@ export const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate
         <div
           className={`h-2 rounded-full transition-all duration-300 ${
             isCurrentMonth 
-              ? 'bg-gradient-to-r from-blue-500 to-blue-600' 
+              ? 'bg-gradient-to-r' 
               : 'bg-gradient-to-r from-green-500 to-green-600'
           }`}
-          style={{ width: `${progressData.progress}%` }}
+          style={{ 
+            width: `${progressData.progress}%`,
+            background: isCurrentMonth 
+              ? `linear-gradient(to right, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default})`
+              : undefined
+          }}
         />
       </div>
       
@@ -406,7 +412,15 @@ export const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate
  * Month Board Banner Component
  */
 export const MonthBoardBanner = () => {
-  const appData = useAppDataContext();
+  let appData;
+  try {
+    appData = useAppDataContext();
+  } catch (error) {
+    // If context is not available, return null
+    console.warn('MonthBoardBanner: AppDataContext not available:', error.message);
+    return null;
+  }
+  
   const [generateMonthBoard] = useCreateMonthBoard();
   const [isGenerating, setIsGenerating] = useState(false);
 
