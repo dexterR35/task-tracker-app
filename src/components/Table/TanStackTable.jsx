@@ -538,7 +538,7 @@ const TanStackTable = forwardRef(({
                   </tr>
                 ))}
               </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+              <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-100 dark:divide-gray-800">
                 {table.getRowModel().rows.map((row, index) => {
                   const rowKey = row.original?.id || row.id;
                   const isSelected = rowSelection[row.id];
@@ -546,17 +546,17 @@ const TanStackTable = forwardRef(({
                   return (
                     <tr
                       key={rowKey}
-                      className={`group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 cursor-pointer ${
+                      className={`group hover:bg-gray-50/50 dark:hover:bg-gray-600/30 cursor-pointer ${
                         isSelected 
-                          ? 'bg-blue-50/80 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400' 
+                          ? 'bg-blue-50/80 dark:bg-red-error/10 border-l-4 border-blue-default dark:border-blue-default' 
                           : 'hover:border-l-2 hover:border-gray-200 dark:hover:border-gray-600'
-                      } ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/30 dark:bg-gray-900/50'}`}
+                      } ${index % 2 === 0 ? 'bg-white dark:bg-smallCard' : 'bg-gray-50/30 dark:bg-gray-900/50'}`}
                       onClick={() => handleRowClick(row)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={`${row.original?.id || row.id}-${cell.column.id}`}
-                          className="px-4 py-3 text-sm font-normal text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100"
+                          className="px-4 py-3 text-sm font-normal "
                           style={{ width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

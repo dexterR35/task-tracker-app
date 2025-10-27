@@ -1,7 +1,5 @@
 import React from "react";
 import { getColumns } from "@/components/Table/tableColumns.jsx";
-import { showError, showSuccess } from "@/utils/toast.js";
-import { logger } from "@/utils/logger.js";
 import TanStackTable from "@/components/Table/TanStackTable";
 import { useTableActions } from "@/hooks/useTableActions";
 

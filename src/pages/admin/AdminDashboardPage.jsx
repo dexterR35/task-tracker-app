@@ -306,7 +306,7 @@ const AdminDashboardPage = () => {
 
       {/* table task section */}
       <div>
-        <div className="py-6 border-bottom">
+        <div className="py-6 ">
           <div className="flex items-center justify-between">
             <div>
               <h3>
@@ -337,7 +337,7 @@ const AdminDashboardPage = () => {
             <DynamicButton
               onClick={() => setShowTable(!showTable)}
               variant="outline"
-              size="lg"
+              size="md"
               iconName={showTable ? "hide" : "show"}
               iconPosition="left"
               disabled={isInitialLoading}

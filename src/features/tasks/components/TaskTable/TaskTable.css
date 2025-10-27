@@ -1,4 +1,4 @@
-/* Minimal Filter Styles for TaskTable */
+/* 
 .minimal-filter-item .field-wrapper {
   margin: 0;
 }
@@ -52,7 +52,7 @@
   transition: all 0.2s ease;
 }
 
-/* Dark mode styles */
+
 .dark .minimal-filter-item .checkbox-field {
   background: rgba(31, 41, 55, 0.8) !important;
   border-color: #374151;
@@ -60,7 +60,7 @@
 }
 
 .dark .minimal-filter-item .checkbox-field:hover {
-  border-color: #3b82f6;
+
   background: rgba(17, 24, 39, 0.9);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
@@ -74,14 +74,14 @@
   font-weight: 600;
 }
 
-/* Task table container */
+
 .task-table {
   background: transparent;
 }
 
-/* Filter section styling */
+
 .task-table .mb-8 {
-  background: rgba(249, 250, 251, 0.5);
+
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 24px;
@@ -94,7 +94,6 @@
   border-color: rgba(55, 65, 81, 0.5);
 }
 
-/* Filter title styling */
 .task-table .mb-8 h3 {
   font-size: 14px;
   font-weight: 600;
@@ -106,7 +105,7 @@
   color: #d1d5db;
 }
 
-/* Filter items container */
+
 .task-table .flex.flex-wrap.gap-2 {
   gap: 12px;
-}
+} */

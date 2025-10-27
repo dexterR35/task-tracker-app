@@ -454,13 +454,13 @@ const TaskTable = ({
   };
 
   return (
-    <div className={`task-table ${className}`}>
+    <div className={`task-table  ${className}`}>
       {/* Filter Section */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="mb-4 card !bg-smallCard">
+        <div className="flex items-center justify-between mb-6 ">
           <div className="flex items-center space-x-3">
-            <div className="w-2 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Task Filters</h3>
+        
+            <h3 >Task Filters</h3>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               {selectedFilter ? `Filtering by: ${selectedFilter}` : 'All tasks shown'}
             </div>
