@@ -92,7 +92,7 @@ const TableControls = ({
 }) => (
   <div className="flex justify-between items-center py-4">
     {/* Left Section - Search and Filters */}
-    <div className="flex items-center space-x-6 flex-1 bg-red-500">
+    <div className="flex items-center space-x-6 flex-1 ">
       {/* Global Filter */}
       {showFilters && (
         <div className="max-w-sm">
