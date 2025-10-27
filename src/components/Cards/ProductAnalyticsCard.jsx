@@ -56,6 +56,7 @@ const ProductAnalyticsCard = ({
               title={categoryPieTitle}
               colors={categoryPieColors}
               showPercentages={true}
+              dataType="product"
             />
           </div>
 
@@ -71,6 +72,7 @@ const ProductAnalyticsCard = ({
               title={productPieTitle}
               colors={productPieColors}
               showPercentages={true}
+              dataType="product"
             />
           </div>
         </div>
@@ -89,6 +91,7 @@ const ProductAnalyticsCard = ({
               title={categoryBiaxialTitle}
               tasksColor={categoryBiaxialTasksColor}
               hoursColor={categoryBiaxialHoursColor}
+              dataType="product"
             />
           </div>
 
@@ -104,6 +107,7 @@ const ProductAnalyticsCard = ({
               title={productBiaxialTitle}
               tasksColor={productBiaxialTasksColor}
               hoursColor={productBiaxialHoursColor}
+              dataType="product"
             />
           </div>
         </div>

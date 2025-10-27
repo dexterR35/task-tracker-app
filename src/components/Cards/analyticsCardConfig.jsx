@@ -6,6 +6,7 @@
 
 import { CARD_SYSTEM } from '@/constants';
 import Badge from '@/components/ui/Badge/Badge';
+import { addConsistentColors, getMarketColor, getProductColor, getAIModelColor, getUserColor } from '@/utils/chartColorMapping';
 // Removed unused analytics cache import
 
 // Markets by Users Card Types
@@ -286,28 +287,34 @@ export const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_
   let userByTaskData = [];
   
   if (options.includeMarketsChart) {
-    chartData = Array.from(allMarkets).sort().map(market => ({
-      name: market.toUpperCase(),
-      value: marketTotals[market] || 0
-    }));
+    chartData = addConsistentColors(
+      Array.from(allMarkets).sort().map(market => ({
+        name: market.toUpperCase(),
+        value: marketTotals[market] || 0
+      })),
+      'market'
+    );
   }
 
   if (options.includeUsersChart && tableData.length > 0) {
-    userByTaskData = tableData
-      .filter(row => !row.bold) // Exclude grand total row
-      .map(row => ({
-        name: row.user,
-        value: row.totalTasks || 0
-      }))
-      .sort((a, b) => b.value - a.value) // Sort by task count descending
-      .slice(0, 10); // Show top 10 users
+    userByTaskData = addConsistentColors(
+      tableData
+        .filter(row => !row.bold) // Exclude grand total row
+        .map(row => ({
+          name: row.user,
+          value: row.totalTasks || 0
+        }))
+        .sort((a, b) => b.value - a.value) // Sort by task count descending
+        .slice(0, 10), // Show top 10 users
+      'user'
+    );
   }
 
   return {
     tableData,
     tableColumns,
     chartData,
-    colors: chartData.map((_, index) => CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]),
+    colors: chartData.map(item => item.color),
     userByTaskData
   };
 };
@@ -337,15 +344,17 @@ const calculateBiaxialBarData = (tasks) => {
     });
   });
   
-  // Convert to array format for the chart
-  return Object.entries(marketStats)
-    .map(([market, stats], index) => ({
-      name: market.toUpperCase(),
-      tasks: stats.tasks,
-      hours: Math.round(stats.hours * 100) / 100, // Round to 2 decimal places
-      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-    }))
-    .sort((a, b) => b.tasks - a.tasks); // Sort by task count descending
+  // Convert to array format for the chart with consistent colors
+  return addConsistentColors(
+    Object.entries(marketStats)
+      .map(([market, stats]) => ({
+        name: market.toUpperCase(),
+        tasks: stats.tasks,
+        hours: Math.round(stats.hours * 100) / 100, // Round to 2 decimal places
+      }))
+      .sort((a, b) => b.tasks - a.tasks), // Sort by task count descending
+    'market'
+  );
 };
 
 const calculateUsersBiaxialData = (tasks, users) => {
@@ -377,28 +386,30 @@ const calculateUsersBiaxialData = (tasks, users) => {
     }
   });
   
-  // Convert to array format for the chart with user names
-  const result = Object.entries(userStats)
-    .map(([userId, stats], index) => {
-      // Find user name from users array - try multiple ID fields
-      const user = users.find(u => 
-        u.uid === userId || 
-        u.id === userId || 
-        u.email === userId ||
-        u.displayName === userId ||
-        u.name === userId
-      );
-      
-      const userName = user ? (user.displayName || user.name || user.email || `User ${userId}`) : `User ${userId}`;
-      
-      return {
-        name: userName,
-        tasks: stats.tasks,
-        hours: Math.round(stats.hours * 100) / 100, // Round to 2 decimal places
-        color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-      };
-    })
-    .sort((a, b) => b.tasks - a.tasks); // Sort by task count descending
+  // Convert to array format for the chart with user names and consistent colors
+  const result = addConsistentColors(
+    Object.entries(userStats)
+      .map(([userId, stats]) => {
+        // Find user name from users array - try multiple ID fields
+        const user = users.find(u => 
+          u.uid === userId || 
+          u.id === userId || 
+          u.email === userId ||
+          u.displayName === userId ||
+          u.name === userId
+        );
+        
+        const userName = user ? (user.displayName || user.name || user.email || `User ${userId}`) : `User ${userId}`;
+        
+        return {
+          name: userName,
+          tasks: stats.tasks,
+          hours: Math.round(stats.hours * 100) / 100, // Round to 2 decimal places
+        };
+      })
+      .sort((a, b) => b.tasks - a.tasks), // Sort by task count descending
+    'user'
+  );
     
   return result;
 };
@@ -637,60 +648,70 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
 
   // Create chart data for casino marketing
-  const casinoMarketingData = sortedMarkets.map(market => ({
-    name: market.toUpperCase(),
-    value: marketingData.casino[market] || 0
-  })).filter(item => item.value > 0);
+  const casinoMarketingData = addConsistentColors(
+    sortedMarkets.map(market => ({
+      name: market.toUpperCase(),
+      value: marketingData.casino[market] || 0
+    })).filter(item => item.value > 0),
+    'market'
+  );
 
   // Create chart data for sport marketing
-  const sportMarketingData = sortedMarkets.map(market => ({
-    name: market.toUpperCase(),
-    value: marketingData.sport[market] || 0
-  })).filter(item => item.value > 0);
+  const sportMarketingData = addConsistentColors(
+    sortedMarkets.map(market => ({
+      name: market.toUpperCase(),
+      value: marketingData.sport[market] || 0
+    })).filter(item => item.value > 0),
+    'market'
+  );
 
   // Create biaxial chart data for casino marketing
-  const casinoBiaxialData = sortedMarkets.map(market => {
-    const marketTasks = marketingData.casino[market] || 0;
-    const marketHours = tasks
-      .filter(task => {
-        const products = task.data_task?.products || task.products;
-        const taskMarkets = task.data_task?.markets || task.markets || [];
-        return typeof products === 'string' && 
-               products.includes('marketing') && 
-               products.includes('casino') &&
-               taskMarkets.includes(market);
-      })
-      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
-    
-    return {
-      name: market.toUpperCase(),
-      tasks: marketTasks,
-      hours: Math.round(marketHours * 100) / 100,
-      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
-    };
-  }).filter(item => item.tasks > 0);
+  const casinoBiaxialData = addConsistentColors(
+    sortedMarkets.map(market => {
+      const marketTasks = marketingData.casino[market] || 0;
+      const marketHours = tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          const taskMarkets = task.data_task?.markets || task.markets || [];
+          return typeof products === 'string' && 
+                 products.includes('marketing') && 
+                 products.includes('casino') &&
+                 taskMarkets.includes(market);
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      return {
+        name: market.toUpperCase(),
+        tasks: marketTasks,
+        hours: Math.round(marketHours * 100) / 100,
+      };
+    }).filter(item => item.tasks > 0),
+    'market'
+  );
 
   // Create biaxial chart data for sport marketing
-  const sportBiaxialData = sortedMarkets.map(market => {
-    const marketTasks = marketingData.sport[market] || 0;
-    const marketHours = tasks
-      .filter(task => {
-        const products = task.data_task?.products || task.products;
-        const taskMarkets = task.data_task?.markets || task.markets || [];
-        return typeof products === 'string' && 
-               products.includes('marketing') && 
-               products.includes('sport') &&
-               taskMarkets.includes(market);
-      })
-      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
-    
-    return {
-      name: market.toUpperCase(),
-      tasks: marketTasks,
-      hours: Math.round(marketHours * 100) / 100,
-      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
-    };
-  }).filter(item => item.tasks > 0);
+  const sportBiaxialData = addConsistentColors(
+    sortedMarkets.map(market => {
+      const marketTasks = marketingData.sport[market] || 0;
+      const marketHours = tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          const taskMarkets = task.data_task?.markets || task.markets || [];
+          return typeof products === 'string' && 
+                 products.includes('marketing') && 
+                 products.includes('sport') &&
+                 taskMarkets.includes(market);
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      return {
+        name: market.toUpperCase(),
+        tasks: marketTasks,
+        hours: Math.round(marketHours * 100) / 100,
+      };
+    }).filter(item => item.tasks > 0),
+    'market'
+  );
 
   return {
     tableData,
@@ -716,10 +737,10 @@ export const getMarketingAnalyticsCardProps = (tasks, isLoading = false) => {
     marketingTableColumns: calculatedData.tableColumns,
     casinoMarketingData: calculatedData.casinoMarketingData,
     casinoMarketingTitle: `Casino Marketing by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
-    casinoMarketingColors: MARKETING_CHART_COLORS.CASINO,
+    casinoMarketingColors: calculatedData.casinoMarketingData.map(item => item.color),
     sportMarketingData: calculatedData.sportMarketingData,
     sportMarketingTitle: `Sport Marketing by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
-    sportMarketingColors: MARKETING_CHART_COLORS.SPORT,
+    sportMarketingColors: calculatedData.sportMarketingData.map(item => item.color),
     casinoBiaxialData: calculatedData.casinoBiaxialData,
     casinoBiaxialTitle: `Casino Marketing Tasks & Hours by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
     casinoBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
@@ -904,60 +925,70 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
 
   // Create chart data for casino acquisition
-  const casinoAcquisitionData = sortedMarkets.map(market => ({
-    name: market.toUpperCase(),
-    value: acquisitionData.casino[market] || 0
-  })).filter(item => item.value > 0);
+  const casinoAcquisitionData = addConsistentColors(
+    sortedMarkets.map(market => ({
+      name: market.toUpperCase(),
+      value: acquisitionData.casino[market] || 0
+    })).filter(item => item.value > 0),
+    'market'
+  );
 
   // Create chart data for sport acquisition
-  const sportAcquisitionData = sortedMarkets.map(market => ({
-    name: market.toUpperCase(),
-    value: acquisitionData.sport[market] || 0
-  })).filter(item => item.value > 0);
+  const sportAcquisitionData = addConsistentColors(
+    sortedMarkets.map(market => ({
+      name: market.toUpperCase(),
+      value: acquisitionData.sport[market] || 0
+    })).filter(item => item.value > 0),
+    'market'
+  );
 
   // Create biaxial chart data for casino acquisition
-  const casinoBiaxialData = sortedMarkets.map(market => {
-    const marketTasks = acquisitionData.casino[market] || 0;
-    const marketHours = tasks
-      .filter(task => {
-        const products = task.data_task?.products || task.products;
-        const taskMarkets = task.data_task?.markets || task.markets || [];
-        return typeof products === 'string' && 
-               products.includes('acquisition') && 
-               products.includes('casino') &&
-               taskMarkets.includes(market);
-      })
-      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
-    
-    return {
-      name: market.toUpperCase(),
-      tasks: marketTasks,
-      hours: Math.round(marketHours * 100) / 100,
-      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
-    };
-  }).filter(item => item.tasks > 0);
+  const casinoBiaxialData = addConsistentColors(
+    sortedMarkets.map(market => {
+      const marketTasks = acquisitionData.casino[market] || 0;
+      const marketHours = tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          const taskMarkets = task.data_task?.markets || task.markets || [];
+          return typeof products === 'string' && 
+                 products.includes('acquisition') && 
+                 products.includes('casino') &&
+                 taskMarkets.includes(market);
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      return {
+        name: market.toUpperCase(),
+        tasks: marketTasks,
+        hours: Math.round(marketHours * 100) / 100,
+      };
+    }).filter(item => item.tasks > 0),
+    'market'
+  );
 
   // Create biaxial chart data for sport acquisition
-  const sportBiaxialData = sortedMarkets.map(market => {
-    const marketTasks = acquisitionData.sport[market] || 0;
-    const marketHours = tasks
-      .filter(task => {
-        const products = task.data_task?.products || task.products;
-        const taskMarkets = task.data_task?.markets || task.markets || [];
-        return typeof products === 'string' && 
-               products.includes('acquisition') && 
-               products.includes('sport') &&
-               taskMarkets.includes(market);
-      })
-      .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
-    
-    return {
-      name: market.toUpperCase(),
-      tasks: marketTasks,
-      hours: Math.round(marketHours * 100) / 100,
-      color: CHART_COLORS.DEFAULT[sortedMarkets.indexOf(market) % CHART_COLORS.DEFAULT.length]
-    };
-  }).filter(item => item.tasks > 0);
+  const sportBiaxialData = addConsistentColors(
+    sortedMarkets.map(market => {
+      const marketTasks = acquisitionData.sport[market] || 0;
+      const marketHours = tasks
+        .filter(task => {
+          const products = task.data_task?.products || task.products;
+          const taskMarkets = task.data_task?.markets || task.markets || [];
+          return typeof products === 'string' && 
+                 products.includes('acquisition') && 
+                 products.includes('sport') &&
+                 taskMarkets.includes(market);
+        })
+        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      return {
+        name: market.toUpperCase(),
+        tasks: marketTasks,
+        hours: Math.round(marketHours * 100) / 100,
+      };
+    }).filter(item => item.tasks > 0),
+    'market'
+  );
 
   return {
     tableData,
@@ -983,10 +1014,10 @@ export const getAcquisitionAnalyticsCardProps = (tasks, isLoading = false) => {
     acquisitionTableColumns: calculatedData.tableColumns,
     casinoAcquisitionData: calculatedData.casinoAcquisitionData,
     casinoAcquisitionTitle: `Casino Acquisition by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
-    casinoAcquisitionColors: ACQUISITION_CHART_COLORS.CASINO,
+    casinoAcquisitionColors: calculatedData.casinoAcquisitionData.map(item => item.color),
     sportAcquisitionData: calculatedData.sportAcquisitionData,
     sportAcquisitionTitle: `Sport Acquisition by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
-    sportAcquisitionColors: ACQUISITION_CHART_COLORS.SPORT,
+    sportAcquisitionColors: calculatedData.sportAcquisitionData.map(item => item.color),
     casinoBiaxialData: calculatedData.casinoBiaxialData,
     casinoBiaxialTitle: `Casino Acquisition Tasks & Hours by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
     casinoBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
@@ -1231,41 +1262,48 @@ export const calculateProductAnalyticsData = (tasks) => {
   ];
 
   // Create first pie chart data (categories with tasks - including misc)
-  const categoryPieData = Object.entries(categoryTotals)
-    .filter(([category, count]) => count > 0)
-    .map(([category, count]) => ({
-      name: category.charAt(0).toUpperCase() + category.slice(1),
-      value: count,
-      percentage: totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0
-    }));
+  const categoryPieData = addConsistentColors(
+    Object.entries(categoryTotals)
+      .filter(([category, count]) => count > 0)
+      .map(([category, count]) => ({
+        name: category.charAt(0).toUpperCase() + category.slice(1),
+        value: count,
+        percentage: totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0
+      })),
+    'product'
+  );
 
   // Create second pie chart data (individual products with tasks - including misc)
-  const productPieData = Object.entries(productCounts)
-    .filter(([product, count]) => count > 0)
-    .map(([product, count], index) => ({
-      name: product.charAt(0).toUpperCase() + product.slice(1),
-      value: count,
-      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-    }));
+  const productPieData = addConsistentColors(
+    Object.entries(productCounts)
+      .filter(([product, count]) => count > 0)
+      .map(([product, count]) => ({
+        name: product.charAt(0).toUpperCase() + product.slice(1),
+        value: count,
+      })),
+    'product'
+  );
 
   // Create biaxial chart data for product analytics (including misc)
-  const biaxialData = Object.entries(productCounts)
-    .filter(([product, count]) => count > 0)
-    .map(([product, count], index) => {
-      const productHours = tasks
-        .filter(task => {
-          const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().trim() === product;
-        })
-        .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
-      
-      return {
-        name: product.charAt(0).toUpperCase() + product.slice(1),
-        tasks: count,
-        hours: Math.round(productHours * 100) / 100,
-        color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-      };
-    });
+  const biaxialData = addConsistentColors(
+    Object.entries(productCounts)
+      .filter(([product, count]) => count > 0)
+      .map(([product, count]) => {
+        const productHours = tasks
+          .filter(task => {
+            const products = task.data_task?.products || task.products;
+            return products && products.toLowerCase().trim() === product;
+          })
+          .reduce((sum, task) => sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+        
+        return {
+          name: product.charAt(0).toUpperCase() + product.slice(1),
+          tasks: count,
+          hours: Math.round(productHours * 100) / 100,
+        };
+      }),
+    'product'
+  );
 
   return {
     tableData,
@@ -1315,10 +1353,10 @@ export const getProductAnalyticsCardProps = (tasks, isLoading = false) => {
     productTableColumns: productData.tableColumns,
     categoryPieData: productData.categoryPieData,
     categoryPieTitle: `Product Categories (${totalTasks} tasks, ${totalHours}h)`,
-    categoryPieColors: CHART_COLORS.DEFAULT,
+    categoryPieColors: productData.categoryPieData.map(item => item.color),
     productPieData: productData.productPieData,
     productPieTitle: `Individual Products (${totalTasks} tasks, ${totalHours}h)`,
-    productPieColors: CHART_COLORS.DEFAULT,
+    productPieColors: productData.productPieData.map(item => item.color),
     categoryBiaxialData: categoryBiaxialData,
     categoryBiaxialTitle: `Product Categories Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
     categoryBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
@@ -1654,124 +1692,142 @@ export const calculateAIAnalyticsData = (tasks, users) => {
   ];
 
   // Create AI models pie chart data
-  const aiModelsData = Array.from(allAIModels).map(model => ({
-    name: model,
-    value: aiModelCounts[model] || 0
-  })).sort((a, b) => b.value - a.value);
+  const aiModelsData = addConsistentColors(
+    Array.from(allAIModels).map(model => ({
+      name: model,
+      value: aiModelCounts[model] || 0
+    })).sort((a, b) => b.value - a.value),
+    'aiModel'
+  );
 
   // Create users AI usage pie chart data
-  const usersAIData = tableData
-    .filter(row => !row.bold) // Exclude grand total row
-    .map(row => ({
-      name: row.user,
-      value: row.aiTime
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 10); // Show top 10 users
+  const usersAIData = addConsistentColors(
+    tableData
+      .filter(row => !row.bold) // Exclude grand total row
+      .map(row => ({
+        name: row.user,
+        value: row.aiTime
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10), // Show top 10 users
+    'user'
+  );
 
   // Create users biaxial chart data (AI time vs AI tasks)
-  const usersBiaxialData = tableData
-    .filter(row => !row.bold) // Exclude grand total row
-    .map((row, index) => ({
-      name: row.user,
-      tasks: row.aiUsedTasks,
-      hours: row.aiTime,
-      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-    }))
-    .sort((a, b) => b.hours - a.hours)
-    .slice(0, 10); // Show top 10 users
+  const usersBiaxialData = addConsistentColors(
+    tableData
+      .filter(row => !row.bold) // Exclude grand total row
+      .map(row => ({
+        name: row.user,
+        tasks: row.aiUsedTasks,
+        hours: row.aiTime,
+      }))
+      .sort((a, b) => b.hours - a.hours)
+      .slice(0, 10), // Show top 10 users
+    'user'
+  );
 
   // Create markets AI usage pie chart data
-  const marketsAIData = Array.from(allMarkets).map(market => {
-    // Count tasks that have AI usage and include this market
-    const marketAICount = tasks.filter(task => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
-      return taskMarkets.includes(market) && aiUsed.length > 0;
-    }).length;
-    
-    return {
-      name: market,
-      value: marketAICount
-    };
-  }).filter(item => item.value > 0)
-    .sort((a, b) => b.value - a.value);
-
-  // Create products AI usage pie chart data
-  const productsAIData = Array.from(allProducts).map(product => {
-    // Count tasks that have AI usage and match this product
-    const productAICount = tasks.filter(task => {
-      const taskProducts = task.data_task?.products || task.products || '';
-      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
-      return taskProducts === product && aiUsed.length > 0;
-    }).length;
-    
-    return {
-      name: product,
-      value: productAICount
-    };
-  }).filter(item => item.value > 0)
-    .sort((a, b) => b.value - a.value);
-
-  // Create markets biaxial chart data (AI usage by market)
-  const marketsBiaxialData = Array.from(allMarkets).map((market, index) => {
-    // Count tasks that have AI usage and include this market
-    const marketAICount = tasks.filter(task => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
-      return taskMarkets.includes(market) && aiUsed.length > 0;
-    }).length;
-    
-    // Calculate total AI time for this market
-    const marketAITime = tasks
-      .filter(task => {
+  const marketsAIData = addConsistentColors(
+    Array.from(allMarkets).map(market => {
+      // Count tasks that have AI usage and include this market
+      const marketAICount = tasks.filter(task => {
         const taskMarkets = task.data_task?.markets || task.markets || [];
         const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
         return taskMarkets.includes(market) && aiUsed.length > 0;
-      })
-      .reduce((sum, task) => {
-        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
-        return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
-      }, 0);
+      }).length;
+      
+      return {
+        name: market,
+        value: marketAICount
+      };
+    }).filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value),
+    'market'
+  );
 
-    return {
-      name: market,
-      tasks: marketAICount,
-      hours: Math.round(marketAITime * 100) / 100,
-      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-    };
-  }).filter(item => item.tasks > 0)
-    .sort((a, b) => b.tasks - a.tasks);
-
-  // Create products biaxial chart data (AI usage by product)
-  const productsBiaxialData = Array.from(allProducts).map((product, index) => {
-    // Count tasks that have AI usage and match this product
-    const productAICount = tasks.filter(task => {
-      const taskProducts = task.data_task?.products || task.products || '';
-      const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
-      return taskProducts === product && aiUsed.length > 0;
-    }).length;
-    
-    // Calculate total AI time for this product
-    const productAITime = tasks
-      .filter(task => {
+  // Create products AI usage pie chart data
+  const productsAIData = addConsistentColors(
+    Array.from(allProducts).map(product => {
+      // Count tasks that have AI usage and match this product
+      const productAICount = tasks.filter(task => {
         const taskProducts = task.data_task?.products || task.products || '';
         const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
         return taskProducts === product && aiUsed.length > 0;
-      })
-      .reduce((sum, task) => {
-        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
-        return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
-      }, 0);
+      }).length;
+      
+      return {
+        name: product,
+        value: productAICount
+      };
+    }).filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value),
+    'product'
+  );
 
-    return {
-      name: product,
-      tasks: productAICount,
-      hours: Math.round(productAITime * 100) / 100,
-      color: CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
-    };
-  }).filter(item => item.tasks > 0)
-    .sort((a, b) => b.tasks - a.tasks);
+  // Create markets biaxial chart data (AI usage by market)
+  const marketsBiaxialData = addConsistentColors(
+    Array.from(allMarkets).map(market => {
+      // Count tasks that have AI usage and include this market
+      const marketAICount = tasks.filter(task => {
+        const taskMarkets = task.data_task?.markets || task.markets || [];
+        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+        return taskMarkets.includes(market) && aiUsed.length > 0;
+      }).length;
+      
+      // Calculate total AI time for this market
+      const marketAITime = tasks
+        .filter(task => {
+          const taskMarkets = task.data_task?.markets || task.markets || [];
+          const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+          return taskMarkets.includes(market) && aiUsed.length > 0;
+        })
+        .reduce((sum, task) => {
+          const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+          return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
+        }, 0);
+
+      return {
+        name: market,
+        tasks: marketAICount,
+        hours: Math.round(marketAITime * 100) / 100,
+      };
+    }).filter(item => item.tasks > 0)
+      .sort((a, b) => b.tasks - a.tasks),
+    'market'
+  );
+
+  // Create products biaxial chart data (AI usage by product)
+  const productsBiaxialData = addConsistentColors(
+    Array.from(allProducts).map(product => {
+      // Count tasks that have AI usage and match this product
+      const productAICount = tasks.filter(task => {
+        const taskProducts = task.data_task?.products || task.products || '';
+        const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+        return taskProducts === product && aiUsed.length > 0;
+      }).length;
+      
+      // Calculate total AI time for this product
+      const productAITime = tasks
+        .filter(task => {
+          const taskProducts = task.data_task?.products || task.products || '';
+          const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+          return taskProducts === product && aiUsed.length > 0;
+        })
+        .reduce((sum, task) => {
+          const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+          return sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0);
+        }, 0);
+
+      return {
+        name: product,
+        tasks: productAICount,
+        hours: Math.round(productAITime * 100) / 100,
+      };
+    }).filter(item => item.tasks > 0)
+      .sort((a, b) => b.tasks - a.tasks),
+    'product'
+  );
 
   return {
     tableData,
@@ -1809,20 +1865,20 @@ export const getAIAnalyticsCardProps = (tasks, users, isLoading = false) => {
     aiTableColumns: calculatedData.tableColumns,
     aiModelsData: calculatedData.aiModelsData,
     aiModelsTitle: `AI Models Usage (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
-    aiModelsColors: AI_CHART_COLORS.MODELS,
+    aiModelsColors: calculatedData.aiModelsData.map(item => item.color),
     usersAIData: calculatedData.usersAIData,
     usersAITitle: `Users by AI Time (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
-    usersAIColors: AI_CHART_COLORS.USERS,
+    usersAIColors: calculatedData.usersAIData.map(item => item.color),
     usersBiaxialData: calculatedData.usersBiaxialData,
     usersBiaxialTitle: `Users: AI Time & AI Tasks (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
     usersBiaxialTimeColor: CHART_COLORS.DEFAULT[0],
     usersBiaxialTasksColor: CHART_COLORS.DEFAULT[1],
     marketsAIData: calculatedData.marketsAIData,
     marketsAITitle: `Markets AI Usage (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
-    marketsAIColors: CHART_COLORS.DEFAULT,
+    marketsAIColors: calculatedData.marketsAIData.map(item => item.color),
     productsAIData: calculatedData.productsAIData,
     productsAITitle: `Products AI Usage (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
-    productsAIColors: CHART_COLORS.DEFAULT,
+    productsAIColors: calculatedData.productsAIData.map(item => item.color),
     marketsBiaxialData: calculatedData.marketsBiaxialData,
     marketsBiaxialTitle: `Markets: AI Tasks & AI Time (${totalTasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
     marketsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],

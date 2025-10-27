@@ -55,6 +55,7 @@ const AcquisitionAnalyticsCard = ({
               data={casinoAcquisitionData}
               title={casinoAcquisitionTitle}
               colors={casinoAcquisitionColors}
+              dataType="market"
             />
           </div>
 
@@ -69,6 +70,7 @@ const AcquisitionAnalyticsCard = ({
               data={sportAcquisitionData}
               title={sportAcquisitionTitle}
               colors={sportAcquisitionColors}
+              dataType="market"
             />
           </div>
         </div>
@@ -87,6 +89,7 @@ const AcquisitionAnalyticsCard = ({
               title={casinoBiaxialTitle}
               tasksColor={casinoBiaxialTasksColor}
               hoursColor={casinoBiaxialHoursColor}
+              dataType="market"
             />
           </div>
 
@@ -102,6 +105,7 @@ const AcquisitionAnalyticsCard = ({
               title={sportBiaxialTitle}
               tasksColor={sportBiaxialTasksColor}
               hoursColor={sportBiaxialHoursColor}
+              dataType="market"
             />
           </div>
         </div>

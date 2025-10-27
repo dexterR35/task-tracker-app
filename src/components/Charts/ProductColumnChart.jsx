@@ -2,8 +2,14 @@ import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 import { CARD_SYSTEM } from '@/constants';
+import { addConsistentColors } from '@/utils/chartColorMapping';
 
-const ProductColumnChart = React.memo(({ data = [], title = "Product Tasks", colors = CHART_COLORS.DEFAULT }) => {
+const ProductColumnChart = React.memo(({ 
+  data = [], 
+  title = "Product Tasks", 
+  colors = CHART_COLORS.DEFAULT,
+  dataType = 'product' // Type of data for consistent color mapping
+}) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -12,9 +18,15 @@ const ProductColumnChart = React.memo(({ data = [], title = "Product Tasks", col
     );
   }
 
+  // Process data with consistent colors
+  const processedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return addConsistentColors(data, dataType);
+  }, [data, dataType]);
+
   // Transform data for Recharts with proper colors - memoized
   const chartData = useMemo(() => {
-    return data.map((item, index) => {
+    return processedData.map((item, index) => {
       const baseColor = item.color || colors[index] || colors[0] || CARD_SYSTEM.COLOR_HEX_MAP.blue;
       return {
         name: item.name,
@@ -22,7 +34,7 @@ const ProductColumnChart = React.memo(({ data = [], title = "Product Tasks", col
         color: baseColor
       };
     });
-  }, [data, colors]);
+  }, [processedData, colors]);
 
   // Memoized formatter functions
   const tooltipFormatter = useCallback((value, name, props) => {

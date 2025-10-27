@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 import { CARD_SYSTEM } from '@/constants';
+import { addConsistentColors, getColorsForData } from '@/utils/chartColorMapping';
 
 const SimplePieChart = React.memo(({ 
   data, 
@@ -12,9 +13,16 @@ const SimplePieChart = React.memo(({
   leaderLineLength = 25,
   leaderLineStyle = "solid", // "solid", "dashed", "dotted"
   showPercentages = true,
-  minPercentageThreshold = 5
+  minPercentageThreshold = 5,
+  dataType = 'market' // Type of data for consistent color mapping
 }) => {
-  if (!data || data.length === 0) {
+  // Process data with consistent colors
+  const processedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return addConsistentColors(data, dataType);
+  }, [data, dataType]);
+
+  if (!processedData || processedData.length === 0) {
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-6 shadow-sm ${className}`}>
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
@@ -107,7 +115,7 @@ const SimplePieChart = React.memo(({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <Pie
-              data={data}
+              data={processedData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -116,8 +124,8 @@ const SimplePieChart = React.memo(({
               fill="#8884d8"
               dataKey="value"
             >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+              {processedData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color || colors[index % colors.length]} />
               ))}
             </Pie>
             <Tooltip 

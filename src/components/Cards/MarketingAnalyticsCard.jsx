@@ -55,6 +55,7 @@ const MarketingAnalyticsCard = ({
               data={casinoMarketingData}
               title={casinoMarketingTitle}
               colors={casinoMarketingColors}
+              dataType="market"
             />
           </div>
 
@@ -69,6 +70,7 @@ const MarketingAnalyticsCard = ({
               data={sportMarketingData}
               title={sportMarketingTitle}
               colors={sportMarketingColors}
+              dataType="market"
             />
           </div>
         </div>
@@ -87,6 +89,7 @@ const MarketingAnalyticsCard = ({
               title={casinoBiaxialTitle}
               tasksColor={casinoBiaxialTasksColor}
               hoursColor={casinoBiaxialHoursColor}
+              dataType="market"
             />
           </div>
 
@@ -102,6 +105,7 @@ const MarketingAnalyticsCard = ({
               title={sportBiaxialTitle}
               tasksColor={sportBiaxialTasksColor}
               hoursColor={sportBiaxialHoursColor}
+              dataType="market"
             />
           </div>
         </div>

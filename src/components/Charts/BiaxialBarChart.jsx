@@ -2,23 +2,31 @@ import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
 import { CARD_SYSTEM } from '@/constants';
+import { addConsistentColors } from '@/utils/chartColorMapping';
 
 const BiaxialBarChart = React.memo(({ 
   data = [], 
   title = "Biaxial Chart", 
   tasksColor = CHART_COLORS.DEFAULT[0], // Use first color from your palette
   hoursColor = CHART_COLORS.DEFAULT[1], // Use second color from your palette
-  className = "" 
+  className = "",
+  dataType = 'market' // Type of data for consistent color mapping
 }) => {
+  // Process data with consistent colors
+  const processedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return addConsistentColors(data, dataType);
+  }, [data, dataType]);
+
   // Transform data for Recharts - memoized to prevent unnecessary recalculations
   const chartData = useMemo(() => {
-    return data.map((item, index) => ({
+    return processedData.map((item, index) => ({
       name: item.name,
       tasks: item.tasks || 0,
       hours: item.hours || 0,
       color: item.color || CHART_COLORS.DEFAULT[index % CHART_COLORS.DEFAULT.length]
     }));
-  }, [data]);
+  }, [processedData]);
 
   // Memoized formatter functions
   const tooltipFormatter = useCallback((value, name, props) => {

@@ -57,6 +57,7 @@ const MarketsByUsersCard = ({
                data={marketsData}
                title={marketsTitle}
                colors={marketsColors}
+               dataType="market"
              />
            </div>
 
@@ -71,6 +72,7 @@ const MarketsByUsersCard = ({
                data={userByTaskData}
                title={userByTaskTitle}
                colors={userByTaskColors}
+               dataType="user"
              />
            </div>
         </div>
@@ -89,6 +91,7 @@ const MarketsByUsersCard = ({
               title={biaxialBarTitle}
               tasksColor={biaxialTasksColor}
               hoursColor={biaxialHoursColor}
+              dataType="market"
             />
           </div>
 
@@ -104,6 +107,7 @@ const MarketsByUsersCard = ({
               title={usersBiaxialTitle}
               tasksColor={usersBiaxialTasksColor}
               hoursColor={usersBiaxialHoursColor}
+              dataType="user"
             />
           </div>
         </div>

@@ -94,6 +94,7 @@ const AIAnalyticsCard = ({
                 title={aiModelsTitle}
                 colors={aiModelsColors}
                 showPercentages={true}
+                dataType="aiModel"
               />
             </div>
 
@@ -109,6 +110,7 @@ const AIAnalyticsCard = ({
                 title={usersAITitle}
                 colors={usersAIColors}
                 showPercentages={true}
+                dataType="user"
               />
             </div>
 
@@ -124,6 +126,7 @@ const AIAnalyticsCard = ({
                 title={marketsAITitle}
                 colors={marketsAIColors}
                 showPercentages={true}
+                dataType="market"
               />
             </div>
 
@@ -139,6 +142,7 @@ const AIAnalyticsCard = ({
                 title={productsAITitle}
                 colors={productsAIColors}
                 showPercentages={true}
+                dataType="product"
               />
             </div>
           </div>
@@ -173,6 +177,7 @@ const AIAnalyticsCard = ({
                 title={usersBiaxialTitle}
                 tasksColor={usersBiaxialTasksColor}
                 hoursColor={usersBiaxialTimeColor}
+                dataType="user"
               />
             </div>
 
@@ -188,6 +193,7 @@ const AIAnalyticsCard = ({
                 title={marketsBiaxialTitle}
                 tasksColor={marketsBiaxialTasksColor}
                 hoursColor={marketsBiaxialTimeColor}
+                dataType="market"
               />
             </div>
 
@@ -203,6 +209,7 @@ const AIAnalyticsCard = ({
                 title={productsBiaxialTitle}
                 tasksColor={productsBiaxialTasksColor}
                 hoursColor={productsBiaxialTimeColor}
+                dataType="product"
               />
             </div>
           </div>
