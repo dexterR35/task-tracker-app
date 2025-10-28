@@ -9,6 +9,7 @@ import { createAnalyticsCards, createDailyTaskCards } from "@/components/Card/sm
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import SelectField from "@/components/forms/components/SelectField";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -449,7 +450,7 @@ const DynamicAnalyticsPage = () => {
   
   if (shouldShowLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white">
+      <div className="min-h-screen bg-primary text-white">
         <div className="mx-auto px-4 py-6">
           {/* Header */}
           <div className="mb-8">
@@ -521,13 +522,16 @@ const DynamicAnalyticsPage = () => {
                 }
               </p>
             </div>
-            <button
+            <DynamicButton
               onClick={() => navigate(-1)}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              variant="secondary"
+              size="md"
+              iconName="back"
+              iconCategory="buttons"
+              iconPosition="left"
             >
-              <Icons.buttons.back className="w-4 h-4" />
-              <span>Back</span>
-            </button>
+              Go Back
+            </DynamicButton>
           </div>
         </div>
         
@@ -643,7 +647,7 @@ const DynamicAnalyticsPage = () => {
                   });
 
                   return (
-                    <div key={week.weekNumber} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <div key={week.weekNumber} className="bg-primary rounded-lg p-6 border border-gray-700">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
@@ -669,10 +673,18 @@ const DynamicAnalyticsPage = () => {
                       {weekTasks.length > 0 ? (
                         <div className="space-y-3">
                           {weekTasks.map((task, index) => (
-                            <div key={index} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <h4 className="font-medium text-white">
+                            <div key={task.id || index} className="flex items-center justify-between p-3 bg-smallCard rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <div 
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor: task.data_task?.reworked ? '#dc2626' : // crimson for reworked
+                                                  task.data_task?.completed ? '#f59e0b' : // amber for completed
+                                                  '#10b981' // green for active
+                                  }}
+                                ></div>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-white">
                                     {task.data_task?.taskName ? (
                                       <a 
                                         href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
@@ -683,27 +695,42 @@ const DynamicAnalyticsPage = () => {
                                         {task.data_task.taskName}
                                       </a>
                                     ) : (
-                                      'Unnamed Task'
+                                      task.data_task?.title || 'Untitled Task'
                                     )}
-                                  </h4>
-                                  <p className="text-sm text-gray-300">
-                                    {task.data_task?.departments ? 
+                                  </span>
+                                  <div className="flex items-center space-x-2 text-xs text-gray-400">
+                                    <span>Reporter: {task.data_task?.reporters || task.reporterName || 'N/A'}</span>
+                                    <span>•</span>
+                                    <span>Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                    <span>•</span>
+                                    <span>Dept: {task.data_task?.departments ? 
                                       (Array.isArray(task.data_task.departments) ? 
                                         task.data_task.departments.join(', ') : 
                                         task.data_task.departments) : 
-                                      'No department'
-                                    }
-                                  </p>
-                                  <p className="text-xs text-gray-400">
-                                    Created: {convertToDate(task.createdAt)?.toLocaleDateString() || 'Unknown date'}
-                                  </p>
+                                      'N/A'}</span>
+                                  </div>
                                 </div>
+                              </div>
+                              <div className="flex items-center space-x-4">
                                 <div className="text-right">
-                                  <div className="text-sm font-medium text-blue-400">
-                                    {task.data_task?.timeInHours || 0}h
+                                  <div className="text-sm font-medium text-white">
+                                    {task.createdByName || task.userName || 'Unknown User'}
                                   </div>
                                   <div className="text-xs text-gray-400">
-                                    {task.data_task?.markets?.length || 0} markets
+                                    {(() => {
+                                      if (!task.createdAt) return 'No date';
+                                      const date = convertToDate(task.createdAt);
+                                      if (!date || isNaN(date.getTime())) return 'Invalid date';
+                                      return date.toLocaleDateString();
+                                    })()}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs text-gray-400">
+                                    Markets: {task.data_task?.markets?.length || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    HR: {task.data_task?.timeInHours || task.timeInHours || 0}h
                                   </div>
                                 </div>
                               </div>
@@ -776,7 +803,7 @@ const DynamicAnalyticsPage = () => {
                 });
 
                 return (
-                  <div key={week.weekNumber} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                  <div key={week.weekNumber} className="bg-primary rounded-lg p-6 border border-gray-700">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
@@ -802,7 +829,7 @@ const DynamicAnalyticsPage = () => {
                     {weekTasks.length > 0 ? (
                       <div className="space-y-3">
                         {weekTasks.map((task, index) => (
-                          <div key={task.id || index} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div key={task.id || index} className="flex items-center justify-between p-3 bg-smallCard rounded-lg">
                             <div className="flex items-center space-x-3">
                               <div 
                                 className="w-3 h-3 rounded-full"
@@ -831,6 +858,12 @@ const DynamicAnalyticsPage = () => {
                                   <span>Reporter: {task.data_task?.reporters || task.reporterName || 'N/A'}</span>
                                   <span>•</span>
                                   <span>Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                  <span>•</span>
+                                  <span>Dept: {task.data_task?.departments ? 
+                                    (Array.isArray(task.data_task.departments) ? 
+                                      task.data_task.departments.join(', ') : 
+                                      task.data_task.departments) : 
+                                    'N/A'}</span>
                                 </div>
                               </div>
                             </div>
@@ -846,6 +879,14 @@ const DynamicAnalyticsPage = () => {
                                     if (!date || isNaN(date.getTime())) return 'Invalid date';
                                     return date.toLocaleDateString();
                                   })()}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-gray-400">
+                                  Markets: {task.data_task?.markets?.length || 0}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  HR: {task.data_task?.timeInHours || task.timeInHours || 0}h
                                 </div>
                               </div>
                             </div>
@@ -868,22 +909,6 @@ const DynamicAnalyticsPage = () => {
           </div>
         </div>
         
-        {/* Debug Information */}
-        <div className="mt-8 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-sm font-semibold mb-2">Debug Information:</h3>
-          <div className="text-sm text-gray-400 space-y-1">
-            <p>Total Tasks: {tasks?.length || 0}</p>
-            <p>Filtered Tasks: {analyticsData.totalTasksThisMonth}</p>
-            <p>User Filter: {userName || 'None'}</p>
-            <p>Reporter Filter: {reporterName || 'None'}</p>
-            <p>Month: {monthId}</p>
-            <p>Markets: {analyticsData.marketsUsed.length} ({Object.entries(analyticsData.marketCounts || {}).map(([k,v]) => `${v}x${k}`).join(', ')})</p>
-            <p>Products: {analyticsData.productsUsed.length} ({Object.entries(analyticsData.productCounts || {}).map(([k,v]) => `${v}x${k}`).join(', ')})</p>
-            <p>AI Models: {Object.entries(analyticsData.aiModelCounts || {}).map(([k,v]) => `${v}x${k}`).join(', ') || 'None'}</p>
-            <p>Weekly Tasks (Mon-Fri): {analyticsData.weeklyTasks.slice(0, 5).join(', ')}</p>
-            <p>Daily Hours (Mon-Fri): {analyticsData.dailyHours.slice(0, 5).map(h => h.toFixed(1)).join(', ')}</p>
-          </div>
-        </div>
       </div>
     </div>
   );
