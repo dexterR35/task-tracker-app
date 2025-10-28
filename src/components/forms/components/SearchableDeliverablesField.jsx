@@ -202,7 +202,7 @@ const SearchableDeliverablesField = ({
       
       {/* Configuration for Selected Deliverable */}
       {selectedDeliverable && selectedOption && (
-        <div className="flex flex-wrap gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+        <div className="flex flex-wrap gap-4 p-4 bg-gray-50 dark:bg-smallCard rounded-lg border">
           
           {/* Debug info */}
           <div className="w-full text-xs text-gray-500 mb-2">

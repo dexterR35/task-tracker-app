@@ -246,6 +246,7 @@ export const CARD_SYSTEM = {
     red: '#EF4444',       // Red-500 - Error, danger, delete
     yellow: '#FACC15',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
+    dark_gray: '#475569', // Slate-600 - Darker gray for better contrast
     orange: '#F97316',    // Orange-500 - Product, warning, energy
     select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
     color_default: '#2563EB', // Blue-600 - Primary blue - Default color for UI elements

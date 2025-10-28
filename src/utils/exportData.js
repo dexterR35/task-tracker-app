@@ -23,6 +23,7 @@ const formatValueForCSV = (value, columnId, reporters = []) => {
       const endDate = value.endDate;
 
       if (startDate && endDate) {
+
         const normalizedStart = normalizeTimestamp(startDate);
         const normalizedEnd = normalizeTimestamp(endDate);
 

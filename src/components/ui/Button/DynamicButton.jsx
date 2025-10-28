@@ -33,7 +33,7 @@ const DynamicButton = ({
   const getButtonStyles = () => {
     const colorMap = {
       primary: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-      secondary: CARD_SYSTEM.COLOR_HEX_MAP.gray,
+      secondary: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,
       success: CARD_SYSTEM.COLOR_HEX_MAP.green,
       danger: CARD_SYSTEM.COLOR_HEX_MAP.red,
       warning: CARD_SYSTEM.COLOR_HEX_MAP.yellow,

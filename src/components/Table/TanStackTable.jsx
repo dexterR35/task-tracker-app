@@ -8,10 +8,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
 import { exportToCSV } from "@/utils/exportData";
-import { TABLE_SYSTEM, CARD_SYSTEM } from '@/constants';
 import { CheckboxField, TextField } from '@/components/forms/components';
 
 // Constants
@@ -538,15 +538,15 @@ const TanStackTable = forwardRef(({
           {/* Table */}
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="min-w-full">
-              <thead className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <thead className="backdrop-blur-sm" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className={`px-4 py-3 text-start font-semibold text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider ${
+                        className={`px-4 py-3 text-start font-semibold text-xs text-white uppercase tracking-wider ${
                           header.column.getCanSort()
-                            ? "cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50"
+                            ? "cursor-pointer select-none hover:bg-gray-600/50"
                             : ""
                         }  first:rounded-tl-lg last:rounded-tr-lg`}
                         onClick={header.column.getToggleSortingHandler()}
@@ -557,7 +557,7 @@ const TanStackTable = forwardRef(({
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </span>
                           {header.column.getCanSort() && (
-                            <span className="text-gray-400 dark:text-gray-500 ">
+                            <span className="text-gray-300">
                               {SORT_ICONS[header.column.getIsSorted()] ?? SORT_ICONS.false}
                             </span>
                           )}

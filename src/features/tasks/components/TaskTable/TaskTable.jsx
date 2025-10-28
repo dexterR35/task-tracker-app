@@ -497,15 +497,7 @@ const TaskTable = ({
             size="sm"
             className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'aiUsed' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>AI Used</span>
-            </div>
+            AI Used
           </DynamicButton>
 
           {/* Marketing Filter */}
@@ -513,17 +505,9 @@ const TaskTable = ({
             onClick={() => handleFilterChange('marketing')}
             variant={selectedFilter === 'marketing' ? 'primary' : 'secondary'}
             size="sm"
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'marketing' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>Marketing</span>
-            </div>
+            Marketing
           </DynamicButton>
 
           {/* Acquisition Filter */}
@@ -531,17 +515,9 @@ const TaskTable = ({
             onClick={() => handleFilterChange('acquisition')}
             variant={selectedFilter === 'acquisition' ? 'primary' : 'secondary'}
             size="sm"
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'acquisition' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>Acquisition</span>
-            </div>
+            Acquisition
           </DynamicButton>
 
           {/* Product Filter */}
@@ -549,17 +525,9 @@ const TaskTable = ({
             onClick={() => handleFilterChange('product')}
             variant={selectedFilter === 'product' ? 'primary' : 'secondary'}
             size="sm"
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'product' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>Product</span>
-            </div>
+            Product
           </DynamicButton>
 
           {/* VIP Filter */}
@@ -567,17 +535,9 @@ const TaskTable = ({
             onClick={() => handleFilterChange('vip')}
             variant={selectedFilter === 'vip' ? 'primary' : 'secondary'}
             size="sm"
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'vip' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>VIP</span>
-            </div>
+            VIP
           </DynamicButton>
 
           {/* Reworked Filter */}
@@ -585,17 +545,9 @@ const TaskTable = ({
             onClick={() => handleFilterChange('reworked')}
             variant={selectedFilter === 'reworked' ? 'primary' : 'secondary'}
             size="sm"
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'reworked' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>Reworked</span>
-            </div>
+            Reworked
           </DynamicButton>
 
           {/* Observation Filter */}
@@ -603,17 +555,9 @@ const TaskTable = ({
             onClick={() => handleFilterChange('observation')}
             variant={selectedFilter === 'observation' ? 'primary' : 'secondary'}
             size="sm"
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{
-                  backgroundColor: selectedFilter === 'observation' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
-                }}
-              ></div>
-              <span>Observation</span>
-            </div>
+            Observation
           </DynamicButton>
         </div>
       </div>
