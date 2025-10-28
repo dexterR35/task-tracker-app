@@ -44,8 +44,8 @@ const BulkActionsBar = ({
       className="rounded-xl p-4 backdrop-blur-sm border-2 shadow-lg"
       style={{
         borderColor: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
-        backgroundColor: 'rgba(194, 226, 250, 0.15)', // select_badge with 15% opacity
-        backgroundImage: 'linear-gradient(135deg, rgba(194, 226, 250, 0.2) 0%, rgba(194, 226, 250, 0.05) 100%)'
+        backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,  
+    
       }}
     >
       <div className="flex items-center justify-between">
@@ -227,21 +227,21 @@ const Pagination = ({
         {selectedCount} of {totalRows} row(s) selected.
       </div>
       <div className="flex items-center space-x-6">
-        <div className="flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/80 px-4 py-2 rounded-lg backdrop-blur-sm">
+        <div className="flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/80 px-4 py-2 rounded-lg ">
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => onPageChange(table.getState().pagination.pageIndex - 1)}
             disabled={!table.getCanPreviousPage()}
-            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed "
           >
             ←
           </button>
           <button
             onClick={() => onPageChange(table.getState().pagination.pageIndex + 1)}
             disabled={!table.getCanNextPage()}
-            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed"
           >
             →
           </button>
@@ -539,13 +539,13 @@ const TanStackTable = forwardRef(({
           {/* Table */}
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="min-w-full">
-              <thead className="backdrop-blur-sm" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
+              <thead className="backdrop-blur-sm" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default }}>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className={`px-4 py-3 text-start font-semibold text-xs text-white uppercase tracking-wider ${
+                        className={`px-4 py-3 text-start font-semibold text-[10px] text-white uppercase tracking-wider ${
                           header.column.getCanSort()
                             ? "cursor-pointer select-none hover:bg-gray-600/50"
                             : ""

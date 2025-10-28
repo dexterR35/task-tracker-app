@@ -302,7 +302,7 @@
   }
 
   thead tr th {
-    @apply  text-text-primary dark:text-text-white font-semibold text-left text-xs !capitalize ;
+    @apply  text-text-primary dark:text-text-white font-semibold text-left text-[10px] !capitalize ;
   }
   
   tbody tr td {

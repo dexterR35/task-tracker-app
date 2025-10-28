@@ -244,19 +244,20 @@ export const NAVIGATION_CONFIG = {
 
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
-    green: '#16C47F',      // Emerald-500 - Fresh, growth, success
-    blue: '#6499E9',      // Blue-600 - Professional, trust, primary
-    purple: '#DDEB9D',    // Violet-600 - Royal, premium, creative
-    crimson: '#EB5B00',   // Red-600 - Authority, admin, critical
-    amber: '#FFB200',     // Amber-500 - Warning, attention, caution
+    green: '#41B06E',      // Emerald-500 - Fresh, growth, success
+    blue: '#C2E2FA',      // Blue-600 - Professional, trust, primary
+    purple: '#6499E9',    // Violet-600 - Royal, premium, creative
+    crimson: '#C2E2FA',   // Red-600 - Authority, admin, critical
+    amber: '#F87B1B',     // Amber-500 - Warning, attention, caution
     pink: '#E50046',      // Pink-600 - AI models, feminine, creative
     red: '#EF4444',       // Red-500 - Error, danger, delete
     yellow: '#FACC15',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
-    dark_gray: '#475569', // Slate-600 - Darker gray for better contrast
-    orange: '#F97316',    // Orange-500 - Product, warning, energy
+    dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
+    orange: '#8C00FF',    // Orange-500 - Product, warning, energy
     select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
-    color_default: '#6256CA', // Blue-600 - Primary blue - Default color for UI elements
+    color_default: '#BF092F',
+    filter_color: '#322277', // Blue-600 - Primary blue - Default color for UI elements
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',

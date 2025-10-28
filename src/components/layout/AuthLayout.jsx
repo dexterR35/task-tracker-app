@@ -11,17 +11,6 @@ const AuthLayout = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === "b") {
-        event.preventDefault();
-        toggleSidebar();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [sidebarOpen]);
 
   useEffect(() => {
     const handleResize = () => {

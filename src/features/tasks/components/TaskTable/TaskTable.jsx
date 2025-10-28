@@ -15,7 +15,7 @@ import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';
 
 // Color constants from COLOR_HEX_MAP
 const CRIMSON_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.crimson;
-const BLUE_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.color_default;
+const GREEN_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.filter_color;
 // import './TaskTable.css';
 
 const TaskTable = ({
@@ -361,7 +361,9 @@ const TaskTable = ({
     actions.push({
       label: "View Jira Link",
       icon: "external-link",
-      variant: "success",
+      variant: "primary",
+      className: "bg-[var(--btn-bg)] hover:opacity-90",
+      style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.green },
       onClick: (selectedTasks) => {
         if (selectedTasks.length === 1) {
           const task = selectedTasks[0];
@@ -384,7 +386,9 @@ const TaskTable = ({
       actions.push({
         label: "View Selected",
         icon: "edit",
-        variant: "primary",
+        variant: "outline",
+        className: "bg-[var(--btn-bg)] hover:opacity-90",
+        style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.blue },
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
             const task = selectedTasks[0];
@@ -404,7 +408,9 @@ const TaskTable = ({
       actions.push({
         label: "Edit Selected",
         icon: "edit",
-        variant: "amber",
+        variant: "primary",
+        className: "bg-[var(--btn-bg)] hover:opacity-90",
+        style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.amber },
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
             handleEditTask(selectedTasks[0]);
@@ -420,7 +426,9 @@ const TaskTable = ({
       actions.push({
         label: "Delete Selected",
         icon: "delete",
-        variant: "danger",
+        variant: "primary",
+        className: "bg-[var(--btn-bg)] hover:opacity-90",
+        style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.crimson },
         onClick: async (selectedTasks) => {
           if (selectedTasks.length === 1) {
             handleDelete(selectedTasks[0]);
@@ -499,7 +507,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('aiUsed')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'aiUsed' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'aiUsed' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             AI Used
           </DynamicButton>
@@ -509,7 +518,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('marketing')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'marketing' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'marketing' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             Marketing
           </DynamicButton>
@@ -519,7 +529,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('acquisition')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'acquisition' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'acquisition' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             Acquisition
           </DynamicButton>
@@ -529,7 +540,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('product')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'product' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'product' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             Product
           </DynamicButton>
@@ -539,7 +551,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('vip')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'vip' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'vip' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             VIP
           </DynamicButton>
@@ -549,7 +562,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('reworked')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'reworked' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'reworked' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             Reworked
           </DynamicButton>
@@ -559,7 +573,8 @@ const TaskTable = ({
             onClick={() => handleFilterChange('deliverables')}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: selectedFilter === 'deliverables' ? CRIMSON_COLOR : BLUE_COLOR }}
+            className="bg-[var(--btn-bg)] hover:opacity-90"
+            style={{ ['--btn-bg']: selectedFilter === 'deliverables' ? CRIMSON_COLOR : GREEN_COLOR }}
           >
             Deliverables
           </DynamicButton>

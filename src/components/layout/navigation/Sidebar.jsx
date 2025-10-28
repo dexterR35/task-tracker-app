@@ -25,9 +25,9 @@ const Sidebar = () => {
   const navigationItems = NAVIGATION_CONFIG.ITEMS;
 
   const getColorClasses = (color, isActive) => {
-    // Use gray colors for all sidebar navigation items
+    // Use color_default for active icons, gray for inactive
     return isActive 
-      ? "bg-gray-600 text-white shadow-lg shadow-gray-600/25" 
+      ? "shadow-lg shadow-gray-600/25" 
       : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-gray-600";
   };
 
@@ -74,6 +74,10 @@ const Sidebar = () => {
             >
               <div
                 className={`p-2 rounded-lg transition-all duration-200 ${getColorClasses(item.color, active)}`}
+                style={active ? {
+                  backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
+                  color: 'white'
+                } : {}}
               >
                 {React.createElement(Icon, { className: "w-4 h-4" })}
               </div>

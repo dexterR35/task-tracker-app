@@ -673,7 +673,18 @@ const DynamicAnalyticsPage = () => {
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <h4 className="font-medium text-white">
-                                    {task.data_task?.taskName || 'Unnamed Task'}
+                                    {task.data_task?.taskName ? (
+                                      <a 
+                                        href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                      >
+                                        {task.data_task.taskName}
+                                      </a>
+                                    ) : (
+                                      'Unnamed Task'
+                                    )}
                                   </h4>
                                   <p className="text-sm text-gray-300">
                                     {task.data_task?.departments ? 
@@ -803,7 +814,18 @@ const DynamicAnalyticsPage = () => {
                               ></div>
                               <div className="flex flex-col">
                                 <span className="font-medium text-white">
-                                  {task.data_task?.taskName || task.data_task?.title || 'Untitled Task'}
+                                  {task.data_task?.taskName ? (
+                                    <a 
+                                      href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                    >
+                                      {task.data_task.taskName}
+                                    </a>
+                                  ) : (
+                                    task.data_task?.title || 'Untitled Task'
+                                  )}
                                 </span>
                                 <div className="flex items-center space-x-2 text-xs text-gray-400">
                                   <span>Reporter: {task.data_task?.reporters || task.reporterName || 'N/A'}</span>

@@ -1,53 +1,15 @@
 import { Icons } from "@/components/icons";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import WeekSelectField from "@/components/forms/components/WeekSelectField";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
 
 
 
-// Color assignment for icons - keeps 5 different colors for visual variety
+// Color assignment for icons - uses colors from CARD_SYSTEM.COLOR_HEX_MAP
 export const getCardColor = (cardType, data = {}) => {
-  // Define the 5 colors for icons
-  const colors = ["blue", "green", "purple", "amber", "crimson"];
-  
-  // Create a deterministic color map for each card type (for icons only)
-  const colorMap = {
-    // Dashboard cards
-    'month-selection': 'blue',
-    'week-selector': 'green',
-    'user-filter': 'green', 
-    'reporter-filter': 'purple',
-    'user-profile': 'amber',
-    'actions': 'crimson',
-    
-    // Analytics cards
-    'analytics-task-overview': 'blue',
-    'analytics-deliverables': 'green',
-    'analytics-marketing': 'purple',
-    'analytics-acquisition': 'amber',
-    'analytics-efficiency': 'crimson',
-    'analytics-product': 'blue',
-    'analytics-misc': 'green',
-    
-    // Daily cards
-    'analytics-daily-monday': 'purple',
-    'analytics-daily-tuesday': 'amber',
-    'analytics-daily-wednesday': 'crimson',
-    'analytics-daily-thursday': 'blue',
-    'analytics-daily-friday': 'green',
-    
-    // Homepage cards
-    'homepage-ai-tasks': 'purple',
-    'homepage-user-performance': 'amber',
-    'homepage-total-hours': 'crimson',
-    'homepage-total-tasks': 'blue',
-    'homepage-design': 'green',
-  };
-  
-  // Return the mapped color for icons or fallback to a hash-based assignment
-  return colorMap[cardType] || colors[Math.abs(cardType.length) % colors.length];
+  // Use the same color for all small cards
+  return 'select_badge';
 };
 
 

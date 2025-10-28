@@ -95,7 +95,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
                       <span> + {(deliverable.variationsQuantity || deliverable.declinariQuantity)}{(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit || 'min')} variations</span>
                     )}
                   </div>
-                  <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.yellow }}>
+                  <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
                     Total: {deliverable.time.toFixed(1)}h ({((deliverable.time * 60) / 480).toFixed(2)} days)
                   </div>
                 </div>
@@ -125,7 +125,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="xs" className="font-mono">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="xs" className="font-mono">
           {taskName}
         </Badge>
       );
@@ -164,7 +164,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="xs">
+            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.select_badge} size="xs">
               {market}
             </Badge>
           ))}

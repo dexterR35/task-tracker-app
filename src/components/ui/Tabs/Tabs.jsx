@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { CARD_SYSTEM } from '@/constants';
 
 const Tabs = ({
   tabs = [],
@@ -33,14 +34,14 @@ const Tabs = ({
         return {
           container: "border-b border-gray-200 dark:border-gray-700",
           tab: "px-4 py-2 text-sm font-medium border-b-2 border-transparent transition-all duration-200",
-          activeTab: "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400",
+          activeTab: "text-gray-900 dark:text-white",
           inactiveTab: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600"
         };
       default:
         return {
           container: "border-b border-gray-200 dark:border-gray-700",
           tab: "px-4 py-2 text-sm font-medium transition-all duration-200",
-          activeTab: "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400",
+          activeTab: "text-gray-900 dark:text-white",
           inactiveTab: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
         };
     }
@@ -100,6 +101,10 @@ const Tabs = ({
                 className={tabClasses}
                 onClick={() => handleTabClick(index, tab)}
                 disabled={tab.disabled}
+                style={{
+                  borderBottomColor: isActive ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
+                  color: isActive ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
+                }}
               >
                 {tab.icon && (
                   <span className="flex-shrink-0">

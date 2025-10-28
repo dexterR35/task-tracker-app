@@ -226,11 +226,12 @@ const AnalyticsPage = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`py-2 px-1 border-b-2 font-medium text-base transition-colors ${
                     activeTab === tab.id
-                      ? 'text-blue-600 dark:text-blue-400'
+                      ? 'text-white'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
                   style={{
                     borderBottomColor: activeTab === tab.id ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
+                    color: activeTab === tab.id ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
                   }}
                 >
                   {tab.name}

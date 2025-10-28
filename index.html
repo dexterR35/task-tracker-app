@@ -112,6 +112,30 @@
         });
       }
     </script>
+    <!-- Prevent initial white flash: set dark mode before app JS runs -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('darkMode');
+          var isDark = saved !== null ? JSON.parse(saved) : true; // default dark
+          if (isDark) {
+            // Add class early so CSS dark: variants apply before first paint
+            document.documentElement.classList.add('dark');
+            // Ensure immediate dark background before CSS loads
+            document.documentElement.style.backgroundColor = '#181826';
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.style.backgroundColor = '#ffffff';
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) {
+          // On any error, prefer dark to avoid white flash
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.backgroundColor = '#181826';
+          document.documentElement.style.colorScheme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -103,9 +103,9 @@ const SmallCard = memo(({ card }) => {
                         
                         {/* Markets section with background */}
                         <div 
-                          className="p-2 rounded-lg border"
+                          className="p-2 rounded-lg border bg-red-500"
                           style={{ 
-                            backgroundColor: `${unifiedBgColor}10`,
+                            backgroundColor: `${unifiedBgColor}30`,
                             borderColor: `${unifiedBgColor}20`
                           }}
                         >
@@ -129,9 +129,9 @@ const SmallCard = memo(({ card }) => {
                                     key={badgeIndex}
                                     className="inline-flex items-center px-1 py-0.5 text-xs font-medium rounded"
                                     style={{
-                                      backgroundColor: `${cardColorHex}30`,
+                                      backgroundColor: `${cardColorHex}20`,
                                       color: cardColorHex,
-                                      border: `1px solid ${cardColorHex}40`,
+                                      border: `1px solid ${cardColorHex}80`,
                                       fontWeight: '600'
                                     }}
                                   >
@@ -148,10 +148,10 @@ const SmallCard = memo(({ card }) => {
                     return (
                       <div 
                         key={index}
-                        className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
+                        className="p-2 rounded-lg border "
                         style={{ 
-                          backgroundColor: `${unifiedBgColor}10`,
-                          borderColor: `${unifiedBgColor}20`
+                          backgroundColor: `${unifiedBgColor}30`,
+                          borderColor: `${unifiedBgColor}80`
                         }}
                       >
                         <div className="flex items-center justify-between">
@@ -160,7 +160,7 @@ const SmallCard = memo(({ card }) => {
                               className="w-1.5 h-1.5 rounded-full"
                               style={{ 
                                 backgroundColor: cardColorHex,
-                                background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
+                                background: cardColorHex
                               }}
                             ></div>
                             <span className="text-xs text-gray-400">{detail.label}</span>

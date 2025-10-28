@@ -58,12 +58,8 @@ export const DarkModeProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Set initial dark mode
-    if (isDarkMode) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
+    // Dark mode class is now handled by pre-init script in index.html
+    // This effect is kept for any future initialization needs
   }, []);
 
   // Cleanup timeout on unmount

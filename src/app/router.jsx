@@ -47,7 +47,7 @@ import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
  * @returns {JSX.Element} - Loading component
  */
 const SimpleLoader = () => (
-  <div className="min-h-screen flex-center">
+  <div className="min-h-screen flex-center bg-primary">
     <Loader size="lg" text="Initializing app…" variant="spinner" />
   </div>
 );
