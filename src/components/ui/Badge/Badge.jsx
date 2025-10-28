@@ -17,10 +17,10 @@ const Badge = ({
 }) => {
   // Size variants
   const sizeClasses = {
-    xs: 'px-1 py-0.5 text-sm',
-    sm: 'px-1.5 py-0.5 text-sm',
-    md: 'px-2 py-1 text-sm',
-    lg: 'px-2.5 py-1.5 text-sm'
+    xs: 'px-1 py-0.5 text-xs',
+    sm: 'px-1.5 py-0.5 text-xs',
+    md: 'px-2 py-1 text-xs',
+    lg: 'px-2.5 py-1.5 text-xs'
   };
 
   // Default fallback color

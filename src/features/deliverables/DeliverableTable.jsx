@@ -106,25 +106,25 @@ const DeliverableTable = ({
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ getValue }) => <span className="font-medium text-gray-900 dark:text-white">{getValue()}</span>,
+      cell: ({ getValue }) => <span className="font-medium text-gray-900 dark:text-white text-xs">{getValue()}</span>,
       size: 200,
     },
     {
       accessorKey: "department",
       header: "Department",
-      cell: ({ getValue }) => <span className="text-gray-700 dark:text-gray-300">{getValue()}</span>,
+      cell: ({ getValue }) => <span className="text-gray-700 dark:text-gray-300 text-xs">{getValue()}</span>,
       size: 150,
     },
     {
       accessorKey: "timePerUnit",
       header: "Time Per Unit",
-      cell: ({ getValue, row }) => <span className="text-gray-700 dark:text-gray-300">{getValue()} {row.original.timeUnit}</span>,
+      cell: ({ getValue, row }) => <span className="text-gray-700 dark:text-gray-300 text-xs">{getValue()} {row.original.timeUnit}</span>,
       size: 120,
     },
     {
       accessorKey: "variationsTime",
       header: "Variations Time",
-      cell: ({ getValue, row }) => <span className="text-gray-700 dark:text-gray-300">{getValue() > 0 ? `${getValue()} ${row.original.variationsTimeUnit || 'min'}` : 'None'}</span>,
+      cell: ({ getValue, row }) => <span className="text-gray-700 dark:text-gray-300 text-xs">{getValue() > 0 ? `${getValue()} ${row.original.variationsTimeUnit || 'min'}` : 'None'}</span>,
       size: 120,
     },
     {

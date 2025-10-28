@@ -9,7 +9,7 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
     columnHelper.accessor('user', {
       header: 'User',
       cell: ({ getValue }) => (
-        <span className="font-medium text-gray-900 dark:text-white">
+        <span className="font-medium text-gray-900 dark:text-white text-xs">
           {getValue()}
         </span>
       ),
@@ -18,7 +18,7 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
     columnHelper.accessor('markets', {
       header: 'Markets',
       cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
+        <span className="text-gray-700 dark:text-gray-300 text-xs">
           {getValue()}
         </span>
       ),
@@ -27,7 +27,7 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
     columnHelper.accessor('totalTasks', {
       header: 'Total Tasks',
       cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
+        <span className="text-gray-700 dark:text-gray-300 text-xs">
           {getValue()}
         </span>
       ),
@@ -36,7 +36,7 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
     columnHelper.accessor('totalHours', {
       header: 'Task Hours',
       cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
+        <span className="text-gray-700 dark:text-gray-300 text-xs">
           {getValue().toFixed(1)}h
         </span>
       ),
@@ -45,7 +45,7 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
     columnHelper.accessor('totalAIHours', {
       header: 'AI Hours',
       cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300">
+        <span className="text-gray-700 dark:text-gray-300 text-xs">
           {getValue().toFixed(1)}h
         </span>
       ),
@@ -54,7 +54,7 @@ const MarketDistributionTable = ({ data, isLoading = false }) => {
     columnHelper.accessor('combinedHours', {
       header: 'Total Hours',
       cell: ({ getValue }) => (
-        <span className="text-gray-700 dark:text-gray-300 font-semibold">
+        <span className="text-gray-700 dark:text-gray-300 font-semibold text-xs">
           {getValue()}h
         </span>
       ),

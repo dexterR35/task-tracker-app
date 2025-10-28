@@ -304,6 +304,10 @@
   thead tr th {
     @apply  text-text-primary dark:text-text-white font-semibold text-left text-xs !capitalize ;
   }
+  
+  tbody tr td {
+    @apply text-xs font-normal;
+  }
   .max-w-6xl {
     @apply !max-w-[95%] mx-auto;
   }

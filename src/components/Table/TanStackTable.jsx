@@ -589,7 +589,7 @@ const TanStackTable = forwardRef(({
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={`${row.original?.id || row.id}-${cell.column.id}`}
-                          className="px-4 py-3 text-sm font-normal "
+                          className="px-4 py-3 text-xs font-normal "
                           style={{ width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

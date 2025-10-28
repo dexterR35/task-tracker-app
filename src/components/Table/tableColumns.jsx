@@ -56,7 +56,7 @@ const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => {
   const value = getValue();
   if (!value) return '-';
   return (
-    <span className="text-sm font-normal text-gray-700 dark:text-gray-300">
+    <span className="text-xs font-normal text-gray-700 dark:text-gray-300">
       {formatDateCell(value, format)}
     </span>
   );
@@ -75,7 +75,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
   return (
     <div className="space-y-1">
       {deliverablesList.map((deliverable, index) => (
-        <div key={index} className="text-sm">
+        <div key={index} className="text-xs">
           <div className="font-medium text-gray-900 dark:text-white">
             {deliverable.quantity}x{deliverable.name}
             {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
@@ -85,9 +85,9 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
             )}
           </div>
           {isUserAdmin && (
-            <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
               {deliverable.configured ? (
-                <div className="text-sm block">
+                <div className="text-xs block">
                   <div className="block">
                     {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
                     {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
@@ -136,14 +136,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'DEPARTMENT',
     cell: ({ getValue, row }) => {
       if (!row.original?.data_task) {
-        return <span className="text-sm" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ No data_task</span>;
+        return <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ No data_task</span>;
       }
       
       const value = getValue();
       if (Array.isArray(value)) {
-        return value.length > 0 ? value.join(', ') : <span className="text-sm" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
+        return value.length > 0 ? value.join(', ') : <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
       }
-      return value || <span className="text-sm" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
+      return value || <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
     },
     size: 100,
   }),
@@ -163,7 +163,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} color="blue" size="xs">
+            <Badge key={index} color="amber" size="xs">
               {market}
             </Badge>
           ))}
@@ -191,7 +191,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
             ))}
           </div>
           {aiTime > 0 && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               Total: {aiTime}h
             </div>
           )}
@@ -392,7 +392,7 @@ const createUserColumns = () => [
               key={index} 
               color="blue" 
               size="xs"
-              className="text-sm"
+              className="text-xs"
             >
               {permission.replace(/_/g, ' ')}
             </Badge>

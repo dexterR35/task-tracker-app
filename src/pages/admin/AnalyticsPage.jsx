@@ -18,7 +18,6 @@ import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { CARD_SYSTEM } from '@/constants';
-import CalculationFormula from '@/components/ui/CalculationFormula/CalculationFormula';
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection
@@ -213,10 +212,6 @@ const AnalyticsPage = () => {
           />
         </div>
 
-        {/* Deliverable Calculation Formula */}
-        <div className="mb-8">
-          <CalculationFormula />
-        </div>
       </div>
 
       {/* Analytics Tabs */}
