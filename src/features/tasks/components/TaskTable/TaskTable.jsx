@@ -253,8 +253,8 @@ const TaskTable = ({
               return taskData.isVip;
             case 'reworked':
               return taskData.reworked;
-            case 'observation':
-              return taskData.observation;
+            case 'deliverables':
+              return taskData.deliverablesUsed && taskData.deliverablesUsed.length > 0;
             default:
               return true;
           }
@@ -550,14 +550,14 @@ const TaskTable = ({
             Reworked
           </DynamicButton>
 
-          {/* Observation Filter */}
+          {/* Deliverables Filter */}
           <DynamicButton
-            onClick={() => handleFilterChange('observation')}
-            variant={selectedFilter === 'observation' ? 'primary' : 'secondary'}
+            onClick={() => handleFilterChange('deliverables')}
+            variant={selectedFilter === 'deliverables' ? 'primary' : 'secondary'}
             size="sm"
             className="bg-white/80 dark:bg-smallCard"
           >
-            Observation
+            Deliverables
           </DynamicButton>
         </div>
       </div>

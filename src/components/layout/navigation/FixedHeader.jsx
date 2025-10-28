@@ -54,6 +54,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         return "User Management";
       case "/profile":
         return "Profile Settings";
+      case "/help":
+        return "Help & Support";
       default:
         return "Dashboard";
     }

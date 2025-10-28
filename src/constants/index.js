@@ -224,6 +224,13 @@ export const NAVIGATION_CONFIG = {
       color: "orange",
       adminOnly: true,
     },
+    {
+      name: "Help",
+      href: "/help",
+      icon: "help",
+      color: "amber",
+      adminOnly: false,
+    },
   ],
   DEPARTMENT: {
     name: "Design",
@@ -433,6 +440,8 @@ export const ROUTES = {
   VIEW_MY_DATA: '/view-my-data',
   TASK_DETAIL: '/task/:taskId',
   PREVIEW_MONTH: '/preview/:monthId',
+  PROFILE: '/profile',
+  HELP: '/help',
 };
 
 // ============================================================================

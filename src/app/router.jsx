@@ -35,6 +35,7 @@ import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
 import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
 import ProfilePage from "@/pages/ProfilePage";
+import HelpPage from "@/pages/HelpPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -250,6 +251,16 @@ const router = createBrowserRouter([
               <ErrorBoundary componentName="ProfilePage">
                 <PageWrapper>
                   <ProfilePage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "help",
+            element: (
+              <ErrorBoundary componentName="HelpPage">
+                <PageWrapper>
+                  <HelpPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),
