@@ -26,6 +26,7 @@ import { logger } from "@/utils/logger";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { getCurrentYear } from "@/utils/dateUtils";
 import listenerManager from "@/features/utils/firebaseListenerManager";
+import { validateTaskPermissions } from '@/utils/permissionValidation';
 
 /**
  * Get Firestore reference for tasks (collection or individual document)
@@ -75,61 +76,6 @@ const buildTaskQuery = (tasksRef, role, userUID) => {
 };
 
 /**
- * Validate user permissions for task operations
- * @param {Object} userData - User data object
- * @param {string} operation - Operation being performed
- * @returns {Object} - Validation result with isValid boolean and errors array
- */
-const validateTaskPermissions = (userData, operation) => {
-  if (!userData) {
-    return { isValid: false, errors: ['User data is required'] };
-  }
-
-  // Check if user is active (both admin and user need to be active)
-  if (userData.isActive === false) {
-    return { isValid: false, errors: ['User account is not active'] };
-  }
-
-  // For ALL users (including admins), check specific permissions
-  const requiredPermissions = {
-    'create_tasks': 'create_tasks',
-    'update_tasks': 'update_tasks', 
-    'delete_tasks': 'delete_tasks',
-    'view_tasks': 'view_tasks'
-  };
-
-  const requiredPermission = requiredPermissions[operation];
-  if (!requiredPermission) {
-    return { isValid: false, errors: [`Unknown operation: ${operation}`] };
-  }
-
-  // Check if user has explicit permissions array
-  if (userData.permissions && Array.isArray(userData.permissions)) {
-    // Use explicit permissions
-    if (!userData.permissions.includes(requiredPermission)) {
-      return { 
-        isValid: false, 
-        errors: [`User lacks required permission: ${requiredPermission}`] 
-      };
-    }
-  } else {
-    // Use role-based permissions
-    // Admins can do everything, regular users need specific permissions
-    if (userData.role === 'admin') {
-      // Admin can perform all task operations
-      return { isValid: true, errors: [] };
-    } else {
-      // For regular users, we need to check if they have the specific permission
-      // Since you don't have permissions array, we'll allow all task operations for now
-      // You can modify this logic based on your specific needs
-      return { isValid: true, errors: [] };
-    }
-  }
-
-  return { isValid: true, errors: [] };
-};
-
-/**
  * Helper function to detect if task data has actually changed
  */
 const hasTaskDataChanged = (currentData, newData) => {
@@ -139,6 +85,12 @@ const hasTaskDataChanged = (currentData, newData) => {
   // Extract the actual task data from currentData
   const currentTaskData = currentData?.data_task || currentData;
 
+  console.log('🔍 [hasTaskDataChanged] Comparing data:', {
+    currentTaskData: currentTaskData,
+    newData: newData,
+    fieldsToIgnore: fieldsToIgnore
+  });
+
   // Compare relevant fields
   const relevantFields = Object.keys(newData).filter(key => !fieldsToIgnore.includes(key));
 
@@ -146,21 +98,38 @@ const hasTaskDataChanged = (currentData, newData) => {
     const currentValue = currentTaskData?.[field];
     const newValue = newData[field];
 
+    console.log(`🔍 [hasTaskDataChanged] Comparing field "${field}":`, {
+      currentValue: currentValue,
+      newValue: newValue,
+      areEqual: currentValue === newValue
+    });
+
     // Handle array comparisons
     if (Array.isArray(currentValue) && Array.isArray(newValue)) {
-      if (currentValue.length !== newValue.length) return true;
-      if (!currentValue.every((item, index) => item === newValue[index])) return true;
+      if (currentValue.length !== newValue.length) {
+        console.log(`🔍 [hasTaskDataChanged] Array length different for "${field}"`);
+        return true;
+      }
+      if (!currentValue.every((item, index) => item === newValue[index])) {
+        console.log(`🔍 [hasTaskDataChanged] Array content different for "${field}"`);
+        return true;
+      }
     }
     // Handle object comparisons
     else if (typeof currentValue === 'object' && typeof newValue === 'object') {
-      if (JSON.stringify(currentValue) !== JSON.stringify(newValue)) return true;
+      if (JSON.stringify(currentValue) !== JSON.stringify(newValue)) {
+        console.log(`🔍 [hasTaskDataChanged] Object different for "${field}"`);
+        return true;
+      }
     }
     // Handle primitive comparisons
     else if (currentValue !== newValue) {
+      console.log(`🔍 [hasTaskDataChanged] Primitive different for "${field}"`);
       return true;
     }
   }
 
+  console.log('🔍 [hasTaskDataChanged] No changes detected');
   return false;
 };
 
@@ -363,7 +332,7 @@ const checkForDuplicateTask = async (colRef, task, userUID) => {
 export const useCreateTask = () => {
   const createTask = useCallback(async (task, userData, reporters = []) => {
     try {
-      // Validate user permissions
+      // Validate user permissions using centralized validation
       const permissionValidation = validateTaskPermissions(userData, 'create_tasks');
       if (!permissionValidation.isValid) {
         throw new Error(permissionValidation.errors.join(', '));
@@ -452,7 +421,7 @@ export const useCreateTask = () => {
 export const useUpdateTask = () => {
   const updateTask = useCallback(async (monthId, taskId, updates, reporters = [], userData) => {
     try {
-      // Validate user permissions
+      // Validate user permissions using centralized validation
       const permissionValidation = validateTaskPermissions(userData, 'update_tasks');
       if (!permissionValidation.isValid) {
         throw new Error(permissionValidation.errors.join(', '));
@@ -505,7 +474,7 @@ export const useUpdateTask = () => {
 export const useDeleteTask = () => {
   const deleteTask = useCallback(async (monthId, taskId, userData) => {
     try {
-      // Validate user permissions
+      // Validate user permissions using centralized validation
       const permissionValidation = validateTaskPermissions(userData, 'delete_tasks');
       if (!permissionValidation.isValid) {
         throw new Error(permissionValidation.errors.join(', '));

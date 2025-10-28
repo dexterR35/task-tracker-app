@@ -89,21 +89,13 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
               {deliverable.configured ? (
                 <div className="text-sm block">
                   <div className="block">
-                    Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {(deliverable.timeInHours * deliverable.quantity).toFixed(1)}h
-                    {deliverable.timeUnit === 'min' && (
-                      <span> ({(deliverable.timeInHours * deliverable.quantity * 60).toFixed(0)}min)</span>
+                    {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
+                    {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
+                      <span> + {(deliverable.variationsQuantity || deliverable.declinariQuantity)}{(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit || 'min')} variations</span>
                     )}
                   </div>
-                  {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
-                    <div className="block">
-                      variations: {(deliverable.variationsQuantity || deliverable.declinariQuantity)}x{(deliverable.variationsTime || deliverable.declinariTime)}{(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit)} = {(deliverable.totalvariationsTime || deliverable.totaldeclinariTime || 0).toFixed(1)}h
-                      {(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit) === 'min' && (
-                        <span> ({((deliverable.totalvariationsTime || deliverable.totaldeclinariTime || 0) * 60).toFixed(0)}min)</span>
-                      )}
-                    </div>
-                  )}
                   <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.yellow }}>
-                    Total: {deliverable.time.toFixed(1)}h ({(deliverable.time / 8).toFixed(1)} day)
+                    Total: {deliverable.time.toFixed(1)}h ({((deliverable.time * 60) / 480).toFixed(2)} days)
                   </div>
                 </div>
               ) : deliverable.notConfigured ? (
@@ -213,7 +205,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'LIVRABLES',
     cell: ({ getValue, row }) => (
       <DeliverableCalculationCell 
-        deliverablesUsed={getValue() || row.original?.data_task}
+        deliverablesUsed={getValue()}
         isUserAdmin={isUserAdmin}
         deliverables={deliverables}
       />
@@ -376,7 +368,7 @@ const createUserColumns = () => [
       const role = getValue() || 'user';
       return (
         <Badge 
-          color={role === 'admin' ? 'red' : role === 'reporter' ? 'blue' : 'amber'} 
+          color="blue" 
           size="xs"
         >
           {role}

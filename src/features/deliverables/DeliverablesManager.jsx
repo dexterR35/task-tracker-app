@@ -119,38 +119,42 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
       const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
       const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
       
-      // Convert to hours
-      let timeInHours = timePerUnit;
-      if (timeUnit === 'min') timeInHours = timePerUnit / 60;
-      if (timeUnit === 'days') timeInHours = timePerUnit * 8;
+  // Convert to minutes (base unit)
+  let timeInMinutes = timePerUnit;
+  if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
       
       // Add variations time if present
-      let variationsTimeInHours = 0;
+      let variationsTimeInMinutes = 0;
       if (variationsTime > 0) {
-        if (variationsTimeUnit === 'min') variationsTimeInHours = variationsTime / 60;
-        else if (variationsTimeUnit === 'hr') variationsTimeInHours = variationsTime;
-        else if (variationsTimeUnit === 'days') variationsTimeInHours = variationsTime * 8;
-        else variationsTimeInHours = variationsTime / 60; // Default to minutes
+        if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
+        else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+        else variationsTimeInMinutes = variationsTime; // Default to minutes
       }
       
       // Get variations quantity for this deliverable (if available in the data)
-      const variationsQuantity = deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
-      const totalvariationsTime = variationsQuantity * variationsTimeInHours;
-      const calculatedTime = (timeInHours * quantity) + totalvariationsTime;
-      totalTime += calculatedTime;
+      const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+      const totalvariationsTimeInMinutes = variationsQuantity * variationsTimeInMinutes;
+      const calculatedTimeInMinutes = (timeInMinutes * quantity) + totalvariationsTimeInMinutes;
+      
+      // Convert to hours and days for display
+      const calculatedTimeInHours = calculatedTimeInMinutes / 60;
+      const calculatedTimeInDays = calculatedTimeInMinutes / 480; // 8 hours = 480 minutes
+      totalTime += calculatedTimeInHours;
       
       deliverablesList.push({
         name: deliverableName,
         quantity: quantity,
-        time: calculatedTime,
+        time: calculatedTimeInHours,
+        timeInMinutes: calculatedTimeInMinutes,
+        timeInDays: calculatedTimeInDays,
         timePerUnit: timePerUnit,
         timeUnit: timeUnit,
         variationsTime: variationsTime,
         variationsTimeUnit: variationsTimeUnit,
         variationsQuantity: variationsQuantity,
-        timeInHours: timeInHours,
-        variationsTimeInHours: variationsTimeInHours,
-        totalvariationsTime: totalvariationsTime,
+        timeInHours: calculatedTimeInHours,
+        variationsTimeInMinutes: variationsTimeInMinutes,
+        totalvariationsTimeInMinutes: totalvariationsTimeInMinutes,
         configured: true
       });
     } else {
@@ -173,8 +177,7 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
   return {
     deliverablesList,
     totalTime,
-    totalMinutes: totalTime * 60,
-    totalDays: totalTime / 8
+    totalMinutes: totalTime * 60
   };
 };
 
@@ -198,31 +201,32 @@ export const calculateSingleDeliverable = (deliverableOption, quantity = 1, vari
   const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
   const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
   
-  // Convert to hours
-  let timeInHours = timePerUnit;
-  if (timeUnit === 'min') timeInHours = timePerUnit / 60;
-  if (timeUnit === 'days') timeInHours = timePerUnit * 8;
+  // Convert to minutes (base unit)
+  let timeInMinutes = timePerUnit;
+  if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
   
   // Add variations time if present
-  let variationsTimeInHours = 0;
+  let variationsTimeInMinutes = 0;
   if (variationsTime > 0) {
-    if (variationsTimeUnit === 'min') variationsTimeInHours = variationsTime / 60;
-    else if (variationsTimeUnit === 'hr') variationsTimeInHours = variationsTime;
-    else if (variationsTimeUnit === 'days') variationsTimeInHours = variationsTime * 8;
-    else variationsTimeInHours = variationsTime / 60; // Default to minutes
+    if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
+    else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+    else variationsTimeInMinutes = variationsTime; // Default to minutes
   }
   
-  const totalvariationsTime = variationsQuantity * variationsTimeInHours;
-  const totalTime = (timeInHours * quantity) + totalvariationsTime;
+  const totalvariationsTimeInMinutes = variationsQuantity * variationsTimeInMinutes;
+  const totalTimeInMinutes = (timeInMinutes * quantity) + totalvariationsTimeInMinutes;
+  
+  // Convert to hours and days for display
+  const totalTimeInHours = totalTimeInMinutes / 60;
+  const totalTimeInDays = totalTimeInMinutes / 480; // 8 hours = 480 minutes
   
   return {
-    time: totalTime,
-    timeInHours,
-    variationsTimeInHours,
-    totalvariationsTime,
-    totalTime,
-    minutes: totalTime * 60,
-    days: totalTime / 8,
+    time: totalTimeInHours,
+    timeInMinutes: totalTimeInMinutes,
+    timeInDays: totalTimeInDays,
+    timeInHours: totalTimeInHours,
+    variationsTimeInMinutes: variationsTimeInMinutes,
+    totalvariationsTimeInMinutes: totalvariationsTimeInMinutes,
     timePerUnit,
     timeUnit,
     variationsTime,
@@ -247,13 +251,13 @@ export const formatDeliverableDisplay = (deliverable) => {
   if ((deliverable.variationsTime || deliverable.declinariTime) > 0) {
     const variationsTime = deliverable.variationsTime || deliverable.declinariTime;
     const variationsTimeUnit = deliverable.variationsTimeUnit || deliverable.declinariTimeUnit;
-    const variationsHours = variationsTimeUnit === 'min' 
-      ? variationsTime / 60 
+    const variationsMinutes = variationsTimeUnit === 'min' 
+      ? variationsTime 
       : variationsTimeUnit === 'hr' 
-        ? variationsTime 
-        : variationsTime * 8;
+        ? variationsTime * 60 
+        : variationsTime * 8 * 60;
     
-    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h + ${variationsHours.toFixed(3)}h variations = ${deliverable.time.toFixed(1)}h`;
+    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h + ${variationsMinutes.toFixed(0)}min variations = ${deliverable.time.toFixed(1)}h`;
   }
   
   return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h`;
@@ -265,24 +269,27 @@ export const formatDeliverableDisplay = (deliverable) => {
 export const formatvariationsDisplay = (variationsTime, variationsTimeUnit) => {
   if (!variationsTime || variationsTime <= 0) return '';
   
-  const variationsHours = variationsTimeUnit === 'min' 
-    ? variationsTime / 60 
+  const variationsMinutes = variationsTimeUnit === 'min' 
+    ? variationsTime 
     : variationsTimeUnit === 'hr' 
-      ? variationsTime 
-      : variationsTime * 8;
+      ? variationsTime * 60 
+      : variationsTime * 8 * 60;
   
-  return `+ ${variationsHours.toFixed(3)}h variations`;
+  return `+ ${variationsMinutes.toFixed(0)}min variations`;
 };
 
 /**
  * Format time breakdown for display
  */
 export const formatTimeBreakdown = (totalTime) => {
+  const totalMinutes = totalTime * 60;
+  const totalDays = totalMinutes / 480; // 8 hours = 480 minutes
+  
   return {
     hours: totalTime.toFixed(1),
-    minutes: (totalTime * 60).toFixed(0),
-    days: (totalTime / 8).toFixed(2),
-    summary: `Total: ${totalTime.toFixed(1)}hr = ${(totalTime * 60).toFixed(0)}min = ${(totalTime / 8).toFixed(2)}days`
+    minutes: totalMinutes.toFixed(0),
+    days: totalDays.toFixed(2),
+    summary: `Total: ${totalTime.toFixed(1)}hr = ${totalMinutes.toFixed(0)}min = ${totalDays.toFixed(2)} days`
   };
 };
 
@@ -315,17 +322,13 @@ const FormattedDeliverableCalculation = ({
               {deliverable.configured ? (
                 <div className="text-xs block">
                   <div className="block">
-                    Base: {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity} = {deliverable.timeInHours * deliverable.quantity}h
-                    {deliverable.timeUnit === 'min' && <span> ({deliverable.timeInHours * deliverable.quantity * 60}min)</span>}
+                    {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
+                    {deliverable.variationsQuantity > 0 && (
+                      <span> + {deliverable.variationsQuantity}{deliverable.variationsTimeUnit || 'min'} variations</span>
+                    )}
                   </div>
-                  {deliverable.variationsQuantity > 0 && (
-                    <div className="block">
-                      variations: {deliverable.variationsQuantity}x{deliverable.variationsTime}{deliverable.variationsTimeUnit} = {deliverable.totalvariationsTime}h
-                      {deliverable.variationsTimeUnit === 'min' && <span> ({deliverable.totalvariationsTime * 60}min)</span>}
-                    </div>
-                  )}
                   <div className="block font-semibold text-yellow-600 dark:text-yellow-400">
-                    Total: {deliverable.time}h ({deliverable.time / 8} day)
+                    Total: {deliverable.time}h ({(deliverable.time * 60 / 480).toFixed(2)} days)
                   </div>
                 </div>
               ) : deliverable.notConfigured ? (

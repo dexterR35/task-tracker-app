@@ -184,12 +184,20 @@ export const getEndOfMonth = (date = new Date()) => {
 
 
 /**
- * Serialize timestamps for JSON serialization
+ * Optimized timestamp serialization for JSON serialization
  * Converts all timestamp fields to ISO strings for API responses
+ * Uses memoization to avoid redundant processing
  */
+const timestampCache = new WeakMap();
+
 export const serializeTimestamps = (data) => {
   if (!data || typeof data !== 'object') {
     return data;
+  }
+
+  // Check cache first to avoid redundant processing
+  if (timestampCache.has(data)) {
+    return timestampCache.get(data);
   }
 
   const serialized = Array.isArray(data) ? [] : {};
@@ -210,6 +218,8 @@ export const serializeTimestamps = (data) => {
     }
   }
 
+  // Cache the result to avoid reprocessing
+  timestampCache.set(data, serialized);
   return serialized;
 };
 

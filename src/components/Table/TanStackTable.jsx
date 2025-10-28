@@ -11,7 +11,7 @@ import {
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
 import { exportToCSV } from "@/utils/exportData";
-import { TABLE_SYSTEM } from '@/constants';
+import { TABLE_SYSTEM, CARD_SYSTEM } from '@/constants';
 import { CheckboxField, TextField } from '@/components/forms/components';
 
 // Constants
@@ -39,35 +39,64 @@ const BulkActionsBar = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200/60 dark:border-blue-700/40 rounded-lg p-3 backdrop-blur-sm">
+    <div 
+      className="rounded-xl p-4 backdrop-blur-sm border-2 shadow-lg"
+      style={{
+        borderColor: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
+        backgroundColor: 'rgba(194, 226, 250, 0.15)', // select_badge with 15% opacity
+        backgroundImage: 'linear-gradient(135deg, rgba(194, 226, 250, 0.2) 0%, rgba(194, 226, 250, 0.05) 100%)'
+      }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              {selectedCount} row selected
-            </span>
-            <span className="text-xs text-blue-600/80 dark:text-blue-400/80">
-              (Single selection mode)
-            </span>
+          <div className="flex items-center space-x-3">
+            <div 
+              className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white dark:ring-gray-800"
+              style={{ 
+                backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
+                boxShadow: `0 0 0 2px ${CARD_SYSTEM.COLOR_HEX_MAP.select_badge}40`
+              }}
+            ></div>
+            <div className="flex flex-col">
+              <span 
+                className="text-sm font-semibold"
+                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.select_badge }}
+              >
+                {selectedCount} row selected
+              </span>
+              <span 
+                className="text-xs font-medium opacity-75"
+                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.select_badge }}
+              >
+                (Single selection mode)
+              </span>
+            </div>
           </div>
           <button
             onClick={onClearSelection}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 bg-transparent border-none cursor-pointer  duration-200 underline decoration-dotted underline-offset-2"
+            className="px-3 py-1.5 text-sm font-medium rounded-lg border-none cursor-pointer duration-200 transition-all hover:scale-105 active:scale-95"
+            style={{ 
+              color: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
+              backgroundColor: 'rgba(194, 226, 250, 0.2)',
+              border: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.select_badge}50`
+            }}
           >
             Clear selection
           </button>
         </div>
         <div className="flex items-center space-x-2">
           {bulkActions.map((action, index) => (
-            <button
+            <DynamicButton
               key={index}
               onClick={() => onBulkAction(action, table)}
               disabled={selectedCount > 1}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-md bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+              variant={action.variant || "secondary"}
+              size="sm"
+              iconName={action.icon}
+              iconPosition="left"
             >
               {action.label}
-            </button>
+            </DynamicButton>
           ))}
         </div>
       </div>
@@ -548,9 +577,13 @@ const TanStackTable = forwardRef(({
                       key={rowKey}
                       className={`group hover:bg-gray-50/50 dark:hover:bg-gray-600/30 cursor-pointer ${
                         isSelected 
-                          ? 'bg-blue-50/80 dark:bg-red-error/10 border-l-4 border-blue-default dark:border-blue-default' 
+                          ? 'bg-blue-100/90 dark:bg-blue-900/30 border-l-4 shadow-sm' 
                           : 'hover:border-l-2 hover:border-gray-200 dark:hover:border-gray-600'
                       } ${index % 2 === 0 ? 'bg-white dark:bg-smallCard' : 'bg-gray-50/30 dark:bg-gray-900/50'}`}
+                      style={isSelected ? {
+                        borderLeftColor: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)' // Blue-600 with 10% opacity
+                      } : {}}
                       onClick={() => handleRowClick(row)}
                     >
                       {row.getVisibleCells().map((cell) => (

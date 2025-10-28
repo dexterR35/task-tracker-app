@@ -353,6 +353,28 @@ const TaskTable = ({
   const bulkActions = useMemo(() => {
     const actions = [];
     
+    // Always add Jira link action first
+    actions.push({
+      label: "View Jira Link",
+      icon: "external-link",
+      variant: "success",
+      onClick: (selectedTasks) => {
+        if (selectedTasks.length === 1) {
+          const task = selectedTasks[0];
+          const taskName = task.data_task?.taskName;
+          
+          if (taskName) {
+            const fullJiraUrl = `https://gmrd.atlassian.net/browse/${taskName}`;
+            window.open(fullJiraUrl, '_blank', 'noopener,noreferrer');
+          } else {
+            showError("No Jira ticket or URL available for this task");
+          }
+        } else {
+          showError("Please select only ONE task to view Jira link");
+        }
+      }
+    });
+    
     // Add view action if user has permission
     if (userCanViewTasks) {
       actions.push({
@@ -373,41 +395,12 @@ const TaskTable = ({
       });
     }
     
-    // Always add Jira link action
-    actions.push({
-      label: "View Jira Link",
-      icon: "external-link",
-      variant: "warning",
-      onClick: (selectedTasks) => {
-        if (selectedTasks.length === 1) {
-          const task = selectedTasks[0];
-          const jiraUrl = task.data_task?.jiraUrl;
-          const jiraTicket = task.data_task?.jiraTicket;
-          
-          let fullJiraUrl = null;
-          if (jiraUrl) {
-            fullJiraUrl = jiraUrl;
-          } else if (jiraTicket) {
-            fullJiraUrl = `https://gmrd.atlassian.net/browse/${jiraTicket}`;
-          }
-          
-          if (fullJiraUrl) {
-            window.open(fullJiraUrl, '_blank', 'noopener,noreferrer');
-          } else {
-            showError("No Jira ticket or URL available for this task");
-          }
-        } else {
-          showError("Please select only ONE task to view Jira link");
-        }
-      }
-    });
-    
     // Add edit action if user has permission
     if (userCanUpdateTasks) {
       actions.push({
         label: "Edit Selected",
         icon: "edit",
-        variant: "edit",
+        variant: "amber",
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
             handleEditTask(selectedTasks[0]);
@@ -498,182 +491,119 @@ const TaskTable = ({
         {/* Filter Buttons Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {/* AI Used Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('aiUsed')}
-            style={{
-              backgroundColor: selectedFilter === 'aiUsed' ? CARD_SYSTEM.COLOR_HEX_MAP.pink : undefined,
-              color: selectedFilter === 'aiUsed' ? 'white' : undefined,
-              borderColor: selectedFilter === 'aiUsed' ? CARD_SYSTEM.COLOR_HEX_MAP.pink : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'aiUsed' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'aiUsed' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-smallCard"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
                 className="w-2 h-2 rounded-full"
                 style={{
-                  backgroundColor: selectedFilter === 'aiUsed' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.pink
+                  backgroundColor: selectedFilter === 'aiUsed' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
                 }}
               ></div>
               <span>AI Used</span>
             </div>
-          </button>
+          </DynamicButton>
 
           {/* Marketing Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('marketing')}
-            style={{
-              backgroundColor: selectedFilter === 'marketing' ? CARD_SYSTEM.COLOR_HEX_MAP.blue : undefined,
-              color: selectedFilter === 'marketing' ? 'white' : undefined,
-              borderColor: selectedFilter === 'marketing' ? CARD_SYSTEM.COLOR_HEX_MAP.blue : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'marketing' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'marketing' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
                 className="w-2 h-2 rounded-full"
                 style={{
-                  backgroundColor: selectedFilter === 'marketing' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.blue
+                  backgroundColor: selectedFilter === 'marketing' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
                 }}
               ></div>
               <span>Marketing</span>
             </div>
-          </button>
+          </DynamicButton>
 
           {/* Acquisition Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('acquisition')}
-            style={{
-              backgroundColor: selectedFilter === 'acquisition' ? CARD_SYSTEM.COLOR_HEX_MAP.green : undefined,
-              color: selectedFilter === 'acquisition' ? 'white' : undefined,
-              borderColor: selectedFilter === 'acquisition' ? CARD_SYSTEM.COLOR_HEX_MAP.green : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'acquisition' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'acquisition' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
                 className="w-2 h-2 rounded-full"
                 style={{
-                  backgroundColor: selectedFilter === 'acquisition' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.green
+                  backgroundColor: selectedFilter === 'acquisition' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
                 }}
               ></div>
               <span>Acquisition</span>
             </div>
-          </button>
+          </DynamicButton>
 
           {/* Product Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('product')}
-            style={{
-              backgroundColor: selectedFilter === 'product' ? CARD_SYSTEM.COLOR_HEX_MAP.orange : undefined,
-              color: selectedFilter === 'product' ? 'white' : undefined,
-              borderColor: selectedFilter === 'product' ? CARD_SYSTEM.COLOR_HEX_MAP.orange : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'product' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'product' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
                 className="w-2 h-2 rounded-full"
                 style={{
-                  backgroundColor: selectedFilter === 'product' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.orange
+                  backgroundColor: selectedFilter === 'product' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
                 }}
               ></div>
               <span>Product</span>
             </div>
-          </button>
+          </DynamicButton>
 
           {/* VIP Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('vip')}
-            style={{
-              backgroundColor: selectedFilter === 'vip' ? CARD_SYSTEM.COLOR_HEX_MAP.yellow : undefined,
-              color: selectedFilter === 'vip' ? 'white' : undefined,
-              borderColor: selectedFilter === 'vip' ? CARD_SYSTEM.COLOR_HEX_MAP.yellow : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'vip' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'vip' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
                 className="w-2 h-2 rounded-full"
                 style={{
-                  backgroundColor: selectedFilter === 'vip' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.yellow
+                  backgroundColor: selectedFilter === 'vip' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
                 }}
               ></div>
               <span>VIP</span>
             </div>
-          </button>
+          </DynamicButton>
 
           {/* Reworked Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('reworked')}
-            style={{
-              backgroundColor: selectedFilter === 'reworked' ? CARD_SYSTEM.COLOR_HEX_MAP.purple : undefined,
-              color: selectedFilter === 'reworked' ? 'white' : undefined,
-              borderColor: selectedFilter === 'reworked' ? CARD_SYSTEM.COLOR_HEX_MAP.purple : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'reworked' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'reworked' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
                 className="w-2 h-2 rounded-full"
                 style={{
-                  backgroundColor: selectedFilter === 'reworked' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.purple
+                  backgroundColor: selectedFilter === 'reworked' ? 'white' : CARD_SYSTEM.COLOR_HEX_MAP.gray
                 }}
               ></div>
               <span>Reworked</span>
             </div>
-          </button>
+          </DynamicButton>
 
           {/* Observation Filter */}
-          <button
+          <DynamicButton
             onClick={() => handleFilterChange('observation')}
-            style={{
-              backgroundColor: selectedFilter === 'observation' ? CARD_SYSTEM.COLOR_HEX_MAP.gray : undefined,
-              color: selectedFilter === 'observation' ? 'white' : undefined,
-              borderColor: selectedFilter === 'observation' ? CARD_SYSTEM.COLOR_HEX_MAP.gray : undefined,
-            }}
-            className={`
-              group relative px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 active:scale-95
-              ${selectedFilter === 'observation' 
-                ? 'text-white shadow-lg' 
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:shadow-md'
-              }
-            `}
+            variant={selectedFilter === 'observation' ? 'primary' : 'secondary'}
+            size="sm"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center space-x-2">
               <div 
@@ -684,7 +614,7 @@ const TaskTable = ({
               ></div>
               <span>Observation</span>
             </div>
-          </button>
+          </DynamicButton>
         </div>
       </div>
 

@@ -146,7 +146,7 @@ const DeliverableTable = ({
     {
       label: "Edit Selected",
       icon: "edit",
-      variant: "edit",
+      variant: "amber",
       onClick: (selectedDeliverables) => {
         if (selectedDeliverables.length === 1) {
           handleEditDeliverable(selectedDeliverables[0]);

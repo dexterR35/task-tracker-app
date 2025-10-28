@@ -18,6 +18,7 @@ import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { CARD_SYSTEM } from '@/constants';
+import CalculationFormula from '@/components/ui/CalculationFormula/CalculationFormula';
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection
@@ -86,72 +87,27 @@ const AnalyticsPage = () => {
     },
   ], []);
 
-  // Analytics data object - memoized to prevent unnecessary re-renders
-  const analyticsData = useMemo(() => ({
-    tasks,
-    selectedMonth,
-    users,
-    reporters,
-    isLoading
-  }), [tasks, selectedMonth, users, reporters, isLoading]);
-
-  // Lazy load card props - only calculate active tab
-  const reporterAnalyticsCardProps = useMemo(() => {
-    if (activeTab !== 'reporter-analytics') return null;
-    return getCachedReporterAnalyticsCardProps(
-      analyticsData.tasks,
-      analyticsData.reporters,
-      analyticsData.selectedMonth,
-      analyticsData.isLoading
-    );
-  }, [activeTab, analyticsData.tasks, analyticsData.reporters, analyticsData.selectedMonth, analyticsData.isLoading]);
-
-  const marketsByUsersCardProps = useMemo(() => {
-    if (activeTab !== 'markets-by-users') return null;
-    return getCachedMarketsByUsersCardProps(
-      analyticsData.tasks,
-      analyticsData.users,
-      analyticsData.selectedMonth,
-      analyticsData.isLoading
-    );
-  }, [activeTab, analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]);
-
-  const marketingAnalyticsCardProps = useMemo(() => {
-    if (activeTab !== 'marketing-analytics') return null;
-    return getCachedMarketingAnalyticsCardProps(
-      analyticsData.tasks,
-      analyticsData.selectedMonth,
-      analyticsData.isLoading
-    );
-  }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
-
-  const acquisitionAnalyticsCardProps = useMemo(() => {
-    if (activeTab !== 'acquisition-analytics') return null;
-    return getCachedAcquisitionAnalyticsCardProps(
-      analyticsData.tasks,
-      analyticsData.selectedMonth,
-      analyticsData.isLoading
-    );
-  }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
-
-  const productAnalyticsCardProps = useMemo(() => {
-    if (activeTab !== 'product-analytics') return null;
-    return getCachedProductAnalyticsCardProps(
-      analyticsData.tasks,
-      analyticsData.selectedMonth,
-      analyticsData.isLoading
-    );
-  }, [activeTab, analyticsData.tasks, analyticsData.selectedMonth, analyticsData.isLoading]);
-
-  const aiAnalyticsCardProps = useMemo(() => {
-    if (activeTab !== 'ai-analytics') return null;
-    return getCachedAIAnalyticsCardProps(
-      analyticsData.tasks,
-      analyticsData.users,
-      analyticsData.selectedMonth,
-      analyticsData.isLoading
-    );
-  }, [activeTab, analyticsData.tasks, analyticsData.users, analyticsData.selectedMonth, analyticsData.isLoading]);
+  // Optimized card props calculation - only calculate for active tab
+  const activeCardProps = useMemo(() => {
+    if (isLoading) return null;
+    
+    switch (activeTab) {
+      case 'reporter-analytics':
+        return getCachedReporterAnalyticsCardProps(tasks, reporters, selectedMonth, isLoading);
+      case 'markets-by-users':
+        return getCachedMarketsByUsersCardProps(tasks, users, selectedMonth, isLoading);
+      case 'marketing-analytics':
+        return getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, isLoading);
+      case 'acquisition-analytics':
+        return getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, isLoading);
+      case 'product-analytics':
+        return getCachedProductAnalyticsCardProps(tasks, selectedMonth, isLoading);
+      case 'ai-analytics':
+        return getCachedAIAnalyticsCardProps(tasks, users, selectedMonth, isLoading);
+      default:
+        return null;
+    }
+  }, [activeTab, tasks, users, reporters, selectedMonth, isLoading]);
 
 
 
@@ -256,6 +212,11 @@ const AnalyticsPage = () => {
             daysInMonth={selectedMonth?.daysInMonth || currentMonth?.daysInMonth}
           />
         </div>
+
+        {/* Deliverable Calculation Formula */}
+        <div className="mb-8">
+          <CalculationFormula />
+        </div>
       </div>
 
       {/* Analytics Tabs */}
@@ -285,91 +246,22 @@ const AnalyticsPage = () => {
 
           {/* Tab Content */}
           <div>
-            {activeTab === 'reporter-analytics' ? (
+            {activeCardProps ? (
               <div className="relative">
-                <div id="reporter-analytics-card">
+                <div id={`${activeTab}-card`}>
                   <div className="relative">
-                    {reporterAnalyticsCardProps ? (
-                      <ReporterAnalyticsCard 
-                        {...reporterAnalyticsCardProps}
-                      />
-                    ) : (
-                      <SkeletonAnalyticsCard />
-                    )}
+                    {activeTab === 'reporter-analytics' && <ReporterAnalyticsCard {...activeCardProps} />}
+                    {activeTab === 'markets-by-users' && <MarketsByUsersCard {...activeCardProps} />}
+                    {activeTab === 'marketing-analytics' && <MarketingAnalyticsCard {...activeCardProps} />}
+                    {activeTab === 'acquisition-analytics' && <AcquisitionAnalyticsCard {...activeCardProps} />}
+                    {activeTab === 'product-analytics' && <ProductAnalyticsCard {...activeCardProps} />}
+                    {activeTab === 'ai-analytics' && <AIAnalyticsCard {...activeCardProps} />}
                   </div>
                 </div>
               </div>
-            ) : activeTab === 'markets-by-users' ? (
-              <div className="relative">
-                <div id="market-user-breakdown-card">
-                  <div className="relative">
-                    {marketsByUsersCardProps ? (
-                      <MarketsByUsersCard 
-                        {...marketsByUsersCardProps}
-                      />
-                    ) : (
-                      <SkeletonAnalyticsCard />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : activeTab === 'marketing-analytics' ? (
-              <div className="relative">
-                <div id="marketing-analytics-card">
-                  <div className="relative">
-                    {marketingAnalyticsCardProps ? (
-                      <MarketingAnalyticsCard 
-                        {...marketingAnalyticsCardProps}
-                      />
-                    ) : (
-                      <SkeletonAnalyticsCard />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : activeTab === 'acquisition-analytics' ? (
-              <div className="relative">
-                <div id="acquisition-analytics-card">
-                  <div className="relative">
-                    {acquisitionAnalyticsCardProps ? (
-                      <AcquisitionAnalyticsCard 
-                        {...acquisitionAnalyticsCardProps}
-                      />
-                    ) : (
-                      <SkeletonAnalyticsCard />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : activeTab === 'product-analytics' ? (
-              <div className="relative">
-                <div id="product-analytics-card">
-                  <div className="relative">
-                    {productAnalyticsCardProps ? (
-                      <ProductAnalyticsCard 
-                        {...productAnalyticsCardProps}
-                      />
-                    ) : (
-                      <SkeletonAnalyticsCard />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : activeTab === 'ai-analytics' ? (
-              <div className="relative">
-                <div id="ai-analytics-card">
-                  <div className="relative">
-                    {aiAnalyticsCardProps ? (
-                      <AIAnalyticsCard 
-                        {...aiAnalyticsCardProps}
-                      />
-                    ) : (
-                      <SkeletonAnalyticsCard />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            ) : (
+              <SkeletonAnalyticsCard />
+            )}
           </div>
         </div>
       )}

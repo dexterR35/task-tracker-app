@@ -11,7 +11,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
-import { prepareFormData } from '@/utils/formUtils';
+import { prepareFormData, createFormSubmissionHandler, handleFormValidation } from '@/utils/formUtils';
 import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
 import TextField from '@/components/forms/components/TextField';
 import PasswordField from '@/components/forms/components/PasswordField';
@@ -44,30 +44,34 @@ const LoginForm = ({ onSuccess, className = "" }) => {
     reValidateMode: 'onChange'
   });
 
-  /**
-   * Handle form submission with validation and error handling
-   * @param {Object} data - Form data object
-   */
-  const onSubmit = async (data) => {
-    try {
+  // Create standardized form submission handler
+  const handleFormSubmit = createFormSubmissionHandler(
+    async (data) => {
       // Prepare login data with lowercase enforcement for email
       const preparedData = prepareFormData(data, {
         fieldsToLowercase: ['email'],
         fieldsToKeepUppercase: [] // No uppercase exceptions for login
       });
       
-      const result = await login(preparedData);
-      handleSuccess('Login successful!', result, 'User Login');
-      reset();
-      onSuccess?.(result);
-    } catch (error) {
-      logger.error('❌ Login failed:', error);
-      // Error toast is already handled in AuthContext.login()
+      return await login(preparedData);
+    },
+    {
+      operation: 'login',
+      resource: 'user',
+      onSuccess: (result) => {
+        handleSuccess('Login successful!', result, 'User Login');
+        onSuccess?.(result);
+      },
+      showSuccessToast: false // Success toast is handled in onSuccess callback
     }
+  );
+
+  const onSubmit = async (data) => {
+    await handleFormSubmit(data, { reset, setError: () => {}, clearErrors: () => {} });
   };
 
   const handleFormError = (errors) => {
-    handleValidationError(errors, 'Login Form');
+    handleFormValidation(errors, 'Login Form');
   };
 
   return (

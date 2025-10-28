@@ -24,9 +24,11 @@ const Modal = ({
               size="sm"
               onClick={onClose}
               iconName="close"
-              iconPosition="center"
+              iconPosition="left"
               className="hover:bg-gray-100 dark:hover:bg-gray-700"
-            />
+            >
+              Close
+            </DynamicButton>
           )}
         </div>
         {/* Modal Content */}

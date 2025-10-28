@@ -143,7 +143,6 @@ export const FORM_OPTIONS = {
   TIME_UNITS: [
     { value: 'min', label: 'Minutes' },
     { value: 'hr', label: 'Hours' },
-    { value: 'days', label: 'Days' },
   ],
   REPORTER_DEPARTMENTS: [
     { value: 'acq', label: 'acq' },
@@ -238,18 +237,18 @@ export const NAVIGATION_CONFIG = {
 
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
-    green: '#80B3FF',      // Green-500 - Fresh, growth
-    blue: '#C2E2FA',       // Blue-600 - Professional, trust
-    purple: '#db2777',     // Pink-600 - Changed from purple to pink
-    crimson: '#C2E2FA',    // Rose-600 - Authority, admin
-    amber: '#DD0303',      // Amber-600 - Changed from yellow to amber-600
-    pink: '#ec4899',       // Pink-500 - AI models
-    red: '#C2E2FA',        // Red-600 - Error
-    yellow: '#d97706',     // Amber-600 - Changed from yellow to amber-600
-    gray: '#6b7280',       // Gray-500 - Disabled
-    orange: '#f97316',     // Orange-500 - Product, warning
-    select_badge: '#C2E2FA', // Red-500 - Selected badges in cards and forms
-    color_default: '#3d48c9', // Primary blue - Default color for UI elements
+    green: '#22C55E',      // Emerald-500 - Fresh, growth, success
+    blue: '#2563EB',      // Blue-600 - Professional, trust, primary
+    purple: '#7C3AED',    // Violet-600 - Royal, premium, creative
+    crimson: '#DC2626',   // Red-600 - Authority, admin, critical
+    amber: '#F59E0B',     // Amber-500 - Warning, attention, caution
+    pink: '#E91E63',      // Pink-600 - AI models, feminine, creative
+    red: '#EF4444',       // Red-500 - Error, danger, delete
+    yellow: '#FACC15',    // Yellow-400 - Bright, optimistic, highlight
+    gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
+    orange: '#F97316',    // Orange-500 - Product, warning, energy
+    select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
+    color_default: '#2563EB', // Blue-600 - Primary blue - Default color for UI elements
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',

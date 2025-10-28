@@ -63,8 +63,7 @@ const CONFIG = {
       required: true,
       options: [
         { value: "min", label: "Minutes" },
-        { value: "hr", label: "Hours" },
-        { value: "days", label: "Days" }
+        { value: "hr", label: "Hours" }
       ],
       validation: { required: VALIDATION.MESSAGES.REQUIRED }
     },

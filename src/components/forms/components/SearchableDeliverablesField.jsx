@@ -44,18 +44,25 @@ const SearchableDeliverablesField = ({
     }
   }, [formValues?.deliverables, selectedDeliverable, field.options, setValue]);
   
-  // Ensure default quantity is set when deliverable is selected
+  // Ensure default quantity is set when deliverable is selected (only for new selections)
   useEffect(() => {
     if (selectedDeliverable && selectedOption && selectedOption.requiresQuantity) {
       const currentQuantity = quantities[selectedDeliverable];
       
+      // Only set default if no quantity exists and we're not in edit mode with existing data
       if (!currentQuantity || currentQuantity < 1) {
-        const newQuantities = { ...quantities, [selectedDeliverable]: 1 };
-        setQuantities(newQuantities);
-        setValue('deliverableQuantities', newQuantities);
+        // Check if we have form values (edit mode) - if so, don't override with defaults
+        const hasExistingQuantities = formValues?.deliverableQuantities && 
+          Object.keys(formValues.deliverableQuantities).length > 0;
+        
+        if (!hasExistingQuantities) {
+          const newQuantities = { ...quantities, [selectedDeliverable]: 1 };
+          setQuantities(newQuantities);
+          setValue('deliverableQuantities', newQuantities);
+        }
       }
     }
-  }, [selectedDeliverable, selectedOption, quantities, setValue]);
+  }, [selectedDeliverable, selectedOption, quantities, setValue, formValues?.deliverableQuantities]);
   
   // Initialize quantities and variations from form data if editing
   useEffect(() => {
@@ -74,23 +81,33 @@ const SearchableDeliverablesField = ({
   const handleDeliverableChange = (value) => {
     setValue('deliverables', value);
     
-    // Clear previous quantities and variations
-    const newQuantities = {};
-    const newvariationsQuantities = {};
-    const newvariationsEnabled = {};
-    
-    // Set default quantity to 1 for deliverables that require quantity
-    if (value) {
-      const deliverable = field.options.find(opt => opt.value === value);
-      if (deliverable && deliverable.requiresQuantity) {
-        newQuantities[value] = 1;
+    // Only clear quantities if the deliverable actually changed
+    if (value !== selectedDeliverable) {
+      // Clear previous quantities and variations for different deliverable
+      const newQuantities = {};
+      const newvariationsQuantities = {};
+      const newvariationsEnabled = {};
+      
+      // Set default quantity to 1 for deliverables that require quantity
+      if (value) {
+        const deliverable = field.options.find(opt => opt.value === value);
+        if (deliverable && deliverable.requiresQuantity) {
+          newQuantities[value] = 1;
+        }
+      }
+      
+      // Update all states and form values
+      updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
+      updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
+      updateStateAndForm(setvariationsEnabled, 'variationsDeliverables', newvariationsEnabled);
+    } else {
+      // If same deliverable, ensure quantities are preserved from form data
+      if (formValues?.deliverableQuantities && formValues.deliverableQuantities[value]) {
+        const preservedQuantities = { ...quantities, [value]: formValues.deliverableQuantities[value] };
+        setQuantities(preservedQuantities);
+        setValue('deliverableQuantities', preservedQuantities);
       }
     }
-    
-    // Update all states and form values
-    updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
-    updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
-    updateStateAndForm(setvariationsEnabled, 'variationsDeliverables', newvariationsEnabled);
     
     // Trigger validation immediately
     trigger('deliverables');

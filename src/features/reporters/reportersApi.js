@@ -124,7 +124,9 @@ export const useReporters = () => {
       }
 
       const reportersRef = collection(db, 'reporters');
-      const newReporter = {
+      
+      // First create the document to get the ID
+      const docRef = await addDoc(reportersRef, {
         ...reporterData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -133,9 +135,12 @@ export const useReporters = () => {
           createdBy: userData.uid,
           createdByName: userData.name || 'Unknown User'
         })
-      };
+      });
 
-      const docRef = await addDoc(reportersRef, newReporter);
+      // Update the document with reporterUID (document ID)
+      await updateDoc(docRef, {
+        reporterUID: docRef.id
+      });
 
       // Invalidate cache when data changes
       dataCache.delete('reporters_list');

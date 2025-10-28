@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Icons from "@/components/icons";
 import { showSuccess, showError } from "@/utils/toast";
-import { BUTTON_SYSTEM } from "@/constants";
+import { BUTTON_SYSTEM, CARD_SYSTEM } from "@/constants";
 
 const DynamicButton = ({
   id,
@@ -29,12 +29,48 @@ const DynamicButton = ({
   const isLoading = loading || localLoading;
   const isDisabled = disabled || isLoading;
 
+  // Get button styles from COLOR_HEX_MAP
+  const getButtonStyles = () => {
+    const colorMap = {
+      primary: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
+      secondary: CARD_SYSTEM.COLOR_HEX_MAP.gray,
+      success: CARD_SYSTEM.COLOR_HEX_MAP.green,
+      danger: CARD_SYSTEM.COLOR_HEX_MAP.red,
+      warning: CARD_SYSTEM.COLOR_HEX_MAP.yellow,
+      amber: CARD_SYSTEM.COLOR_HEX_MAP.amber,
+      blue: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+      pink: CARD_SYSTEM.COLOR_HEX_MAP.pink,
+      orange: CARD_SYSTEM.COLOR_HEX_MAP.orange,
+      purple: CARD_SYSTEM.COLOR_HEX_MAP.purple,
+      crimson: CARD_SYSTEM.COLOR_HEX_MAP.crimson,
+      edit: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+    };
+
+    const backgroundColor = colorMap[variant] || colorMap.primary;
+    
+    // Different text colors for different variants
+    let textColor = '#ffffff'; // Default white text
+    
+    if (variant === 'success') {
+      textColor = '#1f2937'; // text-gray-800 for green background
+    } else if (variant === 'warning' || variant === 'yellow') {
+      textColor = '#1f2937'; // text-gray-800 for yellow/amber backgrounds
+    } else if (variant === 'amber') {
+      textColor = '#1f2937'; // text-gray-800 for amber background
+    }
+
+    return {
+      backgroundColor,
+      color: textColor,
+      border: 'none',
+      opacity: isDisabled ? 0.5 : 1,
+      cursor: isDisabled ? 'not-allowed' : isLoading ? 'wait' : 'pointer',
+    };
+  };
+
   const buttonClasses = `
     ${BUTTON_SYSTEM.BASE_CLASSES} 
-    ${BUTTON_SYSTEM.VARIANT_MAP[variant] || BUTTON_SYSTEM.VARIANT_MAP[BUTTON_SYSTEM.DEFAULTS.VARIANT]} 
     ${BUTTON_SYSTEM.SIZE_MAP[size] || BUTTON_SYSTEM.SIZE_MAP[BUTTON_SYSTEM.DEFAULTS.SIZE]}
-    ${isDisabled ? BUTTON_SYSTEM.STATES.DISABLED : ""}
-    ${isLoading ? BUTTON_SYSTEM.STATES.LOADING : ""}
     ${className}
   `.trim();
 
@@ -131,6 +167,7 @@ const DynamicButton = ({
         id={id}
         to={to}
         className={buttonClasses}
+        style={getButtonStyles()}
         onClick={handleLinkClick}
         aria-disabled={isDisabled}
         aria-busy={isLoading}
@@ -149,6 +186,7 @@ const DynamicButton = ({
       id={id}
       type={type}
       className={buttonClasses}
+      style={getButtonStyles()}
       onClick={handleClick}
       disabled={isDisabled}
       aria-disabled={isDisabled}

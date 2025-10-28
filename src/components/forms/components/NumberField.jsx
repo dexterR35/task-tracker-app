@@ -6,9 +6,13 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
   // Debounced validation to prevent excessive validation calls
   const handleChange = useCallback((e) => {
     const value = e.target.value;
+    // Call the setValue function passed from parent component
+    if (setValue) {
+      setValue(field.name, value);
+    }
     // Only trigger validation on blur, not on every keystroke
     // trigger(field.name); // Removed to prevent excessive validation
-  }, [field.name, trigger]);
+  }, [field.name, trigger, setValue]);
 
   const handleBlur = useCallback(() => {
     // Trigger validation only on blur
@@ -33,7 +37,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
         type="number"
         step={field.step || 0.5}
         min={field.min || 0}
-        defaultValue={field.defaultValue || 0}
+        value={formValues?.[field.name] ?? field.defaultValue ?? 0}
         placeholder={field.placeholder}
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}

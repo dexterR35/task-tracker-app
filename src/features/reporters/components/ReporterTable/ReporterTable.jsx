@@ -75,7 +75,7 @@ const ReporterTable = ({
           {
             label: "Edit Selected",
             icon: "edit",
-            variant: "edit",
+            variant: "amber",
             onClick: (selectedReporters) => {
               if (selectedReporters.length === 1) {
                 handleEdit(selectedReporters[0]);

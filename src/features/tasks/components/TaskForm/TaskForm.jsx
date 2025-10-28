@@ -302,10 +302,17 @@ const TaskForm = ({
     async (data) => {
       // All validation is now handled by Yup schema - no redundant validation needed
       // Prepare form data for database
+      console.log('🔍 [TaskForm] Form submission data:', data);
       const processedData = prepareTaskFormData(data, deliverablesOptions);
+      console.log('🔍 [TaskForm] Processed data for database:', processedData);
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task
+        console.log('🔍 [TaskForm] Updating task:', {
+          monthId: initialData.monthId || initialData.data_task?.monthId || monthId,
+          taskId: initialData.id,
+          processedData: processedData
+        });
           return await updateTask(
             initialData.monthId || initialData.data_task?.monthId || monthId,
             initialData.id,
