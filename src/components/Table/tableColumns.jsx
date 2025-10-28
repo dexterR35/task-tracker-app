@@ -15,6 +15,7 @@ const columnHelper = createColumnHelper();
 
 // Constants
 const DATE_FORMATS = TABLE_SYSTEM.DATE_FORMATS;
+const COLUMN_TYPES = TABLE_SYSTEM.COLUMN_TYPES;
 
 // Badge variants moved to Badge component
 
@@ -124,7 +125,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge color="green" size="xs" className="font-mono">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="xs" className="font-mono">
           {taskName}
         </Badge>
       );
@@ -163,7 +164,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} color="amber" size="xs">
+            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="xs">
               {market}
             </Badge>
           ))}
@@ -185,7 +186,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} color="pink" size="xs">
+              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="xs">
                 {model}
               </Badge>
             ))}
@@ -292,14 +293,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       
       if (days === 0) {
         return (
-          <Badge color="green" size="xs">
+          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="xs">
             Same day
           </Badge>
         );
       }
 
       return (
-        <Badge color="red" size="xs">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.red} size="xs">
           {days} days
         </Badge>
       );
@@ -314,7 +315,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge color="blue" size="xs">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="xs">
           {value}h
         </Badge>
       );
@@ -368,7 +369,7 @@ const createUserColumns = () => [
       const role = getValue() || 'user';
       return (
         <Badge 
-          color="blue" 
+          colorHex={role === 'admin' ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : CARD_SYSTEM.COLOR_HEX_MAP.blue} 
           size="xs"
         >
           {role}
@@ -390,7 +391,7 @@ const createUserColumns = () => [
           {permissions.map((permission, index) => (
             <Badge 
               key={index} 
-              color="blue" 
+              colorHex={CARD_SYSTEM.COLOR_HEX_MAP.gray} 
               size="xs"
               className="text-xs"
             >

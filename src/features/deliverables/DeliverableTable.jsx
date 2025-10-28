@@ -8,6 +8,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton/Skeleton';
 import DeliverableFormModal from './DeliverableFormModal';
 import { useTableActions } from '@/hooks/useTableActions';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
+import { TABLE_SYSTEM } from '@/constants';
 
 // ===== CONFIGURATION =====
 const CONFIG = {
@@ -210,7 +211,7 @@ const DeliverableTable = ({
         showColumnToggle={true}
         enablePagination={true}
         enableFiltering={true}
-        pageSize={10}
+        pageSize={TABLE_SYSTEM.DEFAULT_PAGE_SIZE}
       />
 
       {/* Edit Deliverable Modal */}

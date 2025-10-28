@@ -15,10 +15,6 @@ const SmallCard = memo(({ card }) => {
   const unifiedBgColor = "#475569"; // Slate-600 - Modern, professional
 
   // Style objects
-  const iconBgStyle = {
-    backgroundColor: `${unifiedBgColor}90`
-  };
-
   const iconStyle = {
     color: cardColorHex // Keep original icon colors
   };
@@ -43,10 +39,7 @@ const SmallCard = memo(({ card }) => {
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div
-                className="icon-bg"
-                style={iconBgStyle}
-              >
+              <div className="icon-bg bg-primary">
                 <card.icon
                   className="w-6 h-6"
                   style={iconStyle}

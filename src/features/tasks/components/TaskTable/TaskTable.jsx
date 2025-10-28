@@ -11,8 +11,12 @@ import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import { CheckboxField } from '@/components/forms/components';
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { CARD_SYSTEM } from '@/constants';
-import './TaskTable.css';
+import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';
+
+// Color constants from COLOR_HEX_MAP
+const CRIMSON_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.crimson;
+const BLUE_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.color_default;
+// import './TaskTable.css';
 
 const TaskTable = ({
   className = "",
@@ -24,7 +28,7 @@ const TaskTable = ({
   isLoading: initialLoading = false,
   onCountChange = null,
   enablePagination = true,
-  pageSize = 20,
+  pageSize = TABLE_SYSTEM.DEFAULT_PAGE_SIZE,
 }) => {
   // Filter state - single selection only
   const [selectedFilter, setSelectedFilter] = useState(null);
@@ -468,7 +472,7 @@ const TaskTable = ({
             <div className="flex items-center space-x-2">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Task Filters</h3>
             </div>
-            <div className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+            <div className="px-3 py-1 bg-gray-200 dark:bg-gray-800 rounded-full">
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {selectedFilter ? `${selectedFilter.charAt(0).toUpperCase() + selectedFilter.slice(1)} Tasks` : 'All Tasks'}
               </span>
@@ -493,9 +497,9 @@ const TaskTable = ({
           {/* AI Used Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('aiUsed')}
-            variant={selectedFilter === 'aiUsed' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'aiUsed' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             AI Used
           </DynamicButton>
@@ -503,9 +507,9 @@ const TaskTable = ({
           {/* Marketing Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('marketing')}
-            variant={selectedFilter === 'marketing' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'marketing' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             Marketing
           </DynamicButton>
@@ -513,9 +517,9 @@ const TaskTable = ({
           {/* Acquisition Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('acquisition')}
-            variant={selectedFilter === 'acquisition' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'acquisition' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             Acquisition
           </DynamicButton>
@@ -523,9 +527,9 @@ const TaskTable = ({
           {/* Product Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('product')}
-            variant={selectedFilter === 'product' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'product' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             Product
           </DynamicButton>
@@ -533,9 +537,9 @@ const TaskTable = ({
           {/* VIP Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('vip')}
-            variant={selectedFilter === 'vip' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'vip' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             VIP
           </DynamicButton>
@@ -543,9 +547,9 @@ const TaskTable = ({
           {/* Reworked Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('reworked')}
-            variant={selectedFilter === 'reworked' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'reworked' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             Reworked
           </DynamicButton>
@@ -553,9 +557,9 @@ const TaskTable = ({
           {/* Deliverables Filter */}
           <DynamicButton
             onClick={() => handleFilterChange('deliverables')}
-            variant={selectedFilter === 'deliverables' ? 'primary' : 'secondary'}
+            variant="primary"
             size="sm"
-            className="bg-white/80 dark:bg-smallCard"
+            style={{ backgroundColor: selectedFilter === 'deliverables' ? CRIMSON_COLOR : BLUE_COLOR }}
           >
             Deliverables
           </DynamicButton>

@@ -1645,7 +1645,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return (
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} color="purple" size="xs">
+              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="xs">
                 {model}
               </Badge>
             ))}
@@ -1663,7 +1663,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return (
           <div className="flex flex-wrap gap-1">
             {markets.map((market, index) => (
-              <Badge key={index} color="amber" size="xs">
+              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="xs">
                 {market}
               </Badge>
             ))}
@@ -1681,7 +1681,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return (
           <div className="flex flex-wrap gap-1">
             {products.map((product, index) => (
-              <Badge key={index} color="blue" size="xs">
+              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="xs">
                 {product}
               </Badge>
             ))}

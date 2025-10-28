@@ -13,7 +13,7 @@ import DynamicButton from '@/components/ui/Button/DynamicButton';
 import TextareaField from '@/components/forms/components/TextareaField';
 import TanStackTable from '@/components/Table/TanStackTable';
 import { createColumnHelper } from '@tanstack/react-table';
-import { CARD_SYSTEM } from '@/constants';
+import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit } from 'firebase/firestore';
 import { db } from '@/app/firebase';
 import { logger } from '@/utils/logger';
@@ -425,7 +425,7 @@ const HelpPage = () => {
             showPagination={true}
             showColumnToggle={false}
             enablePagination={true}
-            pageSize={10}
+            pageSize={TABLE_SYSTEM.DEFAULT_PAGE_SIZE}
             enableSorting={true}
             enableFiltering={false}
           />

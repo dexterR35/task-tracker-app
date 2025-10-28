@@ -16,6 +16,7 @@ import { CheckboxField, TextField } from '@/components/forms/components';
 
 // Constants
 const PAGE_SIZE_OPTIONS = TABLE_SYSTEM.PAGE_SIZE_OPTIONS;
+const DEFAULT_PAGE_SIZE = TABLE_SYSTEM.DEFAULT_PAGE_SIZE;
 const SORT_ICONS = TABLE_SYSTEM.SORT_ICONS;
 
 // Utility functions
@@ -262,7 +263,7 @@ const TanStackTable = forwardRef(({
   showPagination = true,
   showFilters = true,
   showColumnToggle = true,
-  pageSize = 10,
+  pageSize = DEFAULT_PAGE_SIZE,
   enableSorting = true,
   enableFiltering = true,
   enablePagination = true,
