@@ -222,7 +222,7 @@ export const NAVIGATION_CONFIG = {
       href: "/landing-pages",
       icon: "document",
       color: "orange",
-      adminOnly: true,
+      adminOnly: false,
     },
     {
       name: "Help",

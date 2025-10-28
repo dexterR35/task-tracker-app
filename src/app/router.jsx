@@ -275,6 +275,16 @@ const router = createBrowserRouter([
               </ErrorBoundary>
             ),
           },
+          {
+            path: "landing-pages",
+            element: (
+              <ErrorBoundary componentName="LandingPages">
+                <PageWrapper key="landing-pages">
+                  <LandingPages />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
           
           // ========================================
           // ADMIN-ONLY ROUTES (Admin role required)
@@ -286,18 +296,6 @@ const router = createBrowserRouter([
                 <ErrorBoundary componentName="AnalyticsPage">
                   <PageWrapper key="analytics">
                     <AnalyticsPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
-            ),
-          },
-          {
-            path: "landing-pages",
-            element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="LandingPages">
-                  <PageWrapper key="landing-pages">
-                    <LandingPages />
                   </PageWrapper>
                 </ErrorBoundary>
               </AdminRoute>
