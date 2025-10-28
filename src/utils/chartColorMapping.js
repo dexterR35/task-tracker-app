@@ -73,6 +73,30 @@ export const DEPARTMENT_COLOR_MAP = {
   'hr': '#10b981',              // Emerald-500
 };
 
+// Reporter-specific color mapping
+export const REPORTER_COLOR_MAP = {
+  'dexter': '#e11d48',          // Rose-600
+  'alex': '#2563eb',            // Blue-600
+  'maria': '#7c3aed',           // Purple-600
+  'john': '#22c55e',            // Green-500
+  'sarah': '#f59e0b',           // Amber-500
+  'mike': '#06b6d4',            // Cyan-500
+  'lisa': '#db2777',            // Pink-600
+  'david': '#84cc16',           // Lime-500
+  'anna': '#dc2626',            // Red-600
+  'tom': '#ca8a04',             // Yellow-600
+  'emma': '#ef4444',            // Red-500
+  'chris': '#6b7280',           // Gray-500
+  'sophie': '#10b981',          // Emerald-500
+  'james': '#8b5cf6',           // Violet-500
+  'olivia': '#f97316',          // Orange-500
+  'william': '#14b8a6',         // Teal-500
+  'ava': '#ec4899',             // Pink-500
+  'noah': '#84cc16',            // Lime-500
+  'mia': '#f59e0b',             // Amber-500
+  'liam': '#06b6d4',            // Cyan-500
+};
+
 /**
  * Get color for a specific market
  * @param {string} market - Market code (e.g., 'RO', 'COM', 'UK')
@@ -114,6 +138,17 @@ export const getDepartmentColor = (department) => {
   if (!department) return BASE_COLORS[0];
   const normalizedDept = department.toLowerCase().trim();
   return DEPARTMENT_COLOR_MAP[normalizedDept] || BASE_COLORS[0];
+};
+
+/**
+ * Get color for a specific reporter
+ * @param {string} reporter - Reporter name
+ * @returns {string} - Hex color code
+ */
+export const getReporterColor = (reporter) => {
+  if (!reporter) return BASE_COLORS[0];
+  const normalizedReporter = reporter.toLowerCase().trim();
+  return REPORTER_COLOR_MAP[normalizedReporter] || getUserColor(reporter);
 };
 
 /**
@@ -160,6 +195,8 @@ export const getColorsForData = (data, type = 'market') => {
         return getAIModelColor(name);
       case 'department':
         return getDepartmentColor(name);
+      case 'reporter':
+        return getReporterColor(name);
       case 'user':
         return getUserColor(name);
       default:
@@ -193,6 +230,9 @@ export const createColorMapping = (data, type = 'market') => {
         break;
       case 'department':
         mapping[name] = getDepartmentColor(name);
+        break;
+      case 'reporter':
+        mapping[name] = getReporterColor(name);
         break;
       case 'user':
         mapping[name] = getUserColor(name);
@@ -233,6 +273,9 @@ export const addConsistentColors = (data, type = 'market', nameKey = 'name') => 
       case 'department':
         color = getDepartmentColor(name);
         break;
+      case 'reporter':
+        color = getReporterColor(name);
+        break;
       case 'user':
         color = getUserColor(name);
         break;
@@ -253,6 +296,7 @@ export const COLOR_MAPS = {
   PRODUCT: PRODUCT_COLOR_MAP,
   AI_MODEL: AI_MODEL_COLOR_MAP,
   DEPARTMENT: DEPARTMENT_COLOR_MAP,
+  REPORTER: REPORTER_COLOR_MAP,
 };
 
 // Export base colors for fallback
