@@ -301,6 +301,45 @@ const HelpPage = () => {
         </div>
 
         <div className="space-y-4">
+          {/* Project Local Updates (manually curated) */}
+          <div 
+            className="p-4 rounded-lg border"
+            style={{ 
+              backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.green}08`,
+              borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.green}20`
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-200">Recent Local Updates</h3>
+                  <span 
+                    className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded space-x-1"
+                    style={{ 
+                      backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.green}15`,
+                      color: CARD_SYSTEM.COLOR_HEX_MAP.green,
+                      border: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}30`
+                    }}
+                  >
+                    <Icons.generic.update className="w-3 h-3" />
+                    <span>Now</span>
+                  </span>
+                </div>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-gray-300">
+                  <li>
+                    Landing Pages: Added NetBet LPs dashboard (TanStackTable, filters, global + brand stats)
+                  </li>
+                  <li>
+                    Task Form: Fixed form behavior and validation issues
+                  </li>
+                  <li>
+                    Auth: Fixed userUID role resolution for accurate permissions
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           {isUpdatesLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -335,12 +374,7 @@ const HelpPage = () => {
                 </div>
               </div>
             ))
-          ) : (
-            <div className="text-center py-8">
-              <Icons.generic.update className="w-12 h-12 mx-auto text-gray-500 mb-3" />
-              <p className="text-gray-400 text-sm">No updates available</p>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 
