@@ -312,7 +312,7 @@ const HelpPage = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-200">Recent Local Updates</h3>
+                  <h3 className="text-sm font-semibold text-gray-200">Recent Updates</h3>
                   <span 
                     className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded space-x-1"
                     style={{ 
