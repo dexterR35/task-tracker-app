@@ -434,32 +434,28 @@ export const SMALL_CARD_CONFIGS = {
           })()}
         </DynamicButton>
         
-        {/* Second button for all data tasks - no filters */}
-        <DynamicButton
-          onClick={() => {
-            // Build URL parameters for ALL data tasks (no filters at all)
-            const params = new URLSearchParams();
-            
-            // Don't set any parameters - this will show all data from all months/weeks/users/reporters
-            // This will show all tasks in the system without any filtering
-            
-            const url = `/analytics-detail?${params.toString()}`;
-            
-            if (data.navigate) {
-              data.navigate(url);
-            } else {
-              // Use React Router navigation instead of window.location.href
-              window.history.pushState({}, '', url);
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }
-          }}
-          iconName="users"
-          variant="primary"
-          size="sm"
-          className="w-full mt-2 uppercase"
-        >
-          VIEW ALL DATA
-        </DynamicButton>
+        {/* Second button for all data tasks - admin only */}
+        {data.isUserAdmin && (
+          <DynamicButton
+            onClick={() => {
+              // Build URL parameters for ALL data tasks (no filters at all)
+              const params = new URLSearchParams();
+              const url = `/analytics-detail?${params.toString()}`;
+              if (data.navigate) {
+                data.navigate(url);
+              } else {
+                window.history.pushState({}, '', url);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }
+            }}
+            iconName="users"
+            variant="primary"
+            size="sm"
+            className="w-full mt-2 uppercase"
+          >
+            VIEW ALL DATA
+          </DynamicButton>
+        )}
       </div>
     ),
   },
