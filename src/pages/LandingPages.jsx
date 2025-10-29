@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import TanStackTable from '@/components/Table/TanStackTable';
 import SmallCard from '@/components/Card/smallCards/SmallCard';
@@ -150,13 +150,16 @@ const LandingPages = () => {
           Language: item['Language'] || 'N/A',
           URL: item['URL'] || '#',
           'LP value': item['LP value'] || 'N/A',
+          // Precomputed lowercase values to avoid repeated toLowerCase in filters
+          _brandLower: (item['Brand'] ? item['Brand'].replace(/"/g, '') : 'Unknown').toLowerCase(),
+          _lpValueLower: (item['LP value'] || 'N/A').toLowerCase(),
           Added: item['Added'] || 'N/A',
           End: item['End'] || 'N/A',
           Author: item['Author'] || 'N/A',
           Status: item['Status'] || 'N/A',
           Redirection: item['Redirection'] || 'N/A',
         }))
-        .filter((item) => item.Brand.toLowerCase().includes('netbet'));
+        .filter((item) => item._brandLower.includes('netbet'));
 
       setJsonData(processedData);
       setIsLoading(false);
@@ -173,6 +176,10 @@ const LandingPages = () => {
     };
   }, [jsonData]);
 
+  // Defer search value to reduce re-renders while typing
+  const deferredSearch = useDeferredValue(filters.Search);
+  const deferredSearchLower = (deferredSearch || '').toLowerCase();
+
   // Filter data based on current filters
   const filteredData = useMemo(() => {
     return jsonData.filter((item) => {
@@ -181,9 +188,7 @@ const LandingPages = () => {
       const matchesLanguage = filters.Language === 'all' || item.Language === filters.Language;
       const matchesStatus = filters.Status === 'all' || item.Status === filters.Status;
       const matchesAuthor = filters.Author === 'all' || item.Author === filters.Author;
-      const matchesSearch =
-        filters.Search === '' ||
-        item['LP value'].toLowerCase().includes(filters.Search.toLowerCase());
+      const matchesSearch = deferredSearchLower === '' || item._lpValueLower.includes(deferredSearchLower);
 
       return (
         matchesBrand &&
@@ -194,7 +199,7 @@ const LandingPages = () => {
         matchesSearch
       );
     });
-  }, [jsonData, filters]);
+  }, [jsonData, filters.Brand, filters.Product, filters.Language, filters.Status, filters.Author, deferredSearchLower]);
 
   // Global statistics (do NOT change with filters)
   const globalStats = useMemo(() => {
