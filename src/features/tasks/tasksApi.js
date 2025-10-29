@@ -27,6 +27,7 @@ import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { getCurrentYear } from "@/utils/dateUtils";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import { validateTaskPermissions } from '@/utils/permissionValidation';
+import { getUserUID } from '@/features/utils/authUtils';
 
 /**
  * Get Firestore reference for tasks (collection or individual document)
@@ -362,8 +363,8 @@ export const useCreateTask = () => {
       }
 
       const colRef = getTaskRef(monthId);
-      const currentUserUID = userData.uid;
-      const currentUserName = userData.name;
+      const currentUserUID = getUserUID(userData);
+      const currentUserName = userData?.name || userData?.displayName || userData?.email || '';
       const createdAt = serverTimestamp();
       const updatedAt = createdAt;
 

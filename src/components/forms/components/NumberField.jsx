@@ -6,19 +6,23 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
   // Debounced validation to prevent excessive validation calls
   const handleChange = useCallback((e) => {
     const value = e.target.value;
-    // Call the setValue function passed from parent component
+    const parsed = value === '' ? '' : Number(value);
     if (setValue) {
-      setValue(field.name, value);
+      setValue(field.name, parsed);
     }
-    // Only trigger validation on blur, not on every keystroke
-    // trigger(field.name); // Removed to prevent excessive validation
-  }, [field.name, trigger, setValue]);
+  }, [field.name, setValue]);
 
   const handleBlur = useCallback(() => {
     // Trigger validation only on blur
     trigger(field.name);
   }, [field.name, trigger]);
   
+  const safeValue = useMemo(() => {
+    const current = formValues?.[field.name];
+    if (current === undefined || current === null) return field.defaultValue ?? '';
+    return Number.isNaN(current) ? '' : current;
+  }, [formValues, field.name, field.defaultValue]);
+
   return (
     <div className="field-wrapper">
       {field.label && (
@@ -30,14 +34,13 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
       
       <input
         {...register(field.name, {
-          valueAsNumber: true,
           onChange: handleChange
         })}
         id={field.name}
         type="number"
         step={field.step || 0.5}
         min={field.min || 0}
-        value={formValues?.[field.name] ?? field.defaultValue ?? 0}
+        value={safeValue}
         placeholder={field.placeholder}
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
@@ -47,7 +50,6 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
           paddingLeft: '12px',
           paddingRight: '8px'
         }}
-        onInput={handleChange}
         onBlur={handleBlur}
       />
       
