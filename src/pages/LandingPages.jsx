@@ -143,22 +143,34 @@ const LandingPages = () => {
     
     setTimeout(() => {
       const processedData = landingPagesData
-        .map((item, index) => ({
-          id: `lp-${index}`, // Add unique ID for TanStackTable
-          Brand: item['Brand'] ? item['Brand'].replace(/"/g, '') : 'Unknown',
-          Product: item['Product'] || 'N/A',
-          Language: item['Language'] || 'N/A',
-          URL: item['URL'] || '#',
-          'LP value': item['LP value'] || 'N/A',
-          // Precomputed lowercase values to avoid repeated toLowerCase in filters
-          _brandLower: (item['Brand'] ? item['Brand'].replace(/"/g, '') : 'Unknown').toLowerCase(),
-          _lpValueLower: (item['LP value'] || 'N/A').toLowerCase(),
-          Added: item['Added'] || 'N/A',
-          End: item['End'] || 'N/A',
-          Author: item['Author'] || 'N/A',
-          Status: item['Status'] || 'N/A',
-          Redirection: item['Redirection'] || 'N/A',
-        }))
+        .map((item, index) => {
+          const brandRaw = item['Brand'] ? item['Brand'].replace(/"/g, '') : 'Unknown';
+          const lpRaw = item['LP value'];
+          const lpValue = typeof lpRaw === 'string' ? lpRaw : (lpRaw == null ? 'N/A' : String(lpRaw));
+          const product = typeof item['Product'] === 'string' ? item['Product'] : (item['Product'] == null ? 'N/A' : String(item['Product']));
+          const language = typeof item['Language'] === 'string' ? item['Language'] : (item['Language'] == null ? 'N/A' : String(item['Language']));
+          const author = typeof item['Author'] === 'string' ? item['Author'] : (item['Author'] == null ? 'N/A' : String(item['Author']));
+          const status = typeof item['Status'] === 'string' ? item['Status'] : (item['Status'] == null ? 'N/A' : String(item['Status']));
+          const url = typeof item['URL'] === 'string' ? item['URL'] : (item['URL'] == null ? '#' : String(item['URL']));
+          const redirection = typeof item['Redirection'] === 'string' ? item['Redirection'] : (item['Redirection'] == null ? 'N/A' : String(item['Redirection']));
+
+          return ({
+            id: `lp-${index}`,
+            Brand: brandRaw,
+            Product: product,
+            Language: language,
+            URL: url,
+            'LP value': lpValue,
+            // Precomputed lowercase values to avoid repeated toLowerCase in filters
+            _brandLower: String(brandRaw).toLowerCase(),
+            _lpValueLower: String(lpValue).toLowerCase(),
+            Added: item['Added'] || 'N/A',
+            End: item['End'] || 'N/A',
+            Author: author,
+            Status: status,
+            Redirection: redirection,
+          });
+        })
         .filter((item) => item._brandLower.includes('netbet'));
 
       setJsonData(processedData);
