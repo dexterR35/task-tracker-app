@@ -37,10 +37,12 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
           onChange: handleChange
         })}
         id={field.name}
+        name={field.name}
         type="number"
         step={field.step || 0.5}
         min={field.min || 0}
         value={safeValue}
+        onChange={handleChange}
         placeholder={field.placeholder}
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
