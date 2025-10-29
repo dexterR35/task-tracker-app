@@ -48,6 +48,16 @@ const TextField = ({ field, register, errors, formValues, watch, setValue }) => 
         readOnly={field.readOnly || false}
         disabled={field.disabled || false}
         className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
+        value={
+          formValues && Object.prototype.hasOwnProperty.call(formValues, field.name)
+            ? formValues[field.name]
+            : undefined
+        }
+        onChange={(e) => {
+          if (setValue) {
+            setValue(field.name, e.target.value);
+          }
+        }}
       />
       
       {/* Badge display for JIRA field */}
