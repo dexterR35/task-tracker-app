@@ -397,7 +397,7 @@ const LandingPages = () => {
           <div>
             <h2>Landing Pages Management</h2>
             <p className="text-small mt-0">
-              @NetBet 2025 • Landing Pages Management System
+              @NetBet 2025  
             </p>
           </div>
         </div>
