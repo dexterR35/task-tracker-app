@@ -5,7 +5,7 @@ import { Icons } from "@/components/icons";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { CARD_SYSTEM } from "@/constants";
 import { useAppDataContext } from "@/context/AppDataContext";
-import { createAnalyticsCards, createDailyTaskCards } from "@/components/Card/smallCards/smallCardConfig";
+import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import SelectField from "@/components/forms/components/SelectField";
@@ -397,16 +397,16 @@ const DynamicAnalyticsPage = () => {
   const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam);
   
   // Create analytics cards using centralized system
-  const analyticsCards = createAnalyticsCards({ 
+  const analyticsCards = createCards({ 
     ...analyticsData, 
     userName, 
     reporterName,
     monthId: actualMonthId,
     tasks,
-  });
+  }, 'analytics');
   
   // Create daily task cards using centralized system
-  const dailyTaskCards = createDailyTaskCards(analyticsData);
+  const dailyTaskCards = createCards(analyticsData, 'daily');
   
   // Helper function to convert Firestore Timestamp to Date
   const convertToDate = (timestamp) => {

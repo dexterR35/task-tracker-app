@@ -33,9 +33,7 @@ const TaskTable = ({
   // Filter state - single selection only
   const [selectedFilter, setSelectedFilter] = useState(null);
 
-  // Modal states
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
+  // Modal states - using table actions system instead
   
   // Page size state for TanStack pagination
   const [pageSizeState, setPageSizeState] = useState(pageSize);
@@ -101,6 +99,7 @@ const TaskTable = ({
     handleEdit,
     handleDelete,
     confirmDelete,
+    closeEditModal,
     closeDeleteModal,
     handleEditSuccess,
   } = useTableActions('task', {
@@ -123,33 +122,7 @@ const TaskTable = ({
     }
   });
 
-  // Handle edit task
-  const handleEditTask = (task) => {
-    // Check permissions before opening edit modal
-    if (!userCanUpdateTasks) {
-      showAuthError("You do not have permission to edit tasks");
-      return;
-    }
-    
-    setEditingTask(task);
-    setShowEditModal(true);
-  };
-
-  // Handle edit success
-  const handleEditTaskSuccess = () => {
-    setShowEditModal(false);
-    setEditingTask(null);
-    handleEditSuccess();
-    // Clear table selection after edit
-    tableRef.current?.clearSelection();
-    // Note: Success toast is already shown by TaskForm's createFormSubmissionHandler
-  };
-
-  // Handle edit modal close
-  const handleEditModalClose = () => {
-    setShowEditModal(false);
-    setEditingTask(null);
-  };
+  // Edit handling is now managed by useTableActions hook
 
   // Get task columns for the table
   const taskColumns = useTaskColumns(selectedMonthId, reporters, user, deliverables);
@@ -234,14 +207,7 @@ const TaskTable = ({
         console.log('Applying filter:', selectedFilter);
         filteredTasks = filteredTasks.filter((task) => {
           const taskData = task.data_task || task;
-          
-          console.log('Task data:', {
-            taskName: taskData.taskName,
-            products: taskData.products,
-            aiUsed: taskData.aiUsed,
-            isVip: taskData.isVip,
-            reworked: taskData.reworked
-          });
+    
           
           // Apply the selected filter
           switch (selectedFilter) {
@@ -360,10 +326,8 @@ const TaskTable = ({
     // Always add Jira link action first
     actions.push({
       label: "View Jira Link",
-      icon: "external-link",
-      variant: "primary",
-      className: "bg-[var(--btn-bg)] hover:opacity-90",
-      style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.green },
+      icon: "code",
+      variant: "success",
       onClick: (selectedTasks) => {
         if (selectedTasks.length === 1) {
           const task = selectedTasks[0];
@@ -385,10 +349,8 @@ const TaskTable = ({
     if (userCanViewTasks) {
       actions.push({
         label: "View Selected",
-        icon: "edit",
-        variant: "outline",
-        className: "bg-[var(--btn-bg)] hover:opacity-90",
-        style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.blue },
+        icon: "eye",
+        variant: "primary",
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
             const task = selectedTasks[0];
@@ -408,12 +370,10 @@ const TaskTable = ({
       actions.push({
         label: "Edit Selected",
         icon: "edit",
-        variant: "primary",
-        className: "bg-[var(--btn-bg)] hover:opacity-90",
-        style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.amber },
+        variant: "edit",
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
-            handleEditTask(selectedTasks[0]);
+            handleEdit(selectedTasks[0]);
           } else {
             showError("Please select only ONE task to edit");
           }
@@ -426,9 +386,7 @@ const TaskTable = ({
       actions.push({
         label: "Delete Selected",
         icon: "delete",
-        variant: "primary",
-        className: "bg-[var(--btn-bg)] hover:opacity-90",
-        style: { ['--btn-bg']: CARD_SYSTEM.COLOR_HEX_MAP.crimson },
+        variant: "danger",
         onClick: async (selectedTasks) => {
           if (selectedTasks.length === 1) {
             handleDelete(selectedTasks[0]);
@@ -440,7 +398,7 @@ const TaskTable = ({
     }
     
     return actions;
-  }, [userCanViewTasks, userCanUpdateTasks, userCanDeleteTasks, navigate, handleEditTask, handleDelete]);
+  }, [userCanViewTasks, userCanUpdateTasks, userCanDeleteTasks, navigate, handleEdit, handleDelete]);
 
   // Initial column visibility
   const initialColumnVisibility = {
@@ -590,7 +548,7 @@ const TaskTable = ({
         error={error}
         isLoading={isLoading}
         onSelect={handleSelect}
-        onEdit={userCanUpdateTasks ? handleEditTask : null}
+        onEdit={userCanUpdateTasks ? handleEdit : null}
         onDelete={userCanDeleteTasks ? handleDelete : null}
         enableRowSelection={true}
         showBulkActions={true}
@@ -603,24 +561,26 @@ const TaskTable = ({
         pageSize={pageSizeState}
       />
 
-      {/* Edit Task Modal */}
-      <TaskFormModal
-        isOpen={showEditModal}
-        onClose={handleEditModalClose}
-        mode="edit"
-        task={editingTask}
-        monthId={selectedMonthId}
-        onSuccess={handleEditTaskSuccess}
-        onError={(error) => {
-          // Handle permission errors
-          if (
-            error?.message?.includes("permission") ||
-            error?.message?.includes("User lacks required")
-          ) {
-            showAuthError("You do not have permission to edit tasks");
-          }
-        }}
-      />
+      {/* Edit Task Modal - managed by useTableActions */}
+      {showTableEditModal && editingItem && (
+        <TaskFormModal
+          isOpen={showTableEditModal}
+          onClose={closeEditModal}
+          mode="edit"
+          task={editingItem}
+          monthId={selectedMonthId}
+          onSuccess={handleEditSuccess}
+          onError={(error) => {
+            // Handle permission errors
+            if (
+              error?.message?.includes("permission") ||
+              error?.message?.includes("User lacks required")
+            ) {
+              showAuthError("You do not have permission to edit tasks");
+            }
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal

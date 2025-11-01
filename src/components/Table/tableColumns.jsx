@@ -8,25 +8,13 @@ import { TABLE_SYSTEM, CARD_SYSTEM } from '@/constants';
 import { differenceInDays } from 'date-fns';
 
 const columnHelper = createColumnHelper();
-
-// Note: createSelectionColumn is defined locally to avoid duplication
-// This function is no longer used since row selection is handled by clicking the row
-
-
 // Constants
 const DATE_FORMATS = TABLE_SYSTEM.DATE_FORMATS;
-const COLUMN_TYPES = TABLE_SYSTEM.COLUMN_TYPES;
-
-// Badge variants moved to Badge component
-
 // Utility functions
 const formatDateCell = (value, format = DATE_FORMATS.SHORT, showTime = true) => {
   if (!value) return '-';
   return formatDate(value, format, showTime);
 };
-
-// getTimeVariant moved to Badge component
-
 const getDurationDays = (startDate, endDate) => {
   if (!startDate || !endDate) return null;
   
@@ -50,14 +38,13 @@ const getDurationDays = (startDate, endDate) => {
     return null;
   }
 };
-
 // Common column cell helpers
 const createSimpleCell = (fallback = '-') => ({ getValue }) => getValue() || fallback;
 const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => {
   const value = getValue();
   if (!value) return '-';
   return (
-    <span className="text-xs font-normal text-gray-700 dark:text-gray-300">
+    <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
       {formatDateCell(value, format)}
     </span>
   );
@@ -77,7 +64,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
     <div className="space-y-1">
       {deliverablesList.map((deliverable, index) => (
         <div key={index} className="text-xs">
-          <div className="font-medium text-gray-900 dark:text-white">
+          <div className="font-medium text-gray-800 dark:text-gray-200 ">
             {deliverable.quantity}x{deliverable.name}
             {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
               <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
@@ -86,7 +73,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
             )}
           </div>
           {isUserAdmin && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+            <div className="text-xs text-gray-800 dark:text-gray-300 space-y-1">
               {deliverable.configured ? (
                 <div className="text-xs block">
                   <div className="block">
@@ -104,7 +91,7 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
                   ⚠️ Not configured in settings - Add to Settings → Deliverables
                 </span>
               ) : (
-                <span className="text-gray-500 dark:text-gray-400">
+                <span className="text-gray-800 dark:text-gray-400">
                   No time configuration
                 </span>
               )}
@@ -122,10 +109,10 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'JIRA LINK',
     cell: ({ getValue, row }) => {
       const taskName = getValue() || row.original?.data_task?.taskName;
-      if (!taskName) return <span className="text-gray-500 dark:text-gray-400">No Link</span>;
+      if (!taskName) return <span className="text-gray-800 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="xs" className="font-mono">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm" >
           {taskName}
         </Badge>
       );
@@ -136,14 +123,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     id: 'departments',
     header: 'DEPARTMENT',
     cell: ({ getValue, row }) => {
+      // 1. Handle the 'No data_task' case specifically
       if (!row.original?.data_task) {
         return <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ No data_task</span>;
       }
       
-      const value = getValue();
-      if (Array.isArray(value)) {
-        return value.length > 0 ? value.join(', ') : <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
-      }
+      const value = getValue(); 
+      
+      // 2. Return the value if it exists (is truthy), or '❌ Missing' if it's falsy (null, undefined, or empty string)
       return value || <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
     },
     size: 100,
@@ -162,9 +149,9 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!markets?.length) return '-';
       
       return (
-        <div className="flex flex-wrap gap-1 uppercase">
+        <div className="flex flex-wrap gap-1 capitalize">
           {markets.map((market, index) => (
-            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.select_badge} size="xs">
+            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
               {market}
             </Badge>
           ))}
@@ -186,14 +173,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="xs">
+              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.pink} size="sm">
                 {model}
               </Badge>
             ))}
           </div>
           {aiTime > 0 && (
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Total: {aiTime}h
+            <div className="text-xs text-gray-800 dark:text-gray-400">
+              Total hr: {aiTime}h
             </div>
           )}
         </div>
@@ -215,7 +202,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   }),
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: 'reporters',
-    header: 'REPORTER',
+    header: 'REPORTERS',
     cell: ({ getValue, row }) => {
       // First try to get reporterName if it exists
       const reporterName = row.original?.data_task?.reporterName;
@@ -243,11 +230,10 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     size: 150,
   }),
   columnHelper.accessor('createdAt', {
-    header: 'D CREATED',
+    header: 'TASK ADDED',
     cell: createDateCell(DATE_FORMATS.DATETIME_LONG),
     size: 150,
   }),
-
   columnHelper.accessor((row) => row.data_task?.observations, {
     id: 'observations',
     header: 'OBSERVATIONS',
@@ -268,23 +254,23 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     },
     size: 200,
   }),
-  
+
   // Additional task data columns (hidden by default)
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: 'startDate',
-    header: 'START DATE',
+    header: 'TASK START',
     cell: createDateCell(DATE_FORMATS.LONG),
     size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.endDate, {
     id: 'endDate',
-    header: 'END DATE',
+    header: 'TASK END',
     cell: createDateCell(DATE_FORMATS.LONG),
     size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: 'done',
-    header: 'DONE',
+    header: 'DONE BY',
     cell: ({ getValue, row }) => {
       const startDate = getValue();
       const endDate = row.original?.data_task?.endDate;
@@ -293,14 +279,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       
       if (days === 0) {
         return (
-          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="xs">
+          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm">
             Same day
           </Badge>
         );
       }
 
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.red} size="xs">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.red} size="sm">
           {days} days
         </Badge>
       );
@@ -315,7 +301,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="xs">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
           {value}h
         </Badge>
       );
@@ -347,11 +333,10 @@ export const useTaskColumns = (monthId = null, reporters = [], user = null, deli
 // User column definitions
 const createUserColumns = () => [
   columnHelper.accessor('name', {
-    header: 'USER',
+    header: 'USERS',
     cell: ({ row }) => (
       <Avatar 
         user={row.original}
-        gradient="from-purple-500 to-purple-600"
         showEmail={false}
         size="md"
       />
@@ -383,7 +368,7 @@ const createUserColumns = () => [
     cell: ({ getValue }) => {
       const permissions = getValue();
       if (!Array.isArray(permissions) || !permissions.length) {
-        return <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.gray }}>No permissions</span>;
+        return <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>No permissions</span>;
       }
       
       return (
@@ -391,9 +376,7 @@ const createUserColumns = () => [
           {permissions.map((permission, index) => (
             <Badge 
               key={index} 
-              colorHex={CARD_SYSTEM.COLOR_HEX_MAP.gray} 
-              size="xs"
-              className="text-xs"
+              colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} 
             >
               {permission.replace(/_/g, ' ')}
             </Badge>
@@ -418,12 +401,11 @@ const createUserColumns = () => [
 // Reporter column definitions
 const createReporterColumns = () => [
   columnHelper.accessor('name', {
-    header: 'REPORTER',
+    header: 'REPORTERS',
     cell: ({ row }) => (
       <Avatar 
         user={row.original}
-        gradient="from-red-error to-red-700"
-        showEmail={true}
+        showEmail={false}
         size="md"
       />
     ),

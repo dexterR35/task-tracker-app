@@ -6,7 +6,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
-import { createSmallCards } from "@/components/Card/smallCards/smallCardConfig";
+import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
 import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils/monthUtils.jsx";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
@@ -208,7 +208,7 @@ const AdminDashboardPage = () => {
   }, [isUserAdmin, selectedUserId, selectedUserName, user?.userUID]);
 
   // Create small cards - optimized memoization to prevent re-renders
-  const smallCards = useMemo(() => createSmallCards({
+  const smallCards = useMemo(() => createCards({
     tasks,
     reporters,
     users,
@@ -231,7 +231,7 @@ const AdminDashboardPage = () => {
     handleWeekChange,
     selectMonth,
     availableMonths,
-  }), [
+  }, 'main'), [
     // Only include data that actually affects card content
     tasks, reporters, users, selectedMonth, currentMonth, isCurrentMonth,
     isUserAdmin, user, selectedUserId, selectedUserName, selectedReporterId,

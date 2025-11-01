@@ -33,7 +33,7 @@ const AnalyticsTable = ({
     columns: tableColumns,
     tableType: "analytics",
     isLoading,
-    className: "text-xs",
+    className: "text-md",
     enableRowSelection: false,
     showBulkActions: false,
     showFilters: false,

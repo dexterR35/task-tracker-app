@@ -46,6 +46,17 @@ const DynamicButton = ({
       edit: CARD_SYSTEM.COLOR_HEX_MAP.blue,
     };
 
+    // Special handling for outline variant to use border and transparent background
+    if (variant === 'outline') {
+      return {
+        backgroundColor: 'transparent',
+        color: '#111827', // text-gray-900 for light backgrounds
+        border: '1px solid #e5e7eb', // border-gray-200
+        opacity: isDisabled ? 0.5 : 1,
+        cursor: isDisabled ? 'not-allowed' : isLoading ? 'wait' : 'pointer',
+      };
+    }
+
     const backgroundColor = colorMap[variant] || colorMap.primary;
     
     // Different text colors for different variants

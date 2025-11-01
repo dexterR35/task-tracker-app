@@ -52,38 +52,33 @@ const BulkActionsBar = ({
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-3">
             <div 
-              className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white dark:ring-gray-800"
+              className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
                 backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
-                boxShadow: `0 0 0 2px ${CARD_SYSTEM.COLOR_HEX_MAP.select_badge}40`
+                boxShadow: `0 0 0 2px ${CARD_SYSTEM.COLOR_HEX_MAP.red}`
               }}
             ></div>
             <div className="flex flex-col">
               <span 
                 className="text-sm font-semibold"
-                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.select_badge }}
+                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}
               >
                 {selectedCount} row selected
               </span>
               <span 
-                className="text-xs font-medium opacity-75"
-                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.select_badge }}
+                className="text-xs font-medium text-gray-400"
               >
                 (Single selection mode)
               </span>
             </div>
           </div>
-          <button
+          <DynamicButton
             onClick={onClearSelection}
-            className="px-3 py-1.5 text-sm font-medium rounded-lg border-none cursor-pointer duration-200 transition-all hover:scale-105 active:scale-95"
-            style={{ 
-              color: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
-              backgroundColor: 'rgba(194, 226, 250, 0.2)',
-              border: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.select_badge}50`
-            }}
+            variant="outline"
+            size="sm"
           >
             Clear selection
-          </button>
+          </DynamicButton>
         </div>
         <div className="flex items-center space-x-2">
           {bulkActions.map((action, index) => (
@@ -115,7 +110,6 @@ const TableControls = ({
   tableType,
   globalFilter,
   setGlobalFilter,
-  columns,
   handleCSVExport,
   isExporting,
   onPageSizeChange
@@ -149,7 +143,7 @@ const TableControls = ({
       {/* Rows per page selector */}
       {showPagination && enablePagination && (
         <div className="flex items-center justify-center gap-3">
-          <label htmlFor="page-size-select" className="text-sm font-medium text-gray-700 dark:text-gray-300 m-0">
+          <label htmlFor="page-size-select" className="text-sm font-medium text-gray-800 dark:text-gray-300 m-0">
             Rows
           </label>
           <select

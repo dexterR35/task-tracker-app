@@ -8,8 +8,34 @@ import { CARD_SYSTEM } from "@/constants";
 
 // Color assignment for icons - uses colors from CARD_SYSTEM.COLOR_HEX_MAP
 export const getCardColor = (cardType, data = {}) => {
-  // Use the same color for all small cards
-  return 'select_badge';
+  // Stable palette of color keys from constants (avoid grays and special-purpose colors)
+  const palette = [
+    'green',
+    'blue',
+    'purple',
+    'amber',
+    'pink',
+    'red',
+    'yellow',
+    'orange',
+    'crimson',
+  ].filter((key) => Boolean(CARD_SYSTEM.COLOR_HEX_MAP[key]));
+
+  // Fallback if palette is somehow empty
+  if (palette.length === 0) return 'color_default';
+
+  // Deterministic hash so the same cardType always maps to the same color
+  const hashString = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  };
+
+  const index = hashString(String(cardType)) % palette.length;
+  return palette[index];
 };
 
 
@@ -23,18 +49,13 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Months",
     icon: Icons.generic.clock,
-    color: (data) => getCardColor("month-selection", data),
+    color: 'green',
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
-    getBadge: (data) => {
-      const cardColor = getCardColor("month-selection", data);
-      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
-      return {
-        text: data.isCurrentMonth ? "Current" : "History",
-        color: cardColor,
-        colorHex: colorHex
-      };
-    },
+    getBadge: (data) => ({
+      text: data.isCurrentMonth ? "Current" : "History",
+      color: 'green'
+    }),
     getContent: (data) => (
       <div className="mb-6">
         <SearchableSelectField
@@ -89,13 +110,12 @@ export const SMALL_CARD_CONFIGS = {
     ],
   },
 
-
   [SMALL_CARD_TYPES.USER_FILTER]: {
     title: "User Filter",
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: (data) => getCardColor("user-filter", data),
+    color: 'amber',
     getValue: (data) => {
       // Show total number of users, not tasks
       return (data.users?.length || 0).toString();
@@ -106,15 +126,10 @@ export const SMALL_CARD_CONFIGS = {
       }
       return "All Users";
     },
-    getBadge: (data) => {
-      const cardColor = getCardColor("user-filter", data);
-      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
-      return {
-        text: data.selectedUserId ? "Filtered" : "All Users",
-        color: cardColor,
-        colorHex: colorHex
-      };
-    },
+    getBadge: (data) => ({
+      text: data.selectedUserId ? "Filtered" : "All Users",
+      color: 'amber'
+    }),
     getContent: (data) => (
       <div className="mb-6 space-y-3">
         <SearchableSelectField
@@ -164,7 +179,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: (data) => getCardColor("reporter-filter", data),
+    color: 'blue',
     getValue: (data) => {
       // Show total number of reporters, not tasks
       return (data.reporters?.length || 0).toString();
@@ -175,15 +190,10 @@ export const SMALL_CARD_CONFIGS = {
       }
       return "All Reporters";
     },
-    getBadge: (data) => {
-      const cardColor = getCardColor("reporter-filter", data);
-      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
-      return {
-        text: data.selectedReporterId ? "Filtered" : "All Reporters",
-        color: cardColor,
-        colorHex: colorHex
-      };
-    },
+    getBadge: (data) => ({
+      text: data.selectedReporterId ? "Filtered" : "All Reporters",
+      color: 'blue'
+    }),
     getContent: (data) => (
       <div className="mb-6 space-y-3">
         <SearchableSelectField
@@ -235,16 +245,11 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Tasks",
     icon: Icons.generic.user,
-    color: (data) => getCardColor("user-profile", data),
-    getBadge: (data) => {
-      const cardColor = getCardColor("user-profile", data);
-      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
-      return {
-        text: (data.currentUser?.role || "user").toLowerCase(),
-        color: cardColor,
-        colorHex: colorHex
-      };
-    },
+    color: 'pink',
+    getBadge: (data) => ({
+      text: (data.currentUser?.role || "user").toLowerCase(),
+      color: 'pink'
+    }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
 
@@ -427,9 +432,9 @@ export const SMALL_CARD_CONFIGS = {
             
             // Build final text
             if (parts.length === 1) {
-              return `VIEW ${parts[0]} DATA`;
+              return ` ${parts[0]} DATA`;
             } else {
-              return `VIEW ${parts.join(" + ")} DATA`;
+              return ` ${parts.join(" + ")} DATA`;
             }
           })()}
         </DynamicButton>
@@ -465,16 +470,11 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Total Tasks",
     icon: Icons.buttons.add,
-    color: (data) => getCardColor("actions", data),
-    getBadge: (data) => {
-      const cardColor = getCardColor("actions", data);
-      const colorHex = CARD_SYSTEM.COLOR_HEX_MAP[cardColor];
-      return {
-        text: data.selectedWeek ? `Week ${data.selectedWeek.weekNumber}` : "All Weeks",
-        color: cardColor,
-        colorHex: colorHex
-      };
-    },
+    color: 'purple',
+    getBadge: (data) => ({
+      text: data.selectedWeek ? `Week ${data.selectedWeek.weekNumber}` : "All Weeks",
+      color: 'purple'
+    }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
       
@@ -663,19 +663,19 @@ export const SMALL_CARD_CONFIGS = {
       ];
     },
   },
-
+  
   // Analytics card configurations
   [SMALL_CARD_TYPES.ANALYTICS_TASK_OVERVIEW]: {
     title: 'Task Overview',
     subtitle: (data) => data.userName || data.reporterName || 'Total Tasks',
     description: 'Total Tasks',
     icon: Icons.generic.task,
-    color: (data) => getCardColor('analytics-task-overview', data),
+    color: 'blue',
     getValue: (data) => data.totalTasksThisMonth?.toString() || '0',
     getStatus: (data) => `${data.totalHours || 0}h`,
     getBadge: (data) => ({
       text: `${data.totalHours || 0}h`,
-      color: getCardColor('analytics-task-overview', data)
+      color: 'blue'
     }),
     getDetails: (data) => [
       {
@@ -706,12 +706,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'NB Stats',
     description: 'deliverables',
     icon: Icons.generic.deliverable,
-    color: (data) => getCardColor('analytics-deliverables', data),
+    color: 'orange',
     getValue: (data) => (data.totalDeliverables || 0).toString(),
     getStatus: (data) => `${data.totalVariations || 0} variations`,
     getBadge: (data) => ({
       text: `${data.totalVariations || 0} var`,
-      color: getCardColor('analytics-deliverables', data)
+      color: 'orange'
     }),
     getDetails: (data) => [
       {
@@ -742,12 +742,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Marketing Tasks',
     description: 'CRM Tasks',
     icon: Icons.generic.target,
-    color: (data) => getCardColor('analytics-marketing', data),
+    color: 'purple',
     getValue: (data) => (data.marketingData?.totalTasks || 0).toString(),
     getStatus: (data) => `${data.marketingData?.totalHours || 0}h`,
     getBadge: (data) => ({
       text: `${data.marketingData?.totalHours || 0}h`,
-      color: getCardColor('analytics-marketing', data)
+      color: 'purple'
     }),
     getDetails: (data) => {
       const marketingData = data.marketingData || {};
@@ -776,12 +776,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Acquisition Tasks',
     description: 'ACQ Tasks ',
     icon: Icons.generic.users,
-    color: (data) => getCardColor('analytics-acquisition', data),
+    color: 'yellow',
     getValue: (data) => (data.acquisitionData?.totalTasks || 0).toString(),
     getStatus: (data) => `${data.acquisitionData?.totalHours || 0}h`,
     getBadge: (data) => ({
       text: `${data.acquisitionData?.totalHours || 0}h`,
-      color: getCardColor('analytics-acquisition', data)
+      color: 'yellow'
     }),
     getDetails: (data) => {
       const acquisitionData = data.acquisitionData || {};
@@ -810,12 +810,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Product Tasks',
     description: 'Product Analysis',
     icon: Icons.generic.package,
-    color: (data) => getCardColor('analytics-product', data),
+    color: 'orange',
     getValue: (data) => (data.productData?.totalTasks || 0).toString(),
     getStatus: (data) => `${data.productData?.totalHours || 0}h`,
     getBadge: (data) => ({
       text: `${data.productData?.totalHours || 0}h`,
-      color: getCardColor('analytics-product', data)
+      color: 'orange'
     }),
     getDetails: (data) => {
       const productData = data.productData || {};
@@ -853,12 +853,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Miscellaneous Tasks',
     description: 'Misc Analysis',
     icon: Icons.generic.document,
-    color: (data) => getCardColor('analytics-misc', data),
+    color: 'gray',
     getValue: (data) => (data.miscData?.totalTasks || 0).toString(),
     getStatus: (data) => `${data.miscData?.totalHours || 0}h`,
     getBadge: (data) => ({
       text: `${data.miscData?.totalHours || 0}h`,
-      color: getCardColor('analytics-misc', data)
+      color: 'gray'
     }),
     getDetails: (data) => {
       const miscData = data.miscData || {};
@@ -896,12 +896,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Quality Metrics',
     description: 'Performance',
     icon: Icons.generic.chart,
-    color: (data) => getCardColor('analytics-efficiency', data),
+    color: 'crimson',
     getValue: (data) => `${data.efficiency?.productivityScore || 0}%`,
     getStatus: (data) => `${data.efficiency?.productivityScore || 0}%`,
     getBadge: (data) => ({
       text: `${data.efficiency?.productivityScore || 0}%`,
-      color: getCardColor('analytics-efficiency', data)
+      color: 'crimson'
     }),
     getDetails: (data) => [
       {
@@ -933,12 +933,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Daily Tasks',
     description: 'Tasks & Hours',
     icon: Icons.generic.calendar,
-    color: (data) => getCardColor('analytics-daily-monday', data),
+    color: 'blue',
     getValue: (data) => (data.weeklyTasks?.[0] || 0).toString(),
     getStatus: (data) => `${(data.dailyHours?.[0] || 0).toFixed(1)}h`,
     getBadge: (data) => ({
       text: `${(data.dailyHours?.[0] || 0).toFixed(1)}h`,
-      color: getCardColor('analytics-daily-monday', data)
+      color: 'blue'
     }),
     getDetails: (data) => [
       {
@@ -966,12 +966,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Daily Tasks',
     description: 'Tasks & Hours',
     icon: Icons.generic.calendar,
-    color: (data) => getCardColor('analytics-daily-tuesday', data),
+    color: 'green',
     getValue: (data) => (data.weeklyTasks?.[1] || 0).toString(),
     getStatus: (data) => `${(data.dailyHours?.[1] || 0).toFixed(1)}h`,
     getBadge: (data) => ({
       text: `${(data.dailyHours?.[1] || 0).toFixed(1)}h`,
-      color: getCardColor('analytics-daily-tuesday', data)
+      color: 'green'
     }),
     getDetails: (data) => [
       {
@@ -999,12 +999,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Daily Tasks',
     description: 'Tasks & Hours',
     icon: Icons.generic.calendar,
-    color: (data) => getCardColor('analytics-daily-wednesday', data),
+    color: 'purple',
     getValue: (data) => (data.weeklyTasks?.[2] || 0).toString(),
     getStatus: (data) => `${(data.dailyHours?.[2] || 0).toFixed(1)}h`,
     getBadge: (data) => ({
       text: `${(data.dailyHours?.[2] || 0).toFixed(1)}h`,
-      color: getCardColor('analytics-daily-wednesday', data)
+      color: 'purple'
     }),
     getDetails: (data) => [
       {
@@ -1032,12 +1032,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Daily Tasks',
     description: 'Tasks & Hours',
     icon: Icons.generic.calendar,
-    color: (data) => getCardColor('analytics-daily-thursday', data),
+    color: 'orange',
     getValue: (data) => (data.weeklyTasks?.[3] || 0).toString(),
     getStatus: (data) => `${(data.dailyHours?.[3] || 0).toFixed(1)}h`,
     getBadge: (data) => ({
       text: `${(data.dailyHours?.[3] || 0).toFixed(1)}h`,
-      color: getCardColor('analytics-daily-thursday', data)
+      color: 'orange'
     }),
     getDetails: (data) => [
       {
@@ -1065,12 +1065,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: 'Daily Tasks',
     description: 'Tasks & Hours',
     icon: Icons.generic.calendar,
-    color: (data) => getCardColor('analytics-daily-friday', data),
+    color: 'yellow',
     getValue: (data) => (data.weeklyTasks?.[4] || 0).toString(),
     getStatus: (data) => `${(data.dailyHours?.[4] || 0).toFixed(1)}h`,
     getBadge: (data) => ({
       text: `${(data.dailyHours?.[4] || 0).toFixed(1)}h`,
-      color: getCardColor('analytics-daily-friday', data)
+      color: 'yellow'
     }),
     getDetails: (data) => [
       {
@@ -1095,68 +1095,50 @@ export const SMALL_CARD_CONFIGS = {
 };
 
 // Create small cards with data
-export const createSmallCards = (data) => {
-  const cardTypes = [
-    SMALL_CARD_TYPES.MONTH_SELECTION,
-    SMALL_CARD_TYPES.ACTIONS, // Task Statistics after month
-    SMALL_CARD_TYPES.WEEK_SELECTOR,
-    // Show filters based on user role
-    ...(data.isUserAdmin
-      ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER] // Admin sees user first, then reporter
-      : [SMALL_CARD_TYPES.REPORTER_FILTER]), // Regular users see only reporter filter
-    SMALL_CARD_TYPES.USER_PROFILE,
-  ];
+// Unified card factory for all small card groups
+export const createCards = (data, mode = 'main') => {
+  let cardTypes = [];
 
-  return cardTypes
-    .map((cardType) => {
-      const config = SMALL_CARD_CONFIGS[cardType];
-      if (!config) {
-        return null;
-      }
-
-      try {
-        const card = {
-          id: `${cardType}-card`,
-          title: config.title,
-          subtitle:
-            typeof config.subtitle === "function"
-              ? config.subtitle(data)
-              : config.subtitle,
-          description:
-            typeof config.description === "function"
-              ? config.description(data)
-              : config.description,
-          icon: config.icon,
-          color:
-            typeof config.color === "function"
-              ? config.color(data)
-              : config.color,
-          value: config.getValue(data),
-          status: config.getStatus(data),
-          badge: config.getBadge ? config.getBadge(data) : null,
-          content: config.getContent ? config.getContent(data) : null,
-          details: config.getDetails ? config.getDetails(data) : [],
-        };
-
-        return card;
-      } catch (error) {
-        return null;
-      }
-    })
-    .filter((card) => card !== null);
-};
-
-// Create analytics cards using the centralized system
-export const createAnalyticsCards = (data) => {
-  const cardTypes = [
-    SMALL_CARD_TYPES.ANALYTICS_TASK_OVERVIEW,
-    SMALL_CARD_TYPES.ANALYTICS_DELIVERABLES,
-    SMALL_CARD_TYPES.ANALYTICS_MARKETING,
-    SMALL_CARD_TYPES.ANALYTICS_ACQUISITION,
-    SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY,
-    SMALL_CARD_TYPES.ANALYTICS_PRODUCT,
-    SMALL_CARD_TYPES.ANALYTICS_MISC,
-  ];
+  // Allow passing a custom list of types as the second argument
+  if (Array.isArray(mode)) {
+    cardTypes = mode;
+  } else {
+    switch (mode) {
+      case 'main':
+        cardTypes = [
+          SMALL_CARD_TYPES.MONTH_SELECTION,
+          SMALL_CARD_TYPES.ACTIONS,
+          SMALL_CARD_TYPES.WEEK_SELECTOR,
+          ...(data.isUserAdmin
+            ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
+            : [SMALL_CARD_TYPES.REPORTER_FILTER]),
+          SMALL_CARD_TYPES.USER_PROFILE,
+        ];
+        break;
+      case 'analytics':
+        cardTypes = [
+          SMALL_CARD_TYPES.ANALYTICS_TASK_OVERVIEW,
+          SMALL_CARD_TYPES.ANALYTICS_DELIVERABLES,
+          SMALL_CARD_TYPES.ANALYTICS_MARKETING,
+          SMALL_CARD_TYPES.ANALYTICS_ACQUISITION,
+          SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY,
+          SMALL_CARD_TYPES.ANALYTICS_PRODUCT,
+          SMALL_CARD_TYPES.ANALYTICS_MISC,
+        ];
+        break;
+      case 'daily':
+        cardTypes = [
+          SMALL_CARD_TYPES.ANALYTICS_DAILY_MONDAY,
+          SMALL_CARD_TYPES.ANALYTICS_DAILY_TUESDAY,
+          SMALL_CARD_TYPES.ANALYTICS_DAILY_WEDNESDAY,
+          SMALL_CARD_TYPES.ANALYTICS_DAILY_THURSDAY,
+          SMALL_CARD_TYPES.ANALYTICS_DAILY_FRIDAY,
+        ];
+        break;
+      default:
+        cardTypes = [];
+    }
+  }
 
   return cardTypes
     .map((cardType) => {
@@ -1169,9 +1151,7 @@ export const createAnalyticsCards = (data) => {
         const card = {
           id: `${cardType}-card`,
           title:
-            typeof config.title === "function"
-              ? config.title(data)
-              : config.title,
+            typeof config.title === "function" ? config.title(data) : config.title,
           subtitle:
             typeof config.subtitle === "function"
               ? config.subtitle(data)
@@ -1182,61 +1162,7 @@ export const createAnalyticsCards = (data) => {
               : config.description,
           icon: config.icon,
           color:
-            typeof config.color === "function"
-              ? config.color(data)
-              : config.color,
-          value: config.getValue(data),
-          status: config.getStatus(data),
-          badge: config.getBadge ? config.getBadge(data) : null,
-          content: config.getContent ? config.getContent(data) : null,
-          details: config.getDetails ? config.getDetails(data) : [],
-        };
-
-        return card;
-      } catch (error) {
-        return null;
-      }
-    })
-    .filter((card) => card !== null);
-};
-
-// Create daily task cards using the centralized system
-export const createDailyTaskCards = (data) => {
-  const cardTypes = [
-    SMALL_CARD_TYPES.ANALYTICS_DAILY_MONDAY,
-    SMALL_CARD_TYPES.ANALYTICS_DAILY_TUESDAY,
-    SMALL_CARD_TYPES.ANALYTICS_DAILY_WEDNESDAY,
-    SMALL_CARD_TYPES.ANALYTICS_DAILY_THURSDAY,
-    SMALL_CARD_TYPES.ANALYTICS_DAILY_FRIDAY,
-  ];
-
-  return cardTypes
-    .map((cardType) => {
-      const config = SMALL_CARD_CONFIGS[cardType];
-      if (!config) {
-        return null;
-      }
-
-      try {
-        const card = {
-          id: `${cardType}-card`,
-          title:
-            typeof config.title === "function"
-              ? config.title(data)
-              : config.title,
-          subtitle:
-            typeof config.subtitle === "function"
-              ? config.subtitle(data)
-              : config.subtitle,
-          description:
-            typeof config.description === "function"
-              ? config.description(data)
-              : config.description,
-          icon: config.icon,
-          color:
-            typeof config.color === "function"
-              ? config.color(data)
-              : config.color,
+            typeof config.color === "function" ? config.color(data) : config.color,
           value: config.getValue(data),
           status: config.getStatus(data),
           badge: config.getBadge ? config.getBadge(data) : null,
