@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 import NumberField from './NumberField';
-import Badge from '@/components/ui/Badge/Badge';
 
 const SearchableDeliverablesField = ({ 
   field, 
@@ -12,7 +11,6 @@ const SearchableDeliverablesField = ({
   trigger,
   clearErrors,
   formValues,
-  hideTimeInfo = false
 }) => {
   const [quantities, setQuantities] = useState({});
   const [variationsQuantities, setvariationsQuantities] = useState({});
@@ -80,7 +78,6 @@ const SearchableDeliverablesField = ({
   // Handle deliverable selection
   const handleDeliverableChange = (value) => {
     setValue('deliverables', value);
-    
     // Only clear quantities if the deliverable actually changed
     if (value !== selectedDeliverable) {
       // Clear previous quantities and variations for different deliverable
@@ -95,7 +92,6 @@ const SearchableDeliverablesField = ({
           newQuantities[value] = 1;
         }
       }
-      
       // Update all states and form values
       updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
       updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
@@ -108,7 +104,6 @@ const SearchableDeliverablesField = ({
         setValue('deliverableQuantities', preservedQuantities);
       }
     }
-    
     // Trigger validation immediately
     trigger('deliverables');
     trigger('deliverableQuantities');
@@ -118,10 +113,8 @@ const SearchableDeliverablesField = ({
     const numQuantity = parseInt(quantity) || 1;
     const newQuantities = { ...quantities, [deliverableValue]: numQuantity };
     updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
-    
     // Clear any quantity-related errors
     clearErrors('deliverableQuantities');
-    
     // Trigger validation immediately
     trigger('deliverableQuantities');
     trigger('deliverables');
@@ -192,7 +185,7 @@ const SearchableDeliverablesField = ({
     noOptionsMessage: hasDeliverables && !selectedDepartment 
       ? "Select a department, it's required to select a department for deliverables"
       : "No options found",
-    hideTimeInfo
+ 
   };
 
   return (
@@ -202,17 +195,11 @@ const SearchableDeliverablesField = ({
       
       {/* Configuration for Selected Deliverable */}
       {selectedDeliverable && selectedOption && (
-        <div className="flex flex-wrap gap-4 p-4 bg-gray-50 dark:bg-smallCard rounded-lg border">
-          
-          {/* Debug info */}
-          <div className="w-full text-xs text-gray-500 mb-2">
-            Debug: Selected: {selectedDeliverable} | Requires Quantity: {selectedOption.requiresQuantity ? 'Yes' : 'No'} | Department: {selectedOption.department}
-          </div>
-          
+        <div className="flex flex-col gap-2">
           {/* Quantity Field (if required) */}
           {selectedOption.requiresQuantity && (
             <div className="flex-1 min-w-[200px] space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label>
                 Quantity
               </label>
               <NumberField
@@ -247,16 +234,16 @@ const SearchableDeliverablesField = ({
               onChange={(e) => handlevariationsToggle(selectedDeliverable, e.target.checked)}
               className="form-checkbox h-4 w-4"
             />
-            <label htmlFor={`variations-${selectedDeliverable}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Enable variations
+            <label htmlFor={`variations-${selectedDeliverable}`}>
+              Enable Variations
             </label>
           </div>
           
           {/* variations Quantity (if enabled) */}
           {variationsEnabled[selectedDeliverable] && (
-            <div className="flex-1 min-w-[200px] space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                variations Quantity
+            <div className="flex-1 min-w-[200px] space-y-2 ">
+              <label className="block">
+                Variations Quantity
               </label>
               <NumberField
                 field={{
@@ -280,18 +267,7 @@ const SearchableDeliverablesField = ({
             </div>
           )}
           
-          {/* Time Information */}
-          {!hideTimeInfo && (
-            <div className="flex-1 min-w-[200px] space-y-2">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Information</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <div>Time per unit: {selectedOption.timePerUnit} {selectedOption.timeUnit}</div>
-                {selectedOption.variationsTime && (
-                  <div>variations time: {selectedOption.variationsTime} {selectedOption.variationsTimeUnit || 'min'}</div>
-                )}
-              </div>
-            </div>
-          )}
+      
         </div>
       )}
     </div>

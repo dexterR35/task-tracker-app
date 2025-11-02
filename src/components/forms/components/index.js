@@ -1,6 +1,5 @@
 // Form Components Exports
 export { default as CheckboxField } from './CheckboxField';
-export { default as DeliverablesField } from './DeliverablesField';
 export { default as MultiSelectField } from './MultiSelectField';
 export { default as NumberField } from './NumberField';
 export { default as PasswordField } from './PasswordField';

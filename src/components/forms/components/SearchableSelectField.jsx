@@ -17,7 +17,7 @@ const SearchableSelectField = ({
   clearErrors,
   formValues,
   noOptionsMessage = "No options found",
-  hideTimeInfo = false
+
 }) => {
   const fieldError = errors[field.name];
   const [isOpen, setIsOpen] = useState(false);
@@ -229,18 +229,18 @@ const SearchableSelectField = ({
           />
           
           {/* Clear button */}
-          {(currentValue || searchTerm) && (
+          {/* {(currentValue || searchTerm) && (
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-              title="Clear selection"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              title="Clear selections"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-          )}
+          )} */}
         </div>
         
         {/* Hidden input for form registration */}
@@ -252,7 +252,7 @@ const SearchableSelectField = ({
 
         {/* Badge display for selected value */}
         {displayValue && (
-          <div className="mt-2">
+          <div className="mt-1">
             <Badge
               color={getFieldBadgeColor(field.name)}
               colorHex={CARD_SYSTEM.COLOR_HEX_MAP[getFieldBadgeColor(field.name)]}
@@ -273,30 +273,26 @@ const SearchableSelectField = ({
         )}
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-smallCard border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+          <div className="absolute card p-0 z-50 w-full mt-1 max-h-60 overflow-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={`${option.value}-${index}`}
                   onClick={() => handleOptionSelect(option)}
-                  className={`px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                    option.value === currentValue ? 'bg-blue-50 dark:bg-blue-900' : ''
+                  className={`px-4 py-2 cursor-pointer hover:bg-blue-900 ${
+                    option.value === currentValue ? 'bg-blue-900' : ''
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-gray-300">
                       {option.name || option.label}
                     </span>
                     {option.email && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-[11px] text-gray-400 lowercase">
                         {option.email}
                       </span>
                     )}
-                    {!hideTimeInfo && option.timePerUnit && option.timeUnit && (
-                      <span className="text-xs text-blue-600 dark:text-blue-400">
-                        {option.timePerUnit} {option.timeUnit}/unit
-                      </span>
-                    )}
+             
                   </div>
                 </div>
               ))

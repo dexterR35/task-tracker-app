@@ -47,7 +47,7 @@ const WeekSelectField = ({
       <select
         value={selectedWeek?.weekNumber || ''}
         onChange={handleChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full "
         disabled={disabled}
       >
         <option value="">All Weeks</option>
@@ -62,7 +62,7 @@ const WeekSelectField = ({
       {selectedWeek && (
         <div className="mt-2">
           <Badge
-            variant="crimson"
+            variant="amber"
             size="sm"
             className="inline-flex items-center gap-1 px-2 py-1 rounded-md"
           >

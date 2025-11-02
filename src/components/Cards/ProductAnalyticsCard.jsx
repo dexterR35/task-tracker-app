@@ -29,8 +29,8 @@ const ProductAnalyticsCard = ({
   }
 
   return (
-    <div id="product-analytics-card" className={`card-large ${className}`}>
-      <h2 className="card-title text-xl mb-6">{title}</h2>
+    <div id="product-analytics-card" className={` ${className}`}>
+      <h3>{title}</h3>
 
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
@@ -47,8 +47,8 @@ const ProductAnalyticsCard = ({
           {/* Product Categories Pie Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                📊 <strong>Product Categories:</strong> Task distribution by category
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                📊 <strong>Product Categories:</strong> Task by category
               </span>
             </div>
             <SimplePieChart
@@ -63,8 +63,8 @@ const ProductAnalyticsCard = ({
           {/* Individual Products Pie Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-                📊 <strong>Individual Products:</strong> Task distribution by product
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                📊 <strong>Individual Products:</strong> Task by product
               </span>
             </div>
             <SimplePieChart
@@ -82,7 +82,7 @@ const ProductAnalyticsCard = ({
           {/* Product Categories Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 📊 <strong>Product Categories:</strong> Tasks & Hours by Category
               </span>
             </div>
@@ -98,7 +98,7 @@ const ProductAnalyticsCard = ({
           {/* Individual Products Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 📊 <strong>Individual Products:</strong> Tasks & Hours by Product
               </span>
             </div>

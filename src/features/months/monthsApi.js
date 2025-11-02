@@ -13,9 +13,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
-  updateDoc,
   serverTimestamp,
-  onSnapshot,
   query
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
@@ -63,7 +61,7 @@ const getMonthsRef = (yearId = null) => {
 /**
  * Current Month Hook (Direct Firestore)
  */
-export const useCurrentMonth = (userUID = null, role = 'user', userData = null) => {
+export const useCurrentMonth = (userUID = null, role = 'user', _userData = null) => {
   const [currentMonth, setCurrentMonth] = useState(null);
   const [boardExists, setBoardExists] = useState(false);
   const [currentMonthBoard, setCurrentMonthBoard] = useState(null);
@@ -154,7 +152,7 @@ export const useCurrentMonth = (userUID = null, role = 'user', userData = null) 
 };
 
 /**
- * Available Months Hook (Direct Firestore)
+ * Available Months Hook (Direct Firestore - One-time fetch)
  */
 export const useAvailableMonths = () => {
   const [availableMonths, setAvailableMonths] = useState([]);
@@ -162,11 +160,9 @@ export const useAvailableMonths = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    let unsubscribe = null;
-
-    const setupListener = () => {
+    const setupListener = async () => {
       try {
-        logger.log('🔍 [useAvailableMonths] Setting up real-time listener');
+        logger.log('🔍 [useAvailableMonths] Fetching months data (one-time)');
         setIsLoading(true);
         setError(null);
 
@@ -174,43 +170,40 @@ export const useAvailableMonths = () => {
         const yearId = getCurrentYear();
         const monthsRef = getMonthsRef(yearId);
 
-        // Set up real-time listener for the months collection
+        // Fetch months data once (one-time fetch instead of real-time listener)
+        logger.log('🔍 [useAvailableMonths] Fetching months from Firestore');
         const monthsQuery = query(monthsRef);
-        unsubscribe = onSnapshot(monthsQuery, (snapshot) => {
-          logger.log('🔍 [useAvailableMonths] Real-time update received, docs:', snapshot.docs.length);
+        const snapshot = await getDocs(monthsQuery);
+        logger.log('🔍 [useAvailableMonths] Months fetched, docs:', snapshot.docs.length);
 
-          const months = [];
+        const months = [];
 
-          if (!snapshot.empty) {
-            snapshot.docs.forEach((doc) => {
-              const monthData = doc.data();
-              const monthId = doc.id;
+        if (!snapshot.empty) {
+          snapshot.docs.forEach((doc) => {
+            const monthData = doc.data();
+            const monthId = doc.id;
 
-              // Parse month ID to get readable month name using month utilities
-              const monthDate = parseMonthId(monthId);
-              const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
+            // Parse month ID to get readable month name using month utilities
+            const monthDate = parseMonthId(monthId);
+            const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
 
-              months.push({
-                monthId,
-                monthName,
-                boardId: monthData.boardId,
-                createdAt: monthData.createdAt,
-                createdBy: monthData.createdBy,
-                createdByName: monthData.createdByName,
-                createdByRole: monthData.createdByRole,
-                isCurrent: monthId === currentMonthInfo.monthId
-              });
+            months.push({
+              monthId,
+              monthName,
+              boardId: monthData.boardId,
+              createdAt: monthData.createdAt,
+              createdBy: monthData.createdBy,
+              createdByName: monthData.createdByName,
+              createdByRole: monthData.createdByRole,
+              isCurrent: monthId === currentMonthInfo.monthId,
+              boardExists: true // All months in availableMonths have boards (they're in the collection)
             });
-          }
+          });
+        }
 
-          logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
-          setAvailableMonths(months);
-          setIsLoading(false);
-        }, (err) => {
-          logger.error("[useAvailableMonths] Listener error:", err);
-          setError(err);
-          setIsLoading(false);
-        });
+        logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
+        setAvailableMonths(months);
+        setIsLoading(false);
 
       } catch (err) {
         logger.error("[useAvailableMonths] Setup error:", err);
@@ -220,13 +213,6 @@ export const useAvailableMonths = () => {
     };
 
     setupListener();
-
-    // Cleanup listener on unmount
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
   }, []); // Empty dependency array - this should only run once
 
   return { availableMonths, isLoading, error };
@@ -239,7 +225,7 @@ export const useCreateMonthBoard = () => {
   const createMonthBoard = useCallback(async (monthId, userData) => {
     try {
       // Validate user permissions
-      const permissionValidation = validateUserPermissions(userData, 'create_month_board');
+      const permissionValidation = validateUserPermissions(userData, 'create_board');
       if (!permissionValidation.isValid) {
         throw new Error(permissionValidation.errors.join(', '));
       }

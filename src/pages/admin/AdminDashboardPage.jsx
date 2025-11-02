@@ -116,8 +116,16 @@ const AdminDashboardPage = () => {
   // Get current month ID for filtering - simplified
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
 
-  // Task creation requires both month/board availability AND user permissions
-  const canCreateTasks = isCurrentMonth && currentMonth.boardExists && canCreateTask();
+  // Task creation logic: allow if:
+  // 1. User has create_tasks permission
+  // 2. AND either:
+  //    - Current month is selected AND board exists, OR
+  //    - A different month is selected AND that month has a board
+  const selectedMonthHasBoard = selectedMonth ? selectedMonth.boardExists : false;
+  const canCreateTasks = canCreateTask() && (
+    (isCurrentMonth && currentMonth.boardExists) ||
+    (!isCurrentMonth && selectedMonthHasBoard)
+  );
 
   // Handle create task - memoized to prevent recreation
   const handleCreateTask = useCallback(() => {
@@ -125,17 +133,17 @@ const AdminDashboardPage = () => {
       // Check if it's a permission issue or month/board issue
       if (!canCreateTask()) {
         showAuthError("You do not have permission to create tasks");
-      } else if (!isCurrentMonth) {
-        showError("Create Task is only available for the current month");
-      } else if (!currentMonth.boardExists) {
-        showError("Create Task is not available - month board not found");
+      } else if (!currentMonth.boardExists && isCurrentMonth) {
+        showError("Create Task is not available - current month board not found");
+      } else if (!selectedMonthHasBoard && !isCurrentMonth) {
+        showError("Create Task is not available - selected month board not found");
       } else {
         showError("Create Task is not available for this month");
       }
       return;
     }
     setShowCreateModal(true);
-  }, [canCreateTasks, canCreateTask, isCurrentMonth, currentMonth.boardExists]);
+  }, [canCreateTasks, canCreateTask, isCurrentMonth, currentMonth.boardExists, selectedMonthHasBoard]);
 
   // Handle week selection - independent from user and reporter selections
   const handleWeekChange = useCallback((week) => {
@@ -388,6 +396,8 @@ const AdminDashboardPage = () => {
             error?.message?.includes("User lacks required")
           ) {
             showAuthError("You do not have permission to create tasks");
+          } else if (error?.message?.includes("board not available") || error?.message?.includes("board not found")) {
+            showError(error.message || "Month board not available for task creation");
           }
         }}
       />

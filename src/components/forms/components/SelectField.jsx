@@ -1,25 +1,7 @@
-/**
- * Select Field Component
- * 
- * @fileoverview Reusable select dropdown field with validation and error handling
- * @author Senior Developer
- * @version 2.0.0
- */
 
 import React from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 
-/**
- * Select Field Component
- * @param {Object} props - Component props
- * @param {Object} props.field - Field configuration object
- * @param {Function} props.register - React Hook Form register function
- * @param {Object} props.errors - Form errors object
- * @param {Object} props.formValues - Current form values
- * @param {Function} props.watch - React Hook Form watch function
- * @param {Function} props.setValue - React Hook Form setValue function
- * @returns {JSX.Element} - Select field component
- */
 const SelectField = ({ field, register, errors, formValues, watch, setValue }) => {
   const fieldError = errors[field.name];
   const currentValue = watch ? watch(field.name) : '';
@@ -34,7 +16,7 @@ const SelectField = ({ field, register, errors, formValues, watch, setValue }) =
   return (
     <div className="field-wrapper">
       {field.label && (
-        <label htmlFor={field.name} className="field-label">
+        <label htmlFor={field.name} className="field-label ">
           {field.label}
           {field.required && <span className="required-indicator">*</span>}
         </label>
@@ -57,7 +39,7 @@ const SelectField = ({ field, register, errors, formValues, watch, setValue }) =
       {currentValue && selectedOption && (
         <div className="mt-2">
           <Badge
-            variant="select_badge"
+            variant="amber"
             size="sm"
             className="inline-flex items-center gap-1"
           >

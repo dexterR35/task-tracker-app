@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppDataContext } from '@/context/AppDataContext';
-import { getMonthBoundaries, getMonthInfo } from '@/utils/monthUtils.jsx';
 import { format, startOfMonth, endOfMonth, getDaysInMonth, addDays, startOfWeek, endOfWeek } from 'date-fns';
 
 const SimpleDateField = ({ 
@@ -112,8 +111,6 @@ const SimpleDateField = ({
     return days;
   };
 
-  // No month navigation - restricted to current month only
-  // Use date-fns for month name formatting
   const currentMonthName = format(currentMonth, 'MMMM yyyy');
 
   return (
@@ -126,28 +123,26 @@ const SimpleDateField = ({
       )}
       
       <div className="relative">
-        {/* Hidden input for form registration */}
         <input
           type="hidden"
           {...register(fieldName)}
           value={selectedDate}
         />
-        
-        {/* Custom input display */}
+    
         <div
           ref={inputRef}
           className={`
             w-full px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200
             ${error 
-              ? 'border-red-error bg-red-50 focus:border-red-error focus:ring-red-error' 
-              : 'border-gray-300 dark:border-gray-600 bg-transparent hover:border-blue-default focus:border-blue-default focus:ring-blue-default'
+              ? 'border-red-error focus:border-red-error focus:ring-red-error' 
+              : 'border-gray-600 bg-transparent hover:border-blue-default '
             }
             focus:ring-2 focus:ring-opacity-20
           `}
           onClick={() => setIsOpen(!isOpen)}
         >
           <div className="flex items-center justify-between">
-            <span className={`text-sm ${selectedDate ? 'text-gray-200 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-sm ${selectedDate ? 'text-gray-200 font-medium' : 'text-gray-300'}`}>
               {selectedDate ? formatDate(selectedDate) : 'Select a date'}
             </span>
             <svg className="w-5 h-5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,38 +150,34 @@ const SimpleDateField = ({
             </svg>
           </div>
         </div>
-
-        {/* Large Calendar Dropdown */}
         {isOpen && (
           <>
-            {/* Backdrop */}
             <div 
               className="fixed inset-0 z-40" 
               onClick={() => setIsOpen(false)}
             />
             
-            {/* Calendar */}
-            <div className="absolute z-50 mt-2 bg-smallCard border border-gray-200 rounded-xl shadow-2xl p-6 w-96 max-w-full">
+            <div className="absolute z-50 mt-2  card border border-gray-500 rounded-xl shadow-2xl px-5 py-4 w-96 max-w-full">
               {/* Calendar Header - With Navigation */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-1">
                 <button
                   type="button"
                   onClick={() => navigateMonth('prev')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="p-2 hover:bg-blue-700 rounded transition-colors duration-200"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h3 className="text-xl font-bold text-white">
+                <h4>
                   {currentMonthName}
-                </h3>
+                </h4>
                 <button
                   type="button"
                   onClick={() => navigateMonth('next')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="p-2 hover:bg-blue-700 rounded transition-colors duration-200"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -195,7 +186,7 @@ const SimpleDateField = ({
               {/* Day Headers - Romanian calendar starts with Monday */}
               <div className="grid grid-cols-7 gap-2 mb-4">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div key={day} className="text-center text-sm font-semibold text-white py-2">
+                  <div key={day} className="text-center text-xs font-semibold text-gray-300 py-2">
                     {day}
                   </div>
                 ))}
@@ -211,10 +202,10 @@ const SimpleDateField = ({
                     disabled={day.isDisabled}
                     className={`
                       w-10 h-10 text-sm rounded-lg font-medium transition-all duration-200
-                      ${day.isCurrentMonth ? 'text-white' : 'text-gray-400'}
-                      ${day.isToday ? 'bg-blue-500 text-white font-bold shadow-lg' : ''}
-                      ${day.isSelected ? 'bg-blue-600 text-white font-bold shadow-lg' : ''}
-                      ${day.isDisabled ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50 hover:text-blue-700'}
+                      ${day.isCurrentMonth ? 'text-gray-200' : 'text-gray-500'}
+                      ${day.isToday ? 'bg-green-700 text-gray-200 font-bold shadow-lg' : ''}
+                      ${day.isSelected ? 'bg-blue-600 text-gray-200 font-bold shadow-lg' : ''}
+                      ${day.isDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-200 hover:text-blue-700'}
                       ${!day.isCurrentMonth ? 'hover:bg-gray-50' : ''}
                       ${!day.isToday && !day.isSelected && !day.isDisabled ? 'hover:scale-105' : ''}
                     `}
@@ -224,21 +215,6 @@ const SimpleDateField = ({
                 ))}
               </div>
 
-              {/* Footer */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">
-                    Select any date (2020-2030)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
             </div>
           </>
         )}

@@ -257,7 +257,7 @@ export const CARD_SYSTEM = {
     orange: '#F25912',    // Orange-500 - Product, warning, energy
     select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
     color_default: '#00418d',
-    filter_color: '#322277', // Blue-600 - Primary blue - Default color for UI elements
+    filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',

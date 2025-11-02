@@ -1,10 +1,4 @@
-/**
- * Login Form Configuration
- *
- * @fileoverview Form field configuration and validation schema for login form
- * @author Senior Developer
- * @version 2.0.0
- */
+
 
 import * as Yup from "yup";
 import { VALIDATION } from '@/constants';
@@ -13,10 +7,6 @@ import { VALIDATION } from '@/constants';
 // LOGIN FORM FIELD CONFIGURATION
 // ============================================================================
 
-/**
- * Login form field definitions
- * @type {Array} - Array of field configuration objects
- */
 export const LOGIN_FORM_FIELDS = [
   {
     name: "email",
@@ -40,10 +30,6 @@ export const LOGIN_FORM_FIELDS = [
 // LOGIN FORM VALIDATION SCHEMA
 // ============================================================================
 
-/**
- * Login form validation schema using Yup
- * @type {Object} - Yup validation schema object
- */
 export const loginSchema = Yup.object().shape({
   email: Yup.string()
     .required(VALIDATION.MESSAGES.REQUIRED)

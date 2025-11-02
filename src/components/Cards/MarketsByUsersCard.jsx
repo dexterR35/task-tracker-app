@@ -32,8 +32,8 @@ const MarketsByUsersCard = ({
   }
 
   return (
-    <div id="markets-by-users-card" className={`card-large ${className}`}>
-      <h2 className="card-title text-xl mb-6">{title}</h2>
+    <div id="markets-by-users-card" className={`e ${className}`}>
+      <h3>{title}</h3>
 
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
@@ -49,8 +49,8 @@ const MarketsByUsersCard = ({
            {/* Markets Distribution Pie Chart */}
            <div className="chart-container">
              <div className="mb-2">
-               <span className="text-xs text-gray-600 dark:text-gray-400 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                 📈 <strong>Markets Distribution:</strong> Task distribution across markets
+             <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                 📈 <strong>Markets Distribution:</strong> Task by markets
                </span>
              </div>
              <SimplePieChart
@@ -64,8 +64,8 @@ const MarketsByUsersCard = ({
            {/* User by Task Chart */}
            <div className="chart-container">
              <div className="mb-2">
-               <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-                 👥 <strong>Users by Tasks:</strong> Task distribution by users
+             <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                 👥 <strong>Users by Tasks:</strong> Task by users
                </span>
              </div>
              <SimplePieChart
@@ -82,7 +82,7 @@ const MarketsByUsersCard = ({
           {/* Markets Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 📊 <strong>Markets:</strong> Tasks & Hours by Market
               </span>
             </div>
@@ -98,7 +98,7 @@ const MarketsByUsersCard = ({
           {/* Users Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 👥 <strong>Users:</strong> Tasks & Hours by User
               </span>
             </div>

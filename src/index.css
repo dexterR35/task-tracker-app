@@ -295,7 +295,7 @@
     @apply font-semibold text-gray-900 dark:text-white mb-1 text-xl;
   }
   h4 {
-    @apply font-semibold text-gray-900 dark:text-white mb-0 text-base;
+    @apply font-semibold text-gray-900 dark:text-gray-200 mb-0 text-sm;
   }
   h5 {
     @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;

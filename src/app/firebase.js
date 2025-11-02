@@ -23,7 +23,7 @@ import { logger } from "@/utils/logger";
  * @returns {FirebaseConfig} Firebase configuration object
  */
 const getFirebaseConfig = () => {
-  const isDevelopment = import.meta.env.MODE === "development";
+  // const isDevelopment = import.meta.env.MODE === "development";
 
   // Use development Firebase project in development mode
   // if (isDevelopment) {
@@ -49,12 +49,12 @@ const getFirebaseConfig = () => {
   //   appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
   // };
       return {
-      apiKey: "AIzaSyBKCRN8f7dOaNrzjhOGIUpB__jQs-PX6MU",
-      authDomain: "track-app-stage.firebaseapp.com",
-      projectId: "track-app-stage",
-      storageBucket: "track-app-stage.firebasestorage.app",
-      messagingSenderId: "236939384499",
-      appId: "1:236939384499:web:5767e2dcbcebd67ed882c6",
+        apiKey: "AIzaSyBKCRN8f7dOaNrzjhOGIUpB__jQs-PX6MU",
+            authDomain: "track-app-stage.firebaseapp.com",
+            projectId: "track-app-stage",
+            storageBucket: "track-app-stage.firebasestorage.app",
+            messagingSenderId: "236939384499",
+            appId: "1:236939384499:web:5767e2dcbcebd67ed882c6",
     };
 };
 

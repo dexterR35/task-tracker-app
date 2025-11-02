@@ -26,9 +26,9 @@ import {
   SimpleDateField,
   UrlField
 } from '@/components/forms/components';
-import DeliverablesField from '@/components/forms/components/DeliverablesField';
+
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { logger } from '@/utils/logger';
+
 // Permission validation now happens at API level
 
 /**
@@ -42,12 +42,23 @@ const TaskForm = ({
   onSuccess, 
   className = "" 
 }) => {
-  const { reporters = [], monthId: hookMonthId, user: userData } = useAppDataContext();
+  const { 
+    reporters = [], 
+    monthId: hookMonthId, 
+    user: userData,
+    currentMonth,
+    selectedMonth,
+    isCurrentMonth
+  } = useAppDataContext();
   const [createTask] = useCreateTask();
   const [updateTask] = useUpdateTask();
   
   // Use prop monthId if provided, otherwise fall back to hook monthId
   const monthId = propMonthId || hookMonthId;
+  
+  // Check if the selected month has a board created
+  const activeMonth = isCurrentMonth ? currentMonth : selectedMonth;
+  const boardExists = activeMonth?.boardExists ?? false;
   const { deliverablesOptions, isLoading: loadingDeliverables } = useDeliverablesOptions();
   
   // Debug logging for deliverables (removed for production)
@@ -300,6 +311,14 @@ const TaskForm = ({
   // Create standardized form submission handler
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
+      // Check board existence before creating task (only for create mode)
+      if (mode === 'create' && !boardExists) {
+        const monthName = activeMonth?.monthName || monthId || 'selected month';
+        throw new Error(
+          `Cannot create task: Month board for ${monthName} has not been created. Please create the month board first before adding tasks.`
+        );
+      }
+      
       // All validation is now handled by Yup schema - no redundant validation needed
       // Prepare form data for database
       console.log('🔍 [TaskForm] Form submission data:', data);

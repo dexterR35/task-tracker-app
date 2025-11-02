@@ -29,11 +29,11 @@ const AcquisitionAnalyticsCard = ({
   }
 
   return (
-    <div id="acquisition-analytics-card" className={`card-large ${className} `}>
-      <h2 className="card-title text-xl mb-6">{title}</h2>
+    <div id="acquisition-analytics-card " className={`${className} `}>
+      <h3>{title}</h3>
 
       {/* Grid Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
         {/* Acquisition Table */}
         <div className="table-container">
           <AnalyticsTable
@@ -41,14 +41,13 @@ const AcquisitionAnalyticsCard = ({
             columns={acquisitionTableColumns}
           />
         </div>
-  
         {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Casino Acquisition Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
-                🎰 <strong>Casino Acquisition:</strong> Task distribution across markets
+              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                🎰 <strong>Casino Acquisition:</strong> Tasks by markets
               </span>
             </div>
             <SimplePieChart
@@ -62,8 +61,8 @@ const AcquisitionAnalyticsCard = ({
           {/* Sport Acquisition Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-                ⚽ <strong>Sport Acquisition:</strong> Task distribution across markets
+              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                ⚽ <strong>Sport Acquisition:</strong> Tasks by markets
               </span>
             </div>
             <SimplePieChart
@@ -80,7 +79,7 @@ const AcquisitionAnalyticsCard = ({
           {/* Casino Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
+              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 🎰 <strong>Casino Acquisition:</strong> Tasks & Hours by Markets
               </span>
             </div>
@@ -96,7 +95,7 @@ const AcquisitionAnalyticsCard = ({
           {/* Sport Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
+              <span className="text-xs dark:bg-blue-900 px-2 py-1 rounded">
                 ⚽ <strong>Sport Acquisition:</strong> Tasks & Hours by Markets
               </span>
             </div>

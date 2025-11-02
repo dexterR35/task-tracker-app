@@ -24,35 +24,35 @@ const SimplePieChart = React.memo(({
 
   if (!processedData || processedData.length === 0) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-6 shadow-sm ${className}`}>
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
-        <div className="text-center text-gray-500 dark:text-gray-400 text-base">No data available</div>
+      <div className={`card ${className}`}>
+        <h4>{title}</h4>
+        <p className="text-center text-gray-500 dark:text-gray-400 text-sm">No data available</p>
       </div>
     );
   }
 
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
-    if (percent < 0.05) return null; // Don't show labels for slices smaller than 5%
+  // const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+  //   if (percent < 0.05) return null; // Don't show labels for slices smaller than 5%
     
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  //   const RADIAN = Math.PI / 180;
+  //   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  //   const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  //   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        fontSize={10}
-        fontWeight="bold"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
+  //   return (
+  //     <text 
+  //       x={x} 
+  //       y={y} 
+  //       fill="white" 
+  //       textAnchor={x > cx ? 'start' : 'end'} 
+  //       dominantBaseline="central"
+  //       fontSize={10}
+  //       fontWeight="bold"
+  //     >
+  //       {`${(percent * 100).toFixed(0)}%`}
+  //     </text>
+  //   );
+  // };
 
   const renderLabelLine = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
     if (!showLeaderLines || percent < (minPercentageThreshold / 100)) return null;
@@ -86,9 +86,9 @@ const SimplePieChart = React.memo(({
           x2={labelX}
           y2={labelY}
           stroke="#374151"
-          strokeWidth={1.5}
+          strokeWidth={1}
           strokeDasharray={getStrokeDashArray()}
-          className="dark:stroke-gray-300"
+          className="dark:stroke-gray-200"
         />
         {/* Label at the end of the line with name and percentage */}
         <text
@@ -98,7 +98,7 @@ const SimplePieChart = React.memo(({
           textAnchor={labelX > cx ? 'start' : 'end'}
           dominantBaseline="central"
           fontSize={12}
-          fontWeight="medium"
+          fontWeight="bold"
           className="dark:fill-gray-200"
           style={{ pointerEvents: 'none' }}
         >
@@ -109,8 +109,8 @@ const SimplePieChart = React.memo(({
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-6 shadow-sm ${className}`}>
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
+    <div className={`card ${className}`}>
+      <h4>{title}</h4>
       <div className="h-56 relative overflow-visible">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -132,7 +132,7 @@ const SimplePieChart = React.memo(({
               formatter={(value, name) => [value, name]}
               labelStyle={{ color: '#374151', fontSize: '14px', fontWeight: 'bold' }}
               contentStyle={{ 
-                backgroundColor: '#f9fafb', 
+                backgroundColor: '#1f2937', 
                 border: '1px solid #d1d5db',
                 borderRadius: '8px',
                 fontSize: '14px',

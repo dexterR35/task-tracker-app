@@ -14,9 +14,6 @@ const CheckboxField = ({ field, register, errors, setValue, trigger, clearErrors
           onChange={(e) => {
             setValue(field.name, e.target.checked);
             trigger(field.name);
-            
-            // Conditional field logic is now handled by Yup .when() validation
-            // The form data processing in prepareTaskFormData handles setting defaults
           }}
         />
         <label htmlFor={field.name} className='m-0'>

@@ -10,7 +10,7 @@ import { useDeliverablesApi } from '@/features/deliverables/useDeliverablesApi';
 import { useTasks } from "@/features/tasks/tasksApi";
 import { useCurrentMonth, useAvailableMonths } from "@/features/months/monthsApi";
 import { useAuth } from "@/context/AuthContext";
-import { getUserUID, isUserAdmin, hasPermission } from "@/features/utils/authUtils";
+import { getUserUID, isUserAdmin, hasPermission, isUserActive } from "@/features/utils/authUtils";
 import { normalizeTimestamp, serializeTimestamps } from "@/utils/dateUtils";
 import { logger } from '@/utils/logger';
 import { AUTH } from '@/constants';
@@ -133,10 +133,12 @@ export const AppDataProvider = ({ children }) => {
     isReady: monthId && monthName
   };
   
-  // Selected month object
+  // Selected month object - check if board exists by seeing if month is in availableMonths
+  const selectedMonthData = selectedMonthId ? availableMonths.find(m => m.monthId === selectedMonthId) : null;
   const selectedMonth = selectedMonthId ? {
     monthId: selectedMonthId,
-    monthName: availableMonths.find(m => m.monthId === selectedMonthId)?.monthName,
+    monthName: selectedMonthData?.monthName,
+    boardExists: selectedMonthData?.boardExists ?? !!selectedMonthData, // Use boardExists from availableMonths, fallback to existence check
     isCurrent: false
   } : null;
   

@@ -29,8 +29,8 @@ const MarketingAnalyticsCard = ({
   }
 
   return (
-    <div id="marketing-analytics-card" className={`card-large ${className} `}>
-      <h2 className="card-title text-xl mb-6">{title}</h2>
+    <div id="marketing-analytics-card" className={`${className} `}>
+      <h3>{title}</h3>
 
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
@@ -47,8 +47,8 @@ const MarketingAnalyticsCard = ({
           {/* Casino Marketing Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
-                🎰 <strong>Casino Marketing:</strong> Task distribution across markets
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                🎰 <strong>Casino Marketing:</strong> Task by markets
               </span>
             </div>
             <SimplePieChart
@@ -62,8 +62,8 @@ const MarketingAnalyticsCard = ({
           {/* Sport Marketing Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-                ⚽ <strong>Sport Marketing:</strong> Task distribution across markets
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                ⚽ <strong>Sport Marketing:</strong> Task by markets
               </span>
             </div>
             <SimplePieChart
@@ -80,7 +80,7 @@ const MarketingAnalyticsCard = ({
           {/* Casino Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 🎰 <strong>Casino Marketing:</strong> Tasks & Hours by Markets
               </span>
             </div>
@@ -96,7 +96,7 @@ const MarketingAnalyticsCard = ({
           {/* Sport Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
                 ⚽ <strong>Sport Marketing:</strong> Tasks & Hours by Markets
               </span>
             </div>

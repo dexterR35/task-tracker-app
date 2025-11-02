@@ -1,31 +1,18 @@
-/**
- * Login Form Component
- * 
- * @fileoverview Authentication login form with validation and error handling
- * @author Senior Developer
- * @version 2.0.0
- */
+
 
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/context/AuthContext';
-import { showError } from '@/utils/toast';
+
 import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { prepareFormData, createFormSubmissionHandler, handleFormValidation } from '@/utils/formUtils';
 import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
 import TextField from '@/components/forms/components/TextField';
 import PasswordField from '@/components/forms/components/PasswordField';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { logger } from '@/utils/logger';
 
 
-/**
- * Login Form Component
- * @param {Object} props - Component props
- * @param {Function} props.onSuccess - Success callback function
- * @param {string} props.className - Additional CSS classes
- * @returns {JSX.Element} - Login form component
- */
+
 const LoginForm = ({ onSuccess, className = "" }) => {
   const { login } = useAuth();
   
