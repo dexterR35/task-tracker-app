@@ -107,10 +107,11 @@ const TableControls = ({
   handleCSVExport,
   isExporting,
   onPageSizeChange,
+  customFilter,
 }) => (
-  <div className="flex justify-between items-center py-4">
+  <div className="flex justify-between items-center py-4 card">
     {/* Left Section - Search and Filters */}
-    <div className="flex items-center space-x-6 flex-1 ">
+    <div className="flex items-center space-x-6 flex-1">
       {/* Global Filter */}
       {showFilters && (
         <div className="max-w-sm">
@@ -128,6 +129,12 @@ const TableControls = ({
             clearErrors={() => {}}
             formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
           />
+        </div>
+      )}
+      {/* Custom Filter - if provided */}
+      {customFilter && (
+        <div className="max-w-sm">
+          {customFilter}
         </div>
       )}
     </div>
@@ -284,6 +291,9 @@ const TanStackTable = forwardRef(
       paginationProps = null,
       onPageChange = null,
       onPageSizeChange = null,
+
+      // Custom filter component
+      customFilter = null,
 
       // Additional props
       ...additionalProps
@@ -550,6 +560,7 @@ const TanStackTable = forwardRef(
               handleCSVExport={handleCSVExport}
               isExporting={isExporting}
               onPageSizeChange={handlePageSizeChange}
+              customFilter={customFilter}
             />
 
             {/* Bulk Actions Bar */}

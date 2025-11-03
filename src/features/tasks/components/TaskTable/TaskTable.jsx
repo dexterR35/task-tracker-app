@@ -9,13 +9,20 @@ import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
-import { CheckboxField } from '@/components/forms/components';
-import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';
+import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
+import { TABLE_SYSTEM } from '@/constants';
 
-// Color constants from COLOR_HEX_MAP
-const CRIMSON_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.crimson;
-const GREEN_COLOR = CARD_SYSTEM.COLOR_HEX_MAP.filter_color;
+// Available filter options
+const FILTER_OPTIONS = [
+  { value: 'aiUsed', label: 'AI Used' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'acquisition', label: 'Acquisition' },
+  { value: 'product', label: 'Product' },
+  { value: 'vip', label: 'VIP' },
+  { value: 'reworked', label: 'Reworked' },
+  { value: 'deliverables', label: 'Deliverables' },
+];
+
 // import './TaskTable.css';
 
 const TaskTable = ({
@@ -328,7 +335,7 @@ const TaskTable = ({
     actions.push({
       label: "View Jira Link",
       icon: "code",
-      variant: "success",
+      variant: "primary",
       onClick: (selectedTasks) => {
         if (selectedTasks.length === 1) {
           const task = selectedTasks[0];
@@ -418,128 +425,43 @@ const TaskTable = ({
   }, [filteredTasks?.length, onCountChange]);
 
 
-  // Handle filter changes - single selection only
-  const handleFilterChange = (filterName) => {
-    // If clicking the same filter, deselect it
-    if (selectedFilter === filterName) {
-      setSelectedFilter(null);
-    } else {
-      // Select the new filter
-      setSelectedFilter(filterName);
+  // Handle filter value change from SearchableSelectField
+  const handleFilterValueChange = useCallback((fieldName, value) => {
+    if (fieldName === 'taskFilter') {
+      // If clicking the same filter or clearing, deselect it
+      if (selectedFilter === value || !value) {
+        setSelectedFilter(null);
+      } else {
+        // Select the new filter
+        setSelectedFilter(value);
+      }
     }
-  };
+  }, [selectedFilter]);
+
+  // Create filter component for inline display
+  const taskFilterComponent = (
+    <SearchableSelectField
+      field={{
+        name: "taskFilter",
+        type: "select",
+        label: "Task Filters",
+        required: false,
+        options: FILTER_OPTIONS,
+        placeholder: "Search filters (e.g., AI Used, Marketing, VIP...)",
+      }}
+      register={() => {}}
+      errors={{}}
+      setValue={handleFilterValueChange}
+      watch={() => selectedFilter || ""}
+      trigger={() => {}}
+      clearErrors={() => {}}
+      formValues={{}}
+      noOptionsMessage="No filters found"
+    />
+  );
 
   return (
     <div className={`task-table  ${className}`}>
-      {/* Modern Filter Section */}
-      <div className="mb-6 card !bg-smallCard border border-gray-200 dark:border-gray-700">
-        {/* Filter Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Task Filters</h3>
-            </div>
-            <div className="px-3 py-1 bg-gray-200 dark:bg-gray-800 rounded-full">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {selectedFilter ? `${selectedFilter.charAt(0).toUpperCase() + selectedFilter.slice(1)} Tasks` : 'All Tasks'}
-              </span>
-            </div>
-          </div>
-          
-          {selectedFilter && (
-            <button
-              onClick={() => setSelectedFilter(null)}
-              className="flex items-center space-x-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span>Clear</span>
-            </button>
-          )}
-        </div>
-        
-        {/* Filter Buttons Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {/* AI Used Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('aiUsed')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'aiUsed' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            AI Used
-          </DynamicButton>
-
-          {/* Marketing Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('marketing')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'marketing' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            Marketing
-          </DynamicButton>
-
-          {/* Acquisition Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('acquisition')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'acquisition' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            Acquisition
-          </DynamicButton>
-
-          {/* Product Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('product')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'product' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            Product
-          </DynamicButton>
-
-          {/* VIP Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('vip')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'vip' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            VIP
-          </DynamicButton>
-
-          {/* Reworked Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('reworked')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'reworked' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            Reworked
-          </DynamicButton>
-
-          {/* Deliverables Filter */}
-          <DynamicButton
-            onClick={() => handleFilterChange('deliverables')}
-            variant="primary"
-            size="sm"
-            className="bg-[var(--btn-bg)] hover:opacity-90"
-            style={{ ['--btn-bg']: selectedFilter === 'deliverables' ? CRIMSON_COLOR : GREEN_COLOR }}
-          >
-            Deliverables
-          </DynamicButton>
-        </div>
-      </div>
-
       {/* Table */}
       <TanStackTable
         ref={tableRef}
@@ -561,6 +483,8 @@ const TaskTable = ({
         enablePagination={enablePagination}
         showPagination={enablePagination}
         pageSize={pageSizeState}
+        // Custom filter component
+        customFilter={taskFilterComponent}
       />
 
       {/* Edit Task Modal - managed by useTableActions */}
