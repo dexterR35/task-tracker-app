@@ -10,7 +10,6 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Icons } from '@/components/icons';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import TextareaField from '@/components/forms/components/TextareaField';
 import TanStackTable from '@/components/Table/TanStackTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';

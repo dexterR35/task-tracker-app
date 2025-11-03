@@ -6,7 +6,8 @@ import { Icons } from '@/components/icons';
 import Badge from '@/components/ui/Badge/Badge';
 import { CARD_SYSTEM } from '@/constants';
 import Loader from '@/components/ui/Loader/Loader';
-import { SelectField, TextField } from '@/components/forms/components';
+import { TextField } from '@/components/forms/components';
+import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 import landingPagesData from '@/constants/data.json';
 
 const columnHelper = createColumnHelper();
@@ -23,19 +24,20 @@ const createLandingPagesColumns = () => [
     cell: ({ getValue }) => {
       const product = getValue();
       const productColors = {
-        Casino: CARD_SYSTEM.COLOR_HEX_MAP.purple,
-        Sport: CARD_SYSTEM.COLOR_HEX_MAP.blue,
-        Vegas: CARD_SYSTEM.COLOR_HEX_MAP.amber,
-        Poker: CARD_SYSTEM.COLOR_HEX_MAP.green,
-        Lotto: CARD_SYSTEM.COLOR_HEX_MAP.red,
-        Live: CARD_SYSTEM.COLOR_HEX_MAP.indigo,
+        Casino: CARD_SYSTEM.COLOR_HEX_MAP.red,
+        Sport: CARD_SYSTEM.COLOR_HEX_MAP.green,
+        Vegas: CARD_SYSTEM.COLOR_HEX_MAP.pink,
+        Poker: CARD_SYSTEM.COLOR_HEX_MAP.purple,
+        Lotto: CARD_SYSTEM.COLOR_HEX_MAP.yellow,
+        Live: CARD_SYSTEM.COLOR_HEX_MAP.blue,
         'Sports + Casino': CARD_SYSTEM.COLOR_HEX_MAP.orange,
       };
       const colorHex = productColors[product] || CARD_SYSTEM.COLOR_HEX_MAP.gray;
       return (
-        <Badge colorHex={colorHex} size="xs">
+        <Badge colorHex={colorHex} size="sm">
           {product}
         </Badge>
+        
       );
     },
     size: 120,
@@ -49,13 +51,13 @@ const createLandingPagesColumns = () => [
     header: 'URL',
     cell: ({ getValue }) => {
       const url = getValue();
-      if (!url || url === '#') return <span className="text-gray-500 dark:text-gray-400">N/A</span>;
+      if (!url || url === '#') return <span>N/A</span>;
       return (
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline break-all text-xs"
+          className="!text-blue-600  underline break-all text-xs"
         >
           {url}
         </a>
@@ -68,7 +70,7 @@ const createLandingPagesColumns = () => [
     cell: ({ getValue }) => {
       const value = getValue();
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.select_badge} size="xs">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
           {value || 'N/A'}
         </Badge>
       );
@@ -98,7 +100,7 @@ const createLandingPagesColumns = () => [
         ? CARD_SYSTEM.COLOR_HEX_MAP.green 
         : CARD_SYSTEM.COLOR_HEX_MAP.red;
       return (
-        <Badge colorHex={colorHex} size="xs">
+        <Badge colorHex={colorHex} size="sm">
           {status || 'N/A'}
         </Badge>
       );
@@ -109,13 +111,13 @@ const createLandingPagesColumns = () => [
     header: 'REDIRECTION',
     cell: ({ getValue }) => {
       const redirection = getValue();
-      if (!redirection || redirection === 'N/A') return <span className="text-gray-500 dark:text-gray-400">N/A</span>;
+      if (!redirection || redirection === 'N/A') return <span>N/A</span>;
       return (
         <a
           href={redirection}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline break-all text-xs"
+          className="!text-blue-600 underline break-all text-xs"
         >
           {redirection}
         </a>
@@ -420,7 +422,7 @@ const LandingPages = () => {
       {/* Filters Section */}
       <div className="card mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <SelectField
+          <SearchableSelectField
             field={{
               name: 'brandSelect',
               label: 'Brand',
@@ -444,7 +446,7 @@ const LandingPages = () => {
             formValues={{ brandSelect: filters.Brand }}
           />
 
-          <SelectField
+          <SearchableSelectField
             field={{
               name: 'productSelect',
               label: 'Product',
@@ -468,7 +470,7 @@ const LandingPages = () => {
             formValues={{ productSelect: filters.Product }}
           />
 
-          <SelectField
+          <SearchableSelectField
             field={{
               name: 'languageSelect',
               label: 'Language',
@@ -492,7 +494,7 @@ const LandingPages = () => {
             formValues={{ languageSelect: filters.Language }}
           />
 
-          <SelectField
+          <SearchableSelectField
             field={{
               name: 'statusSelect',
               label: 'Status',
@@ -514,7 +516,7 @@ const LandingPages = () => {
             formValues={{ statusSelect: filters.Status }}
           />
 
-          <SelectField
+          <SearchableSelectField
             field={{
               name: 'authorSelect',
               label: 'Author',

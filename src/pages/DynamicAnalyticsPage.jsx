@@ -366,7 +366,6 @@ const DynamicAnalyticsPage = () => {
   
   // Watch the week selection
   const selectedWeekValue = watch('weekSelect');
-  
   // Extract URL parameters
   const userName = searchParams.get('user');
   const reporterName = searchParams.get('reporter');
@@ -504,13 +503,13 @@ const DynamicAnalyticsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen">
       <div className="mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{pageTitle}</h1>
+              <h2 >{pageTitle}</h2>
               <p className="text-gray-400">
                 {userName && reporterName 
                   ? ` Analytics for user ${userName} and reporter ${reporterName}`
@@ -524,7 +523,7 @@ const DynamicAnalyticsPage = () => {
             </div>
             <DynamicButton
               onClick={() => navigate(-1)}
-              variant="secondary"
+              variant="primary"
               size="md"
               iconName="back"
               iconCategory="buttons"
@@ -537,7 +536,6 @@ const DynamicAnalyticsPage = () => {
         
         {/* Analytics Cards Grid */}
         <div className="mb-8">
-          {/* <h2 className="text-xl font-semibold mb-4">Performance Overview</h2> */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {analyticsCards.map((card) => (
               <SmallCard key={card.id} card={card} />
@@ -546,10 +544,8 @@ const DynamicAnalyticsPage = () => {
         </div>
         
         {/* Daily Task Cards Grid */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Weekly Task Distribution (Monday-Friday)</h2>
-          
-          
+        <div className="mb-6">
+          <h3 className="mb-6">Weekly Task (Monday-Friday)</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {dailyTaskCards.map((card) => (
               <SmallCard key={card.id} card={card} />
@@ -560,7 +556,7 @@ const DynamicAnalyticsPage = () => {
         {/* Tasks by Week Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Tasks by Week</h2>
+            <h2 className="text-xl ">Tasks by Week</h2>
             <div className="w-64">
               <SelectField
                 field={{
@@ -581,6 +577,7 @@ const DynamicAnalyticsPage = () => {
               />
             </div>
           </div>
+          {/* no task */}
           <div className="space-y-6">
             {(() => {
               if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
@@ -596,7 +593,7 @@ const DynamicAnalyticsPage = () => {
                   </div>
                 );
               }
-
+ {/* no task */}
               // Get weeks for the current month
               const weeks = getWeeksInMonth(actualMonthId);
               if (!weeks || weeks.length === 0) {
@@ -803,7 +800,7 @@ const DynamicAnalyticsPage = () => {
                 });
 
                 return (
-                  <div key={week.weekNumber} className="bg-primary rounded-lg p-6 border border-gray-700">
+                  <div key={week.weekNumber} className="card rounded-lg p-6 border border-gray-700">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
@@ -829,7 +826,7 @@ const DynamicAnalyticsPage = () => {
                     {weekTasks.length > 0 ? (
                       <div className="space-y-3">
                         {weekTasks.map((task, index) => (
-                          <div key={task.id || index} className="flex items-center justify-between p-3 bg-smallCard rounded-lg">
+                          <div key={task.id || index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <div 
                                 className="w-3 h-3 rounded-full"
@@ -846,7 +843,7 @@ const DynamicAnalyticsPage = () => {
                                       href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                                      className="text-blue-300 hover:text-blue-500 underline cursor-pointer"
                                     >
                                       {task.data_task.taskName}
                                     </a>

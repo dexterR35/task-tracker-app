@@ -28,7 +28,7 @@ const AuthLayout = () => {
   }, []);
 
   return (
-    <div className="flex flex-col color-primary">
+    <div className="flex flex-col  ">
       <header className="relative z-50 border-bottom h-14 border-bottom">
         <FixedHeader
           onToggleSidebar={toggleSidebar}
@@ -38,7 +38,7 @@ const AuthLayout = () => {
 
       <div className="flex  overflow-hidden h-[calc(100vh-3.5em)]">
         <aside
-          className={`relative z-40 bg-secondary  border-right   ${sidebarOpen ? "w-72" : "w-0"} overflow-hidden`}
+          className={`relative z-40  border-right   ${sidebarOpen ? "w-72" : "w-0"} overflow-hidden`}
         >
           <div
             className={`w-full h-full  ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}

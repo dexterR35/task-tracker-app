@@ -53,9 +53,9 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         {/* SYNC Logo */}
         <div className="flex items-center space-x-2">
           <img src={logo} alt="SYNC Logo" className="w-7 h-7 object-contain" />
-          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">
             SYNC
-          </h1>
+          </h2>
         </div>
       </div>
 
