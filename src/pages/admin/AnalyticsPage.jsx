@@ -84,27 +84,50 @@ const AnalyticsPage = () => {
     },
   ], []);
 
+  // Helper function to check if data is empty
+  const hasNoData = useMemo(() => {
+    if (!tasks || tasks.length === 0) {
+      return true;
+    }
+    return false;
+  }, [tasks]);
+
   // Optimized card props calculation - only calculate for active tab
   const activeCardProps = useMemo(() => {
     if (isLoading) return null;
     
-    switch (activeTab) {
-      case 'reporter-analytics':
-        return getCachedReporterAnalyticsCardProps(tasks, reporters, selectedMonth, isLoading);
-      case 'markets-by-users':
-        return { tasks, users, isLoading };
-      case 'marketing-analytics':
-        return getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, users, isLoading);
-      case 'acquisition-analytics':
-        return getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, users, isLoading);
-      case 'product-analytics':
-        return getCachedProductAnalyticsCardProps(tasks, selectedMonth, users, isLoading);
-      case 'ai-analytics':
-        return getCachedAIAnalyticsCardProps(tasks, users, selectedMonth, isLoading);
-      default:
-        return null;
+    // If there's no data, return a special object to indicate no data state
+    if (hasNoData) {
+      return { hasNoData: true };
     }
-  }, [activeTab, tasks, users, reporters, selectedMonth, isLoading]);
+    
+    // Ensure we have valid data before calculating props
+    const safeTasks = tasks || [];
+    const safeUsers = users || [];
+    const safeReporters = reporters || [];
+    
+    try {
+      switch (activeTab) {
+        case 'reporter-analytics':
+          return getCachedReporterAnalyticsCardProps(safeTasks, safeReporters, selectedMonth, isLoading);
+        case 'markets-by-users':
+          return { tasks: safeTasks, users: safeUsers, isLoading };
+        case 'marketing-analytics':
+          return getCachedMarketingAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
+        case 'acquisition-analytics':
+          return getCachedAcquisitionAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
+        case 'product-analytics':
+          return getCachedProductAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
+        case 'ai-analytics':
+          return getCachedAIAnalyticsCardProps(safeTasks, safeUsers, selectedMonth, isLoading);
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error(`Error calculating props for ${activeTab}:`, error);
+      return null;
+    }
+  }, [activeTab, tasks, users, reporters, selectedMonth, isLoading, hasNoData]);
 
 
 
@@ -236,7 +259,36 @@ const AnalyticsPage = () => {
 
           {/* Tab Content */}
           <div>
-            {activeCardProps ? (
+            {isLoading ? (
+              <SkeletonAnalyticsCard />
+            ) : activeCardProps && activeCardProps.hasNoData ? (
+              <div className="card">
+                <div className="text-center py-16">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg 
+                      className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={1.5} 
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                      />
+                    </svg>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      No Data Available
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                      There is no data available for {analyticsTabs.find(tab => tab.id === activeTab)?.name || 'this tab'}. 
+                      Data will appear once tasks are added for the selected month.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : activeCardProps ? (
               <div className="relative">
                 <div id={`${activeTab}-card`}>
                   <div className="relative">
@@ -250,7 +302,32 @@ const AnalyticsPage = () => {
                 </div>
               </div>
             ) : (
-              <SkeletonAnalyticsCard />
+              <div className="card">
+                <div className="text-center py-16">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg 
+                      className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={1.5} 
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                      />
+                    </svg>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      No Data Available
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                      Unable to load data for {analyticsTabs.find(tab => tab.id === activeTab)?.name || 'this tab'}. 
+                      Please try refreshing the page.
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
