@@ -1,136 +1,134 @@
-/**
- * Comprehensive Month Utilities
- * All month-related functionality in one place
- */
-
 import React, { useMemo, useState } from "react";
-import { format, getDaysInMonth, startOfMonth, endOfMonth, parseISO, isValid, startOfWeek, endOfWeek, eachDayOfInterval, isWeekend, addWeeks, subWeeks } from "date-fns";
-import { parseMonthId, getCurrentMonthId, normalizeTimestamp } from "@/utils/dateUtils";
+import {
+  format,
+  getDaysInMonth,
+  startOfMonth,
+  endOfMonth,
+  parseISO,
+  isValid,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isWeekend,
+  addWeeks,
+  subWeeks,
+} from "date-fns";
+import {
+  parseMonthId,
+  getCurrentMonthId,
+  normalizeTimestamp,
+} from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useCreateMonthBoard } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { CARD_SYSTEM } from '@/constants';
+import { CARD_SYSTEM } from "@/constants";
 
 // ============================================================================
 // WEEK UTILITIES
 // ============================================================================
 
-/**
- * Get all weeks in a month (Monday-Friday only)
- * @param {string|Date} monthId - Month ID or date
- * @returns {Array} Array of week objects with start/end dates and week number
- */
 export const getWeeksInMonth = (monthId) => {
-  const date = typeof monthId === 'string' ? parseMonthId(monthId) : monthId;
+  const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
   if (!isValid(date)) {
-    logger.error('Invalid date provided to getWeeksInMonth');
+    logger.error("Invalid date provided to getWeeksInMonth");
     return [];
   }
 
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
-  
+
   const weeks = [];
   let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
-  
+
   // Adjust if week starts before month
   if (currentWeekStart < monthStart) {
     currentWeekStart = addWeeks(currentWeekStart, 1);
   }
-  
+
   let weekNumber = 1;
-  
+
   while (currentWeekStart <= monthEnd) {
     const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 }); // Sunday
-    
+
     // Get week days (Monday-Friday only)
     const weekDays = eachDayOfInterval({
       start: currentWeekStart,
-      end: weekEnd
-    }).filter(day => !isWeekend(day) && day >= monthStart && day <= monthEnd);
-    
+      end: weekEnd,
+    }).filter((day) => !isWeekend(day) && day >= monthStart && day <= monthEnd);
+
     if (weekDays.length > 0) {
       weeks.push({
         weekNumber,
         startDate: currentWeekStart,
         endDate: weekEnd,
         days: weekDays,
-        startDateStr: format(currentWeekStart, 'yyyy-MM-dd'),
-        endDateStr: format(weekEnd, 'yyyy-MM-dd'),
-        label: `Week ${weekNumber} (${format(currentWeekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd')})`
+        startDateStr: format(currentWeekStart, "yyyy-MM-dd"),
+        endDateStr: format(weekEnd, "yyyy-MM-dd"),
+        label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(weekEnd, "MMM dd")})`,
       });
     }
-    
+
     currentWeekStart = addWeeks(currentWeekStart, 1);
     weekNumber++;
   }
-  
+
   return weeks;
 };
 
-/**
- * Get tasks for a specific week
- * @param {Array} tasks - All tasks for the month
- * @param {Object} week - Week object with start/end dates
- * @returns {Object} Tasks grouped by day
- */
 export const getTasksForWeek = (tasks, week) => {
   if (!tasks || !Array.isArray(tasks) || !week) {
     return {};
   }
-  
+
   const weekTasks = {};
-  
+
   // Initialize each day with empty array
-  week.days.forEach(day => {
-    const dayStr = format(day, 'yyyy-MM-dd');
+  week.days.forEach((day) => {
+    const dayStr = format(day, "yyyy-MM-dd");
     weekTasks[dayStr] = [];
   });
-  
+
   // Filter and group tasks by day
-  tasks.forEach(task => {
+  tasks.forEach((task) => {
     if (!task.data_task?.startDate) return;
-    
+
     const taskStartDate = new Date(task.data_task.startDate);
-    const taskEndDate = task.data_task.endDate ? new Date(task.data_task.endDate) : taskStartDate;
-    
+    const taskEndDate = task.data_task.endDate
+      ? new Date(task.data_task.endDate)
+      : taskStartDate;
+
     // Check if task falls within this week
     if (taskStartDate >= week.startDate && taskStartDate <= week.endDate) {
-      const dayStr = format(taskStartDate, 'yyyy-MM-dd');
+      const dayStr = format(taskStartDate, "yyyy-MM-dd");
       if (weekTasks[dayStr]) {
         weekTasks[dayStr].push(task);
       }
     }
   });
-  
+
   return weekTasks;
 };
 
-/**
- * Get current week number in the month
- * @param {string|Date} monthId - Month ID or date
- * @returns {number} Current week number (1-based)
- */
 export const getCurrentWeekNumber = (monthId) => {
-  const date = typeof monthId === 'string' ? parseMonthId(monthId) : monthId;
+  const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
   if (!isValid(date)) return 1;
-  
+
   const today = new Date();
   const monthStart = startOfMonth(date);
-  
+
   // If today is not in this month, return first week
   if (today < monthStart || today > endOfMonth(date)) {
     return 1;
   }
-  
+
   const weeks = getWeeksInMonth(monthId);
-  const currentWeek = weeks.find(week => 
-    today >= week.startDate && today <= week.endDate
+  const currentWeek = weeks.find(
+    (week) => today >= week.startDate && today <= week.endDate
   );
-  
+
   return currentWeek ? currentWeek.weekNumber : 1;
 };
 
@@ -138,43 +136,31 @@ export const getCurrentWeekNumber = (monthId) => {
 // VALIDATION UTILITIES
 // ============================================================================
 
-/**
- * Validate month ID format
- * @param {string} monthId - Month ID to validate
- * @returns {Object} Validation result with isValid and error message
- */
 const validateMonthId = (monthId) => {
-  if (!monthId || typeof monthId !== 'string') {
-    return { isValid: false, error: 'Month ID must be a non-empty string' };
+  if (!monthId || typeof monthId !== "string") {
+    return { isValid: false, error: "Month ID must be a non-empty string" };
   }
-  
+
   const monthIdRegex = /^\d{4}-\d{2}$/;
   if (!monthIdRegex.test(monthId)) {
-    return { isValid: false, error: 'Month ID must be in format YYYY-MM' };
+    return { isValid: false, error: "Month ID must be in format YYYY-MM" };
   }
-  
-  const [year, month] = monthId.split('-');
+
+  const [year, month] = monthId.split("-");
   const yearNum = parseInt(year, 10);
   const monthNum = parseInt(month, 10);
-  
+
   if (yearNum < 1900 || yearNum > 2100) {
-    return { isValid: false, error: 'Year must be between 1900 and 2100' };
+    return { isValid: false, error: "Year must be between 1900 and 2100" };
   }
-  
+
   if (monthNum < 1 || monthNum > 12) {
-    return { isValid: false, error: 'Month must be between 01 and 12' };
+    return { isValid: false, error: "Month must be between 01 and 12" };
   }
-  
+
   return { isValid: true, error: null };
 };
 
-/**
- * Safe date creation with timezone handling
- * @param {number} year - Year
- * @param {number} month - Month (1-12)
- * @param {number} day - Day
- * @returns {Date} Date object in local timezone
- */
 const createLocalDate = (year, month, day) => {
   // Create date in local timezone to avoid timezone shifts
   return new Date(year, month - 1, day);
@@ -184,112 +170,92 @@ const createLocalDate = (year, month, day) => {
 // MONTH UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Get current month information
- * @returns {Object} Month information with consistent structure
- */
 export const getCurrentMonthInfo = () => {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1; // getMonth() returns 0-11, we want 1-12
-  
+
   // Use date-fns for consistent date handling
   const startDate = startOfMonth(now);
   const endDate = endOfMonth(now);
-  
+
   return {
-    monthId: `${year}-${String(month).padStart(2, '0')}`,
-    monthName: now.toLocaleString('default', { month: 'long' }),
+    monthId: `${year}-${String(month).padStart(2, "0")}`,
+    monthName: now.toLocaleString("default", { month: "long" }),
     year: year,
     month: month,
     startDate: startDate,
     endDate: endDate,
-    daysInMonth: getDaysInMonth(now)
+    daysInMonth: getDaysInMonth(now),
   };
 };
 
-
-/**
- * Get month boundaries for date restrictions
- * @param {string} monthId - Month ID in format "YYYY-MM"
- * @returns {Object} Min and max date strings for the month
- */
 export const getMonthBoundaries = (monthId) => {
   // Validate input
   const validation = validateMonthId(monthId);
   if (!validation.isValid) {
-    logger.error('Invalid monthId in getMonthBoundaries:', validation.error);
+    logger.error("Invalid monthId in getMonthBoundaries:", validation.error);
     throw new Error(validation.error);
   }
-  
-  const [year, month] = monthId.split('-');
+
+  const [year, month] = monthId.split("-");
   const yearNum = parseInt(year, 10);
   const monthNum = parseInt(month, 10);
-  
+
   try {
     // Use date-fns for consistent date handling with proper timezone
     const firstDay = createLocalDate(yearNum, monthNum, 1);
     const lastDay = endOfMonth(firstDay);
-    
+
     return {
-      min: format(firstDay, 'yyyy-MM-dd'),
-      max: format(lastDay, 'yyyy-MM-dd')
+      min: format(firstDay, "yyyy-MM-dd"),
+      max: format(lastDay, "yyyy-MM-dd"),
     };
   } catch (error) {
-    logger.error('Error in getMonthBoundaries:', error);
+    logger.error("Error in getMonthBoundaries:", error);
     throw new Error(`Failed to get month boundaries: ${error.message}`);
   }
 };
 
-/**
- * Get month date range for API calls
- * @param {string} monthId - Month ID in format "YYYY-MM"
- * @returns {Object} Start and end dates for the month
- */
 export const getMonthDateRange = (monthId) => {
   // Validate input
   const validation = validateMonthId(monthId);
   if (!validation.isValid) {
-    logger.error('Invalid monthId in getMonthDateRange:', validation.error);
+    logger.error("Invalid monthId in getMonthDateRange:", validation.error);
     throw new Error(validation.error);
   }
-  
-  const [year, month] = monthId.split('-');
+
+  const [year, month] = monthId.split("-");
   const yearNum = parseInt(year, 10);
   const monthNum = parseInt(month, 10);
-  
+
   // Use date-fns for consistent date handling
   const firstDay = createLocalDate(yearNum, monthNum, 1);
   const lastDay = endOfMonth(firstDay);
-  
+
   // Return ISO strings for API compatibility, but ensure they represent the correct dates
   return {
     startDate: firstDay.toISOString(),
-    endDate: lastDay.toISOString()
+    endDate: lastDay.toISOString(),
   };
 };
 
-/**
- * Get comprehensive month info for API usage
- * @param {Date} date - Date object (defaults to current date)
- * @returns {Object} Complete month information
- */
 export const getMonthInfo = (date = new Date()) => {
   // Validate input date
   if (!isValid(date)) {
-    logger.error('Invalid date provided to getMonthInfo');
-    throw new Error('Invalid date provided');
+    logger.error("Invalid date provided to getMonthInfo");
+    throw new Error("Invalid date provided");
   }
-  
+
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
-  const monthId = `${year}-${String(month).padStart(2, '0')}`;
+  const monthId = `${year}-${String(month).padStart(2, "0")}`;
   const yearId = year.toString();
-  
+
   // Use date-fns for consistent date handling
   const startDate = startOfMonth(date);
   const endDate = endOfMonth(date);
-  
+
   return {
     monthId,
     yearId,
@@ -297,62 +263,63 @@ export const getMonthInfo = (date = new Date()) => {
     month: month, // Add month field for month board creation
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
-    monthName: date.toLocaleString('default', { month: 'long' }),
+    monthName: date.toLocaleString("default", { month: "long" }),
     daysInMonth: getDaysInMonth(date),
   };
 };
 
-
-/**
- * Calculate month progress
- * @param {string} monthId - Month ID
- * @param {number} daysInMonth - Total days in month (fallback)
- * @returns {Object} Progress information
- */
 export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
   if (!monthId) {
     return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
   }
-  
+
   // Validate monthId format
   const validation = validateMonthId(monthId);
   if (!validation.isValid) {
-    logger.error('Invalid monthId in calculateMonthProgress:', validation.error);
+    logger.error(
+      "Invalid monthId in calculateMonthProgress:",
+      validation.error
+    );
     return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
   }
-  
+
   // Calculate the actual number of days in this month using date-fns
   let totalDays;
   try {
-    const monthIdParts = monthId.split('-');
+    const monthIdParts = monthId.split("-");
     const year = parseInt(monthIdParts[0], 10);
     const month = parseInt(monthIdParts[1], 10);
     const firstDayOfMonth = createLocalDate(year, month, 1);
     totalDays = getDaysInMonth(firstDayOfMonth);
   } catch (error) {
-    logger.error('Error calculating days in month:', error);
+    logger.error("Error calculating days in month:", error);
     // Fallback to daysInMonth prop if available
     totalDays = daysInMonth || 30;
   }
-  
+
   const currentMonthId = getCurrentMonthId();
-  
+
   // If it's not the current month, show 100% progress
   if (monthId !== currentMonthId) {
-    return { progress: 100, daysPassed: totalDays, totalDays: totalDays, daysRemaining: 0 };
+    return {
+      progress: 100,
+      daysPassed: totalDays,
+      totalDays: totalDays,
+      daysRemaining: 0,
+    };
   }
-  
+
   // Calculate progress for current month
   const now = new Date();
   const daysPassed = now.getDate();
   const progress = Math.round((daysPassed / totalDays) * 100);
   const daysRemaining = totalDays - daysPassed;
-  
+
   return {
     progress: Math.min(progress, 100),
     daysPassed,
     totalDays,
-    daysRemaining
+    daysRemaining,
   };
 };
 
@@ -360,10 +327,14 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
 // MONTH COMPONENTS
 // ============================================================================
 
-/**
- * Month Progress Bar Component
- */
-export const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate, endDate, daysInMonth }) => {
+export const MonthProgressBar = ({
+  monthId,
+  monthName,
+  isCurrentMonth,
+  startDate,
+  endDate,
+  daysInMonth,
+}) => {
   const progressData = calculateMonthProgress(monthId, daysInMonth);
 
   if (!monthId) {
@@ -374,33 +345,27 @@ export const MonthProgressBar = ({ monthId, monthName, isCurrentMonth, startDate
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <Icons.generic.clock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {monthName} Progress
-          </span>
+          <Icons.generic.clock className="w-4 h-4" />
+          <span className="text-sm">{monthName} Progress</span>
         </div>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="text-sm ">
           {progressData.daysPassed}/{progressData.totalDays} days
         </span>
       </div>
-      
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+
+      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${
-            isCurrentMonth 
-              ? 'bg-gradient-to-r' 
-              : 'bg-gradient-to-r from-green-500 to-green-600'
-          }`}
-          style={{ 
+          className="h-2 rounded-full transition-all duration-300"
+          style={{
             width: `${progressData.progress}%`,
-            background: isCurrentMonth 
-              ? `linear-gradient(to right, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default})`
-              : undefined
+            backgroundColor: isCurrentMonth
+              ? CARD_SYSTEM.COLOR_HEX_MAP.amber
+              : CARD_SYSTEM.COLOR_HEX_MAP.red,
           }}
         />
       </div>
-      
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+
+      <div className="flex justify-between text-xs mt-2">
         <span>{progressData.daysPassed} days passed</span>
         <span>{progressData.daysRemaining} days remaining</span>
       </div>
@@ -417,10 +382,13 @@ export const MonthBoardBanner = () => {
     appData = useAppDataContext();
   } catch (error) {
     // If context is not available, return null
-    console.warn('MonthBoardBanner: AppDataContext not available:', error.message);
+    console.warn(
+      "MonthBoardBanner: AppDataContext not available:",
+      error.message
+    );
     return null;
   }
-  
+
   const [generateMonthBoard] = useCreateMonthBoard();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -436,7 +404,8 @@ export const MonthBoardBanner = () => {
   } = appData || {};
 
   // Convert Date objects back to ISO strings if needed
-  const startDateStr = startDate instanceof Date ? startDate.toISOString() : startDate;
+  const startDateStr =
+    startDate instanceof Date ? startDate.toISOString() : startDate;
   const endDateStr = endDate instanceof Date ? endDate.toISOString() : endDate;
 
   // Don't show banner if:
@@ -454,22 +423,33 @@ export const MonthBoardBanner = () => {
 
       if (result.success) {
         showSuccess(`Month board for ${monthName} created successfully!`);
-        logger.log("Month board generated successfully", { monthId, monthName });
+        logger.log("Month board generated successfully", {
+          monthId,
+          monthName,
+        });
       } else {
         showError(result.message || "Failed to create month board");
-        logger.error("Month board generation failed", { monthId, monthName, error: result.message });
+        logger.error("Month board generation failed", {
+          monthId,
+          monthName,
+          error: result.message,
+        });
       }
     } catch (error) {
       const errorMessage = error?.message || "Failed to create month board";
       showError(errorMessage);
-      logger.error("Month board generation error", { monthId, monthName, error });
+      logger.error("Month board generation error", {
+        monthId,
+        monthName,
+        error,
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+    <div className="card border border-blue-200 dark:border-blue-800  p-4 mb-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">

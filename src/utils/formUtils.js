@@ -1,17 +1,9 @@
-/**
- * Centralized Form Utilities
- * Standardizes form handling patterns across the application
- */
+
 
 import { showOperationSuccess, showOperationError, showValidationError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 
-/**
- * Standardized form submission handler
- * @param {Function} submitFn - The submission function
- * @param {Object} options - Form options
- * @returns {Function} Form submission handler
- */
+
 export const createFormSubmissionHandler = (submitFn, options = {}) => {
   const {
     operation = 'save',
@@ -78,12 +70,7 @@ export const createFormSubmissionHandler = (submitFn, options = {}) => {
   };
 };
 
-/**
- * Standardized form validation handler
- * @param {Object} errors - Form validation errors
- * @param {string} formName - Name of the form
- * @returns {void}
- */
+
 export const handleFormValidation = (errors, formName = 'Form') => {
   const errorCount = Object.keys(errors).length;
 
@@ -93,12 +80,7 @@ export const handleFormValidation = (errors, formName = 'Form') => {
   }
 };
 
-/**
- * Standardized form reset handler
- * @param {Object} formMethods - React Hook Form methods
- * @param {Object} defaultValues - Default form values
- * @returns {Function} Reset handler
- */
+
 export const createFormResetHandler = (formMethods, defaultValues = {}) => {
   const { reset, clearErrors } = formMethods;
 
@@ -109,12 +91,7 @@ export const createFormResetHandler = (formMethods, defaultValues = {}) => {
   };
 };
 
-/**
- * Standardized form field change handler
- * @param {Object} formMethods - React Hook Form methods
- * @param {string} fieldName - Name of the field
- * @returns {Function} Field change handler
- */
+
 export const createFieldChangeHandler = (formMethods, fieldName) => {
   const { setValue, trigger, clearErrors } = formMethods;
 
@@ -125,12 +102,7 @@ export const createFieldChangeHandler = (formMethods, fieldName) => {
   };
 };
 
-/**
- * Standardized conditional field logic
- * @param {Object} watchedValues - Form watched values
- * @param {Object} conditions - Field conditions
- * @returns {Object} Field visibility and requirements
- */
+
 export const getConditionalFieldLogic = (watchedValues, conditions) => {
   const result = {};
 
@@ -149,12 +121,7 @@ export const getConditionalFieldLogic = (watchedValues, conditions) => {
   return result;
 };
 
-/**
- * Standardized form data preparation
- * @param {Object} data - Raw form data
- * @param {Object} options - Preparation options
- * @returns {Object} Prepared form data
- */
+
 export const prepareFormData = (data, options = {}) => {
   const {
     removeEmptyFields = true,
@@ -207,12 +174,7 @@ export const prepareFormData = (data, options = {}) => {
   return preparedData;
 };
 
-/**
- * Standardized form error display
- * @param {Object} errors - Form errors
- * @param {string} fieldName - Field name
- * @returns {string|null} Error message
- */
+
 export const getFieldError = (errors, fieldName) => {
   const error = errors[fieldName];
   return error?.message || null;
@@ -233,13 +195,7 @@ export const getFormLoadingState = (isSubmitting, isLoading = false) => {
   };
 };
 
-/**
- * Transform form data to lowercase for database storage with uppercase exceptions
- * @param {Object} data - Form data to transform
- * @param {Array} fieldsToLowercase - Specific fields to lowercase (optional, defaults to all string fields)
- * @param {Array} fieldsToKeepUppercase - Fields to keep uppercase (defaults to ['taskName'])
- * @returns {Object} Transformed data with lowercase strings (except specified uppercase fields)
- */
+
 export const transformDataToLowercase = (data, fieldsToLowercase = [], fieldsToKeepUppercase = ['taskName']) => {
   const transformedData = { ...data };
 

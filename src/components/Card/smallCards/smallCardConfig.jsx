@@ -400,8 +400,14 @@ export const SMALL_CARD_CONFIGS = {
         {data.isUserAdmin && (
           <DynamicButton
             onClick={() => {
-              // Build URL parameters for ALL data tasks (no filters at all)
+              // Build URL parameters for ALL data tasks with selected month
               const params = new URLSearchParams();
+              // Handle month selection - use selected month or current month
+              if (data.selectedMonth?.monthId) {
+                params.set('month', data.selectedMonth.monthId);
+              } else if (data.currentMonth?.monthId) {
+                params.set('month', data.currentMonth.monthId);
+              }
               const url = `/analytics-detail?${params.toString()}`;
               if (data.navigate) {
                 data.navigate(url);
@@ -641,11 +647,6 @@ export const SMALL_CARD_CONFIGS = {
         value: `${data.totalHours || 0}h`,
       },
       {
-        icon: Icons.generic.calendar,
-        label: 'Total Tasks (3 Months)',
-        value: (data.totalTasksMultipleMonths || 0).toString(),
-      },
-      {
         icon: Icons.generic.target,
         label: 'Weekly Average',
         value: `${Math.round((data.weeklyTasks || []).reduce((a, b) => a + b, 0) / 7)} tasks`,
@@ -680,16 +681,6 @@ export const SMALL_CARD_CONFIGS = {
         icon: Icons.generic.warning,
         label: 'Total Variations',
         value: (data.totalVariations || 0).toString(),
-      },
-      {
-        icon: Icons.generic.target,
-        label: 'Deliverables per Task',
-        value: data.totalTasksThisMonth > 0 ? `${((data.totalDeliverables || 0) / data.totalTasksThisMonth).toFixed(1)}` : '0',
-      },
-      {
-        icon: Icons.generic.star,
-        label: 'Variation Rate',
-        value: data.totalDeliverables > 0 ? `${(((data.totalVariations || 0) / data.totalDeliverables) * 100).toFixed(1)}%` : '0%',
       },
     ],
   },

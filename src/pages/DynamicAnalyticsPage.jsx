@@ -10,6 +10,7 @@ import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import SelectField from "@/components/forms/components/SelectField";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import Badge from "@/components/ui/Badge/Badge";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -374,7 +375,40 @@ const DynamicAnalyticsPage = () => {
   
   
   // Use real data from context
-  const { tasks, isLoading, error, loadingStates, monthId: contextMonthId } = useAppDataContext();
+  const { tasks, isLoading, error, loadingStates, monthId: contextMonthId, reporters } = useAppDataContext();
+  
+  // Helper function to get reporter name from UID
+  const getReporterName = (task) => {
+    // First try reporterName field
+    const reporterName = task.data_task?.reporterName || task.reporterName;
+    if (reporterName) return reporterName;
+    
+    // If no name, try to resolve from reporters data
+    const reporterId = task.data_task?.reporters || task.data_task?.reporterUID || task.reporterUID || task.reporters;
+    if (reporterId && reporters && Array.isArray(reporters)) {
+      const reporter = reporters.find(r => {
+        const reporterIdField = r.id || r.uid || r.reporterUID;
+        return reporterIdField && 
+               typeof reporterIdField === 'string' &&
+               reporterIdField.toLowerCase() === String(reporterId).toLowerCase();
+      });
+      if (reporter?.name) return reporter.name;
+    }
+    
+    // Fallback to UID if nothing found
+    return reporterId || 'N/A';
+  };
+
+  // Helper function to render market badges (consistent with table columns)
+  const renderMarketBadges = (markets) => {
+    if (!markets || markets.length === 0) return null;
+    const marketList = Array.isArray(markets) ? markets : [markets];
+    return marketList.map((market, idx) => (
+      <Badge key={idx} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
+        {market}
+      </Badge>
+    ));
+  };
   
   // Manage data ready state to prevent flickering
   useEffect(() => {
@@ -488,7 +522,7 @@ const DynamicAnalyticsPage = () => {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-smallCard text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading analytics data: {error.message}</p>
           <button
@@ -594,7 +628,8 @@ const DynamicAnalyticsPage = () => {
                 );
               }
  {/* no task */}
-              // Get weeks for the current month
+              // Get weeks for the current month - this fetches all existing weeks, does NOT create new ones
+              // Weeks are filtered/selected from this list, never duplicated
               const weeks = getWeeksInMonth(actualMonthId);
               if (!weeks || weeks.length === 0) {
                 return (
@@ -604,7 +639,7 @@ const DynamicAnalyticsPage = () => {
                 );
               }
 
-              // If no week is selected (All Weeks), show all weeks
+              // If no week is selected (All Weeks), show all existing weeks
               if (!selectedWeekValue || selectedWeekValue === '') {
                 // Show all weeks
                 return weeks.map((week) => {
@@ -644,7 +679,7 @@ const DynamicAnalyticsPage = () => {
                   });
 
                   return (
-                    <div key={week.weekNumber} className="bg-primary rounded-lg p-6 border border-gray-700">
+                    <div key={week.weekNumber} className="bg-smallCard rounded-lg p-6 border border-gray-700">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
@@ -670,14 +705,16 @@ const DynamicAnalyticsPage = () => {
                       {weekTasks.length > 0 ? (
                         <div className="space-y-3">
                           {weekTasks.map((task, index) => (
-                            <div key={task.id || index} className="flex items-center justify-between p-3 bg-smallCard rounded-lg">
+                            <div key={task.id || index} className=" card flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
                               <div className="flex items-center space-x-3">
                                 <div 
                                   className="w-3 h-3 rounded-full"
                                   style={{
-                                    backgroundColor: task.data_task?.reworked ? '#dc2626' : // crimson for reworked
-                                                  task.data_task?.completed ? '#f59e0b' : // amber for completed
-                                                  '#10b981' // green for active
+                                    backgroundColor: (() => {
+                                      const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
+                                      const hasAI = aiModels && (Array.isArray(aiModels) ? aiModels.length > 0 : Boolean(aiModels));
+                                      return hasAI ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : CARD_SYSTEM.COLOR_HEX_MAP.green;
+                                    })()
                                   }}
                                 ></div>
                                 <div className="flex flex-col">
@@ -695,20 +732,28 @@ const DynamicAnalyticsPage = () => {
                                       task.data_task?.title || 'Untitled Task'
                                     )}
                                   </span>
-                                  <div className="flex items-center space-x-2 text-xs text-gray-400">
-                                    <span>Reporter: {task.data_task?.reporters || task.reporterName || 'N/A'}</span>
-                                    <span>•</span>
-                                    <span>Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
-                                    <span>•</span>
-                                    <span>Dept: {task.data_task?.departments ? 
-                                      (Array.isArray(task.data_task.departments) ? 
-                                        task.data_task.departments.join(', ') : 
-                                        task.data_task.departments) : 
-                                      'N/A'}</span>
+                                  <div className="flex items-center flex-wrap gap-2 mt-0">
+                                    <span className="text-xs text-gray-400">Reporter: {getReporterName(task)}</span>
+                                    <span className="text-xs text-gray-400">•</span>
+                                    <span className="text-xs text-gray-400">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                    {/* AI Badges */}
+                                    {(() => {
+                                      const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
+                                      const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
+                                      if (!aiModels || aiModels.length === 0) return null;
+                                      const models = Array.isArray(aiModels) ? aiModels : [aiModels];
+                                      return models.map((model, idx) => (
+                                        <Badge key={idx} variant="purple" size="sm">
+                                          {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
+                                        </Badge>
+                                      ));
+                                    })()}
+                                    {/* Market Badges */}
+                                    {renderMarketBadges(task.data_task?.markets || task.markets)}
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-4">
+                              <div className="flex items-center justify-end">
                                 <div className="text-right">
                                   <div className="text-sm font-medium text-white">
                                     {task.createdByName || task.userName || 'Unknown User'}
@@ -718,16 +763,12 @@ const DynamicAnalyticsPage = () => {
                                       if (!task.createdAt) return 'No date';
                                       const date = convertToDate(task.createdAt);
                                       if (!date || isNaN(date.getTime())) return 'Invalid date';
-                                      return date.toLocaleDateString();
+                                      const dateStr = date.toLocaleDateString();
+                                      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+                                      const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
+                                      const totalHours = (taskHours + aiTime).toFixed(1);
+                                      return `${dateStr} ${totalHours}h`;
                                     })()}
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-xs text-gray-400">
-                                    Markets: {task.data_task?.markets?.length || 0}
-                                  </div>
-                                  <div className="text-xs text-gray-400">
-                                    HR: {task.data_task?.timeInHours || task.timeInHours || 0}h
                                   </div>
                                 </div>
                               </div>
@@ -749,12 +790,28 @@ const DynamicAnalyticsPage = () => {
                 });
               }
 
-              // Show only the selected week
+              // Show only the selected week - filter from existing weeks
               const weekNumber = parseInt(selectedWeekValue);
               const week = weeks.find(w => w.weekNumber === weekNumber);
-                // Get tasks for this week
-                const weekTasks = [];
-                week.days.forEach(day => {
+              
+              // If week not found, show error message
+              if (!week) {
+                return (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">
+                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-lg font-medium mb-1">Week Not Found</p>
+                      <p className="text-sm">The selected week (Week {weekNumber}) is not available for this month</p>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Get tasks for this week - filter from existing tasks
+              const weekTasks = [];
+              week.days.forEach(day => {
                   try {
                     const dayDate = day instanceof Date ? day : new Date(day);
                     if (isNaN(dayDate.getTime())) return;
@@ -826,17 +883,19 @@ const DynamicAnalyticsPage = () => {
                     {weekTasks.length > 0 ? (
                       <div className="space-y-3">
                         {weekTasks.map((task, index) => (
-                          <div key={task.id || index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                          <div key={task.id || index} className="flex items-center justify-between p-3 card" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
                             <div className="flex items-center space-x-3">
                               <div 
                                 className="w-3 h-3 rounded-full"
                                 style={{
-                                  backgroundColor: task.data_task?.reworked ? '#dc2626' : // crimson for reworked
-                                                task.data_task?.completed ? '#f59e0b' : // amber for completed
-                                                '#10b981' // green for active
+                                  backgroundColor: (() => {
+                                    const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
+                                    const hasAI = aiModels && (Array.isArray(aiModels) ? aiModels.length > 0 : Boolean(aiModels));
+                                    return hasAI ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : CARD_SYSTEM.COLOR_HEX_MAP.green;
+                                  })()
                                 }}
                               ></div>
-                              <div className="flex flex-col">
+                              <div className="flex flex-col"> 
                                 <span className="font-medium text-white">
                                   {task.data_task?.taskName ? (
                                     <a 
@@ -851,20 +910,28 @@ const DynamicAnalyticsPage = () => {
                                     task.data_task?.title || 'Untitled Task'
                                   )}
                                 </span>
-                                <div className="flex items-center space-x-2 text-xs text-gray-400">
-                                  <span>Reporter: {task.data_task?.reporters || task.reporterName || 'N/A'}</span>
-                                  <span>•</span>
-                                  <span>Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
-                                  <span>•</span>
-                                  <span>Dept: {task.data_task?.departments ? 
-                                    (Array.isArray(task.data_task.departments) ? 
-                                      task.data_task.departments.join(', ') : 
-                                      task.data_task.departments) : 
-                                    'N/A'}</span>
+                                <div className="flex items-center flex-wrap gap-2 mt-0">
+                                  <span className="text-xs text-gray-400">Reporter: {getReporterName(task)}</span>
+                                  <span className="text-xs text-gray-400">•</span>
+                                  <span className="text-xs text-gray-400">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                  {/* AI Badges */}
+                                  {(() => {
+                                    const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
+                                    const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
+                                    if (!aiModels || aiModels.length === 0) return null;
+                                    const models = Array.isArray(aiModels) ? aiModels : [aiModels];
+                                    return models.map((model, idx) => (
+                                      <Badge key={idx} variant="purple" size="xs">
+                                        {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
+                                      </Badge>
+                                    ));
+                                  })()}
+                                  {/* Market Badges */}
+                                  {renderMarketBadges(task.data_task?.markets || task.markets)}
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center justify-end">
                               <div className="text-right">
                                 <div className="text-sm font-medium text-white">
                                   {task.createdByName || task.userName || 'Unknown User'}
@@ -874,16 +941,12 @@ const DynamicAnalyticsPage = () => {
                                     if (!task.createdAt) return 'No date';
                                     const date = convertToDate(task.createdAt);
                                     if (!date || isNaN(date.getTime())) return 'Invalid date';
-                                    return date.toLocaleDateString();
+                                    const dateStr = date.toLocaleDateString();
+                                    const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+                                    const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
+                                    const totalHours = (taskHours + aiTime).toFixed(1);
+                                    return `${dateStr} ${totalHours}h`;
                                   })()}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xs text-gray-400">
-                                  Markets: {task.data_task?.markets?.length || 0}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  HR: {task.data_task?.timeInHours || task.timeInHours || 0}h
                                 </div>
                               </div>
                             </div>
