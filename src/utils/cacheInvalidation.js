@@ -16,7 +16,7 @@ export const clearStaticDataCache = (dataType) => {
       `reporters_${getCurrentYear()}`,
       `deliverables_${getCurrentYear()}`,
       'users',
-      'reporters', 
+      'reporters',
       'deliverables'
     ];
 

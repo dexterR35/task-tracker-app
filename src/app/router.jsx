@@ -108,6 +108,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { canAccess } = authState;
   const location = useLocation();
 
+  // Show loading during initial auth check to prevent flash
+  if (authState.isLoading || authState.isAuthChecking) {
+    return <SimpleLoader />;
+  }
+
   // Redirect state object for post-login redirect
   const redirectState = {
     from: location.pathname + location.search + location.hash
@@ -160,17 +165,11 @@ ProtectedRoute.displayName = "ProtectedRoute";
 
 
 /**
- * Root layout with global auth loading state and error boundary
+ * Root layout with error boundary
+ * Auth loading is handled by ProtectedRoute components
  * @returns {JSX.Element} - Root layout component
  */
 const RootLayout = () => {
-  const authState = useAuth();
-  
-  // Show loading during initial auth check to prevent flash
-  if (authState.isLoading || authState.isAuthChecking) {
-    return <SimpleLoader />;
-  }
-  
   return (
     <ErrorBoundary componentName="RootLayout">
       <Outlet />
@@ -181,12 +180,14 @@ const RootLayout = () => {
 /**
  * Main application router configuration
  * Defines all routes with proper protection and layouts
+ * @returns {Router} - Created browser router instance
  */
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    children: [
+export const createRouter = () => {
+  return createBrowserRouter([
+    {
+      path: "/",
+      element: <RootLayout />,
+      children: [
       // ========================================
       // PUBLIC ROUTES (No authentication required)
       // ========================================
@@ -330,13 +331,14 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ========================================
-  // ERROR ROUTES (Catch-all for 404s)
-  // ========================================
-  {
-    path: "*",
-    element: <NotFoundPage />,
-  },
-]);
+    // ========================================
+    // ERROR ROUTES (Catch-all for 404s)
+    // ========================================
+    {
+      path: "*",
+      element: <NotFoundPage />,
+    },
+  ]);
+};
 
-export default router;
+export default createRouter;

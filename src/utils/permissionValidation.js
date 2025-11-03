@@ -25,7 +25,7 @@ import { logger } from '@/utils/logger';
 /**
  * Centralized permission validation function
  * Replaces duplicate validation logic across different API modules
- * 
+ *
  * @param {Object} userData - User data object
  * @param {string|Array} requiredPermissions - Required permission(s)
  * @param {PermissionValidationOptions} options - Validation options
@@ -70,7 +70,7 @@ export const validatePermissions = (userData, requiredPermissions, options = {})
     if (userData.permissions && Array.isArray(userData.permissions)) {
       return userData.permissions.includes(permission);
     }
-    
+
     // Fallback to role-based permissions
     return hasRoleBasedPermission(userData.role, permission);
   });
@@ -186,7 +186,7 @@ export const withPermissionValidation = (requiredPermissions, options = {}) => {
     descriptor.value = async function (...args) {
       // Assume userData is the second argument (after the main data parameter)
       const userData = args[1];
-      
+
       const validation = validatePermissions(userData, requiredPermissions, {
         operation: `${target.constructor.name}.${propertyKey}`,
         ...options
@@ -212,7 +212,7 @@ export const withPermissionValidation = (requiredPermissions, options = {}) => {
  */
 export const usePermissionValidation = (userData, requiredPermissions, options = {}) => {
   const validation = validatePermissions(userData, requiredPermissions, options);
-  
+
   return {
     isValid: validation.isValid,
     errors: validation.errors,

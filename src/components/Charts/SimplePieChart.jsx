@@ -1,8 +1,7 @@
 import React, { useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
+import { CHART_COLORS, addConsistentColors } from "@/components/Cards/analyticsCardConfig";
 import { CARD_SYSTEM } from '@/constants';
-import { addConsistentColors, getColorsForData } from '@/utils/chartColorMapping';
 
 const SimplePieChart = React.memo(({ 
   data, 
@@ -16,10 +15,15 @@ const SimplePieChart = React.memo(({
   minPercentageThreshold = 5,
   dataType = 'market' // Type of data for consistent color mapping
 }) => {
-  // Process data with consistent colors
+  // Process data with consistent colors and sort to reduce label collisions
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    return addConsistentColors(data, dataType);
+    
+    // Sort data by value (descending) to group larger slices together
+    // This helps space out labels better and reduces collisions
+    const sortedData = [...data].sort((a, b) => (b.value || 0) - (a.value || 0));
+    
+    return addConsistentColors(sortedData, dataType);
   }, [data, dataType]);
 
   if (!processedData || processedData.length === 0) {
@@ -54,8 +58,14 @@ const SimplePieChart = React.memo(({
   //   );
   // };
 
+  // Helper function to capitalize text
+  const capitalizeText = (text) => {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
+
   const renderLabelLine = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
-    if (!showLeaderLines || percent < (minPercentageThreshold / 100)) return null;
+    if (!showLeaderLines) return null;
     
     const RADIAN = Math.PI / 180;
     
@@ -76,6 +86,9 @@ const SimplePieChart = React.memo(({
         default: return "none";
       }
     };
+
+    // Capitalize the name
+    const capitalizedName = capitalizeText(name);
 
     return (
       <g style={{ pointerEvents: 'none' }}>
@@ -102,7 +115,7 @@ const SimplePieChart = React.memo(({
           className="dark:fill-gray-200"
           style={{ pointerEvents: 'none' }}
         >
-          {showPercentages ? `${name} (${(percent * 100).toFixed(0)}%)` : name}
+          {showPercentages ? `${capitalizedName} (${(percent * 100).toFixed(0)}%)` : capitalizedName}
         </text>
       </g>
     );
@@ -113,14 +126,14 @@ const SimplePieChart = React.memo(({
       <h4>{title}</h4>
       <div className="h-56 relative overflow-visible">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+          <PieChart margin={{ top: 30, right: 40, bottom: 30, left: 40 }}>
             <Pie
               data={processedData}
               cx="50%"
               cy="50%"
               labelLine={false}
               label={showLeaderLines ? renderLabelLine : false}
-              outerRadius={80}
+              outerRadius={70}
               fill="#8884d8"
               dataKey="value"
             >

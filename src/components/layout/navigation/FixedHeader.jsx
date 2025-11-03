@@ -79,10 +79,13 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {user?.name?.charAt(0) || "U"}
-            </div>
-            <Avatar />
+            <Avatar 
+              user={user}
+              size="sm"
+            
+              showName={false}
+              className="flex-shrink-0"
+            />
             <div className="hidden sm:block text-left">
               <p className="text-sm font-semibold text-gray-900 dark:text-white">
                 {user?.name || "User"}

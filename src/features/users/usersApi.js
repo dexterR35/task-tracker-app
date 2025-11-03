@@ -19,11 +19,11 @@ import {
   serverTimestamp,
   where,
   getDocs,
-  getDoc
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import dataCache from "@/utils/dataCache";
+import listenerManager from "@/features/utils/firebaseListenerManager";
 
 /**
  * Check if user email already exists
@@ -203,44 +203,46 @@ export const useUserByUID = (userUID) => {
       return;
     }
 
-    let unsubscribe = null;
+    const listenerKey = `user_by_uid_${userUID}`;
 
-    const setupListener = () => {
-      setIsLoading(true);
-      setError(null);
+    listenerManager.addListener(
+      listenerKey,
+      () => {
+        setIsLoading(true);
+        setError(null);
 
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('userUID', '==', userUID));
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('userUID', '==', userUID));
 
-      unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          if (snapshot.empty) {
-            setUser(null);
-          } else {
-            const userData = snapshot.docs[0].data();
-            setUser({
-              id: snapshot.docs[0].id,
-              ...userData
-            });
+        return onSnapshot(
+          q,
+          (snapshot) => {
+            if (snapshot.empty) {
+              setUser(null);
+            } else {
+              const userData = snapshot.docs[0].data();
+              setUser({
+                id: snapshot.docs[0].id,
+                ...userData
+              });
+            }
+            setIsLoading(false);
+            setError(null);
+          },
+          (err) => {
+            logger.error('User by UID real-time error:', err);
+            setError(err);
+            setIsLoading(false);
           }
-          setIsLoading(false);
-          setError(null);
-        },
-        (err) => {
-          logger.error('User by UID real-time error:', err);
-          setError(err);
-          setIsLoading(false);
-        }
-      );
-    };
-
-    setupListener();
+        );
+      },
+      false, // Don't preserve - can be paused when tab hidden
+      'users',
+      'user-profile'
+    );
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      listenerManager.removeListener(listenerKey);
     };
   }, [userUID]);
 

@@ -3,6 +3,7 @@ import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
+import { CARD_SYSTEM } from "@/constants";
 
 const ReporterAnalyticsCard = ({
   title,
@@ -15,15 +16,16 @@ const ReporterAnalyticsCard = ({
   reporterBiaxialTitle,
   reporterBiaxialTasksColor,
   reporterBiaxialHoursColor,
+  reporterMarketBiaxialData,
+  reporterMarketBiaxialTitle,
+  reporterMarketBiaxialTasksColor,
+  reporterMarketBiaxialHoursColor,
   className = "",
   isLoading = false,
 }) => {
   if (isLoading) {
     return <SkeletonAnalyticsCard className={className} />;
   }
-
-  // NOTE: hasNoData logic has been removed.
-  // The child components (Table and Charts) are now responsible for handling their own empty states.
 
   return (
     <div id="reporter-analytics-card" className={`${className}`}>
@@ -32,16 +34,22 @@ const ReporterAnalyticsCard = ({
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* Reporter Statistics Table */}
-        <div className="table-container">
-          {/* Always render the table, letting the component handle its data */}
-          <AnalyticsTable
-            data={reporterTableData}
-            columns={reporterTableColumns}
-          />
-        </div>
+        {reporterTableData && reporterTableData.length > 0 ? (
+          <div className="table-container">
+            <AnalyticsTable
+              data={reporterTableData}
+              columns={reporterTableColumns}
+            />
+          </div>
+        ) : (
+          <div className="card">
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">No data</p>
+            </div>
+          </div>
+        )}
 
         {/* Charts Container */}
-        {/* Always render the charts, letting the components handle their data */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Reporter Metrics Pie Chart */}
           <div className="chart-container">
@@ -55,7 +63,7 @@ const ReporterAnalyticsCard = ({
               title={reporterPieTitle}
               colors={reporterPieColors}
               showPercentages={true}
-              dataType="reporter"
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.REPORTER}
             />
           </div>
 
@@ -71,9 +79,25 @@ const ReporterAnalyticsCard = ({
               title={reporterBiaxialTitle}
               tasksColor={reporterBiaxialTasksColor}
               hoursColor={reporterBiaxialHoursColor}
-              dataType="reporter"
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.REPORTER}
             />
           </div>
+        </div>
+
+        {/* Reporter-Market Biaxial Chart */}
+        <div className="chart-container">
+          <div className="mb-2">
+            <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+              📊 <strong>Reporters by Markets:</strong> Tasks & Hours per market by reporter
+            </span>
+          </div>
+          <BiaxialBarChart
+            data={reporterMarketBiaxialData}
+            title={reporterMarketBiaxialTitle}
+            tasksColor={reporterMarketBiaxialTasksColor}
+            hoursColor={reporterMarketBiaxialHoursColor}
+            dataType="reporter"
+          />
         </div>
       </div>
     </div>

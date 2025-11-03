@@ -1,7 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { CHART_COLORS } from "@/components/Cards/analyticsCardConfig";
-import { addConsistentColors } from '@/utils/chartColorMapping';
+import { CHART_COLORS, addConsistentColors } from "@/components/Cards/analyticsCardConfig";
 
 const BiaxialBarChart = React.memo(({ 
   data = [], 
@@ -12,8 +11,16 @@ const BiaxialBarChart = React.memo(({
   dataType = 'market' // Type of data for consistent color mapping
 }) => {
   // Process data with consistent colors
+  // If data already has colors, preserve them; otherwise apply consistent colors
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
+    // Check if data already has color property set (e.g., for market colors)
+    const hasCustomColors = data.some(item => item.color);
+    if (hasCustomColors) {
+      // Preserve existing colors
+      return data;
+    }
+    // Otherwise apply consistent colors based on dataType
     return addConsistentColors(data, dataType);
   }, [data, dataType]);
 
@@ -55,23 +62,23 @@ const BiaxialBarChart = React.memo(({
 
   return (
     <div className={`card rounded-lg p-4 ${className}`}>
-      <h3 className="text-lg mb-6">{title}</h3>
+      <h4 className='capitalize mb-2'>{title}</h4>
       
-      <div className="h-80">
+      <div className="h-100">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
             margin={{
-              top:20,
-              right: 30,
-              left: 30,
+              top:50,
+              right: 10,
+              left: 10,
               bottom: 5,
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="name" 
-              tick={{ fontSize: 13, fill: '#e5e7eb' }}
+              tick={{ fontSize: 12, fill: '#e5e7eb' }}
               angle={-25}
               textAnchor="end"
               height={70}

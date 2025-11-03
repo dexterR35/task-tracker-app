@@ -12,10 +12,10 @@ class FirebaseListenerManager {
     this.isInitialized = false;
     this.cleanupInterval = null;
     this.maxListeners = 50; // Prevent excessive listeners
-    this.cleanupIntervalMs = 7200000; // Clean up every 2 hours (for better performance)
-    this.idleTimeoutMs = 1800000; // 30 minutes of inactivity before cleanup
     this.lastActivity = Date.now();
-    
+    this.isPageVisible = true; // Track page visibility
+    this.pausedListeners = new Map(); // Store paused listener state
+
     // Usage tracking
     this.usageStats = {
       totalListeners: 0,
@@ -25,25 +25,10 @@ class FirebaseListenerManager {
       peakListeners: 0,
       cleanupCount: 0
     };
-    
-    this.startCleanupInterval();
   }
 
   /**
-   * Start automatic cleanup interval
-   */
-  startCleanupInterval() {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-    }
-
-    this.cleanupInterval = setInterval(() => {
-      this.performCleanup();
-    }, this.cleanupIntervalMs);
-  }
-
-  /**
-   * Stop automatic cleanup interval
+   * Stop automatic cleanup interval (kept for backward compatibility)
    */
   stopCleanupInterval() {
     if (this.cleanupInterval) {
@@ -61,17 +46,16 @@ class FirebaseListenerManager {
 
   /**
    * Perform automatic cleanup based on usage patterns
-   * MEGA MASTER: Enhanced with granular cleanup
+   * Only cleans up if too many listeners (no time-based cleanup)
    */
   performCleanup() {
     const listenerCount = this.listeners.size;
-    const timeSinceLastActivity = Date.now() - this.lastActivity;
 
     // Force cleanup if too many listeners - use granular cleanup first
     if (listenerCount > this.maxListeners) {
       logger.warn(`[ListenerManager] Too many listeners (${listenerCount}), performing granular cleanup`);
       this.performGranularCleanup();
-      
+
       // If still too many after granular cleanup, remove all
       if (this.listeners.size > this.maxListeners) {
         this.removeAllListeners();
@@ -85,16 +69,6 @@ class FirebaseListenerManager {
       this.performGranularCleanup();
       return;
     }
-
-    // Cleanup if idle for too long (for infrequent data usage)
-    if (listenerCount > 0 && timeSinceLastActivity > this.idleTimeoutMs) {
-      this.removeAllListeners();
-      return;
-    }
-
-    // Log current listener status (less frequently)
-    if (listenerCount > 0 && timeSinceLastActivity < 300000) { // Only log if active in last 5 minutes
-    }
   }
 
   /**
@@ -102,7 +76,6 @@ class FirebaseListenerManager {
    * This prevents memory leaks while preserving essential functionality
    */
   performSelectiveCleanup() {
-    const now = Date.now();
     const listenersToRemove = [];
 
     for (const [key, unsubscribe] of this.listeners) {
@@ -151,7 +124,6 @@ class FirebaseListenerManager {
     };
 
     const listenersToRemove = [];
-    const now = Date.now();
 
     for (const [key, unsubscribe] of this.listeners) {
       // Skip preserved listeners
@@ -279,8 +251,6 @@ class FirebaseListenerManager {
    * Remove all listeners with error handling (preserves critical listeners)
    */
   removeAllListeners() {
-    const listenerCount = this.listeners.size;
-
     for (const [key, unsubscribe] of this.listeners) {
       // Skip preserved listeners
       if (this.preservedListeners.has(key)) {
@@ -306,7 +276,7 @@ class FirebaseListenerManager {
    * Restore preserved listeners when app becomes visible again
    */
   restorePreservedListeners() {
-    for (const [key, { setupFn, unsubscribe }] of this.preservedListeners) {
+    for (const [key, { setupFn }] of this.preservedListeners) {
       // Clean up old listener if it exists
       if (this.listeners.has(key)) {
         try {
@@ -329,13 +299,118 @@ class FirebaseListenerManager {
   }
 
   /**
+   * Pause all non-critical listeners when page becomes hidden
+   * ALL listeners except auth should be paused when tab is hidden
+   */
+  pauseNonCriticalListeners() {
+    if (!this.isPageVisible) return; // Already paused
+
+    logger.log('[ListenerManager] Page hidden, pausing non-critical listeners');
+    this.isPageVisible = false;
+
+    const listenersToPause = [];
+
+    for (const [key, unsubscribe] of this.listeners) {
+      // Keep ONLY auth listeners active (critical for session management)
+      // Everything else (tasks, users, etc.) should be paused to save resources
+      if (key.includes('auth') || key.includes('auth-state')) {
+        continue;
+      }
+
+      listenersToPause.push({ key, unsubscribe });
+    }
+
+    // Pause all non-critical listeners (including preserved ones)
+    for (const { key, unsubscribe } of listenersToPause) {
+      // Store paused listener info for restoration
+      // Even preserved listeners need to be paused when tab is hidden
+      if (this.preservedListeners.has(key)) {
+        const preserved = this.preservedListeners.get(key);
+        this.pausedListeners.set(key, {
+          setupFn: preserved.setupFn,
+          wasActive: true,
+          wasPreserved: true
+        });
+      } else {
+        // For non-preserved listeners, just unsub them when hidden
+        this.pausedListeners.set(key, { wasActive: true, wasPreserved: false });
+      }
+
+      // Unsubscribe to stop Firestore requests
+      try {
+        unsubscribe();
+      } catch (error) {
+        logger.error(`[ListenerManager] Error pausing listener ${key}:`, error);
+      }
+
+      // Remove from active listeners map
+      this.listeners.delete(key);
+    }
+
+    logger.log(`[ListenerManager] Paused ${listenersToPause.length} non-critical listeners`);
+  }
+
+  /**
+   * Resume paused listeners when page becomes visible
+   */
+  resumePausedListeners() {
+    if (this.isPageVisible) return; // Already active
+
+    logger.log('[ListenerManager] Page visible, resuming paused listeners');
+    this.isPageVisible = true;
+
+    let resumedCount = 0;
+    const listenersToResume = Array.from(this.pausedListeners.entries());
+
+    for (const [key, pausedInfo] of listenersToResume) {
+      try {
+        if (pausedInfo.setupFn) {
+          // Only restore if listener doesn't already exist (might have been recreated)
+          if (!this.listeners.has(key)) {
+            // Restore preserved listener
+            const newUnsubscribe = pausedInfo.setupFn();
+            this.listeners.set(key, newUnsubscribe);
+
+            // Update preserved listeners map
+            if (this.preservedListeners.has(key)) {
+              this.preservedListeners.set(key, {
+                setupFn: pausedInfo.setupFn,
+                unsubscribe: newUnsubscribe
+              });
+            }
+
+            resumedCount++;
+          }
+        }
+        // Non-preserved listeners will be recreated automatically by components when needed
+      } catch (error) {
+        logger.error(`[ListenerManager] Error resuming listener ${key}:`, error);
+      }
+    }
+
+    this.pausedListeners.clear();
+
+    if (resumedCount > 0) {
+      logger.log(`[ListenerManager] Resumed ${resumedCount} listeners`);
+    }
+  }
+
+  /**
    * Cleanup on component unmount or app shutdown
    */
   destroy() {
     this.stopCleanupInterval();
-    this.removeAllListeners();
-    // Also clear preserved listeners on destroy
+    // Remove all listeners including preserved ones on destroy
+    for (const [key, unsubscribe] of this.listeners) {
+      try {
+        unsubscribe();
+      } catch (error) {
+        logger.error(`[ListenerManager] Error removing listener ${key}:`, error);
+      }
+    }
+    this.listeners.clear();
     this.preservedListeners.clear();
+    this.pausedListeners.clear();
   }
 
   /**
@@ -372,20 +447,20 @@ class FirebaseListenerManager {
   trackListenerUsage(key, category, page) {
     // Update total listeners
     this.usageStats.totalListeners = this.listeners.size;
-    
+
     // Track peak listeners
     if (this.usageStats.totalListeners > this.usageStats.peakListeners) {
       this.usageStats.peakListeners = this.usageStats.totalListeners;
     }
-    
+
     // Track listeners per page
     const pageCount = this.usageStats.listenersPerPage.get(page) || 0;
     this.usageStats.listenersPerPage.set(page, pageCount + 1);
-    
+
     // Track listeners per category
     const categoryCount = this.usageStats.listenersPerCategory.get(category) || 0;
     this.usageStats.listenersPerCategory.set(category, categoryCount + 1);
-    
+
     // Track navigation history
     this.usageStats.navigationHistory.push({
       timestamp: new Date().toISOString(),
@@ -393,7 +468,7 @@ class FirebaseListenerManager {
       category,
       totalListeners: this.usageStats.totalListeners
     });
-    
+
     // Keep only last 100 navigation events
     if (this.usageStats.navigationHistory.length > 100) {
       this.usageStats.navigationHistory = this.usageStats.navigationHistory.slice(-100);
@@ -453,21 +528,21 @@ class FirebaseListenerManager {
    */
   shouldPreserveListener(key, recentMinutes = 10) {
     const recentTime = Date.now() - (recentMinutes * 60 * 1000);
-    
+
     // Check if listener was used recently
     const recentUsage = this.usageStats.navigationHistory.filter(
       nav => nav.timestamp && new Date(nav.timestamp).getTime() > recentTime
     );
-    
+
     // Check if this listener was used recently
-    const wasUsedRecently = recentUsage.some(nav => 
+    const wasUsedRecently = recentUsage.some(nav =>
       nav.page && key.includes(nav.page.toLowerCase())
     );
-    
+
     // Check listener category for preservation rules
     const category = this.getListenerCategory(key);
     const categoryConfig = this.getCategoryConfig(category);
-    
+
     return wasUsedRecently || categoryConfig.preserve;
   }
 
@@ -511,7 +586,7 @@ class FirebaseListenerManager {
       'reports': { priority: 5, preserve: false },
       'general': { priority: 5, preserve: false }
     };
-    
+
     return configs[category] || configs.general;
   }
 }
@@ -519,40 +594,29 @@ class FirebaseListenerManager {
 // Create singleton instance
 const listenerManager = new FirebaseListenerManager();
 
-// Clean up listeners on page unload and visibility change
+// Handle page visibility changes to pause/resume listeners
 if (typeof window !== 'undefined') {
   // Clean up on page unload
   window.addEventListener('beforeunload', () => {
     listenerManager.destroy();
   });
 
-  // Handle visibility changes - preserve critical listeners
-  document.addEventListener('visibilitychange', () => {
+  // Pause listeners when page becomes hidden (tab switched, minimized, etc.)
+  const handleVisibilityChange = () => {
     if (document.hidden) {
-      // Only clean up non-critical listeners to prevent memory leaks
-      // while preserving essential real-time functionality
-      listenerManager.performSelectiveCleanup();
-    } else {
-      // App became visible again - restore necessary listeners
-      listenerManager.restorePreservedListeners();
-    }
-  });
-
-    // Clean up on page focus loss (additional safety) - but preserve critical listeners
-    window.addEventListener('blur', () => {
-      listenerManager.performSelectiveCleanup();
-    });
-
-    // Add memory pressure detection
-    if ('memory' in performance) {
-      setInterval(() => {
-        const memory = performance.memory;
-        if (memory.usedJSHeapSize > memory.jsHeapSizeLimit * 0.8) {
-          logger.warn('[ListenerManager] High memory usage detected, performing cleanup');
-          listenerManager.performGranularCleanup();
+      // Use a small delay to batch multiple visibility changes
+      setTimeout(() => {
+        if (document.hidden) {
+          listenerManager.pauseNonCriticalListeners();
         }
-      }, 30000); // Check every 30 seconds
+      }, 100);
+    } else {
+      listenerManager.resumePausedListeners();
     }
+  };
+
+  // Listen for visibility changes (primary method)
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 }
 
 export default listenerManager;

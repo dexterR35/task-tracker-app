@@ -124,7 +124,7 @@ export const useReporters = () => {
       }
 
       const reportersRef = collection(db, 'reporters');
-      
+
       // First create the document to get the ID
       const docRef = await addDoc(reportersRef, {
         ...reporterData,
@@ -169,12 +169,12 @@ export const useReporters = () => {
         // First get the current reporter to check if email is actually changing
         const currentReporterRef = doc(db, 'reporters', reporterId);
         const currentReporterDoc = await getDoc(currentReporterRef);
-        
+
         if (currentReporterDoc.exists()) {
           const currentData = currentReporterDoc.data();
           const currentEmail = currentData.email?.toLowerCase().trim();
           const newEmail = updateData.email.toLowerCase().trim();
-          
+
           // Only check for email conflicts if the email is actually changing
           if (currentEmail !== newEmail) {
             const emailExists = await checkReporterEmailExists(updateData.email);

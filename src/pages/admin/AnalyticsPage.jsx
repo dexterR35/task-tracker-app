@@ -7,7 +7,6 @@ import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
 import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import { 
-  getCachedMarketsByUsersCardProps, 
   getCachedMarketingAnalyticsCardProps, 
   getCachedAcquisitionAnalyticsCardProps, 
   getCachedProductAnalyticsCardProps,
@@ -17,7 +16,6 @@ import {
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { CARD_SYSTEM } from '@/constants';
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection
@@ -94,13 +92,13 @@ const AnalyticsPage = () => {
       case 'reporter-analytics':
         return getCachedReporterAnalyticsCardProps(tasks, reporters, selectedMonth, isLoading);
       case 'markets-by-users':
-        return getCachedMarketsByUsersCardProps(tasks, users, selectedMonth, isLoading);
+        return { tasks, users, isLoading };
       case 'marketing-analytics':
-        return getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, isLoading);
+        return getCachedMarketingAnalyticsCardProps(tasks, selectedMonth, users, isLoading);
       case 'acquisition-analytics':
-        return getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, isLoading);
+        return getCachedAcquisitionAnalyticsCardProps(tasks, selectedMonth, users, isLoading);
       case 'product-analytics':
-        return getCachedProductAnalyticsCardProps(tasks, selectedMonth, isLoading);
+        return getCachedProductAnalyticsCardProps(tasks, selectedMonth, users, isLoading);
       case 'ai-analytics':
         return getCachedAIAnalyticsCardProps(tasks, users, selectedMonth, isLoading);
       default:
@@ -226,13 +224,9 @@ const AnalyticsPage = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`py-2 px-1 border-b-2 font-medium text-base transition-colors ${
                     activeTab === tab.id
-                      ? 'text-white'
+                      ? 'border-gray-900 text-gray-900 dark:border-gray-100 dark:text-gray-100'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
-                  style={{
-                    borderBottomColor: activeTab === tab.id ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
-                    color: activeTab === tab.id ? CARD_SYSTEM.COLOR_HEX_MAP.color_default : undefined,
-                  }}
                 >
                   {tab.name}
                 </button>
@@ -247,7 +241,7 @@ const AnalyticsPage = () => {
                 <div id={`${activeTab}-card`}>
                   <div className="relative">
                     {activeTab === 'reporter-analytics' && <ReporterAnalyticsCard {...activeCardProps} />}
-                    {activeTab === 'markets-by-users' && <MarketsByUsersCard {...activeCardProps} />}
+                    {activeTab === 'markets-by-users' && <MarketsByUsersCard tasks={activeCardProps?.tasks || []} users={activeCardProps?.users || []} isLoading={activeCardProps?.isLoading || false} />}
                     {activeTab === 'marketing-analytics' && <MarketingAnalyticsCard {...activeCardProps} />}
                     {activeTab === 'acquisition-analytics' && <AcquisitionAnalyticsCard {...activeCardProps} />}
                     {activeTab === 'product-analytics' && <ProductAnalyticsCard {...activeCardProps} />}

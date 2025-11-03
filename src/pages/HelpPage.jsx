@@ -17,6 +17,7 @@ import { CARD_SYSTEM, TABLE_SYSTEM } from '@/constants';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit } from 'firebase/firestore';
 import { db } from '@/app/firebase';
 import { logger } from '@/utils/logger';
+import listenerManager from '@/features/utils/firebaseListenerManager';
 
 const columnHelper = createColumnHelper();
 
@@ -78,15 +79,18 @@ const HelpPage = () => {
 
   // Load updates from Firebase
   useEffect(() => {
-    const loadUpdates = () => {
-      try {
+    const listenerKey = 'help_updates';
+    
+    const unsubscribe = listenerManager.addListener(
+      listenerKey,
+      () => {
         const updatesQuery = query(
           collection(db, 'updates'),
           orderBy('createdAt', 'desc'),
           limit(5)
         );
 
-        const unsubscribe = onSnapshot(updatesQuery, (snapshot) => {
+        return onSnapshot(updatesQuery, (snapshot) => {
           const updatesData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
@@ -98,30 +102,30 @@ const HelpPage = () => {
           logger.error('Error loading updates:', error);
           setIsUpdatesLoading(false);
         });
+      },
+      false, // Don't preserve - can be paused when tab hidden
+      'general',
+      'help'
+    );
 
-        return unsubscribe;
-      } catch (error) {
-        logger.error('Error setting up updates listener:', error);
-        setIsUpdatesLoading(false);
-      }
-    };
-
-    const unsubscribe = loadUpdates();
     return () => {
-      if (unsubscribe) unsubscribe();
+      listenerManager.removeListener(listenerKey);
     };
   }, []);
 
   // Load feedback from Firebase
   useEffect(() => {
-    const loadFeedback = () => {
-      try {
+    const listenerKey = 'help_feedback';
+    
+    const unsubscribe = listenerManager.addListener(
+      listenerKey,
+      () => {
         const feedbackQuery = query(
           collection(db, 'feedback'),
           orderBy('submittedAt', 'desc')
         );
 
-        const unsubscribe = onSnapshot(feedbackQuery, (snapshot) => {
+        return onSnapshot(feedbackQuery, (snapshot) => {
           const feedbackData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
@@ -133,17 +137,14 @@ const HelpPage = () => {
           logger.error('Error loading feedback:', error);
           setIsLoading(false);
         });
+      },
+      false, // Don't preserve - can be paused when tab hidden
+      'general',
+      'help'
+    );
 
-        return unsubscribe;
-      } catch (error) {
-        logger.error('Error setting up feedback listener:', error);
-        setIsLoading(false);
-      }
-    };
-
-    const unsubscribe = loadFeedback();
     return () => {
-      if (unsubscribe) unsubscribe();
+      listenerManager.removeListener(listenerKey);
     };
   }, []);
 

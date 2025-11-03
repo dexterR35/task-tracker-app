@@ -99,7 +99,7 @@ export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm', useRomanianTimez
   if (!ms) return 'N/A';
   try {
     const date = new Date(ms);
-    
+
     // Handle timezone consistently - always use local timezone
     // The useRomanianTimezone parameter is kept for backward compatibility but ignored
     return format(date, pattern);

@@ -10,7 +10,7 @@ class DataCache {
     this.defaultTTL = 5 * 60 * 1000; // 5 minutes default TTL
     this.monthCacheTTL = 30 * 24 * 60 * 60 * 1000; // 30 days for months (change once per month)
     this.staticDataTTL = Infinity; // Infinite cache for static data (users, reporters, deliverables, tasks)
-    
+
     // Memory management
     this.maxCacheSize = 1000; // Maximum number of cache entries
     this.maxMemoryUsage = 50 * 1024 * 1024; // 50MB max memory usage
@@ -26,11 +26,11 @@ class DataCache {
   set(key, data, ttl = this.defaultTTL) {
     // Check memory limits before adding
     this.checkMemoryLimits();
-    
+
     const expiry = Date.now() + ttl;
     this.cache.set(key, data);
     this.cacheExpiry.set(key, expiry);
-    
+
     // Add timestamp for static data cleanup
     if (ttl === Infinity && data && typeof data === 'object') {
       data.timestamp = Date.now();
@@ -43,9 +43,9 @@ class DataCache {
   checkMemoryLimits() {
     const cacheSize = this.cache.size;
     const memoryUsage = this.estimateMemoryUsage();
-    
+
     // Check if we're approaching limits
-    if (cacheSize > this.maxCacheSize * this.cleanupThreshold || 
+    if (cacheSize > this.maxCacheSize * this.cleanupThreshold ||
         memoryUsage > this.maxMemoryUsage * this.cleanupThreshold) {
       this.performAggressiveCleanup();
     }
@@ -85,18 +85,18 @@ class DataCache {
    */
   performAggressiveCleanup() {
     logger.warn('[DataCache] Memory limits reached, performing aggressive cleanup');
-    
+
     // Remove oldest entries first
     const entries = Array.from(this.cacheExpiry.entries())
       .sort(([,a], [,b]) => a - b);
-    
+
     const entriesToRemove = Math.floor(this.cache.size * 0.3); // Remove 30% of entries
-    
+
     for (let i = 0; i < entriesToRemove && i < entries.length; i++) {
       const [key] = entries[i];
       this.delete(key);
     }
-    
+
     logger.log(`[DataCache] Aggressive cleanup removed ${entriesToRemove} entries`);
   }
 
@@ -245,21 +245,21 @@ class DataCache {
   cleanup() {
     const now = Date.now();
     const keysToDelete = [];
-    
+
     for (const [key, expiry] of this.cacheExpiry.entries()) {
       if (now > expiry) {
         keysToDelete.push(key);
       }
     }
-    
+
     // Delete expired entries
     keysToDelete.forEach(key => {
       this.delete(key);
     });
-    
+
     // Also clean up static data that's too old (even though it has infinite TTL)
     this.cleanupOldStaticData();
-    
+
     logger.log(`[DataCache] Cleaned up ${keysToDelete.length} expired entries`);
   }
 
@@ -270,7 +270,7 @@ class DataCache {
     const now = Date.now();
     const maxStaticAge = 7 * 24 * 60 * 60 * 1000; // 7 days for static data
     const keysToDelete = [];
-    
+
     for (const [key, expiry] of this.cacheExpiry.entries()) {
       // Check if it's static data and too old
       if (expiry === Infinity && this.cache.has(key)) {
@@ -280,11 +280,11 @@ class DataCache {
         }
       }
     }
-    
+
     keysToDelete.forEach(key => {
       this.delete(key);
     });
-    
+
     if (keysToDelete.length > 0) {
       logger.log(`[DataCache] Cleaned up ${keysToDelete.length} old static entries`);
     }

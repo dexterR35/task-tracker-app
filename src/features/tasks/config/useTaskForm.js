@@ -416,6 +416,7 @@ const createDataTaskStructure = (formData) => {
     products: formData.products || '',
     reporterName: formData.reporterName || '',
     reporters: formData.reporters || '',
+    reporterUID: formData.reporters || '', // Set reporterUID to match reporters ID for analytics
     reworked: formData.reworked || false,
     startDate: formData.startDate,
     taskName: formData.taskName,

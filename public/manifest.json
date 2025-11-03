@@ -3,7 +3,7 @@
   "short_name": "TaskTracker",
   "description": "A modern task tracking application with advanced analytics, team collaboration, and performance monitoring. Track tasks, manage projects, and analyze productivity with our intuitive dashboard.",
   "start_url": "/",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#ffffff",
   "theme_color": "#131b30",
   "orientation": "portrait-primary",

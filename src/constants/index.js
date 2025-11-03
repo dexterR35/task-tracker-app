@@ -65,7 +65,7 @@ export const VALIDATION = {
     NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@netbet\.ro$/,
     JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
     URL: /^https?:\/\/.+/,
-    PHONE: /^\+?[\d\s\-\(\)]+$/,
+    PHONE: /^\+?[\d\s\-()]+$/,
   },
   MESSAGES: {
     REQUIRED: 'This field is required',
@@ -247,17 +247,18 @@ export const CARD_SYSTEM = {
     green: '#00d54d',      // Emerald-500 - Fresh, growth, success
     blue: '#009fff',      // Blue-600 - Professional, trust, primary
     purple: '#00fff5',    // Violet-600 - Royal, premium, creative
-    crimson: '#C2E2FA',   // Red-600 - Authority, admin, critical
+    crimson: '#DC143C',   // Red-600 - Authority, admin, critical
     amber: '#ff9e08',     // Amber-500 - Warning, attention, caution
     pink: '#E50046',      // Pink-600 - AI models, feminine, creative
     red: '#EF4444',       // Red-500 - Error, danger, delete
     yellow: '#d9f500',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
-    dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
-    orange: '#F25912',    // Orange-500 - Product, warning, energy
-    select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
+    orange: '#F25912',
+    soft_purple:"#9694FF",    // Orange-500 - Product, warning, energy
     color_default: '#00418d',
+    select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
+    dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',
@@ -290,6 +291,15 @@ export const CARD_SYSTEM = {
     AI_MODEL_ANALYTICS: 'ai-model-analytics',
     TIME_ANALYTICS: 'time-analytics',
     MARKETING_ANALYTICS: 'marketing-analytics',
+  },
+  // Chart data types for color mapping
+  CHART_DATA_TYPE: {
+    MARKET: 'market',
+    PRODUCT: 'product',
+    AI_MODEL: 'aiModel',
+    DEPARTMENT: 'department',
+    USER: 'user',
+    REPORTER: 'reporter',
   },
 };
 

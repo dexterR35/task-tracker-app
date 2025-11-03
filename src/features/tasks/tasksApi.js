@@ -223,7 +223,7 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
         }
 
         unsubscribe = listenerManager.addListener(
-          listenerKey, 
+          listenerKey,
           () => onSnapshot(
             tasksQuery,
             (snapshot) => {
@@ -260,7 +260,7 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
               setIsLoading(false);
             }
           ),
-          true, // preserve - tasks need real-time updates
+          true, // preserve setup function for restoration, but will be paused when tab hidden
           'tasks', // category
           'tasks' // page
         );
@@ -310,7 +310,7 @@ const checkForDuplicateTask = async (colRef, task, userUID) => {
     );
 
     const duplicateSnapshot = await getDocs(duplicateQuery);
-    
+
     if (!duplicateSnapshot.empty) {
       const duplicateTask = duplicateSnapshot.docs[0].data();
       return {
@@ -377,6 +377,11 @@ export const useCreateTask = () => {
       // Auto-add reporter name if we have reporter ID but no name
       if (task.reporters && !task.reporterName) {
         task.reporterName = resolveReporterName(reporters, task.reporters, task.reporterName);
+      }
+
+      // Set reporterUID to match reporters ID for analytics consistency
+      if (task.reporters && !task.reporterUID) {
+        task.reporterUID = task.reporters;
       }
 
       // Create final document data
@@ -447,6 +452,11 @@ export const useUpdateTask = () => {
       // Auto-add reporter name if we have reporter ID but no name
       if (updates.reporters && !updates.reporterName) {
         updates.reporterName = resolveReporterName(reporters, updates.reporters, updates.reporterName);
+      }
+
+      // Set reporterUID to match reporters ID for analytics consistency
+      if (updates.reporters && !updates.reporterUID) {
+        updates.reporterUID = updates.reporters;
       }
 
       // Structure the updates with data_task wrapper
