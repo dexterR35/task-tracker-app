@@ -106,7 +106,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: 'amber',
+    color: 'purple',
     getValue: (data) => {
       // Show total number of users, not tasks
       return (data.users?.length || 0).toString();
@@ -119,7 +119,7 @@ export const SMALL_CARD_CONFIGS = {
     },
     getBadge: (data) => ({
       text: data.selectedUserId ? "Filtered" : "All Users",
-      color: 'amber'
+      color: 'purple'
     }),
     getContent: (data) => (
       <div className=" space-y-3">
@@ -170,7 +170,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: 'blue',
+    color: 'yellow',
     getValue: (data) => {
       return (data.reporters?.length || 0).toString();
     },
@@ -182,7 +182,7 @@ export const SMALL_CARD_CONFIGS = {
     },
     getBadge: (data) => ({
       text: data.selectedReporterId ? `${data.selectedReporterName}` : "All Reporters",
-      color: 'blue'
+      color: 'yellow'
     }),
     getContent: (data) => (
       <div className="space-y-1">
@@ -360,6 +360,7 @@ export const SMALL_CARD_CONFIGS = {
           iconName="view"
           variant="primary"
           size="sm"   
+          className="w-full uppercase"
         >
           {(() => {
             const parts = [];
@@ -421,7 +422,7 @@ export const SMALL_CARD_CONFIGS = {
             size="sm"
             className="w-full mt-2 uppercase"
           >
-            VIEW ALL DATA
+            VIEW ALL TASKS
           </DynamicButton>
         )}
       </div>
@@ -433,10 +434,10 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Total Tasks",
     icon: Icons.buttons.add,
-    color: 'purple',
+    color: 'amber',
     getBadge: (data) => ({
       text: data.selectedWeek ? `Week ${data.selectedWeek.weekNumber}` : "All Weeks",
-      color: 'purple'
+      color: 'amber'
     }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";

@@ -1,10 +1,3 @@
-/**
- * Tasks API (Direct Firestore with Snapshots)
- *
- * @fileoverview Direct Firestore hooks for tasks with real-time updates
- * @author Senior Developer
- * @version 3.0.0
- */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
@@ -29,12 +22,7 @@ import listenerManager from "@/features/utils/firebaseListenerManager";
 import { validateTaskPermissions } from '@/utils/permissionValidation';
 import { getUserUID } from '@/features/utils/authUtils';
 
-/**
- * Get Firestore reference for tasks (collection or individual document)
- * @param {string} monthId - Month identifier (e.g., "2025-01")
- * @param {string|null} taskId - Optional task ID for individual task
- * @returns {DocumentReference|CollectionReference} - Firestore reference
- */
+
 const getTaskRef = (monthId, taskId = null) => {
   const yearId = getCurrentYear();
   const basePath = ["departments", "design", yearId, monthId, "taskdata"];
@@ -46,23 +34,13 @@ const getTaskRef = (monthId, taskId = null) => {
   }
 };
 
-/**
- * Get Firestore reference for a specific month document
- * @param {string} monthId - Month identifier (e.g., "2025-01")
- * @returns {DocumentReference} - Month document reference
- */
+
 const getMonthRef = (monthId) => {
   const yearId = monthId.split('-')[0]; // Extract year from monthId
   return doc(db, "departments", "design", yearId, monthId);
 };
 
-/**
- * Build Firestore query for tasks based on user role and permissions
- * @param {CollectionReference} tasksRef - Tasks collection reference
- * @param {string} role - User role (admin, user)
- * @param {string|null} userUID - Optional user UID for filtering
- * @returns {Query} - Firestore query
- */
+
 const buildTaskQuery = (tasksRef, role, userUID) => {
   if (role === "user") {
     // Regular users: fetch only their own tasks
@@ -287,13 +265,7 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
 };
 
 
-/**
- * Check for duplicate tasks based on gimodear and name
- * @param {CollectionReference} colRef - Tasks collection reference
- * @param {Object} task - Task data to check
- * @param {string} userUID - Current user UID
- * @returns {Object} - Duplicate check result
- */
+
 const checkForDuplicateTask = async (colRef, task, userUID) => {
   try {
     // Check if task has gimodear and name for duplicate checking

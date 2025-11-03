@@ -24,7 +24,7 @@ const createLandingPagesColumns = () => [
     cell: ({ getValue }) => {
       const product = getValue();
       const productColors = {
-        Casino: CARD_SYSTEM.COLOR_HEX_MAP.red,
+        Casino: CARD_SYSTEM.COLOR_HEX_MAP.crimson,
         Sport: CARD_SYSTEM.COLOR_HEX_MAP.green,
         Vegas: CARD_SYSTEM.COLOR_HEX_MAP.pink,
         Poker: CARD_SYSTEM.COLOR_HEX_MAP.purple,
@@ -98,7 +98,7 @@ const createLandingPagesColumns = () => [
       const status = getValue();
       const colorHex = status === 'Enabled' 
         ? CARD_SYSTEM.COLOR_HEX_MAP.green 
-        : CARD_SYSTEM.COLOR_HEX_MAP.red;
+        : CARD_SYSTEM.COLOR_HEX_MAP.crimson;
       return (
         <Badge colorHex={colorHex} size="sm">
           {status || 'N/A'}
@@ -284,7 +284,7 @@ const LandingPages = () => {
       subtitle: 'NetBet LPs',
       value: globalStats.expired,
       description: 'Expired landing pages',
-      color: 'red',
+      color: 'crimson',
       icon: Icons.buttons.clear,
     },
     {
@@ -311,7 +311,7 @@ const LandingPages = () => {
       subtitle: 'NetBet LPs',
       value: globalStats.casino,
       description: 'Casino product landing pages',
-      color: 'indigo',
+      color: 'orange',
       icon: Icons.generic.product,
     },
   ], [globalStats]);
@@ -332,7 +332,7 @@ const LandingPages = () => {
       subtitle: brandStats.name,
       value: brandStats.expired,
       description: 'Expired for selected brand',
-      color: 'red',
+      color: 'crimson',
       icon: Icons.buttons.clear,
     },
     {
@@ -359,7 +359,7 @@ const LandingPages = () => {
       subtitle: brandStats.name,
       value: brandStats.casino,
       description: 'Casino for selected brand',
-      color: 'indigo',
+      color: 'orange',
       icon: Icons.generic.product,
     },
   ], [brandStats]);

@@ -3,15 +3,11 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppDataContext } from '@/context/AppDataContext';
 import { useCreateTask, useUpdateTask } from '@/features/tasks/tasksApi';
-import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { 
   createTaskFormSchema, 
   createTaskFormFields, 
   prepareTaskFormData,
-  shouldShowField,
-  isConditionallyRequired
 } from '@/features/tasks/config/useTaskForm';
 import { useDeliverablesOptions, useDeliverablesByDepartment } from '@/features/deliverables/DeliverablesManager';
 import { 
@@ -29,12 +25,7 @@ import {
 
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 
-// Permission validation now happens at API level
 
-/**
- * Dedicated Task Form Component
- * Handles creating and updating task records with conditional field logic
- */
 const TaskForm = ({ 
   mode = 'create', 
   initialData = null, 
@@ -61,9 +52,7 @@ const TaskForm = ({
   const boardExists = activeMonth?.boardExists ?? false;
   const { deliverablesOptions, isLoading: loadingDeliverables } = useDeliverablesOptions();
   
-  // Debug logging for deliverables (removed for production)
-  
-  // Create dynamic schema with deliverables options
+
   const dynamicSchema = createTaskFormSchema();
   
   const {

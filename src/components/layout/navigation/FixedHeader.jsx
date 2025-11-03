@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
-import logo from "@/assets/logo.webp";
+import logo from "@/assets/Logo4.webp";
 import Avatar from "@/components/ui/Avatar/Avatar"
 
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {

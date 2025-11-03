@@ -360,7 +360,7 @@ export const MonthProgressBar = ({
             width: `${progressData.progress}%`,
             backgroundColor: isCurrentMonth
               ? CARD_SYSTEM.COLOR_HEX_MAP.amber
-              : CARD_SYSTEM.COLOR_HEX_MAP.red,
+              : CARD_SYSTEM.COLOR_HEX_MAP.crimson,
           }}
         />
       </div>

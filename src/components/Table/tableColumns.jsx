@@ -125,13 +125,13 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     cell: ({ getValue, row }) => {
       // 1. Handle the 'No data_task' case specifically
       if (!row.original?.data_task) {
-        return <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ No data_task</span>;
+        return <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.crimson }}>❌ No data_task</span>;
       }
       
       const value = getValue(); 
       
       // 2. Return the value if it exists (is truthy), or '❌ Missing' if it's falsy (null, undefined, or empty string)
-      return value || <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>❌ Missing</span>;
+      return value || <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.crimson }}>❌ Missing</span>;
     },
     size: 100,
   }),
@@ -286,7 +286,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       }
 
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.red} size="sm">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.crimson} size="sm">
           {days} days
         </Badge>
       );

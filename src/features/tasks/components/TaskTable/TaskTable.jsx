@@ -335,7 +335,7 @@ const TaskTable = ({
     actions.push({
       label: "View Jira Link",
       icon: "code",
-      variant: "primary",
+      variant: "secondary",
       onClick: (selectedTasks) => {
         if (selectedTasks.length === 1) {
           const task = selectedTasks[0];
@@ -358,7 +358,7 @@ const TaskTable = ({
       actions.push({
         label: "View Selected",
         icon: "eye",
-        variant: "primary",
+        variant: "secondary",
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
             const task = selectedTasks[0];
@@ -378,7 +378,7 @@ const TaskTable = ({
       actions.push({
         label: "Edit Selected",
         icon: "edit",
-        variant: "edit",
+        variant: "primary",
         onClick: (selectedTasks) => {
           if (selectedTasks.length === 1) {
             handleEdit(selectedTasks[0]);
@@ -394,7 +394,7 @@ const TaskTable = ({
       actions.push({
         label: "Delete Selected",
         icon: "delete",
-        variant: "danger",
+        variant: "crimson",
         onClick: async (selectedTasks) => {
           if (selectedTasks.length === 1) {
             handleDelete(selectedTasks[0]);

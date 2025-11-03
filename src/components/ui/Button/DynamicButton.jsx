@@ -64,10 +64,10 @@ const DynamicButton = ({
     
     if (variant === 'success') {
       textColor = '#1f2937'; // text-gray-800 for green background
-    } else if (variant === 'warning' || variant === 'yellow') {
-      textColor = '#1f2937'; // text-gray-800 for yellow/amber backgrounds
+    } else if (variant === 'warning' || variant === 'orange') {
+      textColor = '#333'; // text-gray-800 for yellow/amber backgrounds
     } else if (variant === 'amber') {
-      textColor = '#1f2937'; // text-gray-800 for amber background
+      textColor = '#333'; // text-gray-800 for amber background
     }
 
     return {

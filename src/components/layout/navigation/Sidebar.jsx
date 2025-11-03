@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { CARD_SYSTEM, NAVIGATION_CONFIG } from '@/constants';
 
 const Sidebar = () => {
