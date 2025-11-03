@@ -57,6 +57,7 @@ const TaskTable = ({
     reporters,
     deliverables,
     user: userData,
+    users,
   } = useAppDataContext();
 
 
@@ -555,6 +556,7 @@ const TaskTable = ({
         bulkActions={bulkActions}
         initialColumnVisibility={initialColumnVisibility}
         reporters={reporters}
+        users={users}
         // TanStack pagination configuration
         enablePagination={enablePagination}
         showPagination={enablePagination}

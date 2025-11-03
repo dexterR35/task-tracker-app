@@ -482,7 +482,7 @@ const TanStackTable = forwardRef(
           await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced from 300ms to 50ms
         }
 
-        // Perform actual export with reporters data for proper name resolution
+        // Perform actual export with reporters and users data for proper name resolution
         const success = exportToCSV(
           table.getFilteredRowModel().rows.map((row) => row.original),
           columns,
@@ -490,6 +490,7 @@ const TanStackTable = forwardRef(
           {
             filename: `${tableType}_export_${new Date().toISOString().split("T")[0]}.csv`,
             reporters: additionalProps?.reporters || [],
+            users: additionalProps?.users || [],
           }
         );
 
