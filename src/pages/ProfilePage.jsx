@@ -13,6 +13,7 @@ import DynamicButton from '@/components/ui/Button/DynamicButton';
 import TextField from '@/components/forms/components/TextField';
 import PasswordField from '@/components/forms/components/PasswordField';
 import { CARD_SYSTEM } from '@/constants';
+import { logger } from '@/utils/logger';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -70,10 +71,12 @@ const ProfilePage = () => {
       setIsLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Profile updated:', formData);
+      if (import.meta.env.MODE === 'development') {
+        logger.log('Profile updated:', formData);
+      }
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +98,9 @@ const ProfilePage = () => {
       setIsLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Password changed');
+      if (import.meta.env.MODE === 'development') {
+        logger.log('Password changed');
+      }
       
       // Clear password form
       setPasswordData({
@@ -106,7 +111,7 @@ const ProfilePage = () => {
 
       setIsChangingPassword(false);
     } catch (error) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password:', error);
     } finally {
       setIsLoading(false);
     }

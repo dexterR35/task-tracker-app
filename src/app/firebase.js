@@ -129,7 +129,7 @@ const initializeAuthPersistence = async () => {
     logger.error("Auth persistence initialization failed", error);
 
     if (import.meta.env.MODE === "development") {
-      console.warn("Firebase auth persistence is not available. Some features may not work correctly.");
+      logger.warn("Firebase auth persistence is not available. Some features may not work correctly.");
     }
   }
 };

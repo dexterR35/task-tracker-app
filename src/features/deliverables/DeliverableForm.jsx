@@ -16,6 +16,7 @@ import {
   CheckboxField
 } from '@/components/forms/components/';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
+import { logger } from '@/utils/logger';
 
 // ===== CONFIGURATION =====
 const CONFIG = {
@@ -180,7 +181,7 @@ const DeliverableForm = ({
         onSuccess?.();
         // No need to refetch - real-time listener will update automatically
       } catch (error) {
-        console.error('Error saving deliverable:', error);
+        logger.error('Error saving deliverable:', error);
         throw error;
       } finally {
         setSaving(false);

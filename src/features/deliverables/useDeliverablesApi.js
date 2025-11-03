@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase';
 import dataCache from '@/utils/dataCache';
+import { logger } from '@/utils/logger';
 
 /**
  * Centralized hook for deliverables API operations
@@ -34,14 +35,14 @@ export const useDeliverablesApi = () => {
         // Check cache first
         const cachedData = dataCache.get(cacheKey);
         if (cachedData) {
-          console.log('🔍 [useDeliverablesApi] Using cached deliverables data');
+          logger.log('🔍 [useDeliverablesApi] Using cached deliverables data');
           setDeliverables(cachedData);
           setIsLoading(false);
           setError(null);
           return;
         }
 
-        console.log('🔍 [useDeliverablesApi] Fetching deliverables from Firestore');
+        logger.log('🔍 [useDeliverablesApi] Fetching deliverables from Firestore');
         setIsLoading(true);
         setError(null);
         const deliverablesRef = getDeliverablesRef();
@@ -62,9 +63,9 @@ export const useDeliverablesApi = () => {
         setDeliverables(deliverablesList);
         setIsLoading(false);
         setError(null);
-        console.log('✅ [useDeliverablesApi] Deliverables fetched and cached:', deliverablesList.length);
+        logger.log('✅ [useDeliverablesApi] Deliverables fetched and cached:', deliverablesList.length);
       } catch (error) {
-        console.error('Deliverables fetch error:', error);
+        logger.error('Deliverables fetch error:', error);
         setError(error);
         setIsLoading(false);
       }
@@ -110,7 +111,7 @@ export const useDeliverablesApi = () => {
 
       return { success: true, data: newDeliverable };
     } catch (error) {
-      console.error('Error creating deliverable:', error);
+      logger.error('Error creating deliverable:', error);
       throw error;
     }
   }, [getDeliverablesRef]);
@@ -152,7 +153,7 @@ export const useDeliverablesApi = () => {
 
       return { success: true, data: updatedDeliverables };
     } catch (error) {
-      console.error('Error updating deliverable:', error);
+      logger.error('Error updating deliverable:', error);
       throw error;
     }
   }, [getDeliverablesRef]);
@@ -188,7 +189,7 @@ export const useDeliverablesApi = () => {
 
       return { success: true, data: updatedDeliverables };
     } catch (error) {
-      console.error('Error deleting deliverable:', error);
+      logger.error('Error deleting deliverable:', error);
       throw error;
     }
   }, [getDeliverablesRef]);

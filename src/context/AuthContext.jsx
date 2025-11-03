@@ -107,7 +107,7 @@ const SessionManager = {
       const session = {
         ...sessionData,
         timestamp: Date.now(),
-        sessionId: sessionData.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        sessionId: sessionData.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         csrfToken: csrfToken
       };
       

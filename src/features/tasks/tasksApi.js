@@ -64,11 +64,14 @@ const hasTaskDataChanged = (currentData, newData) => {
   // Extract the actual task data from currentData
   const currentTaskData = currentData?.data_task || currentData;
 
-  console.log('🔍 [hasTaskDataChanged] Comparing data:', {
-    currentTaskData: currentTaskData,
-    newData: newData,
-    fieldsToIgnore: fieldsToIgnore
-  });
+  // Debug logging only in development mode
+  if (import.meta.env.MODE === 'development') {
+    logger.log('🔍 [hasTaskDataChanged] Comparing data:', {
+      currentTaskData: currentTaskData,
+      newData: newData,
+      fieldsToIgnore: fieldsToIgnore
+    });
+  }
 
   // Compare relevant fields
   const relevantFields = Object.keys(newData).filter(key => !fieldsToIgnore.includes(key));
@@ -77,38 +80,51 @@ const hasTaskDataChanged = (currentData, newData) => {
     const currentValue = currentTaskData?.[field];
     const newValue = newData[field];
 
-    console.log(`🔍 [hasTaskDataChanged] Comparing field "${field}":`, {
-      currentValue: currentValue,
-      newValue: newValue,
-      areEqual: currentValue === newValue
-    });
+    // Debug logging only in development mode
+    if (import.meta.env.MODE === 'development') {
+      logger.log(`🔍 [hasTaskDataChanged] Comparing field "${field}":`, {
+        currentValue: currentValue,
+        newValue: newValue,
+        areEqual: currentValue === newValue
+      });
+    }
 
     // Handle array comparisons
     if (Array.isArray(currentValue) && Array.isArray(newValue)) {
       if (currentValue.length !== newValue.length) {
-        console.log(`🔍 [hasTaskDataChanged] Array length different for "${field}"`);
+        if (import.meta.env.MODE === 'development') {
+          logger.log(`🔍 [hasTaskDataChanged] Array length different for "${field}"`);
+        }
         return true;
       }
       if (!currentValue.every((item, index) => item === newValue[index])) {
-        console.log(`🔍 [hasTaskDataChanged] Array content different for "${field}"`);
+        if (import.meta.env.MODE === 'development') {
+          logger.log(`🔍 [hasTaskDataChanged] Array content different for "${field}"`);
+        }
         return true;
       }
     }
     // Handle object comparisons
     else if (typeof currentValue === 'object' && typeof newValue === 'object') {
       if (JSON.stringify(currentValue) !== JSON.stringify(newValue)) {
-        console.log(`🔍 [hasTaskDataChanged] Object different for "${field}"`);
+        if (import.meta.env.MODE === 'development') {
+          logger.log(`🔍 [hasTaskDataChanged] Object different for "${field}"`);
+        }
         return true;
       }
     }
     // Handle primitive comparisons
     else if (currentValue !== newValue) {
-      console.log(`🔍 [hasTaskDataChanged] Primitive different for "${field}"`);
+      if (import.meta.env.MODE === 'development') {
+        logger.log(`🔍 [hasTaskDataChanged] Primitive different for "${field}"`);
+      }
       return true;
     }
   }
 
-  console.log('🔍 [hasTaskDataChanged] No changes detected');
+  if (import.meta.env.MODE === 'development') {
+    logger.log('🔍 [hasTaskDataChanged] No changes detected');
+  }
   return false;
 };
 

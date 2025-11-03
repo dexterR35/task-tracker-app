@@ -43,7 +43,7 @@ class ErrorBoundary extends React.Component {
     // Report to error tracking service in production
     if (import.meta.env.MODE === 'production') {
       // You can integrate with services like Sentry, LogRocket, etc.
-      console.error('Production error:', { 
+      logger.error('Production error:', { 
         ...errorBoundaryInfo, 
         error, 
         errorInfo, 

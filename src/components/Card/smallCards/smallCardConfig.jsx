@@ -3,6 +3,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
+import { logger } from "@/utils/logger";
 
 export const getCardColor = (cardType, data = {}) => {
   const palette = [
@@ -471,7 +472,7 @@ export const SMALL_CARD_CONFIGS = {
             }))
           ];
         } catch (error) {
-          console.warn('Error getting weeks for month:', error);
+          logger.warn('Error getting weeks for month:', error);
         }
       }
 
@@ -557,7 +558,7 @@ export const SMALL_CARD_CONFIGS = {
             });
             weekTasks.push(...dayTasks);
           } catch (error) {
-            console.warn('Error processing day:', error, day);
+            logger.warn('Error processing day:', error, day);
           }
         });
         filteredTasks = weekTasks;

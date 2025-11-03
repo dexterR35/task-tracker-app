@@ -11,6 +11,7 @@ import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import { TABLE_SYSTEM } from '@/constants';
+import { logger } from "@/utils/logger";
 
 // Available filter options
 const FILTER_OPTIONS = [
@@ -212,7 +213,9 @@ const TaskTable = ({
 
       // Apply single filter selection
       if (selectedFilter) {
-        console.log('Applying filter:', selectedFilter);
+        if (import.meta.env.MODE === 'development') {
+          logger.log('Applying filter:', selectedFilter);
+        }
         filteredTasks = filteredTasks.filter((task) => {
           const taskData = task.data_task || task;
     
@@ -267,7 +270,7 @@ const TaskTable = ({
             });
             weekTasks.push(...dayTasks);
           } catch (error) {
-            console.warn('Error processing day:', error, day);
+            logger.warn('Error processing day:', error, day);
           }
         });
         filteredTasks = weekTasks;

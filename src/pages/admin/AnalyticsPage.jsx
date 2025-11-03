@@ -16,6 +16,7 @@ import {
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { logger } from "@/utils/logger";
 
 const AnalyticsPage = () => {
   // Get real-time data from month selection
@@ -124,7 +125,7 @@ const AnalyticsPage = () => {
           return null;
       }
     } catch (error) {
-      console.error(`Error calculating props for ${activeTab}:`, error);
+      logger.error(`Error calculating props for ${activeTab}:`, error);
       return null;
     }
   }, [activeTab, tasks, users, reporters, selectedMonth, isLoading, hasNoData]);
@@ -133,7 +134,7 @@ const AnalyticsPage = () => {
 
   // Error handling function
   const showError = (message) => {
-    console.error(message);
+    logger.error(message);
     // You can replace this with a toast notification if you have one
     alert(message);
   };

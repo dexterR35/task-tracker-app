@@ -11,6 +11,7 @@ import { getWeeksInMonth } from "@/utils/monthUtils";
 import SelectField from "@/components/forms/components/SelectField";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Badge from "@/components/ui/Badge/Badge";
+import { logger } from "@/utils/logger";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -103,7 +104,7 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
                 const dayStr = dayDate.toISOString().split('T')[0];
                 return dayStr === taskDateStr;
               } catch (error) {
-                console.warn('Error processing week day:', error, day);
+                logger.warn('Error processing week day:', error, day);
                 return false;
               }
             });
@@ -112,7 +113,7 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
           }
         }
       } catch (error) {
-        console.warn('Error processing week filter:', error);
+        logger.warn('Error processing week filter:', error);
       }
     }
     
@@ -458,7 +459,7 @@ const DynamicAnalyticsPage = () => {
         return new Date(timestamp);
       }
     } catch (error) {
-      console.warn('Error converting timestamp to date:', error, timestamp);
+      logger.warn('Error converting timestamp to date:', error, timestamp);
       return null;
     }
   };
@@ -674,7 +675,7 @@ const DynamicAnalyticsPage = () => {
                       
                       weekTasks.push(...dayTasks);
                     } catch (error) {
-                      console.warn('Error processing day:', error, day);
+                      logger.warn('Error processing day:', error, day);
                     }
                   });
 
@@ -690,7 +691,7 @@ const DynamicAnalyticsPage = () => {
                                 const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
                                 return `${startDate} - ${endDate}`;
                               } catch (error) {
-                                console.warn('Error formatting week dates:', error, week);
+                                logger.warn('Error formatting week dates:', error, week);
                                 return 'Invalid dates';
                               }
                             })()}
@@ -852,7 +853,7 @@ const DynamicAnalyticsPage = () => {
                     });
                     weekTasks.push(...dayTasks);
                   } catch (error) {
-                    console.warn('Error processing day:', error, day);
+                    logger.warn('Error processing day:', error, day);
                   }
                 });
 
@@ -868,7 +869,7 @@ const DynamicAnalyticsPage = () => {
                               const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
                               return `${startDate} - ${endDate}`;
                             } catch (error) {
-                              console.warn('Error formatting week dates:', error, week);
+                                logger.warn('Error formatting week dates:', error, week);
                               return 'Invalid dates';
                             }
                           })()}

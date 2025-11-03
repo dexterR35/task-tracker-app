@@ -382,7 +382,7 @@ export const MonthBoardBanner = () => {
     appData = useAppDataContext();
   } catch (error) {
     // If context is not available, return null
-    console.warn(
+    logger.warn(
       "MonthBoardBanner: AppDataContext not available:",
       error.message
     );

@@ -1,3 +1,5 @@
+import { logger } from "@/utils/logger";
+
 /**
  * Simple Data Cache for Firestore Operations
  * Reduces redundant reads by caching static data

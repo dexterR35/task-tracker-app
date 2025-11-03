@@ -11,6 +11,7 @@ import { showError, showAuthError } from "@/utils/toast";
 import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils/monthUtils.jsx";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
+import { logger } from "@/utils/logger";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -181,7 +182,7 @@ const AdminDashboardPage = () => {
           }
         }
       } catch (error) {
-        console.warn('Error parsing week parameter:', error);
+        logger.warn('Error parsing week parameter:', error);
       }
     } else {
       setSelectedWeek(null);
@@ -190,8 +191,8 @@ const AdminDashboardPage = () => {
 
   // Add logging for combined selections and security checks - optimized
   useEffect(() => {
-    if (selectedUserId && selectedReporterId) {
-      console.log("🔍 Combined selection active", {
+    if (selectedUserId && selectedReporterId && import.meta.env.MODE === 'development') {
+      logger.log("🔍 Combined selection active", {
         selectedUserId,
         selectedUserName,
         selectedReporterId,
@@ -205,8 +206,8 @@ const AdminDashboardPage = () => {
 
   // Security logging for admin actions
   useEffect(() => {
-    if (isUserAdmin && selectedUserId) {
-      console.log("🔐 Admin viewing user data", {
+    if (isUserAdmin && selectedUserId && import.meta.env.MODE === 'development') {
+      logger.log("🔐 Admin viewing user data", {
         adminUserUID: user?.userUID,
         viewingUserUID: selectedUserId,
         viewingUserName: selectedUserName,

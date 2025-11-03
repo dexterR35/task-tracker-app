@@ -24,6 +24,7 @@ import {
 } from '@/components/forms/components';
 
 import DynamicButton from '@/components/ui/Button/DynamicButton';
+import { logger } from '@/utils/logger';
 
 
 const TaskForm = ({ 
@@ -209,25 +210,31 @@ const TaskForm = ({
         deliverables: (() => {
           // Get the first deliverable from deliverablesUsed
           const firstDeliverable = taskData.deliverablesUsed?.[0];
-          console.log('🔍 [TaskForm] Deliverables debug:', {
-            taskData: taskData,
-            deliverablesUsed: taskData.deliverablesUsed,
-            firstDeliverable: firstDeliverable,
-            filteredDeliverablesOptions: filteredDeliverablesOptions
-          });
+          if (import.meta.env.MODE === 'development') {
+            logger.log('🔍 [TaskForm] Deliverables debug:', {
+              taskData: taskData,
+              deliverablesUsed: taskData.deliverablesUsed,
+              firstDeliverable: firstDeliverable,
+              filteredDeliverablesOptions: filteredDeliverablesOptions
+            });
+          }
           
           if (!firstDeliverable?.name) return null;
           
           // Find the matching option in filtered deliverables options
           const matchingOption = filteredDeliverablesOptions.find(opt => opt.value === firstDeliverable.name);
           if (matchingOption) {
-            console.log('🔍 [TaskForm] Found matching option:', matchingOption);
+            if (import.meta.env.MODE === 'development') {
+              logger.log('🔍 [TaskForm] Found matching option:', matchingOption);
+            }
             return firstDeliverable.name;
           }
           
           
           // Return the original name as fallback
-          console.log('🔍 [TaskForm] Using fallback name:', firstDeliverable.name);
+          if (import.meta.env.MODE === 'development') {
+            logger.log('🔍 [TaskForm] Using fallback name:', firstDeliverable.name);
+          }
           return firstDeliverable.name;
         })(),
         deliverableQuantities: (() => {
@@ -280,11 +287,13 @@ const TaskForm = ({
       
       
       // Reset form immediately - no delays needed
-      console.log('🔍 [TaskForm] Resetting form with data:', {
-        deliverables: formData.deliverables,
-        _hasDeliverables: formData._hasDeliverables,
-        deliverableQuantities: formData.deliverableQuantities
-      });
+      if (import.meta.env.MODE === 'development') {
+        logger.log('🔍 [TaskForm] Resetting form with data:', {
+          deliverables: formData.deliverables,
+          _hasDeliverables: formData._hasDeliverables,
+          deliverableQuantities: formData.deliverableQuantities
+        });
+      }
       reset(formData);
       
       // Use useEffect to handle form state updates properly
@@ -310,17 +319,23 @@ const TaskForm = ({
       
       // All validation is now handled by Yup schema - no redundant validation needed
       // Prepare form data for database
-      console.log('🔍 [TaskForm] Form submission data:', data);
+      if (import.meta.env.MODE === 'development') {
+        logger.log('🔍 [TaskForm] Form submission data:', data);
+      }
       const processedData = prepareTaskFormData(data, deliverablesOptions);
-      console.log('🔍 [TaskForm] Processed data for database:', processedData);
+      if (import.meta.env.MODE === 'development') {
+        logger.log('🔍 [TaskForm] Processed data for database:', processedData);
+      }
       
       if (mode === 'edit' && initialData?.id) {
         // Update existing task
-        console.log('🔍 [TaskForm] Updating task:', {
-          monthId: initialData.monthId || initialData.data_task?.monthId || monthId,
-          taskId: initialData.id,
-          processedData: processedData
-        });
+        if (import.meta.env.MODE === 'development') {
+          logger.log('🔍 [TaskForm] Updating task:', {
+            monthId: initialData.monthId || initialData.data_task?.monthId || monthId,
+            taskId: initialData.id,
+            processedData: processedData
+          });
+        }
           return await updateTask(
             initialData.monthId || initialData.data_task?.monthId || monthId,
             initialData.id,
