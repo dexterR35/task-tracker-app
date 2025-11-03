@@ -110,8 +110,8 @@ const SimplePieChart = React.memo(({
           fill="#374151"
           textAnchor={labelX > cx ? 'start' : 'end'}
           dominantBaseline="central"
-          fontSize={12}
-          fontWeight="bold"
+          fontSize={11}
+          fontWeight="medium"
           className="dark:fill-gray-200"
           style={{ pointerEvents: 'none' }}
         >
@@ -143,12 +143,12 @@ const SimplePieChart = React.memo(({
             </Pie>
             <Tooltip 
               formatter={(value, name) => [value, name]}
-              labelStyle={{ color: '#374151', fontSize: '14px', fontWeight: 'bold' }}
+              labelStyle={{ color: '#374151', fontSize: '12px', fontWeight: 'bold' }}
               contentStyle={{ 
-                backgroundColor: '#1f2937', 
+                // backgroundColor: '#1f2937', 
                 border: '1px solid #d1d5db',
                 borderRadius: '8px',
-                fontSize: '14px',
+                fontSize: '12px',
                 fontWeight: 'medium'
               }}
             />
@@ -156,7 +156,7 @@ const SimplePieChart = React.memo(({
               verticalAlign="middle" 
               align="right"
               layout="vertical"
-              width={120}
+              width={130}
               iconType="circle"
               wrapperStyle={{ fontSize: '12px', fontWeight: 'medium' }}
             />
