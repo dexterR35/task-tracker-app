@@ -1,5 +1,55 @@
 import React from "react";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage } from "./analyticsSharedConfig";
+
+/**
+ * Calculate percentages for a group of counts, ensuring they sum to exactly 100%
+ * @param {Array<{key: string, count: number}>} items - Array of items with key and count
+ * @param {number} total - Total count
+ * @returns {Object} - Object mapping keys to percentages that sum to 100%
+ */
+const calculatePercentagesForGroup = (items, total) => {
+  if (total === 0) {
+    const result = {};
+    items.forEach(item => {
+      result[item.key] = 0;
+    });
+    return result;
+  }
+
+  // Calculate raw percentages and floor values
+  const percentages = items.map(item => {
+    const rawPercentage = (item.count / total) * 100;
+    const floored = Math.floor(rawPercentage);
+    const remainder = rawPercentage - floored;
+    return {
+      key: item.key,
+      count: item.count,
+      floored,
+      remainder
+    };
+  });
+
+  // Calculate sum of floored values
+  const sumFloored = percentages.reduce((sum, p) => sum + p.floored, 0);
+  const difference = 100 - sumFloored;
+
+  // Sort by remainder (descending) to allocate extra points to largest remainders
+  const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
+  const adjustedDifference = Math.max(0, Math.min(difference, percentages.length));
+  
+  // Allocate final percentages
+  sorted.forEach((item, index) => {
+    item.finalPercentage = index < adjustedDifference ? item.floored + 1 : item.floored;
+  });
+
+  // Create result object
+  const result = {};
+  percentages.forEach(p => {
+    result[p.key] = p.finalPercentage;
+  });
+
+  return result;
+};
 
 /**
  * Product Analytics Configuration
@@ -21,12 +71,6 @@ export const calculateProductAnalyticsData = (tasks) => {
         {
           key: "totalHours",
           header: "Total Hours",
-          align: "center",
-          highlight: true,
-        },
-        {
-          key: "percentage",
-          header: "Percentage",
           align: "center",
           highlight: true,
         },
@@ -60,9 +104,20 @@ export const calculateProductAnalyticsData = (tasks) => {
     misc: 0,
   };
 
+  // Track markets for each product category
+  const productMarketData = {
+    "product casino": {},
+    "product sport": {},
+    "product poker": {},
+    "product lotto": {},
+  };
+  const marketTotals = {};
+  const allMarkets = new Set();
+
   // Count tasks by product - only include "product" category tasks
   tasks.forEach((task) => {
     const products = task.data_task?.products || task.products;
+    const markets = task.data_task?.markets || task.markets || [];
 
     if (!products) {
       return; // Skip tasks without products
@@ -74,6 +129,31 @@ export const calculateProductAnalyticsData = (tasks) => {
     if (productsLower.startsWith("product ")) {
       if (productCounts.hasOwnProperty(productsLower)) {
         productCounts[productsLower]++;
+      }
+
+      // Track markets for this product category
+      if (Array.isArray(markets) && markets.length > 0) {
+        markets.forEach((market) => {
+          if (market) {
+            const normalizedMarket = market.trim().toUpperCase();
+            allMarkets.add(normalizedMarket);
+
+            // Initialize market data structure
+            if (!productMarketData[productsLower]) {
+              productMarketData[productsLower] = {};
+            }
+            if (!productMarketData[productsLower][normalizedMarket]) {
+              productMarketData[productsLower][normalizedMarket] = 0;
+            }
+            if (!marketTotals[normalizedMarket]) {
+              marketTotals[normalizedMarket] = 0;
+            }
+
+            // Count market occurrences for this product category
+            productMarketData[productsLower][normalizedMarket]++;
+            marketTotals[normalizedMarket]++;
+          }
+        });
       }
     }
     // Skip marketing, acquisition, and other categories
@@ -104,112 +184,87 @@ export const calculateProductAnalyticsData = (tasks) => {
 
   // Create table data for product categories only (only show categories with data)
   const tableData = [];
+  const sortedMarkets = Array.from(allMarkets).sort();
 
-  // Only add categories that have actual data
-  if (categoryTotals["product casino"] > 0) {
-    tableData.push({
-      category: "Product Casino",
-      total: categoryTotals["product casino"],
-      totalHours: tasks
-        .filter((task) => {
-          const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().trim() === "product casino";
-        })
-        .reduce(
-          (sum, task) =>
-            sum + (task.data_task?.timeInHours || task.timeInHours || 0),
-          0
-        ),
-      percentage:
-        totalTasks > 0
-          ? Math.min(Math.round((categoryTotals["product casino"] / totalTasks) * 100), 100)
-          : 0,
-      details: {
-        "product casino": productCounts["product casino"],
-      },
-    });
-  }
+  // Prepare all category items for percentage calculation to ensure they sum to 100%
+  const categoryItems = Object.entries(categoryTotals)
+    .filter(([_, count]) => count > 0)
+    .map(([key, count]) => ({ key, count }));
+  
+  // Calculate percentages for all categories at once to ensure they sum to exactly 100%
+  const categoryPercentages = calculatePercentagesForGroup(categoryItems, totalTasks);
 
-  if (categoryTotals["product sport"] > 0) {
-    tableData.push({
-      category: "Product Sport",
-      total: categoryTotals["product sport"],
-      totalHours: tasks
-        .filter((task) => {
-          const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().trim() === "product sport";
-        })
-        .reduce(
-          (sum, task) =>
-            sum + (task.data_task?.timeInHours || task.timeInHours || 0),
-          0
-        ),
-      percentage:
-        totalTasks > 0
-          ? Math.min(Math.round((categoryTotals["product sport"] / totalTasks) * 100), 100)
-          : 0,
-      details: {
-        "product sport": productCounts["product sport"],
-      },
-    });
-  }
+  // Helper function to add a product category row with markets
+  const addProductCategoryRow = (productKey, categoryName) => {
+    if (categoryTotals[productKey] > 0) {
+      const row = {
+        category: categoryName,
+        total: categoryTotals[productKey],
+        totalHours: tasks
+          .filter((task) => {
+            const products = task.data_task?.products || task.products;
+            return products && products.toLowerCase().trim() === productKey;
+          })
+          .reduce(
+            (sum, task) =>
+              sum + (task.data_task?.timeInHours || task.timeInHours || 0),
+            0
+          ),
+      };
 
-  if (categoryTotals["product poker"] > 0) {
-    tableData.push({
-      category: "Product Poker",
-      total: categoryTotals["product poker"],
-      totalHours: tasks
-        .filter((task) => {
-          const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().trim() === "product poker";
-        })
-        .reduce(
-          (sum, task) =>
-            sum + (task.data_task?.timeInHours || task.timeInHours || 0),
-          0
-        ),
-      percentage:
-        totalTasks > 0
-          ? Math.min(Math.round((categoryTotals["product poker"] / totalTasks) * 100), 100)
-          : 0,
-      details: {
-        "product poker": productCounts["product poker"],
-      },
-    });
-  }
+      // Calculate total market count for this product category (sum of all markets)
+      // This ensures percentages sum to 100% since tasks can have multiple markets
+      let productMarketTotal = 0;
+      const marketItems = [];
+      sortedMarkets.forEach((market) => {
+        const marketCount = productMarketData[productKey]?.[market] || 0;
+        productMarketTotal += marketCount;
+        marketItems.push({ key: market, count: marketCount });
+      });
 
-  if (categoryTotals["product lotto"] > 0) {
-    tableData.push({
-      category: "Product Lotto",
-      total: categoryTotals["product lotto"],
-      totalHours: tasks
-        .filter((task) => {
-          const products = task.data_task?.products || task.products;
-          return products && products.toLowerCase().trim() === "product lotto";
-        })
-        .reduce(
-          (sum, task) =>
-            sum + (task.data_task?.timeInHours || task.timeInHours || 0),
-          0
-        ),
-      percentage:
-        totalTasks > 0
-          ? Math.min(Math.round((categoryTotals["product lotto"] / totalTasks) * 100), 100)
-          : 0,
-      details: {
-        "product lotto": productCounts["product lotto"],
-      },
-    });
-  }
+      // Add market columns with percentages that sum to 100%
+      sortedMarkets.forEach((market) => {
+        const marketCount = productMarketData[productKey]?.[market] || 0;
+        row[market] = calculateCountWithPercentage(marketCount, productMarketTotal, marketItems, market);
+      });
 
-  // Add Total Tasks row only if there are any product tasks
+      tableData.push(row);
+    }
+  };
+
+  // Add categories that have actual data
+  addProductCategoryRow("product casino", "Product Casino");
+  addProductCategoryRow("product sport", "Product Sport");
+  addProductCategoryRow("product poker", "Product Poker");
+  addProductCategoryRow("product lotto", "Product Lotto");
+
+  // Add Grand Total row only if there are any product tasks
   if (totalTasks > 0) {
-    tableData.push({
-      category: "Total Tasks",
+    const grandTotalRow = {
+      category: "Grand Total",
       total: totalTasks,
       totalHours: totalHours,
-      percentage: 100,
+      bold: true,
+      highlight: true,
+    };
+
+    // Calculate total market count across all product categories (sum of all markets)
+    // This ensures percentages sum to 100% since tasks can have multiple markets
+    let grandTotalMarketCount = 0;
+    const grandTotalMarketItems = [];
+    sortedMarkets.forEach((market) => {
+      const marketTotal = marketTotals[market] || 0;
+      grandTotalMarketCount += marketTotal;
+      grandTotalMarketItems.push({ key: market, count: marketTotal });
     });
+
+    // Add market columns with percentages that sum to 100%
+    sortedMarkets.forEach((market) => {
+      const marketTotal = marketTotals[market] || 0;
+      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotalMarketCount, grandTotalMarketItems, market);
+    });
+
+    tableData.push(grandTotalRow);
   }
 
   // Create table columns
@@ -217,6 +272,7 @@ export const calculateProductAnalyticsData = (tasks) => {
     {
       key: "category",
       header: "Product Category",
+      align: "left",
       render: (value) => (
         <span className="font-medium text-gray-900 dark:text-gray-100">
           {value}
@@ -226,6 +282,8 @@ export const calculateProductAnalyticsData = (tasks) => {
     {
       key: "total",
       header: "Task Count",
+      align: "center",
+      highlight: true,
       render: (value) => (
         <span className="text-gray-700 dark:text-gray-300">{value}</span>
       ),
@@ -233,18 +291,22 @@ export const calculateProductAnalyticsData = (tasks) => {
     {
       key: "totalHours",
       header: "Total Hours",
+      align: "center",
+      highlight: true,
       render: (value) => (
         <span className="text-gray-700 dark:text-gray-300">{value}h</span>
       ),
     },
-    {
-      key: "percentage",
-      header: "Percentage",
-      render: (value) => (
-        <span className="text-gray-700 dark:text-gray-300">{value}%</span>
-      ),
-    },
   ];
+
+  // Add market columns
+  sortedMarkets.forEach((market) => {
+    tableColumns.push({
+      key: market,
+      header: market.toUpperCase(),
+      align: "center",
+    });
+  });
 
   // Create first pie chart data (categories with tasks - including misc)
   const categoryPieData = addConsistentColors(

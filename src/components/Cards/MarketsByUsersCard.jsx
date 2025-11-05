@@ -5,7 +5,7 @@ import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { CARD_SYSTEM } from "@/constants";
 import { addConsistentColors } from "@/components/Cards/analyticsCardConfig";
-import { getMarketColor } from "@/components/Cards/configs/analyticsSharedConfig";
+import { getMarketColor, calculateCountWithPercentage } from "@/components/Cards/configs/analyticsSharedConfig";
 
 const CHART_COLORS = {
   DEFAULT: Object.values(CARD_SYSTEM.COLOR_HEX_MAP),
@@ -46,13 +46,6 @@ const calculateUserDataTotals = (userData) => {
   };
 };
 
-const calculateCountWithPercentage = (count, total, decimals = 1) => {
-  if (total === 0) return `${count} (0%)`;
-  const percentage = (count / total) * 100;
-  // Cap at 100% maximum
-  const cappedPercentage = Math.min(percentage, 100);
-  return `${count} (${Math.round(cappedPercentage)}%)`;
-};
 
 // Calculate markets by users data for table and charts
 const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS) => {
@@ -153,14 +146,17 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
       // Calculate total market count for this user (sum of all markets)
       // This ensures percentages sum to 100% since tasks can have multiple markets
       let userTotalMarketCount = 0;
-      allMarkets.forEach((market) => {
-        userTotalMarketCount += userMarketData[userId][market] || 0;
-      });
-
-      // Use the sum of market counts as denominator so percentages sum to 100%
+      const marketItems = [];
       allMarkets.forEach((market) => {
         const marketCount = userMarketData[userId][market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, userTotalMarketCount);
+        userTotalMarketCount += marketCount;
+        marketItems.push({ key: market, count: marketCount });
+      });
+
+      // Calculate percentages for all markets at once to ensure they sum to exactly 100%
+      allMarkets.forEach((market) => {
+        const marketCount = userMarketData[userId][market] || 0;
+        row[market] = calculateCountWithPercentage(marketCount, userTotalMarketCount, marketItems, market);
       });
 
       return row;
@@ -190,14 +186,17 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
     // Calculate total market count across all users (sum of all markets)
     // This ensures percentages sum to 100% since tasks can have multiple markets
     let grandTotalMarketCount = 0;
-    allMarkets.forEach((market) => {
-      grandTotalMarketCount += marketTotals[market] || 0;
-    });
-
-    // Use the sum of market counts as denominator so percentages sum to 100%
+    const grandTotalMarketItems = [];
     allMarkets.forEach((market) => {
       const marketTotal = marketTotals[market] || 0;
-      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotalMarketCount);
+      grandTotalMarketCount += marketTotal;
+      grandTotalMarketItems.push({ key: market, count: marketTotal });
+    });
+
+    // Calculate percentages for all markets at once to ensure they sum to exactly 100%
+    allMarkets.forEach((market) => {
+      const marketTotal = marketTotals[market] || 0;
+      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotalMarketCount, grandTotalMarketItems, market);
     });
     tableData.push(grandTotalRow);
   }

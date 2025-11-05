@@ -285,11 +285,53 @@ export const calculatePercentage = (value, total, decimals = 1) => {
   return cappedPercentage.toFixed(decimals);
 };
 
-export const calculateCountWithPercentage = (count, total, _decimals = 1) => {
+/**
+ * Calculate count with percentage, ensuring percentages sum to 100% when used in groups
+ * @param {number} count - The count value
+ * @param {number} total - Total count
+ * @param {Array<{key: string, count: number}>} allItems - Optional: all items in the group to ensure percentages sum to 100%
+ * @param {string} currentKey - Optional: key of current item (required if allItems provided)
+ * @returns {string} - Formatted string like "5 (10%)"
+ */
+export const calculateCountWithPercentage = (count, total, allItems = null, currentKey = null) => {
   if (total === 0) return `${count} (0%)`;
 
+  // If allItems provided, calculate percentages for entire group to sum to 100%
+  if (allItems && currentKey) {
+    // Calculate raw percentages and floor values
+    const percentages = allItems.map(item => {
+      const rawPercentage = (item.count / total) * 100;
+      const floored = Math.floor(rawPercentage);
+      const remainder = rawPercentage - floored;
+      return {
+        key: item.key,
+        count: item.count,
+        floored,
+        remainder
+      };
+    });
+
+    // Calculate sum of floored values
+    const sumFloored = percentages.reduce((sum, p) => sum + p.floored, 0);
+    const difference = 100 - sumFloored;
+
+    // Sort by remainder (descending) to allocate extra points to largest remainders
+    const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
+    const adjustedDifference = Math.max(0, Math.min(difference, percentages.length));
+    
+    // Allocate final percentages
+    sorted.forEach((item, index) => {
+      item.finalPercentage = index < adjustedDifference ? item.floored + 1 : item.floored;
+    });
+
+    // Find current item's percentage
+    const currentItem = percentages.find(p => p.key === currentKey);
+    const percentage = currentItem ? currentItem.finalPercentage : 0;
+    return `${count} (${percentage}%)`;
+  }
+
+  // Fallback: calculate percentage normally (for single item cases)
   const percentage = (count / total) * 100;
-  // Cap at 100% maximum
   const cappedPercentage = Math.min(percentage, 100);
   return `${count} (${Math.round(cappedPercentage)}%)`;
 };

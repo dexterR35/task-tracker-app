@@ -98,9 +98,13 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
       };
 
       // Add market columns with percentages (categoryTotal is sum of all market counts, so percentages sum to 100%)
+      const marketItems = sortedMarkets.map(market => ({
+        key: market,
+        count: categoryData[market] || 0
+      }));
       sortedMarkets.forEach((market) => {
         const marketCount = categoryData[market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, categoryTotal);
+        row[market] = calculateCountWithPercentage(marketCount, categoryTotal, marketItems, market);
       });
 
       tableData.push(row);
@@ -121,9 +125,13 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     };
 
     // Add market columns with percentages (grandTotal is sum of all market counts, so percentages sum to 100%)
+    const grandTotalMarketItems = sortedMarkets.map(market => ({
+      key: market,
+      count: marketTotals[market] || 0
+    }));
     sortedMarkets.forEach((market) => {
       const marketTotal = marketTotals[market] || 0;
-      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotal);
+      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotal, grandTotalMarketItems, market);
     });
 
     tableData.push(grandTotalRow);
