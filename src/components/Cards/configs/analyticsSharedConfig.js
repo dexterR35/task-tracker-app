@@ -280,14 +280,18 @@ export const calculatePercentage = (value, total, decimals = 1) => {
   if (total === 0) return "0.0";
 
   const percentage = (value / total) * 100;
-  return percentage.toFixed(decimals);
+  // Cap at 100% maximum
+  const cappedPercentage = Math.min(percentage, 100);
+  return cappedPercentage.toFixed(decimals);
 };
 
 export const calculateCountWithPercentage = (count, total, _decimals = 1) => {
   if (total === 0) return `${count} (0%)`;
 
-  const percentage = Math.round((count / total) * 100);
-  return `${count} (${percentage}%)`;
+  const percentage = (count / total) * 100;
+  // Cap at 100% maximum
+  const cappedPercentage = Math.min(percentage, 100);
+  return `${count} (${Math.round(cappedPercentage)}%)`;
 };
 
 /**

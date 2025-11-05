@@ -48,8 +48,10 @@ const calculateUserDataTotals = (userData) => {
 
 const calculateCountWithPercentage = (count, total, decimals = 1) => {
   if (total === 0) return `${count} (0%)`;
-  const percentage = Math.round((count / total) * 100);
-  return `${count} (${percentage}%)`;
+  const percentage = (count / total) * 100;
+  // Cap at 100% maximum
+  const cappedPercentage = Math.min(percentage, 100);
+  return `${count} (${Math.round(cappedPercentage)}%)`;
 };
 
 // Calculate markets by users data for table and charts
@@ -148,9 +150,17 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
         row.totalHours = `${userTotalHours}h`;
       }
 
+      // Calculate total market count for this user (sum of all markets)
+      // This ensures percentages sum to 100% since tasks can have multiple markets
+      let userTotalMarketCount = 0;
+      allMarkets.forEach((market) => {
+        userTotalMarketCount += userMarketData[userId][market] || 0;
+      });
+
+      // Use the sum of market counts as denominator so percentages sum to 100%
       allMarkets.forEach((market) => {
         const marketCount = userMarketData[userId][market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, userTotal);
+        row[market] = calculateCountWithPercentage(marketCount, userTotalMarketCount);
       });
 
       return row;
@@ -177,12 +187,17 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
       grandTotalRow.totalHours = `${totals.totalHours}h`;
     }
 
+    // Calculate total market count across all users (sum of all markets)
+    // This ensures percentages sum to 100% since tasks can have multiple markets
+    let grandTotalMarketCount = 0;
     allMarkets.forEach((market) => {
-      const marketTotal = marketTotals[market];
-      grandTotalRow[market] = calculateCountWithPercentage(
-        marketTotal,
-        totals.totalTasks
-      );
+      grandTotalMarketCount += marketTotals[market] || 0;
+    });
+
+    // Use the sum of market counts as denominator so percentages sum to 100%
+    allMarkets.forEach((market) => {
+      const marketTotal = marketTotals[market] || 0;
+      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotalMarketCount);
     });
     tableData.push(grandTotalRow);
   }

@@ -239,7 +239,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
       products: Array.from(userData.products).join(", "),
       aiUsagePercentage:
         userData.totalTasks > 0
-          ? Math.round((userData.aiUsedCount / userData.totalTasks) * 100)
+          ? Math.min(Math.round((userData.aiUsedCount / userData.totalTasks) * 100), 100)
           : 0,
     };
   });
@@ -265,8 +265,9 @@ export const calculateAIAnalyticsData = (tasks, users) => {
 
   // Calculate grand total percentage
   if (grandTotal.totalTasks > 0) {
-    grandTotal.aiUsagePercentage = Math.round(
-      (grandTotal.aiUsedTasks / grandTotal.totalTasks) * 100
+    grandTotal.aiUsagePercentage = Math.min(
+      Math.round((grandTotal.aiUsedTasks / grandTotal.totalTasks) * 100),
+      100
     );
   }
 

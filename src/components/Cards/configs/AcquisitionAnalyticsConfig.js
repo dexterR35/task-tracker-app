@@ -1,4 +1,4 @@
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage } from "./analyticsSharedConfig";
 
 /**
  * Acquisition Analytics Configuration
@@ -97,14 +97,10 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
         total: categoryTotal,
       };
 
-      // Add market columns with percentages
+      // Add market columns with percentages (categoryTotal is sum of all market counts, so percentages sum to 100%)
       sortedMarkets.forEach((market) => {
         const marketCount = categoryData[market] || 0;
-        const percentage =
-          categoryTotal > 0
-            ? Math.round((marketCount / categoryTotal) * 100)
-            : 0;
-        row[market] = `${marketCount} (${percentage}%)`;
+        row[market] = calculateCountWithPercentage(marketCount, categoryTotal);
       });
 
       tableData.push(row);
@@ -124,11 +120,10 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
       highlight: true,
     };
 
+    // Add market columns with percentages (grandTotal is sum of all market counts, so percentages sum to 100%)
     sortedMarkets.forEach((market) => {
       const marketTotal = marketTotals[market] || 0;
-      const percentage =
-        grandTotal > 0 ? Math.round((marketTotal / grandTotal) * 100) : 0;
-      grandTotalRow[market] = `${marketTotal} (${percentage}%)`;
+      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotal);
     });
 
     tableData.push(grandTotalRow);

@@ -122,7 +122,7 @@ export const calculateProductAnalyticsData = (tasks) => {
         ),
       percentage:
         totalTasks > 0
-          ? Math.round((categoryTotals["product casino"] / totalTasks) * 100)
+          ? Math.min(Math.round((categoryTotals["product casino"] / totalTasks) * 100), 100)
           : 0,
       details: {
         "product casino": productCounts["product casino"],
@@ -146,7 +146,7 @@ export const calculateProductAnalyticsData = (tasks) => {
         ),
       percentage:
         totalTasks > 0
-          ? Math.round((categoryTotals["product sport"] / totalTasks) * 100)
+          ? Math.min(Math.round((categoryTotals["product sport"] / totalTasks) * 100), 100)
           : 0,
       details: {
         "product sport": productCounts["product sport"],
@@ -170,7 +170,7 @@ export const calculateProductAnalyticsData = (tasks) => {
         ),
       percentage:
         totalTasks > 0
-          ? Math.round((categoryTotals["product poker"] / totalTasks) * 100)
+          ? Math.min(Math.round((categoryTotals["product poker"] / totalTasks) * 100), 100)
           : 0,
       details: {
         "product poker": productCounts["product poker"],
@@ -194,7 +194,7 @@ export const calculateProductAnalyticsData = (tasks) => {
         ),
       percentage:
         totalTasks > 0
-          ? Math.round((categoryTotals["product lotto"] / totalTasks) * 100)
+          ? Math.min(Math.round((categoryTotals["product lotto"] / totalTasks) * 100), 100)
           : 0,
       details: {
         "product lotto": productCounts["product lotto"],
@@ -253,7 +253,7 @@ export const calculateProductAnalyticsData = (tasks) => {
       .map(([category, count]) => ({
         name: category.charAt(0).toUpperCase() + category.slice(1),
         value: count,
-        percentage: totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0,
+        percentage: totalTasks > 0 ? Math.min(Math.round((count / totalTasks) * 100), 100) : 0,
       })),
     CHART_DATA_TYPE.PRODUCT
   );
