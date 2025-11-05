@@ -248,20 +248,10 @@ export const calculateProductAnalyticsData = (tasks) => {
       highlight: true,
     };
 
-    // Calculate total market count across all product categories (sum of all markets)
-    // This ensures percentages sum to 100% since tasks can have multiple markets
-    let grandTotalMarketCount = 0;
-    const grandTotalMarketItems = [];
+    // Add market columns with only counts (no percentages for Grand Total)
     sortedMarkets.forEach((market) => {
       const marketTotal = marketTotals[market] || 0;
-      grandTotalMarketCount += marketTotal;
-      grandTotalMarketItems.push({ key: market, count: marketTotal });
-    });
-
-    // Add market columns with percentages that sum to 100%
-    sortedMarkets.forEach((market) => {
-      const marketTotal = marketTotals[market] || 0;
-      grandTotalRow[market] = calculateCountWithPercentage(marketTotal, grandTotalMarketCount, grandTotalMarketItems, market);
+      grandTotalRow[market] = marketTotal;
     });
 
     tableData.push(grandTotalRow);
