@@ -13,7 +13,7 @@ export const LOGIN_FORM_FIELDS = [
     type: "email",
     label: "Email Address",
     required: true,
-    placeholder: "Enter your NetBet email",
+    placeholder: "Enter your email (@netbet.* or @gimo.co.uk)",
     autoComplete: "email"
   },
   {
