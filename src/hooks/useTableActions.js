@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 
 /**
@@ -93,7 +93,6 @@ export const useTableActions = (tableType, options = {}) => {
 
         if (isPermissionError) {
           // Show permission error toast
-          const { showAuthError } = await import('@/utils/toast');
           showAuthError(`You do not have permission to delete ${tableType}s`);
         } else {
           showError(`Failed to delete ${tableType}: ${errorMessage}`);
