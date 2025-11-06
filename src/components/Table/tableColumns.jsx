@@ -78,8 +78,8 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
                 <div className="text-xs block">
                   <div className="block">
                     {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
-                    {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && (
-                      <span> + {(deliverable.variationsQuantity || deliverable.declinariQuantity)}{(deliverable.variationsTimeUnit || deliverable.declinariTimeUnit || 'min')} variations</span>
+                    {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && deliverable.variationsTimeInMinutes > 0 && (
+                      <span> + {(deliverable.variationsQuantity || deliverable.declinariQuantity)} × {(deliverable.variationsTimeInMinutes || 0).toFixed(0)}min</span>
                     )}
                   </div>
                   <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>

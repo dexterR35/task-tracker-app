@@ -253,6 +253,200 @@ const formatValueForCSV = (
 };
 
 /**
+ * Calculate deliverables count and total hours from deliverablesUsed
+ */
+const calculateDeliverablesInfo = (deliverablesUsed, deliverablesOptions = []) => {
+  if (!deliverablesUsed || !Array.isArray(deliverablesUsed) || deliverablesUsed.length === 0) {
+    return { count: 0, hours: 0 };
+  }
+
+  let totalCount = 0;
+  let totalHours = 0;
+
+  deliverablesUsed.forEach((deliverable) => {
+    const deliverableName = deliverable?.name;
+    const quantity = deliverable?.count || 1;
+    totalCount += quantity;
+
+    // Find deliverable in options to get time calculation
+    if (deliverableName && deliverablesOptions.length > 0) {
+      const deliverableOption = deliverablesOptions.find(
+        (d) => d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+      );
+
+      if (deliverableOption) {
+        const timePerUnit = deliverableOption.timePerUnit || 1;
+        const timeUnit = deliverableOption.timeUnit || 'hr';
+        const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+        const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+        const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+
+        // Convert to minutes (base unit)
+        let timeInMinutes = timePerUnit;
+        if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
+
+        // Add variations time if present
+        let variationsTimeInMinutes = 0;
+        if (variationsTime > 0) {
+          if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
+          else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+          else variationsTimeInMinutes = variationsTime;
+        }
+
+        const totalvariationsTimeInMinutes = variationsQuantity * variationsTimeInMinutes;
+        const calculatedTimeInMinutes = (timeInMinutes * quantity) + totalvariationsTimeInMinutes;
+        const calculatedTimeInHours = calculatedTimeInMinutes / 60;
+        totalHours += calculatedTimeInHours;
+      }
+    }
+  });
+
+  return { count: totalCount, hours: totalHours };
+};
+
+/**
+ * Custom CSV export for tasks - only specific columns
+ */
+const exportTasksToCSV = (data, options = {}) => {
+  try {
+    const {
+      filename = null,
+      includeHeaders = true,
+      deliverables = [],
+    } = options;
+
+    // Transform deliverables to the format expected by calculateDeliverablesInfo
+    const deliverablesOptions = deliverables.map(deliverable => ({
+      value: deliverable.name,
+      label: deliverable.name,
+      department: deliverable.department,
+      timePerUnit: deliverable.timePerUnit,
+      timeUnit: deliverable.timeUnit,
+      requiresQuantity: deliverable.requiresQuantity,
+      variationsTime: deliverable.variationsTime,
+      variationsTimeUnit: deliverable.variationsTimeUnit || 'min',
+      declinariTime: deliverable.declinariTime,
+      declinariTimeUnit: deliverable.declinariTimeUnit
+    }));
+
+    const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
+
+    // Define custom headers
+    const headers = [
+      "DEPARTMENT",
+      "JIRA LINK",
+      "MARKET",
+      "TOTAL HOURS",
+      "DELIVERABLES COUNT",
+      "DELIVERABLES HOURS"
+    ];
+
+    // Create rows with only the specified columns
+    const rows = data.map((row) => {
+      const taskData = row.data_task || row;
+
+      // 1. Department
+      const departments = taskData.departments;
+      let departmentValue = "-";
+      if (Array.isArray(departments) && departments.length > 0) {
+        departmentValue = departments.join(", ");
+      } else if (typeof departments === "string" && departments) {
+        departmentValue = departments;
+      }
+
+      // 2. JIRA LINK
+      const taskName = taskData.taskName;
+      let jiraLink = "-";
+      if (taskName) {
+        if (taskName.startsWith("http://") || taskName.startsWith("https://")) {
+          jiraLink = taskName;
+        } else if (taskName.match(/^[A-Z]+-\d+$/)) {
+          jiraLink = `https://gmrd.atlassian.net/browse/${taskName}`;
+        } else {
+          jiraLink = taskName;
+        }
+      }
+
+      // 3. MARKET
+      const markets = taskData.markets;
+      let marketValue = "-";
+      if (Array.isArray(markets) && markets.length > 0) {
+        marketValue = markets.join(", ");
+      } else if (typeof markets === "string" && markets) {
+        marketValue = markets;
+      }
+
+      // 4. TOTAL HOURS (excluding AI hours)
+      const timeInHours = taskData.timeInHours || 0;
+      const aiTime = taskData.aiUsed?.[0]?.aiTime || 0;
+      const totalHours = Math.max(0, (typeof timeInHours === "number" ? timeInHours : 0) - (typeof aiTime === "number" ? aiTime : 0));
+      const totalHoursValue = totalHours > 0 ? totalHours.toFixed(1) : "0";
+
+      // 5. Deliverables count and hours
+      const deliverablesUsed = taskData.deliverablesUsed || [];
+      const deliverablesInfo = calculateDeliverablesInfo(deliverablesUsed, deliverablesOptions);
+      const deliverablesCount = deliverablesInfo.count || 0;
+      const deliverablesHours = deliverablesInfo.hours || 0;
+
+      // Escape values that contain delimiter, quotes, or newlines
+      const escapeValue = (value) => {
+        const stringValue = String(value);
+        if (
+          stringValue.includes(delimiter) ||
+          stringValue.includes('"') ||
+          stringValue.includes("\n")
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      return [
+        escapeValue(departmentValue),
+        escapeValue(jiraLink),
+        escapeValue(marketValue),
+        escapeValue(totalHoursValue),
+        escapeValue(deliverablesCount),
+        escapeValue(deliverablesHours.toFixed(1))
+      ].join(delimiter);
+    });
+
+    // Create CSV content
+    let csvContent = "";
+    if (includeHeaders) {
+      csvContent = [headers.join(delimiter), ...rows].join("\n");
+    } else {
+      csvContent = rows.join("\n");
+    }
+
+    // Create and download file
+    const blob = new Blob([csvContent], {
+      type: `text/csv;charset=${EXPORT_CONFIG.CSV_ENCODING};`,
+    });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+
+    // Use custom filename or generate default
+    const exportFilename =
+      filename ||
+      `tasks_export_${new Date().toISOString().split("T")[0]}.csv`;
+    link.setAttribute("download", exportFilename);
+
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return true;
+  } catch (error) {
+    logger.error("Error exporting tasks CSV:", error);
+    return false;
+  }
+};
+
+/**
  * Unified CSV Export utility function
  * Handles both table data and analytics data exports
  */
@@ -264,6 +458,7 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       analyticsMode = false,
       reporters = [],
       users = [],
+      deliverables = [],
     } = options;
 
     // Handle analytics data (array of objects without columns)
@@ -271,6 +466,17 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       return exportAnalyticsToCSV(data, tableType, {
         filename,
         includeHeaders,
+      });
+    }
+
+    // Custom export for tasks - only specific columns
+    // Excludes: reporters, created by, task added, observation, task start, task end, done by, task hr, vip, reworked
+    // Includes only: DEPARTMENT, JIRA LINK, MARKET, TOTAL HOURS, DELIVERABLES COUNT, DELIVERABLES HOURS
+    if (tableType === "tasks") {
+      return exportTasksToCSV(data, {
+        filename,
+        includeHeaders,
+        deliverables,
       });
     }
 

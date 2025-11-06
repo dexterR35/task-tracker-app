@@ -248,16 +248,11 @@ export const formatDeliverableDisplay = (deliverable) => {
   // Calculate base time (without variations)
   const baseTime = deliverable.timeInHours * deliverable.quantity;
   
-  if ((deliverable.variationsTime || deliverable.declinariTime) > 0) {
-    const variationsTime = deliverable.variationsTime || deliverable.declinariTime;
-    const variationsTimeUnit = deliverable.variationsTimeUnit || deliverable.declinariTimeUnit;
-    const variationsMinutes = variationsTimeUnit === 'min' 
-      ? variationsTime 
-      : variationsTimeUnit === 'hr' 
-        ? variationsTime * 60 
-        : variationsTime * 8 * 60;
+  if ((deliverable.variationsTime || deliverable.declinariTime) > 0 && (deliverable.variationsQuantity || deliverable.declinariQuantity) > 0) {
+    const variationsQuantity = deliverable.variationsQuantity || deliverable.declinariQuantity || 0;
+    const variationsTimeInMinutes = deliverable.variationsTimeInMinutes || 0;
     
-    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h + ${variationsMinutes.toFixed(0)}min variations = ${deliverable.time.toFixed(1)}h`;
+    return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} + ${variationsQuantity} × ${variationsTimeInMinutes.toFixed(0)}min = ${deliverable.time.toFixed(1)}h`;
   }
   
   return `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} = ${baseTime.toFixed(1)}h`;
@@ -323,8 +318,8 @@ const FormattedDeliverableCalculation = ({
                 <div className="text-xs block">
                   <div className="block">
                     {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
-                    {deliverable.variationsQuantity > 0 && (
-                      <span> + {deliverable.variationsQuantity}{deliverable.variationsTimeUnit || 'min'} variations</span>
+                    {deliverable.variationsQuantity > 0 && deliverable.variationsTimeInMinutes > 0 && (
+                      <span> + {deliverable.variationsQuantity} × {(deliverable.variationsTimeInMinutes || 0).toFixed(0)}min</span>
                     )}
                   </div>
                   <div className="block font-semibold text-yellow-600 dark:text-yellow-400">

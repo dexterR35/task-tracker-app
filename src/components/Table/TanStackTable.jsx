@@ -501,6 +501,7 @@ const TanStackTable = forwardRef(
             filename: `${tableType}_export_${new Date().toISOString().split("T")[0]}.csv`,
             reporters: additionalProps?.reporters || [],
             users: additionalProps?.users || [],
+            deliverables: additionalProps?.deliverables || [],
           }
         );
 

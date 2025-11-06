@@ -10,7 +10,7 @@ import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import { TABLE_SYSTEM } from '@/constants';
+import { TABLE_SYSTEM, FORM_OPTIONS } from '@/constants';
 import { logger } from "@/utils/logger";
 
 // Available filter options
@@ -40,6 +40,8 @@ const TaskTable = ({
 }) => {
   // Filter state - single selection only
   const [selectedFilter, setSelectedFilter] = useState(null);
+  // Department filter state
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState(null);
 
   // Modal states - using table actions system instead
   
@@ -147,7 +149,7 @@ const TaskTable = ({
   
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, selectedFilter) => {
+    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter) => {
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
@@ -210,6 +212,30 @@ const TaskTable = ({
 
         return true; // Admin sees all tasks
       });
+
+      // Apply department filter
+      if (selectedDepartmentFilter) {
+        if (import.meta.env.MODE === 'development') {
+          logger.log('Applying department filter:', selectedDepartmentFilter);
+        }
+        filteredTasks = filteredTasks.filter((task) => {
+          const taskData = task.data_task || task;
+          const taskDepartments = taskData.departments;
+          
+          // Normalize the selected filter to lowercase for comparison
+          const normalizedFilter = selectedDepartmentFilter.toLowerCase();
+          
+          // Handle both array and string formats
+          if (Array.isArray(taskDepartments)) {
+            return taskDepartments.some(dept => 
+              dept?.toLowerCase() === normalizedFilter
+            );
+          } else if (typeof taskDepartments === 'string') {
+            return taskDepartments.toLowerCase() === normalizedFilter;
+          }
+          return false;
+        });
+      }
 
       // Apply single filter selection
       if (selectedFilter) {
@@ -292,7 +318,8 @@ const TaskTable = ({
       selectedReporterId,
       selectedMonthId,
       selectedWeek,
-      selectedFilter
+      selectedFilter,
+      selectedDepartmentFilter
     );
     
     // Sort by createdAt in descending order (newest first)
@@ -328,7 +355,7 @@ const TaskTable = ({
       
       return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
     });
-  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, selectedWeek, selectedFilter]);
+  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter, getFilteredTasks]);
 
   // Bulk actions - build array efficiently without re-creation
   const bulkActions = useMemo(() => {
@@ -438,29 +465,57 @@ const TaskTable = ({
         // Select the new filter
         setSelectedFilter(value);
       }
+    } else if (fieldName === 'departmentFilter') {
+      // If clicking the same department filter or clearing, deselect it
+      if (selectedDepartmentFilter === value || !value) {
+        setSelectedDepartmentFilter(null);
+      } else {
+        // Select the new department filter
+        setSelectedDepartmentFilter(value);
+      }
     }
-  }, [selectedFilter]);
+  }, [selectedFilter, selectedDepartmentFilter]);
 
-  // Create filter component for inline display
+  // Create filter component for inline display (combining both filters)
   const taskFilterComponent = (
-    <SearchableSelectField
-      field={{
-        name: "taskFilter",
-        type: "select",
-        label: "Task Filters",
-        required: false,
-        options: FILTER_OPTIONS,
-        placeholder: "Search filters (e.g., AI Used, Marketing, VIP...)",
-      }}
-      register={() => {}}
-      errors={{}}
-      setValue={handleFilterValueChange}
-      watch={() => selectedFilter || ""}
-      trigger={() => {}}
-      clearErrors={() => {}}
-      formValues={{}}
-      noOptionsMessage="No filters found"
-    />
+    <div className="flex items-center space-x-4">
+      <SearchableSelectField
+        field={{
+          name: "departmentFilter",
+          type: "select",
+          label: "Department",
+          required: false,
+          options: FORM_OPTIONS.DEPARTMENTS,
+          placeholder: "Search department (e.g., Design, Video, Dev...)",
+        }}
+        register={() => {}}
+        errors={{}}
+        setValue={handleFilterValueChange}
+        watch={() => selectedDepartmentFilter || ""}
+        trigger={() => {}}
+        clearErrors={() => {}}
+        formValues={{}}
+        noOptionsMessage="No departments found"
+      />
+      <SearchableSelectField
+        field={{
+          name: "taskFilter",
+          type: "select",
+          label: "Task Filters",
+          required: false,
+          options: FILTER_OPTIONS,
+          placeholder: "Search filters (e.g., AI Used, Marketing, VIP...)",
+        }}
+        register={() => {}}
+        errors={{}}
+        setValue={handleFilterValueChange}
+        watch={() => selectedFilter || ""}
+        trigger={() => {}}
+        clearErrors={() => {}}
+        formValues={{}}
+        noOptionsMessage="No filters found"
+      />
+    </div>
   );
 
   return (
@@ -482,6 +537,7 @@ const TaskTable = ({
         initialColumnVisibility={initialColumnVisibility}
         reporters={reporters}
         users={users}
+        deliverables={deliverables}
         // TanStack pagination configuration
         enablePagination={enablePagination}
         showPagination={enablePagination}
