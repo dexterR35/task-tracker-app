@@ -21,7 +21,6 @@ const FILTER_OPTIONS = [
   { value: 'product', label: 'Product' },
   { value: 'vip', label: 'VIP' },
   { value: 'reworked', label: 'Reworked' },
-  { value: 'deliverables', label: 'Deliverables' },
 ];
 
 // import './TaskTable.css';
@@ -42,6 +41,8 @@ const TaskTable = ({
   const [selectedFilter, setSelectedFilter] = useState(null);
   // Department filter state
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState(null);
+  // Deliverable filter state
+  const [selectedDeliverableFilter, setSelectedDeliverableFilter] = useState(null);
 
   // Modal states - using table actions system instead
   
@@ -149,7 +150,7 @@ const TaskTable = ({
   
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter) => {
+    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter) => {
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
@@ -237,6 +238,27 @@ const TaskTable = ({
         });
       }
 
+      // Apply deliverable filter
+      if (selectedDeliverableFilter) {
+        if (import.meta.env.MODE === 'development') {
+          logger.log('Applying deliverable filter:', selectedDeliverableFilter);
+        }
+        filteredTasks = filteredTasks.filter((task) => {
+          const taskData = task.data_task || task;
+          const deliverablesUsed = taskData.deliverablesUsed;
+          
+          if (!deliverablesUsed || !Array.isArray(deliverablesUsed) || deliverablesUsed.length === 0) {
+            return false;
+          }
+          
+          // Check if any deliverable matches the selected filter
+          return deliverablesUsed.some(deliverable => {
+            const deliverableName = deliverable?.name;
+            return deliverableName && deliverableName.toLowerCase() === selectedDeliverableFilter.toLowerCase();
+          });
+        });
+      }
+
       // Apply single filter selection
       if (selectedFilter) {
         if (import.meta.env.MODE === 'development') {
@@ -260,8 +282,6 @@ const TaskTable = ({
               return taskData.isVip;
             case 'reworked':
               return taskData.reworked;
-            case 'deliverables':
-              return taskData.deliverablesUsed && taskData.deliverablesUsed.length > 0;
             default:
               return true;
           }
@@ -319,7 +339,8 @@ const TaskTable = ({
       selectedMonthId,
       selectedWeek,
       selectedFilter,
-      selectedDepartmentFilter
+      selectedDepartmentFilter,
+      selectedDeliverableFilter
     );
     
     // Sort by createdAt in descending order (newest first)
@@ -355,7 +376,7 @@ const TaskTable = ({
       
       return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
     });
-  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter, getFilteredTasks]);
+  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter, getFilteredTasks]);
 
   // Bulk actions - build array efficiently without re-creation
   const bulkActions = useMemo(() => {
@@ -473,10 +494,29 @@ const TaskTable = ({
         // Select the new department filter
         setSelectedDepartmentFilter(value);
       }
+    } else if (fieldName === 'deliverableFilter') {
+      // If clicking the same deliverable filter or clearing, deselect it
+      if (selectedDeliverableFilter === value || !value) {
+        setSelectedDeliverableFilter(null);
+      } else {
+        // Select the new deliverable filter
+        setSelectedDeliverableFilter(value);
+      }
     }
-  }, [selectedFilter, selectedDepartmentFilter]);
+  }, [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter]);
 
-  // Create filter component for inline display (combining both filters)
+  // Create deliverables options for filter
+  const deliverableFilterOptions = useMemo(() => {
+    if (!deliverables || !Array.isArray(deliverables) || deliverables.length === 0) {
+      return [];
+    }
+    return deliverables.map(deliverable => ({
+      value: deliverable.name,
+      label: deliverable.name
+    }));
+  }, [deliverables]);
+
+  // Create filter component for inline display (combining all filters)
   const taskFilterComponent = (
     <div className="flex items-center space-x-4">
       <SearchableSelectField
@@ -496,6 +536,24 @@ const TaskTable = ({
         clearErrors={() => {}}
         formValues={{}}
         noOptionsMessage="No departments found"
+      />
+      <SearchableSelectField
+        field={{
+          name: "deliverableFilter",
+          type: "select",
+          label: "Deliverable",
+          required: false,
+          options: deliverableFilterOptions,
+          placeholder: "Search deliverable (e.g., gamepreview, thumbnail...)",
+        }}
+        register={() => {}}
+        errors={{}}
+        setValue={handleFilterValueChange}
+        watch={() => selectedDeliverableFilter || ""}
+        trigger={() => {}}
+        clearErrors={() => {}}
+        formValues={{}}
+        noOptionsMessage="No deliverables found"
       />
       <SearchableSelectField
         field={{

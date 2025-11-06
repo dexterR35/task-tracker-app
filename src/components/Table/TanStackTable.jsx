@@ -133,7 +133,7 @@ const TableControls = ({
       )}
       {/* Custom Filter - if provided */}
       {customFilter && (
-        <div className="max-w-sm">
+        <div className="max-w-full">
           {customFilter}
         </div>
       )}
