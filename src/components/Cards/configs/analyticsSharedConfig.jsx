@@ -1,3 +1,4 @@
+import React from "react";
 import { CARD_SYSTEM, FORM_OPTIONS } from "@/constants";
 
 /**
@@ -183,7 +184,6 @@ export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey
           color: nameToColorMap.get(name)
         };
       }
-
       // Try to get a unique color using hash, but ensure uniqueness
       // Use USER_COLORS for users, BASE_COLORS for reporters
       const colorPalette = type === CHART_DATA_TYPE.USER ? USER_COLORS : BASE_COLORS;
@@ -262,11 +262,7 @@ export const calculateTotal = (dataObject, defaultValue = 0) => {
   }, 0);
 };
 
-/**
- * Calculate totals for user data (hours and tasks)
- * @param {Object} userData - Object containing userHours and userTotals
- * @returns {Object} - Object with totalHours and totalTasks
- */
+
 export const calculateUserDataTotals = (userData) => {
   const { userHours = {}, userTotals = {} } = userData;
 
@@ -285,14 +281,7 @@ export const calculatePercentage = (value, total, decimals = 1) => {
   return cappedPercentage.toFixed(decimals);
 };
 
-/**
- * Calculate count with percentage, ensuring percentages sum to 100% when used in groups
- * @param {number} count - The count value
- * @param {number} total - Total count
- * @param {Array<{key: string, count: number}>} allItems - Optional: all items in the group to ensure percentages sum to 100%
- * @param {string} currentKey - Optional: key of current item (required if allItems provided)
- * @returns {string} - Formatted string like "5 (10%)"
- */
+
 export const calculateCountWithPercentage = (count, total, allItems = null, currentKey = null) => {
   if (total === 0) return `${count} (0%)`;
 
@@ -318,7 +307,6 @@ export const calculateCountWithPercentage = (count, total, allItems = null, curr
     // Sort by remainder (descending) to allocate extra points to largest remainders
     const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
     const adjustedDifference = Math.max(0, Math.min(difference, percentages.length));
-    
     // Allocate final percentages
     sorted.forEach((item, index) => {
       item.finalPercentage = index < adjustedDifference ? item.floored + 1 : item.floored;
@@ -334,6 +322,34 @@ export const calculateCountWithPercentage = (count, total, allItems = null, curr
   const percentage = (count / total) * 100;
   const cappedPercentage = Math.min(percentage, 100);
   return `${count} (${Math.round(cappedPercentage)}%)`;
+};
+
+
+export const renderCountWithPercentage = (value) => {
+  if (typeof value === 'number') {
+    return <span>{value}</span>;
+  }
+
+  if (typeof value !== 'string') {
+    return <span>{String(value)}</span>;
+  }
+
+  // Match pattern like "2 (3%)" or "17 (21%)"
+  const match = value.match(/^(\d+)\s*\((\d+)%\)$/);
+  if (match) {
+    const count = match[1];
+    const percentage = match[2];
+    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.green;
+
+    return (
+      <span>
+        {count} (<span style={{ color: greenColor }}>{percentage}%</span>)
+      </span>
+    );
+  }
+
+  // If it doesn't match the pattern, return as-is
+  return <span>{value}</span>;
 };
 
 /**
@@ -376,5 +392,103 @@ export const getTaskUserUID = (task) => {
 // Extract AI used from task
 export const getTaskAIUsed = (task) => {
   return task.data_task?.aiUsed || task.aiUsed || [];
+};
+
+/**
+ * Add grand total row to table data
+ * @param {Array} tableData - Array of table row objects
+ * @param {Object} options - Configuration options
+ * @param {string} options.labelKey - Key for the label column (e.g., 'user', 'category', 'reporter')
+ * @param {string} options.labelValue - Value for the grand total label (default: 'Grand Total')
+ * @param {Array} options.sumColumns - Array of column keys to sum (e.g., ['totalTasks', 'totalHours'])
+ * @param {Array} options.marketColumns - Array of market column keys to sum (optional)
+ * @param {Object} options.customValues - Object with custom values for specific columns (optional)
+ * @returns {Array} - Table data with grand total row appended
+ */
+export const addGrandTotalRow = (tableData, options = {}) => {
+  if (!tableData || tableData.length === 0) {
+    return tableData;
+  }
+
+  const {
+    labelKey = 'category',
+    labelValue = 'Grand Total',
+    sumColumns = [],
+    marketColumns = [],
+    customValues = {},
+  } = options;
+
+  // Create grand total row
+  const grandTotalRow = {
+    [labelKey]: labelValue,
+    bold: true,
+    highlight: true,
+  };
+
+  // Sum numeric columns
+  sumColumns.forEach((columnKey) => {
+    const total = tableData.reduce((sum, row) => {
+      const value = row[columnKey];
+      if (typeof value === 'number') {
+        return sum + value;
+      }
+      return sum;
+    }, 0);
+
+    // Round to 2 decimal places for hours/decimals
+    if (columnKey.includes('Hours') || columnKey.includes('Time') || columnKey.includes('Percentage')) {
+      grandTotalRow[columnKey] = Math.round(total * 100) / 100;
+    } else {
+      grandTotalRow[columnKey] = total;
+    }
+  });
+
+  // Sum market columns
+  if (marketColumns.length > 0) {
+    marketColumns.forEach((marketKey) => {
+      const marketTotal = tableData.reduce((sum, row) => {
+        const value = row[marketKey];
+        if (typeof value === 'number') {
+          return sum + value;
+        }
+        // Handle percentage strings like "5 (10%)"
+        if (typeof value === 'string' && value.includes('(')) {
+          const numMatch = value.match(/^\d+/);
+          return sum + (numMatch ? parseInt(numMatch[0], 10) : 0);
+        }
+        return sum;
+      }, 0);
+      grandTotalRow[marketKey] = marketTotal;
+    });
+  } else {
+    // Auto-detect market columns (columns that aren't in sumColumns and aren't the label)
+    const firstRow = tableData[0];
+    if (firstRow) {
+      Object.keys(firstRow).forEach((key) => {
+        if (key !== labelKey && !sumColumns.includes(key) && key !== 'bold' && key !== 'highlight') {
+          // Check if it's a market column (uppercase or contains market-like patterns)
+          if (key.length <= 5 || /^[A-Z]{2,5}$/.test(key)) {
+            const marketTotal = tableData.reduce((sum, row) => {
+              const value = row[key];
+              if (typeof value === 'number') {
+                return sum + value;
+              }
+              if (typeof value === 'string' && value.includes('(')) {
+                const numMatch = value.match(/^\d+/);
+                return sum + (numMatch ? parseInt(numMatch[0], 10) : 0);
+              }
+              return sum;
+            }, 0);
+            grandTotalRow[key] = marketTotal;
+          }
+        }
+      });
+    }
+  }
+
+  // Add custom values (overrides calculated values)
+  Object.assign(grandTotalRow, customValues);
+
+  return [...tableData, grandTotalRow];
 };
 

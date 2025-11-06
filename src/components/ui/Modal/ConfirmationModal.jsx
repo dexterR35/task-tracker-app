@@ -28,25 +28,25 @@ const ConfirmationModal = ({
         return {
           icon: '⚠️',
           confirmButton: 'danger',
-          titleColor: 'text-red-600 dark:text-red-400'
+          titleColor: 'text-red-error '
         };
       case 'warning':
         return {
           icon: '⚠️',
           confirmButton: 'warning',
-          titleColor: 'text-yellow-600 dark:text-yellow-400'
+          titleColor: 'text-yellow-600 '
         };
       case 'info':
         return {
           icon: 'ℹ️',
           confirmButton: 'primary',
-          titleColor: 'text-blue-600 dark:text-blue-400'
+          titleColor: 'text-blue-600 '
         };
       default:
         return {
           icon: '❓',
           confirmButton: 'primary',
-          titleColor: 'text-gray-600 dark:text-gray-400'
+          titleColor: 'text-gray-200 '
         };
     }
   };

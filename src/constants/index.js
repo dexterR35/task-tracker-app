@@ -186,8 +186,6 @@ export const FORM_OPTIONS = {
     { value: 'gr', label: 'gr' },
     { value: 'fr', label: 'fr' }
   ],
-  // Note: Reporter departments, channels, and countries are now loaded dynamically from the database
-  // This ensures the form options are always up-to-date with actual data
 };
 
 // ============================================================================

@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
@@ -5,7 +6,7 @@ import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { CHART_COLORS } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 
-const AcquisitionAnalyticsCard = ({
+const AcquisitionAnalyticsCard = memo(({
   title = "Acquisition Analytics",
   acquisitionTableData = [],
   acquisitionTableColumns = [],
@@ -25,6 +26,10 @@ const AcquisitionAnalyticsCard = ({
   sportBiaxialHoursColor,
   casinoUsersCharts = [],
   sportUsersCharts = [],
+  casinoUserTableData = [],
+  casinoUserTableColumns = [],
+  sportUserTableData = [],
+  sportUserTableColumns = [],
   className = "",
   isLoading = false,
 }) => {
@@ -40,29 +45,78 @@ const AcquisitionAnalyticsCard = ({
   const safeSportBiaxialData = Array.isArray(sportBiaxialData) ? sportBiaxialData : [];
   const safeCasinoUsersCharts = Array.isArray(casinoUsersCharts) ? casinoUsersCharts : [];
   const safeSportUsersCharts = Array.isArray(sportUsersCharts) ? sportUsersCharts : [];
+  const safeCasinoUserTableData = Array.isArray(casinoUserTableData) ? casinoUserTableData : [];
+  const safeCasinoUserTableColumns = Array.isArray(casinoUserTableColumns) ? casinoUserTableColumns : [];
+  const safeSportUserTableData = Array.isArray(sportUserTableData) ? sportUserTableData : [];
+  const safeSportUserTableColumns = Array.isArray(sportUserTableColumns) ? sportUserTableColumns : [];
 
   return (
     <div id="acquisition-analytics-card" className={`${className}`}>
-      <h3>{title}</h3>
-
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
-        {/* Acquisition Table */}
-        {safeAcquisitionTableData && safeAcquisitionTableData.length > 0 ? (
-          <div className="table-container">
-            <AnalyticsTable
-              data={safeAcquisitionTableData}
-              columns={acquisitionTableColumns}
-            />
-          </div>
-        ) : (
-          <div className="card">
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No data</p>
+        {/* Tables Section */}
+        <div>
+          {/* Acquisition Table */}
+          {safeAcquisitionTableData && safeAcquisitionTableData.length > 0 ? (
+            <div className="table-container mb-6">
+              <AnalyticsTable
+                data={safeAcquisitionTableData}
+                columns={acquisitionTableColumns}
+                sectionTitle="📊 Acquisition Table"
+              />
+            </div>
+          ) : (
+            <div className="card mb-6">
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No data</p>
+              </div>
+            </div>
+          )}
+
+          {/* Casino Acquisition: Per-User Table */}
+          <div className="mb-6">
+          {safeCasinoUserTableData && safeCasinoUserTableData.length > 0 ? (
+            <div className="table-container">
+              <AnalyticsTable
+                data={safeCasinoUserTableData}
+                columns={safeCasinoUserTableColumns}
+                sectionTitle="🎰 Casino Acquisition: Per User"
+              />
+            </div>
+          ) : (
+            <div className="card">
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No casino acquisition user data</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+            {/* Sport Acquisition: Per-User Table */}
+            <div className="mb-6">
+              {safeSportUserTableData && safeSportUserTableData.length > 0 ? (
+                <div className="table-container">
+                  <AnalyticsTable
+                    data={safeSportUserTableData}
+                    columns={safeSportUserTableColumns}
+                    sectionTitle="⚽ Sport Acquisition: Per User"
+                  />
+                </div>
+              ) : (
+                <div className="card">
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No sport acquisition user data</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-        {/* Charts Container */}
+
+        {/* Charts Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">📈 Charts</h3>
+          
+          {/* Pie Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Casino Acquisition Chart */}
           <div className="chart-container">
@@ -161,10 +215,15 @@ const AcquisitionAnalyticsCard = ({
             )}
           </div>
         </div>
+        </div>
 
-        {/* Casino Acquisition: Per-User Charts */}
+        {/* User Charts Section */}
         <div>
-          <h3 className=" mb-6">🎰 Casino Acquisition: Per User</h3>
+          <h3 className="mb-4 text-lg font-semibold">👥 User Charts</h3>
+          
+          {/* Casino Acquisition: Per-User Charts */}
+          <div className="mb-6">
+            <h4 className="mb-4 text-md font-medium">🎰 Casino Acquisition: Per User</h4>
           {safeCasinoUsersCharts && safeCasinoUsersCharts.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {safeCasinoUsersCharts.map((userChart) => (
@@ -191,41 +250,44 @@ const AcquisitionAnalyticsCard = ({
               </div>
             </div>
           )}
-        </div>
+          </div>
 
-        {/* Sport Acquisition: Per-User Charts */}
-        <div>
-          <h3 className=" mb-6">⚽ Sport Acquisition: Per User</h3>
-          {safeSportUsersCharts && safeSportUsersCharts.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {safeSportUsersCharts.map((userChart) => (
-                <div key={`sport-${userChart.userId}`} className="chart-container">
-                  <div className="mb-2">
-                    <span className="text-xs dark:bg-blue-900 px-2 py-1 rounded">
-                      👥 <strong>{userChart.userName}:</strong> {userChart.category} - Markets
-                    </span>
+          {/* Sport Acquisition: Per-User Charts */}
+          <div>
+            <h4 className="mb-4 text-md font-medium">⚽ Sport Acquisition: Per User</h4>
+            {safeSportUsersCharts && safeSportUsersCharts.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {safeSportUsersCharts.map((userChart) => (
+                  <div key={`sport-${userChart.userId}`} className="chart-container">
+                    <div className="mb-2">
+                      <span className="text-xs dark:bg-blue-900 px-2 py-1 rounded">
+                        👥 <strong>{userChart.userName}:</strong> {userChart.category} - Markets
+                      </span>
+                    </div>
+                    <BiaxialBarChart
+                      data={userChart.marketData}
+                      title={`${userChart.userName}: ${userChart.category} (${userChart.totalTasks} tasks, ${userChart.totalHours}h)`}
+                      tasksColor={CHART_COLORS.DEFAULT[0]}
+                      hoursColor={CHART_COLORS.DEFAULT[1]}
+                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                    />
                   </div>
-                  <BiaxialBarChart
-                    data={userChart.marketData}
-                    title={`${userChart.userName}: ${userChart.category} (${userChart.totalTasks} tasks, ${userChart.totalHours}h)`}
-                    tasksColor={CHART_COLORS.DEFAULT[0]}
-                    hoursColor={CHART_COLORS.DEFAULT[1]}
-                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="card">
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">No data</p>
+                ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="card">
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400">No data</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-};
+});
+
+AcquisitionAnalyticsCard.displayName = 'AcquisitionAnalyticsCard';
 
 export default AcquisitionAnalyticsCard;

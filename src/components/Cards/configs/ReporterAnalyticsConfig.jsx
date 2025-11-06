@@ -1,6 +1,6 @@
 import React from "react";
 import Badge from "@/components/ui/Badge/Badge";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, addGrandTotalRow } from "./analyticsSharedConfig";
 
 /**
  * Reporter Analytics Configuration
@@ -109,7 +109,7 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
   });
 
   // Create reporter table data
-  const reporterTableData = Array.from(allReporters).map((reporterKey) => {
+  let reporterTableData = Array.from(allReporters).map((reporterKey) => {
     const data = reporterData[reporterKey];
 
     return {
@@ -124,20 +124,18 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
   // Sort by total tasks descending
   reporterTableData.sort((a, b) => b.totalTasks - a.totalTasks);
 
-  // Add grand total row
-  const grandTotal = {
-    reporter: "Grand Total",
-    totalTasks: reporterTableData.reduce((sum, row) => sum + row.totalTasks, 0),
-    totalHours:
-      Math.round(
-        reporterTableData.reduce((sum, row) => sum + row.totalHours, 0) * 100
-      ) / 100,
-    markets: "All Markets",
-    products: "All Products",
-    bold: true,
-    highlight: true,
-  };
-  reporterTableData.push(grandTotal);
+  // Add grand total row using shared utility
+  if (reporterTableData.length > 0) {
+    reporterTableData = addGrandTotalRow(reporterTableData, {
+      labelKey: 'reporter',
+      labelValue: 'Grand Total',
+      sumColumns: ['totalTasks', 'totalHours'],
+      customValues: {
+        markets: "All Markets",
+        products: "All Products",
+      },
+    });
+  }
 
   // Create table columns
   const reporterTableColumns = [
@@ -163,9 +161,9 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
           return value;
         const markets = value.split(", ").filter((m) => m.trim());
         return (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 uppercase">
             {markets.map((market, index) => (
-              <Badge key={index} color="amber" size="xs">
+              <Badge key={index} color="purple" size="xs">
                 {market}
               </Badge>
             ))}
@@ -184,7 +182,7 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
         return (
           <div className="flex flex-wrap gap-1">
             {products.map((product, index) => (
-              <Badge key={index} color="orange" size="xs">
+              <Badge key={index} color="green" size="xs">
                 {product}
               </Badge>
             ))}

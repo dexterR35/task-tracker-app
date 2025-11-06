@@ -1,11 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, memo } from "react";
 import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { CARD_SYSTEM } from "@/constants";
 import { addConsistentColors } from "@/components/Cards/analyticsCardConfig";
-import { getMarketColor, calculateCountWithPercentage } from "@/components/Cards/configs/analyticsSharedConfig";
+import { getMarketColor, calculateCountWithPercentage, renderCountWithPercentage } from "@/components/Cards/configs/analyticsSharedConfig";
 
 const CHART_COLORS = {
   DEFAULT: Object.values(CARD_SYSTEM.COLOR_HEX_MAP),
@@ -220,6 +220,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
           key: market,
           header: market.toUpperCase(),
           align: "center",
+          render: renderCountWithPercentage,
         }))
     );
   }
@@ -479,7 +480,7 @@ const calculateUsersByMarketsCharts = (tasks, users) => {
   return userCharts;
 };
 
-const MarketsByUsersCard = ({
+const MarketsByUsersCard = memo(({
   tasks = [],
   users = [],
   className = "",
@@ -577,7 +578,6 @@ const MarketsByUsersCard = ({
   if (!hasRealData && !hasMarketsData && !hasUserByTaskData && !hasMarketsBiaxialData && !hasUsersBiaxialData && !hasUsersByMarketsCharts) {
     return (
       <div id="markets-by-users-card" className={`${className}`}>
-        <h3>{title}</h3>
         <div className="card">
           <div className="text-center py-8">
             <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -594,20 +594,27 @@ const MarketsByUsersCard = ({
 
   return (
     <div id="markets-by-users-card" className={`${className}`}>
-      <h3>{title}</h3>
-
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-        {/* Markets by Users Table Div */}
-        {hasRealData && (
-          <div className="table-container">
-            <AnalyticsTable
-              data={analyticsByUserMarketsTableData}
-              columns={analyticsByUserMarketsTableColumns}
-            />
-          </div>
-        )}
-        {/* Charts Container - 2 charts in a row */}
+        {/* Tables Section */}
+        <div>
+          {/* Markets by Users Table Div */}
+          {hasRealData && (
+            <div className="table-container">
+              <AnalyticsTable
+                data={analyticsByUserMarketsTableData}
+                columns={analyticsByUserMarketsTableColumns}
+                sectionTitle="📊 Markets by Users"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Charts Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">📈 Charts</h3>
+          
+          {/* Charts Container - 2 charts in a row */}
         {(hasMarketsData || hasUserByTaskData) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Markets Distribution Pie Chart */}
@@ -688,9 +695,14 @@ const MarketsByUsersCard = ({
             )}
           </div>
         )}
+        </div>
 
-        {/* Users by Markets - Separate Chart for Each User in 2-column grid */}
-        {hasUsersByMarketsCharts && (
+        {/* User Charts Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">👥 User Charts</h3>
+          
+          {/* Users by Markets - Separate Chart for Each User in 2-column grid */}
+          {hasUsersByMarketsCharts && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {usersByMarketsCharts.map((userChart) => (
               <div key={userChart.userId} className="chart-container">
@@ -709,10 +721,13 @@ const MarketsByUsersCard = ({
               </div>
             ))}
           </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
-};
+});
+
+MarketsByUsersCard.displayName = 'MarketsByUsersCard';
 
 export default MarketsByUsersCard;

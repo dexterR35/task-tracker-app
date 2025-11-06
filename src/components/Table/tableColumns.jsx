@@ -149,7 +149,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!markets?.length) return '-';
       
       return (
-        <div className="flex flex-wrap gap-1 capitalize">
+        <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
             <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
               {market}
@@ -301,7 +301,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.select_badge} size="sm">
           {value}h
         </Badge>
       );
@@ -338,7 +338,7 @@ const createUserColumns = () => [
       <Avatar 
         user={row.original}
         showEmail={false}
-        size="md"
+        size="sm"
       />
     ),
     size: 200,
@@ -406,7 +406,7 @@ const createReporterColumns = () => [
       <Avatar 
         user={row.original}
         showEmail={false}
-        size="md"
+        size="sm"
       />
     ),
     size: 200,
@@ -418,17 +418,41 @@ const createReporterColumns = () => [
   }),
   columnHelper.accessor('departament', {
     header: 'DEPARTMENT',
-    cell: createSimpleCell(),
+    cell: ({ getValue }) => {
+      const department = getValue();
+      if (!department) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
+      return (
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm">
+          {department}
+        </Badge>
+      );
+    },
     size: 150,
   }),
   columnHelper.accessor('country', {
     header: 'COUNTRY',
-    cell: createSimpleCell(),
+    cell: ({ getValue }) => {
+      const country = getValue();
+      if (!country) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
+      return (
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="sm">
+          {country}
+        </Badge>
+      );
+    },
     size: 100,
   }),
   columnHelper.accessor('channelName', {
     header: 'CHANNEL',
-    cell: createSimpleCell(),
+    cell: ({ getValue }) => {
+      const channel = getValue();
+      if (!channel) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
+      return (
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm">
+          {channel}
+        </Badge>
+      );
+    },
     size: 120,
   }),
   columnHelper.accessor('createdAt', {

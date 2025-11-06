@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
@@ -10,17 +16,17 @@ import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import { TABLE_SYSTEM, FORM_OPTIONS } from '@/constants';
+import { TABLE_SYSTEM, FORM_OPTIONS } from "@/constants";
 import { logger } from "@/utils/logger";
 
 // Available filter options
 const FILTER_OPTIONS = [
-  { value: 'aiUsed', label: 'AI Used' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'acquisition', label: 'Acquisition' },
-  { value: 'product', label: 'Product' },
-  { value: 'vip', label: 'VIP' },
-  { value: 'reworked', label: 'Reworked' },
+  { value: "aiUsed", label: "AI Used" },
+  { value: "marketing", label: "Marketing" },
+  { value: "acquisition", label: "Acquisition" },
+  { value: "product", label: "Product" },
+  { value: "vip", label: "VIP" },
+  { value: "reworked", label: "Reworked" },
 ];
 
 // import './TaskTable.css';
@@ -40,25 +46,28 @@ const TaskTable = ({
   // Filter state - single selection only
   const [selectedFilter, setSelectedFilter] = useState(null);
   // Department filter state
-  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState(null);
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] =
+    useState(null);
   // Deliverable filter state
-  const [selectedDeliverableFilter, setSelectedDeliverableFilter] = useState(null);
+  const [selectedDeliverableFilter, setSelectedDeliverableFilter] =
+    useState(null);
 
   // Modal states - using table actions system instead
-  
+
   // Page size state for TanStack pagination
   const [pageSizeState, setPageSizeState] = useState(pageSize);
-  
+
   // Table ref for clearing selection
   const tableRef = useRef(null);
 
   // Get auth functions separately
-  const { canAccess, user, canDeleteTask, canUpdateTask, canViewTasks } = useAuth();
+  const { canAccess, user, canDeleteTask, canUpdateTask, canViewTasks } =
+    useAuth();
   const isUserAdmin = canAccess("admin");
   const userCanDeleteTasks = canDeleteTask();
   const userCanUpdateTasks = canUpdateTask();
   const userCanViewTasks = canViewTasks();
-  
+
   // Get navigate function for React Router navigation
   const navigate = useNavigate();
 
@@ -71,12 +80,10 @@ const TaskTable = ({
     users,
   } = useAppDataContext();
 
-
   // Use context tasks with TanStack pagination
   const tasks = contextTasks || [];
   const isLoading = initialLoading;
   const error = tasksError;
-
 
   // Get delete task hook
   const [deleteTask] = useDeleteTask();
@@ -84,14 +91,14 @@ const TaskTable = ({
   // Delete wrapper - simplified since useTableActions now handles permission errors
   const handleTaskDeleteMutation = async (task) => {
     if (!deleteTask) {
-      throw new Error('Delete task mutation not available');
+      throw new Error("Delete task mutation not available");
     }
-    
+
     try {
       await deleteTask(
-        task.monthId,  // Always use task's own monthId
+        task.monthId, // Always use task's own monthId
         task.id,
-        userData || {}  // Pass user data for permission validation
+        userData || {} // Pass user data for permission validation
       );
       // Note: Success toast is already shown by useTableActions hook
     } catch (error) {
@@ -114,12 +121,14 @@ const TaskTable = ({
     closeEditModal,
     closeDeleteModal,
     handleEditSuccess,
-  } = useTableActions('task', {
+  } = useTableActions("task", {
     getItemDisplayName: (task) => {
       if (task?.data_task?.taskName) return task.data_task.taskName;
       if (task?.data_task?.departments) {
         const departments = task.data_task.departments;
-        return Array.isArray(departments) ? departments.join(', ') : departments;
+        return Array.isArray(departments)
+          ? departments.join(", ")
+          : departments;
       }
       return task?.data_task?.taskName || task?.id;
     },
@@ -131,30 +140,56 @@ const TaskTable = ({
     onSelectSuccess: () => {
       // Don't clear selection immediately for view action - let navigation handle it
       // The selection will be cleared when the component unmounts or when user returns
-    }
+    },
   });
 
   // Edit handling is now managed by useTableActions hook
 
   // Get task columns for the table
-  const taskColumns = useTaskColumns(selectedMonthId, reporters, user, deliverables);
+  const taskColumns = useTaskColumns(
+    selectedMonthId,
+    reporters,
+    user,
+    deliverables
+  );
 
   // Page size change handler for TanStack pagination
   const handlePageSizeChange = useCallback((newPageSize) => {
     setPageSizeState(newPageSize);
   }, []);
 
-
   // Extract stable user values
   const userUID = user?.userUID;
-  
+
+  // Helper functions to reduce duplication
+  const matchesUser = useCallback((task, userId) => {
+    return task.userUID === userId || task.createbyUID === userId;
+  }, []);
+
+  const getTaskData = useCallback((task) => {
+    return task.data_task || task;
+  }, []);
+
+  const getTaskReporterId = useCallback((task) => {
+    return task.data_task?.reporters || task.reporters;
+  }, []);
+
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
-    (tasks, selectedUserId, selectedReporterId, currentMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter) => {
+    (
+      tasks,
+      selectedUserId,
+      selectedReporterId,
+      currentMonthId,
+      selectedWeek,
+      selectedFilter,
+      selectedDepartmentFilter,
+      selectedDeliverableFilter
+    ) => {
       if (!tasks || !Array.isArray(tasks)) {
         return [];
       }
-      
+
       // First apply month, user, and reporter filtering
       let filteredTasks = tasks.filter((task) => {
         // Always filter by month first
@@ -163,75 +198,58 @@ const TaskTable = ({
         // Role-based filtering: Regular users can only see their own tasks
         if (!isUserAdmin) {
           // Check if this task belongs to the current user
-          const isUserTask = userUID && (
-            task.userUID === userUID || 
-            task.createbyUID === userUID
-          );
-          
+          const isUserTask = userUID && matchesUser(task, userUID);
           // Regular users can ONLY see their own tasks
           return isUserTask;
         }
 
+        // Admin filtering logic
         // If both user and reporter are selected, show tasks that match BOTH
         if (selectedUserId && selectedReporterId) {
-          const matchesUser =
-            task.userUID === selectedUserId ||
-            task.createbyUID === selectedUserId;
-          
-          const taskReporterId = task.data_task?.reporters;
+          const matchesSelectedUser = matchesUser(task, selectedUserId);
+          const taskReporterId = getTaskReporterId(task);
           if (!taskReporterId) return false;
-          
+
           // Compare task reporter ID directly with selectedReporterId (exact case)
-          const matchesReporter = taskReporterId === selectedReporterId;
-          
-          return matchesUser && matchesReporter;
+          return matchesSelectedUser && taskReporterId === selectedReporterId;
         }
 
         // If only user is selected, show tasks for that user
         if (selectedUserId && !selectedReporterId) {
-          return (
-            task.userUID === selectedUserId ||
-            task.createbyUID === selectedUserId
-          );
+          return matchesUser(task, selectedUserId);
         }
 
         // If only reporter is selected, show tasks for that reporter
         if (selectedReporterId && !selectedUserId) {
-          const taskReporterId = task.data_task?.reporters;
+          const taskReporterId = getTaskReporterId(task);
           if (!taskReporterId) return false;
-          
+
           // Compare task reporter ID directly with selectedReporterId (exact case)
           return taskReporterId === selectedReporterId;
         }
 
-        // If neither user nor reporter is selected, show tasks based on role
-        if (!isUserAdmin) {
-          const isUserTask = userUID && (task.userUID === userUID || task.createbyUID === userUID);
-          const isReporterTask = task.reporters || task.data_task?.reporters;
-          return isUserTask || isReporterTask;
-        }
-
-        return true; // Admin sees all tasks
+        // If neither user nor reporter is selected, admin sees all tasks
+        return true;
       });
 
       // Apply department filter
       if (selectedDepartmentFilter) {
-        if (import.meta.env.MODE === 'development') {
-          logger.log('Applying department filter:', selectedDepartmentFilter);
+        if (import.meta.env.MODE === "development") {
+          logger.log("Applying department filter:", selectedDepartmentFilter);
         }
         filteredTasks = filteredTasks.filter((task) => {
-          const taskData = task.data_task || task;
+          const taskData = getTaskData(task);
           const taskDepartments = taskData.departments;
-          
+
           // Normalize the selected filter to lowercase for comparison
           const normalizedFilter = selectedDepartmentFilter.toLowerCase();
-          
+
           // Handle both array and string formats
           if (Array.isArray(taskDepartments)) {
-            return taskDepartments.some(dept => 
-              dept?.toLowerCase() === normalizedFilter
+            return taskDepartments.some(
+              (dept) => dept?.toLowerCase() === normalizedFilter
             );
-          } else if (typeof taskDepartments === 'string') {
+          } else if (typeof taskDepartments === "string") {
             return taskDepartments.toLowerCase() === normalizedFilter;
           }
           return false;
@@ -240,47 +258,54 @@ const TaskTable = ({
 
       // Apply deliverable filter
       if (selectedDeliverableFilter) {
-        if (import.meta.env.MODE === 'development') {
-          logger.log('Applying deliverable filter:', selectedDeliverableFilter);
+        if (import.meta.env.MODE === "development") {
+          logger.log("Applying deliverable filter:", selectedDeliverableFilter);
         }
         filteredTasks = filteredTasks.filter((task) => {
-          const taskData = task.data_task || task;
+          const taskData = getTaskData(task);
           const deliverablesUsed = taskData.deliverablesUsed;
-          
-          if (!deliverablesUsed || !Array.isArray(deliverablesUsed) || deliverablesUsed.length === 0) {
+
+          if (
+            !deliverablesUsed ||
+            !Array.isArray(deliverablesUsed) ||
+            deliverablesUsed.length === 0
+          ) {
             return false;
           }
-          
+
           // Check if any deliverable matches the selected filter
-          return deliverablesUsed.some(deliverable => {
+          return deliverablesUsed.some((deliverable) => {
             const deliverableName = deliverable?.name;
-            return deliverableName && deliverableName.toLowerCase() === selectedDeliverableFilter.toLowerCase();
+            return (
+              deliverableName &&
+              deliverableName.toLowerCase() ===
+                selectedDeliverableFilter.toLowerCase()
+            );
           });
         });
       }
 
       // Apply single filter selection
       if (selectedFilter) {
-        if (import.meta.env.MODE === 'development') {
-          logger.log('Applying filter:', selectedFilter);
+        if (import.meta.env.MODE === "development") {
+          logger.log("Applying filter:", selectedFilter);
         }
         filteredTasks = filteredTasks.filter((task) => {
-          const taskData = task.data_task || task;
-    
-          
+          const taskData = getTaskData(task);
+
           // Apply the selected filter
           switch (selectedFilter) {
-            case 'aiUsed':
+            case "aiUsed":
               return taskData.aiUsed?.length > 0;
-            case 'marketing':
-              return taskData.products?.includes('marketing');
-            case 'acquisition':
-              return taskData.products?.includes('acquisition');
-            case 'product':
-              return taskData.products?.includes('product');
-            case 'vip':
+            case "marketing":
+              return taskData.products?.includes("marketing");
+            case "acquisition":
+              return taskData.products?.includes("acquisition");
+            case "product":
+              return taskData.products?.includes("product");
+            case "vip":
               return taskData.isVip;
-            case 'reworked':
+            case "reworked":
               return taskData.reworked;
             default:
               return true;
@@ -291,32 +316,40 @@ const TaskTable = ({
       // If a week is selected, filter by week
       if (selectedWeek && selectedWeek.days) {
         const weekTasks = [];
-        selectedWeek.days.forEach(day => {
+        selectedWeek.days.forEach((day) => {
           try {
             const dayDate = day instanceof Date ? day : new Date(day);
             if (isNaN(dayDate.getTime())) return;
-            
-            const dayStr = dayDate.toISOString().split('T')[0];
-            const dayTasks = filteredTasks.filter(task => {
+
+            const dayStr = dayDate.toISOString().split("T")[0];
+            const dayTasks = filteredTasks.filter((task) => {
               if (!task.createdAt) return false;
-              
+
               // Handle Firestore Timestamp
               let taskDate;
-              if (task.createdAt && typeof task.createdAt === 'object' && task.createdAt.seconds) {
+              if (
+                task.createdAt &&
+                typeof task.createdAt === "object" &&
+                task.createdAt.seconds
+              ) {
                 taskDate = new Date(task.createdAt.seconds * 1000);
-              } else if (task.createdAt && typeof task.createdAt === 'object' && task.createdAt.toDate) {
+              } else if (
+                task.createdAt &&
+                typeof task.createdAt === "object" &&
+                task.createdAt.toDate
+              ) {
                 taskDate = task.createdAt.toDate();
               } else {
                 taskDate = new Date(task.createdAt);
               }
-              
+
               if (isNaN(taskDate.getTime())) return false;
-              const taskDateStr = taskDate.toISOString().split('T')[0];
+              const taskDateStr = taskDate.toISOString().split("T")[0];
               return taskDateStr === dayStr;
             });
             weekTasks.push(...dayTasks);
           } catch (error) {
-            logger.warn('Error processing day:', error, day);
+            logger.warn("Error processing day:", error, day);
           }
         });
         filteredTasks = weekTasks;
@@ -324,7 +357,7 @@ const TaskTable = ({
 
       return filteredTasks;
     },
-    [isUserAdmin, userUID]
+    [isUserAdmin, userUID, matchesUser, getTaskData, getTaskReporterId]
   );
 
   // Get filtered tasks and sort by createdAt (newest first) - memoized for performance
@@ -342,12 +375,12 @@ const TaskTable = ({
       selectedDepartmentFilter,
       selectedDeliverableFilter
     );
-    
+
     // Sort by createdAt in descending order (newest first)
     return filtered.sort((a, b) => {
       // Handle Firebase Timestamps and different date formats
       let dateA, dateB;
-      
+
       if (a.createdAt) {
         // Handle Firebase Timestamp objects
         if (a.createdAt.seconds) {
@@ -360,7 +393,7 @@ const TaskTable = ({
       } else {
         dateA = new Date(0);
       }
-      
+
       if (b.createdAt) {
         // Handle Firebase Timestamp objects
         if (b.createdAt.seconds) {
@@ -373,15 +406,25 @@ const TaskTable = ({
       } else {
         dateB = new Date(0);
       }
-      
+
       return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
     });
-  }, [tasks, selectedUserId, selectedReporterId, selectedMonthId, selectedWeek, selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter, getFilteredTasks]);
+  }, [
+    tasks,
+    selectedUserId,
+    selectedReporterId,
+    selectedMonthId,
+    selectedWeek,
+    selectedFilter,
+    selectedDepartmentFilter,
+    selectedDeliverableFilter,
+    getFilteredTasks,
+  ]);
 
   // Bulk actions - build array efficiently without re-creation
   const bulkActions = useMemo(() => {
     const actions = [];
-    
+
     // Always add Jira link action first
     actions.push({
       label: "View Jira Link",
@@ -391,19 +434,19 @@ const TaskTable = ({
         if (selectedTasks.length === 1) {
           const task = selectedTasks[0];
           const taskName = task.data_task?.taskName;
-          
+
           if (taskName) {
             const fullJiraUrl = `https://gmrd.atlassian.net/browse/${taskName}`;
-            window.open(fullJiraUrl, '_blank', 'noopener,noreferrer');
+            window.open(fullJiraUrl, "_blank", "noopener,noreferrer");
           } else {
             showError("No Jira ticket or URL available for this task");
           }
         } else {
           showError("Please select only ONE task to view Jira link");
         }
-      }
+      },
     });
-    
+
     // Add view action if user has permission
     if (userCanViewTasks) {
       actions.push({
@@ -414,16 +457,16 @@ const TaskTable = ({
           if (selectedTasks.length === 1) {
             const task = selectedTasks[0];
             const params = new URLSearchParams();
-            if (task.monthId) params.set('monthId', task.monthId);
-            if (task.createdByName) params.set('user', task.createdByName);
+            if (task.monthId) params.set("monthId", task.monthId);
+            if (task.createdByName) params.set("user", task.createdByName);
             navigate(`/task/${task.id}?${params.toString()}`);
           } else {
             showError("Please select only ONE task to view");
           }
-        }
+        },
       });
     }
-    
+
     // Add edit action if user has permission
     if (userCanUpdateTasks) {
       actions.push({
@@ -436,10 +479,10 @@ const TaskTable = ({
           } else {
             showError("Please select only ONE task to edit");
           }
-        }
+        },
       });
     }
-    
+
     // Add delete action if user has permission
     if (userCanDeleteTasks) {
       actions.push({
@@ -452,20 +495,27 @@ const TaskTable = ({
           } else {
             showError("Please select only ONE task to delete");
           }
-        }
+        },
       });
     }
-    
+
     return actions;
-  }, [userCanViewTasks, userCanUpdateTasks, userCanDeleteTasks, navigate, handleEdit, handleDelete]);
+  }, [
+    userCanViewTasks,
+    userCanUpdateTasks,
+    userCanDeleteTasks,
+    navigate,
+    handleEdit,
+    handleDelete,
+  ]);
 
   // Initial column visibility
   const initialColumnVisibility = {
-    'isVip': false,        // Hide VIP column by default
-    'reworked': true,     // Hide Reworked column by default
-    'startDate': true,    // Hide Start Date column by default
-    'endDate': false,      // Hide End Date column by default
-    'observations': false  // Hide Observations column by default
+    isVip: false, // Hide VIP column by default
+    reworked: true, // Hide Reworked column by default
+    startDate: true, // Hide Start Date column by default
+    endDate: false, // Hide End Date column by default
+    observations: false, // Hide Observations column by default
   };
 
   // Notify parent component about count changes
@@ -475,50 +525,74 @@ const TaskTable = ({
     }
   }, [filteredTasks?.length, onCountChange]);
 
-
   // Handle filter value change from SearchableSelectField
-  const handleFilterValueChange = useCallback((fieldName, value) => {
-    if (fieldName === 'taskFilter') {
-      // If clicking the same filter or clearing, deselect it
-      if (selectedFilter === value || !value) {
-        setSelectedFilter(null);
-      } else {
-        // Select the new filter
-        setSelectedFilter(value);
+  const handleFilterValueChange = useCallback(
+    (fieldName, value) => {
+      if (fieldName === "taskFilter") {
+        // If clicking the same filter or clearing, deselect it
+        if (selectedFilter === value || !value) {
+          setSelectedFilter(null);
+        } else {
+          // Select the new filter
+          setSelectedFilter(value);
+        }
+      } else if (fieldName === "departmentFilter") {
+        // If clicking the same department filter or clearing, deselect it
+        if (selectedDepartmentFilter === value || !value) {
+          setSelectedDepartmentFilter(null);
+        } else {
+          // Select the new department filter
+          setSelectedDepartmentFilter(value);
+        }
+      } else if (fieldName === "deliverableFilter") {
+        // If clicking the same deliverable filter or clearing, deselect it
+        if (selectedDeliverableFilter === value || !value) {
+          setSelectedDeliverableFilter(null);
+        } else {
+          // Select the new deliverable filter
+          setSelectedDeliverableFilter(value);
+        }
       }
-    } else if (fieldName === 'departmentFilter') {
-      // If clicking the same department filter or clearing, deselect it
-      if (selectedDepartmentFilter === value || !value) {
-        setSelectedDepartmentFilter(null);
-      } else {
-        // Select the new department filter
-        setSelectedDepartmentFilter(value);
-      }
-    } else if (fieldName === 'deliverableFilter') {
-      // If clicking the same deliverable filter or clearing, deselect it
-      if (selectedDeliverableFilter === value || !value) {
-        setSelectedDeliverableFilter(null);
-      } else {
-        // Select the new deliverable filter
-        setSelectedDeliverableFilter(value);
-      }
-    }
-  }, [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter]);
+    },
+    [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter]
+  );
 
   // Create deliverables options for filter
   const deliverableFilterOptions = useMemo(() => {
-    if (!deliverables || !Array.isArray(deliverables) || deliverables.length === 0) {
+    if (
+      !deliverables ||
+      !Array.isArray(deliverables) ||
+      deliverables.length === 0
+    ) {
       return [];
     }
-    return deliverables.map(deliverable => ({
+    return deliverables.map((deliverable) => ({
       value: deliverable.name,
-      label: deliverable.name
+      label: deliverable.name,
     }));
   }, [deliverables]);
 
-  // Create filter component for inline display (combining all filters)
+  // Create filter component for inline display (reordered: search, task filters, department, deliverables)
   const taskFilterComponent = (
     <div className="flex items-center space-x-4">
+      <SearchableSelectField
+        field={{
+          name: "taskFilter",
+          type: "select",
+          label: "Task Filters",
+          required: false,
+          options: FILTER_OPTIONS,
+          placeholder: "Search filters ",
+        }}
+        register={() => {}}
+        errors={{}}
+        setValue={handleFilterValueChange}
+        watch={() => selectedFilter || ""}
+        trigger={() => {}}
+        clearErrors={() => {}}
+        formValues={{}}
+        noOptionsMessage="No filters found"
+      />
       <SearchableSelectField
         field={{
           name: "departmentFilter",
@@ -526,7 +600,7 @@ const TaskTable = ({
           label: "Department",
           required: false,
           options: FORM_OPTIONS.DEPARTMENTS,
-          placeholder: "Search department (e.g., Design, Video, Dev...)",
+          placeholder: "Search department ",
         }}
         register={() => {}}
         errors={{}}
@@ -544,7 +618,7 @@ const TaskTable = ({
           label: "Deliverable",
           required: false,
           options: deliverableFilterOptions,
-          placeholder: "Search deliverable (e.g., gamepreview, thumbnail...)",
+          placeholder: "Search deliverable ",
         }}
         register={() => {}}
         errors={{}}
@@ -554,24 +628,6 @@ const TaskTable = ({
         clearErrors={() => {}}
         formValues={{}}
         noOptionsMessage="No deliverables found"
-      />
-      <SearchableSelectField
-        field={{
-          name: "taskFilter",
-          type: "select",
-          label: "Task Filters",
-          required: false,
-          options: FILTER_OPTIONS,
-          placeholder: "Search filters (e.g., AI Used, Marketing, VIP...)",
-        }}
-        register={() => {}}
-        errors={{}}
-        setValue={handleFilterValueChange}
-        watch={() => selectedFilter || ""}
-        trigger={() => {}}
-        clearErrors={() => {}}
-        formValues={{}}
-        noOptionsMessage="No filters found"
       />
     </div>
   );
@@ -632,10 +688,13 @@ const TaskTable = ({
         onConfirm={confirmDelete}
         title="Delete Task"
         message={`Are you sure you want to delete task "${(() => {
-          if (itemToDelete?.data_task?.taskName) return itemToDelete.data_task.taskName;
+          if (itemToDelete?.data_task?.taskName)
+            return itemToDelete.data_task.taskName;
           if (itemToDelete?.data_task?.departments) {
             const departments = itemToDelete.data_task.departments;
-            return Array.isArray(departments) ? departments.join(', ') : departments;
+            return Array.isArray(departments)
+              ? departments.join(", ")
+              : departments;
           }
           return itemToDelete?.data_task?.taskName || itemToDelete?.id;
         })()}"? This action cannot be undone.`}

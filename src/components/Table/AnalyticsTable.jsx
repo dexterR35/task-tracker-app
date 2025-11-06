@@ -8,7 +8,8 @@ const AnalyticsTable = ({
   data, 
   columns, 
   className = "",
-  isLoading = false
+  isLoading = false,
+  sectionTitle = "📊 Tables"
 }) => {
   // Convert columns to TanStack format - memoized to prevent re-renders
   const tableColumns = useMemo(() => 
@@ -42,6 +43,7 @@ const AnalyticsTable = ({
     enablePagination: false,
     enableFiltering: false,
     pageSize: data?.length || 10000,
+    sectionTitle: sectionTitle,
     initialState: {
       pagination: {
         pageSize: data?.length || 10000

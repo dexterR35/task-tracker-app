@@ -15,6 +15,7 @@ export {
   calculateUserDataTotals,
   calculatePercentage,
   calculateCountWithPercentage,
+  addGrandTotalRow,
   // Chart color mapping functions
   MARKET_COLOR_MAP,
   PRODUCT_COLOR_MAP,

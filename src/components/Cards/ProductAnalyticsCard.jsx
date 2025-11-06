@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
@@ -5,7 +6,7 @@ import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { CHART_COLORS } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 
-const ProductAnalyticsCard = ({
+const ProductAnalyticsCard = memo(({
   title,
   productTableData,
   productTableColumns,
@@ -47,27 +48,33 @@ const ProductAnalyticsCard = ({
 
   return (
     <div id="product-analytics-card" className={`${className}`}>
-      <h3>{title}</h3>
-
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-        {/* Product Statistics Table */}
-        {productTableData && productTableData.length > 0 ? (
-          <div className="table-container">
-            <AnalyticsTable
-              data={productTableData}
-              columns={productTableColumns}
-            />
-          </div>
-        ) : (
-          <div className="card">
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No data</p>
+        {/* Tables Section */}
+        <div>
+          {/* Product Statistics Table */}
+          {productTableData && productTableData.length > 0 ? (
+            <div className="table-container">
+              <AnalyticsTable
+                data={productTableData}
+                columns={productTableColumns}
+                sectionTitle="📊 Product Statistics"
+              />
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="card">
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No data</p>
+              </div>
+            </div>
+          )}
+        </div>
         
-        {/* Charts Container */}
+        {/* Charts Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">📈 Charts</h3>
+          
+          {/* Pie Charts Container - All pie charts together */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Product Categories Pie Chart */}
           <div className="chart-container">
@@ -85,24 +92,40 @@ const ProductAnalyticsCard = ({
             />
           </div>
 
-          {/* Individual Products Pie Chart */}
+          {/* Product Casino Markets Pie Chart */}
           <div className="chart-container">
             <div className="mb-2">
               <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
-                📊 <strong>Individual Products:</strong> Task by product
+                🎰 <strong>Product Casino:</strong> Markets Distribution
               </span>
             </div>
             <SimplePieChart
-              data={productPieData}
-              title={productPieTitle}
-              colors={productPieColors}
+              data={productCasinoMarketsPieData}
+              title={productCasinoMarketsPieTitle}
+              colors={productCasinoMarketsPieColors}
               showPercentages={true}
-              dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+            />
+          </div>
+
+          {/* Product Sport Markets Pie Chart */}
+          <div className="chart-container">
+            <div className="mb-2">
+              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
+                ⚽ <strong>Product Sport:</strong> Markets Distribution
+              </span>
+            </div>
+            <SimplePieChart
+              data={productSportMarketsPieData}
+              title={productSportMarketsPieTitle}
+              colors={productSportMarketsPieColors}
+              showPercentages={true}
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
             />
           </div>
         </div>
 
-        {/* Biaxial Charts Container */}
+        {/* Biaxial Charts Container - All biaxial charts together */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Product Categories Biaxial Chart */}
           <div className="chart-container">
@@ -120,41 +143,6 @@ const ProductAnalyticsCard = ({
             />
           </div>
 
-          {/* Individual Products Biaxial Chart */}
-          <div className="chart-container">
-            <div className="mb-2">
-              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
-                📊 <strong>Individual Products:</strong> Tasks & Hours by Product
-              </span>
-            </div>
-            <BiaxialBarChart
-              data={productBiaxialData}
-              title={productBiaxialTitle}
-              tasksColor={productBiaxialTasksColor}
-              hoursColor={productBiaxialHoursColor}
-              dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-            />
-          </div>
-        </div>
-
-        {/* Product Casino Markets Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Product Casino Markets Pie Chart */}
-          <div className="chart-container">
-            <div className="mb-2">
-              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
-                🎰 <strong>Product Casino:</strong> Markets Distribution
-              </span>
-            </div>
-            <SimplePieChart
-              data={productCasinoMarketsPieData}
-              title={productCasinoMarketsPieTitle}
-              colors={productCasinoMarketsPieColors}
-              showPercentages={true}
-              dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-            />
-          </div>
-
           {/* Product Casino Markets Biaxial Chart */}
           <div className="chart-container">
             <div className="mb-2">
@@ -167,25 +155,6 @@ const ProductAnalyticsCard = ({
               title={productCasinoMarketsBiaxialTitle}
               tasksColor={productCasinoMarketsBiaxialTasksColor}
               hoursColor={productCasinoMarketsBiaxialHoursColor}
-              dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-            />
-          </div>
-        </div>
-
-        {/* Product Sport Markets Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Product Sport Markets Pie Chart */}
-          <div className="chart-container">
-            <div className="mb-2">
-              <span className="text-xs dark:bg-blue-800 px-2 py-1 rounded">
-                ⚽ <strong>Product Sport:</strong> Markets Distribution
-              </span>
-            </div>
-            <SimplePieChart
-              data={productSportMarketsPieData}
-              title={productSportMarketsPieTitle}
-              colors={productSportMarketsPieColors}
-              showPercentages={true}
               dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
             />
           </div>
@@ -206,10 +175,15 @@ const ProductAnalyticsCard = ({
             />
           </div>
         </div>
+        </div>
 
-        {/* Product Analytics: Per-User Charts */}
+        {/* User Charts Section */}
         <div>
-          <h3 className="mb-6" >📊 Product Analytics: Per User</h3>
+          <h3 className="mb-4 text-lg font-semibold">👥 User Charts</h3>
+          
+          {/* Product Analytics: Per-User Charts */}
+          <div>
+            <h4 className="mb-4 text-md font-medium">📊 Product Analytics: Per User</h4>
           {productUsersCharts && productUsersCharts.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {productUsersCharts.map((userChart) => (
@@ -236,10 +210,13 @@ const ProductAnalyticsCard = ({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
   );
-};
+});
+
+ProductAnalyticsCard.displayName = 'ProductAnalyticsCard';
 
 export default ProductAnalyticsCard;

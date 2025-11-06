@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
@@ -16,6 +16,7 @@ import {
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 
 const AnalyticsPage = () => {
@@ -85,6 +86,16 @@ const AnalyticsPage = () => {
     },
   ], []);
 
+  // Memoize tab button click handlers to prevent re-renders
+  // Note: analyticsTabs is already memoized with empty deps, so it's stable
+  const tabClickHandlers = useMemo(() => {
+    const handlers = {};
+    analyticsTabs.forEach((tab) => {
+      handlers[tab.id] = () => handleTabChange(tab.id);
+    });
+    return handlers;
+  }, [analyticsTabs, handleTabChange]);
+
   // Helper function to check if data is empty
   const hasNoData = useMemo(() => {
     if (!tasks || tasks.length === 0) {
@@ -129,6 +140,20 @@ const AnalyticsPage = () => {
       return null;
     }
   }, [activeTab, tasks, users, reporters, selectedMonth, isLoading, hasNoData]);
+
+  // Memoize active tab name to avoid repeated find() calls
+  const activeTabName = useMemo(() => {
+    return analyticsTabs.find(tab => tab.id === activeTab)?.name || 'this tab';
+  }, [analyticsTabs, activeTab]);
+
+  // Memoize tab button styles to prevent object recreation
+  const tabButtonStyles = useMemo(() => {
+    const activeStyle = {
+      borderBottomColor: CARD_SYSTEM.COLOR_HEX_MAP.amber,
+      borderBottomWidth: '2px',
+    };
+    return { active: activeStyle, inactive: {} };
+  }, []);
 
 
 
@@ -189,7 +214,7 @@ const AnalyticsPage = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-bold ">
               Analytics Dashboard
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -239,22 +264,30 @@ const AnalyticsPage = () => {
       {/* Analytics Tabs */}
       {!isLoading && (
         <div className="space-y-6">
-          {/* Tab Navigation */}
+          {/* Traditional Tab Navigation */}
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8">
-              {analyticsTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-base transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-gray-900 text-gray-900 dark:border-gray-100 dark:text-gray-100'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  {tab.name}
-                </button>
-              ))}
+            <nav className="flex flex-wrap -mb-px space-x-8">
+              {analyticsTabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <DynamicButton
+                    key={tab.id}
+                    onClick={tabClickHandlers[tab.id]}
+                    variant="ghost"
+                    className={`
+                      py-3 px-1 border-b-2 font-medium !text-[0.85rem] rounded-none !shadow-none
+                      ${
+                        isActive
+                          ? 'text-gray-900 dark:text-gray-100'
+                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                      }
+                      `}
+                    style={isActive ? tabButtonStyles.active : tabButtonStyles.inactive}
+                  >
+                    {tab.name}
+                  </DynamicButton>
+                );
+              })}
             </nav>
           </div>
 
@@ -283,7 +316,7 @@ const AnalyticsPage = () => {
                       No Data Available
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
-                      There is no data available for {analyticsTabs.find(tab => tab.id === activeTab)?.name || 'this tab'}. 
+                      There is no data available for {activeTabName}. 
                       Data will appear once tasks are added for the selected month.
                     </p>
                   </div>
@@ -323,7 +356,7 @@ const AnalyticsPage = () => {
                       No Data Available
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
-                      Unable to load data for {analyticsTabs.find(tab => tab.id === activeTab)?.name || 'this tab'}. 
+                      Unable to load data for {activeTabName}. 
                       Please try refreshing the page.
                     </p>
                   </div>

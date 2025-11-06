@@ -1,10 +1,11 @@
+import React, { memo } from "react";
 import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { CARD_SYSTEM } from "@/constants";
 
-const AIAnalyticsCard = ({
+const AIAnalyticsCard = memo(({
   title,
   aiTableData,
   aiTableColumns,
@@ -45,26 +46,33 @@ const AIAnalyticsCard = ({
 
   return (
     <div id="ai-analytics-card" className={`${className}`}>
-      <h3>{title}</h3>
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
-        {/* AI Usage Statistics Table */}
-        {aiTableData && aiTableData.length > 0 ? (
-          <div className="table-container">
-            <AnalyticsTable
-              data={aiTableData}
-              columns={aiTableColumns}
-            />
-          </div>
-        ) : (
-          <div className="card">
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No data</p>
+        {/* Tables Section */}
+        <div>
+          {/* AI Usage Statistics Table */}
+          {aiTableData && aiTableData.length > 0 ? (
+            <div className="table-container">
+              <AnalyticsTable
+                data={aiTableData}
+                columns={aiTableColumns}
+                sectionTitle="📊 AI Usage Statistics"
+              />
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="card">
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No data</p>
+              </div>
+            </div>
+          )}
+        </div>
 
-        {/* Charts Container */}
+        {/* Charts Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">📈 Charts</h3>
+          
+          {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: Products */}
           <div className="space-y-6">
@@ -206,9 +214,12 @@ const AIAnalyticsCard = ({
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
   );
-};
+});
+
+AIAnalyticsCard.displayName = 'AIAnalyticsCard';
 
 export default AIAnalyticsCard;

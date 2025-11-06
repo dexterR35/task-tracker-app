@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useDeliverablesApi } from './useDeliverablesApi';
 import { isUserAdmin } from '@/features/utils/authUtils';
 import { showError, showSuccess } from '@/utils/toast';
@@ -8,7 +8,9 @@ import { SkeletonTable } from '@/components/ui/Skeleton/Skeleton';
 import DeliverableFormModal from './DeliverableFormModal';
 import { useTableActions } from '@/hooks/useTableActions';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
-import { TABLE_SYSTEM } from '@/constants';
+import Badge from '@/components/ui/Badge/Badge';
+import { SearchableSelectField } from '@/components/forms/components';
+import { TABLE_SYSTEM, CARD_SYSTEM, FORM_OPTIONS } from '@/constants';
 
 // ===== CONFIGURATION =====
 const CONFIG = {
@@ -29,6 +31,7 @@ const DeliverableTable = ({
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDeliverable, setEditingDeliverable] = useState(null);
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState(null);
   const canManageDeliverables = isUserAdmin(user);
   const { deliverables: globalDeliverables, isLoading: loadingSettings, deleteDeliverable } = useDeliverablesApi();
   
@@ -39,7 +42,17 @@ const DeliverableTable = ({
   // Real-time listener is handled by useDeliverablesApi hook
 
   // Use data directly from Firebase (already sorted in real-time listener)
-  const deliverablesData = propDeliverables || globalDeliverables || [];
+  const allDeliverablesData = propDeliverables || globalDeliverables || [];
+
+  // Filter deliverables by selected department
+  const deliverablesData = useMemo(() => {
+    if (!selectedDepartmentFilter) {
+      return allDeliverablesData;
+    }
+    return allDeliverablesData.filter(deliverable => 
+      deliverable.department === selectedDepartmentFilter
+    );
+  }, [allDeliverablesData, selectedDepartmentFilter]);
 
   useEffect(() => {
     if (onCountChange) onCountChange(deliverablesData?.length || 0);
@@ -113,34 +126,103 @@ const DeliverableTable = ({
     {
       accessorKey: "department",
       header: "Department",
-      cell: ({ getValue }) => <span className="text-gray-700 dark:text-gray-300 text-xs">{getValue()}</span>,
+      cell: ({ getValue }) => {
+        const department = getValue();
+        if (!department) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
+        return (
+          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm">
+            {department}
+          </Badge>
+        );
+      },
       size: 150,
     },
     {
       accessorKey: "timePerUnit",
       header: "Time Per Unit",
-      cell: ({ getValue, row }) => <span className="text-gray-700 dark:text-gray-300 text-xs">{getValue()} {row.original.timeUnit}</span>,
+      cell: ({ getValue, row }) => {
+        const timePerUnit = getValue();
+        const timeUnit = row.original.timeUnit || '';
+        if (!timePerUnit) {
+          return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
+        }
+        return (
+          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm">
+            {timePerUnit} {timeUnit}
+          </Badge>
+        );
+      },
       size: 120,
     },
     {
       accessorKey: "variationsTime",
       header: "Variations Time",
-      cell: ({ getValue, row }) => <span className="text-gray-700 dark:text-gray-300 text-xs">{getValue() > 0 ? `${getValue()} ${row.original.variationsTimeUnit || 'min'}` : 'None'}</span>,
+      cell: ({ getValue, row }) => {
+        const variationsTime = getValue();
+        const timeUnit = row.original.variationsTimeUnit || 'min';
+        if (!variationsTime || variationsTime === 0) {
+          return <span className="text-gray-500 dark:text-gray-400 text-xs">None</span>;
+        }
+        return (
+          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.pink} size="sm">
+            {variationsTime} {timeUnit}
+          </Badge>
+        );
+      },
       size: 120,
     },
     {
       accessorKey: "requiresQuantity",
       header: "Requires Quantity",
-      cell: ({ getValue }) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          getValue() ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-        }`}>
-          {getValue() ? 'Yes' : 'No'}
-        </span>
-      ),
+      cell: ({ getValue }) => {
+        const requiresQuantity = getValue();
+        return (
+          <Badge 
+            colorHex={requiresQuantity ? CARD_SYSTEM.COLOR_HEX_MAP.green : CARD_SYSTEM.COLOR_HEX_MAP.gray} 
+            size="sm"
+          >
+            {requiresQuantity ? 'Yes' : 'No'}
+          </Badge>
+        );
+      },
       size: 120,
     },
   ], []);
+
+  // Handle department filter change
+  const handleDepartmentFilterChange = useCallback((fieldName, value) => {
+    if (fieldName === 'departmentFilter') {
+      // If clicking the same department filter or clearing, deselect it
+      if (selectedDepartmentFilter === value || !value) {
+        setSelectedDepartmentFilter(null);
+      } else {
+        // Select the new department filter
+        setSelectedDepartmentFilter(value);
+      }
+    }
+  }, [selectedDepartmentFilter]);
+
+  // Create department filter component
+  const departmentFilterComponent = useMemo(() => (
+    <SearchableSelectField
+      field={{
+        name: "departmentFilter",
+        type: "select",
+        label: "Department",
+        required: false,
+        options: FORM_OPTIONS.DEPARTMENTS,
+        placeholder: "Search department ",
+      }}
+      register={() => {}}
+      errors={{}}
+      setValue={handleDepartmentFilterChange}
+      watch={() => selectedDepartmentFilter || ""}
+      trigger={() => {}}
+      clearErrors={() => {}}
+      formValues={{}}
+      noOptionsMessage="No departments found"
+    />
+  ), [selectedDepartmentFilter, handleDepartmentFilterChange]);
 
   // Memoized bulk actions
   const bulkActions = useMemo(() => [
@@ -212,6 +294,7 @@ const DeliverableTable = ({
         enablePagination={true}
         enableFiltering={true}
         pageSize={TABLE_SYSTEM.DEFAULT_PAGE_SIZE}
+        customFilter={departmentFilterComponent}
       />
 
       {/* Edit Deliverable Modal */}

@@ -1,4 +1,4 @@
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
 
 /**
  * Acquisition Analytics Configuration
@@ -80,7 +80,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   });
 
   // Create table data
-  const tableData = [];
+  let tableData = [];
   const sortedMarkets = Array.from(allMarkets).sort();
 
   // Add rows for each acquisition category
@@ -111,26 +111,20 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     }
   });
 
-  // Add grand total row
-  const grandTotal = Object.values(marketTotals).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-  if (grandTotal > 0) {
-    const grandTotalRow = {
-      category: "Grand Total",
-      total: grandTotal,
-      bold: true,
-      highlight: true,
-    };
-
-    // Add market columns with only counts (no percentages for Grand Total)
-    sortedMarkets.forEach((market) => {
-      const marketTotal = marketTotals[market] || 0;
-      grandTotalRow[market] = marketTotal;
-    });
-
-    tableData.push(grandTotalRow);
+  // Add grand total row using shared utility
+  if (tableData.length > 0) {
+    const grandTotal = Object.values(marketTotals).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+    if (grandTotal > 0) {
+      tableData = addGrandTotalRow(tableData, {
+        labelKey: 'category',
+        labelValue: 'Grand Total',
+        sumColumns: ['total'],
+        marketColumns: sortedMarkets,
+      });
+    }
   }
 
   // Create table columns
@@ -145,6 +139,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
       key: market,
       header: market.toUpperCase(),
       align: "center",
+      render: renderCountWithPercentage,
     });
   });
 
@@ -473,6 +468,222 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     );
   });
 
+  // Calculate user table data for casino acquisition
+  const calculateCasinoUserTable = (acquisitionTasks, users) => {
+    if (!acquisitionTasks || acquisitionTasks.length === 0 || !users || users.length === 0) {
+      return {
+        tableData: [],
+        tableColumns: [
+          { key: "user", header: "User", align: "left" },
+          { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+          { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+        ],
+      };
+    }
+
+    const userMarketStats = {};
+    const allMarkets = new Set();
+
+    acquisitionTasks.forEach((task) => {
+      const taskMarkets = task.data_task?.markets || task.markets || [];
+      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+      const userId = task.userUID || task.createbyUID;
+
+      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
+
+      const user = users.find(
+        (u) =>
+          u.uid === userId ||
+          u.id === userId ||
+          u.userUID === userId ||
+          u.email === userId ||
+          u.displayName === userId ||
+          u.name === userId
+      );
+
+      const userName = user
+        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
+        : `User ${userId.slice(0, 8)}`;
+
+      if (!userMarketStats[userId]) {
+        userMarketStats[userId] = {
+          userName,
+          markets: {},
+          totalTasks: 0,
+          totalHours: 0,
+        };
+      }
+
+      taskMarkets.forEach((market) => {
+        if (market) {
+          const normalizedMarket = market.trim().toUpperCase();
+          allMarkets.add(normalizedMarket);
+          if (!userMarketStats[userId].markets[normalizedMarket]) {
+            userMarketStats[userId].markets[normalizedMarket] = 0;
+          }
+          userMarketStats[userId].markets[normalizedMarket] += 1;
+        }
+      });
+
+      userMarketStats[userId].totalTasks += 1;
+      userMarketStats[userId].totalHours += taskHours;
+    });
+
+    const sortedMarkets = Array.from(allMarkets).sort();
+    const tableData = Object.entries(userMarketStats)
+      .map(([_userId, userData]) => {
+        const row = {
+          user: userData.userName,
+          totalTasks: userData.totalTasks,
+          totalHours: Math.round(userData.totalHours * 100) / 100,
+        };
+
+        sortedMarkets.forEach((market) => {
+          row[market] = userData.markets[market] || 0;
+        });
+
+        return row;
+      })
+      .sort((a, b) => {
+        if (b.totalTasks !== a.totalTasks) {
+          return b.totalTasks - a.totalTasks;
+        }
+        return a.user.localeCompare(b.user);
+      });
+
+    // Add grand total row using shared utility
+    const tableDataWithTotal = addGrandTotalRow(tableData, {
+      labelKey: 'user',
+      labelValue: 'Grand Total',
+      sumColumns: ['totalTasks', 'totalHours'],
+      marketColumns: sortedMarkets,
+    });
+
+    const tableColumns = [
+      { key: "user", header: "User", align: "left" },
+      { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+      { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+    ];
+
+    sortedMarkets.forEach((market) => {
+      tableColumns.push({
+        key: market,
+        header: market.toUpperCase(),
+        align: "center",
+      });
+    });
+
+    return { tableData: tableDataWithTotal, tableColumns };
+  };
+
+  // Calculate user table data for sport acquisition
+  const calculateSportUserTable = (acquisitionTasks, users) => {
+    if (!acquisitionTasks || acquisitionTasks.length === 0 || !users || users.length === 0) {
+      return {
+        tableData: [],
+        tableColumns: [
+          { key: "user", header: "User", align: "left" },
+          { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+          { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+        ],
+      };
+    }
+
+    const userMarketStats = {};
+    const allMarkets = new Set();
+
+    acquisitionTasks.forEach((task) => {
+      const taskMarkets = task.data_task?.markets || task.markets || [];
+      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+      const userId = task.userUID || task.createbyUID;
+
+      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
+
+      const user = users.find(
+        (u) =>
+          u.uid === userId ||
+          u.id === userId ||
+          u.userUID === userId ||
+          u.email === userId ||
+          u.displayName === userId ||
+          u.name === userId
+      );
+
+      const userName = user
+        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
+        : `User ${userId.slice(0, 8)}`;
+
+      if (!userMarketStats[userId]) {
+        userMarketStats[userId] = {
+          userName,
+          markets: {},
+          totalTasks: 0,
+          totalHours: 0,
+        };
+      }
+
+      taskMarkets.forEach((market) => {
+        if (market) {
+          const normalizedMarket = market.trim().toUpperCase();
+          allMarkets.add(normalizedMarket);
+          if (!userMarketStats[userId].markets[normalizedMarket]) {
+            userMarketStats[userId].markets[normalizedMarket] = 0;
+          }
+          userMarketStats[userId].markets[normalizedMarket] += 1;
+        }
+      });
+
+      userMarketStats[userId].totalTasks += 1;
+      userMarketStats[userId].totalHours += taskHours;
+    });
+
+    const sortedMarkets = Array.from(allMarkets).sort();
+    const tableData = Object.entries(userMarketStats)
+      .map(([_userId, userData]) => {
+        const row = {
+          user: userData.userName,
+          totalTasks: userData.totalTasks,
+          totalHours: Math.round(userData.totalHours * 100) / 100,
+        };
+
+        sortedMarkets.forEach((market) => {
+          row[market] = userData.markets[market] || 0;
+        });
+
+        return row;
+      })
+      .sort((a, b) => {
+        if (b.totalTasks !== a.totalTasks) {
+          return b.totalTasks - a.totalTasks;
+        }
+        return a.user.localeCompare(b.user);
+      });
+
+    // Add grand total row using shared utility
+    const tableDataWithTotal = addGrandTotalRow(tableData, {
+      labelKey: 'user',
+      labelValue: 'Grand Total',
+      sumColumns: ['totalTasks', 'totalHours'],
+      marketColumns: sortedMarkets,
+    });
+
+    const tableColumns = [
+      { key: "user", header: "User", align: "left" },
+      { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
+      { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
+    ];
+
+    sortedMarkets.forEach((market) => {
+      tableColumns.push({
+        key: market,
+        header: market.toUpperCase(),
+        align: "center",
+      });
+    });
+
+    return { tableData: tableDataWithTotal, tableColumns };
+  };
+
   return {
     tableData,
     tableColumns,
@@ -487,6 +698,8 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     calculateUsersChartsByCategory,
     casinoAcquisitionTasks,
     sportAcquisitionTasks,
+    calculateCasinoUserTable,
+    calculateSportUserTable,
   };
 };
 
@@ -504,6 +717,16 @@ export const getAcquisitionAnalyticsCardProps = (tasks, users = [], isLoading = 
     calculatedData.sportAcquisitionTasks,
     users,
     "Sport Acquisition"
+  );
+
+  // Calculate user tables
+  const casinoUserTable = calculatedData.calculateCasinoUserTable(
+    calculatedData.casinoAcquisitionTasks,
+    users
+  );
+  const sportUserTable = calculatedData.calculateSportUserTable(
+    calculatedData.sportAcquisitionTasks,
+    users
   );
 
   return {
@@ -530,6 +753,10 @@ export const getAcquisitionAnalyticsCardProps = (tasks, users = [], isLoading = 
     sportBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     casinoUsersCharts: casinoUsersCharts,
     sportUsersCharts: sportUsersCharts,
+    casinoUserTableData: casinoUserTable.tableData,
+    casinoUserTableColumns: casinoUserTable.tableColumns,
+    sportUserTableData: sportUserTable.tableData,
+    sportUserTableColumns: sportUserTable.tableColumns,
     isLoading,
   };
 };

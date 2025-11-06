@@ -397,8 +397,8 @@ const LandingPages = () => {
       <div className="mb-4">
         <div className="flex items-end justify-between">
           <div>
-            <h2>Landing Pages Management</h2>
-            <p className="text-small mt-0">
+            <h1 className="text-xl font-bold">Landing Pages</h1>
+            <p className="text-xs mt-0">
               @NetBet 2025  
             </p>
           </div>

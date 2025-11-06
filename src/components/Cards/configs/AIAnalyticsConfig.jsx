@@ -1,7 +1,7 @@
 import React from "react";
 import { CARD_SYSTEM } from "@/constants";
 import Badge from "@/components/ui/Badge/Badge";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, addGrandTotalRow } from "./analyticsSharedConfig";
 
 /**
  * AI Analytics Configuration
@@ -224,7 +224,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
   });
 
   // Create table data
-  const tableData = Array.from(allUsers).map((userId) => {
+  let tableData = Array.from(allUsers).map((userId) => {
     const user = users.find((u) => (u.id || u.uid || u.userUID) === userId);
     const userName = user?.name || user?.email || `User ${userId.slice(0, 8)}`;
     const userData = userAIData[userId];
@@ -247,31 +247,26 @@ export const calculateAIAnalyticsData = (tasks, users) => {
   // Sort by AI time descending
   tableData.sort((a, b) => b.aiTime - a.aiTime);
 
-  // Add grand total row
-  const grandTotal = {
-    user: "Grand Total",
-    totalTasks: tableData.reduce((sum, row) => sum + row.totalTasks, 0),
-    aiUsedTasks: tableData.reduce((sum, row) => sum + row.aiUsedTasks, 0),
-    aiTime:
-      Math.round(tableData.reduce((sum, row) => sum + row.aiTime, 0) * 100) /
-      100,
-    aiModels: Array.from(allAIModels).join(", "),
-    markets: Array.from(allMarkets).join(", "),
-    products: Array.from(allProducts).join(", "),
-    aiUsagePercentage: 0,
-    bold: true,
-    highlight: true,
-  };
+  // Add grand total row using shared utility
+  if (tableData.length > 0) {
+    const grandTotalTasks = tableData.reduce((sum, row) => sum + row.totalTasks, 0);
+    const grandTotalAiUsedTasks = tableData.reduce((sum, row) => sum + row.aiUsedTasks, 0);
+    const aiUsagePercentage = grandTotalTasks > 0
+      ? Math.min(Math.round((grandTotalAiUsedTasks / grandTotalTasks) * 100), 100)
+      : 0;
 
-  // Calculate grand total percentage
-  if (grandTotal.totalTasks > 0) {
-    grandTotal.aiUsagePercentage = Math.min(
-      Math.round((grandTotal.aiUsedTasks / grandTotal.totalTasks) * 100),
-      100
-    );
+    tableData = addGrandTotalRow(tableData, {
+      labelKey: 'user',
+      labelValue: 'Grand Total',
+      sumColumns: ['totalTasks', 'aiUsedTasks', 'aiTime'],
+      customValues: {
+        aiModels: Array.from(allAIModels).join(", "),
+        markets: Array.from(allMarkets).join(", "),
+        products: Array.from(allProducts).join(", "),
+        aiUsagePercentage: aiUsagePercentage,
+      },
+    });
   }
-
-  tableData.push(grandTotal);
 
   // Create table columns
   const tableColumns = [

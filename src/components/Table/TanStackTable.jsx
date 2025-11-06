@@ -61,7 +61,7 @@ const BulkActionsBar = ({
             <div className="flex flex-col">
               <span
                 className="text-sm font-semibold"
-                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}
+                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}
               >
                 {selectedCount} row selected
               </span>
@@ -108,10 +108,15 @@ const TableControls = ({
   isExporting,
   onPageSizeChange,
   customFilter,
+  sectionTitle,
 }) => (
   <div className="flex justify-between items-center py-4 card">
-    {/* Left Section - Search and Filters */}
+    {/* Left Section - Section Title, Search and Filters */}
     <div className="flex items-center space-x-6 flex-1">
+      {/* Section Title */}
+      {sectionTitle && (
+        <h3 className="text-lg font-semibold m-0">{sectionTitle}</h3>
+      )}
       {/* Global Filter */}
       {showFilters && (
         <div className="max-w-sm">
@@ -527,24 +532,15 @@ const TanStackTable = forwardRef(
     const selectedCount = getSelectedCount(rowSelection);
     const totalRows = table.getFilteredRowModel().rows.length;
 
-    // Show skeleton only when loading, show no data message when data is empty but not loading
+    // Show skeleton only when loading
     const shouldShowSkeleton = isLoading;
-    const shouldShowNoData = !isLoading && (!data || data.length === 0);
+    // Check if there are any rows to display (after filtering)
+    const hasRows = table.getRowModel().rows.length > 0;
 
     return (
       <div ref={tableRef} className={`space-y-4 ${className}`}>
         {shouldShowSkeleton ? (
           <SkeletonTable rows={3} />
-        ) : shouldShowNoData ? (
-          <div className="flex flex-col items-center justify-center py-5 card text-gray-500 dark:text-gray-400">
-            <div className="text-4xl mb-4">📊</div>
-            <div className="text-lg font-medium mb-2">No Data Available</div>
-            <div className="text-sm text-center">
-              {tableType === "analytics"
-                ? "No analytics data found for the selected criteria."
-                : "No data found for the current selection."}
-            </div>
-          </div>
         ) : (
           <>
             {/* Table Controls - Always show export button, show other controls based on props */}
@@ -562,6 +558,7 @@ const TanStackTable = forwardRef(
               isExporting={isExporting}
               onPageSizeChange={handlePageSizeChange}
               customFilter={customFilter}
+              sectionTitle={additionalProps?.sectionTitle}
             />
 
             {/* Bulk Actions Bar */}
@@ -614,42 +611,60 @@ const TanStackTable = forwardRef(
                   ))}
                 </thead>
                 <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-500/60">
-                  {table.getRowModel().rows.map((row, index) => {
-                    const rowKey = row.original?.id || row.id;
-                    const isSelected = rowSelection[row.id];
+                  {hasRows ? (
+                    table.getRowModel().rows.map((row, index) => {
+                      const rowKey = row.original?.id || row.id;
+                      const isSelected = rowSelection[row.id];
 
-                    return (
-                      <tr
-                        key={rowKey}
-                        className={`cursor-pointer border-gray-500/60`}
-                         
-                        style={
-                          isSelected
-                ? {
-                    // Apply all border styles when selected
-                    borderLeft: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}`,
-                    borderRight: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}`,
-                    backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,
-                  }
-                : {}
-                        }
-                        onClick={() => handleRowClick(row)}
+                      return (
+                        <tr
+                          key={rowKey}
+                          className={`cursor-pointer border-gray-500/60`}
+                           
+                          style={
+                            isSelected
+                  ? {
+                      // Apply all border styles when selected
+                      borderLeft: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}`,
+                      borderRight: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}`,
+                      backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,
+                    }
+                  : {}
+                          }
+                          onClick={() => handleRowClick(row)}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <td
+                              key={`${row.original?.id || row.id}-${cell.column.id}`}
+                              className="px-3 py-4 text-xs font-normal "
+                              style={{ width: cell.column.getSize() }}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={table.getAllColumns().length}
+                        className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                       >
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={`${row.original?.id || row.id}-${cell.column.id}`}
-                            className="px-3 py-4 text-xs font-normal "
-                            style={{ width: cell.column.getSize() }}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="text-2xl mb-2">📊</div>
+                          <div className="text-sm font-medium">
+                            {tableType === "analytics"
+                              ? "No analytics data found for the selected criteria."
+                              : "No tasks found matching the current filters."}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

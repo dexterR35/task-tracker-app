@@ -1,5 +1,5 @@
 import React from "react";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
 
 /**
  * Calculate percentages for a group of counts, ensuring they sum to exactly 100%
@@ -183,7 +183,7 @@ export const calculateProductAnalyticsData = (tasks) => {
   };
 
   // Create table data for product categories only (only show categories with data)
-  const tableData = [];
+  let tableData = [];
   const sortedMarkets = Array.from(allMarkets).sort();
 
   // Prepare all category items for percentage calculation to ensure they sum to 100%
@@ -239,22 +239,13 @@ export const calculateProductAnalyticsData = (tasks) => {
   addProductCategoryRow("product lotto", "Product Lotto");
 
   // Add Grand Total row only if there are any product tasks
-  if (totalTasks > 0) {
-    const grandTotalRow = {
-      category: "Grand Total",
-      total: totalTasks,
-      totalHours: totalHours,
-      bold: true,
-      highlight: true,
-    };
-
-    // Add market columns with only counts (no percentages for Grand Total)
-    sortedMarkets.forEach((market) => {
-      const marketTotal = marketTotals[market] || 0;
-      grandTotalRow[market] = marketTotal;
+  if (totalTasks > 0 && tableData.length > 0) {
+    tableData = addGrandTotalRow(tableData, {
+      labelKey: 'category',
+      labelValue: 'Grand Total',
+      sumColumns: ['total', 'totalHours'],
+      marketColumns: sortedMarkets,
     });
-
-    tableData.push(grandTotalRow);
   }
 
   // Create table columns
@@ -295,6 +286,7 @@ export const calculateProductAnalyticsData = (tasks) => {
       key: market,
       header: market.toUpperCase(),
       align: "center",
+      render: renderCountWithPercentage,
     });
   });
 
@@ -586,6 +578,8 @@ export const calculateProductAnalyticsData = (tasks) => {
     productSportTotalHours,
     calculateUsersChartsByProduct,
     filteredTasks,
+    totalTasks,
+    totalHours,
   };
 };
 
@@ -598,13 +592,9 @@ export const getProductAnalyticsCardProps = (tasks, users = [], isLoading = fals
     users
   );
 
-  // Use filtered totals from productData instead of all tasks
-  const totalTasks =
-    productData.tableData.find((row) => row.category === "Total Tasks")
-      ?.total || 0;
-  const totalHours =
-    productData.tableData.find((row) => row.category === "Total Tasks")
-      ?.totalHours || 0;
+  // Use totals directly from calculated data
+  const totalTasks = productData.totalTasks || 0;
+  const totalHours = Math.round((productData.totalHours || 0) * 100) / 100;
 
   // Split biaxial data into two charts (categories and products)
   const categoryBiaxialData = Object.entries(productData.categoryTotals || {})

@@ -1,4 +1,4 @@
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
 
 /**
  * Marketing Analytics Configuration
@@ -59,7 +59,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
   }
 
   // Create table data
-  const tableData = [];
+  let tableData = [];
   const sortedMarkets = Array.from(allMarkets).sort();
 
   // Add rows for each marketing category
@@ -90,26 +90,20 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     }
   });
 
-  // Add grand total row
-  const grandTotal = Object.values(marketTotals).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-  if (grandTotal > 0) {
-    const grandTotalRow = {
-      category: "Grand Total",
-      total: grandTotal,
-      bold: true,
-      highlight: true,
-    };
-
-    // Add market columns with only counts (no percentages for Grand Total)
-    sortedMarkets.forEach((market) => {
-      const marketTotal = marketTotals[market] || 0;
-      grandTotalRow[market] = marketTotal;
-    });
-
-    tableData.push(grandTotalRow);
+  // Add grand total row using shared utility
+  if (tableData.length > 0) {
+    const grandTotal = Object.values(marketTotals).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+    if (grandTotal > 0) {
+      tableData = addGrandTotalRow(tableData, {
+        labelKey: 'category',
+        labelValue: 'Grand Total',
+        sumColumns: ['total'],
+        marketColumns: sortedMarkets,
+      });
+    }
   }
 
   // Create table columns
@@ -125,6 +119,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
         key: market,
         header: market.toUpperCase(),
         align: "center",
+        render: renderCountWithPercentage,
       });
     });
   } else {
@@ -207,7 +202,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
         }
         return b.hours - a.hours;
       })
-      .map(({ hours, ...rest }) => rest), // Remove hours from final data
+      .map(({ hours: _hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.MARKET
   );
 
@@ -232,7 +227,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
         }
         return b.hours - a.hours;
       })
-      .map(({ hours, ...rest }) => rest), // Remove hours from final data
+      .map(({ hours: _hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.MARKET
   );
 
@@ -254,7 +249,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
 
         // Normalize market to uppercase for consistent color mapping
         const normalizedMarket = market.trim().toUpperCase();
-        
+
         return {
           name: normalizedMarket,
           tasks: marketTasks,
@@ -290,7 +285,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
 
         // Normalize market to uppercase for consistent color mapping
         const normalizedMarket = market.trim().toUpperCase();
-        
+
         return {
           name: normalizedMarket,
           tasks: marketTasks,

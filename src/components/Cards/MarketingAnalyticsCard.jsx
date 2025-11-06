@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
@@ -5,7 +6,7 @@ import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import { CHART_COLORS } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 
-const MarketingAnalyticsCard = ({
+const MarketingAnalyticsCard = memo(({
   title,
   marketingTableData,
   marketingTableColumns,
@@ -34,27 +35,33 @@ const MarketingAnalyticsCard = ({
 
   return (
     <div id="marketing-analytics-card" className={`${className}`}>
-      <h3>{title}</h3>
-
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-        {/* Marketing Table */}
-        {marketingTableData && marketingTableData.length > 0 ? (
-          <div className="table-container">
-            <AnalyticsTable
-              data={marketingTableData}
-              columns={marketingTableColumns}
-            />
-          </div>
-        ) : (
-          <div className="card">
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No data</p>
+        {/* Tables Section */}
+        <div>
+          {/* Marketing Table */}
+          {marketingTableData && marketingTableData.length > 0 ? (
+            <div className="table-container">
+              <AnalyticsTable
+                data={marketingTableData}
+                columns={marketingTableColumns}
+                sectionTitle="📊 Marketing Statistics"
+              />
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="card">
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No data</p>
+              </div>
+            </div>
+          )}
+        </div>
   
-        {/* Charts Container */}
+        {/* Charts Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">📈 Charts</h3>
+          
+          {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Casino Marketing Chart */}
           <div className="chart-container">
@@ -121,10 +128,15 @@ const MarketingAnalyticsCard = ({
             />
           </div>
         </div>
+        </div>
 
-        {/* Casino Marketing: Per-User Charts */}
+        {/* User Charts Section */}
         <div>
-          <h3 className=" mb-6">🎰 Casino Marketing: Per User</h3>
+          <h3 className="mb-4 text-lg font-semibold">👥 User Charts</h3>
+          
+          {/* Casino Marketing: Per-User Charts */}
+          <div className="mb-6">
+            <h4 className="mb-4 text-md font-medium">🎰 Casino Marketing: Per User</h4>
           {casinoUsersCharts && casinoUsersCharts.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {casinoUsersCharts.map((userChart) => (
@@ -153,9 +165,9 @@ const MarketingAnalyticsCard = ({
           )}
         </div>
 
-        {/* Sport Marketing: Per-User Charts */}
-        <div>
-          <h3 className="mb-6">⚽ Sport Marketing: Per User</h3>
+            {/* Sport Marketing: Per-User Charts */}
+            <div>
+              <h4 className="mb-4 text-md font-medium">⚽ Sport Marketing: Per User</h4>
           {sportUsersCharts && sportUsersCharts.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {sportUsersCharts.map((userChart) => (
@@ -182,10 +194,13 @@ const MarketingAnalyticsCard = ({
               </div>
             </div>
           )}
-        </div>
+            </div>
+          </div>
       </div>
     </div>
   );
-};
+});
+
+MarketingAnalyticsCard.displayName = 'MarketingAnalyticsCard';
 
 export default MarketingAnalyticsCard;
