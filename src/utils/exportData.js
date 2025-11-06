@@ -139,9 +139,14 @@ const formatValueForCSV = (
     return value.length > 0 ? value.join(", ") : "-";
   }
 
-  // Handle Markets array - join as single row
-  if (columnId === "markets" && Array.isArray(value)) {
-    return value.length > 0 ? value.join(", ") : "-";
+  // Handle Markets array - join as single row (uppercase)
+  if (columnId === "markets") {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value.map(m => String(m).toUpperCase()).join(", ") : "-";
+    } else if (typeof value === "string" && value) {
+      return value.toUpperCase();
+    }
+    return "-";
   }
 
   // Handle deliverables object - format with count and name (e.g., 2xgamepreview)
@@ -371,9 +376,9 @@ const exportTasksToCSV = (data, options = {}) => {
       const markets = taskData.markets;
       let marketValue = "-";
       if (Array.isArray(markets) && markets.length > 0) {
-        marketValue = markets.join(", ");
+        marketValue = markets.map(m => String(m).toUpperCase()).join(", ");
       } else if (typeof markets === "string" && markets) {
-        marketValue = markets;
+        marketValue = markets.toUpperCase();
       }
 
       // 4. TOTAL HOURS (excluding AI hours)
