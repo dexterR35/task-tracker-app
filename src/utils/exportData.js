@@ -345,8 +345,8 @@ const exportTasksToCSV = (data, options = {}) => {
       "JIRA LINK",
       "MARKET",
       "TOTAL HOURS",
-      "DELIVERABLES COUNT",
-      "DELIVERABLES HOURS"
+      "DELIVERABLE COUNT",
+      "DELIVERABLE NAMES"
     ];
 
     // Create rows with only the specified columns
@@ -390,11 +390,28 @@ const exportTasksToCSV = (data, options = {}) => {
       const totalHours = Math.max(0, (typeof timeInHours === "number" ? timeInHours : 0) - (typeof aiTime === "number" ? aiTime : 0));
       const totalHoursValue = totalHours > 0 ? totalHours.toFixed(1) : "0";
 
-      // 5. Deliverables count and hours
+      // 5. Deliverable count (excluding variations) and names
       const deliverablesUsed = taskData.deliverablesUsed || [];
-      const deliverablesInfo = calculateDeliverablesInfo(deliverablesUsed, deliverablesOptions);
-      const deliverablesCount = deliverablesInfo.count || 0;
-      const deliverablesHours = deliverablesInfo.hours || 0;
+      let deliverableCount = 0;
+      const deliverableNames = [];
+      
+      if (Array.isArray(deliverablesUsed) && deliverablesUsed.length > 0) {
+        deliverablesUsed.forEach((deliverable) => {
+          const deliverableName = deliverable?.name;
+          const quantity = deliverable?.count || 1;
+          
+          if (deliverableName) {
+            // Count only base quantity, exclude variations
+            deliverableCount += quantity;
+            // Add only the name (no quantity prefix since count is in separate column)
+            deliverableNames.push(deliverableName);
+          }
+        });
+      }
+      
+      const deliverableNamesValue = deliverableNames.length > 0 
+        ? deliverableNames.join(", ") 
+        : "-";
 
       // Escape values that contain delimiter, quotes, or newlines
       const escapeValue = (value) => {
@@ -414,8 +431,8 @@ const exportTasksToCSV = (data, options = {}) => {
         escapeValue(jiraLink),
         escapeValue(marketValue),
         escapeValue(totalHoursValue),
-        escapeValue(deliverablesCount),
-        escapeValue(deliverablesHours.toFixed(1))
+        escapeValue(deliverableCount),
+        escapeValue(deliverableNamesValue)
       ].join(delimiter);
     });
 
