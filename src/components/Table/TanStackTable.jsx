@@ -300,6 +300,9 @@ const TanStackTable = forwardRef(
       // Custom filter component
       customFilter = null,
 
+      // Custom filters state (for dynamic export detection)
+      customFilters = {},
+
       // Additional props
       ...additionalProps
     },
@@ -497,6 +500,18 @@ const TanStackTable = forwardRef(
           await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced from 300ms to 50ms
         }
 
+        // Check if any filters are active
+        const hasTanStackFilters = Boolean(globalFilter) || (columnFilters && columnFilters.length > 0);
+        const hasCustomFilters = customFilters && (
+          Boolean(customFilters.selectedFilter) ||
+          Boolean(customFilters.selectedDepartmentFilter) ||
+          Boolean(customFilters.selectedDeliverableFilter) ||
+          Boolean(customFilters.selectedUserId) ||
+          Boolean(customFilters.selectedReporterId) ||
+          Boolean(customFilters.selectedWeek)
+        );
+        const hasActiveFilters = hasTanStackFilters || hasCustomFilters;
+
         // Perform actual export with reporters and users data for proper name resolution
         const success = exportToCSV(
           table.getFilteredRowModel().rows.map((row) => row.original),
@@ -507,6 +522,7 @@ const TanStackTable = forwardRef(
             reporters: additionalProps?.reporters || [],
             users: additionalProps?.users || [],
             deliverables: additionalProps?.deliverables || [],
+            hasActiveFilters, // Pass filter state to export function
           }
         );
 
@@ -526,7 +542,7 @@ const TanStackTable = forwardRef(
         setExportProgress(0);
         setExportStep("");
       }
-    }, [table, columns, tableType, additionalProps?.reporters]);
+    }, [table, columns, tableType, additionalProps?.reporters, globalFilter, columnFilters, customFilters]);
 
     // Memoized values
     const selectedCount = getSelectedCount(rowSelection);

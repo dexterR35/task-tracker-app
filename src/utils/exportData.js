@@ -484,6 +484,7 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       reporters = [],
       users = [],
       deliverables = [],
+      hasActiveFilters = false, // New option to detect if filters are active
     } = options;
 
     // Handle analytics data (array of objects without columns)
@@ -494,15 +495,111 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       });
     }
 
-    // Custom export for tasks - only specific columns
-    // Excludes: reporters, created by, task added, observation, task start, task end, done by, task hr, vip, reworked
-    // Includes only: DEPARTMENT, JIRA LINK, MARKET, TOTAL HOURS, DELIVERABLES COUNT, DELIVERABLES HOURS
+    // Custom export for tasks - dynamic based on filters
+    // If filters are active: export all visible columns
+    // If no filters: export only specific columns (DEPARTMENT, JIRA LINK, MARKET, TOTAL HOURS, DELIVERABLE COUNT, DELIVERABLE NAMES)
     if (tableType === "tasks") {
-      return exportTasksToCSV(data, {
-        filename,
-        includeHeaders,
-        deliverables,
-      });
+      // If filters are active, use generic export with all visible columns
+      if (hasActiveFilters) {
+        // Get all visible columns (excluding select and actions)
+        const visibleColumns = columns.filter(
+          (col) => col.id !== "select" && col.id !== "actions"
+        );
+
+        // Create headers from visible columns
+        const headers = visibleColumns
+          .map((col) => {
+            if (typeof col.header === "string") return col.header;
+            if (typeof col.header === "function") return col.accessorKey || col.id;
+            return col.accessorKey || col.id;
+          })
+          .join(EXPORT_CONFIG.CSV_DELIMITER);
+
+        // Create rows
+        const rows = data.map((row) => {
+          return visibleColumns
+            .map((col) => {
+              let value;
+
+              // Handle different accessor types
+              if (typeof col.accessorFn === "function") {
+                value = col.accessorFn(row);
+              } else if (col.accessorKey) {
+                if (col.accessorKey.includes(".")) {
+                  const keys = col.accessorKey.split(".");
+                  value = keys.reduce((obj, key) => obj?.[key], row);
+                } else {
+                  value = row[col.accessorKey];
+                }
+              } else {
+                value = null;
+              }
+
+              // Format the value using our custom formatter
+              const columnId =
+                col.id ||
+                (col.accessorKey?.includes(".")
+                  ? col.accessorKey.split(".").pop()
+                  : col.accessorKey) ||
+                "";
+              const formattedValue = formatValueForCSV(
+                value,
+                columnId,
+                reporters,
+                users,
+                row
+              );
+
+              // Escape delimiter, quotes, and newlines
+              const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
+              if (
+                formattedValue.includes(delimiter) ||
+                formattedValue.includes('"') ||
+                formattedValue.includes("\n")
+              ) {
+                return `"${formattedValue.replace(/"/g, '""')}"`;
+              }
+              return formattedValue;
+            })
+            .join(EXPORT_CONFIG.CSV_DELIMITER);
+        });
+
+        // Create CSV content
+        let csvContent = "";
+        if (includeHeaders) {
+          csvContent = [headers, ...rows].join("\n");
+        } else {
+          csvContent = rows.join("\n");
+        }
+
+        // Create and download file
+        const blob = new Blob([csvContent], {
+          type: `text/csv;charset=${EXPORT_CONFIG.CSV_ENCODING};`,
+        });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+
+        const exportFilename =
+          filename ||
+          `tasks_export_${new Date().toISOString().split("T")[0]}.csv`;
+        link.setAttribute("download", exportFilename);
+
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        return true;
+      } else {
+        // No filters active - use custom export with specific columns only
+        return exportTasksToCSV(data, {
+          filename,
+          includeHeaders,
+          deliverables,
+        });
+      }
     }
 
     // Get all columns (both visible and hidden) excluding only the select column

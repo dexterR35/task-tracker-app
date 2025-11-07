@@ -658,6 +658,15 @@ const TaskTable = ({
         pageSize={pageSizeState}
         // Custom filter component
         customFilter={taskFilterComponent}
+        // Pass filter state for dynamic export
+        customFilters={{
+          selectedFilter,
+          selectedDepartmentFilter,
+          selectedDeliverableFilter,
+          selectedUserId,
+          selectedReporterId,
+          selectedWeek,
+        }}
       />
 
       {/* Edit Task Modal - managed by useTableActions */}
