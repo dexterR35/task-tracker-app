@@ -312,7 +312,7 @@ const AdminDashboardPage = () => {
       <div className="mb-2 ">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Dynamic Small Cards */}
-          {isInitialLoading
+          {!isInitialLoading
             ? Array.from({ length: 5 }).map((_, index) => (
                 <SkeletonCard key={index} />
               ))

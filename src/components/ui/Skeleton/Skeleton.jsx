@@ -45,7 +45,7 @@ export const SkeletonCard = ({ className = '' }) => (
 
           {/* Details */}
           <div className="space-y-2">
-            <div className="p-2 rounded-lg border">
+            <div className="p-2 rounded-lg border border-gray-500">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Skeleton height="0.375rem" width="0.375rem" rounded="full" />
@@ -54,7 +54,7 @@ export const SkeletonCard = ({ className = '' }) => (
                 <Skeleton height="0.75rem" width="1.5rem" />
               </div>
             </div>
-            <div className="p-2 rounded-lg border">
+            <div className="p-2 rounded-lg border border-gray-500">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Skeleton height="0.375rem" width="0.375rem" rounded="full" />
