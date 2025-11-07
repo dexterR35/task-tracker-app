@@ -12,6 +12,7 @@ import SelectField from "@/components/forms/components/SelectField";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Badge from "@/components/ui/Badge/Badge";
 import { logger } from "@/utils/logger";
+import { normalizeTimestamp } from "@/utils/dateUtils";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -23,7 +24,7 @@ const HARDCODED_EFFICIENCY_DATA = {
 };
 
 // Generate real data from useAppData
-const generateRealData = (tasks, userName, reporterName, monthId, weekParam = null) => {
+const generateRealData = (tasks, userName, reporterName, monthId, weekParam = null, deliverablesOptions = []) => {
   if (!tasks || tasks.length === 0) {
     return {
       totalTasksThisMonth: 0,
@@ -31,6 +32,8 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
       totalHours: 0,
       totalDeliverables: 0,
       totalVariations: 0,
+      totalDeliverablesHours: 0,
+      totalDeliverablesWithVariationsHours: 0,
       aiUsed: { total: 0, models: [], time: 0 },
       marketsUsed: [],
       productsUsed: [],
@@ -139,6 +142,62 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
       return delSum + (del.variationsCount || 0);
     }, 0);
   }, 0);
+
+  // Calculate deliverables hours (base time and with variations)
+  let totalDeliverablesHours = 0; // Base time without variations
+  let totalDeliverablesWithVariationsHours = 0; // Base time + variations time
+
+  filteredTasks.forEach(task => {
+    const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+    if (!deliverables || deliverables.length === 0) return;
+
+    deliverables.forEach(deliverable => {
+      const deliverableName = deliverable?.name;
+      const quantity = deliverable?.count || 1;
+      const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+
+      if (!deliverableName) return;
+
+      // Find deliverable in options
+      const deliverableOption = deliverablesOptions.find(d =>
+        d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+      );
+
+      if (deliverableOption) {
+        const timePerUnit = deliverableOption.timePerUnit || 1;
+        const timeUnit = deliverableOption.timeUnit || 'hr';
+        const requiresQuantity = deliverableOption.requiresQuantity || false;
+
+        // Convert base time to hours
+        let baseTimeInHours = timePerUnit;
+        if (timeUnit === 'min') baseTimeInHours = timePerUnit / 60;
+        else if (timeUnit === 'hr') baseTimeInHours = timePerUnit;
+        else if (timeUnit === 'day') baseTimeInHours = timePerUnit * 8;
+
+        // Calculate base time for this deliverable (quantity × timePerUnit)
+        const deliverableBaseHours = baseTimeInHours * quantity;
+        totalDeliverablesHours += deliverableBaseHours;
+
+        // Calculate variations time if applicable
+        let variationsTimeInHours = 0;
+        if (requiresQuantity && variationsQuantity > 0) {
+          const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+          const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+
+          let variationsTimePerUnitInHours = variationsTime;
+          if (variationsTimeUnit === 'min') variationsTimePerUnitInHours = variationsTime / 60;
+          else if (variationsTimeUnit === 'hr') variationsTimePerUnitInHours = variationsTime;
+          else if (variationsTimeUnit === 'day') variationsTimePerUnitInHours = variationsTime * 8;
+
+          variationsTimeInHours = variationsTimePerUnitInHours * variationsQuantity;
+        }
+
+        // Total time with variations
+        const totalWithVariations = deliverableBaseHours + variationsTimeInHours;
+        totalDeliverablesWithVariationsHours += totalWithVariations;
+      }
+    });
+  });
 
   // AI Usage
   const aiUsed = filteredTasks.reduce((acc, task) => {
@@ -298,7 +357,11 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
                     task.createdAt || 
                     task.timestamp;
     
-    const date = new Date(taskDate);
+    if (!taskDate) return;
+    
+    const date = normalizeTimestamp(taskDate);
+    if (!date || isNaN(date.getTime())) return;
+    
     const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     
     // Convert to our array index (Monday = 0, Sunday = 6)
@@ -321,6 +384,8 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
     totalHours,
     totalDeliverables,
     totalVariations,
+    totalDeliverablesHours,
+    totalDeliverablesWithVariationsHours,
     aiUsed,
     marketingData,
     acquisitionData,
@@ -358,7 +423,24 @@ const DynamicAnalyticsPage = () => {
   
   
   // Use real data from context
-  const { tasks, isLoading, error, loadingStates, monthId: contextMonthId, reporters } = useAppDataContext();
+  const { tasks, isLoading, error, loadingStates, monthId: contextMonthId, reporters, deliverables } = useAppDataContext();
+
+  // Transform deliverables to options format
+  const deliverablesOptions = useMemo(() => {
+    if (!deliverables || deliverables.length === 0) return [];
+    return deliverables.map(deliverable => ({
+      value: deliverable.name,
+      label: deliverable.name,
+      department: deliverable.department,
+      timePerUnit: deliverable.timePerUnit,
+      timeUnit: deliverable.timeUnit,
+      requiresQuantity: deliverable.requiresQuantity,
+      variationsTime: deliverable.variationsTime,
+      variationsTimeUnit: deliverable.variationsTimeUnit || 'min',
+      declinariTime: deliverable.declinariTime,
+      declinariTimeUnit: deliverable.declinariTimeUnit
+    }));
+  }, [deliverables]);
   
   // Helper function to get reporter name from UID
   const getReporterName = (task) => {
@@ -387,11 +469,184 @@ const DynamicAnalyticsPage = () => {
     if (!markets || markets.length === 0) return null;
     const marketList = Array.isArray(markets) ? markets : [markets];
     return marketList.map((market, idx) => (
-      <Badge key={idx} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.yellow} size="sm" className="uppercase">
+      <Badge key={idx} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm" className="uppercase">
         {market}
       </Badge>
     ));
   };
+
+  // Helper function to get tasks for a specific week
+  const getWeekTasks = useCallback((week, tasksList) => {
+    if (!week || !week.days || !tasksList) return [];
+    
+    const weekTasks = [];
+    week.days.forEach(day => {
+      try {
+        const dayDate = day instanceof Date ? day : new Date(day);
+        if (isNaN(dayDate.getTime())) return;
+        
+        const dayStr = dayDate.toISOString().split('T')[0];
+        const dayTasks = tasksList.filter(task => {
+          if (!task.createdAt) return false;
+          
+          const taskDate = convertToDate(task.createdAt);
+          if (!taskDate || isNaN(taskDate.getTime())) return false;
+          
+          const taskDateStr = taskDate.toISOString().split('T')[0];
+          const dateMatch = taskDateStr === dayStr;
+          
+          if (!dateMatch) return false;
+          
+          // Filter by user if userName is specified
+          if (userName) {
+            const userMatch = (
+              task.createdByName === userName ||
+              task.userName === userName ||
+              (task.userUID && task.userUID.includes(userName)) ||
+              (task.createbyUID && task.createbyUID.includes(userName)) ||
+              (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
+              (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()))
+            );
+            if (!userMatch) return false;
+          }
+          
+          // Filter by reporter if reporterName is specified
+          if (reporterName) {
+            const reporterMatch = (
+              task.data_task?.reporterName === reporterName ||
+              task.reporterName === reporterName ||
+              (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
+              (task.reporterUID && task.reporterUID === reporterName) ||
+              (task.data_task?.reporterName && task.data_task.reporterName.toLowerCase().includes(reporterName.toLowerCase()))
+            );
+            if (!reporterMatch) return false;
+          }
+          
+          return true;
+        });
+        
+        weekTasks.push(...dayTasks);
+      } catch (error) {
+        logger.warn('Error processing day:', error, day);
+      }
+    });
+    
+    return weekTasks;
+  }, [userName, reporterName]);
+
+  // Helper function to format week date range
+  const formatWeekDates = useCallback((week) => {
+    try {
+      const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
+      const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
+      return `${startDate} - ${endDate}`;
+    } catch (error) {
+      logger.warn('Error formatting week dates:', error, week);
+      return 'Invalid dates';
+    }
+  }, []);
+
+  // Helper component to render a single week section
+  const renderWeekSection = useCallback((week, weekTasks) => {
+    return (
+      <div key={week.weekNumber} className="bg-smallCard rounded-lg p-6 border border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
+            <p className="text-sm text-gray-300">{formatWeekDates(week)}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
+            <div className="text-sm text-gray-300">tasks</div>
+          </div>
+        </div>
+        
+        {weekTasks.length > 0 ? (
+          <div className="space-y-3">
+            {weekTasks.map((task, index) => (
+              <div key={task.id || index} className="card flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{
+                      backgroundColor: (() => {
+                        const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
+                        const hasAI = aiModels && (Array.isArray(aiModels) ? aiModels.length > 0 : Boolean(aiModels));
+                        return hasAI ? CARD_SYSTEM.COLOR_HEX_MAP.pink : CARD_SYSTEM.COLOR_HEX_MAP.green;
+                      })()
+                    }}
+                  ></div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-white">
+                      {task.data_task?.taskName ? (
+                        <a 
+                          href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                        >
+                          {task.data_task.taskName}
+                        </a>
+                      ) : (
+                        task.data_task?.title || 'Untitled Task'
+                      )}
+                    </span>
+                    <div className="flex items-center flex-wrap gap-2 mt-0">
+                      <span className="text-xs text-gray-300">Reporter: {getReporterName(task)}</span>
+                      <span className="text-xs text-gray-300">•</span>
+                      <span className="text-xs text-gray-300">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                      {/* AI Badges */}
+                      {(() => {
+                        const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
+                        const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
+                        if (!aiModels || aiModels.length === 0) return null;
+                        const models = Array.isArray(aiModels) ? aiModels : [aiModels];
+                        return models.map((model, idx) => (
+                          <Badge key={idx} variant="pink" size="sm">
+                            {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
+                          </Badge>
+                        ));
+                      })()}
+                      {/* Market Badges */}
+                      {renderMarketBadges(task.data_task?.markets || task.markets)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end">
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">
+                      {task.createdByName || task.userName || 'Unknown User'}
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      {(() => {
+                        if (!task.createdAt) return 'No date';
+                        const date = convertToDate(task.createdAt);
+                        if (!date || isNaN(date.getTime())) return 'Invalid date';
+                        const dateStr = date.toLocaleDateString();
+                        const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+                        const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
+                        const totalHours = (taskHours + aiTime).toFixed(1);
+                        return `${dateStr} ${totalHours}h`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-300 mb-2">
+              <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <p className="text-sm">No tasks for this week</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }, [getReporterName, renderMarketBadges, formatWeekDates]);
   
   // Manage data ready state to prevent flickering
   useEffect(() => {
@@ -410,7 +665,7 @@ const DynamicAnalyticsPage = () => {
   const actualMonthId = monthId === 'current' ? contextMonthId : monthId;
   
   // Generate real data based on parameters
-  const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam);
+  const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam, deliverablesOptions);
   
   // Create analytics cards using centralized system
   const analyticsCards = createCards({ 
@@ -426,24 +681,7 @@ const DynamicAnalyticsPage = () => {
   
   // Helper function to convert Firestore Timestamp to Date
   const convertToDate = (timestamp) => {
-    if (!timestamp) return null;
-    
-    try {
-      // Handle Firestore Timestamp objects
-      if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
-        // Firestore Timestamp: {seconds: number, nanoseconds: number}
-        return new Date(timestamp.seconds * 1000);
-      } else if (timestamp && typeof timestamp === 'object' && timestamp.toDate) {
-        // Firestore Timestamp with toDate method
-        return timestamp.toDate();
-      } else {
-        // Regular Date string or Date object
-        return new Date(timestamp);
-      }
-    } catch (error) {
-      logger.warn('Error converting timestamp to date:', error, timestamp);
-      return null;
-    }
+    return normalizeTimestamp(timestamp);
   };
 
   
@@ -622,163 +860,28 @@ const DynamicAnalyticsPage = () => {
                 );
               }
 
-              // If no week is selected (All Weeks), show all existing weeks
-              if (!selectedWeekValue || selectedWeekValue === '') {
-                // Show all weeks
-                return weeks.map((week) => {
-                  // Get tasks for this week
-                  const weekTasks = [];
-                  week.days.forEach(day => {
-                    try {
-                      const dayDate = day instanceof Date ? day : new Date(day);
-                      if (isNaN(dayDate.getTime())) return;
-                      
-                      const dayStr = dayDate.toISOString().split('T')[0];
-                      const dayTasks = tasks.filter(task => {
-                        if (!task.createdAt) return false;
-                        
-                        const taskDate = convertToDate(task.createdAt);
-                        if (!taskDate || isNaN(taskDate.getTime())) return false;
-                        
-                        const taskDateStr = taskDate.toISOString().split('T')[0];
-                        const dateMatch = taskDateStr === dayStr;
-                        
-                        // Also filter by user if userName is specified
-                        const userMatch = !userName || 
-                          (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
-                          (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()));
-                        
-                        // Also filter by reporter if reporterName is specified
-                        const reporterMatch = !reporterName || 
-                          (task.data_task?.reporterName && task.data_task.reporterName.toLowerCase().includes(reporterName.toLowerCase()));
-                        
-                        return dateMatch && userMatch && reporterMatch;
-                      });
-                      
-                      weekTasks.push(...dayTasks);
-                    } catch (error) {
-                      logger.warn('Error processing day:', error, day);
-                    }
-                  });
+              // Determine which weeks to display
+              const weeksToDisplay = (() => {
+                if (!selectedWeekValue || selectedWeekValue === '') {
+                  // Show all weeks
+                  return weeks;
+                } else {
+                  // Show only selected week
+                  const weekNumber = parseInt(selectedWeekValue);
+                  const selectedWeek = weeks.find(w => w.weekNumber === weekNumber);
+                  
+                  if (!selectedWeek) {
+                    // Week not found - return null to show error
+                    return null;
+                  }
+                  
+                  return [selectedWeek];
+                }
+              })();
 
-                  return (
-                    <div key={week.weekNumber} className="bg-smallCard rounded-lg p-6 border border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
-                          <p className="text-sm text-gray-300">
-                            {(() => {
-                              try {
-                                const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
-                                const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
-                                return `${startDate} - ${endDate}`;
-                              } catch (error) {
-                                logger.warn('Error formatting week dates:', error, week);
-                                return 'Invalid dates';
-                              }
-                            })()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
-                          <div className="text-sm text-gray-300">tasks</div>
-                        </div>
-                      </div>
-                      
-                      {weekTasks.length > 0 ? (
-                        <div className="space-y-3">
-                          {weekTasks.map((task, index) => (
-                            <div key={task.id || index} className=" card flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
-                              <div className="flex items-center space-x-3">
-                                <div 
-                                  className="w-3 h-3 rounded-full"
-                                  style={{
-                                    backgroundColor: (() => {
-                                      const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
-                                      const hasAI = aiModels && (Array.isArray(aiModels) ? aiModels.length > 0 : Boolean(aiModels));
-                                      return hasAI ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : CARD_SYSTEM.COLOR_HEX_MAP.green;
-                                    })()
-                                  }}
-                                ></div>
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-white">
-                                    {task.data_task?.taskName ? (
-                                      <a 
-                                        href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
-                                      >
-                                        {task.data_task.taskName}
-                                      </a>
-                                    ) : (
-                                      task.data_task?.title || 'Untitled Task'
-                                    )}
-                                  </span>
-                                  <div className="flex items-center flex-wrap gap-2 mt-0">
-                                    <span className="text-xs text-gray-300">Reporter: {getReporterName(task)}</span>
-                                    <span className="text-xs text-gray-300">•</span>
-                                    <span className="text-xs text-gray-300">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
-                                    {/* AI Badges */}
-                                    {(() => {
-                                      const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
-                                      const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
-                                      if (!aiModels || aiModels.length === 0) return null;
-                                      const models = Array.isArray(aiModels) ? aiModels : [aiModels];
-                                      return models.map((model, idx) => (
-                                        <Badge key={idx} variant="pink" size="sm">
-                                          {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
-                                        </Badge>
-                                      ));
-                                    })()}
-                                    {/* Market Badges */}
-                                    {renderMarketBadges(task.data_task?.markets || task.markets)}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-end">
-                                <div className="text-right">
-                                  <div className="text-sm font-medium text-white">
-                                    {task.createdByName || task.userName || 'Unknown User'}
-                                  </div>
-                                  <div className="text-xs text-gray-300">
-                                    {(() => {
-                                      if (!task.createdAt) return 'No date';
-                                      const date = convertToDate(task.createdAt);
-                                      if (!date || isNaN(date.getTime())) return 'Invalid date';
-                                      const dateStr = date.toLocaleDateString();
-                                      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-                                      const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
-                                      const totalHours = (taskHours + aiTime).toFixed(1);
-                                      return `${dateStr} ${totalHours}h`;
-                                    })()}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="text-gray-300 mb-2">
-                            <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <p className="text-sm">No tasks for this week</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                });
-              }
-
-              // Show only the selected week - filter from existing weeks
-              const weekNumber = parseInt(selectedWeekValue);
-              const week = weeks.find(w => w.weekNumber === weekNumber);
-              
               // If week not found, show error message
-              if (!week) {
+              if (weeksToDisplay === null) {
+                const weekNumber = parseInt(selectedWeekValue);
                 return (
                   <div className="text-center py-8">
                     <div className="text-gray-300 mb-2">
@@ -791,163 +894,12 @@ const DynamicAnalyticsPage = () => {
                   </div>
                 );
               }
-              
-              // Get tasks for this week - filter from existing tasks
-              const weekTasks = [];
-              week.days.forEach(day => {
-                  try {
-                    const dayDate = day instanceof Date ? day : new Date(day);
-                    if (isNaN(dayDate.getTime())) return;
-                    
-                    const dayStr = dayDate.toISOString().split('T')[0];
-                    const dayTasks = tasks.filter(task => {
-                      if (!task.createdAt) return false;
-                      
-                      const taskDate = convertToDate(task.createdAt);
-                      if (!taskDate || isNaN(taskDate.getTime())) return false;
-                      
-                      const taskDateStr = taskDate.toISOString().split('T')[0];
-                      const dateMatch = taskDateStr === dayStr;
-                      
-                      // Also filter by user if userName is specified
-                      if (userName && dateMatch) {
-                        const userMatch = (
-                          task.createdByName === userName ||
-                          task.userName === userName ||
-                          (task.userUID && task.userUID.includes(userName)) ||
-                          (task.createbyUID && task.createbyUID.includes(userName))
-                        );
-                        if (!userMatch) return false;
-                      }
-                      
-                      // Also filter by reporter if reporterName is specified
-                      if (reporterName && dateMatch) {
-                        const reporterMatch = (
-                          task.data_task?.reporterName === reporterName ||
-                          task.reporterName === reporterName ||
-                          (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
-                          (task.reporterUID && task.reporterUID === reporterName)
-                        );
-                        if (!reporterMatch) return false;
-                      }
-                      
-                      return dateMatch;
-                    });
-                    weekTasks.push(...dayTasks);
-                  } catch (error) {
-                    logger.warn('Error processing day:', error, day);
-                  }
-                });
 
-                return (
-                  <div key={week.weekNumber} className="card rounded-lg p-6 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
-                        <p className="text-sm text-gray-300">
-                          {(() => {
-                            try {
-                              const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
-                              const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
-                              return `${startDate} - ${endDate}`;
-                            } catch (error) {
-                                logger.warn('Error formatting week dates:', error, week);
-                              return 'Invalid dates';
-                            }
-                          })()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
-                        <div className="text-sm text-gray-300">tasks</div>
-                      </div>
-                    </div>
-                    
-                    {weekTasks.length > 0 ? (
-                      <div className="space-y-3">
-                        {weekTasks.map((task, index) => (
-                          <div key={task.id || index} className="flex items-center justify-between p-3 card" style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray }}>
-                            <div className="flex items-center space-x-3">
-                              <div 
-                                className="w-3 h-3 rounded-full"
-                                style={{
-                                  backgroundColor: (() => {
-                                    const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
-                                    const hasAI = aiModels && (Array.isArray(aiModels) ? aiModels.length > 0 : Boolean(aiModels));
-                                    return hasAI ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : CARD_SYSTEM.COLOR_HEX_MAP.green;
-                                  })()
-                                }}
-                              ></div>
-                              <div className="flex flex-col"> 
-                                <span className="font-medium text-white">
-                                  {task.data_task?.taskName ? (
-                                    <a 
-                                      href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-300 hover:text-blue-500 underline cursor-pointer"
-                                    >
-                                      {task.data_task.taskName}
-                                    </a>
-                                  ) : (
-                                    task.data_task?.title || 'Untitled Task'
-                                  )}
-                                </span>
-                                <div className="flex items-center flex-wrap gap-2 mt-0">
-                                  <span className="text-xs text-gray-300">Reporter: {getReporterName(task)}</span>
-                                  <span className="text-xs text-gray-300">•</span>
-                                  <span className="text-xs text-gray-300">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
-                                  {/* AI Badges */}
-                                  {(() => {
-                                    const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
-                                    const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
-                                    if (!aiModels || aiModels.length === 0) return null;
-                                    const models = Array.isArray(aiModels) ? aiModels : [aiModels];
-                                    return models.map((model, idx) => (
-                                      <Badge key={idx} variant="pink" size="xs">
-                                        {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
-                                      </Badge>
-                                    ));
-                                  })()}
-                                  {/* Market Badges */}
-                                  {renderMarketBadges(task.data_task?.markets || task.markets)}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-end">
-                              <div className="text-right">
-                                <div className="text-sm font-medium text-white">
-                                  {task.createdByName || task.userName || 'Unknown User'}
-                                </div>
-                                <div className="text-xs text-gray-300">
-                                  {(() => {
-                                    if (!task.createdAt) return 'No date';
-                                    const date = convertToDate(task.createdAt);
-                                    if (!date || isNaN(date.getTime())) return 'Invalid date';
-                                    const dateStr = date.toLocaleDateString();
-                                    const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-                                    const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
-                                    const totalHours = (taskHours + aiTime).toFixed(1);
-                                    return `${dateStr} ${totalHours}h`;
-                                  })()}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <div className="text-gray-300">
-                          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                          <p className="text-sm">No tasks for this week</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
+              // Render all weeks (either all weeks or just the selected one) - using shared helper functions
+              return weeksToDisplay.map((week) => {
+                const weekTasks = getWeekTasks(week, tasks);
+                return renderWeekSection(week, weekTasks);
+              });
             })()}
           </div>
         </div>

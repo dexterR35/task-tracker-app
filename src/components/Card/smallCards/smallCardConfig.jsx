@@ -727,18 +727,39 @@ export const SMALL_CARD_CONFIGS = {
       text: `${data.totalVariations || 0} var`,
       color: 'orange'
     }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.package,
-        label: 'Total Deliverables',
-        value: (data.totalDeliverables || 0).toString(),
-      },
-      {
-        icon: Icons.generic.warning,
-        label: 'Total Variations',
-        value: (data.totalVariations || 0).toString(),
-      },
-    ],
+    getDetails: (data) => {
+      const baseHours = data.totalDeliverablesHours || 0;
+      const totalHours = data.totalDeliverablesWithVariationsHours || 0;
+      const variationsHours = totalHours - baseHours;
+      
+      return [
+        {
+          icon: Icons.generic.package,
+          label: 'Total Deliverables',
+          value: (data.totalDeliverables || 0).toString(),
+        },
+        {
+          icon: Icons.generic.warning,
+          label: 'Total Variations',
+          value: (data.totalVariations || 0).toString(),
+        },
+        {
+          icon: Icons.generic.clock,
+          label: 'Base Hours (Deliverables Only)',
+          value: `${baseHours.toFixed(1)}h`,
+        },
+        {
+          icon: variationsHours > 0 ? Icons.generic.warning : Icons.generic.clock,
+          label: 'Variations Hours',
+          value: `${variationsHours.toFixed(1)}h`,
+        },
+        {
+          icon: Icons.generic.timer,
+          label: 'Total Hours (Deliverables + Variations)',
+          value: `${totalHours.toFixed(1)}h`,
+        },
+      ];
+    },
   },
 
   [SMALL_CARD_TYPES.ANALYTICS_MARKETING]: {
