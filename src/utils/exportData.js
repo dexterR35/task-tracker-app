@@ -13,7 +13,8 @@ const formatValueForCSV = (
   columnId,
   reporters = [],
   users = [],
-  row = null
+  row = null,
+  options = {}
 ) => {
   // Handle null/undefined values
   if (value === null || value === undefined) {
@@ -149,32 +150,138 @@ const formatValueForCSV = (
     return "-";
   }
 
-  // Handle deliverables object - format with count and name (e.g., 2xgamepreview)
+  // Handle deliverables object - format with full details matching table display
   if (columnId === "deliverables" && typeof value === "object") {
     if (Array.isArray(value)) {
       if (value.length === 0) return "-";
 
-      let deliverables = [];
+      // Get deliverables options from row context if available
+      const deliverablesOptions = row?.deliverablesOptions || options?.deliverables || [];
+      
+      let formattedDeliverables = [];
 
-      value.forEach((item) => {
-        if (typeof item === "object" && item.quantity && item.name) {
-          // Format as "quantityxname" (e.g., 2xgamepreview)
-          deliverables.push(`${item.quantity}x${item.name}`);
+      value.forEach((deliverable) => {
+        if (!deliverable || typeof deliverable !== "object") return;
+        
+        const deliverableName = deliverable?.name;
+        const quantity = deliverable?.count || 1;
+        
+        if (!deliverableName) return;
+
+        // Find deliverable in options to get time calculation
+        const deliverableOption = deliverablesOptions.find(
+          (d) => d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+        );
+
+        if (deliverableOption) {
+          const timePerUnit = deliverableOption.timePerUnit || 1;
+          const timeUnit = deliverableOption.timeUnit || 'hr';
+          const requiresQuantity = deliverableOption.requiresQuantity || false;
+          
+          // Only use variations if requiresQuantity is true
+          const variationsTime = (requiresQuantity && deliverableOption.variationsTime) || deliverableOption.declinariTime || 0;
+          const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+          const variationsQuantity = (requiresQuantity && (deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0)) || 0;
+
+          // Convert to minutes (base unit)
+          let timeInMinutes = timePerUnit;
+          if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
+          else if (timeUnit === 'min') timeInMinutes = timePerUnit;
+
+          // Calculate variations time
+          let variationsTimeInMinutes = 0;
+          if (requiresQuantity && variationsTime > 0) {
+            if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
+            else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+            else variationsTimeInMinutes = variationsTime;
+          }
+
+          const totalvariationsTimeInMinutes = variationsQuantity * variationsTimeInMinutes;
+          const calculatedTimeInMinutes = (timeInMinutes * quantity) + totalvariationsTimeInMinutes;
+          const calculatedTimeInHours = calculatedTimeInMinutes / 60;
+          const calculatedTimeInDays = calculatedTimeInMinutes / 480; // 8 hours = 480 minutes
+
+          // Format as: "2xDesign update\n1hr × 2\nTotal: 2.0h (0.25 days)"
+          let formatted = `${quantity}x${deliverableName}`;
+          
+          // Add variations if present
+          if (variationsQuantity > 0) {
+            formatted += ` + ${variationsQuantity} variations`;
+          }
+          
+          formatted += `\n${timePerUnit}${timeUnit} × ${quantity}`;
+          
+          // Add variations time if present
+          if (variationsQuantity > 0 && variationsTimeInMinutes > 0) {
+            formatted += ` + ${variationsQuantity} × ${variationsTimeInMinutes.toFixed(0)}min`;
+          }
+          
+          formatted += `\nTotal: ${calculatedTimeInHours.toFixed(1)}h (${calculatedTimeInDays.toFixed(2)} days)`;
+          
+          formattedDeliverables.push(formatted);
+        } else {
+          // Deliverable not configured - just show name and count
+          formattedDeliverables.push(`${quantity}x${deliverableName}`);
         }
       });
 
-      if (deliverables.length === 0) return "-";
+      if (formattedDeliverables.length === 0) return "-";
 
-      return deliverables.join(", ");
+      return formattedDeliverables.join("\n\n");
     }
 
     // Handle single deliverable object
     if (value && typeof value === "object") {
-      if (value.quantity && value.name) {
-        // Format as "quantityxname" (e.g., 2xgamepreview)
-        return `${value.quantity}x${value.name}`;
+      const deliverableName = value?.name;
+      const quantity = value?.count || 1;
+      
+      if (!deliverableName) return "-";
+      
+      // Get deliverables options from row context if available
+      const deliverablesOptions = row?.deliverablesOptions || options?.deliverables || [];
+      const deliverableOption = deliverablesOptions.find(
+        (d) => d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+      );
+
+      if (deliverableOption) {
+        const timePerUnit = deliverableOption.timePerUnit || 1;
+        const timeUnit = deliverableOption.timeUnit || 'hr';
+        const requiresQuantity = deliverableOption.requiresQuantity || false;
+        
+        const variationsTime = (requiresQuantity && deliverableOption.variationsTime) || deliverableOption.declinariTime || 0;
+        const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+        const variationsQuantity = (requiresQuantity && (value?.variationsCount || value?.variationsQuantity || value?.declinariQuantity || 0)) || 0;
+
+        let timeInMinutes = timePerUnit;
+        if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
+        else if (timeUnit === 'min') timeInMinutes = timePerUnit;
+
+        let variationsTimeInMinutes = 0;
+        if (requiresQuantity && variationsTime > 0) {
+          if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
+          else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+          else variationsTimeInMinutes = variationsTime;
+        }
+
+        const totalvariationsTimeInMinutes = variationsQuantity * variationsTimeInMinutes;
+        const calculatedTimeInMinutes = (timeInMinutes * quantity) + totalvariationsTimeInMinutes;
+        const calculatedTimeInHours = calculatedTimeInMinutes / 60;
+        const calculatedTimeInDays = calculatedTimeInMinutes / 480;
+
+        let formatted = `${quantity}x${deliverableName}`;
+        if (variationsQuantity > 0) {
+          formatted += ` + ${variationsQuantity} variations`;
+        }
+        formatted += `\n${timePerUnit}${timeUnit} × ${quantity}`;
+        if (variationsQuantity > 0 && variationsTimeInMinutes > 0) {
+          formatted += ` + ${variationsQuantity} × ${variationsTimeInMinutes.toFixed(0)}min`;
+        }
+        formatted += `\nTotal: ${calculatedTimeInHours.toFixed(1)}h (${calculatedTimeInDays.toFixed(2)} days)`;
+        
+        return formatted;
       }
-      return "-";
+      
+      return `${quantity}x${deliverableName}`;
     }
     return "-";
   }
@@ -495,10 +602,28 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
       });
     }
 
+    // Transform deliverables to the format expected by formatValueForCSV
+    // This is used for tasks table exports
+    const deliverablesOptions = deliverables && deliverables.length > 0
+      ? deliverables.map(deliverable => ({
+          value: deliverable.name,
+          label: deliverable.name,
+          department: deliverable.department,
+          timePerUnit: deliverable.timePerUnit,
+          timeUnit: deliverable.timeUnit,
+          requiresQuantity: deliverable.requiresQuantity,
+          variationsTime: deliverable.variationsTime,
+          variationsTimeUnit: deliverable.variationsTimeUnit || deliverable.declinariTimeUnit || 'min',
+          declinariTime: deliverable.declinariTime,
+          declinariTimeUnit: deliverable.declinariTimeUnit
+        }))
+      : [];
+
     // Custom export for tasks - dynamic based on filters
     // If filters are active: export all visible columns
     // If no filters: export only specific columns (DEPARTMENT, JIRA LINK, MARKET, TOTAL HOURS, DELIVERABLE COUNT, DELIVERABLE NAMES)
     if (tableType === "tasks") {
+
       // If filters are active, use generic export with all visible columns
       if (hasActiveFilters) {
         // Get all visible columns (excluding select and actions)
@@ -547,7 +672,8 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
                 columnId,
                 reporters,
                 users,
-                row
+                row,
+                { deliverables: deliverablesOptions }
               );
 
               // Escape delimiter, quotes, and newlines
@@ -655,7 +781,8 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
             columnId,
             reporters,
             users,
-            row
+            row,
+            { deliverables: deliverablesOptions }
           );
 
           // Escape delimiter, quotes, and newlines in string values
