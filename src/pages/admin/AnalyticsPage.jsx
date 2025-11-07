@@ -275,7 +275,7 @@ const AnalyticsPage = () => {
                     onClick={tabClickHandlers[tab.id]}
                     variant="ghost"
                     className={`
-                      py-3 px-1 border-b-2 font-medium !text-[0.85rem] rounded-none !shadow-none
+                      py-3 px-1 border-b-2 font-medium !text-[16px] rounded-none !shadow-none
                       ${
                         isActive
                           ? 'text-gray-900 dark:text-gray-100'

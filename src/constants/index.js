@@ -246,7 +246,7 @@ export const CARD_SYSTEM = {
     orange: '#F25912',
     soft_purple:"#9694FF",    // Orange-500 - Product, warning, energy
     color_default: '#124f9b',
-    select_badge: '#C2E2FA', // Blue-600 - Selected badges in cards and forms
+    select_badge: '#00fff5', // C2E2FA- Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
     dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
   },

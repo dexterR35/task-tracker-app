@@ -12,7 +12,7 @@ const ConfirmationModal = ({
   message = "Are you sure you want to proceed?",
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "danger", // "danger", "warning", "info"
+ // Uses DynamicButton variants: "danger", "warning", "success", "primary", "secondary", "amber", "blue", "pink", "orange", "purple", "crimson", "edit"
   isLoading = false
 }) => {
   if (!isOpen) return null;
@@ -21,37 +21,6 @@ const ConfirmationModal = ({
     onConfirm();
     onClose();
   };
-
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'danger':
-        return {
-          icon: '⚠️',
-          confirmButton: 'danger',
-          titleColor: 'text-red-error '
-        };
-      case 'warning':
-        return {
-          icon: '⚠️',
-          confirmButton: 'warning',
-          titleColor: 'text-yellow-600 '
-        };
-      case 'info':
-        return {
-          icon: 'ℹ️',
-          confirmButton: 'primary',
-          titleColor: 'text-blue-600 '
-        };
-      default:
-        return {
-          icon: '❓',
-          confirmButton: 'primary',
-          titleColor: 'text-gray-200 '
-        };
-    }
-  };
-
-  const styles = getVariantStyles();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -62,11 +31,10 @@ const ConfirmationModal = ({
       />
       
       {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="relative card rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
         {/* Header */}
         <div className="flex items-center mb-4">
-          <span className="text-2xl mr-3">{styles.icon}</span>
-          <h3 className={`text-lg font-semibold ${styles.titleColor}`}>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {title}
           </h3>
         </div>
@@ -90,7 +58,7 @@ const ConfirmationModal = ({
           </DynamicButton>
           
           <DynamicButton
-            variant={styles.confirmButton}
+            variant="danger"
             onClick={handleConfirm}
             loading={isLoading}
             size="sm"

@@ -13,8 +13,8 @@ const SmallCard = memo(
     );
     const styles = useMemo(
       () => ({
-        regularDetailBg: `${DETAILS_BG_COLOR_HEX}20`, // 30% Opacity
-        regularDetailBorder: `${DETAILS_BG_COLOR_HEX}50`, // 80% Opacity
+        regularDetailBg: `${cardColorHex}10`, // 20% Opacity - matches icon-bg
+        regularDetailBorder: `${cardColorHex}40`, // 50% Opacity - matches card color theme
         iconStyle: { color: cardColorHex },
         valueStyle: { color: cardColorHex },
         dotStyle: { backgroundColor: cardColorHex, background: cardColorHex },

@@ -307,34 +307,44 @@ export const SMALL_CARD_CONFIGS = {
       const selectedReporterId = data.selectedReporterId;
       const currentMonthId =
         data.selectedMonth?.monthId || data.currentMonth?.monthId;
-      // Filter tasks based on selections
+      
+      // Helper function to get reporter ID (matches TaskTable logic)
+      const getTaskReporterId = (task) => {
+        return task.data_task?.reporters || task.reporters;
+      };
+      
+      // Helper function to check if task matches user
+      const matchesUser = (task, userId) => {
+        return task.userUID === userId || task.createbyUID === userId;
+      };
+      
+      // Filter tasks based on selections (matching TaskTable logic exactly)
       const filteredTasks = data.tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
+        
         // If both user and reporter are selected, show tasks that match BOTH
         if (selectedUserId && selectedReporterId) {
-          const matchesUser =
-            task.userUID === selectedUserId ||
-            task.createbyUID === selectedUserId;
-          const matchesReporter =
-            task.reporterUID === selectedReporterId ||
-            task.data_task?.reporterUID === selectedReporterId;
-          return matchesUser && matchesReporter;
+          const matchesSelectedUser = matchesUser(task, selectedUserId);
+          const taskReporterId = getTaskReporterId(task);
+          if (!taskReporterId) return false;
+          // Compare task reporter ID directly with selectedReporterId (exact match)
+          return matchesSelectedUser && taskReporterId === selectedReporterId;
         }
+        
         // If only user is selected, show tasks for that user
         if (selectedUserId && !selectedReporterId) {
-          return (
-            task.userUID === selectedUserId ||
-            task.createbyUID === selectedUserId
-          );
+          return matchesUser(task, selectedUserId);
         }
+        
         // If only reporter is selected, show tasks for that reporter
         if (selectedReporterId && !selectedUserId) {
-          return (
-            task.reporterUID === selectedReporterId ||
-            task.data_task?.reporterUID === selectedReporterId
-          );
+          const taskReporterId = getTaskReporterId(task);
+          if (!taskReporterId) return false;
+          // Compare task reporter ID directly with selectedReporterId (exact match)
+          return taskReporterId === selectedReporterId;
         }
+        
         // If no selections, show current user's tasks
         const userUID = data.currentUser?.userUID;
         return (

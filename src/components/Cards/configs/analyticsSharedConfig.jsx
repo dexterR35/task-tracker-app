@@ -343,7 +343,7 @@ export const renderCountWithPercentage = (value) => {
 
     return (
       <span>
-        {count} (<span style={{ color: greenColor }}>{percentage}%</span>)
+        {count} (<span className="font-normal" style={{ color: greenColor }}>{percentage}%</span>)
       </span>
     );
   }
@@ -352,10 +352,6 @@ export const renderCountWithPercentage = (value) => {
   return <span>{value}</span>;
 };
 
-/**
- * Helper functions for extracting data from tasks
- * These reduce code duplication across analytics configs
- */
 
 // Extract markets from task (with normalization)
 export const getTaskMarkets = (task) => {
@@ -394,17 +390,7 @@ export const getTaskAIUsed = (task) => {
   return task.data_task?.aiUsed || task.aiUsed || [];
 };
 
-/**
- * Add grand total row to table data
- * @param {Array} tableData - Array of table row objects
- * @param {Object} options - Configuration options
- * @param {string} options.labelKey - Key for the label column (e.g., 'user', 'category', 'reporter')
- * @param {string} options.labelValue - Value for the grand total label (default: 'Grand Total')
- * @param {Array} options.sumColumns - Array of column keys to sum (e.g., ['totalTasks', 'totalHours'])
- * @param {Array} options.marketColumns - Array of market column keys to sum (optional)
- * @param {Object} options.customValues - Object with custom values for specific columns (optional)
- * @returns {Array} - Table data with grand total row appended
- */
+
 export const addGrandTotalRow = (tableData, options = {}) => {
   if (!tableData || tableData.length === 0) {
     return tableData;

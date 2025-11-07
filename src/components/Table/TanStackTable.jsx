@@ -583,7 +583,7 @@ const TanStackTable = forwardRef(
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className={`px-4 py-3 text-start font-semibold text-[10px] text-gray-200 tracking-normal ${
+                          className={`px-4 py-3 text-start ${tableType === "analytics" ? "font-bold" : "font-semibold"} text-[10px] text-gray-200 tracking-normal ${
                             header.column.getCanSort()
                               ? "cursor-pointer select-none hover:bg-gray-600/50"
                               : ""
@@ -615,6 +615,9 @@ const TanStackTable = forwardRef(
                     table.getRowModel().rows.map((row, index) => {
                       const rowKey = row.original?.id || row.id;
                       const isSelected = rowSelection[row.id];
+                      const isBoldRow = row.original?.bold || row.original?.highlight;
+                      // Determine font weight: bold for analytics tables or rows marked as bold/highlight
+                      const fontWeight = (tableType === "analytics" || isBoldRow) ? "font-bold" : "font-normal";
 
                       return (
                         <tr
@@ -636,7 +639,7 @@ const TanStackTable = forwardRef(
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={`${row.original?.id || row.id}-${cell.column.id}`}
-                              className="px-3 py-4 text-xs font-normal "
+                              className={`px-3 py-4 text-xs ${fontWeight} `}
                               style={{ width: cell.column.getSize() }}
                             >
                               {flexRender(
