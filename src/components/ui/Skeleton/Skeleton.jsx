@@ -7,7 +7,7 @@ const Skeleton = ({
   rounded = 'md',
   animate = true 
 }) => {
-  const baseClasses = `bg-gray-200 dark:bg-gray-700 ${rounded === 'md' ? 'rounded-md' : rounded === 'lg' ? 'rounded-lg' : rounded === 'full' ? 'rounded-full' : ''}`;
+  const baseClasses = `bg-gray-200 dark:bg-gray-600/50 ${rounded === 'md' ? 'rounded-md' : rounded === 'lg' ? 'rounded-lg' : rounded === 'full' ? 'rounded-full' : ''}`;
   const animateClasses = animate ? 'animate-pulse' : '';
   
   return (
@@ -45,7 +45,7 @@ export const SkeletonCard = ({ className = '' }) => (
 
           {/* Details */}
           <div className="space-y-2">
-            <div className="p-2 rounded-lg border border-gray-500">
+            <div className="p-2 rounded-lg border border-gray-300 dark:border-gray-600/50" style={{ backgroundColor: 'rgba(100, 116, 139, 0.12)', borderColor: 'rgba(100, 116, 139, 0.3)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Skeleton height="0.375rem" width="0.375rem" rounded="full" />
@@ -54,7 +54,7 @@ export const SkeletonCard = ({ className = '' }) => (
                 <Skeleton height="0.75rem" width="1.5rem" />
               </div>
             </div>
-            <div className="p-2 rounded-lg border border-gray-500">
+            <div className="p-2 rounded-lg border border-gray-300 dark:border-gray-600/50" style={{ backgroundColor: 'rgba(100, 116, 139, 0.12)', borderColor: 'rgba(100, 116, 139, 0.3)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Skeleton height="0.375rem" width="0.375rem" rounded="full" />
@@ -87,18 +87,21 @@ export const SkeletonButton = ({ className = '' }) => (
 export const SkeletonTable = ({ rows = 5, className = '' }) => (
   <div className={`space-y-3 ${className}`}>
     {/* Table Header */}
-    <div className="grid grid-cols-6 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <Skeleton height="1rem" width="80%" />
-      <Skeleton height="1rem" width="60%" />
-      <Skeleton height="1rem" width="70%" />
-      <Skeleton height="1rem" width="50%" />
-      <Skeleton height="1rem" width="60%" />
-      <Skeleton height="1rem" width="40%" />
+    <div className="grid grid-cols-6 gap-4 p-4 bg-gray-100 dark:bg-[#252a3c] rounded-lg">
+      <Skeleton height="1rem" width="80%" className="bg-gray-300 dark:bg-gray-500/50" />
+      <Skeleton height="1rem" width="60%" className="bg-gray-300 dark:bg-gray-500/50" />
+      <Skeleton height="1rem" width="70%" className="bg-gray-300 dark:bg-gray-500/50" />
+      <Skeleton height="1rem" width="50%" className="bg-gray-300 dark:bg-gray-500/50" />
+      <Skeleton height="1rem" width="60%" className="bg-gray-300 dark:bg-gray-500/50" />
+      <Skeleton height="1rem" width="40%" className="bg-gray-300 dark:bg-gray-500/50" />
     </div>
     
     {/* Table Rows */}
     {Array.from({ length: rows }).map((_, index) => (
-      <div key={index} className="grid grid-cols-6 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div 
+        key={index} 
+        className="grid grid-cols-6 gap-4 p-4 border border-gray-200 dark:border-gray-700/70 rounded-lg dark:bg-smallCard"
+      >
         <Skeleton height="1rem" width="90%" />
         <Skeleton height="1rem" width="70%" />
         <Skeleton height="1rem" width="80%" />
@@ -115,18 +118,36 @@ export const SkeletonAnalyticsCard = ({ className = '' }) => (
     {/* Title */}
     <Skeleton height="1.5rem" width="40%" className="mb-6" />
     
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Table Section */}
+    <div className="space-y-6">
+      {/* Table Section - First */}
       <div>
         <Skeleton height="1.25rem" width="30%" className="mb-4" />
         <SkeletonTable rows={4} />
       </div>
       
-      {/* Chart Section */}
+      {/* Charts Section - First Set */}
       <div>
         <Skeleton height="1.25rem" width="35%" className="mb-4" />
-        <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <Skeleton height="200px" width="200px" rounded="full" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 rounded-lg">
+            <Skeleton height="200px" width="200px" rounded="full" />
+          </div>
+          <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 rounded-lg">
+            <Skeleton height="200px" width="200px" rounded="full" />
+          </div>
+        </div>
+      </div>
+      
+      {/* Charts Section - Second Set */}
+      <div>
+        <Skeleton height="1.25rem" width="35%" className="mb-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 rounded-lg">
+            <Skeleton height="200px" width="200px" rounded="full" />
+          </div>
+          <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 rounded-lg">
+            <Skeleton height="200px" width="200px" rounded="full" />
+          </div>
         </div>
       </div>
     </div>
@@ -162,7 +183,7 @@ export const SkeletonHeader = ({ className = '' }) => (
     </div>
     
     {/* Header Card */}
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+    <div className="bg-white dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 rounded-lg p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <Skeleton height="2rem" width="16rem" className="mb-2" />

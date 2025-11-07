@@ -339,7 +339,7 @@ export const renderCountWithPercentage = (value) => {
   if (match) {
     const count = match[1];
     const percentage = match[2];
-    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.green;
+    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.amber;
 
     return (
       <span>
