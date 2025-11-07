@@ -13,6 +13,48 @@ const TextField = ({ field, register, errors, formValues, watch, setValue }) => 
     }
   };
   
+  // Get the register props
+  const registerProps = register ? register(field.name) : {};
+  
+  // Check if we're using manual control (when register returns empty object or no ref)
+  // react-hook-form register always returns a ref, so if there's no ref, it's manual control
+  const isManualControl = !registerProps || Object.keys(registerProps).length === 0 || !registerProps.ref;
+  
+  // For manual control, always provide a value (even if empty string) to avoid controlled/uncontrolled warning
+  // For react-hook-form, don't provide value prop (let register handle it)
+  const inputValue = isManualControl
+    ? (formValues && formValues[field.name] !== undefined ? formValues[field.name] : '')
+    : undefined;
+  
+  const handleChange = (e) => {
+    if (isManualControl && setValue) {
+      setValue(field.name, e.target.value);
+    }
+  };
+  
+  // Build input props based on control type
+  const inputProps = isManualControl
+    ? {
+        id: field.name,
+        name: field.name,
+        type: field.type || 'text',
+        placeholder: field.placeholder,
+        autoComplete: field.autoComplete || 'off',
+        readOnly: field.readOnly || false,
+        disabled: field.disabled || false,
+        value: inputValue,
+        onChange: handleChange,
+      }
+    : {
+        ...registerProps,
+        id: field.name,
+        type: field.type || 'text',
+        placeholder: field.placeholder,
+        autoComplete: field.autoComplete || 'off',
+        readOnly: field.readOnly || false,
+        disabled: field.disabled || false,
+      };
+  
   return (
     <div className="field-wrapper">
       {field.label && (
@@ -23,24 +65,8 @@ const TextField = ({ field, register, errors, formValues, watch, setValue }) => 
       )}
       
       <input
-        {...register(field.name)}
-        id={field.name}
-        type={field.type || 'text'}
-        placeholder={field.placeholder}
-        autoComplete={field.autoComplete}
-        readOnly={field.readOnly || false}
-        disabled={field.disabled || false}
+        {...inputProps}
         className={`form-input ${field.readOnly ? 'readonly' : ''} ${fieldError ? 'error' : ''}`}
-        value={
-          formValues && Object.prototype.hasOwnProperty.call(formValues, field.name)
-            ? formValues[field.name]
-            : undefined
-        }
-        onChange={(e) => {
-          if (setValue) {
-            setValue(field.name, e.target.value);
-          }
-        }}
       />
       
       {/* Badge display for JIRA field */}

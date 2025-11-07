@@ -161,6 +161,14 @@ const DeliverableForm = ({
   });
 
   const formValues = watch();
+  const requiresQuantity = watch('requiresQuantity');
+
+  // Watch for requiresQuantity changes and clear variationsTime if unchecked
+  React.useEffect(() => {
+    if (!requiresQuantity) {
+      setValue('variationsTime', 0);
+    }
+  }, [requiresQuantity, setValue]);
 
   const handleFormSubmit = createFormSubmissionHandler(
     async (data) => {
@@ -208,7 +216,17 @@ const DeliverableForm = ({
           <SelectField field={CONFIG.FORM_FIELDS[1]} register={register} errors={errors} formValues={formValues} />
           <NumberField field={CONFIG.FORM_FIELDS[2]} register={register} errors={errors} setValue={setValue} trigger={trigger} formValues={formValues} />
           <SelectField field={CONFIG.FORM_FIELDS[3]} register={register} errors={errors} formValues={formValues} />
-          <NumberField field={CONFIG.FORM_FIELDS[4]} register={register} errors={errors} setValue={setValue} trigger={trigger} formValues={formValues} />
+          <NumberField 
+            field={{
+              ...CONFIG.FORM_FIELDS[4],
+              disabled: !requiresQuantity
+            }} 
+            register={register} 
+            errors={errors} 
+            setValue={setValue} 
+            trigger={trigger} 
+            formValues={formValues} 
+          />
           <CheckboxField field={CONFIG.FORM_FIELDS[5]} register={register} errors={errors} setValue={setValue} trigger={trigger} formValues={formValues} />
         </div>
 

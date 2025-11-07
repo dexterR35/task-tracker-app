@@ -282,17 +282,20 @@ const calculateDeliverablesInfo = (deliverablesUsed, deliverablesOptions = []) =
       if (deliverableOption) {
         const timePerUnit = deliverableOption.timePerUnit || 1;
         const timeUnit = deliverableOption.timeUnit || 'hr';
-        const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+        const requiresQuantity = deliverableOption.requiresQuantity || false;
+        
+        // Only use variations if requiresQuantity is true
+        const variationsTime = (requiresQuantity && deliverableOption.variationsTime) || deliverableOption.declinariTime || 0;
         const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
-        const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+        const variationsQuantity = (requiresQuantity && (deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0)) || 0;
 
         // Convert to minutes (base unit)
         let timeInMinutes = timePerUnit;
         if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
 
-        // Add variations time if present
+        // Add variations time if present and requiresQuantity is true
         let variationsTimeInMinutes = 0;
-        if (variationsTime > 0) {
+        if (requiresQuantity && variationsTime > 0) {
           if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
           else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
           else variationsTimeInMinutes = variationsTime;
