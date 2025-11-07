@@ -41,6 +41,7 @@ export const useTableActions = (tableType, options = {}) => {
       onSelectSuccess(item);
     } else if (tableType === 'task') {
       // For tasks, navigate to task detail page
+      // eslint-disable-next-line no-undef
       const params = new URLSearchParams();
       if (item.monthId) params.set('monthId', item.monthId);
       if (item.createdByName) params.set('user', item.createdByName);
@@ -106,7 +107,6 @@ export const useTableActions = (tableType, options = {}) => {
       }
 
       // Only show success toast if we reach this point without errors
-      const displayName = getItemDisplayName(itemToDelete);
       showSuccess(`${tableType} deleted successfully!`);
 
       if (onDeleteSuccess) {

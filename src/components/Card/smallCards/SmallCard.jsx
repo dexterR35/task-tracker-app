@@ -28,7 +28,12 @@ const SmallCard = memo(
           {/* Header (omitted for brevity) */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <div className="icon-bg">
+              <div 
+                className="icon-bg"
+                style={{
+                  backgroundColor: `${cardColorHex}20`,
+                }}
+              >
                 <card.icon
                   className="w-4.5 h-4.5"
                   style={{

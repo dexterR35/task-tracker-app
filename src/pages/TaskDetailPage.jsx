@@ -12,6 +12,11 @@ import { formatDate, normalizeTimestamp } from "@/utils/dateUtils";
 import { differenceInDays } from "date-fns";
 import { Icons } from "@/components/icons";
 import { CARD_SYSTEM } from "@/constants";
+import {
+  useDeliverablesOptions,
+  useDeliverableCalculation,
+} from "@/features/deliverables/DeliverablesManager";
+import { convertMarketsToBadges } from "@/components/Card/smallCards/smallCardConfig";
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -19,7 +24,7 @@ const TaskDetailPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isUserAdmin = user?.role === "admin";
-  const { tasks, isLoading } = useAppDataContext();
+  const { tasks, isLoading, deliverables } = useAppDataContext();
 
   // Get query parameters
   const userId = searchParams.get("user");
@@ -27,6 +32,12 @@ const TaskDetailPage = () => {
 
   // Find the task in the current tasks data
   const task = tasks?.find((t) => t.id === taskId);
+
+  // Get deliverables options and calculate deliverable details
+  const { deliverablesOptions } = useDeliverablesOptions();
+  const deliverablesUsed = task?.data_task?.deliverablesUsed || [];
+  const { deliverablesList, totalTime: deliverablesTotalTime } =
+    useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
 
   const handleGoBack = () => {
     navigate("/dashboard");
@@ -113,7 +124,8 @@ const TaskDetailPage = () => {
           },
           {
             label: "Markets",
-            value: formatArrayValue(task?.data_task?.markets),
+            value: task?.data_task?.markets?.length || 0,
+            badges: convertMarketsToBadges(task?.data_task?.markets),
           },
           {
             label: "Reporter",
@@ -194,21 +206,107 @@ const TaskDetailPage = () => {
         description: "Deliverable information",
         icon: Icons.generic.deliverable,
         color: "amber",
-        value: task?.data_task?.deliverablesUsed?.length || 0,
+        value: deliverablesUsed.length || 0,
         badge: {
-          text: `${task?.data_task?.deliverablesUsed?.length || 0} items`,
+          text: `${deliverablesTotalTime.toFixed(1)}h total`,
           color: "amber",
+        },
+        details: (() => {
+          const details = [
+            {
+              label: "Total Deliverables",
+              value: deliverablesUsed.length || 0,
+            },
+            {
+              label: "Total Deliverables Time",
+              value: `${deliverablesTotalTime.toFixed(1)}h (${((deliverablesTotalTime * 60) / 480).toFixed(2)} days)`,
+            },
+          ];
+
+          // Add detailed deliverable information
+          if (deliverablesList && deliverablesList.length > 0) {
+            deliverablesList.forEach((deliverable, index) => {
+              const variationsQty = deliverable.variationsQuantity || 0;
+              const variationsTime = deliverable.variationsTime || 0;
+              const variationsTimeUnit =
+                deliverable.variationsTimeUnit || "min";
+              const hasVariations = variationsQty > 0 && variationsTime > 0;
+
+              details.push({
+                label: `Deliverable ${index + 1}: ${deliverable.name}`,
+                value: `${deliverable.quantity}x`,
+              });
+
+              // Show calculation
+              if (hasVariations) {
+                details.push({
+                  label: `  Calculation`,
+                  value: `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} + ${variationsQty} × ${variationsTime}${variationsTimeUnit}`,
+                });
+                details.push({
+                  label: `  Variations`,
+                  value: `${variationsQty} × ${variationsTime}${variationsTimeUnit}`,
+                });
+              } else {
+                details.push({
+                  label: `  Calculation`,
+                  value: `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity}`,
+                });
+                details.push({
+                  label: `  Variations`,
+                  value: "None",
+                });
+              }
+
+              details.push({
+                label: `  Total Time`,
+                value: `${deliverable.time.toFixed(1)}h (${deliverable.timeInDays.toFixed(2)} days)`,
+              });
+            });
+          } else if (deliverablesUsed.length > 0) {
+            // Show basic info if calculation not available
+            deliverablesUsed.forEach((deliverable, index) => {
+              details.push({
+                label: `Deliverable ${index + 1}`,
+                value: deliverable.name || "Unknown",
+              });
+              details.push({
+                label: `  Quantity`,
+                value: deliverable.count || 1,
+              });
+              details.push({
+                label: `  Variations Count`,
+                value:
+                  deliverable.variationsCount ||
+                  deliverable.variationsQuantity ||
+                  0,
+              });
+              details.push({
+                label: `  Variations Enabled`,
+                value: deliverable.variationsEnabled ? "Yes" : "No",
+              });
+            });
+          }
+
+          return details;
+        })(),
+      },
+      {
+        id: "task-observations",
+        title: "Observations",
+        subtitle: "Task Notes",
+        description: "Additional observations and notes",
+        icon: Icons.generic.message || Icons.generic.document,
+        color: "blue",
+        value: task?.data_task?.observations ? "Has Notes" : "No Notes",
+        badge: {
+          text: task?.data_task?.observations ? "Present" : "Empty",
+          color: task?.data_task?.observations ? "blue" : "gray",
         },
         details: [
           {
-            label: "Deliverables Used",
-            value: task?.data_task?.deliverablesUsed?.length || 0,
-          },
-          {
-            label: "Deliverable Quantities",
-            value: task?.data_task?.deliverableQuantities
-              ? "Configured"
-              : "Not set",
+            label: "Observations",
+            value: task?.data_task?.observations || "No observations recorded",
           },
         ],
       },
@@ -289,7 +387,13 @@ const TaskDetailPage = () => {
         ],
       },
     ];
-  }, [task, daysBetween]);
+  }, [
+    task,
+    daysBetween,
+    deliverablesList,
+    deliverablesTotalTime,
+    deliverablesUsed,
+  ]);
 
   return (
     <div className="min-h-screen  ">
@@ -359,13 +463,13 @@ const TaskDetailPage = () => {
               )}
             </div>
 
-            {/* Task Header - No gradient, clean design */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+  
+            <div className="card  ">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-2xl font-bold ">
                     {task?.data_task?.taskName || "Unnamed Task"}
-                  </h1>
+                  </h2>
                   <p className="text-gray-600 dark:text-gray-400 mt-2">
                     Task ID: {task?.id}
                   </p>

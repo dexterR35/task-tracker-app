@@ -3,7 +3,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import netbetLogo from "@/assets/netbet-logo.png";
 import logo from "@/assets/logo.webp";
 import { Icons } from "@/components/icons";
-import { CARD_SYSTEM } from "@/constants";
+import { CARD_SYSTEM, APP_CONFIG } from "@/constants";
 import { getCardColor } from "@/components/Card/smallCards/smallCardConfig";
 import {
   AreaChart,
@@ -288,12 +288,12 @@ const HomePage = () => {
           <div className="flex justify-center items-center mb-4">
             <img 
               src={logo} 
-              alt="SYNC Logo" 
+              alt={`${APP_CONFIG.NAME} Logo`}
               className="w-16 h-16 object-contain mr-4"
             />
             <h1 className="text-6xl">
               <span >Welcome to </span>
-              <span className="text-red-error ">SYNC</span>
+              <span className="text-red-error ">{APP_CONFIG.NAME}</span>
             </h1>
           </div>
           <p className="md:text-lg max-w-xl mx-auto text-center mb-10">

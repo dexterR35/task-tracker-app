@@ -126,6 +126,7 @@ const SimpleDateField = ({
         <input
           type="hidden"
           {...register(fieldName)}
+          id={`${fieldName}-hidden`}
           value={selectedDate}
         />
     

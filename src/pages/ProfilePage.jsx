@@ -14,6 +14,7 @@ import TextField from '@/components/forms/components/TextField';
 import PasswordField from '@/components/forms/components/PasswordField';
 import { CARD_SYSTEM } from '@/constants';
 import { logger } from '@/utils/logger';
+import SmallCard from '@/components/Card/smallCards/SmallCard';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -153,104 +154,6 @@ const ProfilePage = () => {
     },
   ], []);
 
-  // Profile Card Component (using exact dashboard card design)
-  const ProfileCard = ({ card }) => {
-    const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[card.color] || "#64748b";
-    
-    return (
-      <div className="card-small p-4">
-        <div className="h-auto">
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div
-                  className="icon-bg"
-                  style={{ backgroundColor: `${cardColorHex}20` }}
-                >
-                  <card.icon
-                    className="w-6 h-6"
-                    style={{ color: cardColorHex }}
-                  />
-                </div>
-                <div className="leading-2">
-                  <h4 className="text-sm font-semibold text-gray-300 !mb-0">
-                    {card.title}
-                  </h4>
-                  <h5 className="text-xs text-gray-400 mt-0">
-                    {card.subtitle}
-                  </h5>
-                </div>
-              </div>
-              
-              {/* Status Badge */}
-              {card.badge && (
-                <span 
-                  className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded"
-                  style={{ 
-                    backgroundColor: cardColorHex,
-                    color: cardColorHex === '#f59e0b' ? '#374151' : 'white'
-                  }}
-                >
-                  {card.badge.text}
-                </span>
-              )}
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1">
-              {/* Main Value */}
-              <div className="mb-6">
-                <p className="text-3xl font-bold mb-2" style={{ color: cardColorHex }}>
-                  {card.value}
-                </p>
-                <p className="text-sm text-gray-400">{card.description}</p>
-              </div>
-
-              {/* Custom Content */}
-              {card.content && (
-                <div className="mb-6">
-                  {card.content}
-                </div>
-              )}
-
-              {/* Enhanced Data */}
-              {card.details && card.details.length > 0 && (
-                <div className="space-y-1">
-                  {card.details.map((detail, index) => (
-                    <div 
-                      key={index}
-                      className="p-2 rounded-lg border hover:bg-gray-700/30 transition-colors"
-                      style={{ 
-                        backgroundColor: `${cardColorHex}10`,
-                        borderColor: `${cardColorHex}20`
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div 
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ 
-                              backgroundColor: cardColorHex,
-                              background: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`
-                            }}
-                          ></div>
-                          <span className="text-xs text-gray-400">{detail.label}</span>
-                        </div>
-                        <span className="text-xs font-medium text-gray-300">
-                          {detail.value}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // Create profile cards data
   const profileCards = [
@@ -622,21 +525,12 @@ const ProfilePage = () => {
             <div className="mb-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {profileCards.map((card) => (
-                  <ProfileCard key={card.id} card={card} />
+                  <SmallCard key={card.id} card={card} />
                 ))}
               </div>
             </div>
           )}
 
-          {activeTab === 'settings' && (
-            <div className="mb-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {settingsCards.map((card) => (
-                  <ProfileCard key={card.id} card={card} />
-                ))}
-              </div>
-            </div>
-          )}
 
         </div>
       </div>

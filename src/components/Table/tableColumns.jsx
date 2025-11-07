@@ -112,7 +112,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-800 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm" >
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm" >
           {taskName}
         </Badge>
       );
@@ -125,13 +125,13 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     cell: ({ getValue, row }) => {
       // 1. Handle the 'No data_task' case specifically
       if (!row.original?.data_task) {
-        return <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.crimson }}>❌ No data_task</span>;
+        return <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}>❌ No data_task</span>;
       }
       
       const value = getValue(); 
       
       // 2. Return the value if it exists (is truthy), or '❌ Missing' if it's falsy (null, undefined, or empty string)
-      return value || <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.crimson }}>❌ Missing</span>;
+      return value || <span className="text-xs" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}>❌ Missing</span>;
     },
     size: 100,
   }),
@@ -151,7 +151,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
+            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.yellow} size="sm">
               {market}
             </Badge>
           ))}
@@ -286,7 +286,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       }
 
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.crimson} size="sm">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.pink} size="sm">
           {days} days
         </Badge>
       );
@@ -301,7 +301,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.select_badge} size="sm">
+        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm">
           {value}h
         </Badge>
       );
@@ -354,7 +354,7 @@ const createUserColumns = () => [
       const role = getValue() || 'user';
       return (
         <Badge 
-          colorHex={role === 'admin' ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : CARD_SYSTEM.COLOR_HEX_MAP.blue} 
+          colorHex={role === 'admin' ? CARD_SYSTEM.COLOR_HEX_MAP.pink : CARD_SYSTEM.COLOR_HEX_MAP.blue} 
           size="xs"
         >
           {role}
@@ -368,7 +368,7 @@ const createUserColumns = () => [
     cell: ({ getValue }) => {
       const permissions = getValue();
       if (!Array.isArray(permissions) || !permissions.length) {
-        return <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.red }}>No permissions</span>;
+        return <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}>No permissions</span>;
       }
       
       return (

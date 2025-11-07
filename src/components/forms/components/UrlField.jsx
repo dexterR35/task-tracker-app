@@ -29,6 +29,7 @@ const UrlField = ({ field, register, errors, formValues }) => {
       <input
         {...register(field.name)}
         id={field.name}
+        name={field.name}
         type="url"
         placeholder={field.placeholder}
         autoComplete={field.autoComplete}

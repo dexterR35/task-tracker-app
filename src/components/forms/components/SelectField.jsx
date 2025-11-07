@@ -25,6 +25,7 @@ const SelectField = ({ field, register, errors, formValues, watch, setValue }) =
       <select
         {...register(field.name)}
         id={field.name}
+        name={field.name}
         className={`form-input ${fieldError ? 'error' : ''}`}
       >
         <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>

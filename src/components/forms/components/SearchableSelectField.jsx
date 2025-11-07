@@ -219,6 +219,7 @@ const SearchableSelectField = ({
           <input
             ref={inputRef}
             id={field.name}
+            name={field.name}
             type="text"
             value={displayValue}
             onChange={handleInputChange}

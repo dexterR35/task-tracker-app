@@ -5,7 +5,7 @@ import { Icons } from "@/components/icons";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { CARD_SYSTEM } from "@/constants";
 import { useAppDataContext } from "@/context/AppDataContext";
-import { createCards } from "@/components/Card/smallCards/smallCardConfig";
+import { createCards, convertMarketsToBadges } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import SelectField from "@/components/forms/components/SelectField";
@@ -36,7 +36,6 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
       productsUsed: [],
       weeklyTasks: [0, 0, 0, 0, 0, 0, 0],
       dailyHours: [0, 0, 0, 0, 0, 0, 0],
-      latestTasks: [],
       efficiency: HARDCODED_EFFICIENCY_DATA,
     };
   }
@@ -316,22 +315,6 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
   // Round daily hours to 1 decimal for display
   const roundedDailyHours = dailyHours.map(hours => Math.round(hours * 10) / 10);
 
-
-  // Latest 5 tasks with Jira links
-  const latestTasks = filteredTasks
-    .sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp))
-    .slice(0, 5)
-    .map(task => ({
-      id: task.id,
-      name: task.data_task?.taskName || task.taskName || 'Unnamed Task',
-      status: task.data_task?.reworked ? 'reworked' : 'completed',
-      hours: task.data_task?.timeInHours || task.timeInHours || 0,
-      jiraLink: task.data_task?.jiraLink || task.jiraLink,
-      createdAt: task.createdAt || task.timestamp,
-      reporter: task.data_task?.reporterName || task.reporterName,
-      user: task.createdByName || task.userName,
-    }));
-
   return {
     totalTasksThisMonth,
     totalTasksMultipleMonths: totalTasksThisMonth * 3, // Estimate
@@ -348,7 +331,6 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
     aiModelCounts,
     weeklyTasks: weeklyTasks,
     dailyHours: roundedDailyHours,
-    latestTasks,
     efficiency: HARDCODED_EFFICIENCY_DATA,
   };
 };
@@ -405,7 +387,7 @@ const DynamicAnalyticsPage = () => {
     if (!markets || markets.length === 0) return null;
     const marketList = Array.isArray(markets) ? markets : [markets];
     return marketList.map((market, idx) => (
-      <Badge key={idx} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
+      <Badge key={idx} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.yellow} size="sm" className="uppercase">
         {market}
       </Badge>
     ));
@@ -545,7 +527,7 @@ const DynamicAnalyticsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 >{pageTitle}</h2>
-              <p className="text-gray-400">
+              <p className="text-gray-300">
                 {userName && reporterName 
                   ? ` Analytics for user ${userName} and reporter ${reporterName}`
                   : userName 
@@ -618,7 +600,7 @@ const DynamicAnalyticsPage = () => {
               if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
                 return (
                   <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
+                    <div className="text-gray-300 mb-2">
                       <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
@@ -635,7 +617,7 @@ const DynamicAnalyticsPage = () => {
               if (!weeks || weeks.length === 0) {
                 return (
                   <div className="text-center py-4">
-                    <p className="text-gray-400">No weeks available for this month</p>
+                    <p className="text-gray-300">No weeks available for this month</p>
                   </div>
                 );
               }
@@ -684,7 +666,7 @@ const DynamicAnalyticsPage = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-gray-300">
                             {(() => {
                               try {
                                 const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
@@ -699,7 +681,7 @@ const DynamicAnalyticsPage = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
-                          <div className="text-sm text-gray-400">tasks</div>
+                          <div className="text-sm text-gray-300">tasks</div>
                         </div>
                       </div>
                       
@@ -734,9 +716,9 @@ const DynamicAnalyticsPage = () => {
                                     )}
                                   </span>
                                   <div className="flex items-center flex-wrap gap-2 mt-0">
-                                    <span className="text-xs text-gray-400">Reporter: {getReporterName(task)}</span>
-                                    <span className="text-xs text-gray-400">•</span>
-                                    <span className="text-xs text-gray-400">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                    <span className="text-xs text-gray-300">Reporter: {getReporterName(task)}</span>
+                                    <span className="text-xs text-gray-300">•</span>
+                                    <span className="text-xs text-gray-300">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
                                     {/* AI Badges */}
                                     {(() => {
                                       const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
@@ -744,7 +726,7 @@ const DynamicAnalyticsPage = () => {
                                       if (!aiModels || aiModels.length === 0) return null;
                                       const models = Array.isArray(aiModels) ? aiModels : [aiModels];
                                       return models.map((model, idx) => (
-                                        <Badge key={idx} variant="purple" size="sm">
+                                        <Badge key={idx} variant="pink" size="sm">
                                           {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
                                         </Badge>
                                       ));
@@ -759,7 +741,7 @@ const DynamicAnalyticsPage = () => {
                                   <div className="text-sm font-medium text-white">
                                     {task.createdByName || task.userName || 'Unknown User'}
                                   </div>
-                                  <div className="text-xs text-gray-400">
+                                  <div className="text-xs text-gray-300">
                                     {(() => {
                                       if (!task.createdAt) return 'No date';
                                       const date = convertToDate(task.createdAt);
@@ -778,7 +760,7 @@ const DynamicAnalyticsPage = () => {
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <div className="text-gray-400 mb-2">
+                          <div className="text-gray-300 mb-2">
                             <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
@@ -799,7 +781,7 @@ const DynamicAnalyticsPage = () => {
               if (!week) {
                 return (
                   <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
+                    <div className="text-gray-300 mb-2">
                       <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -862,7 +844,7 @@ const DynamicAnalyticsPage = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-white">Week {week.weekNumber}</h3>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-gray-300">
                           {(() => {
                             try {
                               const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
@@ -877,7 +859,7 @@ const DynamicAnalyticsPage = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-blue-400">{weekTasks.length}</div>
-                        <div className="text-sm text-gray-400">tasks</div>
+                        <div className="text-sm text-gray-300">tasks</div>
                       </div>
                     </div>
                     
@@ -912,9 +894,9 @@ const DynamicAnalyticsPage = () => {
                                   )}
                                 </span>
                                 <div className="flex items-center flex-wrap gap-2 mt-0">
-                                  <span className="text-xs text-gray-400">Reporter: {getReporterName(task)}</span>
-                                  <span className="text-xs text-gray-400">•</span>
-                                  <span className="text-xs text-gray-400">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
+                                  <span className="text-xs text-gray-300">Reporter: {getReporterName(task)}</span>
+                                  <span className="text-xs text-gray-300">•</span>
+                                  <span className="text-xs text-gray-300">Hours: {task.data_task?.timeInHours || task.timeInHours || 0}h</span>
                                   {/* AI Badges */}
                                   {(() => {
                                     const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
@@ -922,7 +904,7 @@ const DynamicAnalyticsPage = () => {
                                     if (!aiModels || aiModels.length === 0) return null;
                                     const models = Array.isArray(aiModels) ? aiModels : [aiModels];
                                     return models.map((model, idx) => (
-                                      <Badge key={idx} variant="purple" size="xs">
+                                      <Badge key={idx} variant="pink" size="xs">
                                         {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
                                       </Badge>
                                     ));
@@ -937,7 +919,7 @@ const DynamicAnalyticsPage = () => {
                                 <div className="text-sm font-medium text-white">
                                   {task.createdByName || task.userName || 'Unknown User'}
                                 </div>
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-gray-300">
                                   {(() => {
                                     if (!task.createdAt) return 'No date';
                                     const date = convertToDate(task.createdAt);
@@ -956,7 +938,7 @@ const DynamicAnalyticsPage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-4">
-                        <div className="text-gray-400">
+                        <div className="text-gray-300">
                           <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                           </svg>

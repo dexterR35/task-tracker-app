@@ -1,17 +1,9 @@
-/**
- * Application Constants
- * Centralized constants file for the Task Tracker application
- * All application-wide constants should be defined here
- */
-
-// ============================================================================
-// APPLICATION CONFIGURATION
-// ============================================================================
 
 export const APP_CONFIG = {
-  NAME: 'Task Tracker App',
+  NAME: 'SYNC', // App name - change this to sync across all titles and meta tags
+  FULL_NAME: 'SYNC Task Management & Analytics', // Full app name for titles
   VERSION: '1.0.0',
-  DESCRIPTION: 'Task tracking and analytics application for NetBet',
+  DESCRIPTION: 'A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.',
   COMPANY: 'NetBet',
   SUPPORT_EMAIL: 'support@netbet.ro',
   DEFAULT_LOCALE: 'en-US', // US language
@@ -243,13 +235,13 @@ export const NAVIGATION_CONFIG = {
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
     green: '#00d54d',      // Emerald-500 - Fresh, growth, success
-    blue: '#009fff',      // Blue-600 - Professional, trust, primary
+    blue: '#00a9ff',      // Blue-600 - Professional, trust, primary
     purple: '#00fff5',    // Violet-600 - Royal, premium, creative
     crimson: '#DC143C',   // Red-600 - Authority, admin, critical
     amber: '#ff9e08',     // Amber-500 - Warning, attention, caution
     pink: '#E50046',      // Pink-600 - AI models, feminine, creative
     red: '#EF4444',       // Red-500 - Error, danger, delete
-    yellow: '#d9f500',    // Yellow-400 - Bright, optimistic, highlight
+    yellow: '#eedc00',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
     orange: '#F25912',
     soft_purple:"#9694FF",    // Orange-500 - Product, warning, energy

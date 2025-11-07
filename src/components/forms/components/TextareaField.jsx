@@ -13,6 +13,7 @@ const TextareaField = ({ field, register, errors, formValues }) => {
       <textarea
         {...register(field.name)}
         id={field.name}
+        name={field.name}
         placeholder={field.placeholder}
         rows={field.rows || 4}
         maxLength={field.maxLength}

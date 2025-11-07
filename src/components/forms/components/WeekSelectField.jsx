@@ -45,6 +45,8 @@ const WeekSelectField = ({
       )}
       
       <select
+        id="week-select"
+        name="week-select"
         value={selectedWeek?.weekNumber || ''}
         onChange={handleChange}
         className="w-full "

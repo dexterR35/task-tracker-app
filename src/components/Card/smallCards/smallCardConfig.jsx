@@ -31,6 +31,60 @@ export const getCardColor = (cardType, data = {}) => {
   return palette[index];
 };
 
+/**
+ * Convert markets array to badges object format for SmallCard
+ * This is the shared function used across all cards that need to display market badges
+ * 
+ * @param {Array|Object|string} markets - Markets data (array, object already in badges format, or string)
+ * @param {number} defaultCount - Default count for each market when converting from array (default: 1)
+ * @returns {Object|null} - Badges object with market names as keys and counts as values, or null if no markets
+ * 
+ * @example
+ * // Array input - converts to object with count 1 for each
+ * convertMarketsToBadges(["UK", "US"]) // Returns: {UK: 1, US: 1}
+ * 
+ * // Object input (already in badges format) - returns as-is
+ * convertMarketsToBadges({UK: 5, US: 3}) // Returns: {UK: 5, US: 3}
+ * 
+ * // String input - splits by comma and converts to object
+ * convertMarketsToBadges("UK, US") // Returns: {UK: 1, US: 1}
+ */
+export const convertMarketsToBadges = (markets, defaultCount = 1) => {
+  if (!markets) return null;
+
+  // If already an object (badges format), return as-is (same as smallCardConfig pattern)
+  if (typeof markets === 'object' && !Array.isArray(markets)) {
+    const keys = Object.keys(markets);
+    return keys.length > 0 ? markets : null;
+  }
+
+  // Handle array - convert to object format
+  let marketsArray = [];
+  if (Array.isArray(markets)) {
+    marketsArray = markets;
+  } else if (typeof markets === 'string') {
+    // Handle comma-separated string
+    marketsArray = markets.split(',').map(m => m.trim()).filter(Boolean);
+  } else {
+    return null;
+  }
+
+  if (marketsArray.length === 0) return null;
+
+  // Convert array to object with default count for each market (same pattern as analytics configs)
+  const badgesObj = {};
+  marketsArray.forEach(market => {
+    if (market) {
+      const marketKey = typeof market === 'string' ? market.trim() : String(market);
+      if (marketKey) {
+        badgesObj[marketKey] = defaultCount;
+      }
+    }
+  });
+
+  return Object.keys(badgesObj).length > 0 ? badgesObj : null;
+};
+
 // Small Card Types
 export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
 

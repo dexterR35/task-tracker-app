@@ -65,6 +65,7 @@ const MultiSelectField = ({
         <select
           value=""
           id={field.name}
+          name={field.name}
           className={`form-input ${fieldError ? "error" : ""}`}
           onChange={(e) => handleAddValue(e.target.value)}
         >

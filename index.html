@@ -3,29 +3,66 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Task Tracker App - Efficient Task Management & Analytics</title>
+    
+    <!-- App Name Configuration - Change APP_NAME here to sync across all titles -->
+    <script>
+      // SYNC APP NAME: Change this variable to update all titles and meta tags
+      // Also update: src/constants/index.js APP_CONFIG.NAME and APP_CONFIG.FULL_NAME
+      // Also update: public/manifest.json name and short_name
+      var APP_NAME = 'SYNC';
+      var APP_FULL_NAME = APP_NAME + ' Task Management & Analytics';
+      var APP_DESCRIPTION = 'A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.';
+    </script>
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="A modern task tracking application with advanced analytics, team collaboration, and performance monitoring. Track tasks, manage projects, and analyze productivity with our intuitive dashboard.">
+    <meta name="description" content="">
     <meta name="keywords" content="task tracker, project management, productivity, analytics, team collaboration, task management, project tracking, workflow management">
-    <meta name="author" content="Task Tracker App">
+    <meta name="author" content="">
     <meta name="robots" content="index, follow">
     <meta name="language" content="English">
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="SYNC Task Management & Analytics">
-    <meta property="og:description" content="A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.">
+    <meta property="og:title" content="">
+    <meta property="og:description" content="">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://task-tracker-app-omega.vercel.app">
     <meta property="og:image" content="https://task-tracker-app-omega.vercel.app/assets/netbet-logo.png">
-    <meta property="og:site_name" content="Task Tracker App">
+    <meta property="og:site_name" content="">
     <meta property="og:locale" content="en_US">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="SYNC Task Management & Analytics">
-    <meta name="twitter:description" content="A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.">
+    <meta name="twitter:title" content="">
+    <meta name="twitter:description" content="">
     <meta name="twitter:image" content="https://task-tracker-app-omega.vercel.app/assets/netbet-logo.png">
+    
+    <!-- Set titles and meta tags after DOM is ready -->
+    <script>
+      (function() {
+        // Set page title
+        document.title = APP_FULL_NAME;
+        
+        // Function to set meta tag content
+        function setMetaTag(attr, value, isProperty) {
+          var selector = isProperty 
+            ? 'meta[property="' + attr + '"]' 
+            : 'meta[name="' + attr + '"]';
+          var meta = document.querySelector(selector);
+          if (meta) {
+            meta.setAttribute('content', value);
+          }
+        }
+        
+        // Set all meta tags
+        setMetaTag('description', APP_DESCRIPTION);
+        setMetaTag('author', APP_NAME);
+        setMetaTag('og:title', APP_FULL_NAME, true);
+        setMetaTag('og:description', APP_DESCRIPTION, true);
+        setMetaTag('og:site_name', APP_NAME, true);
+        setMetaTag('twitter:title', APP_FULL_NAME);
+        setMetaTag('twitter:description', APP_DESCRIPTION);
+      })();
+    </script>
     
     <!-- Favicon Links -->
     <link rel="icon" type="image/webp" sizes="64x64" href="/favicon-64x64.webp">
@@ -56,12 +93,12 @@
     <meta name="theme-color" content="#131b30">
     
     <!-- Structured Data (JSON-LD) -->
-    <script type="application/ld+json">
+    <script type="application/ld+json" id="structured-data">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Task Tracker App",
-      "description": "A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.",
+      "name": "",
+      "description": "",
       "url": "https://task-tracker-app-omega.vercel.app",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web Browser",
@@ -72,7 +109,7 @@
       },
       "author": {
         "@type": "Organization",
-        "name": "Task Tracker App"
+        "name": ""
       },
       "featureList": [
         "Task Management",
@@ -83,6 +120,19 @@
         "Real-time Updates"
       ]
     }
+    </script>
+    <script>
+      // Update structured data with app name
+      (function() {
+        var structuredData = document.getElementById('structured-data');
+        if (structuredData) {
+          var data = JSON.parse(structuredData.textContent);
+          data.name = APP_FULL_NAME;
+          data.description = APP_DESCRIPTION;
+          data.author.name = APP_NAME;
+          structuredData.textContent = JSON.stringify(data);
+        }
+      })();
     </script>
     
     <script>

@@ -48,6 +48,7 @@ const TextField = ({ field, register, errors, formValues, watch, setValue }) => 
     : {
         ...registerProps,
         id: field.name,
+        name: field.name,
         type: field.type || 'text',
         placeholder: field.placeholder,
         autoComplete: field.autoComplete || 'off',
