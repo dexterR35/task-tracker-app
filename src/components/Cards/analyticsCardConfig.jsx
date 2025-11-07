@@ -70,3 +70,10 @@ export {
   getReporterAnalyticsCardProps,
   getCachedReporterAnalyticsCardProps,
 } from "./configs/ReporterAnalyticsConfig";
+
+// Re-export Misc Analytics
+export {
+  calculateMiscAnalyticsData,
+  getMiscAnalyticsCardProps,
+  getCachedMiscAnalyticsCardProps,
+} from "./configs/MiscAnalyticsConfig.jsx";

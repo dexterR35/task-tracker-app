@@ -4,12 +4,14 @@ import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
 import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
+import MiscAnalyticsCard from "@/components/Cards/MiscAnalyticsCard";
 import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import { 
   getCachedMarketingAnalyticsCardProps, 
   getCachedAcquisitionAnalyticsCardProps, 
   getCachedProductAnalyticsCardProps,
+  getCachedMiscAnalyticsCardProps,
   getCachedAIAnalyticsCardProps,
   getCachedReporterAnalyticsCardProps
 } from "@/components/Cards/analyticsCardConfig";
@@ -75,6 +77,11 @@ const AnalyticsPage = () => {
       description: 'Product breakdown and analytics'
     },
     {
+      id: 'misc-analytics',
+      name: 'Misc Analytics',
+      description: 'Misc product breakdown and analytics'
+    },
+    {
       id: 'ai-analytics',
       name: 'AI Analytics',
       description: 'AI analytics by users and models'
@@ -130,6 +137,8 @@ const AnalyticsPage = () => {
           return getCachedAcquisitionAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
         case 'product-analytics':
           return getCachedProductAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
+        case 'misc-analytics':
+          return getCachedMiscAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
         case 'ai-analytics':
           return getCachedAIAnalyticsCardProps(safeTasks, safeUsers, selectedMonth, isLoading);
         default:
@@ -331,6 +340,7 @@ const AnalyticsPage = () => {
                     {activeTab === 'marketing-analytics' && <MarketingAnalyticsCard {...activeCardProps} />}
                     {activeTab === 'acquisition-analytics' && <AcquisitionAnalyticsCard {...activeCardProps} />}
                     {activeTab === 'product-analytics' && <ProductAnalyticsCard {...activeCardProps} />}
+                    {activeTab === 'misc-analytics' && <MiscAnalyticsCard {...activeCardProps} />}
                     {activeTab === 'ai-analytics' && <AIAnalyticsCard {...activeCardProps} />}
                   </div>
                 </div>
