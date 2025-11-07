@@ -218,6 +218,7 @@ const SearchableSelectField = ({
         <div className="relative">
           <input
             ref={inputRef}
+            id={field.name}
             type="text"
             value={displayValue}
             onChange={handleInputChange}

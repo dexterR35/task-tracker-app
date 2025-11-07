@@ -131,6 +131,11 @@ const SimpleDateField = ({
     
         <div
           ref={inputRef}
+          id={field.name}
+          role="button"
+          tabIndex={0}
+          aria-label={field.label || 'Select date'}
+          aria-expanded={isOpen}
           className={`
             w-full px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200
             ${error 
@@ -140,6 +145,12 @@ const SimpleDateField = ({
             focus:ring-2 focus:ring-opacity-20
           `}
           onClick={() => setIsOpen(!isOpen)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsOpen(!isOpen);
+            }
+          }}
         >
           <div className="flex items-center justify-between">
             <span className={`text-sm ${selectedDate ? 'text-gray-200 font-medium' : 'text-gray-300'}`}>

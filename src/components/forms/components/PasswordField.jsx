@@ -13,6 +13,7 @@ const PasswordField = ({ field, register, errors, formValues }) => {
       
       <input
         {...register(field.name)}
+        id={field.name}
         type="password"
         placeholder={field.placeholder}
         autoComplete={field.autoComplete || 'current-password'}
