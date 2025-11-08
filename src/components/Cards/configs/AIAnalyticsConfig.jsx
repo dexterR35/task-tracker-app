@@ -1,7 +1,7 @@
 import React from "react";
 import { CARD_SYSTEM } from "@/constants";
 import Badge from "@/components/ui/Badge/Badge";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, addGrandTotalRow } from "./analyticsSharedConfig";
+import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, addGrandTotalRow, normalizeMarket } from "./analyticsSharedConfig";
 
 /**
  * AI Analytics Configuration
@@ -84,7 +84,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
             return (
               <div className="flex flex-wrap gap-1">
                 {products.map((product, index) => (
-                  <Badge key={index} color="blue" size="sm">
+                  <Badge key={index} variant="blue" size="sm">
                     {product}
                   </Badge>
                 ))}
@@ -307,7 +307,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
             {aiModels.map((model, index) => (
               <Badge
                 key={index}
-                colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+                variant="purple"
                 size="xs"
               >
                 {model}
@@ -329,7 +329,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
             {markets.map((market, index) => (
               <Badge
                 key={index}
-                colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+                variant="amber"
                 size="xs"
               >
                 {market}
@@ -351,7 +351,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
             {products.map((product, index) => (
               <Badge
                 key={index}
-                colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue}
+                variant="blue"
                 size="xs"
               >
                 {product}
@@ -369,8 +369,17 @@ export const calculateAIAnalyticsData = (tasks, users) => {
       .map((model) => ({
         name: model,
         value: aiModelCounts[model] || 0,
+        hours: Math.round((aiModelHours[model] || 0) * 100) / 100,
       }))
-      .sort((a, b) => b.value - a.value),
+      .filter((item) => item.value > 0)
+      .sort((a, b) => {
+        // Sort by tasks (value) first (descending), then by hours (descending)
+        if (b.value !== a.value) {
+          return b.value - a.value;
+        }
+        return b.hours - a.hours;
+      })
+      .map(({ hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.AI_MODEL
   );
 
@@ -399,9 +408,18 @@ export const calculateAIAnalyticsData = (tasks, users) => {
       .filter((row) => !row.bold) // Exclude grand total row
       .map((row) => ({
         name: row.user,
-        value: row.aiTime,
+        value: row.aiTime, // Keep aiTime as value for pie chart display
+        tasks: row.aiUsedTasks, // Add tasks for sorting
+        hours: row.aiTime,
       }))
-      .sort((a, b) => b.value - a.value),
+      .sort((a, b) => {
+        // Sort by tasks first (descending), then by hours (descending)
+        if (b.tasks !== a.tasks) {
+          return b.tasks - a.tasks;
+        }
+        return b.hours - a.hours;
+      })
+      .map(({ tasks, ...rest }) => rest), // Remove tasks from final data (keep value and hours if needed)
     CHART_DATA_TYPE.USER
   );
 
@@ -450,7 +468,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
           }, 0);
 
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         
         return {
           name: normalizedMarket,
@@ -481,13 +499,35 @@ export const calculateAIAnalyticsData = (tasks, users) => {
           return taskProducts === product && aiUsed.length > 0;
         }).length;
 
+        // Calculate total AI time for this product
+        const productAITime = tasks
+          .filter((task) => {
+            const taskProducts = task.data_task?.products || task.products || "";
+            const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+            return taskProducts === product && aiUsed.length > 0;
+          })
+          .reduce((sum, task) => {
+            const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+            return (
+              sum + aiUsed.reduce((aiSum, ai) => aiSum + (ai.aiTime || 0), 0)
+            );
+          }, 0);
+
         return {
           name: product,
           value: productAICount,
+          hours: Math.round(productAITime * 100) / 100,
         };
       })
       .filter((item) => item.value > 0)
-      .sort((a, b) => b.value - a.value),
+      .sort((a, b) => {
+        // Sort by tasks (value) first (descending), then by hours (descending)
+        if (b.value !== a.value) {
+          return b.value - a.value;
+        }
+        return b.hours - a.hours;
+      })
+      .map(({ hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.PRODUCT
   );
 
@@ -517,7 +557,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
           }, 0);
 
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         
         return {
           name: normalizedMarket,
@@ -569,7 +609,13 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         };
       })
       .filter((item) => item.tasks > 0)
-      .sort((a, b) => b.tasks - a.tasks),
+      .sort((a, b) => {
+        // Sort by tasks first (descending), then by hours (descending)
+        if (b.tasks !== a.tasks) {
+          return b.tasks - a.tasks;
+        }
+        return b.hours - a.hours;
+      }),
     CHART_DATA_TYPE.PRODUCT
   );
 

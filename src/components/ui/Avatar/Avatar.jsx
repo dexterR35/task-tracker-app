@@ -14,6 +14,7 @@ const Avatar = ({
   // Styling props
   size = 'md',
   gradient = 'from-blue-default to-btn-primary',
+  backgroundColor = null,
   className = '',
   
   // Display options
@@ -45,7 +46,10 @@ const Avatar = ({
     <div className={`flex items-center ${className}`}>
       {/* Avatar Circle */}
       <div className={`flex-shrink-0 ${sizeClass}`}>
-        <div className={`${sizeClass} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+        <div 
+          className={`${sizeClass} rounded-full flex items-center justify-center ${backgroundColor ? '' : `bg-gradient-to-br ${gradient}`}`}
+          style={backgroundColor ? { backgroundColor } : {}}
+        >
           {isIconAvatar ? (
             <IconComponent className="text-white" />
           ) : (

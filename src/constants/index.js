@@ -231,24 +231,25 @@ export const NAVIGATION_CONFIG = {
 };
 
 // ============================================================================
-
+// 70% → B3, 73% → BA, 75% → BF, 80% → CC, 85% → D9
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
     green: '#00d54d',      // Emerald-500 - Fresh, growth, success
     blue: '#00a9ff',      // Blue-600 - Professional, trust, primary
-    purple: '#00fff5',    // Violet-600 - Royal, premium, creative
+    purple: '#0fc9ce',    // Violet-600 - Royal, premium, creative
     crimson: '#DC143C',   // Red-600 - Authority, admin, critical
     amber: '#ff9e08',     // Amber-500 - Warning, attention, caution
     pink: '#E50046',      // Pink-600 - AI models, feminine, creative
     red: '#EF4444',       // Red-500 - Error, danger, delete
-    yellow: '#eedc00',    // Yellow-400 - Bright, optimistic, highlight
+    yellow: '#d3c300',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
     orange: '#F25912',
     soft_purple:"#9694FF",    // Orange-500 - Product, warning, energy
-    color_default: '#124f9b',
-    select_badge: '#00fff5', // C2E2FA- Selected badges in cards and forms
+    color_default: '#332f9b',
+    select_badge: '#00d8de', // C2E2FA- Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
     dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
+    indigo: '#312e81',
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',

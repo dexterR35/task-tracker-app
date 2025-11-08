@@ -16,7 +16,8 @@ import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import { TABLE_SYSTEM, FORM_OPTIONS } from "@/constants";
+import DepartmentFilter from "@/components/filters/DepartmentFilter";
+import { TABLE_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 
 // Available filter options
@@ -199,8 +200,18 @@ const TaskTable = ({
         if (!isUserAdmin) {
           // Check if this task belongs to the current user
           const isUserTask = userUID && matchesUser(task, userUID);
+          if (!isUserTask) return false;
+          
+          // If reporter is selected, also filter by reporter
+          if (selectedReporterId) {
+            const taskReporterId = getTaskReporterId(task);
+            if (!taskReporterId) return false;
+            // Compare task reporter ID directly with selectedReporterId (exact match)
+            return String(taskReporterId) === String(selectedReporterId);
+          }
+          
           // Regular users can ONLY see their own tasks
-          return isUserTask;
+          return true;
         }
 
         // Admin filtering logic
@@ -572,6 +583,23 @@ const TaskTable = ({
     }));
   }, [deliverables]);
 
+  // Get user's department for filtering (user role only sees their own department)
+  const userDepartmentOptions = useMemo(() => {
+    if (isUserAdmin) {
+      // Admin sees all departments
+      return null; // null means use default FORM_OPTIONS.DEPARTMENTS
+    }
+    
+    // For user role, only show their own department
+    const userDepartment = userData?.department;
+    if (!userDepartment) {
+      return null; // If no department, don't show filter
+    }
+    
+    // Return array with only user's department
+    return [{ value: userDepartment, label: userDepartment }];
+  }, [isUserAdmin, userData?.department]);
+
   // Create filter component for inline display (reordered: search, task filters, department, deliverables)
   const taskFilterComponent = (
     <div className="flex items-center space-x-4">
@@ -593,24 +621,13 @@ const TaskTable = ({
         formValues={{}}
         noOptionsMessage="No filters found"
       />
-      <SearchableSelectField
-        field={{
-          name: "departmentFilter",
-          type: "select",
-          label: "Department",
-          required: false,
-          options: FORM_OPTIONS.DEPARTMENTS,
-          placeholder: "Search department ",
-        }}
-        register={() => {}}
-        errors={{}}
-        setValue={handleFilterValueChange}
-        watch={() => selectedDepartmentFilter || ""}
-        trigger={() => {}}
-        clearErrors={() => {}}
-        formValues={{}}
-        noOptionsMessage="No departments found"
-      />
+      {userDepartmentOptions !== null && (
+        <DepartmentFilter
+          selectedDepartmentFilter={selectedDepartmentFilter}
+          onFilterChange={handleFilterValueChange}
+          departmentOptions={userDepartmentOptions}
+        />
+      )}
       <SearchableSelectField
         field={{
           name: "deliverableFilter",

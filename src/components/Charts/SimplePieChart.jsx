@@ -138,7 +138,12 @@ const SimplePieChart = React.memo(({
               dataKey="value"
             >
               {processedData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color || colors[index % colors.length]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.color || colors[index % colors.length]}
+                  stroke="none"
+                  strokeWidth={0}
+                />
               ))}
             </Pie>
             <Tooltip 

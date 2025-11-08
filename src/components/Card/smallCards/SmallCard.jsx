@@ -13,83 +13,110 @@ const SmallCard = memo(
     );
     const styles = useMemo(
       () => ({
-        regularDetailBg: `${cardColorHex}10`, // 20% Opacity - matches icon-bg
-        regularDetailBorder: `${cardColorHex}40`, // 50% Opacity - matches card color theme
+        regularDetailBg: `${cardColorHex}10`, // 10% Opacity - matches icon-bg
+        regularDetailBorder: `${cardColorHex}30`, // 30% Opacity - matches card color theme
         iconStyle: { color: cardColorHex },
         valueStyle: { color: cardColorHex },
         dotStyle: { backgroundColor: cardColorHex, background: cardColorHex },
+        gradientBg: `linear-gradient(135deg, ${cardColorHex}15 0%, ${cardColorHex}05 100%)`,
+        iconGradient: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`,
       }),
       [cardColorHex]
     );
 
     return (
-      <div className="card-small">
-        <div className="flex flex-col h-full">
-          {/* Header (omitted for brevity) */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div 
-                className="icon-bg"
+      <div className="card-small-modern group">
+        {/* Accent border on top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl "
+          style={{
+            background: `linear-gradient(90deg, ${cardColorHex} 0%, ${cardColorHex}cc 50%, ${cardColorHex} 100%)`,
+          }}
+        />
+
+        <div className="flex flex-col h-full relative z-10">
+          {/* Modern Header Section */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {/* Modern Icon with gradient background */}
+              <div
+                className="relative flex-shrink-0"
                 style={{
-                  backgroundColor: `${cardColorHex}20`,
+                  background: styles.iconGradient,
+                  borderRadius: "12px",
+                  padding: "10px",
+                  boxShadow: `0 4px 12px ${cardColorHex}25`,
                 }}
               >
-                <card.icon
-                  className="w-4.5 h-4.5"
-                  style={{
-                    color: cardColorHex,
-                    regularDetailBg: `${DETAILS_BG_COLOR_HEX}20`,
-                  }}
+                <div
+                  className="absolute inset-0 rounded-xl "
+                  style={{ background: cardColorHex }}
                 />
+                <card.icon className="relative w-5 h-5 text-white" />
               </div>
-              {/* Title & Subtitle */}
-              <div>
-                <h4>{card.title}</h4>
-                <h5>{card.subtitle}</h5>
+
+              {/* Title & Subtitle with better typography */}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">
+                  {card.title}
+                </h4>
+                {card.subtitle && (
+                  <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
+                    {card.subtitle}
+                  </h5>
+                )}
               </div>
             </div>
-            {/* Status Badge */}
+
+            {/* Status Badge - Modern positioning */}
             {card.badge && (
-              <Badge
-                size="sm"
-                style={{
-                  color: cardColorHex,
-                  backgroundColor: `${cardColorHex}20`,
-                }}
-              >
-                {card.badge.text}
-              </Badge>
+              <div className="flex-shrink-0 ml-2">
+                <Badge
+                  size="sm"
+                  className="shadow-sm"
+                  style={{
+                    color: cardColorHex,
+                    backgroundColor: `${cardColorHex}15`,
+                    borderColor: `${cardColorHex}30`,
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                  }}
+                >
+                  {card.badge.text}
+                </Badge>
+              </div>
             )}
           </div>
-          {/* <p
-            className="!h-0.5 rounded mb-2 mt-3"
-            style={{
-              color: cardColorHex,
-              backgroundColor: `${cardColorHex}50`,
-            }}
-          ></p> */}
-          <div className="flex-1">
-            <div className="mb-2">
+
+          {/* Main Content Section */}
+          <div className="flex-1 flex flex-col">
+            {/* Value Display - Prominent */}
+            <div className="mb-4">
               <p
-                className="text-4xl font-semibold mb-1"
+                className="text-4xl font-bold mb-2 leading-tight tracking-tight"
                 style={styles.valueStyle}
               >
                 {card.value}
               </p>
-              <p className="text-sm text-gray-400">{card.description}</p>
+              {card.description && (
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
+                  {card.description}
+                </p>
+              )}
             </div>
-  
-            {/* filters inputs content */}
+
+            {/* Filters/Inputs Content */}
             {card.content && (
-              <div className="leading-relaxed mb-4">{card.content}</div>
+              <div className="leading-relaxed mb-4 text-sm">{card.content}</div>
             )}
 
-    
+            {/* Details Section - Modern Cards */}
             {card.details && card.details.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2 mt-auto">
                 {card.details.map((detail, index) => {
                   const hasBadges =
                     detail.badges && Object.keys(detail.badges).length > 0;
+
                   // --- SUB-CATEGORY DETAIL LAYOUT (Market Badges) ---
                   if (hasBadges) {
                     const sortedBadges = Object.entries(detail.badges || {})
@@ -97,29 +124,38 @@ const SmallCard = memo(
                       .slice(0, 5);
 
                     return (
-                      <div key={index} className="space-y-2">
+                      <div key={index} className="space-y-2.5">
                         {/* Subcategory title */}
-                        <h4 className="text-xs text-gray-300 capitalize ">
+                        <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           {detail.label}
                         </h4>
 
-                        {/* Markets section with background */}
+                        {/* Markets section - Modern card design */}
                         <div
-                          className="p-2 rounded-sm border" // Use rounded-lg for consistency
+                          className="p-2 rounded-xl border "
                           style={{
-                            backgroundColor: styles.regularDetailBg,
+                            background: styles.gradientBg,
                             borderColor: styles.regularDetailBorder,
+                            boxShadow: `0 2px 8px ${cardColorHex}10`,
                           }}
                         >
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs text-gray-300">Markets:</p>
-                              <div className="text-xs font-semibold text-gray-300">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between pb-2 border-b border-gray-200/20 dark:border-gray-700/30">
+                              <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Markets
+                              </p>
+                              <div
+                                className="text-xs font-bold px-2 py-0.5 rounded-md"
+                                style={{
+                                  color: cardColorHex,
+                                  backgroundColor: `${cardColorHex}15`,
+                                }}
+                              >
                                 {detail.value}
                               </div>
                             </div>
-                            {/* Market badges */}
-                            <div className="flex flex-wrap gap-1">
+                            {/* Market badges - Modern layout */}
+                            <div className="flex flex-wrap gap-1.5">
                               {sortedBadges.map(
                                 ([market, count], badgeIndex) => (
                                   <Badge
@@ -128,7 +164,7 @@ const SmallCard = memo(
                                     className="border"
                                     style={{
                                       color: cardColorHex,
-                                      backgroundColor: `${cardColorHex}20`,
+                                      backgroundColor: `${cardColorHex}15`,
                                       borderColor: `${cardColorHex}40`,
                                     }}
                                   >
@@ -142,25 +178,35 @@ const SmallCard = memo(
                       </div>
                     );
                   } else {
+                    // Regular detail item - Modern design
                     return (
                       <div
                         key={index}
-                        className="p-2 rounded-sm border flex items-center justify-between"
+                        className="p-2 rounded-lg border flex items-center justify-between "
                         style={{
-                          backgroundColor: styles.regularDetailBg,
+                          background: styles.gradientBg,
                           borderColor: styles.regularDetailBorder,
                         }}
                       >
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2.5">
                           <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={styles.dotStyle}
-                          ></div>
-                          <span className="text-xs text-gray-300">
+                            className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm"
+                            style={{
+                              ...styles.dotStyle,
+                              boxShadow: `0 0 8px ${cardColorHex}60`,
+                            }}
+                          />
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                             {detail.label}
                           </span>
                         </div>
-                        <span className="text-xs font-semibold text-gray-300">
+                        <span
+                          className="text-xs font-bold px-2 py-0.5 rounded-md"
+                          style={{
+                            color: cardColorHex,
+                            backgroundColor: `${cardColorHex}15`,
+                          }}
+                        >
                           {detail.value}
                         </span>
                       </div>

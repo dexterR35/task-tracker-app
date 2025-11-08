@@ -1,55 +1,16 @@
 import React from "react";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
-
-/**
- * Calculate percentages for a group of counts, ensuring they sum to exactly 100%
- * @param {Array<{key: string, count: number}>} items - Array of items with key and count
- * @param {number} total - Total count
- * @returns {Object} - Object mapping keys to percentages that sum to 100%
- */
-const calculatePercentagesForGroup = (items, total) => {
-  if (total === 0) {
-    const result = {};
-    items.forEach(item => {
-      result[item.key] = 0;
-    });
-    return result;
-  }
-
-  // Calculate raw percentages and floor values
-  const percentages = items.map(item => {
-    const rawPercentage = (item.count / total) * 100;
-    const floored = Math.floor(rawPercentage);
-    const remainder = rawPercentage - floored;
-    return {
-      key: item.key,
-      count: item.count,
-      floored,
-      remainder
-    };
-  });
-
-  // Calculate sum of floored values
-  const sumFloored = percentages.reduce((sum, p) => sum + p.floored, 0);
-  const difference = 100 - sumFloored;
-
-  // Sort by remainder (descending) to allocate extra points to largest remainders
-  const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
-  const adjustedDifference = Math.max(0, Math.min(difference, percentages.length));
-  
-  // Allocate final percentages
-  sorted.forEach((item, index) => {
-    item.finalPercentage = index < adjustedDifference ? item.floored + 1 : item.floored;
-  });
-
-  // Create result object
-  const result = {};
-  percentages.forEach(p => {
-    result[p.key] = p.finalPercentage;
-  });
-
-  return result;
-};
+import { 
+  addConsistentColors, 
+  CHART_COLORS, 
+  CHART_DATA_TYPE, 
+  getMarketColor, 
+  calculateCountWithPercentage, 
+  addGrandTotalRow, 
+  renderCountWithPercentage,
+  calculatePercentagesForGroup,
+  calculateUsersChartsByCategory,
+  normalizeMarket,
+} from "./analyticsSharedConfig";
 
 /**
  * Product Analytics Configuration
@@ -135,7 +96,7 @@ export const calculateProductAnalyticsData = (tasks) => {
       if (Array.isArray(markets) && markets.length > 0) {
         markets.forEach((market) => {
           if (market) {
-            const normalizedMarket = market.trim().toUpperCase();
+            const normalizedMarket = normalizeMarket(market);
             allMarkets.add(normalizedMarket);
 
             // Initialize market data structure
@@ -294,11 +255,34 @@ export const calculateProductAnalyticsData = (tasks) => {
   const categoryPieData = addConsistentColors(
     Object.entries(categoryTotals)
       .filter(([category, count]) => count > 0)
-      .map(([category, count]) => ({
-        name: category.charAt(0).toUpperCase() + category.slice(1),
-        value: count,
-        percentage: totalTasks > 0 ? Math.min(Math.round((count / totalTasks) * 100), 100) : 0,
-      })),
+      .map(([category, count]) => {
+        // Calculate hours for this category
+        const categoryHours = tasks
+          .filter((task) => {
+            const products = task.data_task?.products || task.products;
+            return products && products.toLowerCase().trim() === category;
+          })
+          .reduce(
+            (sum, task) =>
+              sum + (task.data_task?.timeInHours || task.timeInHours || 0),
+            0
+          );
+
+        return {
+          name: category.charAt(0).toUpperCase() + category.slice(1),
+          value: count,
+          hours: Math.round(categoryHours * 100) / 100,
+          percentage: totalTasks > 0 ? Math.min(Math.round((count / totalTasks) * 100), 100) : 0,
+        };
+      })
+      .sort((a, b) => {
+        // Sort by tasks (value) first (descending), then by hours (descending)
+        if (b.value !== a.value) {
+          return b.value - a.value;
+        }
+        return b.hours - a.hours;
+      })
+      .map(({ hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.PRODUCT
   );
 
@@ -306,10 +290,33 @@ export const calculateProductAnalyticsData = (tasks) => {
   const productPieData = addConsistentColors(
     Object.entries(productCounts)
       .filter(([product, count]) => count > 0)
-      .map(([product, count]) => ({
-        name: product.charAt(0).toUpperCase() + product.slice(1),
-        value: count,
-      })),
+      .map(([product, count]) => {
+        // Calculate hours for this product
+        const productHours = tasks
+          .filter((task) => {
+            const products = task.data_task?.products || task.products;
+            return products && products.toLowerCase().trim() === product;
+          })
+          .reduce(
+            (sum, task) =>
+              sum + (task.data_task?.timeInHours || task.timeInHours || 0),
+            0
+          );
+
+        return {
+          name: product.charAt(0).toUpperCase() + product.slice(1),
+          value: count,
+          hours: Math.round(productHours * 100) / 100,
+        };
+      })
+      .sort((a, b) => {
+        // Sort by tasks (value) first (descending), then by hours (descending)
+        if (b.value !== a.value) {
+          return b.value - a.value;
+        }
+        return b.hours - a.hours;
+      })
+      .map(({ hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.PRODUCT
   );
 
@@ -380,9 +387,17 @@ export const calculateProductAnalyticsData = (tasks) => {
           .map(([market, stats]) => ({
             name: market,
             value: stats.tasks,
+            hours: Math.round(stats.hours * 100) / 100,
           }))
           .filter((item) => item.value > 0)
-          .sort((a, b) => b.value - a.value),
+          .sort((a, b) => {
+            // Sort by tasks (value) first (descending), then by hours (descending)
+            if (b.value !== a.value) {
+              return b.value - a.value;
+            }
+            return b.hours - a.hours;
+          })
+          .map(({ hours, ...rest }) => rest), // Remove hours from final data
         CHART_DATA_TYPE.MARKET
       )
     : [];
@@ -415,9 +430,17 @@ export const calculateProductAnalyticsData = (tasks) => {
           .map(([market, stats]) => ({
             name: market,
             value: stats.tasks,
+            hours: Math.round(stats.hours * 100) / 100,
           }))
           .filter((item) => item.value > 0)
-          .sort((a, b) => b.value - a.value),
+          .sort((a, b) => {
+            // Sort by tasks (value) first (descending), then by hours (descending)
+            if (b.value !== a.value) {
+              return b.value - a.value;
+            }
+            return b.hours - a.hours;
+          })
+          .map(({ hours, ...rest }) => rest), // Remove hours from final data
         CHART_DATA_TYPE.MARKET
       )
     : [];
@@ -465,100 +488,10 @@ export const calculateProductAnalyticsData = (tasks) => {
     0
   );
 
-  // Calculate per-user charts for product (separate chart per user showing their markets breakdown)
+  // Use shared calculateUsersChartsByCategory function
+  // Wrapper to maintain API compatibility (product doesn't use categoryName)
   const calculateUsersChartsByProduct = (productTasks, users) => {
-    if (!productTasks || productTasks.length === 0 || !users || users.length === 0) return [];
-
-    const userMarketStats = {}; // { userId: { userName: "...", markets: { "RO": { tasks, hours }, ... } } }
-
-    productTasks.forEach((task) => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      const userId = task.userUID || task.createbyUID;
-
-      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
-
-      // Get user name
-      const user = users.find(
-        (u) =>
-          u.uid === userId ||
-          u.id === userId ||
-          u.userUID === userId ||
-          u.email === userId ||
-          u.displayName === userId ||
-          u.name === userId
-      );
-
-      const userName = user
-        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
-        : `User ${userId.slice(0, 8)}`;
-
-      // Initialize user if not exists
-      if (!userMarketStats[userId]) {
-        userMarketStats[userId] = {
-          userName,
-          markets: {},
-          totalTasks: 0,
-          totalHours: 0,
-        };
-      }
-
-      taskMarkets.forEach((market) => {
-        if (market) {
-          const normalizedMarket = market.trim().toUpperCase();
-          if (!userMarketStats[userId].markets[normalizedMarket]) {
-            userMarketStats[userId].markets[normalizedMarket] = {
-              tasks: 0,
-              hours: 0,
-            };
-          }
-          userMarketStats[userId].markets[normalizedMarket].tasks += 1;
-          userMarketStats[userId].markets[normalizedMarket].hours += taskHours;
-        }
-      });
-
-      // Update user totals
-      userMarketStats[userId].totalTasks += 1;
-      userMarketStats[userId].totalHours += taskHours;
-    });
-
-    // Create separate chart data for each user
-    return Object.entries(userMarketStats)
-      .map(([userId, userData]) => {
-        const marketData = Object.entries(userData.markets)
-          .map(([market, stats]) => ({
-            name: market,
-            tasks: stats.tasks,
-            hours: Math.round(stats.hours * 100) / 100,
-            market: market,
-          }))
-          .filter((item) => item.tasks > 0 || item.hours > 0)
-          .sort((a, b) => {
-            if (b.tasks !== a.tasks) {
-              return b.tasks - a.tasks;
-            }
-            return b.hours - a.hours;
-          })
-          .map((item) => ({
-            ...item,
-            color: getMarketColor(item.market),
-          }));
-
-        return {
-          userId,
-          userName: userData.userName,
-          marketData,
-          totalTasks: userData.totalTasks,
-          totalHours: Math.round(userData.totalHours * 100) / 100,
-        };
-      })
-      .filter((chart) => chart.marketData.length > 0)
-      .sort((a, b) => {
-        if (b.totalTasks !== a.totalTasks) {
-          return b.totalTasks - a.totalTasks;
-        }
-        return a.userName.localeCompare(b.userName);
-      });
+    return calculateUsersChartsByCategory(productTasks, users, null);
   };
 
   return {

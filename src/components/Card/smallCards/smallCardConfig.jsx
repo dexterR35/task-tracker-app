@@ -135,6 +135,7 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No months available"
+          variant="green"
         />
       </div>
     ),
@@ -207,21 +208,61 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No users found"
+          variant="purple"
         />
       </div>
     ),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.user,
-        label: "Selected",
-        value: data.selectedUserId ? data.selectedUserName : "All Users",
-      },
-      {
-        icon: Icons.generic.users,
-        label: "Total Users",
-        value: `${data.users?.length || 0} users`,
-      },
-    ],
+    getDetails: (data) => {
+      // Calculate total tasks and hours for selected user, or logged-in user if none selected
+      let totalTasks = 0;
+      let totalHours = 0;
+      
+      if (data.tasks && Array.isArray(data.tasks)) {
+        const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
+        const targetUserId = data.selectedUserId || data.currentUser?.userUID;
+        
+        // Filter tasks by month if specified
+        let filteredTasks = data.tasks;
+        if (currentMonthId) {
+          filteredTasks = filteredTasks.filter((task) => task.monthId === currentMonthId);
+        }
+        
+        // Filter by target user (selected user or logged-in user)
+        if (targetUserId) {
+          filteredTasks = filteredTasks.filter((task) => {
+            return task.userUID === targetUserId || task.createbyUID === targetUserId;
+          });
+        }
+        
+        totalTasks = filteredTasks.length;
+        
+        // Calculate total hours
+        totalHours = filteredTasks.reduce((sum, task) => {
+          const hours = task.data_task?.timeInHours || task.timeInHours || 0;
+          return sum + (typeof hours === "number" ? hours : 0);
+        }, 0);
+      }
+      
+      return [
+        {
+          icon: Icons.generic.user,
+          label: "Current User",
+          value: data.selectedUserId 
+            ? data.selectedUserName 
+            : (data.currentUser?.name || data.currentUser?.email || "Current User"),
+        },
+        {
+          icon: Icons.generic.task,
+          label: "Total Task",
+          value: totalTasks.toString(),
+        },
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hr",
+          value: `${totalHours.toFixed(1)}h`,
+        },
+      ];
+    },
   },
 
   [SMALL_CARD_TYPES.REPORTER_FILTER]: {
@@ -272,23 +313,67 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No reporters found"
+          variant="yellow"
         />
       </div>
     ),
-    getDetails: (data) => [
-      {
-        icon: Icons.admin.reporters,
-        label: "Selected",
-        value: data.selectedReporterId
-          ? data.selectedReporterName
-          : "All Reporters",
-      },
-      {
-        icon: Icons.admin.reporters,
-        label: "Total Reporters Task",
-        value: `..loading data`,
-      },
-    ],
+    getDetails: (data) => {
+      // Calculate total tasks and hours for selected reporter only
+      let totalReporterTasks = 0;
+      let totalHours = 0;
+      
+      // Only calculate if a reporter is selected
+      if (data.selectedReporterId && data.tasks && Array.isArray(data.tasks)) {
+        const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
+        
+        // Filter tasks by month if specified
+        let filteredTasks = data.tasks;
+        if (currentMonthId) {
+          filteredTasks = filteredTasks.filter((task) => task.monthId === currentMonthId);
+        }
+        
+        // Filter by selected reporter
+        filteredTasks = filteredTasks.filter((task) => {
+          // Check multiple possible reporter ID fields
+          const taskReporterId = 
+            task.data_task?.reporters || 
+            task.data_task?.reporterUID || 
+            task.reporters || 
+            task.reporterUID;
+          
+          // Compare task reporter ID with selected reporter ID
+          return taskReporterId && String(taskReporterId) === String(data.selectedReporterId);
+        });
+        
+        totalReporterTasks = filteredTasks.length;
+        
+        // Calculate total hours
+        totalHours = filteredTasks.reduce((sum, task) => {
+          const hours = task.data_task?.timeInHours || task.timeInHours || 0;
+          return sum + (typeof hours === "number" ? hours : 0);
+        }, 0);
+      }
+      
+      return [
+        {
+          icon: Icons.admin.reporters,
+          label: "Selected",
+          value: data.selectedReporterId
+            ? data.selectedReporterName
+            : "0",
+        },
+        {
+          icon: Icons.admin.reporters,
+          label: "Total Reporters Task",
+          value: totalReporterTasks.toString(),
+        },
+        {
+          icon: Icons.generic.clock,
+          label: "Total Hr",
+          value: `${totalHours.toFixed(1)}h`,
+        },
+      ];
+    },
   },
 
   [SMALL_CARD_TYPES.USER_PROFILE]: {
@@ -296,7 +381,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Total Tasks Per User",
     icon: Icons.generic.user,
-    color: "pink",
+    color: "blue",
     getBadge: (data) => ({
       text: data.currentUser?.role || "user",
       // color: 'pink'
@@ -307,6 +392,8 @@ export const SMALL_CARD_CONFIGS = {
       const selectedReporterId = data.selectedReporterId;
       const currentMonthId =
         data.selectedMonth?.monthId || data.currentMonth?.monthId;
+      const isUserAdmin = data.isUserAdmin || data.currentUser?.role === "admin";
+      const currentUserId = data.currentUser?.userUID;
       
       // Helper function to get reporter ID (matches TaskTable logic)
       const getTaskReporterId = (task) => {
@@ -323,6 +410,25 @@ export const SMALL_CARD_CONFIGS = {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
         
+        // Role-based filtering: Regular users can only see their own tasks
+        if (!isUserAdmin) {
+          // Check if this task belongs to the current user
+          const isUserTask = currentUserId && matchesUser(task, currentUserId);
+          if (!isUserTask) return false;
+          
+          // If reporter is selected, also filter by reporter
+          if (selectedReporterId) {
+            const taskReporterId = getTaskReporterId(task);
+            if (!taskReporterId) return false;
+            // Compare task reporter ID directly with selectedReporterId (exact match)
+            return String(taskReporterId) === String(selectedReporterId);
+          }
+          
+          // Regular users can ONLY see their own tasks
+          return true;
+        }
+        
+        // Admin filtering logic
         // If both user and reporter are selected, show tasks that match BOTH
         if (selectedUserId && selectedReporterId) {
           const matchesSelectedUser = matchesUser(task, selectedUserId);
@@ -345,11 +451,8 @@ export const SMALL_CARD_CONFIGS = {
           return taskReporterId === selectedReporterId;
         }
         
-        // If no selections, show current user's tasks
-        const userUID = data.currentUser?.userUID;
-        return (
-          userUID && (task.userUID === userUID || task.createbyUID === userUID)
-        );
+        // If neither user nor reporter is selected, admin sees all tasks
+        return true;
       });
       return filteredTasks.length.toString();
     },
@@ -383,6 +486,37 @@ export const SMALL_CARD_CONFIGS = {
         label: "Current User",
         value: data.currentUser?.name || data.currentUser?.email || "N/A",
       });
+      
+      // Add selected week section (without "All Weeks")
+      const monthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
+      if (monthId) {
+        try {
+          // Show selected week
+          const selectedWeek = data.selectedWeek;
+          details.push({
+            label: "Selected Week",
+            value: selectedWeek 
+              ? `Week ${selectedWeek.weekNumber}` 
+              : "All Weeks",
+            icon: Icons.generic.calendar,
+          });
+        } catch (error) {
+          logger.warn("Error getting weeks for USER_PROFILE card:", error);
+          details.push({
+            label: "Selected Week",
+            value: "All Weeks",
+            icon: Icons.generic.calendar,
+          });
+        }
+      } else {
+        // No month selected, show default
+        details.push({
+          label: "Selected Week",
+          value: "All Weeks",
+          icon: Icons.generic.calendar,
+        });
+      }
+      
       return details;
     },
     getContent: (data) => (
@@ -602,6 +736,7 @@ export const SMALL_CARD_CONFIGS = {
             clearErrors={() => {}}
             formValues={{}}
             noOptionsMessage="No weeks available"
+            variant="amber"
           />
         </div>
       );
@@ -712,16 +847,84 @@ export const SMALL_CARD_CONFIGS = {
         );
       }, 0);
 
-      const declinedQuantity = filteredTasks.reduce((sum, task) => {
-        // Count tasks that are marked as declined or reworked
-        const isDeclined = task.data_task?.reworked || task.reworked || false;
-        return sum + (isDeclined ? 1 : 0);
-      }, 0);
+      // Calculate total hours for deliverables + variations
+      let totalDeliverablesWithVariationsHours = 0;
+      
+      // Get deliverables options from data if available, or transform from deliverables array
+      let deliverablesOptions = data.deliverablesOptions || [];
+      if (!deliverablesOptions.length && data.deliverables && Array.isArray(data.deliverables)) {
+        deliverablesOptions = data.deliverables.map(deliverable => ({
+          value: deliverable.name,
+          label: deliverable.name,
+          department: deliverable.department,
+          timePerUnit: deliverable.timePerUnit,
+          timeUnit: deliverable.timeUnit,
+          requiresQuantity: deliverable.requiresQuantity,
+          variationsTime: deliverable.variationsTime,
+          variationsTimeUnit: deliverable.variationsTimeUnit || 'min',
+          declinariTime: deliverable.declinariTime,
+          declinariTimeUnit: deliverable.declinariTimeUnit
+        }));
+      }
+
+      // Calculate deliverables hours with variations
+      if (deliverablesOptions.length > 0) {
+        filteredTasks.forEach(task => {
+          const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+          if (!deliverables || deliverables.length === 0) return;
+
+          deliverables.forEach(deliverable => {
+            const deliverableName = deliverable?.name;
+            const quantity = deliverable?.count || 1;
+            const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+
+            if (!deliverableName) return;
+
+            // Find deliverable in options
+            const deliverableOption = deliverablesOptions.find(d =>
+              d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+            );
+
+            if (deliverableOption) {
+              const timePerUnit = deliverableOption.timePerUnit || 1;
+              const timeUnit = deliverableOption.timeUnit || 'hr';
+              const requiresQuantity = deliverableOption.requiresQuantity || false;
+
+              // Convert base time to hours
+              let baseTimeInHours = timePerUnit;
+              if (timeUnit === 'min') baseTimeInHours = timePerUnit / 60;
+              else if (timeUnit === 'hr') baseTimeInHours = timePerUnit;
+              else if (timeUnit === 'day') baseTimeInHours = timePerUnit * 8;
+
+              // Calculate base time for this deliverable (quantity × timePerUnit)
+              const deliverableBaseHours = baseTimeInHours * quantity;
+
+              // Calculate variations time if applicable
+              let variationsTimeInHours = 0;
+              if (requiresQuantity && variationsQuantity > 0) {
+                const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+                const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+
+                let variationsTimePerUnitInHours = variationsTime;
+                if (variationsTimeUnit === 'min') variationsTimePerUnitInHours = variationsTime / 60;
+                else if (variationsTimeUnit === 'hr') variationsTimePerUnitInHours = variationsTime;
+                else if (variationsTimeUnit === 'day') variationsTimePerUnitInHours = variationsTime * 8;
+
+                variationsTimeInHours = variationsTimePerUnitInHours * variationsQuantity;
+              }
+
+              // Total time with variations
+              const totalWithVariations = deliverableBaseHours + variationsTimeInHours;
+              totalDeliverablesWithVariationsHours += totalWithVariations;
+            }
+          });
+        });
+      }
 
       return [
         {
           icon: Icons.generic.clock,
-          label: "Total Hours",
+          label: "Total Hours Task",
           value: `${totalHours.toFixed(1)}h`,
         },
         {
@@ -730,9 +933,9 @@ export const SMALL_CARD_CONFIGS = {
           value: totalDeliverables.toString(),
         },
         {
-          icon: Icons.generic.warning,
-          label: "Variation Name",
-          value: declinedQuantity.toString(),
+          icon: Icons.generic.timer,
+          label: "Total Hrs Deliverable + Variation",
+          value: `${totalDeliverablesWithVariationsHours.toFixed(1)}h`,
         },
       ];
     },
@@ -1208,7 +1411,6 @@ export const createCards = (data, mode = "main") => {
           SMALL_CARD_TYPES.ANALYTICS_DELIVERABLES,
           SMALL_CARD_TYPES.ANALYTICS_MARKETING,
           SMALL_CARD_TYPES.ANALYTICS_ACQUISITION,
-          SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY,
           SMALL_CARD_TYPES.ANALYTICS_PRODUCT,
           SMALL_CARD_TYPES.ANALYTICS_MISC,
         ];

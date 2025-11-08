@@ -8,7 +8,6 @@ import { getFirestore } from "firebase/firestore";
 import { logger } from "@/utils/logger";
 
 
-
 /**
  * Firebase configuration with automatic environment detection
  * @returns {FirebaseConfig} Firebase configuration object
@@ -40,7 +39,7 @@ const getFirebaseConfig = () => {
   //   appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
   // };
       return {
-    apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
+   apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
     authDomain: "task-tracker-app-eb03e.firebaseapp.com",
     projectId: "task-tracker-app-eb03e",
     storageBucket: "task-tracker-app-eb03e.firebasestorage.app",

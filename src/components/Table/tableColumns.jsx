@@ -112,7 +112,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-800 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm" >
+        <Badge variant="purple" size="sm" >
           {taskName}
         </Badge>
       );
@@ -151,7 +151,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.yellow} size="sm">
+            <Badge key={index} variant="yellow" size="sm">
               {market}
             </Badge>
           ))}
@@ -173,7 +173,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {aiModels.map((model, index) => (
-              <Badge key={index} colorHex={CARD_SYSTEM.COLOR_HEX_MAP.pink} size="sm">
+              <Badge key={index} variant="pink" size="sm">
                 {model}
               </Badge>
             ))}
@@ -279,14 +279,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       
       if (days === 0) {
         return (
-          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm">
+          <Badge variant="green" size="sm">
             Same day
           </Badge>
         );
       }
 
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.pink} size="sm">
+        <Badge variant="pink" size="sm">
           {days} days
         </Badge>
       );
@@ -301,7 +301,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!value) return '-';
       
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm">
+        <Badge variant="purple" size="sm">
           {value}h
         </Badge>
       );
@@ -354,7 +354,7 @@ const createUserColumns = () => [
       const role = getValue() || 'user';
       return (
         <Badge 
-          colorHex={role === 'admin' ? CARD_SYSTEM.COLOR_HEX_MAP.pink : CARD_SYSTEM.COLOR_HEX_MAP.blue} 
+          variant={role === 'admin' ? 'pink' : 'blue'} 
           size="xs"
         >
           {role}
@@ -376,7 +376,7 @@ const createUserColumns = () => [
           {permissions.map((permission, index) => (
             <Badge 
               key={index} 
-              colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} 
+              variant="green" 
             >
               {permission.replace(/_/g, ' ')}
             </Badge>
@@ -422,7 +422,7 @@ const createReporterColumns = () => [
       const department = getValue();
       if (!department) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm">
+        <Badge variant="green" size="sm">
           {department}
         </Badge>
       );
@@ -435,7 +435,7 @@ const createReporterColumns = () => [
       const country = getValue();
       if (!country) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.blue} size="sm">
+        <Badge variant="blue" size="sm">
           {country}
         </Badge>
       );
@@ -448,7 +448,7 @@ const createReporterColumns = () => [
       const channel = getValue();
       if (!channel) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm">
+        <Badge variant="purple" size="sm">
           {channel}
         </Badge>
       );

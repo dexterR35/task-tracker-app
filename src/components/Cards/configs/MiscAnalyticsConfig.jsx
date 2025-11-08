@@ -1,46 +1,19 @@
 import React from "react";
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
-
-/**
- * Calculate percentages for a group of counts, ensuring they sum to exactly 100%
- */
-const calculatePercentagesForGroup = (items, total) => {
-  if (total === 0) {
-    const result = {};
-    items.forEach(item => {
-      result[item.key] = 0;
-    });
-    return result;
-  }
-
-  const percentages = items.map(item => {
-    const rawPercentage = (item.count / total) * 100;
-    const floored = Math.floor(rawPercentage);
-    const remainder = rawPercentage - floored;
-    return {
-      key: item.key,
-      count: item.count,
-      floored,
-      remainder
-    };
-  });
-
-  const sumFloored = percentages.reduce((sum, p) => sum + p.floored, 0);
-  const difference = 100 - sumFloored;
-  const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
-  const adjustedDifference = Math.max(0, Math.min(difference, percentages.length));
-  
-  sorted.forEach((item, index) => {
-    item.finalPercentage = index < adjustedDifference ? item.floored + 1 : item.floored;
-  });
-
-  const result = {};
-  percentages.forEach(p => {
-    result[p.key] = p.finalPercentage;
-  });
-
-  return result;
-};
+import { 
+  addConsistentColors, 
+  CHART_COLORS, 
+  CHART_DATA_TYPE, 
+  getMarketColor, 
+  calculateCountWithPercentage, 
+  addGrandTotalRow, 
+  renderCountWithPercentage,
+  calculatePercentagesForGroup,
+  getUserName,
+  normalizeMarket,
+  getTaskMarkets,
+  getTaskHours,
+  getTaskUserUID,
+} from "./analyticsSharedConfig";
 
 /**
  * Misc Analytics Configuration
@@ -108,7 +81,7 @@ export const calculateMiscAnalyticsData = (tasks) => {
       if (Array.isArray(markets) && markets.length > 0) {
         markets.forEach((market) => {
           if (market) {
-            const normalizedMarket = market.trim().toUpperCase();
+            const normalizedMarket = normalizeMarket(market);
             allMarkets.add(normalizedMarket);
 
             if (!miscData[categoryKey].markets[normalizedMarket]) {
@@ -241,8 +214,17 @@ export const calculateMiscAnalyticsData = (tasks) => {
           ? "Misc" 
           : categoryKey.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" "),
         value: data.count,
+        hours: Math.round(data.hours * 100) / 100,
         percentage: totalTasks > 0 ? Math.min(Math.round((data.count / totalTasks) * 100), 100) : 0,
-      })),
+      }))
+      .sort((a, b) => {
+        // Sort by tasks (value) first (descending), then by hours (descending)
+        if (b.value !== a.value) {
+          return b.value - a.value;
+        }
+        return b.hours - a.hours;
+      })
+      .map(({ hours, ...rest }) => rest), // Remove hours from final data
     CHART_DATA_TYPE.PRODUCT
   );
 
@@ -294,26 +276,13 @@ const calculateUsersMiscData = (miscTasks, users, allMarkets) => {
   const sortedMarkets = Array.from(allMarkets).sort();
 
   miscTasks.forEach((task) => {
-    const taskMarkets = task.data_task?.markets || task.markets || [];
-    const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-    const userId = task.userUID || task.createbyUID;
+    const taskMarkets = getTaskMarkets(task);
+    const taskHours = getTaskHours(task);
+    const userId = getTaskUserUID(task);
 
     if (!userId || !taskMarkets || taskMarkets.length === 0) return;
 
-    // Get user name
-    const user = users.find(
-      (u) =>
-        u.uid === userId ||
-        u.id === userId ||
-        u.userUID === userId ||
-        u.email === userId ||
-        u.displayName === userId ||
-        u.name === userId
-    );
-
-    const userName = user
-      ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
-      : `User ${userId.slice(0, 8)}`;
+    const userName = getUserName(userId, users);
 
     // Initialize user if not exists
     if (!userMiscData[userId]) {
@@ -327,7 +296,7 @@ const calculateUsersMiscData = (miscTasks, users, allMarkets) => {
 
     taskMarkets.forEach((market) => {
       if (market) {
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         if (!userMiscData[userId].markets[normalizedMarket]) {
           userMiscData[userId].markets[normalizedMarket] = {
             tasks: 0,

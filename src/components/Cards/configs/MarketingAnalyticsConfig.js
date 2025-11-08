@@ -1,9 +1,13 @@
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
-
-/**
- * Marketing Analytics Configuration
- * Handles marketing-specific analytics calculations and card props
- */
+import {
+  addConsistentColors,
+  CHART_COLORS,
+  CHART_DATA_TYPE,
+  calculateCountWithPercentage,
+  addGrandTotalRow,
+  renderCountWithPercentage,
+  calculateUsersChartsByCategory,
+  normalizeMarket,
+} from "./analyticsSharedConfig";
 
 export const calculateMarketingAnalyticsData = (tasks) => {
   const marketingData = {
@@ -187,7 +191,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     sortedMarkets
       .map((market) => {
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         return {
           name: normalizedMarket,
           value: marketingData.casino[market] || 0,
@@ -212,7 +216,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     sortedMarkets
       .map((market) => {
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         return {
           name: normalizedMarket,
           value: marketingData.sport[market] || 0,
@@ -248,7 +252,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
           );
 
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
 
         return {
           name: normalizedMarket,
@@ -284,7 +288,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
           );
 
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
 
         return {
           name: normalizedMarket,
@@ -303,101 +307,10 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     CHART_DATA_TYPE.MARKET
   );
 
-  // Calculate per-user charts for marketing (separate chart per user per category)
-  const calculateUsersChartsByCategory = (marketingTasks, users, categoryName) => {
-    if (!marketingTasks || marketingTasks.length === 0 || !users || users.length === 0) return [];
-
-    const userMarketStats = {}; // { userId: { userName: "...", markets: { "RO": { tasks, hours }, ... } } }
-
-    marketingTasks.forEach((task) => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      const userId = task.userUID || task.createbyUID;
-
-      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
-
-      // Get user name
-      const user = users.find(
-        (u) =>
-          u.uid === userId ||
-          u.id === userId ||
-          u.userUID === userId ||
-          u.email === userId ||
-          u.displayName === userId ||
-          u.name === userId
-      );
-
-      const userName = user
-        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
-        : `User ${userId.slice(0, 8)}`;
-
-      // Initialize user if not exists
-      if (!userMarketStats[userId]) {
-        userMarketStats[userId] = {
-          userName,
-          markets: {},
-          totalTasks: 0,
-          totalHours: 0,
-        };
-      }
-
-      taskMarkets.forEach((market) => {
-        if (market) {
-          const normalizedMarket = market.trim().toUpperCase();
-          if (!userMarketStats[userId].markets[normalizedMarket]) {
-            userMarketStats[userId].markets[normalizedMarket] = {
-              tasks: 0,
-              hours: 0,
-            };
-          }
-          userMarketStats[userId].markets[normalizedMarket].tasks += 1;
-          userMarketStats[userId].markets[normalizedMarket].hours += taskHours;
-        }
-      });
-
-      // Update user totals
-      userMarketStats[userId].totalTasks += 1;
-      userMarketStats[userId].totalHours += taskHours;
-    });
-
-    // Create separate chart data for each user
-    return Object.entries(userMarketStats)
-      .map(([userId, userData]) => {
-        const marketData = Object.entries(userData.markets)
-          .map(([market, stats]) => ({
-            name: market,
-            tasks: stats.tasks,
-            hours: Math.round(stats.hours * 100) / 100,
-            market: market,
-          }))
-          .filter((item) => item.tasks > 0 || item.hours > 0)
-          .sort((a, b) => {
-            if (b.tasks !== a.tasks) {
-              return b.tasks - a.tasks;
-            }
-            return b.hours - a.hours;
-          })
-          .map((item) => ({
-            ...item,
-            color: getMarketColor(item.market),
-          }));
-
-        return {
-          userId,
-          userName: userData.userName,
-          category: categoryName,
-          marketData,
-          totalTasks: userData.totalTasks,
-          totalHours: Math.round(userData.totalHours * 100) / 100,
-        };
-      })
-      .filter((chart) => chart.marketData.length > 0)
-      .sort((a, b) => {
-        if (b.totalTasks !== a.totalTasks) {
-          return b.totalTasks - a.totalTasks;
-        }
-        return a.userName.localeCompare(b.userName);
-      });
+  // Use shared calculateUsersChartsByCategory function
+  // Wrapper to maintain API compatibility
+  const calculateUsersChartsByCategoryWrapper = (marketingTasks, users, categoryName) => {
+    return calculateUsersChartsByCategory(marketingTasks, users, categoryName);
   };
 
   // Get marketing tasks filtered by category
@@ -430,7 +343,7 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     casinoTotalHours,
     sportTotalTasks,
     sportTotalHours,
-    calculateUsersChartsByCategory,
+    calculateUsersChartsByCategory: calculateUsersChartsByCategoryWrapper,
     casinoMarketingTasks,
     sportMarketingTasks,
   };

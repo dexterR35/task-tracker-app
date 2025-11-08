@@ -317,10 +317,6 @@
     @apply text-xs text-red-error dark:text-red-error mt-2 flex items-center gap-0 justify-start;
   }
 
-  /* .error-message::before {
-    content: "⚠";
-    font-size: 12px;
-  } */
 
   /* Global Required Indicator */
   .required-indicator {
@@ -346,11 +342,34 @@
   }
 
   .card {
-    @apply bg-white/90 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 p-4 shadow-md rounded-md;
+    @apply bg-white/90 dark:bg-smallCard border border-gray-200/70 dark:border-gray-700/70 p-4 shadow-md rounded-md;
   }
 
   .card-small {
     @apply bg-white/90 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/70 p-4 shadow-md rounded-md;
+  }
+
+  /* Modern Small Card Design */
+  .card-small-modern {
+    @apply relative bg-white/95 dark:bg-smallCard border border-gray-200/50 dark:border-gray-700/50 p-5 shadow-lg rounded-xl overflow-hidden;
+
+  }
+
+
+  .card-small-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%); */
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .dark .card-small-modern::before {
+    /* background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.02) 100%); */
   }
 
 

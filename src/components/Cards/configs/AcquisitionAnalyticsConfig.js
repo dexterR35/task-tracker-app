@@ -1,9 +1,14 @@
-import { addConsistentColors, CHART_COLORS, CHART_DATA_TYPE, getMarketColor, calculateCountWithPercentage, addGrandTotalRow, renderCountWithPercentage } from "./analyticsSharedConfig";
-
-/**
- * Acquisition Analytics Configuration
- * Handles acquisition-specific analytics calculations and card props
- */
+import {
+  addConsistentColors,
+  CHART_COLORS,
+  CHART_DATA_TYPE,
+  calculateCountWithPercentage,
+  addGrandTotalRow,
+  renderCountWithPercentage,
+  calculateUsersChartsByCategory,
+  calculateUserTable,
+  normalizeMarket,
+} from "./analyticsSharedConfig";
 
 export const calculateAcquisitionAnalyticsData = (tasks) => {
   if (!tasks || tasks.length === 0) {
@@ -98,13 +103,18 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
       };
 
       // Add market columns with percentages (categoryTotal is sum of all market counts, so percentages sum to 100%)
-      const marketItems = sortedMarkets.map(market => ({
+      const marketItems = sortedMarkets.map((market) => ({
         key: market,
-        count: categoryData[market] || 0
+        count: categoryData[market] || 0,
       }));
       sortedMarkets.forEach((market) => {
         const marketCount = categoryData[market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, categoryTotal, marketItems, market);
+        row[market] = calculateCountWithPercentage(
+          marketCount,
+          categoryTotal,
+          marketItems,
+          market
+        );
       });
 
       tableData.push(row);
@@ -119,9 +129,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     );
     if (grandTotal > 0) {
       tableData = addGrandTotalRow(tableData, {
-        labelKey: 'category',
-        labelValue: 'Grand Total',
-        sumColumns: ['total'],
+        labelKey: "category",
+        labelValue: "Grand Total",
+        sumColumns: ["total"],
         marketColumns: sortedMarkets,
       });
     }
@@ -214,7 +224,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     sortedMarkets
       .map((market) => {
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         return {
           name: normalizedMarket,
           value: acquisitionData.casino[market] || 0,
@@ -249,7 +259,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     sortedMarkets
       .map((market) => {
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
         return {
           name: normalizedMarket,
           value: acquisitionData.sport[market] || 0,
@@ -291,7 +301,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
           );
 
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
 
         return {
           name: normalizedMarket,
@@ -333,7 +343,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
           );
 
         // Normalize market to uppercase for consistent color mapping
-        const normalizedMarket = market.trim().toUpperCase();
+        const normalizedMarket = normalizeMarket(market);
 
         return {
           name: normalizedMarket,
@@ -352,101 +362,10 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     CHART_DATA_TYPE.MARKET
   );
 
-  // Calculate per-user charts for acquisition (separate chart per user per category)
-  const calculateUsersChartsByCategory = (acquisitionTasks, users, categoryName) => {
-    if (!acquisitionTasks || acquisitionTasks.length === 0 || !users || users.length === 0) return [];
-
-    const userMarketStats = {}; // { userId: { userName: "...", markets: { "RO": { tasks, hours }, ... } } }
-
-    acquisitionTasks.forEach((task) => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      const userId = task.userUID || task.createbyUID;
-
-      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
-
-      // Get user name
-      const user = users.find(
-        (u) =>
-          u.uid === userId ||
-          u.id === userId ||
-          u.userUID === userId ||
-          u.email === userId ||
-          u.displayName === userId ||
-          u.name === userId
-      );
-
-      const userName = user
-        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
-        : `User ${userId.slice(0, 8)}`;
-
-      // Initialize user if not exists
-      if (!userMarketStats[userId]) {
-        userMarketStats[userId] = {
-          userName,
-          markets: {},
-          totalTasks: 0,
-          totalHours: 0,
-        };
-      }
-
-      taskMarkets.forEach((market) => {
-        if (market) {
-          const normalizedMarket = market.trim().toUpperCase();
-          if (!userMarketStats[userId].markets[normalizedMarket]) {
-            userMarketStats[userId].markets[normalizedMarket] = {
-              tasks: 0,
-              hours: 0,
-            };
-          }
-          userMarketStats[userId].markets[normalizedMarket].tasks += 1;
-          userMarketStats[userId].markets[normalizedMarket].hours += taskHours;
-        }
-      });
-
-      // Update user totals
-      userMarketStats[userId].totalTasks += 1;
-      userMarketStats[userId].totalHours += taskHours;
-    });
-
-    // Create separate chart data for each user
-    return Object.entries(userMarketStats)
-      .map(([userId, userData]) => {
-        const marketData = Object.entries(userData.markets)
-          .map(([market, stats]) => ({
-            name: market,
-            tasks: stats.tasks,
-            hours: Math.round(stats.hours * 100) / 100,
-            market: market,
-          }))
-          .filter((item) => item.tasks > 0 || item.hours > 0)
-          .sort((a, b) => {
-            if (b.tasks !== a.tasks) {
-              return b.tasks - a.tasks;
-            }
-            return b.hours - a.hours;
-          })
-          .map((item) => ({
-            ...item,
-            color: getMarketColor(item.market),
-          }));
-
-        return {
-          userId,
-          userName: userData.userName,
-          category: categoryName,
-          marketData,
-          totalTasks: userData.totalTasks,
-          totalHours: Math.round(userData.totalHours * 100) / 100,
-        };
-      })
-      .filter((chart) => chart.marketData.length > 0)
-      .sort((a, b) => {
-        if (b.totalTasks !== a.totalTasks) {
-          return b.totalTasks - a.totalTasks;
-        }
-        return a.userName.localeCompare(b.userName);
-      });
+  // Use shared calculateUsersChartsByCategory function
+  // Wrapper to maintain API compatibility
+  const calculateUsersChartsByCategoryWrapper = (acquisitionTasks, users, categoryName) => {
+    return calculateUsersChartsByCategory(acquisitionTasks, users, categoryName);
   };
 
   // Get acquisition tasks filtered by category
@@ -468,220 +387,14 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     );
   });
 
-  // Calculate user table data for casino acquisition
+  // Use shared calculateUserTable function for both casino and sport
+  // Wrappers to maintain API compatibility
   const calculateCasinoUserTable = (acquisitionTasks, users) => {
-    if (!acquisitionTasks || acquisitionTasks.length === 0 || !users || users.length === 0) {
-      return {
-        tableData: [],
-        tableColumns: [
-          { key: "user", header: "User", align: "left" },
-          { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
-          { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
-        ],
-      };
-    }
-
-    const userMarketStats = {};
-    const allMarkets = new Set();
-
-    acquisitionTasks.forEach((task) => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      const userId = task.userUID || task.createbyUID;
-
-      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
-
-      const user = users.find(
-        (u) =>
-          u.uid === userId ||
-          u.id === userId ||
-          u.userUID === userId ||
-          u.email === userId ||
-          u.displayName === userId ||
-          u.name === userId
-      );
-
-      const userName = user
-        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
-        : `User ${userId.slice(0, 8)}`;
-
-      if (!userMarketStats[userId]) {
-        userMarketStats[userId] = {
-          userName,
-          markets: {},
-          totalTasks: 0,
-          totalHours: 0,
-        };
-      }
-
-      taskMarkets.forEach((market) => {
-        if (market) {
-          const normalizedMarket = market.trim().toUpperCase();
-          allMarkets.add(normalizedMarket);
-          if (!userMarketStats[userId].markets[normalizedMarket]) {
-            userMarketStats[userId].markets[normalizedMarket] = 0;
-          }
-          userMarketStats[userId].markets[normalizedMarket] += 1;
-        }
-      });
-
-      userMarketStats[userId].totalTasks += 1;
-      userMarketStats[userId].totalHours += taskHours;
-    });
-
-    const sortedMarkets = Array.from(allMarkets).sort();
-    const tableData = Object.entries(userMarketStats)
-      .map(([_userId, userData]) => {
-        const row = {
-          user: userData.userName,
-          totalTasks: userData.totalTasks,
-          totalHours: Math.round(userData.totalHours * 100) / 100,
-        };
-
-        sortedMarkets.forEach((market) => {
-          row[market] = userData.markets[market] || 0;
-        });
-
-        return row;
-      })
-      .sort((a, b) => {
-        if (b.totalTasks !== a.totalTasks) {
-          return b.totalTasks - a.totalTasks;
-        }
-        return a.user.localeCompare(b.user);
-      });
-
-    // Add grand total row using shared utility
-    const tableDataWithTotal = addGrandTotalRow(tableData, {
-      labelKey: 'user',
-      labelValue: 'Grand Total',
-      sumColumns: ['totalTasks', 'totalHours'],
-      marketColumns: sortedMarkets,
-    });
-
-    const tableColumns = [
-      { key: "user", header: "User", align: "left" },
-      { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
-      { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
-    ];
-
-    sortedMarkets.forEach((market) => {
-      tableColumns.push({
-        key: market,
-        header: market.toUpperCase(),
-        align: "center",
-      });
-    });
-
-    return { tableData: tableDataWithTotal, tableColumns };
+    return calculateUserTable(acquisitionTasks, users);
   };
 
-  // Calculate user table data for sport acquisition
   const calculateSportUserTable = (acquisitionTasks, users) => {
-    if (!acquisitionTasks || acquisitionTasks.length === 0 || !users || users.length === 0) {
-      return {
-        tableData: [],
-        tableColumns: [
-          { key: "user", header: "User", align: "left" },
-          { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
-          { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
-        ],
-      };
-    }
-
-    const userMarketStats = {};
-    const allMarkets = new Set();
-
-    acquisitionTasks.forEach((task) => {
-      const taskMarkets = task.data_task?.markets || task.markets || [];
-      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      const userId = task.userUID || task.createbyUID;
-
-      if (!userId || !taskMarkets || taskMarkets.length === 0) return;
-
-      const user = users.find(
-        (u) =>
-          u.uid === userId ||
-          u.id === userId ||
-          u.userUID === userId ||
-          u.email === userId ||
-          u.displayName === userId ||
-          u.name === userId
-      );
-
-      const userName = user
-        ? user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`
-        : `User ${userId.slice(0, 8)}`;
-
-      if (!userMarketStats[userId]) {
-        userMarketStats[userId] = {
-          userName,
-          markets: {},
-          totalTasks: 0,
-          totalHours: 0,
-        };
-      }
-
-      taskMarkets.forEach((market) => {
-        if (market) {
-          const normalizedMarket = market.trim().toUpperCase();
-          allMarkets.add(normalizedMarket);
-          if (!userMarketStats[userId].markets[normalizedMarket]) {
-            userMarketStats[userId].markets[normalizedMarket] = 0;
-          }
-          userMarketStats[userId].markets[normalizedMarket] += 1;
-        }
-      });
-
-      userMarketStats[userId].totalTasks += 1;
-      userMarketStats[userId].totalHours += taskHours;
-    });
-
-    const sortedMarkets = Array.from(allMarkets).sort();
-    const tableData = Object.entries(userMarketStats)
-      .map(([_userId, userData]) => {
-        const row = {
-          user: userData.userName,
-          totalTasks: userData.totalTasks,
-          totalHours: Math.round(userData.totalHours * 100) / 100,
-        };
-
-        sortedMarkets.forEach((market) => {
-          row[market] = userData.markets[market] || 0;
-        });
-
-        return row;
-      })
-      .sort((a, b) => {
-        if (b.totalTasks !== a.totalTasks) {
-          return b.totalTasks - a.totalTasks;
-        }
-        return a.user.localeCompare(b.user);
-      });
-
-    // Add grand total row using shared utility
-    const tableDataWithTotal = addGrandTotalRow(tableData, {
-      labelKey: 'user',
-      labelValue: 'Grand Total',
-      sumColumns: ['totalTasks', 'totalHours'],
-      marketColumns: sortedMarkets,
-    });
-
-    const tableColumns = [
-      { key: "user", header: "User", align: "left" },
-      { key: "totalTasks", header: "Total Tasks", align: "center", highlight: true },
-      { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
-    ];
-
-    sortedMarkets.forEach((market) => {
-      tableColumns.push({
-        key: market,
-        header: market.toUpperCase(),
-        align: "center",
-      });
-    });
-
-    return { tableData: tableDataWithTotal, tableColumns };
+    return calculateUserTable(acquisitionTasks, users);
   };
 
   return {
@@ -695,7 +408,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     casinoTotalHours,
     sportTotalTasks,
     sportTotalHours,
-    calculateUsersChartsByCategory,
+    calculateUsersChartsByCategory: calculateUsersChartsByCategoryWrapper,
     casinoAcquisitionTasks,
     sportAcquisitionTasks,
     calculateCasinoUserTable,
@@ -704,7 +417,11 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
 };
 
 // Get acquisition analytics card props for direct use with AcquisitionAnalyticsCard
-export const getAcquisitionAnalyticsCardProps = (tasks, users = [], isLoading = false) => {
+export const getAcquisitionAnalyticsCardProps = (
+  tasks,
+  users = [],
+  isLoading = false
+) => {
   const calculatedData = calculateAcquisitionAnalyticsData(tasks);
 
   // Calculate per-user charts for each category
@@ -770,4 +487,3 @@ export const getCachedAcquisitionAnalyticsCardProps = (
 ) => {
   return getAcquisitionAnalyticsCardProps(tasks, users, isLoading);
 };
-

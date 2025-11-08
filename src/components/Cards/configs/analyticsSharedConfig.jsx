@@ -339,7 +339,7 @@ export const renderCountWithPercentage = (value) => {
   if (match) {
     const count = match[1];
     const percentage = match[2];
-    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.amber;
+    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.select_badge;
 
     return (
       <span>
@@ -476,5 +476,306 @@ export const addGrandTotalRow = (tableData, options = {}) => {
   Object.assign(grandTotalRow, customValues);
 
   return [...tableData, grandTotalRow];
+};
+
+// ============================================================================
+// SHARED USER UTILITIES
+// ============================================================================
+
+/**
+ * Get user name from users array by userId
+ * Only uses userUID for matching (as per DB schema)
+ */
+export const getUserName = (userId, users) => {
+  if (!userId || !users || !Array.isArray(users)) {
+    return `User ${userId?.slice(0, 8) || 'Unknown'}`;
+  }
+  
+  const user = users.find((u) => u.userUID === userId);
+  
+  if (!user) {
+    return `User ${userId.slice(0, 8)}`;
+  }
+  
+  return user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`;
+};
+
+/**
+ * Normalize market code (trim and uppercase)
+ */
+export const normalizeMarket = (market) => {
+  if (!market || typeof market !== 'string') return '';
+  return market.trim().toUpperCase();
+};
+
+// ============================================================================
+// SHARED CALCULATION UTILITIES
+// ============================================================================
+
+/**
+ * Calculate percentages for a group of counts, ensuring they sum to exactly 100%
+ * @param {Array<{key: string, count: number}>} items - Array of items with key and count
+ * @param {number} total - Total count
+ * @returns {Object} - Object mapping keys to percentages that sum to 100%
+ */
+export const calculatePercentagesForGroup = (items, total) => {
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return {};
+  }
+
+  if (total === 0) {
+    const result = {};
+    items.forEach(item => {
+      result[item.key] = 0;
+    });
+    return result;
+  }
+
+  // Calculate raw percentages and floor values
+  const percentages = items.map(item => {
+    const rawPercentage = (item.count / total) * 100;
+    const floored = Math.floor(rawPercentage);
+    const remainder = rawPercentage - floored;
+    return {
+      key: item.key,
+      count: item.count,
+      floored,
+      remainder
+    };
+  });
+
+  // Calculate sum of floored values
+  const sumFloored = percentages.reduce((sum, p) => sum + p.floored, 0);
+  const difference = 100 - sumFloored;
+
+  // Sort by remainder (descending) to allocate extra points to largest remainders
+  const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
+  const adjustedDifference = Math.max(0, Math.min(difference, percentages.length));
+  
+  // Allocate final percentages
+  sorted.forEach((item, index) => {
+    item.finalPercentage = index < adjustedDifference ? item.floored + 1 : item.floored;
+  });
+
+  // Create result object
+  const result = {};
+  percentages.forEach(p => {
+    result[p.key] = p.finalPercentage;
+  });
+
+  return result;
+};
+
+/**
+ * Calculate per-user charts by category (generic function for acquisition, marketing, product, etc.)
+ * @param {Array} tasks - Array of tasks
+ * @param {Array} users - Array of user objects
+ * @param {string} categoryName - Optional category name for display
+ * @returns {Array} - Array of user chart objects with marketData
+ */
+export const calculateUsersChartsByCategory = (tasks, users, categoryName = null) => {
+  if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
+
+  const userMarketStats = {}; // { userId: { userName: "...", markets: { "RO": { tasks, hours }, ... } } }
+
+  tasks.forEach((task) => {
+    const taskMarkets = getTaskMarkets(task);
+    const taskHours = getTaskHours(task);
+    const userId = getTaskUserUID(task);
+
+    if (!userId || !taskMarkets || taskMarkets.length === 0) return;
+
+    const userName = getUserName(userId, users);
+
+    // Initialize user if not exists
+    if (!userMarketStats[userId]) {
+      userMarketStats[userId] = {
+        userName,
+        markets: {},
+        totalTasks: 0,
+        totalHours: 0,
+      };
+    }
+
+    taskMarkets.forEach((market) => {
+      if (market) {
+        const normalizedMarket = normalizeMarket(market);
+        if (!userMarketStats[userId].markets[normalizedMarket]) {
+          userMarketStats[userId].markets[normalizedMarket] = {
+            tasks: 0,
+            hours: 0,
+          };
+        }
+        userMarketStats[userId].markets[normalizedMarket].tasks += 1;
+        userMarketStats[userId].markets[normalizedMarket].hours += taskHours;
+      }
+    });
+
+    // Update user totals
+    userMarketStats[userId].totalTasks += 1;
+    userMarketStats[userId].totalHours += taskHours;
+  });
+
+  // Create separate chart data for each user
+  return Object.entries(userMarketStats)
+    .map(([userId, userData]) => {
+      const marketData = Object.entries(userData.markets)
+        .map(([market, stats]) => ({
+          name: market,
+          tasks: stats.tasks,
+          hours: Math.round(stats.hours * 100) / 100,
+          market: market, // Keep market reference for color mapping
+        }))
+        .filter((item) => item.tasks > 0 || item.hours > 0)
+        .sort((a, b) => {
+          // Sort by tasks first (descending), then by hours (descending)
+          if (b.tasks !== a.tasks) {
+            return b.tasks - a.tasks;
+          }
+          return b.hours - a.hours;
+        })
+        .map((item) => ({
+          ...item,
+          color: getMarketColor(item.market), // Use market color mapping
+        }));
+
+      return {
+        userId,
+        userName: userData.userName,
+        ...(categoryName && { category: categoryName }),
+        marketData,
+        totalTasks: userData.totalTasks,
+        totalHours: Math.round(userData.totalHours * 100) / 100,
+      };
+    })
+    .filter((chart) => chart.marketData.length > 0) // Only include users with market data
+    .sort((a, b) => {
+      // Sort by total tasks first (descending), then by hours (descending)
+      if (b.totalTasks !== a.totalTasks) {
+        return b.totalTasks - a.totalTasks;
+      }
+      return b.totalHours - a.totalHours;
+    });
+};
+
+/**
+ * Calculate user table data with markets (generic function)
+ * @param {Array} tasks - Array of tasks
+ * @param {Array} users - Array of user objects
+ * @returns {Object} - Object with tableData and tableColumns
+ */
+export const calculateUserTable = (tasks, users) => {
+  if (!tasks || tasks.length === 0 || !users || users.length === 0) {
+    return {
+      tableData: [],
+      tableColumns: [
+        { key: "user", header: "User", align: "left" },
+        {
+          key: "totalTasks",
+          header: "Total Tasks",
+          align: "center",
+          highlight: true,
+        },
+        {
+          key: "totalHours",
+          header: "Total Hours",
+          align: "center",
+          highlight: true,
+        },
+      ],
+    };
+  }
+
+  const userMarketStats = {};
+  const allMarkets = new Set();
+
+  tasks.forEach((task) => {
+    const taskMarkets = getTaskMarkets(task);
+    const taskHours = getTaskHours(task);
+    const userId = getTaskUserUID(task);
+
+    if (!userId || !taskMarkets || taskMarkets.length === 0) return;
+
+    const userName = getUserName(userId, users);
+
+    if (!userMarketStats[userId]) {
+      userMarketStats[userId] = {
+        userName,
+        markets: {},
+        totalTasks: 0,
+        totalHours: 0,
+      };
+    }
+
+    taskMarkets.forEach((market) => {
+      if (market) {
+        const normalizedMarket = normalizeMarket(market);
+        allMarkets.add(normalizedMarket);
+        if (!userMarketStats[userId].markets[normalizedMarket]) {
+          userMarketStats[userId].markets[normalizedMarket] = 0;
+        }
+        userMarketStats[userId].markets[normalizedMarket] += 1;
+      }
+    });
+
+    userMarketStats[userId].totalTasks += 1;
+    userMarketStats[userId].totalHours += taskHours;
+  });
+
+  const sortedMarkets = Array.from(allMarkets).sort();
+  const tableData = Object.entries(userMarketStats)
+    .map(([_userId, userData]) => {
+      const row = {
+        user: userData.userName,
+        totalTasks: userData.totalTasks,
+        totalHours: Math.round(userData.totalHours * 100) / 100,
+      };
+
+      sortedMarkets.forEach((market) => {
+        row[market] = userData.markets[market] || 0;
+      });
+
+      return row;
+    })
+    .sort((a, b) => {
+      if (b.totalTasks !== a.totalTasks) {
+        return b.totalTasks - a.totalTasks;
+      }
+      return a.user.localeCompare(b.user);
+    });
+
+  // Add grand total row using shared utility
+  const tableDataWithTotal = addGrandTotalRow(tableData, {
+    labelKey: "user",
+    labelValue: "Grand Total",
+    sumColumns: ["totalTasks", "totalHours"],
+    marketColumns: sortedMarkets,
+  });
+
+  const tableColumns = [
+    { key: "user", header: "User", align: "left" },
+    {
+      key: "totalTasks",
+      header: "Total Tasks",
+      align: "center",
+      highlight: true,
+    },
+    {
+      key: "totalHours",
+      header: "Total Hours",
+      align: "center",
+      highlight: true,
+    },
+  ];
+
+  sortedMarkets.forEach((market) => {
+    tableColumns.push({
+      key: market,
+      header: market.toUpperCase(),
+      align: "center",
+    });
+  });
+
+  return { tableData: tableDataWithTotal, tableColumns };
 };
 

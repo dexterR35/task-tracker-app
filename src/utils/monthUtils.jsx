@@ -1,22 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   format,
   getDaysInMonth,
   startOfMonth,
   endOfMonth,
-  parseISO,
   isValid,
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
   isWeekend,
   addWeeks,
-  subWeeks,
 } from "date-fns";
 import {
   parseMonthId,
   getCurrentMonthId,
-  normalizeTimestamp,
 } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
 import { useAppDataContext } from "@/context/AppDataContext";
@@ -26,9 +23,6 @@ import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { CARD_SYSTEM } from "@/constants";
 
-// ============================================================================
-// WEEK UTILITIES
-// ============================================================================
 
 export const getWeeksInMonth = (monthId) => {
   const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
@@ -273,7 +267,6 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
     return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
   }
 
-  // Validate monthId format
   const validation = validateMonthId(monthId);
   if (!validation.isValid) {
     logger.error(
@@ -283,7 +276,6 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
     return { progress: 0, daysPassed: 0, totalDays: 0, daysRemaining: 0 };
   }
 
-  // Calculate the actual number of days in this month using date-fns
   let totalDays;
   try {
     const monthIdParts = monthId.split("-");
@@ -293,12 +285,10 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
     totalDays = getDaysInMonth(firstDayOfMonth);
   } catch (error) {
     logger.error("Error calculating days in month:", error);
-    // Fallback to daysInMonth prop if available
     totalDays = daysInMonth || 30;
   }
 
   const currentMonthId = getCurrentMonthId();
-
   // If it's not the current month, show 100% progress
   if (monthId !== currentMonthId) {
     return {
@@ -323,16 +313,10 @@ export const calculateMonthProgress = (monthId, daysInMonth = 30) => {
   };
 };
 
-// ============================================================================
-// MONTH COMPONENTS
-// ============================================================================
-
 export const MonthProgressBar = ({
   monthId,
   monthName,
   isCurrentMonth,
-  startDate,
-  endDate,
   daysInMonth,
 }) => {
   const progressData = calculateMonthProgress(monthId, daysInMonth);
@@ -346,7 +330,7 @@ export const MonthProgressBar = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <Icons.generic.clock className="w-4 h-4" />
-          <span className="text-sm">{monthName} Progress</span>
+          <span className="!text-md">{monthName}</span>
         </div>
         <span className="text-sm ">
           {progressData.daysPassed}/{progressData.totalDays} days
@@ -359,8 +343,8 @@ export const MonthProgressBar = ({
           style={{
             width: `${progressData.progress}%`,
             backgroundColor: isCurrentMonth
-              ? CARD_SYSTEM.COLOR_HEX_MAP.amber
-              : CARD_SYSTEM.COLOR_HEX_MAP.crimson,
+              ? CARD_SYSTEM.COLOR_HEX_MAP.amber + "ba" // 70% → B3, 73% → BA, 75% → BF, 80% → CC, 85% → D9 55 8C
+              : CARD_SYSTEM.COLOR_HEX_MAP.pink + "bf",
           }}
         />
       </div>
@@ -373,37 +357,29 @@ export const MonthProgressBar = ({
   );
 };
 
-/**
- * Month Board Banner Component
- */
 export const MonthBoardBanner = () => {
   let appData;
   try {
     appData = useAppDataContext();
   } catch (error) {
-    // If context is not available, return null
     logger.warn(
       "MonthBoardBanner: AppDataContext not available:",
       error.message
     );
     return null;
   }
-
   const [generateMonthBoard] = useCreateMonthBoard();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Extract month data
   const {
     monthId,
     monthName,
     boardExists,
     startDate,
     endDate,
-    daysInMonth,
     isInitialLoading,
   } = appData || {};
 
-  // Convert Date objects back to ISO strings if needed
   const startDateStr =
     startDate instanceof Date ? startDate.toISOString() : startDate;
   const endDateStr = endDate instanceof Date ? endDate.toISOString() : endDate;
@@ -449,7 +425,7 @@ export const MonthBoardBanner = () => {
   };
 
   return (
-    <div className="card border border-blue-200 dark:border-blue-800  p-4 mb-6">
+    <div className="card ">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -476,9 +452,3 @@ export const MonthBoardBanner = () => {
     </div>
   );
 };
-
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-// All functions and components are already exported individually above

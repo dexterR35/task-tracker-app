@@ -9,8 +9,8 @@ import DeliverableFormModal from './DeliverableFormModal';
 import { useTableActions } from '@/hooks/useTableActions';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
 import Badge from '@/components/ui/Badge/Badge';
-import { SearchableSelectField } from '@/components/forms/components';
-import { TABLE_SYSTEM, CARD_SYSTEM, FORM_OPTIONS } from '@/constants';
+import { TABLE_SYSTEM, CARD_SYSTEM } from '@/constants';
+import DepartmentFilter from '@/components/filters/DepartmentFilter';
 
 // ===== CONFIGURATION =====
 const CONFIG = {
@@ -130,7 +130,7 @@ const DeliverableTable = ({
         const department = getValue();
         if (!department) return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
         return (
-          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.green} size="sm">
+          <Badge variant="green" size="sm">
             {department}
           </Badge>
         );
@@ -147,7 +147,7 @@ const DeliverableTable = ({
           return <span className="text-gray-500 dark:text-gray-400 text-xs">-</span>;
         }
         return (
-          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.purple} size="sm">
+          <Badge variant="purple" size="sm">
             {timePerUnit} {timeUnit}
           </Badge>
         );
@@ -164,7 +164,7 @@ const DeliverableTable = ({
           return <span className="text-gray-500 dark:text-gray-400 text-xs">None</span>;
         }
         return (
-          <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.pink} size="sm">
+          <Badge variant="pink" size="sm">
             {variationsTime} {timeUnit}
           </Badge>
         );
@@ -178,7 +178,7 @@ const DeliverableTable = ({
         const requiresQuantity = getValue();
         return (
           <Badge 
-            colorHex={requiresQuantity ? CARD_SYSTEM.COLOR_HEX_MAP.green : CARD_SYSTEM.COLOR_HEX_MAP.gray} 
+            variant={requiresQuantity ? 'green' : 'gray'} 
             size="sm"
           >
             {requiresQuantity ? 'Yes' : 'No'}
@@ -202,25 +202,11 @@ const DeliverableTable = ({
     }
   }, [selectedDepartmentFilter]);
 
-  // Create department filter component
+  // Create department filter component using shared component
   const departmentFilterComponent = useMemo(() => (
-    <SearchableSelectField
-      field={{
-        name: "departmentFilter",
-        type: "select",
-        label: "Department",
-        required: false,
-        options: FORM_OPTIONS.DEPARTMENTS,
-        placeholder: "Search department ",
-      }}
-      register={() => {}}
-      errors={{}}
-      setValue={handleDepartmentFilterChange}
-      watch={() => selectedDepartmentFilter || ""}
-      trigger={() => {}}
-      clearErrors={() => {}}
-      formValues={{}}
-      noOptionsMessage="No departments found"
+    <DepartmentFilter
+      selectedDepartmentFilter={selectedDepartmentFilter}
+      onFilterChange={handleDepartmentFilterChange}
     />
   ), [selectedDepartmentFilter, handleDepartmentFilterChange]);
 

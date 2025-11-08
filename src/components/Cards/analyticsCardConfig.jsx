@@ -34,6 +34,12 @@ export {
   addConsistentColors,
   COLOR_MAPS,
   BASE_COLOR_PALETTE,
+  // Shared utilities
+  getUserName,
+  normalizeMarket,
+  calculatePercentagesForGroup,
+  calculateUsersChartsByCategory,
+  calculateUserTable,
 } from "./configs/analyticsSharedConfig";
 
 // Re-export Marketing Analytics

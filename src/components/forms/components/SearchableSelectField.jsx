@@ -17,6 +17,7 @@ const SearchableSelectField = ({
   clearErrors,
   formValues,
   noOptionsMessage = "No options found",
+  variant, // Badge variant/color to use (e.g., "green", "blue", "purple")
 
 }) => {
   const fieldError = errors[field.name];
@@ -256,8 +257,7 @@ const SearchableSelectField = ({
         {displayValue && (
           <div className="mt-1">
             <Badge
-              color={getFieldBadgeColor(field.name)}
-              colorHex={CARD_SYSTEM.COLOR_HEX_MAP[getFieldBadgeColor(field.name)]}
+              variant={variant || getFieldBadgeColor(field.name)}
               size="sm"
               className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm"
             >

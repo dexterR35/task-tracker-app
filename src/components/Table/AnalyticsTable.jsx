@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import TanStackTable from "@/components/Table/TanStackTable";
 import { createColumnHelper } from "@tanstack/react-table";
+import { TABLE_SYSTEM } from "@/constants";
 
 const columnHelper = createColumnHelper();
 
@@ -9,7 +10,9 @@ const AnalyticsTable = ({
   columns, 
   className = "",
   isLoading = false,
-  sectionTitle = "📊 Tables"
+  sectionTitle = "📊 Tables",
+  enablePagination = false,
+  showPagination = false
 }) => {
   // Convert columns to TanStack format - memoized to prevent re-renders
   const tableColumns = useMemo(() => 
@@ -28,6 +31,10 @@ const AnalyticsTable = ({
     ), [columns]
   );
 
+  // Calculate page size - use default page size (20) when pagination is enabled, otherwise show all rows
+  const totalRows = data?.length || 0;
+  const defaultPageSize = enablePagination ? TABLE_SYSTEM.DEFAULT_PAGE_SIZE : (totalRows || 10000);
+
   // Table props
   const tableProps = {
     data: data || [],
@@ -38,15 +45,15 @@ const AnalyticsTable = ({
     enableRowSelection: false,
     showBulkActions: false,
     showFilters: false,
-    showPagination: false,
+    showPagination: showPagination,
     showColumnToggle: false,
-    enablePagination: false,
+    enablePagination: enablePagination,
     enableFiltering: false,
-    pageSize: data?.length || 10000,
+    pageSize: defaultPageSize,
     sectionTitle: sectionTitle,
     initialState: {
       pagination: {
-        pageSize: data?.length || 10000
+        pageSize: defaultPageSize
       }
     }
   };

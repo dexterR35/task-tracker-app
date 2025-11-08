@@ -23,18 +23,18 @@ const createLandingPagesColumns = () => [
     header: 'PRODUCT',
     cell: ({ getValue }) => {
       const product = getValue();
-      const productColors = {
-        Casino: CARD_SYSTEM.COLOR_HEX_MAP.crimson,
-        Sport: CARD_SYSTEM.COLOR_HEX_MAP.green,
-        Vegas: CARD_SYSTEM.COLOR_HEX_MAP.pink,
-        Poker: CARD_SYSTEM.COLOR_HEX_MAP.purple,
-        Lotto: CARD_SYSTEM.COLOR_HEX_MAP.yellow,
-        Live: CARD_SYSTEM.COLOR_HEX_MAP.blue,
-        'Sports + Casino': CARD_SYSTEM.COLOR_HEX_MAP.orange,
+      const productVariants = {
+        Casino: 'crimson',
+        Sport: 'green',
+        Vegas: 'pink',
+        Poker: 'purple',
+        Lotto: 'yellow',
+        Live: 'blue',
+        'Sports + Casino': 'orange',
       };
-      const colorHex = productColors[product] || CARD_SYSTEM.COLOR_HEX_MAP.gray;
+      const variant = productVariants[product] || 'gray';
       return (
-        <Badge colorHex={colorHex} size="sm">
+        <Badge variant={variant} size="sm">
           {product}
         </Badge>
         
@@ -70,7 +70,7 @@ const createLandingPagesColumns = () => [
     cell: ({ getValue }) => {
       const value = getValue();
       return (
-        <Badge colorHex={CARD_SYSTEM.COLOR_HEX_MAP.amber} size="sm">
+        <Badge variant="amber" size="sm">
           {value || 'N/A'}
         </Badge>
       );
@@ -96,11 +96,9 @@ const createLandingPagesColumns = () => [
     header: 'STATUS',
     cell: ({ getValue }) => {
       const status = getValue();
-      const colorHex = status === 'Enabled' 
-        ? CARD_SYSTEM.COLOR_HEX_MAP.green 
-        : CARD_SYSTEM.COLOR_HEX_MAP.crimson;
+      const variant = status === 'Enabled' ? 'green' : 'crimson';
       return (
-        <Badge colorHex={colorHex} size="sm">
+        <Badge variant={variant} size="sm">
           {status || 'N/A'}
         </Badge>
       );

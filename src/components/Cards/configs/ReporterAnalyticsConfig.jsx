@@ -192,16 +192,38 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
     },
   ];
 
-  // Create chart data
-  const reporterPieData = addConsistentColors(
-    reporterTableData
-      .filter((row) => !row.bold) // Exclude grand total row
-      .map((row) => ({
-        name: row.reporter,
-        value: row.totalTasks,
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10), // Show top 10 reporters
+  // Create chart data - split all reporters into 3 pie charts
+  const allReporterPieData = reporterTableData
+    .filter((row) => !row.bold) // Exclude grand total row
+    .map((row) => ({
+      name: row.reporter,
+      value: row.totalTasks,
+      hours: row.totalHours,
+    }))
+    .sort((a, b) => {
+      // Sort by tasks (value) first (descending), then by hours (descending)
+      if (b.value !== a.value) {
+        return b.value - a.value;
+      }
+      return b.hours - a.hours;
+    })
+    .map(({ hours, ...rest }) => rest); // Remove hours from final data
+
+  // Split reporters into 3 groups (roughly equal thirds)
+  const totalReporters = allReporterPieData.length;
+  const thirdPoint = Math.ceil(totalReporters / 3);
+  const twoThirdPoint = Math.ceil((totalReporters * 2) / 3);
+  
+  const reporterPieData1 = addConsistentColors(
+    allReporterPieData.slice(0, thirdPoint),
+    CHART_DATA_TYPE.REPORTER
+  );
+  const reporterPieData2 = addConsistentColors(
+    allReporterPieData.slice(thirdPoint, twoThirdPoint),
+    CHART_DATA_TYPE.REPORTER
+  );
+  const reporterPieData3 = addConsistentColors(
+    allReporterPieData.slice(twoThirdPoint),
     CHART_DATA_TYPE.REPORTER
   );
 
@@ -219,86 +241,92 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
           return b.tasks - a.tasks;
         }
         return b.hours - a.hours;
-      })
-      .slice(0, 10), // Show top 10 reporters
+      }),
     CHART_DATA_TYPE.REPORTER
   );
 
-  // Calculate reporter-market breakdown for biaxial chart
-  const reporterMarketStats = {};
+  // Calculate reporter stats by product type (Casino and Sport)
+  // Casino includes: acq casino, markets casino, product casino
+  // Sport includes: acq sport, markets sport, product sport
+  const reporterStatsCasino = {};
+  const reporterStatsSport = {};
+
+  // Process tasks and group by reporter for casino and sport
   tasks.forEach((task) => {
+    const products = task.data_task?.products || task.products || "";
+    const productLower = products.toLowerCase().trim();
     const reporterName = task.data_task?.reporterName || task.reporterName;
     const reporterUID = task.data_task?.reporterUID || task.data_task?.reporters || task.reporterUID || task.reporters;
-    const markets = task.data_task?.markets || task.markets || [];
     const timeInHours = task.data_task?.timeInHours || task.timeInHours || 0;
 
     if (!reporterName && !reporterUID) return;
 
     const normalizedName = normalizeReporterName(reporterName);
     const reporterKey = normalizedName || reporterUID;
+    const reporterDisplayName = reporterData[reporterKey]?.reporterName || reporterName || reporterKey;
 
-    if (Array.isArray(markets) && markets.length > 0) {
-      markets.forEach((market) => {
-        if (market) {
-          // Normalize market (trim and uppercase) to ensure consistent matching
-          const normalizedMarket = market.trim().toUpperCase();
-          const key = `${reporterKey}-${normalizedMarket}`;
-          if (!reporterMarketStats[key]) {
-            reporterMarketStats[key] = {
-              reporter: reporterData[reporterKey]?.reporterName || reporterName || reporterKey,
-              market: normalizedMarket, // Store normalized market
-              tasks: 0,
-              hours: 0,
-            };
-          }
-          reporterMarketStats[key].tasks += 1;
-          reporterMarketStats[key].hours += timeInHours;
-        }
-      });
-    } else {
-      // If no markets, count under "No Market"
-      const key = `${reporterKey}-No Market`;
-      if (!reporterMarketStats[key]) {
-        reporterMarketStats[key] = {
-          reporter: reporterData[reporterKey]?.reporterName || reporterName || reporterKey,
-          market: "No Market",
+    // Check for sport and casino - they can be part of compound names like "acquisition sport", "marketing sport", "product sport"
+    // Casino: includes "casino" (acq casino, markets casino, product casino)
+    // Sport: includes "sport" (acq sport, markets sport, product sport)
+    if (productLower.includes("casino")) {
+      if (!reporterStatsCasino[reporterKey]) {
+        reporterStatsCasino[reporterKey] = {
+          reporter: reporterDisplayName,
           tasks: 0,
           hours: 0,
         };
       }
-      reporterMarketStats[key].tasks += 1;
-      reporterMarketStats[key].hours += timeInHours;
+      reporterStatsCasino[reporterKey].tasks += 1;
+      reporterStatsCasino[reporterKey].hours += timeInHours;
+    } else if (productLower.includes("sport")) {
+      if (!reporterStatsSport[reporterKey]) {
+        reporterStatsSport[reporterKey] = {
+          reporter: reporterDisplayName,
+          tasks: 0,
+          hours: 0,
+        };
+      }
+      reporterStatsSport[reporterKey].tasks += 1;
+      reporterStatsSport[reporterKey].hours += timeInHours;
     }
   });
 
-  // Create reporter-market biaxial chart data
-  // Use market colors so each market (RO, IT, etc.) has the same color
-  const reporterMarketBiaxialData = Object.values(reporterMarketStats)
-    .map((stat) => ({
-      name: `${stat.reporter} - ${stat.market}`,
-      tasks: stat.tasks,
-      hours: Math.round(stat.hours * 100) / 100,
-      market: stat.market, // Keep market reference for color mapping
-    }))
-    .sort((a, b) => {
-      // Sort by tasks first (descending), then by hours (descending)
-      if (b.tasks !== a.tasks) {
-        return b.tasks - a.tasks;
-      }
-      return b.hours - a.hours;
-    })
-    .slice(0, 30) // Show top 20 reporter-market combinations
-    .map((item) => ({
-      ...item,
-      color: getMarketColor(item.market), // Use market color mapping
-    }));
+  // Helper function to create biaxial chart data from stats, only including reporters with tasks
+  // NOTE: No slice - shows ALL reporters with tasks (unlike pie chart which is limited to top 10)
+  const createBiaxialData = (statsObject) => {
+    return Object.values(statsObject)
+      .filter((stat) => stat.tasks > 0) // Only include reporters with tasks
+      .map((stat) => ({
+        name: stat.reporter,
+        tasks: stat.tasks,
+        hours: Math.round(stat.hours * 100) / 100,
+      }))
+      .sort((a, b) => {
+        // Sort by tasks first (descending), then by hours (descending)
+        if (b.tasks !== a.tasks) {
+          return b.tasks - a.tasks;
+        }
+        return b.hours - a.hours;
+      });
+    // No slice - return all reporters with tasks
+  };
+
+  // Create separate reporter biaxial chart data for Casino and Sport
+  // Shows ALL reporters with tasks (no slice)
+  const reporterMarketBiaxialDataCasino = createBiaxialData(reporterStatsCasino);
+  const reporterMarketBiaxialDataSport = createBiaxialData(reporterStatsSport);
+  const reporterMarketBiaxialDataProduct = []; // Not used anymore, but keeping for compatibility
 
   return {
     reporterTableData,
     reporterTableColumns,
-    reporterPieData,
+    reporterPieData1,
+    reporterPieData2,
+    reporterPieData3,
     reporterBiaxialData,
-    reporterMarketBiaxialData,
+    reporterMarketBiaxialDataCasino,
+    reporterMarketBiaxialDataSport,
+    reporterMarketBiaxialDataProduct,
   };
 };
 
@@ -322,15 +350,19 @@ export const getReporterAnalyticsCardProps = (
     title: "Reporter Analytics",
     reporterTableData: calculatedData.reporterTableData,
     reporterTableColumns: calculatedData.reporterTableColumns,
-    reporterPieData: calculatedData.reporterPieData,
-    reporterPieTitle: `Reporter Metrics (${totalTasks} tasks, ${totalHours}h)`,
-    reporterPieColors: calculatedData.reporterPieData.map((item) => item.color),
+    reporterPieData1: calculatedData.reporterPieData1,
+    reporterPieData2: calculatedData.reporterPieData2,
+    reporterPieData3: calculatedData.reporterPieData3,
+    reporterPieColors1: calculatedData.reporterPieData1.map((item) => item.color),
+    reporterPieColors2: calculatedData.reporterPieData2.map((item) => item.color),
+    reporterPieColors3: calculatedData.reporterPieData3.map((item) => item.color),
     reporterBiaxialData: calculatedData.reporterBiaxialData,
     reporterBiaxialTitle: `Reporter Metrics: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
     reporterBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     reporterBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
-    reporterMarketBiaxialData: calculatedData.reporterMarketBiaxialData,
-    reporterMarketBiaxialTitle: `Reporters by Markets: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+    reporterMarketBiaxialDataCasino: calculatedData.reporterMarketBiaxialDataCasino,
+    reporterMarketBiaxialDataSport: calculatedData.reporterMarketBiaxialDataSport,
+    reporterMarketBiaxialDataProduct: calculatedData.reporterMarketBiaxialDataProduct,
     reporterMarketBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     reporterMarketBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     isLoading,

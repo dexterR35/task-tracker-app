@@ -62,7 +62,7 @@ const BiaxialBarChart = React.memo(({
 
   return (
     <div className={`card rounded-lg p-4 ${className}`}>
-      <h4 className='capitalize mb-2'>{title}</h4>
+      {title && <h4 className='capitalize mb-2'>{title}</h4>}
       
       <div className="h-100">
         <ResponsiveContainer width="100%" height="100%">
@@ -74,6 +74,7 @@ const BiaxialBarChart = React.memo(({
               left: 10,
               bottom: 5,
             }}
+            barCategoryGap={0}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
