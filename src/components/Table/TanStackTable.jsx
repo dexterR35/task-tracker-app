@@ -303,6 +303,10 @@ const TanStackTable = forwardRef(
       // Custom filters state (for dynamic export detection)
       customFilters = {},
 
+      // Global filter props
+      initialGlobalFilter = "",
+      onGlobalFilterChange = null,
+
       // Additional props
       ...additionalProps
     },
@@ -310,8 +314,23 @@ const TanStackTable = forwardRef(
   ) => {
     // Table state management
     const [sorting, setSorting] = useState([]);
-    const [globalFilter, setGlobalFilter] = useState("");
+    const [globalFilter, setGlobalFilter] = useState(initialGlobalFilter || "");
     const [columnFilters, setColumnFilters] = useState([]);
+
+    // Sync global filter when initialGlobalFilter prop changes
+    useEffect(() => {
+      if (initialGlobalFilter !== undefined && initialGlobalFilter !== globalFilter) {
+        setGlobalFilter(initialGlobalFilter);
+      }
+    }, [initialGlobalFilter]);
+
+    // Wrapper for setGlobalFilter that also calls the callback
+    const handleGlobalFilterChange = useCallback((value) => {
+      setGlobalFilter(value);
+      if (onGlobalFilterChange) {
+        onGlobalFilterChange(value);
+      }
+    }, [onGlobalFilterChange]);
     const [columnVisibility, setColumnVisibility] = useState(
       initialColumnVisibility
     );
@@ -443,7 +462,7 @@ const TanStackTable = forwardRef(
         pagination,
       },
       onSortingChange: setSorting,
-      onGlobalFilterChange: setGlobalFilter,
+      onGlobalFilterChange: handleGlobalFilterChange,
       onColumnFiltersChange: setColumnFilters,
       onColumnVisibilityChange: setColumnVisibility,
       onRowSelectionChange: handleRowSelectionChange,
@@ -568,7 +587,7 @@ const TanStackTable = forwardRef(
               table={table}
               tableType={tableType}
               globalFilter={globalFilter}
-              setGlobalFilter={setGlobalFilter}
+              setGlobalFilter={handleGlobalFilterChange}
               columns={columns}
               handleCSVExport={handleCSVExport}
               isExporting={isExporting}

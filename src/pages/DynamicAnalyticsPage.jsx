@@ -14,6 +14,9 @@ import Badge from "@/components/ui/Badge/Badge";
 import { logger } from "@/utils/logger";
 import { normalizeTimestamp } from "@/utils/dateUtils";
 import PerformanceQualityMetricsCard from "@/components/Cards/PerformanceQualityMetricsCard";
+import TanStackTable from "@/components/Table/TanStackTable";
+import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
+import { useAuth } from "@/context/AuthContext";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -517,6 +520,7 @@ const DynamicAnalyticsPage = () => {
   
   // Use real data from context
   const { tasks, isLoading, error, loadingStates, monthId: contextMonthId, reporters, deliverables } = useAppDataContext();
+  const { user } = useAuth();
 
   // Transform deliverables to options format
   const deliverablesOptions = useMemo(() => {
@@ -956,6 +960,63 @@ const DynamicAnalyticsPage = () => {
   
   // Generate real data based on parameters
   const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam, deliverablesOptions);
+
+  // Get task columns for the table
+  const taskColumns = useTaskColumns(actualMonthId, reporters, user, deliverables);
+
+  // Filter tasks by selected week for the table
+  const filteredTasksByWeek = useMemo(() => {
+    if (!tasks || !Array.isArray(tasks) || tasks.length === 0) return [];
+    
+    // Filter by month
+    let filtered = tasks.filter(task => {
+      if (actualMonthId && actualMonthId !== 'current' && task.monthId !== actualMonthId) return false;
+      return true;
+    });
+
+    // Filter by user if specified
+    if (userName) {
+      filtered = filtered.filter(task => {
+        const userMatch = (
+          task.createdByName === userName ||
+          task.userName === userName ||
+          (task.userUID && task.userUID.includes(userName)) ||
+          (task.createbyUID && task.createbyUID.includes(userName)) ||
+          (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
+          (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()))
+        );
+        return userMatch;
+      });
+    }
+
+    // Filter by reporter if specified
+    if (reporterName) {
+      filtered = filtered.filter(task => {
+        const reporterMatch = (
+          task.data_task?.reporterName === reporterName ||
+          task.reporterName === reporterName ||
+          (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
+          (task.reporterUID && task.reporterUID === reporterName) ||
+          (task.data_task?.reporterName && task.data_task.reporterName.toLowerCase().includes(reporterName.toLowerCase()))
+        );
+        return reporterMatch;
+      });
+    }
+
+    // Filter by selected week if specified
+    if (selectedWeekValue && selectedWeekValue !== '') {
+      const weeks = getWeeksInMonth(actualMonthId);
+      const weekNumber = parseInt(selectedWeekValue);
+      const selectedWeek = weeks.find(w => w.weekNumber === weekNumber);
+      
+      if (selectedWeek) {
+        const weekTasks = getWeekTasks(selectedWeek, filtered);
+        return weekTasks;
+      }
+    }
+
+    return filtered;
+  }, [tasks, actualMonthId, userName, reporterName, selectedWeekValue, getWeekTasks]);
   
   // Create analytics cards using centralized system
   const analyticsCards = createCards({ 
@@ -1104,117 +1165,57 @@ const DynamicAnalyticsPage = () => {
           </div>
         </div>
         
-        {/* Tasks by Week Section - Modern Design */}
+        {/* Tasks by Week Section - TanStack Table */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                Tasks by Week
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                View and manage tasks organized by week
-              </p>
-            </div>
-            <div className="w-full sm:w-64">
-              <SelectField
-                field={{
-                  name: 'weekSelect',
-                  label: '',
-                  options: [
-                    { value: '', label: 'All Weeks' },
-                    ...getWeeksInMonth(actualMonthId).map(week => ({
-                      value: week.weekNumber.toString(),
-                      label: `Week ${week.weekNumber}`
-                    }))
-                  ]
-                }}
-                register={register}
-                setValue={setValue}
-                watch={watch}
-                errors={errors}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              Tasks by Week
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              View and manage tasks organized by week
+            </p>
+          </div>
+          
+          {/* Week Filter Component */}
+          {(() => {
+            const weekFilterComponent = (
+              <div className="w-full sm:w-64">
+                <SelectField
+                  field={{
+                    name: 'weekSelect',
+                    label: 'Select Week',
+                    options: [
+                      { value: '', label: 'All Weeks' },
+                      ...getWeeksInMonth(actualMonthId).map(week => ({
+                        value: week.weekNumber.toString(),
+                        label: `Week ${week.weekNumber}`
+                      }))
+                    ]
+                  }}
+                  register={register}
+                  setValue={setValue}
+                  watch={watch}
+                  errors={errors}
+                />
+              </div>
+            );
+
+            return (
+              <TanStackTable
+                data={filteredTasksByWeek}
+                columns={taskColumns}
+                tableType="tasks"
+                error={error}
+                isLoading={isLoading}
+                showFilters={true}
+                showPagination={true}
+                customFilter={weekFilterComponent}
+                reporters={reporters}
+                users={[]}
+                deliverables={deliverables}
               />
-            </div>
-          </div>
-          {/* Weeks Container */}
-          <div className="space-y-6">
-            {(() => {
-              if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
-                return (
-                  <div className="text-center py-8">
-                    <div className="text-gray-300 mb-2">
-                      <Icons.generic.document className="w-12 h-12 mx-auto mb-2" />
-                      <p className="text-lg font-medium mb-1">No Tasks</p>
-                      <p className="text-sm">No tasks found for this month</p>
-                    </div>
-                  </div>
-                );
-              }
- {/* no task */}
-              // Get weeks for the current month - this fetches all existing weeks, does NOT create new ones
-              // Weeks are filtered/selected from this list, never duplicated
-              const weeks = getWeeksInMonth(actualMonthId);
-              if (!weeks || weeks.length === 0) {
-                return (
-                  <div className="text-center py-4">
-                    <p className="text-gray-300">No weeks available for this month</p>
-                  </div>
-                );
-              }
-
-              // Determine which weeks to display
-              const weeksToDisplay = (() => {
-                if (!selectedWeekValue || selectedWeekValue === '') {
-                  // Show all weeks
-                  return weeks;
-                } else {
-                  // Show only selected week
-                  const weekNumber = parseInt(selectedWeekValue);
-                  const selectedWeek = weeks.find(w => w.weekNumber === weekNumber);
-                  
-                  if (!selectedWeek) {
-                    // Week not found - return null to show error
-                    return null;
-                  }
-                  
-                  return [selectedWeek];
-                }
-              })();
-
-              // If week not found, show error message
-              if (weeksToDisplay === null) {
-                const weekNumber = parseInt(selectedWeekValue);
-                return (
-                  <div className="text-center py-8">
-                    <div className="text-gray-300 mb-2">
-                      <Icons.generic.warning className="w-12 h-12 mx-auto mb-2" />
-                      <p className="text-lg font-medium mb-1">Week Not Found</p>
-                      <p className="text-sm">The selected week (Week {weekNumber}) is not available for this month</p>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Render all weeks (either all weeks or just the selected one) - using shared helper functions
-              try {
-                return weeksToDisplay.map((week) => {
-                  const weekTasks = getWeekTasks(week, tasks);
-                  return renderWeekSection(week, weekTasks);
-                });
-              } catch (error) {
-                // Display error for tasks without startDate
-                return (
-                  <div className="text-center py-8">
-                    <div className="text-red-400 mb-4">
-                      <Icons.generic.warning className="w-12 h-12 mx-auto mb-2" />
-                      <p className="text-lg font-semibold mb-2">Error Loading Week Tasks</p>
-                      <p className="text-sm text-red-300 whitespace-pre-line">{error.message}</p>
-                      <p className="text-xs text-red-400 mt-2">Please ensure all tasks have a valid startDate.</p>
-                    </div>
-                  </div>
-                );
-              }
-            })()}
-          </div>
+            );
+          })()}
         </div>
         
       </div>

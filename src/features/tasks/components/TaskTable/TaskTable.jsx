@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import TanStackTable from "@/components/Table/TanStackTable";
@@ -44,14 +44,26 @@ const TaskTable = ({
   enablePagination = true,
   pageSize = TABLE_SYSTEM.DEFAULT_PAGE_SIZE,
 }) => {
-  // Filter state - single selection only
-  const [selectedFilter, setSelectedFilter] = useState(null);
-  // Department filter state
+  // Get navigate function for React Router navigation
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read filter values from URL parameters
+  const urlFilter = searchParams.get("filter") || "";
+  const urlDepartment = searchParams.get("department") || "";
+  const urlDeliverable = searchParams.get("deliverable") || "";
+  const urlSearch = searchParams.get("search") || "";
+
+  // Filter state - single selection only - initialize from URL
+  const [selectedFilter, setSelectedFilter] = useState(urlFilter || null);
+  // Department filter state - initialize from URL
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] =
-    useState(null);
-  // Deliverable filter state
+    useState(urlDepartment || null);
+  // Deliverable filter state - initialize from URL
   const [selectedDeliverableFilter, setSelectedDeliverableFilter] =
-    useState(null);
+    useState(urlDeliverable || null);
+  // Global search filter state - initialize from URL
+  const [globalSearchFilter, setGlobalSearchFilter] = useState(urlSearch || "");
 
   // Modal states - using table actions system instead
 
@@ -68,9 +80,6 @@ const TaskTable = ({
   const userCanDeleteTasks = canDeleteTask();
   const userCanUpdateTasks = canUpdateTask();
   const userCanViewTasks = canViewTasks();
-
-  // Get navigate function for React Router navigation
-  const navigate = useNavigate();
 
   // Get data from useAppData hook
   const {
@@ -536,36 +545,85 @@ const TaskTable = ({
     }
   }, [filteredTasks?.length, onCountChange]);
 
+  // Sync filter states with URL parameters when URL changes (but not when we're updating URL from state)
+  const isUpdatingURLRef = useRef(false);
+  
+  useEffect(() => {
+    // Skip if we're in the middle of updating URL
+    if (isUpdatingURLRef.current) {
+      isUpdatingURLRef.current = false;
+      return;
+    }
+
+    const urlFilter = searchParams.get("filter") || "";
+    const urlDepartment = searchParams.get("department") || "";
+    const urlDeliverable = searchParams.get("deliverable") || "";
+    const urlSearch = searchParams.get("search") || "";
+
+    // Only update state if URL params differ from current state
+    if (urlFilter !== (selectedFilter || "")) {
+      setSelectedFilter(urlFilter || null);
+    }
+    if (urlDepartment !== (selectedDepartmentFilter || "")) {
+      setSelectedDepartmentFilter(urlDepartment || null);
+    }
+    if (urlDeliverable !== (selectedDeliverableFilter || "")) {
+      setSelectedDeliverableFilter(urlDeliverable || null);
+    }
+    if (urlSearch !== globalSearchFilter) {
+      setGlobalSearchFilter(urlSearch);
+    }
+  }, [searchParams]);
+
+  // Sync global search filter with URL
+  useEffect(() => {
+    const urlSearch = searchParams.get("search") || "";
+    // Only update URL if the filter value differs from URL
+    if (globalSearchFilter !== urlSearch) {
+      isUpdatingURLRef.current = true;
+      updateURLParams({ search: globalSearchFilter || "" });
+    }
+  }, [globalSearchFilter]);
+
+  // Helper function to update URL parameters
+  const updateURLParams = useCallback((updates) => {
+    isUpdatingURLRef.current = true;
+    const currentParams = new URLSearchParams(window.location.search);
+    const paramsObj = Object.fromEntries(currentParams.entries());
+    
+    // Apply updates
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value || value === "") {
+        delete paramsObj[key];
+      } else {
+        paramsObj[key] = value;
+      }
+    });
+    
+    setSearchParams(paramsObj, { replace: true });
+  }, [setSearchParams]);
+
   // Handle filter value change from SearchableSelectField
   const handleFilterValueChange = useCallback(
     (fieldName, value) => {
       if (fieldName === "taskFilter") {
         // If clicking the same filter or clearing, deselect it
-        if (selectedFilter === value || !value) {
-          setSelectedFilter(null);
-        } else {
-          // Select the new filter
-          setSelectedFilter(value);
-        }
+        const newValue = (selectedFilter === value || !value) ? null : value;
+        setSelectedFilter(newValue);
+        updateURLParams({ filter: newValue || "" });
       } else if (fieldName === "departmentFilter") {
         // If clicking the same department filter or clearing, deselect it
-        if (selectedDepartmentFilter === value || !value) {
-          setSelectedDepartmentFilter(null);
-        } else {
-          // Select the new department filter
-          setSelectedDepartmentFilter(value);
-        }
+        const newValue = (selectedDepartmentFilter === value || !value) ? null : value;
+        setSelectedDepartmentFilter(newValue);
+        updateURLParams({ department: newValue || "" });
       } else if (fieldName === "deliverableFilter") {
         // If clicking the same deliverable filter or clearing, deselect it
-        if (selectedDeliverableFilter === value || !value) {
-          setSelectedDeliverableFilter(null);
-        } else {
-          // Select the new deliverable filter
-          setSelectedDeliverableFilter(value);
-        }
+        const newValue = (selectedDeliverableFilter === value || !value) ? null : value;
+        setSelectedDeliverableFilter(newValue);
+        updateURLParams({ deliverable: newValue || "" });
       }
     },
-    [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter]
+    [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter, updateURLParams]
   );
 
   // Create deliverables options for filter
@@ -675,6 +733,9 @@ const TaskTable = ({
         pageSize={pageSizeState}
         // Custom filter component
         customFilter={taskFilterComponent}
+        // Global filter props for URL sync
+        initialGlobalFilter={globalSearchFilter}
+        onGlobalFilterChange={setGlobalSearchFilter}
         // Pass filter state for dynamic export
         customFilters={{
           selectedFilter,
