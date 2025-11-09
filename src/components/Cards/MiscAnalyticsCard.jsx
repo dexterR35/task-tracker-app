@@ -48,13 +48,13 @@ const MiscAnalyticsCard = memo(({
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* Tables Section */}
         <div>
-          {/* Misc Statistics Table */}
-          {miscTableData && miscTableData.length > 0 ? (
+          {/* Users Misc Statistics Table */}
+          {usersMiscTableData && usersMiscTableData.length > 0 ? (
             <div className="table-container">
               <AnalyticsTable
-                data={miscTableData}
-                columns={miscTableColumns}
-                sectionTitle="Misc Statistics"
+                data={usersMiscTableData}
+                columns={usersMiscTableColumns}
+                sectionTitle="Users Misc Statistics"
               />
             </div>
           ) : (
@@ -64,23 +64,12 @@ const MiscAnalyticsCard = memo(({
               </div>
             </div>
           )}
-
-          {/* Users Misc Statistics Table */}
-          {usersMiscTableData && usersMiscTableData.length > 0 ? (
-            <div className="table-container mt-6">
-              <AnalyticsTable
-                data={usersMiscTableData}
-                columns={usersMiscTableColumns}
-                sectionTitle="Users Misc Statistics"
-              />
-            </div>
-          ) : null}
         </div>
         
         {/* Charts Section */}
         <div>
-          {/* Pie Charts Container */}
-          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+          {/* Charts Container - 3 columns grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Misc Categories Pie Chart */}
             <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
               <ChartHeader
@@ -100,10 +89,7 @@ const MiscAnalyticsCard = memo(({
                 />
               </div>
             </div>
-          </div>
 
-          {/* Biaxial Charts Container */}
-          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-6">
             {/* Misc Categories Biaxial Chart */}
             {(() => {
               const totalTasks = categoryBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;

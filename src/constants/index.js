@@ -199,6 +199,16 @@ export const NAVIGATION_CONFIG = {
       icon: "chart",
       color: "purple",
       adminOnly: true,
+      subItems: [
+        {
+          name: "Overview",
+          href: "/analytics",
+        },
+        {
+          name: "View All Data",
+          href: "/analytics-detail",
+        },
+      ],
     },
     {
       name: "Management",
