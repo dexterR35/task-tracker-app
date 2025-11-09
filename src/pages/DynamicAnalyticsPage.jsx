@@ -17,6 +17,7 @@ import PerformanceQualityMetricsCard from "@/components/Cards/PerformanceQuality
 import TanStackTable from "@/components/Table/TanStackTable";
 import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
 import { useAuth } from "@/context/AuthContext";
+import { matchesUserName, matchesReporterName } from "@/utils/taskFilters";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -52,26 +53,14 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
     // Filter by month
     if (monthId && monthId !== 'current' && task.monthId !== monthId) return false;
     
-    // Filter by user if specified
-    if (userName) {
-      const userMatch = (
-        task.createdByName === userName ||
-        task.userName === userName ||
-        (task.userUID && task.userUID.includes(userName)) ||
-        (task.createbyUID && task.createbyUID.includes(userName))
-      );
-      if (!userMatch) return false;
+    // Filter by user if specified (using shared utility)
+    if (userName && !matchesUserName(task, userName)) {
+      return false;
     }
     
-    // Filter by reporter if specified
-    if (reporterName) {
-      const reporterMatch = (
-        task.data_task?.reporterName === reporterName ||
-        task.reporterName === reporterName ||
-        (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
-        (task.reporterUID && task.reporterUID === reporterName)
-      );
-      if (!reporterMatch) return false;
+    // Filter by reporter if specified (using shared utility)
+    if (reporterName && !matchesReporterName(task, reporterName)) {
+      return false;
     }
     
     // Filter by week if specified
@@ -974,33 +963,14 @@ const DynamicAnalyticsPage = () => {
       return true;
     });
 
-    // Filter by user if specified
+    // Filter by user if specified (using shared utility for name matching)
     if (userName) {
-      filtered = filtered.filter(task => {
-        const userMatch = (
-          task.createdByName === userName ||
-          task.userName === userName ||
-          (task.userUID && task.userUID.includes(userName)) ||
-          (task.createbyUID && task.createbyUID.includes(userName)) ||
-          (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
-          (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()))
-        );
-        return userMatch;
-      });
+      filtered = filtered.filter(task => matchesUserName(task, userName));
     }
 
-    // Filter by reporter if specified
+    // Filter by reporter if specified (using shared utility for name matching)
     if (reporterName) {
-      filtered = filtered.filter(task => {
-        const reporterMatch = (
-          task.data_task?.reporterName === reporterName ||
-          task.reporterName === reporterName ||
-          (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
-          (task.reporterUID && task.reporterUID === reporterName) ||
-          (task.data_task?.reporterName && task.data_task.reporterName.toLowerCase().includes(reporterName.toLowerCase()))
-        );
-        return reporterMatch;
-      });
+      filtered = filtered.filter(task => matchesReporterName(task, reporterName));
     }
 
     // Filter by selected week if specified

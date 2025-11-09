@@ -4,6 +4,7 @@ import SearchableSelectField from "@/components/forms/components/SearchableSelec
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
+import { matchesUser, getTaskReporterId, filterTasksByUserAndReporter } from "@/utils/taskFilters";
 
 export const getCardColor = (cardType, data = {}) => {
   const palette = [
@@ -380,34 +381,14 @@ export const SMALL_CARD_CONFIGS = {
       
       // Determine target user: selected user or current user (never show all tasks)
       const targetUserId = selectedUserId || currentUserId;
-      
-      // Helper function to get reporter ID (matches TaskTable logic)
-      const getTaskReporterId = (task) => {
-        return task.data_task?.reporters || task.reporters;
-      };
-      
-      // Helper function to check if task matches user
-      const matchesUser = (task, userId) => {
-        return task.userUID === userId || task.createbyUID === userId;
-      };
-      
-      // Filter tasks based on selections - always filter by user (selected or current)
-      const filteredTasks = data.tasks.filter((task) => {
-        // Always filter by month first
-        if (currentMonthId && task.monthId !== currentMonthId) return false;
-        
-        // Always filter by target user (selected user or current user)
-        if (targetUserId && !matchesUser(task, targetUserId)) return false;
-        
-        // If reporter is selected, also filter by reporter
-        if (selectedReporterId) {
-          const taskReporterId = getTaskReporterId(task);
-          if (!taskReporterId) return false;
-          // Compare task reporter ID directly with selectedReporterId (exact match)
-          return String(taskReporterId) === String(selectedReporterId);
-        }
-        
-        return true;
+
+      // Use shared utility for filtering
+      const filteredTasks = filterTasksByUserAndReporter(data.tasks, {
+        selectedUserId: targetUserId,
+        selectedReporterId,
+        currentMonthId,
+        isUserAdmin: data.isUserAdmin || data.currentUser?.role === "admin",
+        currentUserUID: currentUserId,
       });
       return filteredTasks.length.toString();
     },
@@ -750,37 +731,14 @@ export const SMALL_CARD_CONFIGS = {
         filteredTasks = weekTasks;
       }
 
-      // Apply user and reporter filtering if specified
+      // Apply user and reporter filtering if specified using shared utility
       if (data.selectedUserId || data.selectedReporterId) {
-        filteredTasks = filteredTasks.filter((task) => {
-          // If both user and reporter are selected, show tasks that match BOTH
-          if (data.selectedUserId && data.selectedReporterId) {
-            const matchesUser =
-              task.userUID === data.selectedUserId ||
-              task.createbyUID === data.selectedUserId;
-            const matchesReporter =
-              task.reporterUID === data.selectedReporterId ||
-              task.data_task?.reporterUID === data.selectedReporterId;
-            return matchesUser && matchesReporter;
-          }
-
-          // If only user is selected, show tasks for that user
-          if (data.selectedUserId && !data.selectedReporterId) {
-            return (
-              task.userUID === data.selectedUserId ||
-              task.createbyUID === data.selectedUserId
-            );
-          }
-
-          // If only reporter is selected, show tasks for that reporter
-          if (data.selectedReporterId && !data.selectedUserId) {
-            return (
-              task.reporterUID === data.selectedReporterId ||
-              task.data_task?.reporterUID === data.selectedReporterId
-            );
-          }
-
-          return true;
+        filteredTasks = filterTasksByUserAndReporter(filteredTasks, {
+          selectedUserId: data.selectedUserId,
+          selectedReporterId: data.selectedReporterId,
+          currentMonthId: null, // Already filtered by month above
+          isUserAdmin: data.isUserAdmin || data.currentUser?.role === "admin",
+          currentUserUID: data.currentUser?.userUID,
         });
       }
 

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { updateURLParam } from "@/utils/urlParams";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
@@ -62,18 +63,8 @@ const AdminDashboardPage = () => {
         return;
       }
       
-      // Get current URL parameters
-      const currentParams = new URLSearchParams(window.location.search);
-      const paramsObj = Object.fromEntries(currentParams.entries());
-      
-      // Only modify the user parameter, leave everything else untouched
-      if (!userId || userId === '') {
-        delete paramsObj.user;
-      } else {
-        paramsObj.user = userId;
-      }
-      
-      setSearchParams(paramsObj, { replace: true });
+      // Use shared utility to update URL parameter
+      updateURLParam(setSearchParams, "user", userId || "");
     },
     [setSearchParams, isUserAdmin, user]
   );
@@ -81,18 +72,8 @@ const AdminDashboardPage = () => {
   // Handle reporter selection - completely independent from user selection
   const handleReporterSelect = useCallback(
     (reporterId) => {
-      // Get current URL parameters
-      const currentParams = new URLSearchParams(window.location.search);
-      const paramsObj = Object.fromEntries(currentParams.entries());
-      
-      // Only modify the reporter parameter, leave everything else untouched
-      if (!reporterId || reporterId === '') {
-        delete paramsObj.reporter;
-      } else {
-        paramsObj.reporter = reporterId;
-      }
-      
-      setSearchParams(paramsObj, { replace: true });
+      // Use shared utility to update URL parameter
+      updateURLParam(setSearchParams, "reporter", reporterId || "");
     },
     [setSearchParams]
   );
@@ -152,18 +133,9 @@ const AdminDashboardPage = () => {
     // If week is null or empty, clear the selection (show all weeks)
     setSelectedWeek(week);
     
-    // Get current URL parameters and preserve existing ones
-    const currentParams = new URLSearchParams(window.location.search);
-    const paramsObj = Object.fromEntries(currentParams.entries());
-    
-    // Only modify the week parameter, leave everything else untouched
-    if (!week) {
-      delete paramsObj.week;
-    } else {
-      paramsObj.week = week.weekNumber.toString();
-    }
-    
-    setSearchParams(paramsObj, { replace: true });
+    // Use shared utility to update URL parameter
+    const weekValue = week ? week.weekNumber.toString() : "";
+    updateURLParam(setSearchParams, "week", weekValue);
   }, [setSearchParams]);
 
   // Initialize selectedWeek from URL parameter

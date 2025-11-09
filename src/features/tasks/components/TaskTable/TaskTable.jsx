@@ -19,6 +19,8 @@ import SearchableSelectField from "@/components/forms/components/SearchableSelec
 import DepartmentFilter from "@/components/filters/DepartmentFilter";
 import { TABLE_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
+import { updateURLParam, updateURLParams, getURLParam } from "@/utils/urlParams";
+import { matchesUser, getTaskReporterId, getTaskData, filterTasksByUserAndReporter } from "@/utils/taskFilters";
 
 // Available filter options
 const FILTER_OPTIONS = [
@@ -48,11 +50,11 @@ const TaskTable = ({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Read filter values from URL parameters
-  const urlFilter = searchParams.get("filter") || "";
-  const urlDepartment = searchParams.get("department") || "";
-  const urlDeliverable = searchParams.get("deliverable") || "";
-  const urlSearch = searchParams.get("search") || "";
+  // Read filter values from URL parameters using shared utility
+  const urlFilter = getURLParam(searchParams, "filter");
+  const urlDepartment = getURLParam(searchParams, "department");
+  const urlDeliverable = getURLParam(searchParams, "deliverable");
+  const urlSearch = getURLParam(searchParams, "search");
 
   // Filter state - single selection only - initialize from URL
   const [selectedFilter, setSelectedFilter] = useState(urlFilter || null);
@@ -171,19 +173,6 @@ const TaskTable = ({
   // Extract stable user values
   const userUID = user?.userUID;
 
-  // Helper functions to reduce duplication
-  const matchesUser = useCallback((task, userId) => {
-    return task.userUID === userId || task.createbyUID === userId;
-  }, []);
-
-  const getTaskData = useCallback((task) => {
-    return task.data_task || task;
-  }, []);
-
-  const getTaskReporterId = useCallback((task) => {
-    return task.data_task?.reporters || task.reporters;
-  }, []);
-
   // Reusable filtering function with role-based access control
   const getFilteredTasks = useCallback(
     (
@@ -200,56 +189,13 @@ const TaskTable = ({
         return [];
       }
 
-      // First apply month, user, and reporter filtering
-      let filteredTasks = tasks.filter((task) => {
-        // Always filter by month first
-        if (currentMonthId && task.monthId !== currentMonthId) return false;
-
-        // Role-based filtering: Regular users can only see their own tasks
-        if (!isUserAdmin) {
-          // Check if this task belongs to the current user
-          const isUserTask = userUID && matchesUser(task, userUID);
-          if (!isUserTask) return false;
-          
-          // If reporter is selected, also filter by reporter
-          if (selectedReporterId) {
-            const taskReporterId = getTaskReporterId(task);
-            if (!taskReporterId) return false;
-            // Compare task reporter ID directly with selectedReporterId (exact match)
-            return String(taskReporterId) === String(selectedReporterId);
-          }
-          
-          // Regular users can ONLY see their own tasks
-          return true;
-        }
-
-        // Admin filtering logic
-        // If both user and reporter are selected, show tasks that match BOTH
-        if (selectedUserId && selectedReporterId) {
-          const matchesSelectedUser = matchesUser(task, selectedUserId);
-          const taskReporterId = getTaskReporterId(task);
-          if (!taskReporterId) return false;
-
-          // Compare task reporter ID directly with selectedReporterId (exact case)
-          return matchesSelectedUser && taskReporterId === selectedReporterId;
-        }
-
-        // If only user is selected, show tasks for that user
-        if (selectedUserId && !selectedReporterId) {
-          return matchesUser(task, selectedUserId);
-        }
-
-        // If only reporter is selected, show tasks for that reporter
-        if (selectedReporterId && !selectedUserId) {
-          const taskReporterId = getTaskReporterId(task);
-          if (!taskReporterId) return false;
-
-          // Compare task reporter ID directly with selectedReporterId (exact case)
-          return taskReporterId === selectedReporterId;
-        }
-
-        // If neither user nor reporter is selected, admin sees all tasks
-        return true;
+      // Use shared utility for user/reporter filtering
+      let filteredTasks = filterTasksByUserAndReporter(tasks, {
+        selectedUserId,
+        selectedReporterId,
+        currentMonthId,
+        isUserAdmin,
+        currentUserUID: userUID,
       });
 
       // Apply department filter
@@ -577,31 +523,14 @@ const TaskTable = ({
 
   // Sync global search filter with URL
   useEffect(() => {
-    const urlSearch = searchParams.get("search") || "";
+    const urlSearch = getURLParam(searchParams, "search");
     // Only update URL if the filter value differs from URL
     if (globalSearchFilter !== urlSearch) {
       isUpdatingURLRef.current = true;
-      updateURLParams({ search: globalSearchFilter || "" });
+      updateURLParam(setSearchParams, "search", globalSearchFilter || "");
     }
-  }, [globalSearchFilter]);
+  }, [globalSearchFilter, searchParams, setSearchParams]);
 
-  // Helper function to update URL parameters
-  const updateURLParams = useCallback((updates) => {
-    isUpdatingURLRef.current = true;
-    const currentParams = new URLSearchParams(window.location.search);
-    const paramsObj = Object.fromEntries(currentParams.entries());
-    
-    // Apply updates
-    Object.entries(updates).forEach(([key, value]) => {
-      if (!value || value === "") {
-        delete paramsObj[key];
-      } else {
-        paramsObj[key] = value;
-      }
-    });
-    
-    setSearchParams(paramsObj, { replace: true });
-  }, [setSearchParams]);
 
   // Handle filter value change from SearchableSelectField
   const handleFilterValueChange = useCallback(
@@ -610,20 +539,20 @@ const TaskTable = ({
         // If clicking the same filter or clearing, deselect it
         const newValue = (selectedFilter === value || !value) ? null : value;
         setSelectedFilter(newValue);
-        updateURLParams({ filter: newValue || "" });
+        updateURLParam(setSearchParams, "filter", newValue || "");
       } else if (fieldName === "departmentFilter") {
         // If clicking the same department filter or clearing, deselect it
         const newValue = (selectedDepartmentFilter === value || !value) ? null : value;
         setSelectedDepartmentFilter(newValue);
-        updateURLParams({ department: newValue || "" });
+        updateURLParam(setSearchParams, "department", newValue || "");
       } else if (fieldName === "deliverableFilter") {
         // If clicking the same deliverable filter or clearing, deselect it
         const newValue = (selectedDeliverableFilter === value || !value) ? null : value;
         setSelectedDeliverableFilter(newValue);
-        updateURLParams({ deliverable: newValue || "" });
+        updateURLParam(setSearchParams, "deliverable", newValue || "");
       }
     },
-    [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter, updateURLParams]
+    [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter, setSearchParams]
   );
 
   // Create deliverables options for filter
