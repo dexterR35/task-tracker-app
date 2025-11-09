@@ -63,13 +63,13 @@ const Sidebar = () => {
   };
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-smallCard border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`flex flex-col h-full bg-white dark:bg-smallCard  transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header Section */}
       <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         
         {/* Design department */}
         {!isCollapsed && (
-          <div className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-700/30">
+          <div className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg ">
             <div 
               className="p-2 rounded-lg text-white shadow-md"
               style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP[NAVIGATION_CONFIG.DEPARTMENT.color] }}
@@ -127,7 +127,7 @@ const Sidebar = () => {
                     )}
                   </button>
                   {!isCollapsed && isExpanded && hasSubItems && (
-                    <div className="ml-4 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                    <div className="ml-4 space-y-1  pl-3">
                       {item.subItems.map((subItem) => {
                         const subActive = isActive(subItem.href);
                         return (

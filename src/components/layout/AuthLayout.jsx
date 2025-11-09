@@ -38,7 +38,7 @@ const AuthLayout = () => {
 
       <div className="flex  overflow-hidden h-[calc(100vh-3.5em)]">
         <aside
-          className={`relative z-40  border-right   ${sidebarOpen ? "w-72" : "w-0"} overflow-hidden`}
+          className={`relative z-40    ${sidebarOpen ? "w-72" : "w-0"} overflow-hidden`}
         >
           <div
             className={`w-full h-full  ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
@@ -50,7 +50,7 @@ const AuthLayout = () => {
           className={`w-full flex flex-col overflow-hidden  ${sidebarOpen ? "ml-0" : "ml-0"}`}
         >
           <MonthBoardBanner />
-          <main className=" overflow-y-auto bg-primary ">
+          <main className=" overflow-y-auto bg-primary w-full">
             <div className="px-6 py-6 ">
               <Outlet />
             </div>
