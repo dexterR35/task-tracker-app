@@ -163,11 +163,11 @@ const ProfilePage = () => {
       subtitle: 'Basic Details',
       description: 'Your personal data',
       icon: Icons.generic.user,
-      color: 'purple',
+      color: 'pink',
       value: formData.name,
       badge: {
         text: formData.role.toUpperCase(),
-        color: 'purple'
+        color: 'pink'
       },
       content: (
         <div className="flex items-center space-x-4 mb-4">

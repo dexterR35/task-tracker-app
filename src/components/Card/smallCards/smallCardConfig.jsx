@@ -166,7 +166,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: "purple",
+    color: "blue",
     getValue: (data) => {
       // Show total number of users, not tasks
       return (data.users?.length || 0).toString();
@@ -179,7 +179,7 @@ export const SMALL_CARD_CONFIGS = {
     },
     getBadge: (data) => ({
       text: data.selectedUserId ? "Filtered" : "All Users",
-      color: "purple",
+      color: "blue",
     }),
     getContent: (data) => (
       <div className=" space-y-3">
@@ -208,7 +208,7 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No users found"
-          variant="purple"
+          variant="blue"
         />
       </div>
     ),
@@ -270,7 +270,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: "yellow",
+    color: "orange",
     getValue: (data) => {
       return (data.reporters?.length || 0).toString();
     },
@@ -284,7 +284,7 @@ export const SMALL_CARD_CONFIGS = {
       text: data.selectedReporterId
         ? `${data.selectedReporterName}`
         : "All Reporters",
-      color: "yellow",
+      color: "orange",
     }),
     getContent: (data) => (
       <div className="space-y-1">
@@ -313,7 +313,7 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No reporters found"
-          variant="yellow"
+          variant="purple"
         />
       </div>
     ),
@@ -379,12 +379,12 @@ export const SMALL_CARD_CONFIGS = {
   [SMALL_CARD_TYPES.USER_PROFILE]: {
     title: "User Profile",
     subtitle: "View All",
-    description: "Total Tasks Per User",
+    description: "User Tasks",
     icon: Icons.generic.user,
-    color: "blue",
+    color: "pink",
     getBadge: (data) => ({
       text: data.currentUser?.role || "user",
-      // color: 'pink'
+      color: 'pink'
     }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
@@ -394,6 +394,9 @@ export const SMALL_CARD_CONFIGS = {
         data.selectedMonth?.monthId || data.currentMonth?.monthId;
       const isUserAdmin = data.isUserAdmin || data.currentUser?.role === "admin";
       const currentUserId = data.currentUser?.userUID;
+      
+      // Determine target user: selected user or current user (never show all tasks)
+      const targetUserId = selectedUserId || currentUserId;
       
       // Helper function to get reporter ID (matches TaskTable logic)
       const getTaskReporterId = (task) => {
@@ -405,53 +408,22 @@ export const SMALL_CARD_CONFIGS = {
         return task.userUID === userId || task.createbyUID === userId;
       };
       
-      // Filter tasks based on selections (matching TaskTable logic exactly)
+      // Filter tasks based on selections - always filter by user (selected or current)
       const filteredTasks = data.tasks.filter((task) => {
         // Always filter by month first
         if (currentMonthId && task.monthId !== currentMonthId) return false;
         
-        // Role-based filtering: Regular users can only see their own tasks
-        if (!isUserAdmin) {
-          // Check if this task belongs to the current user
-          const isUserTask = currentUserId && matchesUser(task, currentUserId);
-          if (!isUserTask) return false;
-          
-          // If reporter is selected, also filter by reporter
-          if (selectedReporterId) {
-            const taskReporterId = getTaskReporterId(task);
-            if (!taskReporterId) return false;
-            // Compare task reporter ID directly with selectedReporterId (exact match)
-            return String(taskReporterId) === String(selectedReporterId);
-          }
-          
-          // Regular users can ONLY see their own tasks
-          return true;
-        }
+        // Always filter by target user (selected user or current user)
+        if (targetUserId && !matchesUser(task, targetUserId)) return false;
         
-        // Admin filtering logic
-        // If both user and reporter are selected, show tasks that match BOTH
-        if (selectedUserId && selectedReporterId) {
-          const matchesSelectedUser = matchesUser(task, selectedUserId);
+        // If reporter is selected, also filter by reporter
+        if (selectedReporterId) {
           const taskReporterId = getTaskReporterId(task);
           if (!taskReporterId) return false;
           // Compare task reporter ID directly with selectedReporterId (exact match)
-          return matchesSelectedUser && taskReporterId === selectedReporterId;
+          return String(taskReporterId) === String(selectedReporterId);
         }
         
-        // If only user is selected, show tasks for that user
-        if (selectedUserId && !selectedReporterId) {
-          return matchesUser(task, selectedUserId);
-        }
-        
-        // If only reporter is selected, show tasks for that reporter
-        if (selectedReporterId && !selectedUserId) {
-          const taskReporterId = getTaskReporterId(task);
-          if (!taskReporterId) return false;
-          // Compare task reporter ID directly with selectedReporterId (exact match)
-          return taskReporterId === selectedReporterId;
-        }
-        
-        // If neither user nor reporter is selected, admin sees all tasks
         return true;
       });
       return filteredTasks.length.toString();

@@ -325,33 +325,62 @@ export const MonthProgressBar = ({
     return null;
   }
 
+  const primaryColor = isCurrentMonth
+    ? '#2b67f6'
+    : CARD_SYSTEM.COLOR_HEX_MAP.pink;
+
   return (
-    <div className="w-full">
+    <div className="w-full card">
+      {/* Header Section */}
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <Icons.generic.clock className="w-4 h-4" />
-          <span className="!text-md">{monthName}</span>
+        <div>
+          <h3 className="text-base font-semibold">
+            {monthName}
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {isCurrentMonth ? "Current Month" : "Past Month"}
+          </p>
         </div>
-        <span className="text-sm ">
-          {progressData.daysPassed}/{progressData.totalDays} days
-        </span>
+        <div className="text-right">
+          <div className="text-xl font-bold" style={{ color: primaryColor }}>
+            {progressData.progress}%
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {progressData.daysPassed}/{progressData.totalDays} days
+          </div>
+        </div>
       </div>
 
-      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-        <div
-          className="h-2 rounded-full transition-all duration-300"
-          style={{
-            width: `${progressData.progress}%`,
-            backgroundColor: isCurrentMonth
-              ? CARD_SYSTEM.COLOR_HEX_MAP.amber + "ba" // 70% → B3, 73% → BA, 75% → BF, 80% → CC, 85% → D9 55 8C
-              : CARD_SYSTEM.COLOR_HEX_MAP.pink + "bf",
-          }}
-        />
+      {/* Progress Bar Section */}
+      <div className="mb-2">
+        <div className="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{
+              width: `${progressData.progress}%`,
+              backgroundColor: primaryColor,
+            }}
+          />
+        </div>
       </div>
 
-      <div className="flex justify-between text-xs mt-2">
-        <span>{progressData.daysPassed} days passed</span>
-        <span>{progressData.daysRemaining} days remaining</span>
+      {/* Stats Section */}
+      <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center space-x-1">
+          <div 
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: primaryColor }}
+          ></div>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            {progressData.daysPassed} days passed
+          </span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500"></div>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            {progressData.daysRemaining} days remaining
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -388,6 +417,7 @@ export const MonthBoardBanner = () => {
   // 1. Still loading initial data
   // 2. Board already exists
   // 3. No month data available
+
   if (isInitialLoading || boardExists || !monthId || !monthName) {
     return null;
   }
@@ -425,17 +455,17 @@ export const MonthBoardBanner = () => {
   };
 
   return (
-    <div className="card ">
+    <div className="card">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-            <Icons.generic.calendar className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+            <Icons.generic.calendar className="w-4 h-4 text-blue-600 dark:text-blue-300" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+            <h3 className="text-base font-semibold text-blue-900 dark:text-blue-100">
               Create Month Board
             </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
               Generate the task board for {monthName} to start tracking tasks
             </p>
           </div>
@@ -444,7 +474,7 @@ export const MonthBoardBanner = () => {
           onClick={handleGenerateBoard}
           disabled={isGenerating}
           iconName="add"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm"
         >
           {isGenerating ? "Creating..." : "Create Board"}
         </DynamicButton>

@@ -235,7 +235,7 @@ export const NAVIGATION_CONFIG = {
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
     green: '#00d54d',      // Emerald-500 - Fresh, growth, success
-    blue: '#00a9ff',      // Blue-600 - Professional, trust, primary
+    blue: '#467dfd',      // Blue-600 - Professional, trust, primary
     purple: '#0fc9ce',    // Violet-600 - Royal, premium, creative
     crimson: '#DC143C',   // Red-600 - Authority, admin, critical
     amber: '#ff9e08',     // Amber-500 - Warning, attention, caution
@@ -245,7 +245,7 @@ export const CARD_SYSTEM = {
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
     orange: '#F25912',
     soft_purple:"#9694FF",    // Orange-500 - Product, warning, energy
-    color_default: '#332f9b',
+    color_default: '#1b46ad',
     select_badge: '#00d8de', // C2E2FA- Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
     dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast

@@ -13,6 +13,7 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Badge from "@/components/ui/Badge/Badge";
 import { logger } from "@/utils/logger";
 import { normalizeTimestamp } from "@/utils/dateUtils";
+import PerformanceQualityMetricsCard from "@/components/Cards/PerformanceQualityMetricsCard";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -1092,6 +1093,12 @@ const DynamicAnalyticsPage = () => {
             {analyticsCards.map((card) => (
               <SmallCard key={card.id} card={card} />
             ))}
+            {analyticsData?.efficiency && (
+              <PerformanceQualityMetricsCard 
+                key="performance-quality-metrics" 
+                efficiency={analyticsData.efficiency}
+              />
+            )}
           </div>
         </div>
         

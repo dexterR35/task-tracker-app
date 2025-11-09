@@ -112,7 +112,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!taskName) return <span className="text-gray-800 dark:text-gray-400">No Link</span>;
       
       return (
-        <Badge variant="purple" size="sm" >
+        <Badge variant="select_badge" size="sm" >
           {taskName}
         </Badge>
       );
@@ -151,7 +151,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} variant="yellow" size="sm">
+            <Badge key={index} variant="orange" size="sm">
               {market}
             </Badge>
           ))}

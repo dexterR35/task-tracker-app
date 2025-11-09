@@ -12,7 +12,6 @@ import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
 import { logger } from "@/utils/logger";
-import PerformanceQualityMetricsCard from "@/components/Cards/PerformanceQualityMetricsCard";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -298,7 +297,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Month Progress Bar */}
-        <div className="mt-6 mb-8 card">
+        <div className="mt-6 mb-8">
           <MonthProgressBar
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}
@@ -319,41 +318,7 @@ const AdminDashboardPage = () => {
             ? Array.from({ length: 5 }).map((_, index) => (
                 <SkeletonCard key={index} />
               ))
-            : (() => {
-                // Find the index of USER_PROFILE card (ID format: user-profile-card)
-                const userProfileIndex = smallCards.findIndex(
-                  (card) => card.id === 'user-profile-card' || card.id?.includes('user-profile')
-                );
-                
-                // If USER_PROFILE card found, insert PerformanceQualityMetricsCard after it
-                if (userProfileIndex !== -1) {
-                  const renderedCards = [];
-                  
-                  // Render cards before and including USER_PROFILE
-                  for (let i = 0; i <= userProfileIndex; i++) {
-                    renderedCards.push(
-                      <SmallCard key={smallCards[i].id} card={smallCards[i]} />
-                    );
-                  }
-                  
-                  // Insert Performance Quality Metrics card
-                  renderedCards.push(
-                    <PerformanceQualityMetricsCard key="performance-quality-metrics" />
-                  );
-                  
-                  // Render remaining cards after USER_PROFILE
-                  for (let i = userProfileIndex + 1; i < smallCards.length; i++) {
-                    renderedCards.push(
-                      <SmallCard key={smallCards[i].id} card={smallCards[i]} />
-                    );
-                  }
-                  
-                  return renderedCards;
-                }
-                
-                // Fallback: render all cards normally
-                return smallCards.map((card) => <SmallCard key={card.id} card={card} />);
-              })()}
+            : smallCards.map((card) => <SmallCard key={card.id} card={card} />)}
         </div>
       </div>
 
