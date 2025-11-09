@@ -244,7 +244,7 @@ export const useCreateMonthBoard = () => {
       }
       const monthInfo = getMonthInfo(monthDate);
       const boardId = `board_${monthId}_${Date.now()}`;
-      const currentUserUID = userData.uid;
+      const currentUserUID = userData.userUID;
       const currentUserName = userData.name;
       const currentUserRole = userData.role || 'user';
 

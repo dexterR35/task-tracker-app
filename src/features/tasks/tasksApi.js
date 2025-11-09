@@ -1,9 +1,8 @@
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   collection,
   query,
-  orderBy,
   onSnapshot,
   addDoc,
   updateDoc,
@@ -148,8 +147,8 @@ const resolveReporterName = (reporters, reporterId, reporterName) => {
   if (reporterId && !reporterName) {
     const selectedReporter = reporters.find(r => {
       if (!r || typeof r !== 'object') return false;
-      // Check multiple possible ID fields
-      const reporterIdField = r.id || r.uid || r.reporterUID;
+      // Use reporterUID field
+      const reporterIdField = r.reporterUID;
       return reporterIdField &&
              typeof reporterIdField === 'string' &&
              reporterIdField === sanitizedReporterId;
@@ -221,9 +220,6 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
           () => onSnapshot(
             tasksQuery,
             (snapshot) => {
-              if (snapshot && snapshot.docs) {
-              }
-
               if (!snapshot || !snapshot.docs || snapshot.empty) {
                 setTasks([]);
                 setIsLoading(false);
@@ -280,8 +276,6 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
   return { tasks, isLoading, error };
 };
 
-
-
 const checkForDuplicateTask = async (colRef, task, userUID) => {
   try {
     // Check if task has gimodear and name for duplicate checking
@@ -300,7 +294,6 @@ const checkForDuplicateTask = async (colRef, task, userUID) => {
     const duplicateSnapshot = await getDocs(duplicateQuery);
 
     if (!duplicateSnapshot.empty) {
-      const duplicateTask = duplicateSnapshot.docs[0].data();
       return {
         isDuplicate: true,
         message: `A task with gimodear "${task.gimodear}" and name "${task.name}" already exists`

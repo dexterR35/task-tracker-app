@@ -444,7 +444,7 @@ const TaskForm = ({
   const fieldsWithOptions = formFields.map(field => {
     if (field.name === 'reporters') {
       const reporterOptions = reporters?.map(reporter => ({
-        value: reporter.id || reporter.uid, // Use document ID or uid field
+        value: reporter.reporterUID, // Use reporterUID field
         label: reporter.name, // Just the name for display
         name: reporter.name,
         email: reporter.email

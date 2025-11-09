@@ -225,7 +225,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
 
   // Create table data
   let tableData = Array.from(allUsers).map((userId) => {
-    const user = users.find((u) => (u.id || u.uid || u.userUID) === userId);
+    const user = users.find((u) => (u.userUID || u.id) === userId);
     const userName = user?.name || user?.email || `User ${userId.slice(0, 8)}`;
     const userData = userAIData[userId];
 

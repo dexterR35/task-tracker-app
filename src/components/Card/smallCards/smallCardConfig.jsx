@@ -296,7 +296,7 @@ export const SMALL_CARD_CONFIGS = {
             required: false,
             options:
               data.reporters?.map((reporter) => ({
-                value: reporter.reporterUID || reporter.id || reporter.uid,
+                value: reporter.reporterUID,
                 label: reporter.name || reporter.reporterName,
               })) || [],
             placeholder: "Search Reporters...",
@@ -444,7 +444,7 @@ export const SMALL_CARD_CONFIGS = {
       // Show selected reporter info if reporter is selected
       if (data.selectedReporterId) {
         const selectedReporter = data.reporters?.find(
-          (r) => (r.id || r.uid) === data.selectedReporterId
+          (r) => r.reporterUID === data.selectedReporterId
         );
         details.push({
           label: "Selected Reporter",
@@ -515,7 +515,7 @@ export const SMALL_CARD_CONFIGS = {
             // Handle reporter selection
             if (data.selectedReporterId) {
               const selectedReporter = data.reporters?.find(
-                (r) => (r.id || r.uid) === data.selectedReporterId
+                (r) => r.reporterUID === data.selectedReporterId
               );
               const reporterName =
                 selectedReporter?.name ||
@@ -568,7 +568,7 @@ export const SMALL_CARD_CONFIGS = {
             // Reporter part - only add if both user and reporter are selected
             if (data.selectedReporterId && data.selectedUserId) {
               const selectedReporter = data.reporters?.find(
-                (r) => (r.id || r.uid) === data.selectedReporterId
+                (r) => r.reporterUID === data.selectedReporterId
               );
               const reporterName =
                 selectedReporter?.name?.toUpperCase() ||

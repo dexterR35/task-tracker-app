@@ -7,6 +7,7 @@ import Avatar from "@/components/ui/Avatar/Avatar";
 import Badge from "@/components/ui/Badge/Badge";
 import ChartHeader from "./ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
+import { Icons } from "@/components/icons";
 import { addConsistentColors } from "@/components/Cards/analyticsCardConfig";
 import { getMarketColor, calculateCountWithPercentage, renderCountWithPercentage, getUserName, normalizeMarket, getTaskMarkets, getTaskHours, getTaskUserUID } from "@/components/Cards/configs/analyticsSharedConfig";
 
@@ -471,6 +472,8 @@ const calculateUsersByMarketsCharts = (tasks, users) => {
   return userCharts;
 };
 
+const ChartIcon = Icons.generic.chart;
+
 const MarketsByUsersCard = memo(({
   tasks = [],
   users = [],
@@ -639,9 +642,7 @@ const MarketsByUsersCard = memo(({
                   background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
                 }}
               >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+                <ChartIcon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-0.5">

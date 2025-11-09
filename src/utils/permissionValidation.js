@@ -79,7 +79,7 @@ export const validatePermissions = (userData, requiredPermissions, options = {})
     const error = `User lacks required permissions for ${operation}`;
     if (logWarnings) {
       logger.warn(`[validatePermissions] ${error}:`, {
-        userUID: userData.userUID || userData.uid,
+        userUID: userData.userUID,
         email: userData.email,
         role: userData.role,
         userPermissions: userData.permissions || [],

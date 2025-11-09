@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
+import { Icons } from "@/components/icons";
 import MarketsByUsersCard from "@/components/Cards/MarketsByUsersCard";
 import MarketingAnalyticsCard from "@/components/Cards/MarketingAnalyticsCard";
 import AcquisitionAnalyticsCard from "@/components/Cards/AcquisitionAnalyticsCard";
@@ -7,13 +8,13 @@ import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
 import MiscAnalyticsCard from "@/components/Cards/MiscAnalyticsCard";
 import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
-import { 
-  getCachedMarketingAnalyticsCardProps, 
-  getCachedAcquisitionAnalyticsCardProps, 
+import {
+  getCachedMarketingAnalyticsCardProps,
+  getCachedAcquisitionAnalyticsCardProps,
   getCachedProductAnalyticsCardProps,
   getCachedMiscAnalyticsCardProps,
   getCachedAIAnalyticsCardProps,
-  getCachedReporterAnalyticsCardProps
+  getCachedReporterAnalyticsCardProps,
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
@@ -24,11 +25,10 @@ import { logger } from "@/utils/logger";
 const AnalyticsPage = () => {
   // Get real-time data from month selection
   const { users, reporters, error } = useAppDataContext();
-  
-  
+
   // Tab state
-  const [activeTab, setActiveTab] = useState('markets-by-users');
-  
+  const [activeTab, setActiveTab] = useState("markets-by-users");
+
   const {
     tasks, // Real-time tasks data (selected or current month)
     availableMonths, // Available months for dropdown
@@ -43,11 +43,9 @@ const AnalyticsPage = () => {
 
   // Debug logging removed for cleaner code
 
-
   // Get current month name for display
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
-
 
   // Tab change handler - memoized to prevent re-renders
   const handleTabChange = useCallback((tabId) => {
@@ -55,43 +53,47 @@ const AnalyticsPage = () => {
   }, []);
 
   // Analytics tabs configuration - memoized to prevent re-renders
-  const analyticsTabs = useMemo(() => [
-    {
-      id: 'markets-by-users',
-      name: 'Markets by Users',
-      description: 'Task breakdown by markets and users'
-    },
-    {
-      id: 'marketing-analytics',
-      name: 'Marketing Analytics',
-      description: 'Marketing performance and analytics'
-    },
-    {
-      id: 'acquisition-analytics',
-      name: 'Acquisition Analytics',
-      description: 'Acquisition metrics and insights'
-    },
-    {
-      id: 'product-analytics',
-      name: 'Product Analytics',
-      description: 'Product breakdown and analytics'
-    },
-    {
-      id: 'misc-analytics',
-      name: 'Misc Analytics',
-      description: 'Misc product breakdown and analytics'
-    },
-    {
-      id: 'ai-analytics',
-      name: 'AI Analytics',
-      description: 'AI analytics by users and models'
-    },
-    {
-      id: 'reporter-analytics',
-      name: 'Reporter Analytics',
-      description: 'Reporter metrics with tasks, hours, markets, and products'
-    },
-  ], []);
+  const analyticsTabs = useMemo(
+    () => [
+      {
+        id: "markets-by-users",
+        name: "Markets by Users",
+        description: "Task breakdown by markets and users",
+      },
+      {
+        id: "marketing-analytics",
+        name: "Marketing Analytics",
+        description: "Marketing performance and analytics",
+      },
+      {
+        id: "acquisition-analytics",
+        name: "Acquisition Analytics",
+        description: "Acquisition metrics and insights",
+      },
+      {
+        id: "product-analytics",
+        name: "Product Analytics",
+        description: "Product breakdown and analytics",
+      },
+      {
+        id: "misc-analytics",
+        name: "Misc Analytics",
+        description: "Misc product breakdown and analytics",
+      },
+      {
+        id: "ai-analytics",
+        name: "AI Analytics",
+        description: "AI analytics by users and models",
+      },
+      {
+        id: "reporter-analytics",
+        name: "Reporter Analytics",
+        description:
+          "Reporter metrics with tasks, hours, markets, and products",
+      },
+    ],
+    []
+  );
 
   // Memoize tab button click handlers to prevent re-renders
   // Note: analyticsTabs is already memoized with empty deps, so it's stable
@@ -114,33 +116,46 @@ const AnalyticsPage = () => {
   // Optimized card props calculation - only calculate for active tab
   const activeCardProps = useMemo(() => {
     if (isLoading) return null;
-    
+
     // If there's no data, return a special object to indicate no data state
     if (hasNoData) {
       return { hasNoData: true };
     }
-    
-    // Ensure we have valid data before calculating props
-    const safeTasks = tasks || [];
-    const safeUsers = users || [];
-    const safeReporters = reporters || [];
-    
+
     try {
       switch (activeTab) {
-        case 'reporter-analytics':
-          return getCachedReporterAnalyticsCardProps(safeTasks, safeReporters, selectedMonth, isLoading);
-        case 'markets-by-users':
-          return { tasks: safeTasks, users: safeUsers, isLoading };
-        case 'marketing-analytics':
-          return getCachedMarketingAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
-        case 'acquisition-analytics':
-          return getCachedAcquisitionAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
-        case 'product-analytics':
-          return getCachedProductAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
-        case 'misc-analytics':
-          return getCachedMiscAnalyticsCardProps(safeTasks, selectedMonth, safeUsers, isLoading);
-        case 'ai-analytics':
-          return getCachedAIAnalyticsCardProps(safeTasks, safeUsers, selectedMonth, isLoading);
+        case "reporter-analytics":
+          return getCachedReporterAnalyticsCardProps(
+            tasks,
+            reporters
+          );
+        case "markets-by-users":
+          return { tasks, users };
+        case "marketing-analytics":
+          return getCachedMarketingAnalyticsCardProps(
+            tasks,
+            users
+          );
+        case "acquisition-analytics":
+          return getCachedAcquisitionAnalyticsCardProps(
+            tasks,
+            users
+          );
+        case "product-analytics":
+          return getCachedProductAnalyticsCardProps(
+            tasks,
+            users
+          );
+        case "misc-analytics":
+          return getCachedMiscAnalyticsCardProps(
+            tasks,
+            users
+          );
+        case "ai-analytics":
+          return getCachedAIAnalyticsCardProps(
+            tasks,
+            users
+          );
         default:
           return null;
       }
@@ -148,23 +163,23 @@ const AnalyticsPage = () => {
       logger.error(`Error calculating props for ${activeTab}:`, error);
       return null;
     }
-  }, [activeTab, tasks, users, reporters, selectedMonth, isLoading, hasNoData]);
+  }, [activeTab, tasks, users, reporters, hasNoData]);
 
   // Memoize active tab name to avoid repeated find() calls
   const activeTabName = useMemo(() => {
-    return analyticsTabs.find(tab => tab.id === activeTab)?.name || 'this tab';
+    return (
+      analyticsTabs.find((tab) => tab.id === activeTab)?.name || "this tab"
+    );
   }, [analyticsTabs, activeTab]);
 
   // Memoize tab button styles to prevent object recreation
   const tabButtonStyles = useMemo(() => {
     const activeStyle = {
       borderBottomColor: CARD_SYSTEM.COLOR_HEX_MAP.amber,
-      borderBottomWidth: '2px',
+      borderBottomWidth: "2px",
     };
     return { active: activeStyle, inactive: {} };
   }, []);
-
-
 
   // Error handling function
   const showError = (message) => {
@@ -172,8 +187,6 @@ const AnalyticsPage = () => {
     // You can replace this with a toast notification if you have one
     alert(message);
   };
-
-
 
   if (isLoading || isInitialLoading) {
     return (
@@ -190,7 +203,7 @@ const AnalyticsPage = () => {
               <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse"></div>
             </div>
           </div>
-          
+
           {/* Month Progress Bar Skeleton */}
           <div className="mt-4">
             <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
@@ -211,7 +224,8 @@ const AnalyticsPage = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-red-500 dark:text-red-400">
-          Error loading analytics: {(error || monthError)?.message || "Unknown error"}
+          Error loading analytics:{" "}
+          {(error || monthError)?.message || "Unknown error"}
         </div>
       </div>
     );
@@ -223,51 +237,46 @@ const AnalyticsPage = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold ">
-              Analytics Dashboard
-            </h1>
+            <h1 className="text-xl font-bold ">Analytics Dashboard</h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
               Task breakdown by acquisition, product, and marketing
             </p>
           </div>
           <div className="flex items-center space-x-3">
-
-            
             {/* Month Selector */}
             <select
               value={selectedMonth?.monthId || currentMonth?.monthId || ""}
               onChange={(e) => selectMonth(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+              className="bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
             >
-              {availableMonths && availableMonths.length > 0 ? (
-                availableMonths.map(month => (
-                  <option key={month.monthId} value={month.monthId}>
-                    {month.monthName} {month.isCurrent ? "(Current)" : ""}
-                  </option>
-                ))
-              ) : (
-                currentMonth && (
-                  <option value={currentMonth.monthId}>
-                    {currentMonth.monthName} (Current)
-                  </option>
-                )
-              )}
+              {availableMonths && availableMonths.length > 0
+                ? availableMonths.map((month) => (
+                    <option key={month.monthId} value={month.monthId}>
+                      {month.monthName} {month.isCurrent ? "(Current)" : ""}
+                    </option>
+                  ))
+                : currentMonth && (
+                    <option value={currentMonth.monthId}>
+                      {currentMonth.monthName} (Current)
+                    </option>
+                  )}
             </select>
           </div>
         </div>
-        
+
         {/* Month Progress Bar */}
         <div className="mt-4 mb-8">
-          <MonthProgressBar 
+          <MonthProgressBar
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}
             isCurrentMonth={isCurrentMonth}
             startDate={selectedMonth?.startDate || currentMonth?.startDate}
             endDate={selectedMonth?.endDate || currentMonth?.endDate}
-            daysInMonth={selectedMonth?.daysInMonth || currentMonth?.daysInMonth}
+            daysInMonth={
+              selectedMonth?.daysInMonth || currentMonth?.daysInMonth
+            }
           />
         </div>
-
       </div>
 
       {/* Analytics Tabs */}
@@ -287,11 +296,15 @@ const AnalyticsPage = () => {
                       py-3 px-1 border-b-2 font-medium !text-[16px] rounded-none !shadow-none
                       ${
                         isActive
-                          ? 'text-gray-900 dark:text-gray-100'
-                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                          ? "text-gray-900 dark:text-gray-100"
+                          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
                       }
                       `}
-                    style={isActive ? tabButtonStyles.active : tabButtonStyles.inactive}
+                    style={
+                      isActive
+                        ? tabButtonStyles.active
+                        : tabButtonStyles.inactive
+                    }
                   >
                     {tab.name}
                   </DynamicButton>
@@ -308,25 +321,13 @@ const AnalyticsPage = () => {
               <div className="card">
                 <div className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
-                    <svg 
-                      className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={1.5} 
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-                      />
-                    </svg>
+                    <Icons.generic.document className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       No Data Available
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
-                      There is no data available for {activeTabName}. 
-                      Data will appear once tasks are added for the selected month.
+                      There is no data available for {activeTabName}. Data will
+                      appear once tasks are added for the selected month.
                     </p>
                   </div>
                 </div>
@@ -335,13 +336,27 @@ const AnalyticsPage = () => {
               <div className="relative">
                 <div id={`${activeTab}-card`}>
                   <div className="relative">
-                    {activeTab === 'reporter-analytics' && <ReporterAnalyticsCard {...activeCardProps} />}
-                    {activeTab === 'markets-by-users' && <MarketsByUsersCard tasks={activeCardProps?.tasks || []} users={activeCardProps?.users || []} isLoading={activeCardProps?.isLoading || false} />}
-                    {activeTab === 'marketing-analytics' && <MarketingAnalyticsCard {...activeCardProps} />}
-                    {activeTab === 'acquisition-analytics' && <AcquisitionAnalyticsCard {...activeCardProps} />}
-                    {activeTab === 'product-analytics' && <ProductAnalyticsCard {...activeCardProps} />}
-                    {activeTab === 'misc-analytics' && <MiscAnalyticsCard {...activeCardProps} />}
-                    {activeTab === 'ai-analytics' && <AIAnalyticsCard {...activeCardProps} />}
+                    {activeTab === "reporter-analytics" && (
+                      <ReporterAnalyticsCard {...activeCardProps} />
+                    )}
+                    {activeTab === "markets-by-users" && (
+                      <MarketsByUsersCard {...activeCardProps} />
+                    )}
+                    {activeTab === "marketing-analytics" && (
+                      <MarketingAnalyticsCard {...activeCardProps} />
+                    )}
+                    {activeTab === "acquisition-analytics" && (
+                      <AcquisitionAnalyticsCard {...activeCardProps} />
+                    )}
+                    {activeTab === "product-analytics" && (
+                      <ProductAnalyticsCard {...activeCardProps} />
+                    )}
+                    {activeTab === "misc-analytics" && (
+                      <MiscAnalyticsCard {...activeCardProps} />
+                    )}
+                    {activeTab === "ai-analytics" && (
+                      <AIAnalyticsCard {...activeCardProps} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -349,25 +364,13 @@ const AnalyticsPage = () => {
               <div className="card">
                 <div className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
-                    <svg 
-                      className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={1.5} 
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-                      />
-                    </svg>
+                    <Icons.generic.document className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       No Data Available
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
-                      Unable to load data for {activeTabName}. 
-                      Please try refreshing the page.
+                      Unable to load data for {activeTabName}. Please try
+                      refreshing the page.
                     </p>
                   </div>
                 </div>
@@ -376,9 +379,6 @@ const AnalyticsPage = () => {
           </div>
         </div>
       )}
-
-
-
     </div>
   );
 };

@@ -545,7 +545,7 @@ const DynamicAnalyticsPage = () => {
     const reporterId = task.data_task?.reporters || task.data_task?.reporterUID || task.reporterUID || task.reporters;
     if (reporterId && reporters && Array.isArray(reporters)) {
       const reporter = reporters.find(r => {
-        const reporterIdField = r.id || r.uid || r.reporterUID;
+        const reporterIdField = r.reporterUID;
         return reporterIdField && 
                typeof reporterIdField === 'string' &&
                reporterIdField.toLowerCase() === String(reporterId).toLowerCase();
@@ -853,9 +853,7 @@ const DynamicAnalyticsPage = () => {
                               style={{ color: taskColor }}
                             >
                               {task.data_task.taskName}
-                              <svg className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
+                              <Icons.generic.globe className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                             </a>
                           ) : (
                             <span className="text-base font-semibold text-gray-900 dark:text-white">
@@ -867,15 +865,11 @@ const DynamicAnalyticsPage = () => {
                         {/* Metadata Row */}
                         <div className="flex items-center flex-wrap gap-3 text-xs">
                           <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
+                            <Icons.generic.user className="w-3.5 h-3.5" />
                             <span className="font-medium">{getReporterName(task)}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <Icons.generic.clock className="w-3.5 h-3.5" />
                             <span className="font-medium">
                               {(() => {
                                 const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
@@ -930,9 +924,7 @@ const DynamicAnalyticsPage = () => {
         ) : (
           <div className="text-center py-12 relative z-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-gray-100 dark:bg-gray-800">
-              <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+              <Icons.generic.document className="w-8 h-8 text-gray-400 dark:text-gray-500" />
             </div>
             <p className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-1">
               No tasks for this week
@@ -1150,9 +1142,7 @@ const DynamicAnalyticsPage = () => {
                 return (
                   <div className="text-center py-8">
                     <div className="text-gray-300 mb-2">
-                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
+                      <Icons.generic.document className="w-12 h-12 mx-auto mb-2" />
                       <p className="text-lg font-medium mb-1">No Tasks</p>
                       <p className="text-sm">No tasks found for this month</p>
                     </div>
@@ -1196,9 +1186,7 @@ const DynamicAnalyticsPage = () => {
                 return (
                   <div className="text-center py-8">
                     <div className="text-gray-300 mb-2">
-                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <Icons.generic.warning className="w-12 h-12 mx-auto mb-2" />
                       <p className="text-lg font-medium mb-1">Week Not Found</p>
                       <p className="text-sm">The selected week (Week {weekNumber}) is not available for this month</p>
                     </div>
@@ -1217,9 +1205,7 @@ const DynamicAnalyticsPage = () => {
                 return (
                   <div className="text-center py-8">
                     <div className="text-red-400 mb-4">
-                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <Icons.generic.warning className="w-12 h-12 mx-auto mb-2" />
                       <p className="text-lg font-semibold mb-2">Error Loading Week Tasks</p>
                       <p className="text-sm text-red-300 whitespace-pre-line">{error.message}</p>
                       <p className="text-xs text-red-400 mt-2">Please ensure all tasks have a valid startDate.</p>

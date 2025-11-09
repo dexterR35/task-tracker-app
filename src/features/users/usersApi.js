@@ -109,7 +109,7 @@ export const useUsers = () => {
         ...userData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        createdBy: adminUserData?.uid,
+        createdBy: adminUserData?.userUID,
         createdByName: adminUserData?.name
       };
 
@@ -141,7 +141,7 @@ export const useUsers = () => {
       const updates = {
         ...updateData,
         updatedAt: serverTimestamp(),
-        updatedBy: adminUserData?.uid,
+        updatedBy: adminUserData?.userUID,
         updatedByName: adminUserData?.name
       };
 

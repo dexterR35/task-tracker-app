@@ -105,7 +105,7 @@ export const useDeliverablesApi = () => {
       await setDoc(deliverablesRef, {
         deliverables: updatedDeliverables,
         updatedAt: serverTimestamp(),
-        updatedBy: userData?.uid,
+        updatedBy: userData?.userUID,
         updatedByName: userData?.name
       }, { merge: true });
 
@@ -147,7 +147,7 @@ export const useDeliverablesApi = () => {
       await setDoc(deliverablesRef, {
         deliverables: updatedDeliverables,
         updatedAt: serverTimestamp(),
-        updatedBy: userData?.uid,
+        updatedBy: userData?.userUID,
         updatedByName: userData?.name
       }, { merge: true });
 
@@ -183,7 +183,7 @@ export const useDeliverablesApi = () => {
       await setDoc(deliverablesRef, {
         deliverables: updatedDeliverables,
         updatedAt: serverTimestamp(),
-        updatedBy: userData?.uid,
+        updatedBy: userData?.userUID,
         updatedByName: userData?.name
       }, { merge: true });
 

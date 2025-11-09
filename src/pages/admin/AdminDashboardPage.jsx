@@ -51,7 +51,7 @@ const AdminDashboardPage = () => {
   const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
   const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
   
-  const selectedReporter = reporters.find((r) => (r.id || r.uid) === selectedReporterId);
+  const selectedReporter = reporters.find((r) => r.reporterUID === selectedReporterId);
   const selectedReporterName = selectedReporter?.name || selectedReporter?.reporterName;
 
   // Handle user selection - completely independent from reporter selection

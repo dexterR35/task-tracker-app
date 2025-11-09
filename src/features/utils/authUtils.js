@@ -33,7 +33,7 @@ const isAdmin = (user) => {
  */
 export const getUserUID = (user) => {
   if (!user) return null;
-  return user.userUID || user.uid || user.id || null;
+  return user.userUID || user.id || null;
 };
 
 /**
@@ -76,7 +76,7 @@ export const validateUserStructure = (user, options = {}) => {
  */
 export const isUserComplete = (user) => {
   if (!user) return false;
-  return !!(user.userUID || user.uid) && !!user.email && !!user.name && !!user.role;
+  return !!user.userUID && !!user.email && !!user.name && !!user.role;
 };
 
 /**
@@ -403,7 +403,7 @@ export const validateUserPermissions = (userData, requiredPermissions, options =
     const error = `User lacks required permissions for ${operation}`;
     if (logWarnings) {
       logger.warn(`[validateUserPermissions] ${error}:`, {
-        userUID: userData.userUID || userData.uid,
+        userUID: userData.userUID,
         email: userData.email,
         role: userData.role,
         userPermissions: userData.permissions || [],

@@ -8,6 +8,9 @@ import Badge from "@/components/ui/Badge/Badge";
 import ChartHeader from "./ChartHeader";
 import { CHART_COLORS } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
+import { Icons } from "@/components/icons";
+
+const ChartIcon = Icons.generic.chart;
 
 const AcquisitionAnalyticsCard = memo(({
   title = "Acquisition Analytics",
@@ -40,35 +43,22 @@ const AcquisitionAnalyticsCard = memo(({
     return <SkeletonAnalyticsCard className={className} />;
   }
 
-  // Validate and ensure props are arrays to prevent errors
-  const safeAcquisitionTableData = Array.isArray(acquisitionTableData) ? acquisitionTableData : [];
-  const safeCasinoAcquisitionData = Array.isArray(casinoAcquisitionData) ? casinoAcquisitionData : [];
-  const safeSportAcquisitionData = Array.isArray(sportAcquisitionData) ? sportAcquisitionData : [];
-  const safeCasinoBiaxialData = Array.isArray(casinoBiaxialData) ? casinoBiaxialData : [];
-  const safeSportBiaxialData = Array.isArray(sportBiaxialData) ? sportBiaxialData : [];
-  const safeCasinoUsersCharts = Array.isArray(casinoUsersCharts) ? casinoUsersCharts : [];
-  const safeSportUsersCharts = Array.isArray(sportUsersCharts) ? sportUsersCharts : [];
-  const safeCasinoUserTableData = Array.isArray(casinoUserTableData) ? casinoUserTableData : [];
-  const safeCasinoUserTableColumns = Array.isArray(casinoUserTableColumns) ? casinoUserTableColumns : [];
-  const safeSportUserTableData = Array.isArray(sportUserTableData) ? sportUserTableData : [];
-  const safeSportUserTableColumns = Array.isArray(sportUserTableColumns) ? sportUserTableColumns : [];
-
   // Calculate totals for pie charts
   const casinoAcquisitionPieTotal = useMemo(() => 
-    safeCasinoAcquisitionData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [safeCasinoAcquisitionData]
+    casinoAcquisitionData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
+    [casinoAcquisitionData]
   );
   const casinoAcquisitionPieHours = useMemo(() => 
-    safeCasinoBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
-    [safeCasinoBiaxialData]
+    casinoBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
+    [casinoBiaxialData]
   );
   const sportAcquisitionPieTotal = useMemo(() => 
-    safeSportAcquisitionData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [safeSportAcquisitionData]
+    sportAcquisitionData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
+    [sportAcquisitionData]
   );
   const sportAcquisitionPieHours = useMemo(() => 
-    safeSportBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
-    [safeSportBiaxialData]
+    sportBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
+    [sportBiaxialData]
   );
 
   return (
@@ -78,10 +68,10 @@ const AcquisitionAnalyticsCard = memo(({
         {/* Tables Section */}
         <div>
           {/* Acquisition Table */}
-          {safeAcquisitionTableData && safeAcquisitionTableData.length > 0 ? (
+          {acquisitionTableData && acquisitionTableData.length > 0 ? (
             <div className="table-container mb-6">
               <AnalyticsTable
-                data={safeAcquisitionTableData}
+                data={acquisitionTableData}
                 columns={acquisitionTableColumns}
                 sectionTitle="Acquisition Table"
               />
@@ -96,11 +86,11 @@ const AcquisitionAnalyticsCard = memo(({
 
           {/* Casino Acquisition: Per-User Table */}
           <div className="mb-6">
-          {safeCasinoUserTableData && safeCasinoUserTableData.length > 0 ? (
+          {casinoUserTableData && casinoUserTableData.length > 0 ? (
             <div className="table-container">
               <AnalyticsTable
-                data={safeCasinoUserTableData}
-                columns={safeCasinoUserTableColumns}
+                data={casinoUserTableData}
+                columns={casinoUserTableColumns}
                 sectionTitle="Casino Acquisition: Per User"
               />
             </div>
@@ -115,11 +105,11 @@ const AcquisitionAnalyticsCard = memo(({
 
             {/* Sport Acquisition: Per-User Table */}
             <div className="mb-6">
-              {safeSportUserTableData && safeSportUserTableData.length > 0 ? (
+              {sportUserTableData && sportUserTableData.length > 0 ? (
                 <div className="table-container">
                   <AnalyticsTable
-                    data={safeSportUserTableData}
-                    columns={safeSportUserTableColumns}
+                    data={sportUserTableData}
+                    columns={sportUserTableColumns}
                     sectionTitle="Sport Acquisition: Per User"
                   />
                 </div>
@@ -153,9 +143,7 @@ const AcquisitionAnalyticsCard = memo(({
                   background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
                 }}
               >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+                <ChartIcon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-0.5">
@@ -201,9 +189,7 @@ const AcquisitionAnalyticsCard = memo(({
                     background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
                   }}
                 >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+                  <ChartIcon className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <h5 className="font-semibold text-gray-900 dark:text-white text-base">
@@ -241,9 +227,9 @@ const AcquisitionAnalyticsCard = memo(({
               </div>
             </div>
             <div className="p-5">
-              {safeCasinoAcquisitionData && safeCasinoAcquisitionData.length > 0 ? (
+              {casinoAcquisitionData && casinoAcquisitionData.length > 0 ? (
                 <SimplePieChart
-                  data={safeCasinoAcquisitionData}
+                  data={casinoAcquisitionData}
                   title=""
                   colors={casinoAcquisitionColors}
                   dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
@@ -276,9 +262,7 @@ const AcquisitionAnalyticsCard = memo(({
                     background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
                   }}
                 >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+                  <ChartIcon className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <h5 className="font-semibold text-gray-900 dark:text-white text-base">
@@ -316,9 +300,9 @@ const AcquisitionAnalyticsCard = memo(({
               </div>
             </div>
             <div className="p-5">
-              {safeSportAcquisitionData && safeSportAcquisitionData.length > 0 ? (
+              {sportAcquisitionData && sportAcquisitionData.length > 0 ? (
                 <SimplePieChart
-                  data={safeSportAcquisitionData}
+                  data={sportAcquisitionData}
                   title=""
                   colors={sportAcquisitionColors}
                   dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
@@ -338,8 +322,8 @@ const AcquisitionAnalyticsCard = memo(({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Casino Biaxial Chart */}
           {(() => {
-            const totalTasks = safeCasinoBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
-            const totalHours = safeCasinoBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
+            const totalTasks = casinoBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+            const totalHours = casinoBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
               <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
                 <div className="relative px-5 py-4 overflow-hidden">
@@ -398,9 +382,9 @@ const AcquisitionAnalyticsCard = memo(({
                   </div>
                 </div>
                 <div className="p-5">
-                  {safeCasinoBiaxialData && safeCasinoBiaxialData.length > 0 ? (
+                  {casinoBiaxialData && casinoBiaxialData.length > 0 ? (
                     <BiaxialBarChart
-                      data={safeCasinoBiaxialData}
+                      data={casinoBiaxialData}
                       title=""
                       tasksColor={casinoBiaxialTasksColor}
                       hoursColor={casinoBiaxialHoursColor}
@@ -420,8 +404,8 @@ const AcquisitionAnalyticsCard = memo(({
 
           {/* Sport Biaxial Chart */}
           {(() => {
-            const totalTasks = safeSportBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
-            const totalHours = safeSportBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
+            const totalTasks = sportBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+            const totalHours = sportBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
               <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
                 <div className="relative px-5 py-4 overflow-hidden">
@@ -480,9 +464,9 @@ const AcquisitionAnalyticsCard = memo(({
                   </div>
                 </div>
                 <div className="p-5">
-                  {safeSportBiaxialData && safeSportBiaxialData.length > 0 ? (
+                  {sportBiaxialData && sportBiaxialData.length > 0 ? (
                     <BiaxialBarChart
-                      data={safeSportBiaxialData}
+                      data={sportBiaxialData}
                       title=""
                       tasksColor={sportBiaxialTasksColor}
                       hoursColor={sportBiaxialHoursColor}
@@ -518,9 +502,9 @@ const AcquisitionAnalyticsCard = memo(({
                 <span>Casino Acquisition: Per User</span>
               </h4>
             </div>
-          {safeCasinoUsersCharts && safeCasinoUsersCharts.length > 0 ? (
+          {casinoUsersCharts && casinoUsersCharts.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {safeCasinoUsersCharts.map((userChart) => (
+              {casinoUsersCharts.map((userChart) => (
                 <div 
                   key={`casino-${userChart.userId}`} 
                   className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
@@ -612,9 +596,9 @@ const AcquisitionAnalyticsCard = memo(({
                 <span>Sport Acquisition: Per User</span>
               </h4>
             </div>
-            {safeSportUsersCharts && safeSportUsersCharts.length > 0 ? (
+            {sportUsersCharts && sportUsersCharts.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {safeSportUsersCharts.map((userChart) => (
+                {sportUsersCharts.map((userChart) => (
                   <div 
                     key={`sport-${userChart.userId}`} 
                     className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"

@@ -11,7 +11,6 @@ import {
   collection,
   query,
   orderBy,
-  onSnapshot,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -131,8 +130,8 @@ export const useReporters = () => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         // Only add user info if user is authenticated (optional)
-        ...(userData && userData.uid && {
-          createdBy: userData.uid,
+        ...(userData && userData.userUID && {
+          createdBy: userData.userUID,
           createdByName: userData.name || 'Unknown User'
         })
       });
@@ -190,8 +189,8 @@ export const useReporters = () => {
         ...updateData,
         updatedAt: serverTimestamp(),
         // Only add user info if user is authenticated (optional)
-        ...(userData && userData.uid && {
-          updatedBy: userData.uid,
+        ...(userData && userData.userUID && {
+          updatedBy: userData.userUID,
           updatedByName: userData.name || 'Unknown User'
         })
       };

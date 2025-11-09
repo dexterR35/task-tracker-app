@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
 import { CARD_SYSTEM } from '@/constants';
+import { Icons } from '@/components/icons';
 
 // Function to get badge color - use select_badge for all selected badges
 const getFieldBadgeColor = (fieldName) => {
@@ -239,9 +240,7 @@ const SearchableSelectField = ({
               className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               title="Clear selections"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <Icons.buttons.clear className="w-3.5 h-3.5" />
             </button>
           )} */}
         </div>

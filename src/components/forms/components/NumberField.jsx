@@ -17,11 +17,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
     trigger(field.name);
   }, [field.name, trigger]);
   
-  const safeValue = useMemo(() => {
-    const current = formValues?.[field.name];
-    if (current === undefined || current === null) return field.defaultValue ?? '';
-    return Number.isNaN(current) ? '' : current;
-  }, [formValues, field.name, field.defaultValue]);
+  const value = formValues?.[field.name] ?? field.defaultValue ?? '';
 
   return (
     <div className="field-wrapper">
@@ -41,7 +37,7 @@ const NumberField = ({ field, register, errors, setValue, trigger, formValues })
         type="number"
         step={field.step || 0.5}
         min={field.min || 0}
-        value={safeValue}
+        value={value}
         onChange={handleChange}
         placeholder={field.placeholder}
         readOnly={field.readOnly || false}

@@ -70,7 +70,7 @@ const formatValueForCSV = (
       // Try to find user by UID
       const userByUID = userUID
         ? users.find((u) => {
-            const userIdField = u.userUID || u.uid || u.id;
+            const userIdField = u.userUID || u.id;
             return (
               userIdField &&
               typeof userIdField === "string" &&
@@ -328,7 +328,7 @@ const formatValueForCSV = (
     // If it's a UID/ID, look it up from the reporters data
     if (typeof value === "string" && reporters.length > 0) {
       const reporter = reporters.find((r) => {
-        const reporterIdField = r.reporterUID || r.uid || r.id;
+        const reporterIdField = r.reporterUID;
         return (
           reporterIdField &&
           typeof reporterIdField === "string" &&

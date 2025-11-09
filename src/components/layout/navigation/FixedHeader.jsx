@@ -123,10 +123,6 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
                   <Icons.generic.settings className="w-4 h-4 inline mr-3" />
                   Preferences
                 </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <Icons.generic.document className="w-4 h-4 inline mr-3" />
-                  Help & Support
-                </button>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 py-1">
                 <button

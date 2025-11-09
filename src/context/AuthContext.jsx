@@ -166,52 +166,15 @@ export const AuthProvider = ({ children }) => {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [error, setError] = useState(null);
 
-  // Validate user object has all required properties
-  const safeUser = (() => {
-    if (!user) return null;
-    
-    if (!isUserComplete(user)) {
-      return null;
-    }
-    
-    return {
-      ...user,
-      permissions: Array.isArray(user.permissions) ? user.permissions : undefined
-    };
-  })();
 
   // Initialize auth state listener
   useEffect(() => {
     let isMounted = true;
-    let sessionRefreshInterval = null;
 
     const initializeAuth = async () => {
       try {
         setIsAuthChecking(true);
         setIsLoading(true);
-
-        // Check for existing session
-        const existingSession = SessionManager.getSession();
-        if (existingSession && SessionManager.isSessionValid()) {
-          logger.log('Valid session found, restoring user state');
-          setUser(existingSession.user);
-          setIsLoading(false);
-          setIsAuthChecking(false);
-          
-          // Set up session refresh interval (every 30 minutes)
-          sessionRefreshInterval = setInterval(() => {
-            if (SessionManager.isSessionValid()) {
-              SessionManager.refreshSession();
-            } else {
-              logger.log('Session expired, clearing user state');
-              setUser(null);
-              SessionManager.clearSession();
-              clearInterval(sessionRefreshInterval);
-            }
-          }, 30 * 60 * 1000); // 30 minutes
-          
-          return;
-        }
 
         // Set up Firebase auth state listener
         authUnsubscribe = onAuthStateChanged(
@@ -232,7 +195,6 @@ export const AuthProvider = ({ children }) => {
                 // Simple user data - only what you actually have in your database
                 const completeUserData = {
                   // Firebase auth data (minimal)
-                  uid: firebaseUser.uid,
                   email: firebaseUser.email,
                   
                   // Your Firestore data (exactly as stored)
@@ -244,7 +206,6 @@ export const AuthProvider = ({ children }) => {
 
                 if (isMounted) {
                   setUser(completeUserData);
-                  SessionManager.setSession({ user: completeUserData });
                   setIsLoading(false);
                   setIsAuthChecking(false);
                   setError(null);
@@ -253,7 +214,6 @@ export const AuthProvider = ({ children }) => {
                 logger.log("User not authenticated, clearing user state");
                 if (isMounted) {
                   setUser(null);
-                  SessionManager.clearSession();
                   setIsLoading(false);
                   setIsAuthChecking(false);
                   setError(null);
@@ -264,7 +224,6 @@ export const AuthProvider = ({ children }) => {
               if (isMounted) {
                 setError(error.message || "Authentication error");
                 setUser(null);
-                SessionManager.clearSession();
                 setIsLoading(false);
                 setIsAuthChecking(false);
               }
@@ -275,7 +234,6 @@ export const AuthProvider = ({ children }) => {
             if (isMounted) {
               setError(error.message || "Authentication error");
               setUser(null);
-              SessionManager.clearSession();
               setIsLoading(false);
               setIsAuthChecking(false);
             }
@@ -286,7 +244,6 @@ export const AuthProvider = ({ children }) => {
         if (isMounted) {
           setError(error.message || "Authentication initialization error");
           setUser(null);
-          SessionManager.clearSession();
           setIsLoading(false);
           setIsAuthChecking(false);
         }
@@ -300,9 +257,6 @@ export const AuthProvider = ({ children }) => {
       if (authUnsubscribe) {
         authUnsubscribe();
         authUnsubscribe = null;
-      }
-      if (sessionRefreshInterval) {
-        clearInterval(sessionRefreshInterval);
       }
     };
   }, []);
@@ -336,7 +290,6 @@ export const AuthProvider = ({ children }) => {
       // Simple user data - only what you actually have in your database
       const completeUserData = {
         // Firebase auth data (minimal)
-        uid: firebaseUser.uid,
         email: firebaseUser.email,
         
         // Your Firestore data (exactly as stored)
@@ -347,7 +300,6 @@ export const AuthProvider = ({ children }) => {
       };
 
       setUser(completeUserData);
-      SessionManager.setSession({ user: completeUserData });
       setIsLoading(false);
 
       // Show welcome message
@@ -378,7 +330,6 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
       
       setUser(null);
-      SessionManager.clearSession();
       setIsLoading(false);
 
       // Clear the session-based user logging flag
@@ -409,18 +360,18 @@ export const AuthProvider = ({ children }) => {
       return canAccessRole(user, requiredRole);
     },
     
-    hasPermission: (permission) => hasPermission(safeUser, permission),
-    canGenerate: () => canAccessCharts(safeUser),
-    canAccessTasks: () => canAccessTasks(safeUser),
-    canCreateTask: () => canCreateTask(safeUser),
-    canUpdateTask: () => canUpdateTask(safeUser),
-    canDeleteTask: () => canDeleteTask(safeUser),
-    canViewTasks: () => canViewTasks(safeUser),
-    canCreateBoard: () => canCreateBoard(safeUser),
-    canSubmitForms: () => canSubmitForms(safeUser),
-    canPerformTaskCRUD: () => canPerformTaskCRUD(safeUser),
-    hasAdminPermissions: () => hasAdminPermissions(safeUser),
-    getUserPermissionSummary: () => getUserPermissionSummary(safeUser)
+    hasPermission: (permission) => hasPermission(user, permission),
+    canGenerate: () => canAccessCharts(user),
+    canAccessTasks: () => canAccessTasks(user),
+    canCreateTask: () => canCreateTask(user),
+    canUpdateTask: () => canUpdateTask(user),
+    canDeleteTask: () => canDeleteTask(user),
+    canViewTasks: () => canViewTasks(user),
+    canCreateBoard: () => canCreateBoard(user),
+    canSubmitForms: () => canSubmitForms(user),
+    canPerformTaskCRUD: () => canPerformTaskCRUD(user),
+    hasAdminPermissions: () => hasAdminPermissions(user),
+    getUserPermissionSummary: () => getUserPermissionSummary(user)
   };
 
   // Simplified auth status check
@@ -430,7 +381,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     // Core state
-    user: safeUser,
+    user,
     isLoading,
     isAuthChecking,
     error,

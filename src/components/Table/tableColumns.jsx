@@ -215,7 +215,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       if (!reporterId) return '-';
       
       const reporter = stableReporters.find(r => {
-        const reporterIdField = r.id || r.uid || r.reporterUID;
+        const reporterIdField = r.reporterUID;
         return reporterIdField && 
                typeof reporterIdField === 'string' &&
                reporterIdField.toLowerCase() === reporterId.toLowerCase();
