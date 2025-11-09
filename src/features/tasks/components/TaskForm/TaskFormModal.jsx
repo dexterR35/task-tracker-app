@@ -19,6 +19,7 @@ const TaskFormModal = ({
       onClose={onClose}
       title={title}
       maxWidth="max-w-4xl"
+      bgColor="primary"
     >
       <TaskForm
         mode={mode}

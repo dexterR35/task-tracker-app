@@ -475,114 +475,117 @@ const TaskForm = ({
   });
 
   return (
-    <div className={`p-6  w-full ${className}`}>
-      
-      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-3 ">
-        {/* 1. Jira Link - Full Width */}
-        <div className="form-section">
-          {renderFieldsByName(['jiraLink'])}
-        </div>
+    <div className={`p-5 w-full ${className}`}>
+      <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-4">
+        {/* Basic Information Section */}
+        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Basic Information</h3>
+          <div className="space-y-3">
+            {/* Jira Link - Full Width */}
+            <div>
+              {renderFieldsByName(['jiraLink'])}
+            </div>
 
-        {/* 2. Department + Product - 2 columns */}
-        <div className="form-section">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderFieldsByName(['departments', 'products'])}
+            {/* Department + Product - 2 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {renderFieldsByName(['departments', 'products'])}
+            </div>
+
+            {/* Markets + Reporter - 2 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {renderFieldsByName(['markets', 'reporters'])}
+            </div>
           </div>
         </div>
 
-        {/* 3. Markets + Reporter - 2 columns */}
-        <div className="form-section">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderFieldsByName(['markets', 'reporters'])}
-            {/* Debug info for reporters */}
-            {mode === 'edit' && (
-              <div className="text-xs text-gray-500 mt-1">
-                Debug: Selected reporter value: {watchedValues.reporters}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 4. Start Date + End Date + Total Time Hours - 3 columns */}
-        <div className="form-section">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Timeline Section */}
+        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Timeline & Duration</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {renderFieldsByName(['startDate', 'endDate', 'timeInHours'])}
           </div>
         </div>
 
-        {/* 7. VIP Task + Reworked - 2 columns */}
-        <div className="form-section">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Task Properties Section */}
+        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Task Properties</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {renderFieldsByName(['isVip', 'reworked'])}
           </div>
         </div>
 
-        {/* 8. AI Used - Full Width */}
-        <div className="form-section">
-          {renderFieldsByName(['_usedAIEnabled'])}
-        </div>
-
-        {/* 9. AI Models + AI Time - 2 columns (conditional) */}
-        {watchedValues._usedAIEnabled && (
-          <div className="form-section">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {renderFieldsByName(['aiModels', 'aiTime'])}
+        {/* AI Configuration Section */}
+        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">AI Configuration</h3>
+          <div className="space-y-3">
+            {/* AI Used - Full Width */}
+            <div>
+              {renderFieldsByName(['_usedAIEnabled'])}
             </div>
-          </div>
-        )}
 
-        {/* 10. Has Deliverables - Full Width */}
-        <div className="form-section">
-          {renderFieldsByName(['_hasDeliverables'])}
-        </div>
-
-        {/* 11. Deliverables - Full Width (conditional) */}
-        {watchedValues._hasDeliverables && (
-          <div className="form-section">
-            <SearchableDeliverablesField
-              field={{
-                name: 'deliverables',
-                type: 'select',
-                label: 'Deliverables',
-                required: true,
-                options: filteredDeliverablesOptions || null
-              }}
-              register={register}
-              errors={errors}
-              setValue={setValue}
-              watch={watch}
-              trigger={trigger}
-              clearErrors={clearErrors}
-              formValues={watchedValues}
-              hideTimeInfo={true}
-            />
-            {/* Debug info for deliverables */}
-            {mode === 'edit' && (
-              <div className="text-xs text-gray-500 mt-1">
-                Debug: Selected deliverable: {watchedValues.deliverables} | Has deliverables: {watchedValues._hasDeliverables ? 'Yes' : 'No'}
+            {/* AI Models + AI Time - 2 columns (conditional) */}
+            {watchedValues._usedAIEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {renderFieldsByName(['aiModels', 'aiTime'])}
               </div>
             )}
           </div>
-        )}
-
-        {/* 11. Observations - Full Width */}
-        <div className="form-section">
-          {renderFieldsByName(['observations'])}
         </div>
 
-        
+        {/* Deliverables Section */}
+        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Deliverables</h3>
+          <div className="space-y-3">
+            {/* Has Deliverables - Full Width */}
+            <div>
+              {renderFieldsByName(['_hasDeliverables'])}
+            </div>
+
+            {/* Deliverables - Full Width (conditional) */}
+            {watchedValues._hasDeliverables && (
+              <div className="pt-1">
+                <SearchableDeliverablesField
+                  field={{
+                    name: 'deliverables',
+                    type: 'select',
+                    label: 'Deliverables',
+                    required: true,
+                    options: filteredDeliverablesOptions || null
+                  }}
+                  register={register}
+                  errors={errors}
+                  setValue={setValue}
+                  watch={watch}
+                  trigger={trigger}
+                  clearErrors={clearErrors}
+                  formValues={watchedValues}
+                  hideTimeInfo={true}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Notes Section */}
+        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Additional Notes</h3>
+          <div>
+            {renderFieldsByName(['observations'])}
+          </div>
+        </div>
+
         {/* Submit Button */}
-        <div className="flex justify-end ">
+        <div className="flex justify-end pt-4 border-t border-gray-200/80 dark:border-gray-700/80">
           <DynamicButton
             type="submit"
             variant="primary"
-            size="lg"
+            size="md"
             disabled={isSubmitting}
             loading={isSubmitting}
             iconName={mode === 'create' ? 'add' : 'edit'}
             iconPosition="left"
             loadingText="Saving..."
-            className="px-8 py-3"
+            className="px-6 py-2"
           >
             {submitButtonText}
           </DynamicButton>
