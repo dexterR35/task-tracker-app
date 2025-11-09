@@ -768,8 +768,21 @@ export const calculateUserTable = (tasks, users) => {
         totalHours: Math.round(userData.totalHours * 100) / 100,
       };
 
+      // Calculate market items for percentage calculation
+      const marketItems = sortedMarkets.map((market) => ({
+        key: market,
+        count: userData.markets[market] || 0,
+      }));
+
+      // Add market columns with percentages
       sortedMarkets.forEach((market) => {
-        row[market] = userData.markets[market] || 0;
+        const marketCount = userData.markets[market] || 0;
+        row[market] = calculateCountWithPercentage(
+          marketCount,
+          userData.totalTasks,
+          marketItems,
+          market
+        );
       });
 
       return row;
@@ -810,6 +823,7 @@ export const calculateUserTable = (tasks, users) => {
       key: market,
       header: market.toUpperCase(),
       align: "center",
+      render: renderCountWithPercentage,
     });
   });
 
