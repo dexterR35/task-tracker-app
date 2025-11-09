@@ -3,8 +3,6 @@ import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
-import Avatar from "@/components/ui/Avatar/Avatar";
-import Badge from "@/components/ui/Badge/Badge";
 import ChartHeader from "./ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
@@ -348,7 +346,7 @@ const calculateBiaxialBarData = (tasks) => {
 };
 
 const calculateUsersBiaxialData = (tasks, users) => {
-  if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
+  if (!tasks || tasks.length === 0) return [];
 
   const userStats = {};
 
@@ -386,7 +384,7 @@ const calculateUsersBiaxialData = (tasks, users) => {
 
 // Calculate user-market breakdown - separate chart for each user
 const calculateUsersByMarketsCharts = (tasks, users) => {
-  if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
+  if (!tasks || tasks.length === 0) return [];
 
   const userMarketStats = {}; // { userId: { userName: "...", markets: { "RO": { tasks, hours }, ... } } }
 
@@ -397,7 +395,7 @@ const calculateUsersByMarketsCharts = (tasks, users) => {
 
     if (!userId || !taskMarkets || taskMarkets.length === 0) return;
 
-    const userName = getUserName(userId, users);
+    const userName = getUserName(userId, users || []);
 
     // Initialize user if not exists
     if (!userMarketStats[userId]) {
@@ -485,34 +483,33 @@ const MarketsByUsersCard = memo(({
 
     const calculatedData = calculateMarketsByUsersData(tasks, users, CALCULATION_OPTIONS.FULL_MARKETS_BY_USERS);
 
-    const totalTasks = tasks?.length || 0;
-    const totalHours =
-      tasks?.reduce(
-        (sum, task) =>
-          sum + (task.data_task?.timeInHours || task.timeInHours || 0),
-        0
-      ) || 0;
-
     const biaxialBarData = calculateBiaxialBarData(tasks);
     const usersBiaxialData = calculateUsersBiaxialData(tasks, users);
     const usersByMarketsCharts = calculateUsersByMarketsCharts(tasks, users);
+
+    // Calculate totals from actual chart data for consistency
+    const marketsTotalTasks = calculatedData.chartData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+    const marketsTotalHours = biaxialBarData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
+    
+    const usersTotalTasks = calculatedData.userByTaskData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+    const usersTotalHours = usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
 
     return {
       title: "Markets by Users",
       analyticsByUserMarketsTableData: calculatedData.tableData,
       analyticsByUserMarketsTableColumns: calculatedData.tableColumns,
       marketsData: calculatedData.chartData,
-      marketsTitle: `Markets Distribution (${totalTasks} tasks, ${totalHours}h)`,
+      marketsTitle: `Markets Distribution (${marketsTotalTasks} tasks, ${Math.round(marketsTotalHours * 10) / 10}h)`,
       marketsColors: calculatedData.colors,
       userByTaskData: calculatedData.userByTaskData,
-      userByTaskTitle: `Users by Task Count (${totalTasks} tasks, ${totalHours}h)`,
+      userByTaskTitle: `Users by Task Count (${usersTotalTasks} tasks, ${Math.round(usersTotalHours * 10) / 10}h)`,
       userByTaskColors: CHART_COLORS.USER_BY_TASK,
       biaxialBarData: biaxialBarData,
-      biaxialBarTitle: `Markets: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+      biaxialBarTitle: `Markets: Tasks & Hours (${marketsTotalTasks} tasks, ${Math.round(marketsTotalHours * 10) / 10}h)`,
       biaxialTasksColor: CHART_COLORS.DEFAULT[0],
       biaxialHoursColor: CHART_COLORS.DEFAULT[1],
       usersBiaxialData: usersBiaxialData,
-      usersBiaxialTitle: `Users: Tasks & Hours (${totalTasks} tasks, ${totalHours}h)`,
+      usersBiaxialTitle: `Users: Tasks & Hours (${usersTotalTasks} tasks, ${Math.round(usersTotalHours * 10) / 10}h)`,
       usersBiaxialTasksColor: CHART_COLORS.DEFAULT[2],
       usersBiaxialHoursColor: CHART_COLORS.DEFAULT[3],
       usersByMarketsCharts: usersByMarketsCharts,
@@ -623,112 +620,20 @@ const MarketsByUsersCard = memo(({
         </div>
 
         {/* Charts Section */}
-        <div>
-          {/* Modern Charts Header */}
-          <div className="relative bg-white/95 dark:bg-smallCard rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50 shadow-md mb-6 overflow-hidden">
-            {/* Accent bar line on top */}
-            <div 
-              className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-              }}
-            />
-            
-            <div className="flex items-center gap-3 pt-2 relative z-10">
-              {/* Icon with color_default background */}
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                style={{
-                  background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                }}
-              >
-                <ChartIcon className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-0.5">
-                  Charts
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Visual analytics and data insights
-                </p>
-              </div>
-              <Badge
-                size="sm"
-                className="shadow-sm"
-                style={{
-                  color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                  backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                  borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                }}
-              >
-                Analytics
-              </Badge>
-            </div>
-          </div>
-          
+       
           {/* Charts Container - 2 charts in a row */}
         {(hasMarketsData || hasUserByTaskData) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Markets Distribution Pie Chart */}
             {hasMarketsData && (
               <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                <div className="relative px-5 py-4 overflow-hidden">
-                  {/* Accent bar line on top */}
-                  <div 
-                    className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                    style={{
-                      background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                    }}
-                  />
-                  <div className="flex items-center gap-3 pt-2 relative z-10">
-                    {/* Icon with color_default background */}
-                    <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                      style={{
-                        background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                      }}
-                    >
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                        <span>Markets Distribution: Task by markets</span>
-                      </h5>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="select_badge" 
-                        size="sm"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                          backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                          borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        {marketsPieTotal} tasks
-                      </Badge>
-                      <Badge 
-                        variant="select_badge" 
-                        size="sm"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                          backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                          borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        {Math.round(marketsPieHours * 10) / 10}h
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+                <ChartHeader
+                  title="Markets Distribution: Task by markets"
+                  badges={[
+                    `${marketsPieTotal} tasks`,
+                    `${Math.round(marketsPieHours * 10) / 10}h`
+                  ]}
+                />
                 <div className="p-5">
                   <SimplePieChart
                     data={marketsData}
@@ -745,61 +650,13 @@ const MarketsByUsersCard = memo(({
             {/* User by Task Chart */}
             {hasUserByTaskData && (
               <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                <div className="relative px-5 py-4 overflow-hidden">
-                  {/* Accent bar line on top */}
-                  <div 
-                    className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                    style={{
-                      background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                    }}
-                  />
-                  <div className="flex items-center gap-3 pt-2 relative z-10">
-                    {/* Icon with color_default background */}
-                    <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                      style={{
-                        background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                      }}
-                    >
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                        <span>Users by Tasks: Task by users</span>
-                      </h5>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="select_badge" 
-                        size="sm"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                          backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                          borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        {userByTaskPieTotal} tasks
-                      </Badge>
-                      <Badge 
-                        variant="select_badge" 
-                        size="sm"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                          backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                          borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        {Math.round(userByTaskPieHours * 10) / 10}h
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+                <ChartHeader
+                  title="Users by Tasks: Task by users"
+                  badges={[
+                    `${userByTaskPieTotal} tasks`,
+                    `${Math.round(userByTaskPieHours * 10) / 10}h`
+                  ]}
+                />
                 <div className="p-5">
                   <SimplePieChart
                     data={userByTaskData}
@@ -822,61 +679,13 @@ const MarketsByUsersCard = memo(({
               const totalHours = biaxialBarData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <div className="relative px-5 py-4 overflow-hidden">
-                    {/* Accent bar line on top */}
-                    <div 
-                      className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                      style={{
-                        background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                      }}
-                    />
-                    <div className="flex items-center gap-3 pt-2 relative z-10">
-                      {/* Icon with color_default background */}
-                      <div 
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                        }}
-                      >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                          <span>Markets: Tasks & Hours by Market</span>
-                        </h5>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {totalTasks} tasks
-                        </Badge>
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {totalHours}h
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+                  <ChartHeader
+                    title="Markets: Tasks & Hours by Market"
+                    badges={[
+                      `${totalTasks} tasks`,
+                      `${totalHours}h`
+                    ]}
+                  />
                   <div className="p-5">
                     <BiaxialBarChart
                       data={biaxialBarData}
@@ -896,61 +705,13 @@ const MarketsByUsersCard = memo(({
               const totalHours = usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <div className="relative px-5 py-4 overflow-hidden">
-                    {/* Accent bar line on top */}
-                    <div 
-                      className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                      style={{
-                        background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                      }}
-                    />
-                    <div className="flex items-center gap-3 pt-2 relative z-10">
-                      {/* Icon with color_default background */}
-                      <div 
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                        }}
-                      >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                          <span>Users: Tasks & Hours by User</span>
-                        </h5>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {totalTasks} tasks
-                        </Badge>
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {totalHours}h
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+                  <ChartHeader
+                    title="Users: Tasks & Hours by User"
+                    badges={[
+                      `${totalTasks} tasks`,
+                      `${totalHours}h`
+                    ]}
+                  />
                   <div className="p-5">
                     <BiaxialBarChart
                       data={usersBiaxialData}
@@ -965,7 +726,7 @@ const MarketsByUsersCard = memo(({
             })()}
           </div>
         )}
-        </div>
+    
 
         {/* User Charts Section */}
         <div className="mt-8">
@@ -984,61 +745,14 @@ const MarketsByUsersCard = memo(({
                 key={userChart.userId} 
                 className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
               >
-                {/* Header with modern design */}
-                <div className="relative px-5 py-4 overflow-hidden">
-                  {/* Accent bar line on top */}
-                  <div 
-                    className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                    style={{
-                      background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                    }}
-                  />
-                  <div className="flex items-center justify-between pt-2 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <Avatar 
-                        name={userChart.userName}
-                        size="md"
-                        showName={false}
-                        className="flex-shrink-0"
-                        backgroundColor={CARD_SYSTEM.COLOR_HEX_MAP.color_default}
-                      />
-                      <div>
-                        <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                          {userChart.userName}
-                        </h5>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Markets Tasks & Hours</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="select_badge" 
-                        size="sm"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                          backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                          borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        {userChart.totalTasks} tasks
-                      </Badge>
-                      <Badge 
-                        variant="select_badge" 
-                        size="sm"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                          backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                          borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        {userChart.totalHours}h
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+                <ChartHeader
+                  title={userChart.userName}
+                  subtitle="Markets Tasks & Hours"
+                  badges={[
+                    `${userChart.totalTasks} tasks`,
+                    `${userChart.totalHours}h`
+                  ]}
+                />
                 
                 {/* Chart Container */}
                 <div className="p-5">

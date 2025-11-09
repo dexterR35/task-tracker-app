@@ -74,13 +74,7 @@ const SmallCard = memo(
                 <Badge
                   size="sm"
                   className="shadow-sm"
-                  style={{
-                    color: cardColorHex,
-                    backgroundColor: `${cardColorHex}15`,
-                    borderColor: `${cardColorHex}30`,
-                    borderWidth: "1px",
-                    borderStyle: "solid",
-                  }}
+                  variant={card.badge.color}
                 >
                   {card.badge.text}
                 </Badge>

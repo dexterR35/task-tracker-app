@@ -686,8 +686,7 @@ export const getAIAnalyticsCardProps = (tasks, users, isLoading = false) => {
 // Simplified version without caching
 export const getCachedAIAnalyticsCardProps = (
   tasks,
-  users,
-  month,
+  users = [],
   isLoading = false
 ) => {
   return getAIAnalyticsCardProps(tasks, users, isLoading);

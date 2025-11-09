@@ -151,7 +151,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} variant="orange" size="sm">
+            <Badge key={index} variant="green" size="sm">
               {market}
             </Badge>
           ))}

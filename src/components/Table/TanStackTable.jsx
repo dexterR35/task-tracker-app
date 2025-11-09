@@ -55,7 +55,7 @@ const BulkActionsBar = ({
             <div
               className="w-3 h-3 rounded-full shadow-sm"
               style={{
-                backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.purple,          
+                backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,          
               }}
             ></div>
             <div className="flex flex-col">
@@ -599,7 +599,7 @@ const TanStackTable = forwardRef(
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className={`px-4 py-3 text-start ${tableType === "analytics" ? "font-bold" : "font-semibold"} text-[10px] text-gray-200 tracking-normal ${
+                          className={`px-4 py-3 text-start ${tableType === "analytics" ? "font-bold" : "font-semibold"} text-[12px] text-gray-200 tracking-normal ${
                             header.column.getCanSort()
                               ? "cursor-pointer select-none hover:bg-gray-600/50"
                               : ""
@@ -626,7 +626,7 @@ const TanStackTable = forwardRef(
                     </tr>
                   ))}
                 </thead>
-                <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-500/60">
+                <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-500/70 ">
                   {hasRows ? (
                     table.getRowModel().rows.map((row, index) => {
                       const rowKey = row.original?.id || row.id;
@@ -638,14 +638,14 @@ const TanStackTable = forwardRef(
                       return (
                         <tr
                           key={rowKey}
-                          className={`cursor-pointer border-gray-500/60`}
+                          className={`cursor-pointer  border-b`}
                            
                           style={
                             isSelected
                   ? {
                       // Apply all border styles when selected
-                      borderLeft: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}`,
-                      borderRight: `1px solid ${CARD_SYSTEM.COLOR_HEX_MAP.green}`,
+                      borderLeft: `2px solid ${CARD_SYSTEM.COLOR_HEX_MAP.pink}`,
+                      borderRight: `2px solid ${CARD_SYSTEM.COLOR_HEX_MAP.pink}`,
                       backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,
                     }
                   : {}
@@ -655,7 +655,7 @@ const TanStackTable = forwardRef(
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={`${row.original?.id || row.id}-${cell.column.id}`}
-                              className={`px-3 py-4 text-xs ${fontWeight} `}
+                              className={`px-3 py-4 text-[13px] ${fontWeight} `}
                               style={{ width: cell.column.getSize() }}
                             >
                               {flexRender(

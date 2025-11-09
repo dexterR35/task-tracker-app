@@ -13,6 +13,7 @@ import {
   getTaskMarkets,
   getTaskHours,
   getTaskUserUID,
+  calculateUsersChartsByCategory,
 } from "./analyticsSharedConfig";
 
 /**
@@ -439,6 +440,13 @@ export const getMiscAnalyticsCardProps = (tasks, users = [], isLoading = false) 
   const miscData = calculateMiscAnalyticsData(tasks);
   const usersMiscData = calculateUsersMiscData(miscData.filteredTasks, users, miscData.sortedMarkets);
 
+  // Calculate per-user charts showing their markets breakdown for misc tasks
+  const miscUsersCharts = calculateUsersChartsByCategory(
+    miscData.filteredTasks,
+    users,
+    "Misc"
+  );
+
   return {
     title: "Misc Analytics",
     miscTableData: miscData.tableData,
@@ -452,6 +460,7 @@ export const getMiscAnalyticsCardProps = (tasks, users = [], isLoading = false) 
     categoryBiaxialTitle: `Misc Categories: Tasks & Hours (${miscData.totalTasks} tasks, ${Math.round(miscData.totalHours * 100) / 100}h)`,
     categoryBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     categoryBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    miscUsersCharts: miscUsersCharts,
     className: "",
     isLoading,
   };
@@ -460,7 +469,6 @@ export const getMiscAnalyticsCardProps = (tasks, users = [], isLoading = false) 
 // Simplified version without caching
 export const getCachedMiscAnalyticsCardProps = (
   tasks,
-  month,
   users = [],
   isLoading = false
 ) => {

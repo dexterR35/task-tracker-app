@@ -15,10 +15,11 @@ import {
   getCachedMiscAnalyticsCardProps,
   getCachedAIAnalyticsCardProps,
   getCachedReporterAnalyticsCardProps,
+  getCachedMarketsByUsersCardProps,
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
+
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 
@@ -130,7 +131,7 @@ const AnalyticsPage = () => {
             reporters
           );
         case "markets-by-users":
-          return { tasks, users };
+          return getCachedMarketsByUsersCardProps(tasks, users);
         case "marketing-analytics":
           return getCachedMarketingAnalyticsCardProps(
             tasks,
@@ -175,8 +176,8 @@ const AnalyticsPage = () => {
   // Memoize tab button styles to prevent object recreation
   const tabButtonStyles = useMemo(() => {
     const activeStyle = {
-      borderBottomColor: CARD_SYSTEM.COLOR_HEX_MAP.amber,
-      borderBottomWidth: "2px",
+      borderBottomColor: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+      borderBottomWidth: "3px",
     };
     return { active: activeStyle, inactive: {} };
   }, []);
@@ -288,18 +289,17 @@ const AnalyticsPage = () => {
               {analyticsTabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
-                  <DynamicButton
+                  <button
                     key={tab.id}
                     onClick={tabClickHandlers[tab.id]}
-                    variant="ghost"
                     className={`
-                      py-3 px-1 border-b-2 font-medium !text-[16px] rounded-none !shadow-none
+                      py-3 px-4 border-b-2 font-medium text-base rounded-none
                       ${
                         isActive
-                          ? "text-gray-900 dark:text-gray-100"
-                          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? "text-gray-900 dark:text-gray-100 font-semibold"
+                          : "border-transparent text-gray-500 dark:text-gray-400"
                       }
-                      `}
+                    `}
                     style={
                       isActive
                         ? tabButtonStyles.active
@@ -307,7 +307,7 @@ const AnalyticsPage = () => {
                     }
                   >
                     {tab.name}
-                  </DynamicButton>
+                  </button>
                 );
               })}
             </nav>

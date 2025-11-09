@@ -10,7 +10,7 @@ const AnalyticsTable = ({
   columns, 
   className = "",
   isLoading = false,
-  sectionTitle = "📊 Tables",
+  sectionTitle = "Tables",
   enablePagination = false,
   showPagination = false
 }) => {
@@ -41,7 +41,7 @@ const AnalyticsTable = ({
     columns: tableColumns,
     tableType: "analytics",
     isLoading,
-    className: "text-md",
+    className: "!text-md",
     enableRowSelection: false,
     showBulkActions: false,
     showFilters: false,

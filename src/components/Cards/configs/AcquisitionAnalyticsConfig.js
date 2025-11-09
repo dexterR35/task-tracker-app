@@ -481,7 +481,6 @@ export const getAcquisitionAnalyticsCardProps = (
 // Simplified version without caching
 export const getCachedAcquisitionAnalyticsCardProps = (
   tasks,
-  month,
   users = [],
   isLoading = false
 ) => {

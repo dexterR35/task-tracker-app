@@ -163,7 +163,7 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
         return (
           <div className="flex flex-wrap gap-1 uppercase">
             {markets.map((market, index) => (
-              <Badge key={index} color="purple" size="xs">
+              <Badge key={index} variant="purple" size="xs">
                 {market}
               </Badge>
             ))}
@@ -182,7 +182,7 @@ export const calculateReporterAnalyticsData = (tasks, reporters) => {
         return (
           <div className="flex flex-wrap gap-1">
             {products.map((product, index) => (
-              <Badge key={index} color="green" size="xs">
+              <Badge key={index} variant="green" size="xs">
                 {product}
               </Badge>
             ))}

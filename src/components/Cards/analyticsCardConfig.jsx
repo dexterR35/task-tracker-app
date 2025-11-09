@@ -83,3 +83,9 @@ export {
   getMiscAnalyticsCardProps,
   getCachedMiscAnalyticsCardProps,
 } from "./configs/MiscAnalyticsConfig.jsx";
+
+// Re-export Markets by Users
+export {
+  getMarketsByUsersCardProps,
+  getCachedMarketsByUsersCardProps,
+} from "./configs/MarketsByUsersConfig";

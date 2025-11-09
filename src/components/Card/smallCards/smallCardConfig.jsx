@@ -31,24 +31,7 @@ export const getCardColor = (cardType, data = {}) => {
   return palette[index];
 };
 
-/**
- * Convert markets array to badges object format for SmallCard
- * This is the shared function used across all cards that need to display market badges
- *
- * @param {Array|Object|string} markets - Markets data (array, object already in badges format, or string)
- * @param {number} defaultCount - Default count for each market when converting from array (default: 1)
- * @returns {Object|null} - Badges object with market names as keys and counts as values, or null if no markets
- *
- * @example
- * // Array input - converts to object with count 1 for each
- * convertMarketsToBadges(["UK", "US"]) // Returns: {UK: 1, US: 1}
- *
- * // Object input (already in badges format) - returns as-is
- * convertMarketsToBadges({UK: 5, US: 3}) // Returns: {UK: 5, US: 3}
- *
- * // String input - splits by comma and converts to object
- * convertMarketsToBadges("UK, US") // Returns: {UK: 1, US: 1}
- */
+
 export const convertMarketsToBadges = (markets, defaultCount = 1) => {
   if (!markets) return null;
 
@@ -99,12 +82,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Months",
     icon: Icons.generic.clock,
-    color: "green",
+    color: "blue",
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getBadge: (data) => ({
       text: data.isCurrentMonth ? "Current" : "History",
-      color: "green",
+      color: "blue",
     }),
     getContent: (data) => (
       <div className="">
@@ -135,7 +118,7 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No months available"
-          variant="green"
+          variant="blue"
         />
       </div>
     ),
@@ -166,7 +149,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: "blue",
+    color: "amber",
     getValue: (data) => {
       // Show total number of users, not tasks
       return (data.users?.length || 0).toString();
@@ -179,7 +162,7 @@ export const SMALL_CARD_CONFIGS = {
     },
     getBadge: (data) => ({
       text: data.selectedUserId ? "Filtered" : "All Users",
-      color: "blue",
+      color: "amber",
     }),
     getContent: (data) => (
       <div className=" space-y-3">
@@ -208,7 +191,7 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No users found"
-          variant="blue"
+          variant="amber"
         />
       </div>
     ),
@@ -313,7 +296,7 @@ export const SMALL_CARD_CONFIGS = {
           clearErrors={() => {}}
           formValues={{}}
           noOptionsMessage="No reporters found"
-          variant="purple"
+          variant="orange"
         />
       </div>
     ),
@@ -625,12 +608,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Total Tasks",
     icon: Icons.buttons.add,
-    color: "amber",
+    color: "green",
     getBadge: (data) => ({
       text: data.selectedWeek
         ? `Week ${data.selectedWeek.weekNumber}`
         : "All Weeks",
-      color: "amber",
+      color: "green",
     }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
@@ -708,7 +691,7 @@ export const SMALL_CARD_CONFIGS = {
             clearErrors={() => {}}
             formValues={{}}
             noOptionsMessage="No weeks available"
-            variant="amber"
+            variant="green"
           />
         </div>
       );

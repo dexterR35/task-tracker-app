@@ -3,8 +3,6 @@ import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
-import Avatar from "@/components/ui/Avatar/Avatar";
-import Badge from "@/components/ui/Badge/Badge";
 import ChartHeader from "./ChartHeader";
 import { CHART_COLORS } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
@@ -82,51 +80,7 @@ const MarketingAnalyticsCard = memo(({
         </div>
   
         {/* Charts Section */}
-        <div>
-          {/* Modern Charts Header */}
-          <div className="relative bg-white/95 dark:bg-smallCard rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50 shadow-md mb-6 overflow-hidden">
-            {/* Accent bar line on top */}
-            <div 
-              className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-              }}
-            />
-            
-            <div className="flex items-center gap-3 pt-2 relative z-10">
-              {/* Icon with color_default background */}
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                style={{
-                  background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                }}
-              >
-                <ChartIcon className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-0.5">
-                  Charts
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Visual analytics and data insights
-                </p>
-              </div>
-              <Badge
-                size="sm"
-                className="shadow-sm"
-                style={{
-                  color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                  backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                  borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                }}
-              >
-                Analytics
-              </Badge>
-            </div>
-          </div>
-          
+      
           {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Casino Marketing Chart */}
@@ -222,7 +176,7 @@ const MarketingAnalyticsCard = memo(({
             );
           })()}
         </div>
-        </div>
+       
 
         {/* User Charts Section */}
         <div className="mt-8">
@@ -247,61 +201,14 @@ const MarketingAnalyticsCard = memo(({
                   key={`casino-${userChart.userId}`} 
                   className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
                 >
-                  {/* Header with modern design */}
-                  <div className="relative px-5 py-4 overflow-hidden">
-                    {/* Accent bar line on top */}
-                    <div 
-                      className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                      style={{
-                        background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                      }}
-                    />
-                    <div className="flex items-center justify-between pt-2 relative z-10">
-                      <div className="flex items-center gap-3">
-                        <Avatar 
-                          name={userChart.userName}
-                          size="md"
-                          showName={false}
-                          className="flex-shrink-0"
-                          backgroundColor={CARD_SYSTEM.COLOR_HEX_MAP.color_default}
-                        />
-                        <div>
-                          <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                            {userChart.userName}
-                          </h5>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{userChart.category} - Markets</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {userChart.totalTasks} tasks
-                        </Badge>
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {userChart.totalHours}h
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+                  <ChartHeader
+                    title={userChart.userName}
+                    subtitle={`${userChart.category} - Markets`}
+                    badges={[
+                      `${userChart.totalTasks} tasks`,
+                      `${userChart.totalHours}h`
+                    ]}
+                  />
                   
                   {/* Chart Container */}
                   <div className="p-5">
@@ -341,61 +248,14 @@ const MarketingAnalyticsCard = memo(({
                   key={`sport-${userChart.userId}`} 
                   className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
                 >
-                  {/* Header with modern design */}
-                  <div className="relative px-5 py-4 overflow-hidden">
-                    {/* Accent bar line on top */}
-                    <div 
-                      className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-                      style={{
-                        background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-                      }}
-                    />
-                    <div className="flex items-center justify-between pt-2 relative z-10">
-                      <div className="flex items-center gap-3">
-                        <Avatar 
-                          name={userChart.userName}
-                          size="md"
-                          showName={false}
-                          className="flex-shrink-0"
-                          backgroundColor={CARD_SYSTEM.COLOR_HEX_MAP.color_default}
-                        />
-                        <div>
-                          <h5 className="font-semibold text-gray-900 dark:text-white text-base">
-                            {userChart.userName}
-                          </h5>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{userChart.category} - Markets</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {userChart.totalTasks} tasks
-                        </Badge>
-                        <Badge 
-                          variant="select_badge" 
-                          size="sm"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                            backgroundColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}15`,
-                            borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP.color_default}30`,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                          }}
-                        >
-                          {userChart.totalHours}h
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+                  <ChartHeader
+                    title={userChart.userName}
+                    subtitle={`${userChart.category} - Markets`}
+                    badges={[
+                      `${userChart.totalTasks} tasks`,
+                      `${userChart.totalHours}h`
+                    ]}
+                  />
                   
                   {/* Chart Container */}
                   <div className="p-5">

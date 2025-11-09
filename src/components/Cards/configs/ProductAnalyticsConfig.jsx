@@ -593,7 +593,6 @@ export const getProductAnalyticsCardProps = (tasks, users = [], isLoading = fals
 // Simplified version without caching
 export const getCachedProductAnalyticsCardProps = (
   tasks,
-  month,
   users = [],
   isLoading = false
 ) => {

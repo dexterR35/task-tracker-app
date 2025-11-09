@@ -339,11 +339,11 @@ export const renderCountWithPercentage = (value) => {
   if (match) {
     const count = match[1];
     const percentage = match[2];
-    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.select_badge;
+    const greenColor = CARD_SYSTEM.COLOR_HEX_MAP.amber;
 
     return (
       <span>
-        {count} (<span className="font-normal" style={{ color: greenColor }}>{percentage}%</span>)
+        {count} (<span className="font-bold" style={{ color: greenColor }}>{percentage}%</span>)
       </span>
     );
   }
@@ -382,7 +382,7 @@ export const getTaskReporterUID = (task) => {
 
 // Extract user UID from task
 export const getTaskUserUID = (task) => {
-  return task.userUID || task.createbyUID || "";
+  return task.userUID || task.createbyUID || task.data_task?.userUID || task.data_task?.createbyUID || "";
 };
 
 // Extract AI used from task
@@ -487,17 +487,54 @@ export const addGrandTotalRow = (tableData, options = {}) => {
  * Only uses userUID for matching (as per DB schema)
  */
 export const getUserName = (userId, users) => {
-  if (!userId || !users || !Array.isArray(users)) {
-    return `User ${userId?.slice(0, 8) || 'Unknown'}`;
+  if (!userId) {
+    return 'Unknown User';
   }
   
-  const user = users.find((u) => u.userUID === userId);
+  // Normalize userId for comparison (trim and ensure string)
+  const normalizedUserId = typeof userId === 'string' ? userId.trim() : String(userId);
+  
+  // If users array is not available or empty, return fallback
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    return `User ${normalizedUserId.slice(0, 8)}`;
+  }
+  
+  // Try to find user by userUID (exact match, case-sensitive)
+  const user = users.find((u) => {
+    if (!u || typeof u !== 'object') return false;
+    
+    // Check userUID field (primary) - exact match
+    if (u.userUID !== undefined && u.userUID !== null) {
+      const userUID = typeof u.userUID === 'string' ? u.userUID.trim() : String(u.userUID);
+      if (userUID === normalizedUserId) {
+        return true;
+      }
+    }
+    
+    // Fallback: check id field if userUID doesn't exist (but only if it's not the Firestore doc ID)
+    // Note: Firestore doc IDs are usually different from userUID, so this is a last resort
+    if (u.id && u.id !== u.userUID) {
+      const userIdFromId = typeof u.id === 'string' ? u.id.trim() : String(u.id);
+      if (userIdFromId === normalizedUserId) {
+        return true;
+      }
+    }
+    
+    return false;
+  });
   
   if (!user) {
-    return `User ${userId.slice(0, 8)}`;
+    return `User ${normalizedUserId.slice(0, 8)}`;
   }
   
-  return user.displayName || user.name || user.email || `User ${userId.slice(0, 8)}`;
+  // Return user name in priority order: displayName > name > email > fallback
+  // Ensure we return a string value
+  const userName = user.displayName || user.name || user.email;
+  if (userName && typeof userName === 'string' && userName.trim().length > 0) {
+    return userName.trim();
+  }
+  
+  return `User ${normalizedUserId.slice(0, 8)}`;
 };
 
 /**
@@ -574,7 +611,7 @@ export const calculatePercentagesForGroup = (items, total) => {
  * @returns {Array} - Array of user chart objects with marketData
  */
 export const calculateUsersChartsByCategory = (tasks, users, categoryName = null) => {
-  if (!tasks || tasks.length === 0 || !users || users.length === 0) return [];
+  if (!tasks || tasks.length === 0) return [];
 
   const userMarketStats = {}; // { userId: { userName: "...", markets: { "RO": { tasks, hours }, ... } } }
 
@@ -585,7 +622,7 @@ export const calculateUsersChartsByCategory = (tasks, users, categoryName = null
 
     if (!userId || !taskMarkets || taskMarkets.length === 0) return;
 
-    const userName = getUserName(userId, users);
+    const userName = getUserName(userId, users || []);
 
     // Initialize user if not exists
     if (!userMarketStats[userId]) {

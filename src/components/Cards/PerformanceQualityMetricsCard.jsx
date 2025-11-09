@@ -1,27 +1,10 @@
-/**
- * Performance Quality Metrics Card Component
- * 
- * @fileoverview Reusable card component for displaying performance and quality metrics
- * @author Senior Developer
- * @version 1.0.0
- */
+
 
 import React from 'react';
 import SmallCard from '@/components/Card/smallCards/SmallCard';
 import { Icons } from '@/components/icons';
 
-/**
- * Performance Quality Metrics Card
- * Displays productivity score, task completion, quality rating, and on-time delivery metrics
- * 
- * @param {Object} props - Component props
- * @param {Object} props.efficiency - Efficiency data object
- * @param {number} props.efficiency.productivityScore - Productivity score percentage (default: 87)
- * @param {number} props.efficiency.averageTaskCompletion - Average task completion in days (default: 2.3)
- * @param {number} props.efficiency.qualityRating - Quality rating out of 5 (default: 4.2)
- * @param {number} props.efficiency.onTimeDelivery - On-time delivery percentage (default: 94)
- * @returns {JSX.Element} Performance Quality Metrics Card
- */
+
 const PerformanceQualityMetricsCard = ({ 
   efficiency = {
     productivityScore: 87,

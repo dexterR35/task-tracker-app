@@ -90,7 +90,7 @@ const AdminManagementPage = () => {
   // Memoize tab button styles to prevent object recreation
   const tabButtonStyles = useMemo(() => {
     const activeStyle = {
-      borderBottomColor: CARD_SYSTEM.COLOR_HEX_MAP.amber,
+      borderBottomColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
       borderBottomWidth: '2px',
     };
     return { active: activeStyle, inactive: {} };
@@ -119,19 +119,21 @@ const AdminManagementPage = () => {
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
-                  <DynamicButton
+                  <button
                     key={tab.id}
                     onClick={tabClickHandlers[tab.id]}
-                    variant="ghost"
                     className={`
-                      py-3 px-1 border-b-2 font-medium !text-[16px] rounded-none !shadow-none
-                   : ' text-gray-500 '
+                      py-3 px-4 border-b-2 font-medium text-base rounded-none
+                      ${
+                        isActive
+                          ? "text-gray-900 dark:text-gray-100 font-semibold"
+                          : "border-transparent text-gray-500 dark:text-gray-400"
                       }
-                      `}
+                    `}
                     style={isActive ? tabButtonStyles.active : tabButtonStyles.inactive}
                   >
                     {tab.name}
-                  </DynamicButton>
+                  </button>
                 );
               })}
             </nav>
