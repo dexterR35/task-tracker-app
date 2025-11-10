@@ -429,7 +429,7 @@ export const addGrandTotalRow = (tableData, options = {}) => {
     }
   });
 
-  // Sum market columns
+  // Sum market columns (tasks with percentages)
   if (marketColumns.length > 0) {
     marketColumns.forEach((marketKey) => {
       const marketTotal = tableData.reduce((sum, row) => {
@@ -445,15 +445,28 @@ export const addGrandTotalRow = (tableData, options = {}) => {
         return sum;
       }, 0);
       grandTotalRow[marketKey] = marketTotal;
+
+      // Sum hours columns for this market
+      const hoursKey = `${marketKey}_hours`;
+      const hoursTotal = tableData.reduce((sum, row) => {
+        const value = row[hoursKey];
+        if (typeof value === 'number') {
+          return sum + value;
+        }
+        return sum;
+      }, 0);
+      grandTotalRow[hoursKey] = Math.round(hoursTotal * 100) / 100;
     });
   } else {
     // Auto-detect market columns (columns that aren't in sumColumns and aren't the label)
     const firstRow = tableData[0];
     if (firstRow) {
+      const detectedMarkets = new Set();
       Object.keys(firstRow).forEach((key) => {
-        if (key !== labelKey && !sumColumns.includes(key) && key !== 'bold' && key !== 'highlight') {
+        if (key !== labelKey && !sumColumns.includes(key) && key !== 'bold' && key !== 'highlight' && !key.endsWith('_hours')) {
           // Check if it's a market column (uppercase or contains market-like patterns)
           if (key.length <= 5 || /^[A-Z]{2,5}$/.test(key)) {
+            detectedMarkets.add(key);
             const marketTotal = tableData.reduce((sum, row) => {
               const value = row[key];
               if (typeof value === 'number') {
@@ -466,6 +479,19 @@ export const addGrandTotalRow = (tableData, options = {}) => {
               return sum;
             }, 0);
             grandTotalRow[key] = marketTotal;
+
+            // Also handle hours column if it exists
+            const hoursKey = `${key}_hours`;
+            if (firstRow.hasOwnProperty(hoursKey)) {
+              const hoursTotal = tableData.reduce((sum, row) => {
+                const value = row[hoursKey];
+                if (typeof value === 'number') {
+                  return sum + value;
+                }
+                return sum;
+              }, 0);
+              grandTotalRow[hoursKey] = Math.round(hoursTotal * 100) / 100;
+            }
           }
         }
       });
@@ -749,9 +775,13 @@ export const calculateUserTable = (tasks, users) => {
         const normalizedMarket = normalizeMarket(market);
         allMarkets.add(normalizedMarket);
         if (!userMarketStats[userId].markets[normalizedMarket]) {
-          userMarketStats[userId].markets[normalizedMarket] = 0;
+          userMarketStats[userId].markets[normalizedMarket] = {
+            tasks: 0,
+            hours: 0,
+          };
         }
-        userMarketStats[userId].markets[normalizedMarket] += 1;
+        userMarketStats[userId].markets[normalizedMarket].tasks += 1;
+        userMarketStats[userId].markets[normalizedMarket].hours += taskHours;
       }
     });
 
@@ -771,18 +801,21 @@ export const calculateUserTable = (tasks, users) => {
       // Calculate market items for percentage calculation
       const marketItems = sortedMarkets.map((market) => ({
         key: market,
-        count: userData.markets[market] || 0,
+        count: userData.markets[market]?.tasks || 0,
       }));
 
-      // Add market columns with percentages
+      // Add market columns with percentages and hours
       sortedMarkets.forEach((market) => {
-        const marketCount = userData.markets[market] || 0;
+        const marketData = userData.markets[market] || { tasks: 0, hours: 0 };
+        const marketCount = marketData.tasks || 0;
         row[market] = calculateCountWithPercentage(
           marketCount,
           userData.totalTasks,
           marketItems,
           market
         );
+        // Add hours column for this market
+        row[`${market}_hours`] = Math.round(marketData.hours * 100) / 100;
       });
 
       return row;
@@ -824,6 +857,13 @@ export const calculateUserTable = (tasks, users) => {
       header: market.toUpperCase(),
       align: "center",
       render: renderCountWithPercentage,
+    });
+    // Add hours column for each market
+    tableColumns.push({
+      key: `${market}_hours`,
+      header: `${market.toUpperCase()} Hours`,
+      align: "center",
+      highlight: false,
     });
   });
 

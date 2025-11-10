@@ -577,10 +577,15 @@ const TanStackTable = forwardRef(
         );
         const hasActiveFilters = hasTanStackFilters || hasCustomFilters;
 
+        // Get visible columns based on column visibility state
+        const visibleColumns = table.getAllColumns().filter(
+          (col) => col.getIsVisible() && col.id !== "select" && col.id !== "actions"
+        );
+
         // Perform actual export with reporters and users data for proper name resolution
         const success = exportToCSV(
           table.getFilteredRowModel().rows.map((row) => row.original),
-          columns,
+          visibleColumns.length > 0 ? visibleColumns : columns, // Use visible columns if available, fallback to all columns
           tableType,
           {
             filename: `${tableType}_export_${new Date().toISOString().split("T")[0]}.csv`,

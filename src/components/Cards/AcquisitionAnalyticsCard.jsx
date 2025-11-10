@@ -35,6 +35,8 @@ const AcquisitionAnalyticsCard = memo(
     casinoUserTableColumns = [],
     sportUserTableData = [],
     sportUserTableColumns = [],
+    sportCasinoUserTableData = [],
+    sportCasinoUserTableColumns = [],
     className = "",
     isLoading = false,
   }) => {
@@ -131,6 +133,27 @@ const AcquisitionAnalyticsCard = memo(
                   <div className="text-center py-8">
                     <p className="text-gray-500 dark:text-gray-400">
                       No sport acquisition user data
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sport + Casino: Per-User Table */}
+            <div className="mb-6">
+              {sportCasinoUserTableData && sportCasinoUserTableData.length > 0 ? (
+                <div className="table-container">
+                  <AnalyticsTable
+                    data={sportCasinoUserTableData}
+                    columns={sportCasinoUserTableColumns}
+                    sectionTitle="Sport + Casino: Per User"
+                  />
+                </div>
+              ) : (
+                <div className="card">
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">
+                      No sport + casino acquisition user data
                     </p>
                   </div>
                 </div>

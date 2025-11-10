@@ -42,13 +42,23 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     lotto: {},
   };
 
+  // Track hours per market per category
+  const acquisitionHours = {
+    casino: {},
+    sport: {},
+    poker: {},
+    lotto: {},
+  };
+
   const marketTotals = {};
+  const marketHoursTotals = {}; // Track total hours per market
   const allMarkets = new Set();
 
   // Process tasks to extract acquisition data
   tasks.forEach((task) => {
     const products = task.data_task?.products || task.products;
     const markets = task.data_task?.markets || task.markets || [];
+    const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
 
     if (!products || !Array.isArray(markets) || markets.length === 0) return;
 
@@ -70,14 +80,18 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
             // Initialize data structures
             if (!acquisitionData[category][market]) {
               acquisitionData[category][market] = 0;
+              acquisitionHours[category][market] = 0;
             }
             if (!marketTotals[market]) {
               marketTotals[market] = 0;
+              marketHoursTotals[market] = 0;
             }
 
-            // Count tasks
+            // Count tasks and hours
             acquisitionData[category][market]++;
+            acquisitionHours[category][market] += taskHours;
             marketTotals[market]++;
+            marketHoursTotals[market] += taskHours;
           }
         });
       }
@@ -91,8 +105,13 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   // Add rows for each acquisition category
   Object.keys(acquisitionData).forEach((category) => {
     const categoryData = acquisitionData[category];
+    const categoryHours = acquisitionHours[category];
     const categoryTotal = Object.values(categoryData).reduce(
       (sum, count) => sum + count,
+      0
+    );
+    const categoryTotalHours = Object.values(categoryHours).reduce(
+      (sum, hours) => sum + hours,
       0
     );
 
@@ -100,6 +119,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
       const row = {
         category: category.charAt(0).toUpperCase() + category.slice(1),
         total: categoryTotal,
+        totalHours: Math.round(categoryTotalHours * 100) / 100,
       };
 
       // Add market columns with percentages (categoryTotal is sum of all market counts, so percentages sum to 100%)
@@ -115,6 +135,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
           marketItems,
           market
         );
+        // Add hours column for this market
+        const marketHours = acquisitionHours[category][market] || 0;
+        row[`${market}_hours`] = Math.round(marketHours * 100) / 100;
       });
 
       tableData.push(row);
@@ -131,7 +154,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
       tableData = addGrandTotalRow(tableData, {
         labelKey: "category",
         labelValue: "Grand Total",
-        sumColumns: ["total"],
+        sumColumns: ["total", "totalHours"],
         marketColumns: sortedMarkets,
       });
     }
@@ -141,15 +164,23 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   const tableColumns = [
     { key: "category", header: "Acquisition Category", align: "left" },
     { key: "total", header: "Total Tasks", align: "center", highlight: true },
+    { key: "totalHours", header: "Total Hours", align: "center", highlight: true },
   ];
 
-  // Add market columns
+  // Add market columns (tasks with percentages)
   sortedMarkets.forEach((market) => {
     tableColumns.push({
       key: market,
       header: market.toUpperCase(),
       align: "center",
       render: renderCountWithPercentage,
+    });
+    // Add hours column for each market
+    tableColumns.push({
+      key: `${market}_hours`,
+      header: `${market.toUpperCase()} Hours`,
+      align: "center",
+      highlight: false,
     });
   });
 
@@ -397,6 +428,21 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     return calculateUserTable(acquisitionTasks, users);
   };
 
+  // Calculate Sport + Casino combined user table
+  const calculateSportCasinoUserTable = (tasks, users) => {
+    // Filter tasks for both sport and casino acquisition
+    const sportCasinoTasks = tasks.filter((task) => {
+      const products = task.data_task?.products || task.products;
+      return (
+        typeof products === "string" &&
+        products.includes("acquisition") &&
+        (products.includes("sport") || products.includes("casino"))
+      );
+    });
+
+    return calculateUserTable(sportCasinoTasks, users);
+  };
+
   return {
     tableData,
     tableColumns,
@@ -413,6 +459,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     sportAcquisitionTasks,
     calculateCasinoUserTable,
     calculateSportUserTable,
+    calculateSportCasinoUserTable,
   };
 };
 
@@ -445,6 +492,10 @@ export const getAcquisitionAnalyticsCardProps = (
     calculatedData.sportAcquisitionTasks,
     users
   );
+  const sportCasinoUserTable = calculatedData.calculateSportCasinoUserTable(
+    tasks,
+    users
+  );
 
   return {
     title: "Acquisition Analytics",
@@ -474,6 +525,8 @@ export const getAcquisitionAnalyticsCardProps = (
     casinoUserTableColumns: casinoUserTable.tableColumns,
     sportUserTableData: sportUserTable.tableData,
     sportUserTableColumns: sportUserTable.tableColumns,
+    sportCasinoUserTableData: sportCasinoUserTable.tableData,
+    sportCasinoUserTableColumns: sportCasinoUserTable.tableColumns,
     isLoading,
   };
 };
