@@ -422,6 +422,141 @@ const calculateDeliverablesInfo = (deliverablesUsed, deliverablesOptions = []) =
 /**
  * Custom CSV export for tasks - only specific columns
  */
+// Export function for user-specific export (different column order)
+export const exportTasksToCSVForUser = (data, options = {}) => {
+  try {
+    const {
+      filename = null,
+      includeHeaders = true,
+      deliverables = [],
+    } = options;
+
+    const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
+
+    // Define custom headers - user export order: JIRA LINK, DEPARTMENT, MARKET, TOTAL HOURS, DELIVERABLES
+    const headers = [
+      "JIRA LINK",
+      "DEPARTMENT",
+      "MARKET",
+      "TOTAL HOURS",
+      "DELIVERABLES"
+    ];
+
+    // Create rows with only the specified columns
+    const rows = data.map((row) => {
+      const taskData = row.data_task || row;
+
+      // 1. JIRA LINK
+      const taskName = taskData.taskName;
+      let jiraLink = "-";
+      if (taskName) {
+        if (taskName.startsWith("http://") || taskName.startsWith("https://")) {
+          jiraLink = taskName;
+        } else if (taskName.match(/^[A-Z]+-\d+$/)) {
+          jiraLink = `https://gmrd.atlassian.net/browse/${taskName}`;
+        } else {
+          jiraLink = taskName;
+        }
+      }
+
+      // 2. Department
+      const departments = taskData.departments;
+      let departmentValue = "-";
+      if (Array.isArray(departments) && departments.length > 0) {
+        departmentValue = departments.join(", ");
+      } else if (typeof departments === "string" && departments) {
+        departmentValue = departments;
+      }
+
+      // 3. MARKET
+      const markets = taskData.markets;
+      let marketValue = "-";
+      if (Array.isArray(markets) && markets.length > 0) {
+        marketValue = markets.map(m => String(m).toUpperCase()).join(", ");
+      } else if (typeof markets === "string" && markets) {
+        marketValue = markets.toUpperCase();
+      }
+
+      // 4. TOTAL HOURS (excluding AI hours)
+      const timeInHours = taskData.timeInHours || 0;
+      const aiTime = taskData.aiUsed?.[0]?.aiTime || 0;
+      const totalHours = Math.max(0, (typeof timeInHours === "number" ? timeInHours : 0) - (typeof aiTime === "number" ? aiTime : 0));
+      const totalHoursValue = totalHours > 0 ? totalHours.toFixed(1) : "0";
+
+      // 5. Deliverables (names only, comma-separated)
+      const deliverablesUsed = taskData.deliverablesUsed || [];
+      const deliverableNames = [];
+      
+      if (Array.isArray(deliverablesUsed) && deliverablesUsed.length > 0) {
+        deliverablesUsed.forEach((deliverable) => {
+          const deliverableName = deliverable?.name;
+          if (deliverableName) {
+            deliverableNames.push(deliverableName);
+          }
+        });
+      }
+      
+      const deliverableNamesValue = deliverableNames.length > 0 
+        ? deliverableNames.join(", ") 
+        : "-";
+
+      // Escape values that contain delimiter, quotes, or newlines
+      const escapeValue = (value) => {
+        const stringValue = String(value);
+        if (
+          stringValue.includes(delimiter) ||
+          stringValue.includes('"') ||
+          stringValue.includes("\n")
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      return [
+        escapeValue(jiraLink),
+        escapeValue(departmentValue),
+        escapeValue(marketValue),
+        escapeValue(totalHoursValue),
+        escapeValue(deliverableNamesValue)
+      ].join(delimiter);
+    });
+
+    // Create CSV content
+    let csvContent = "";
+    if (includeHeaders) {
+      csvContent = [headers.join(delimiter), ...rows].join("\n");
+    } else {
+      csvContent = rows.join("\n");
+    }
+
+    // Create and download file
+    const blob = new Blob([csvContent], {
+      type: `text/csv;charset=${EXPORT_CONFIG.CSV_ENCODING};`,
+    });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+
+    // Use custom filename or generate default
+    const exportFilename =
+      filename ||
+      `tasks_user_export_${new Date().toISOString().split("T")[0]}.csv`;
+    link.setAttribute("download", exportFilename);
+
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return true;
+  } catch (error) {
+    logger.error("Error exporting tasks to CSV for user:", error);
+    return false;
+  }
+};
+
 const exportTasksToCSV = (data, options = {}) => {
   try {
     const {
@@ -446,14 +581,13 @@ const exportTasksToCSV = (data, options = {}) => {
 
     const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
 
-    // Define custom headers
+    // Define custom headers - only these columns always
     const headers = [
       "DEPARTMENT",
       "JIRA LINK",
       "MARKET",
       "TOTAL HOURS",
-      "DELIVERABLE COUNT",
-      "DELIVERABLE NAMES"
+      "DELIVERABLES"
     ];
 
     // Create rows with only the specified columns
@@ -497,20 +631,14 @@ const exportTasksToCSV = (data, options = {}) => {
       const totalHours = Math.max(0, (typeof timeInHours === "number" ? timeInHours : 0) - (typeof aiTime === "number" ? aiTime : 0));
       const totalHoursValue = totalHours > 0 ? totalHours.toFixed(1) : "0";
 
-      // 5. Deliverable count (excluding variations) and names
+      // 5. Deliverables (names only, comma-separated)
       const deliverablesUsed = taskData.deliverablesUsed || [];
-      let deliverableCount = 0;
       const deliverableNames = [];
       
       if (Array.isArray(deliverablesUsed) && deliverablesUsed.length > 0) {
         deliverablesUsed.forEach((deliverable) => {
           const deliverableName = deliverable?.name;
-          const quantity = deliverable?.count || 1;
-          
           if (deliverableName) {
-            // Count only base quantity, exclude variations
-            deliverableCount += quantity;
-            // Add only the name (no quantity prefix since count is in separate column)
             deliverableNames.push(deliverableName);
           }
         });
@@ -538,7 +666,6 @@ const exportTasksToCSV = (data, options = {}) => {
         escapeValue(jiraLink),
         escapeValue(marketValue),
         escapeValue(totalHoursValue),
-        escapeValue(deliverableCount),
         escapeValue(deliverableNamesValue)
       ].join(delimiter);
     });
@@ -619,113 +746,14 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
         }))
       : [];
 
-    // Custom export for tasks - dynamic based on filters
-    // If filters are active: export all visible columns
-    // If no filters: export only specific columns (DEPARTMENT, JIRA LINK, MARKET, TOTAL HOURS, DELIVERABLE COUNT, DELIVERABLE NAMES)
+    // Custom export for tasks - always export only specific columns
+    // Always exports: DEPARTMENT, JIRA LINK, MARKET, TOTAL HOURS, DELIVERABLES
     if (tableType === "tasks") {
-
-      // If filters are active, use generic export with all visible columns
-      if (hasActiveFilters) {
-        // Get all visible columns (excluding select and actions)
-        const visibleColumns = columns.filter(
-          (col) => col.id !== "select" && col.id !== "actions"
-        );
-
-        // Create headers from visible columns
-        const headers = visibleColumns
-          .map((col) => {
-            if (typeof col.header === "string") return col.header;
-            if (typeof col.header === "function") return col.accessorKey || col.id;
-            return col.accessorKey || col.id;
-          })
-          .join(EXPORT_CONFIG.CSV_DELIMITER);
-
-        // Create rows
-        const rows = data.map((row) => {
-          return visibleColumns
-            .map((col) => {
-              let value;
-
-              // Handle different accessor types
-              if (typeof col.accessorFn === "function") {
-                value = col.accessorFn(row);
-              } else if (col.accessorKey) {
-                if (col.accessorKey.includes(".")) {
-                  const keys = col.accessorKey.split(".");
-                  value = keys.reduce((obj, key) => obj?.[key], row);
-                } else {
-                  value = row[col.accessorKey];
-                }
-              } else {
-                value = null;
-              }
-
-              // Format the value using our custom formatter
-              const columnId =
-                col.id ||
-                (col.accessorKey?.includes(".")
-                  ? col.accessorKey.split(".").pop()
-                  : col.accessorKey) ||
-                "";
-              const formattedValue = formatValueForCSV(
-                value,
-                columnId,
-                reporters,
-                users,
-                row,
-                { deliverables: deliverablesOptions }
-              );
-
-              // Escape delimiter, quotes, and newlines
-              const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
-              if (
-                formattedValue.includes(delimiter) ||
-                formattedValue.includes('"') ||
-                formattedValue.includes("\n")
-              ) {
-                return `"${formattedValue.replace(/"/g, '""')}"`;
-              }
-              return formattedValue;
-            })
-            .join(EXPORT_CONFIG.CSV_DELIMITER);
-        });
-
-        // Create CSV content
-        let csvContent = "";
-        if (includeHeaders) {
-          csvContent = [headers, ...rows].join("\n");
-        } else {
-          csvContent = rows.join("\n");
-        }
-
-        // Create and download file
-        const blob = new Blob([csvContent], {
-          type: `text/csv;charset=${EXPORT_CONFIG.CSV_ENCODING};`,
-        });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-
-        const exportFilename =
-          filename ||
-          `tasks_export_${new Date().toISOString().split("T")[0]}.csv`;
-        link.setAttribute("download", exportFilename);
-
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        return true;
-      } else {
-        // No filters active - use custom export with specific columns only
-        return exportTasksToCSV(data, {
-          filename,
-          includeHeaders,
-          deliverables,
-        });
-      }
+      return exportTasksToCSV(data, {
+        filename,
+        includeHeaders,
+        deliverables,
+      });
     }
 
     // Get all columns (both visible and hidden) excluding only the select column

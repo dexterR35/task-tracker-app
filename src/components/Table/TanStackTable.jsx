@@ -19,8 +19,9 @@ import {
 import { CARD_SYSTEM, TABLE_SYSTEM } from "@/constants";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
-import { exportToCSV } from "@/utils/exportData";
+import { exportToCSV, exportTasksToCSVForUser } from "@/utils/exportData";
 import { CheckboxField, TextField } from "@/components/forms/components";
+import { logger } from "@/utils/logger";
 
 // Constants
 const PAGE_SIZE_OPTIONS = TABLE_SYSTEM.PAGE_SIZE_OPTIONS;
@@ -105,11 +106,13 @@ const TableControls = ({
   globalFilter,
   setGlobalFilter,
   handleCSVExport,
+  handleUserCSVExport, // New prop for user-specific export
   isExporting,
   onPageSizeChange,
   customFilter,
   sectionTitle,
   departmentFilter, // New prop for department filter
+  showUserExportButton = false, // Show user export button only when user is selected
 }) => (
   <div className="flex justify-between items-center py-4 card">
     {/* Left Section - Section Title, Search and Filters */}
@@ -215,6 +218,16 @@ const TableControls = ({
       >
         {isExporting ? "Exporting..." : "Export CSV"}
       </button>
+      {/* User-specific export button - only shown when user is selected */}
+      {showUserExportButton && handleUserCSVExport && (
+        <button
+          onClick={handleUserCSVExport}
+          disabled={isExporting}
+          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+        >
+          {isExporting ? "Exporting..." : "Export User CSV"}
+        </button>
+      )}
     </div>
   </div>
 );
@@ -596,6 +609,60 @@ const TanStackTable = forwardRef(
       }
     }, [table, columns, tableType, additionalProps?.reporters, globalFilter, columnFilters, customFilters]);
 
+    // User-specific export handler (only for tasks table when user is selected)
+    const handleUserCSVExport = useCallback(async () => {
+      if (tableType !== "tasks") return;
+      
+      setIsExporting(true);
+      setExportType("csv");
+      setExportProgress(0);
+      setExportStep("Preparing user CSV export...");
+
+      try {
+        // Simulate progress steps
+        const progressSteps = [
+          { step: "Preparing data...", progress: 10 },
+          { step: "Processing rows...", progress: 30 },
+          { step: "Formatting data...", progress: 50 },
+          { step: "Generating CSV...", progress: 70 },
+          { step: "Finalizing export...", progress: 90 },
+          { step: "Saving file...", progress: 100 },
+        ];
+
+        for (const { step, progress } of progressSteps) {
+          setExportStep(step);
+          setExportProgress(progress);
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+
+        // Use user-specific export function
+        const success = exportTasksToCSVForUser(
+          table.getFilteredRowModel().rows.map((row) => row.original),
+          {
+            filename: `tasks_user_export_${new Date().toISOString().split("T")[0]}.csv`,
+            deliverables: additionalProps?.deliverables || [],
+          }
+        );
+
+        if (success) {
+          setExportStep("User CSV exported successfully!");
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        } else {
+          setExportStep("User CSV export failed. Please try again.");
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      } catch (error) {
+        logger.error("Error exporting user CSV:", error);
+        setExportStep("User CSV export failed. Please try again.");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      } finally {
+        setIsExporting(false);
+        setExportType(null);
+        setExportProgress(0);
+        setExportStep("");
+      }
+    }, [table, tableType, additionalProps?.deliverables]);
+
     // Memoized values
     const selectedCount = getSelectedCount(rowSelection);
     const totalRows = table.getFilteredRowModel().rows.length;
@@ -623,11 +690,13 @@ const TanStackTable = forwardRef(
               setGlobalFilter={handleGlobalFilterChange}
               columns={columns}
               handleCSVExport={handleCSVExport}
+              handleUserCSVExport={tableType === "tasks" ? handleUserCSVExport : null}
               isExporting={isExporting}
               onPageSizeChange={handlePageSizeChange}
               customFilter={customFilter}
               sectionTitle={additionalProps?.sectionTitle}
               departmentFilter={departmentFilter}
+              showUserExportButton={tableType === "tasks" && Boolean(customFilters?.selectedUserId)}
             />
 
             {/* Bulk Actions Bar */}
