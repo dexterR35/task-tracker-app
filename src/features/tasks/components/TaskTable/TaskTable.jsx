@@ -174,6 +174,8 @@ const TaskTable = ({
   const userUID = user?.userUID;
 
   // Reusable filtering function with role-based access control
+  // All filters work together with AND logic - a task must pass ALL active filters to be shown
+  // Filter order: 1) User/Reporter/Month, 2) Department, 3) Deliverable, 4) Task Filter, 5) Week
   const getFilteredTasks = useCallback(
     (
       tasks,
@@ -189,16 +191,34 @@ const TaskTable = ({
         return [];
       }
 
-      // Use shared utility for user/reporter filtering
+      // Normalize empty strings to null for proper filtering
+      const normalizedUserId = selectedUserId && selectedUserId.trim() !== "" ? selectedUserId : null;
+      const normalizedReporterId = selectedReporterId && selectedReporterId.trim() !== "" ? selectedReporterId : null;
+
+      // Step 1: Filter by User, Reporter, and Month (using shared utility)
       let filteredTasks = filterTasksByUserAndReporter(tasks, {
-        selectedUserId,
-        selectedReporterId,
+        selectedUserId: normalizedUserId,
+        selectedReporterId: normalizedReporterId,
         currentMonthId,
         isUserAdmin,
         currentUserUID: userUID,
       });
 
-      // Apply department filter
+      if (import.meta.env.MODE === "development") {
+        logger.log("Filtering tasks:", {
+          totalTasks: tasks.length,
+          afterUserReporterFilter: filteredTasks.length,
+          normalizedUserId,
+          normalizedReporterId,
+          currentMonthId,
+          selectedWeek: selectedWeek ? `Week ${selectedWeek.weekNumber}` : null,
+          selectedFilter,
+          selectedDepartmentFilter,
+          selectedDeliverableFilter,
+        });
+      }
+
+      // Step 2: Apply department filter
       if (selectedDepartmentFilter) {
         if (import.meta.env.MODE === "development") {
           logger.log("Applying department filter:", selectedDepartmentFilter);
@@ -222,7 +242,7 @@ const TaskTable = ({
         });
       }
 
-      // Apply deliverable filter
+      // Step 3: Apply deliverable filter
       if (selectedDeliverableFilter) {
         if (import.meta.env.MODE === "development") {
           logger.log("Applying deliverable filter:", selectedDeliverableFilter);
@@ -251,7 +271,7 @@ const TaskTable = ({
         });
       }
 
-      // Apply single filter selection
+      // Step 4: Apply task filter (AI Used, Marketing, Acquisition, Product, VIP, Reworked)
       if (selectedFilter) {
         if (import.meta.env.MODE === "development") {
           logger.log("Applying filter:", selectedFilter);
@@ -279,46 +299,140 @@ const TaskTable = ({
         });
       }
 
-      // If a week is selected, filter by week
-      if (selectedWeek && selectedWeek.days) {
-        const weekTasks = [];
-        selectedWeek.days.forEach((day) => {
-          try {
-            const dayDate = day instanceof Date ? day : new Date(day);
-            if (isNaN(dayDate.getTime())) return;
+      // Step 5: Apply week filter (if week is selected, filter by task startDate)
+      if (selectedWeek) {
+        if (import.meta.env.MODE === "development") {
+          logger.log("Applying week filter:", {
+            weekNumber: selectedWeek.weekNumber,
+            startDate: selectedWeek.startDate,
+            endDate: selectedWeek.endDate,
+            days: selectedWeek.days?.length || 0,
+            tasksBeforeWeekFilter: filteredTasks.length,
+          });
+        }
+        
+        // Get week date range - use startDate and endDate if available, otherwise calculate from days
+        let weekStart, weekEnd;
+        
+        if (selectedWeek.startDate && selectedWeek.endDate) {
+          weekStart = new Date(selectedWeek.startDate);
+          weekEnd = new Date(selectedWeek.endDate);
+        } else if (selectedWeek.days && Array.isArray(selectedWeek.days) && selectedWeek.days.length > 0) {
+          // Calculate from days array if dates not available
+          const sortedDays = [...selectedWeek.days]
+            .map(day => day instanceof Date ? day : new Date(day))
+            .filter(day => !isNaN(day.getTime()))
+            .sort((a, b) => a - b);
+          
+          if (sortedDays.length > 0) {
+            weekStart = new Date(sortedDays[0]);
+            weekEnd = new Date(sortedDays[sortedDays.length - 1]);
+          } else {
+            // If no valid days, skip week filter
+            if (import.meta.env.MODE === "development") {
+              logger.warn("Week has no valid days, skipping week filter");
+            }
+            weekStart = null;
+            weekEnd = null;
+          }
+        } else {
+          // If no date info available, skip week filter
+          if (import.meta.env.MODE === "development") {
+            logger.warn("Week has no date information, skipping week filter");
+          }
+          weekStart = null;
+          weekEnd = null;
+        }
 
-            const dayStr = dayDate.toISOString().split("T")[0];
-            const dayTasks = filteredTasks.filter((task) => {
-              if (!task.createdAt) return false;
+        if (weekStart && weekEnd) {
+          // Normalize week dates to start/end of day for comparison
+          weekStart.setHours(0, 0, 0, 0);
+          weekEnd.setHours(23, 59, 59, 999);
 
-              // Handle Firestore Timestamp
-              let taskDate;
-              if (
-                task.createdAt &&
-                typeof task.createdAt === "object" &&
-                task.createdAt.seconds
-              ) {
-                taskDate = new Date(task.createdAt.seconds * 1000);
+          filteredTasks = filteredTasks.filter((task) => {
+            const taskData = getTaskData(task);
+            
+            // Use startDate to determine which week the task belongs to
+            // If task has no startDate, exclude it when week filter is active
+            if (!taskData.startDate) {
+              if (import.meta.env.MODE === "development") {
+                logger.log("Task excluded - no startDate:", {
+                  taskId: task.id || task.taskId,
+                  taskName: taskData.taskName,
+                });
+              }
+              return false;
+            }
+
+            try {
+              // Parse task start date - handle multiple formats
+              let taskStartDate;
+              if (taskData.startDate instanceof Date) {
+                taskStartDate = new Date(taskData.startDate);
+              } else if (typeof taskData.startDate === "string") {
+                taskStartDate = new Date(taskData.startDate);
               } else if (
-                task.createdAt &&
-                typeof task.createdAt === "object" &&
-                task.createdAt.toDate
+                taskData.startDate &&
+                typeof taskData.startDate === "object" &&
+                taskData.startDate.seconds
               ) {
-                taskDate = task.createdAt.toDate();
+                taskStartDate = new Date(taskData.startDate.seconds * 1000);
+              } else if (
+                taskData.startDate &&
+                typeof taskData.startDate === "object" &&
+                taskData.startDate.toDate &&
+                typeof taskData.startDate.toDate === "function"
+              ) {
+                taskStartDate = taskData.startDate.toDate();
               } else {
-                taskDate = new Date(task.createdAt);
+                taskStartDate = new Date(taskData.startDate);
               }
 
-              if (isNaN(taskDate.getTime())) return false;
-              const taskDateStr = taskDate.toISOString().split("T")[0];
-              return taskDateStr === dayStr;
+              if (isNaN(taskStartDate.getTime())) {
+                if (import.meta.env.MODE === "development") {
+                  logger.warn("Task excluded - invalid startDate:", {
+                    taskId: task.id || task.taskId,
+                    startDate: taskData.startDate,
+                  });
+                }
+                return false;
+              }
+
+              // Normalize task date to start of day for comparison
+              taskStartDate.setHours(0, 0, 0, 0);
+
+              // Check if task start date falls within the week range
+              // Task belongs to this week if its startDate is within weekStart and weekEnd
+              const isInWeek = taskStartDate >= weekStart && taskStartDate <= weekEnd;
+
+              if (import.meta.env.MODE === "development") {
+                if (isInWeek) {
+                  logger.log("Task matches week:", {
+                    taskId: task.id || task.taskId,
+                    taskName: taskData.taskName,
+                    taskStartDate: taskStartDate.toISOString().split("T")[0],
+                    weekStart: weekStart.toISOString().split("T")[0],
+                    weekEnd: weekEnd.toISOString().split("T")[0],
+                  });
+                }
+              }
+
+              return isInWeek;
+            } catch (error) {
+              logger.warn("Error processing task date for week filter:", error, {
+                taskId: task.id || task.taskId,
+                startDate: taskData.startDate,
+              });
+              return false;
+            }
+          });
+
+          if (import.meta.env.MODE === "development") {
+            logger.log("After week filter:", {
+              tasksAfterWeekFilter: filteredTasks.length,
             });
-            weekTasks.push(...dayTasks);
-          } catch (error) {
-            logger.warn("Error processing day:", error, day);
           }
-        });
-        filteredTasks = weekTasks;
+        }
       }
 
       return filteredTasks;

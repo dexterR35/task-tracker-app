@@ -10,7 +10,12 @@
  * @returns {boolean}
  */
 export const matchesUser = (task, userId) => {
-  return task.userUID === userId || task.createbyUID === userId;
+  if (!userId) return false;
+  // Convert both to strings for reliable comparison
+  const taskUserUID = task.userUID ? String(task.userUID) : null;
+  const taskCreatebyUID = task.createbyUID ? String(task.createbyUID) : null;
+  const normalizedUserId = String(userId);
+  return taskUserUID === normalizedUserId || taskCreatebyUID === normalizedUserId;
 };
 
 /**
@@ -38,8 +43,10 @@ export const getTaskReporterName = (task) => {
  * @returns {boolean}
  */
 export const matchesReporter = (task, reporterId) => {
+  if (!reporterId) return false;
   const taskReporterId = getTaskReporterId(task);
   if (!taskReporterId) return false;
+  // Convert both to strings for reliable comparison
   return String(taskReporterId) === String(reporterId);
 };
 
@@ -115,6 +122,10 @@ export const filterTasksByUserAndReporter = (tasks, options = {}) => {
     currentUserUID = null,
   } = options;
 
+  // Normalize empty strings to null for proper filtering
+  const normalizedUserId = selectedUserId && selectedUserId.trim() !== "" ? selectedUserId : null;
+  const normalizedReporterId = selectedReporterId && selectedReporterId.trim() !== "" ? selectedReporterId : null;
+
   if (!tasks || !Array.isArray(tasks)) {
     return [];
   }
@@ -132,8 +143,8 @@ export const filterTasksByUserAndReporter = (tasks, options = {}) => {
       if (!isUserTask) return false;
 
       // If reporter is selected, also filter by reporter
-      if (selectedReporterId) {
-        return matchesReporter(task, selectedReporterId);
+      if (normalizedReporterId) {
+        return matchesReporter(task, normalizedReporterId);
       }
 
       // Regular users can ONLY see their own tasks
@@ -142,25 +153,25 @@ export const filterTasksByUserAndReporter = (tasks, options = {}) => {
 
     // Admin filtering logic
     // If both user and reporter are selected, show tasks that match BOTH
-    if (selectedUserId && selectedReporterId) {
-      const matchesSelectedUser = matchesUser(task, selectedUserId);
+    if (normalizedUserId && normalizedReporterId) {
+      const matchesSelectedUser = matchesUser(task, normalizedUserId);
       const taskReporterId = getTaskReporterId(task);
       if (!taskReporterId) return false;
       // Compare task reporter ID directly with selectedReporterId (exact match)
-      return matchesSelectedUser && String(taskReporterId) === String(selectedReporterId);
+      return matchesSelectedUser && String(taskReporterId) === String(normalizedReporterId);
     }
 
     // If only user is selected, show tasks for that user
-    if (selectedUserId && !selectedReporterId) {
-      return matchesUser(task, selectedUserId);
+    if (normalizedUserId && !normalizedReporterId) {
+      return matchesUser(task, normalizedUserId);
     }
 
     // If only reporter is selected, show tasks for that reporter
-    if (selectedReporterId && !selectedUserId) {
+    if (normalizedReporterId && !normalizedUserId) {
       const taskReporterId = getTaskReporterId(task);
       if (!taskReporterId) return false;
       // Compare task reporter ID directly with selectedReporterId (exact match)
-      return String(taskReporterId) === String(selectedReporterId);
+      return String(taskReporterId) === String(normalizedReporterId);
     }
 
     // If neither user nor reporter is selected, admin sees all tasks
