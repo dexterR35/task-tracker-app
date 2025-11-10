@@ -21,6 +21,7 @@ import { TABLE_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 import { updateURLParam, updateURLParams, getURLParam } from "@/utils/urlParams";
 import { matchesUser, getTaskReporterId, getTaskData, filterTasksByUserAndReporter } from "@/utils/taskFilters";
+import { saveUserPreference, loadUserPreference } from "@/utils/userPreferences";
 
 // Available filter options
 const FILTER_OPTIONS = [
@@ -589,14 +590,45 @@ const TaskTable = ({
     handleDelete,
   ]);
 
-  // Initial column visibility
-  const initialColumnVisibility = {
+  // Default column visibility
+  const defaultColumnVisibility = {
     isVip: false, // Hide VIP column by default
-    reworked: true, // Hide Reworked column by default
-    startDate: true, // Hide Start Date column by default
+    reworked: true, // Show Reworked column by default
+    startDate: true, // Show Start Date column by default
     endDate: false, // Hide End Date column by default
     observations: false, // Hide Observations column by default
   };
+
+  // Load saved column visibility from localStorage (per user)
+  // Note: userUID is already declared above (line 175)
+  const [columnVisibility, setColumnVisibility] = useState(() => {
+    if (userUID) {
+      const saved = loadUserPreference(userUID, 'taskTable_columnVisibility', defaultColumnVisibility);
+      return { ...defaultColumnVisibility, ...saved };
+    }
+    return defaultColumnVisibility;
+  });
+
+  // Handle column visibility changes - save to localStorage
+  const handleColumnVisibilityChange = useCallback((newVisibility) => {
+    setColumnVisibility(newVisibility);
+    if (userUID) {
+      saveUserPreference(userUID, 'taskTable_columnVisibility', newVisibility);
+    }
+  }, [userUID]);
+
+  // Reload column visibility when user changes
+  useEffect(() => {
+    if (userUID) {
+      const saved = loadUserPreference(userUID, 'taskTable_columnVisibility', defaultColumnVisibility);
+      setColumnVisibility({ ...defaultColumnVisibility, ...saved });
+    } else {
+      setColumnVisibility(defaultColumnVisibility);
+    }
+  }, [userUID]); // Only depend on userUID, not defaultColumnVisibility
+
+  // Use columnVisibility state as initialColumnVisibility for TanStackTable
+  const initialColumnVisibility = columnVisibility;
 
   // Notify parent component about count changes
   useEffect(() => {
@@ -701,7 +733,17 @@ const TaskTable = ({
     return [{ value: userDepartment, label: userDepartment }];
   }, [isUserAdmin, userData?.department]);
 
-  // Create filter component for inline display (reordered: search, task filters, department, deliverables)
+  // Department filter component (to show after search)
+  // Show for admins (userDepartmentOptions === null means use default) or for users with department
+  const departmentFilterComponent = (
+    <DepartmentFilter
+      selectedDepartmentFilter={selectedDepartmentFilter}
+      onFilterChange={handleFilterValueChange}
+      departmentOptions={userDepartmentOptions}
+    />
+  );
+
+  // Create filter component for inline display (task filters and deliverables only, department is separate)
   const taskFilterComponent = (
     <div className="flex items-center space-x-4">
       <SearchableSelectField
@@ -722,13 +764,6 @@ const TaskTable = ({
         formValues={{}}
         noOptionsMessage="No filters found"
       />
-      {userDepartmentOptions !== null && (
-        <DepartmentFilter
-          selectedDepartmentFilter={selectedDepartmentFilter}
-          onFilterChange={handleFilterValueChange}
-          departmentOptions={userDepartmentOptions}
-        />
-      )}
       <SearchableSelectField
         field={{
           name: "deliverableFilter",
@@ -767,6 +802,7 @@ const TaskTable = ({
         showBulkActions={true}
         bulkActions={bulkActions}
         initialColumnVisibility={initialColumnVisibility}
+        onColumnVisibilityChange={handleColumnVisibilityChange}
         reporters={reporters}
         users={users}
         deliverables={deliverables}
@@ -776,6 +812,8 @@ const TaskTable = ({
         pageSize={pageSizeState}
         // Custom filter component
         customFilter={taskFilterComponent}
+        // Department filter (shown after search)
+        departmentFilter={departmentFilterComponent}
         // Global filter props for URL sync
         initialGlobalFilter={globalSearchFilter}
         onGlobalFilterChange={setGlobalSearchFilter}

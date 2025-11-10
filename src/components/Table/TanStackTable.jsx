@@ -109,6 +109,7 @@ const TableControls = ({
   onPageSizeChange,
   customFilter,
   sectionTitle,
+  departmentFilter, // New prop for department filter
 }) => (
   <div className="flex justify-between items-center py-4 card">
     {/* Left Section - Section Title, Search and Filters */}
@@ -134,6 +135,12 @@ const TableControls = ({
             clearErrors={() => {}}
             formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
           />
+        </div>
+      )}
+      {/* Department Filter - right after search */}
+      {departmentFilter && (
+        <div className="w-64">
+          {departmentFilter}
         </div>
       )}
       {/* Custom Filter - if provided */}
@@ -282,6 +289,7 @@ const TanStackTable = forwardRef(
 
       // Column visibility
       initialColumnVisibility = {},
+      onColumnVisibilityChange = null, // Callback when column visibility changes
 
       // Action handlers (for bulk actions)
       onEdit = null,
@@ -299,6 +307,7 @@ const TanStackTable = forwardRef(
 
       // Custom filter component
       customFilter = null,
+      departmentFilter = null, // Department filter to show after search
 
       // Custom filters state (for dynamic export detection)
       customFilters = {},
@@ -334,6 +343,30 @@ const TanStackTable = forwardRef(
     const [columnVisibility, setColumnVisibility] = useState(
       initialColumnVisibility
     );
+
+    // Sync column visibility when initialColumnVisibility prop changes (e.g., when user changes)
+    useEffect(() => {
+      if (initialColumnVisibility && Object.keys(initialColumnVisibility).length > 0) {
+        // Only update if values actually differ to avoid unnecessary re-renders
+        setColumnVisibility((prev) => {
+          const hasChanges = Object.keys(initialColumnVisibility).some(
+            (key) => prev[key] !== initialColumnVisibility[key]
+          );
+          return hasChanges ? initialColumnVisibility : prev;
+        });
+      }
+    }, [initialColumnVisibility]);
+
+    // Wrapper for setColumnVisibility that also calls the callback
+    const handleColumnVisibilityChange = useCallback((updater) => {
+      setColumnVisibility((prev) => {
+        const newValue = typeof updater === 'function' ? updater(prev) : updater;
+        if (onColumnVisibilityChange) {
+          onColumnVisibilityChange(newValue);
+        }
+        return newValue;
+      });
+    }, [onColumnVisibilityChange]);
     const [rowSelection, setRowSelection] = useState({});
     const [rowActionId, setRowActionId] = useState(null);
     const [pagination, setPagination] = useState({
@@ -464,7 +497,7 @@ const TanStackTable = forwardRef(
       onSortingChange: setSorting,
       onGlobalFilterChange: handleGlobalFilterChange,
       onColumnFiltersChange: setColumnFilters,
-      onColumnVisibilityChange: setColumnVisibility,
+      onColumnVisibilityChange: handleColumnVisibilityChange,
       onRowSelectionChange: handleRowSelectionChange,
       onPaginationChange: setPagination,
       getCoreRowModel: getCoreRowModel(),
@@ -594,6 +627,7 @@ const TanStackTable = forwardRef(
               onPageSizeChange={handlePageSizeChange}
               customFilter={customFilter}
               sectionTitle={additionalProps?.sectionTitle}
+              departmentFilter={departmentFilter}
             />
 
             {/* Bulk Actions Bar */}
