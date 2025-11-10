@@ -21,6 +21,17 @@ const SearchableDeliverablesField = ({
   const hasDeliverables = watch('_hasDeliverables') || false;
   const selectedOption = field.options?.find(option => option.value === selectedDeliverable);
   
+  // Check if variations are properly configured for the selected deliverable
+  const canUseVariations = useMemo(() => {
+    if (!selectedOption) return false;
+    // Variations can only be used if:
+    // 1. requiresQuantity is true
+    // 2. variationsTime is configured (exists and > 0)
+    return selectedOption.requiresQuantity === true && 
+           selectedOption.variationsTime != null && 
+           selectedOption.variationsTime > 0;
+  }, [selectedOption]);
+  
   // Debug logging for deliverables field (removed for production)
 
   // Handle initial value when form is reset
@@ -75,6 +86,25 @@ const SearchableDeliverablesField = ({
     }
   }, [formValues?.deliverableQuantities, formValues?.variationsQuantities, formValues?.variationsDeliverables]);
 
+  // Clear variations if deliverable doesn't support them
+  useEffect(() => {
+    if (selectedDeliverable && selectedOption && !canUseVariations) {
+      // Check if variations are currently enabled for this deliverable
+      const hasVariationsEnabled = variationsEnabled[selectedDeliverable];
+      if (hasVariationsEnabled) {
+        // Clear variations if not supported
+        const newvariationsEnabled = { ...variationsEnabled };
+        delete newvariationsEnabled[selectedDeliverable];
+        const newvariationsQuantities = { ...variationsQuantities };
+        delete newvariationsQuantities[selectedDeliverable];
+        setvariationsEnabled(newvariationsEnabled);
+        setvariationsQuantities(newvariationsQuantities);
+        setValue('variationsDeliverables', newvariationsEnabled);
+        setValue('variationsQuantities', newvariationsQuantities);
+      }
+    }
+  }, [selectedDeliverable, selectedOption, canUseVariations]);
+
   // Handle deliverable selection
   const handleDeliverableChange = (value) => {
     setValue('deliverables', value);
@@ -103,6 +133,23 @@ const SearchableDeliverablesField = ({
         setQuantities(preservedQuantities);
         setValue('deliverableQuantities', preservedQuantities);
       }
+      
+      // Clear variations if the deliverable doesn't support them
+      const deliverable = field.options?.find(opt => opt.value === value);
+      if (deliverable) {
+        const canUse = deliverable.requiresQuantity === true && 
+                      deliverable.variationsTime != null && 
+                      deliverable.variationsTime > 0;
+        if (!canUse && variationsEnabled[value]) {
+          // Clear variations if not supported
+          const newvariationsEnabled = { ...variationsEnabled };
+          delete newvariationsEnabled[value];
+          const newvariationsQuantities = { ...variationsQuantities };
+          delete newvariationsQuantities[value];
+          updateStateAndForm(setvariationsEnabled, 'variationsDeliverables', newvariationsEnabled);
+          updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
+        }
+      }
     }
     // Trigger validation immediately
     trigger('deliverables');
@@ -127,6 +174,18 @@ const SearchableDeliverablesField = ({
   };
 
   const handlevariationsToggle = (deliverableValue, enabled) => {
+    // Only allow enabling variations if the deliverable supports it
+    const deliverable = field.options?.find(opt => opt.value === deliverableValue);
+    if (enabled && deliverable) {
+      const canEnable = deliverable.requiresQuantity === true && 
+                       deliverable.variationsTime != null && 
+                       deliverable.variationsTime > 0;
+      if (!canEnable) {
+        // Don't allow enabling if not properly configured
+        return;
+      }
+    }
+    
     const newvariationsEnabled = { ...variationsEnabled, [deliverableValue]: enabled };
     updateStateAndForm(setvariationsEnabled, 'variationsDeliverables', newvariationsEnabled);
     
@@ -225,22 +284,24 @@ const SearchableDeliverablesField = ({
             </div>
           )}
           
-          {/* variations Toggle */}
-          <div className="flex items-center space-x-2 min-w-[200px]">
-            <input
-              type="checkbox"
-              id={`variations-${selectedDeliverable}`}
-              checked={variationsEnabled[selectedDeliverable] || false}
-              onChange={(e) => handlevariationsToggle(selectedDeliverable, e.target.checked)}
-              className="form-checkbox h-4 w-4"
-            />
-            <label htmlFor={`variations-${selectedDeliverable}`}>
-              Enable Variations
-            </label>
-          </div>
+          {/* variations Toggle - Only show if variations are properly configured */}
+          {canUseVariations && (
+            <div className="flex items-center space-x-2 min-w-[200px]">
+              <input
+                type="checkbox"
+                id={`variations-${selectedDeliverable}`}
+                checked={variationsEnabled[selectedDeliverable] || false}
+                onChange={(e) => handlevariationsToggle(selectedDeliverable, e.target.checked)}
+                className="form-checkbox h-4 w-4"
+              />
+              <label htmlFor={`variations-${selectedDeliverable}`}>
+                Enable Variations
+              </label>
+            </div>
+          )}
           
           {/* variations Quantity (if enabled) */}
-          {variationsEnabled[selectedDeliverable] && (
+          {canUseVariations && variationsEnabled[selectedDeliverable] && (
             <div className="flex-1 min-w-[200px] space-y-2 ">
               <label className="block">
                 Variations Quantity
