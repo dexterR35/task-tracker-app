@@ -157,7 +157,16 @@ const SearchableDeliverablesField = ({
   };
 
   const handleQuantityChange = (deliverableValue, quantity) => {
-    const numQuantity = parseInt(quantity) || 1;
+    // Allow empty string during editing, only enforce minimum on blur
+    // Accept both string and number types
+    let numQuantity;
+    if (quantity === '' || quantity === null || quantity === undefined) {
+      numQuantity = '';
+    } else {
+      // Handle both string and number inputs
+      const parsed = typeof quantity === 'number' ? quantity : parseInt(String(quantity));
+      numQuantity = isNaN(parsed) ? '' : parsed;
+    }
     const newQuantities = { ...quantities, [deliverableValue]: numQuantity };
     updateStateAndForm(setQuantities, 'deliverableQuantities', newQuantities);
     // Clear any quantity-related errors
@@ -203,7 +212,17 @@ const SearchableDeliverablesField = ({
   };
 
   const handlevariationsQuantityChange = (deliverableValue, quantity) => {
-    const newvariationsQuantities = { ...variationsQuantities, [deliverableValue]: parseInt(quantity) || 1 };
+    // Allow empty string during editing, only enforce minimum on blur
+    // Accept both string and number types
+    let numQuantity;
+    if (quantity === '' || quantity === null || quantity === undefined) {
+      numQuantity = '';
+    } else {
+      // Handle both string and number inputs
+      const parsed = typeof quantity === 'number' ? quantity : parseInt(String(quantity));
+      numQuantity = isNaN(parsed) ? '' : parsed;
+    }
+    const newvariationsQuantities = { ...variationsQuantities, [deliverableValue]: numQuantity };
     updateStateAndForm(setvariationsQuantities, 'variationsQuantities', newvariationsQuantities);
     trigger('variationsQuantities');
   };
@@ -279,7 +298,7 @@ const SearchableDeliverablesField = ({
                 errors={errors}
                 setValue={(fieldName, value) => handleQuantityChange(selectedDeliverable, value)}
                 trigger={() => {}}
-                formValues={{ [`quantity_${selectedDeliverable}`]: quantities[selectedDeliverable] || 1 }}
+                formValues={{ [`quantity_${selectedDeliverable}`]: quantities[selectedDeliverable] ?? '' }}
               />
             </div>
           )}
@@ -323,7 +342,7 @@ const SearchableDeliverablesField = ({
                 errors={errors}
                 setValue={(fieldName, value) => handlevariationsQuantityChange(selectedDeliverable, value)}
                 trigger={() => {}}
-                formValues={{ [`variations_quantity_${selectedDeliverable}`]: variationsQuantities[selectedDeliverable] || 1 }}
+                formValues={{ [`variations_quantity_${selectedDeliverable}`]: variationsQuantities[selectedDeliverable] ?? '' }}
               />
             </div>
           )}
