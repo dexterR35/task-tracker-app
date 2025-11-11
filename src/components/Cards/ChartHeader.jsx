@@ -69,9 +69,9 @@ const ChartHeader = ({
             {badges.map((badge, index) => (
               <Badge 
                 key={index}
-                variant="amber" 
+                variant="green" 
                 size="sm"
-                className="shadow-sm"
+                className="shadow-sm !text-xl"
               >
                 {typeof badge === 'string' ? badge : badge.value || badge}
               </Badge>
