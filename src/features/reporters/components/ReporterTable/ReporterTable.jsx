@@ -63,7 +63,7 @@ const ReporterTable = ({
           {
             label: "View Selected",
             icon: "eye",
-            variant: "primary",
+            variant: "secondary",
             onClick: (selectedReporters) => {
               if (selectedReporters.length === 1) {
                 handleSelect(selectedReporters[0]);
@@ -75,7 +75,7 @@ const ReporterTable = ({
           {
             label: "Edit Selected",
             icon: "edit",
-            variant: "edit",
+            variant: "primary",
             onClick: (selectedReporters) => {
               if (selectedReporters.length === 1) {
                 handleEdit(selectedReporters[0]);
@@ -87,7 +87,7 @@ const ReporterTable = ({
           {
             label: "Delete Selected",
             icon: "delete",
-            variant: "danger",
+            variant: "crimson",
             onClick: async (selectedReporters) => {
               if (selectedReporters.length === 1) {
                 handleDelete(selectedReporters[0]);

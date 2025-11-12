@@ -65,22 +65,11 @@ const MarketingAnalyticsCard = memo(({
         <div>
           {/* Marketing Table */}
           {marketingTableData && marketingTableData.length > 0 ? (
-            <div className="card-small-modern">
-              {/* Accent border on top */}
-              <div
-                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                style={{
-                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.purple} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.purple}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.purple} 100%)`,
-                }}
-              />
-              <div className="relative z-10 p-5">
-                <AnalyticsTable
-                  data={marketingTableData}
-                  columns={marketingTableColumns}
-                  sectionTitle=""
-                />
-              </div>
-            </div>
+            <AnalyticsTable
+              data={marketingTableData}
+              columns={marketingTableColumns}
+              sectionTitle=""
+            />
           ) : (
             <div className="card-small-modern">
               <div className="text-center py-12">

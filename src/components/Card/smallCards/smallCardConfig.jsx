@@ -1098,7 +1098,7 @@ export const SMALL_CARD_CONFIGS = {
     description: "Performance",
     icon: Icons.generic.chart,
     color: "crimson",
-    getValue: (data) => `${data.efficiency?.productivityScore || 0}%`,
+    getValue: (data) => "In Progress",
     getStatus: (data) => `${data.efficiency?.productivityScore || 0}%`,
     getBadge: (data) => ({
       text: `${data.efficiency?.productivityScore || 0}%`,
@@ -1316,6 +1316,8 @@ export const createCards = (data, mode = "main") => {
             ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
             : [SMALL_CARD_TYPES.REPORTER_FILTER]),
           SMALL_CARD_TYPES.USER_PROFILE,
+          // Performance card only for user role (not admin)
+          ...(data.isUserAdmin ? [] : [SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY]),
         ];
         break;
       case "analytics":

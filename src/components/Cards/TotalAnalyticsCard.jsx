@@ -35,25 +35,14 @@ const TotalAnalyticsCard = memo(({
       {/* Table Section - First Row */}
       <div>
         {tableData && tableData.length > 0 ? (
-          <div className="card-small-modern">
-            {/* Accent border on top */}
-            <div
-              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
-              }}
-            />
-            <div className="relative z-10 p-5">
-              <AnalyticsTable
-                data={tableData}
-                columns={tableColumns}
-                sectionTitle=""
-                isLoading={isLoading}
-                enablePagination={false}
-                showPagination={false}
-              />
-            </div>
-          </div>
+          <AnalyticsTable
+            data={tableData}
+            columns={tableColumns}
+            sectionTitle=""
+            isLoading={isLoading}
+            enablePagination={false}
+            showPagination={false}
+          />
         ) : (
           <div className="card-small-modern">
             <div className="text-center py-12">
@@ -65,34 +54,23 @@ const TotalAnalyticsCard = memo(({
       </div>
 
       {/* Pie Chart Section - Second Row */}
-      <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-        {/* Accent border on top */}
-        <div
-          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-          style={{
-            background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
-          }}
+      <ChartHeader
+        variant="section"
+        title="Total Tasks by Category"
+        badges={[
+          `${pieTotal} tasks`,
+          `${totalHours}h`
+        ]}
+        color={cardColor}
+      >
+        <SimplePieChart
+          data={pieData}
+          title=""
+          colors={pieColors}
+          showPercentages={true}
+          dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
         />
-        <div className="relative z-10">
-          <ChartHeader
-            title="Total Tasks by Category"
-            badges={[
-              `${pieTotal} tasks`,
-              `${totalHours}h`
-            ]}
-            color={cardColor}
-          />
-          <div className="px-5 pb-5">
-            <SimplePieChart
-              data={pieData}
-              title=""
-              colors={pieColors}
-              showPercentages={true}
-              dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-            />
-          </div>
-        </div>
-      </div>
+      </ChartHeader>
     </div>
   );
 });

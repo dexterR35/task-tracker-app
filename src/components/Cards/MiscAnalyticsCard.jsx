@@ -50,21 +50,11 @@ const MiscAnalyticsCard = memo(({
         <div>
           {/* Users Misc Statistics Table */}
           {usersMiscTableData && usersMiscTableData.length > 0 ? (
-            <div className="card-small-modern">
-              <div
-                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                style={{
-                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.pink} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.pink}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.pink} 100%)`,
-                }}
-              />
-              <div className="relative z-10 p-5">
-                <AnalyticsTable
-                  data={usersMiscTableData}
-                  columns={usersMiscTableColumns}
-                  sectionTitle=""
-                />
-              </div>
-            </div>
+            <AnalyticsTable
+              data={usersMiscTableData}
+              columns={usersMiscTableColumns}
+              sectionTitle=""
+            />
           ) : (
             <div className="card-small-modern">
               <div className="text-center py-12">
@@ -80,48 +70,46 @@ const MiscAnalyticsCard = memo(({
           {/* Charts Container - 3 columns grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Misc Categories Pie Chart */}
-            <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-              <ChartHeader
-                title="Misc Categories: Task by category"
-                badges={[
-                  `${categoryPieTotal} tasks`,
-                  `${Math.round(categoryPieHours * 10) / 10}h`
-                ]}
+            <ChartHeader
+              variant="section"
+              title="Misc Categories: Task by category"
+              badges={[
+                `${categoryPieTotal} tasks`,
+                `${Math.round(categoryPieHours * 10) / 10}h`
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+            >
+              <SimplePieChart
+                data={categoryPieData}
+                title=""
+                colors={categoryPieColors}
+                showPercentages={true}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
               />
-              <div className="p-5">
-                <SimplePieChart
-                  data={categoryPieData}
-                  title=""
-                  colors={categoryPieColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                />
-              </div>
-            </div>
+            </ChartHeader>
 
             {/* Misc Categories Biaxial Chart */}
             {(() => {
               const totalTasks = categoryBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
               const totalHours = categoryBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
-                <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <ChartHeader
-                    title="Misc Categories: Tasks & Hours by Category"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
+                <ChartHeader
+                  variant="section"
+                  title="Misc Categories: Tasks & Hours by Category"
+                  badges={[
+                    `${totalTasks} tasks`,
+                    `${totalHours}h`
+                  ]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+                >
+                  <BiaxialBarChart
+                    data={categoryBiaxialData}
+                    title=""
+                    tasksColor={categoryBiaxialTasksColor}
+                    hoursColor={categoryBiaxialHoursColor}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
                   />
-                  <div className="p-5">
-                    <BiaxialBarChart
-                      data={categoryBiaxialData}
-                      title=""
-                      tasksColor={categoryBiaxialTasksColor}
-                      hoursColor={categoryBiaxialHoursColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                    />
-                  </div>
-                </div>
+                </ChartHeader>
               );
             })()}
           </div>
@@ -146,31 +134,26 @@ const MiscAnalyticsCard = memo(({
             {miscUsersCharts && miscUsersCharts.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {miscUsersCharts.map((userChart) => (
-                  <div 
-                    key={`misc-${userChart.userId}`} 
-                    className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+                  <ChartHeader
+                    key={`misc-${userChart.userId}`}
+                    variant="section"
+                    title={userChart.userName}
+                    subtitle={`${userChart.category} - Markets`}
+                    badges={[
+                      `${userChart.totalTasks} tasks`,
+                      `${userChart.totalHours}h`
+                    ]}
+                    color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
                   >
-                    <ChartHeader
-                      title={userChart.userName}
-                      subtitle={`${userChart.category} - Markets`}
-                      badges={[
-                        `${userChart.totalTasks} tasks`,
-                        `${userChart.totalHours}h`
-                      ]}
+                    <BiaxialBarChart
+                      data={userChart.marketData}
+                      title=""
+                      tasksColor={CHART_COLORS.DEFAULT[0]}
+                      hoursColor={CHART_COLORS.DEFAULT[1]}
+                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                      showHours={true}
                     />
-                    
-                    {/* Chart Container */}
-                    <div className="p-5">
-                      <BiaxialBarChart
-                        data={userChart.marketData}
-                        title=""
-                        tasksColor={CHART_COLORS.DEFAULT[0]}
-                        hoursColor={CHART_COLORS.DEFAULT[1]}
-                        dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                        showHours={true}
-                      />
-                    </div>
-                  </div>
+                  </ChartHeader>
                 ))}
               </div>
             ) : (

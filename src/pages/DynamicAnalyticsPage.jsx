@@ -10,7 +10,6 @@ import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Badge from "@/components/ui/Badge/Badge";
 import { logger } from "@/utils/logger";
 import { normalizeTimestamp } from "@/utils/dateUtils";
-import PerformanceQualityMetricsCard from "@/components/Cards/PerformanceQualityMetricsCard";
 import { useAuth } from "@/context/AuthContext";
 import { matchesUserName, matchesReporterName } from "@/utils/taskFilters";
 import { getWeeksInMonth } from "@/utils/monthUtils";
@@ -704,12 +703,6 @@ const DynamicAnalyticsPage = () => {
             {analyticsCards.map((card) => (
               <SmallCard key={card.id} card={card} />
             ))}
-            {analyticsData?.efficiency && (
-              <PerformanceQualityMetricsCard 
-                key="performance-quality-metrics" 
-                efficiency={analyticsData.efficiency}
-              />
-            )}
           </div>
         </div>
         

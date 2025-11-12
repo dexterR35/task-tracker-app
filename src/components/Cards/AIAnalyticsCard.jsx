@@ -91,21 +91,11 @@ const AIAnalyticsCard = memo(({
         <div>
           {/* AI Usage Statistics Table */}
           {aiTableData && aiTableData.length > 0 ? (
-            <div className="card-small-modern">
-              <div
-                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                style={{
-                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.purple} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.purple}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.purple} 100%)`,
-                }}
-              />
-              <div className="relative z-10 p-5">
-                <AnalyticsTable
-                  data={aiTableData}
-                  columns={aiTableColumns}
-                  sectionTitle=""
-                />
-              </div>
-            </div>
+            <AnalyticsTable
+              data={aiTableData}
+              columns={aiTableColumns}
+              sectionTitle=""
+            />
           ) : (
             <div className="card-small-modern">
               <div className="text-center py-12">
@@ -123,48 +113,46 @@ const AIAnalyticsCard = memo(({
           {/* Left Column: Products */}
           <div className="space-y-6">
             {/* Products AI Usage Pie Chart */}
-            <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-              <ChartHeader
-                title="Products AI: AI usage by product"
-                badges={[
-                  `${productsAIPieTotal} tasks`,
-                  `${Math.round(productsAIPieHours * 10) / 10}h`
-                ]}
+            <ChartHeader
+              variant="section"
+              title="Products AI: AI usage by product"
+              badges={[
+                `${productsAIPieTotal} tasks`,
+                `${Math.round(productsAIPieHours * 10) / 10}h`
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+            >
+              <SimplePieChart
+                data={productsAIData}
+                title=""
+                colors={productsAIColors}
+                showPercentages={true}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
               />
-              <div className="p-5">
-                <SimplePieChart
-                  data={productsAIData}
-                  title=""
-                  colors={productsAIColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                />
-              </div>
-            </div>
+            </ChartHeader>
 
             {/* Products AI Analysis Biaxial Chart - Below pie chart */}
             {(() => {
               const totalTasks = productsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
               const totalHours = productsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
-                <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <ChartHeader
-                    title="Products AI: AI Time vs AI Tasks by product"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
+                <ChartHeader
+                  variant="section"
+                  title="Products AI: AI Time vs AI Tasks by product"
+                  badges={[
+                    `${totalTasks} tasks`,
+                    `${totalHours}h`
+                  ]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+                >
+                  <BiaxialBarChart
+                    data={productsBiaxialData}
+                    title=""
+                    tasksColor={productsBiaxialTasksColor}
+                    hoursColor={productsBiaxialTimeColor}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
                   />
-                  <div className="p-5">
-                    <BiaxialBarChart
-                      data={productsBiaxialData}
-                      title=""
-                      tasksColor={productsBiaxialTasksColor}
-                      hoursColor={productsBiaxialTimeColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                    />
-                  </div>
-                </div>
+                </ChartHeader>
               );
             })()}
           </div>
@@ -172,48 +160,46 @@ const AIAnalyticsCard = memo(({
           {/* Right Column: Markets */}
           <div className="space-y-6">
             {/* Markets AI Usage Pie Chart */}
-            <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-              <ChartHeader
-                title="Markets AI: AI usage by market"
-                badges={[
-                  `${marketsAIPieTotal} tasks`,
-                  `${Math.round(marketsAIPieHours * 10) / 10}h`
-                ]}
+            <ChartHeader
+              variant="section"
+              title="Markets AI: AI usage by market"
+              badges={[
+                `${marketsAIPieTotal} tasks`,
+                `${Math.round(marketsAIPieHours * 10) / 10}h`
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+            >
+              <SimplePieChart
+                data={marketsAIData}
+                title=""
+                colors={marketsAIColors}
+                showPercentages={true}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
               />
-              <div className="p-5">
-                <SimplePieChart
-                  data={marketsAIData}
-                  title=""
-                  colors={marketsAIColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                />
-              </div>
-            </div>
+            </ChartHeader>
 
             {/* Markets AI Analysis Biaxial Chart - Below pie chart */}
             {(() => {
               const totalTasks = marketsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
               const totalHours = marketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
-                <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <ChartHeader
-                    title="Markets AI: AI Time vs AI Tasks by market"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
+                <ChartHeader
+                  variant="section"
+                  title="Markets AI: AI Time vs AI Tasks by market"
+                  badges={[
+                    `${totalTasks} tasks`,
+                    `${totalHours}h`
+                  ]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+                >
+                  <BiaxialBarChart
+                    data={marketsBiaxialData}
+                    title=""
+                    tasksColor={marketsBiaxialTasksColor}
+                    hoursColor={marketsBiaxialTimeColor}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
                   />
-                  <div className="p-5">
-                    <BiaxialBarChart
-                      data={marketsBiaxialData}
-                      title=""
-                      tasksColor={marketsBiaxialTasksColor}
-                      hoursColor={marketsBiaxialTimeColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                    />
-                  </div>
-                </div>
+                </ChartHeader>
               );
             })()}
           </div>
@@ -221,48 +207,46 @@ const AIAnalyticsCard = memo(({
           {/* AI Models Section - Pie chart with biaxial below */}
           <div className="space-y-6">
             {/* AI Models Usage Pie Chart */}
-            <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-              <ChartHeader
-                title="AI Models: Distribution of AI models used"
-                badges={[
-                  `${aiModelsPieTotal} tasks`,
-                  `${Math.round(aiModelsPieHours * 10) / 10}h`
-                ]}
+            <ChartHeader
+              variant="section"
+              title="AI Models: Distribution of AI models used"
+              badges={[
+                `${aiModelsPieTotal} tasks`,
+                `${Math.round(aiModelsPieHours * 10) / 10}h`
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+            >
+              <SimplePieChart
+                data={aiModelsData}
+                title=""
+                colors={aiModelsColors}
+                showPercentages={true}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.AI_MODEL}
               />
-              <div className="p-5">
-                <SimplePieChart
-                  data={aiModelsData}
-                  title=""
-                  colors={aiModelsColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.AI_MODEL}
-                />
-              </div>
-            </div>
+            </ChartHeader>
 
             {/* AI Models Biaxial Chart - Below pie chart */}
             {(() => {
               const totalTasks = aiModelsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
               const totalHours = aiModelsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
-                <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <ChartHeader
-                    title="AI Models: AI Time vs AI Tasks by model"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
+                <ChartHeader
+                  variant="section"
+                  title="AI Models: AI Time vs AI Tasks by model"
+                  badges={[
+                    `${totalTasks} tasks`,
+                    `${totalHours}h`
+                  ]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+                >
+                  <BiaxialBarChart
+                    data={aiModelsBiaxialData}
+                    title=""
+                    tasksColor={aiModelsBiaxialTasksColor}
+                    hoursColor={aiModelsBiaxialHoursColor}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.AI_MODEL}
                   />
-                  <div className="p-5">
-                    <BiaxialBarChart
-                      data={aiModelsBiaxialData}
-                      title=""
-                      tasksColor={aiModelsBiaxialTasksColor}
-                      hoursColor={aiModelsBiaxialHoursColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.AI_MODEL}
-                    />
-                  </div>
-                </div>
+                </ChartHeader>
               );
             })()}
           </div>
@@ -270,49 +254,47 @@ const AIAnalyticsCard = memo(({
           {/* Users Section - Pie chart with biaxial below */}
           <div className="space-y-6">
             {/* Users by AI Time Pie Chart */}
-            <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-              <ChartHeader
-                title="AI Time: AI usage time by user"
-                badges={[
-                  `${usersAIPieTotal} tasks`,
-                  `${Math.round(usersAIPieHours * 10) / 10}h`
-                ]}
+            <ChartHeader
+              variant="section"
+              title="AI Time: AI usage time by user"
+              badges={[
+                `${usersAIPieTotal} tasks`,
+                `${Math.round(usersAIPieHours * 10) / 10}h`
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+            >
+              <SimplePieChart
+                data={usersAIData}
+                title=""
+                colors={usersAIColors}
+                showPercentages={true}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.USER}
               />
-              <div className="p-5">
-                <SimplePieChart
-                  data={usersAIData}
-                  title=""
-                  colors={usersAIColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.USER}
-                />
-              </div>
-            </div>
+            </ChartHeader>
 
             {/* Users AI Time vs AI Tasks Biaxial Chart - Below pie chart */}
             {(() => {
               const totalTasks = usersBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
               const totalHours = usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
-                <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <ChartHeader
-                    title="Users AI: AI time vs AI tasks by user"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
+                <ChartHeader
+                  variant="section"
+                  title="Users AI: AI time vs AI tasks by user"
+                  badges={[
+                    `${totalTasks} tasks`,
+                    `${totalHours}h`
+                  ]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
+                >
+                  <BiaxialBarChart
+                    data={usersBiaxialData}
+                    title=""
+                    tasksColor={usersBiaxialTasksColor}
+                    hoursColor={usersBiaxialTimeColor}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.USER}
+                    showHours={true}
                   />
-                  <div className="p-5">
-                    <BiaxialBarChart
-                      data={usersBiaxialData}
-                      title=""
-                      tasksColor={usersBiaxialTasksColor}
-                      hoursColor={usersBiaxialTimeColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.USER}
-                      showHours={true}
-                    />
-                  </div>
-                </div>
+                </ChartHeader>
               );
             })()}
           </div>

@@ -1,11 +1,11 @@
 import React from "react";
-import { 
-  addConsistentColors, 
-  CHART_COLORS, 
-  CHART_DATA_TYPE, 
-  getMarketColor, 
-  calculateCountWithPercentage, 
-  addGrandTotalRow, 
+import {
+  addConsistentColors,
+  CHART_COLORS,
+  CHART_DATA_TYPE,
+  getMarketColor,
+  calculateCountWithPercentage,
+  addGrandTotalRow,
   renderCountWithPercentage,
   calculatePercentagesForGroup,
   calculateUsersChartsByCategory,
@@ -151,9 +151,12 @@ export const calculateProductAnalyticsData = (tasks) => {
   const categoryItems = Object.entries(categoryTotals)
     .filter(([_, count]) => count > 0)
     .map(([key, count]) => ({ key, count }));
-  
+
   // Calculate percentages for all categories at once to ensure they sum to exactly 100%
-  const categoryPercentages = calculatePercentagesForGroup(categoryItems, totalTasks);
+  const categoryPercentages = calculatePercentagesForGroup(
+    categoryItems,
+    totalTasks
+  );
 
   // Helper function to add a product category row with markets
   const addProductCategoryRow = (productKey, categoryName) => {
@@ -186,7 +189,12 @@ export const calculateProductAnalyticsData = (tasks) => {
       // Add market columns with percentages that sum to 100%
       sortedMarkets.forEach((market) => {
         const marketCount = productMarketData[productKey]?.[market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, productMarketTotal, marketItems, market);
+        row[market] = calculateCountWithPercentage(
+          marketCount,
+          productMarketTotal,
+          marketItems,
+          market
+        );
       });
 
       tableData.push(row);
@@ -202,9 +210,9 @@ export const calculateProductAnalyticsData = (tasks) => {
   // Add Grand Total row only if there are any product tasks
   if (totalTasks > 0 && tableData.length > 0) {
     tableData = addGrandTotalRow(tableData, {
-      labelKey: 'category',
-      labelValue: 'Grand Total',
-      sumColumns: ['total', 'totalHours'],
+      labelKey: "category",
+      labelValue: "Grand Total",
+      sumColumns: ["total", "totalHours"],
       marketColumns: sortedMarkets,
     });
   }
@@ -272,7 +280,10 @@ export const calculateProductAnalyticsData = (tasks) => {
           name: category.charAt(0).toUpperCase() + category.slice(1),
           value: count,
           hours: Math.round(categoryHours * 100) / 100,
-          percentage: totalTasks > 0 ? Math.min(Math.round((count / totalTasks) * 100), 100) : 0,
+          percentage:
+            totalTasks > 0
+              ? Math.min(Math.round((count / totalTasks) * 100), 100)
+              : 0,
         };
       })
       .sort((a, b) => {
@@ -375,7 +386,8 @@ export const calculateProductAnalyticsData = (tasks) => {
           };
         }
         productMarketStats[productsLower][normalizedMarket].tasks += 1;
-        productMarketStats[productsLower][normalizedMarket].hours += timeInHours;
+        productMarketStats[productsLower][normalizedMarket].hours +=
+          timeInHours;
       }
     });
   });
@@ -492,20 +504,28 @@ export const calculateProductAnalyticsData = (tasks) => {
   // Get all markets from both product casino and product sport
   const allProductMarkets = new Set();
   if (productMarketStats["product casino"]) {
-    Object.keys(productMarketStats["product casino"]).forEach(market => allProductMarkets.add(market));
+    Object.keys(productMarketStats["product casino"]).forEach((market) =>
+      allProductMarkets.add(market)
+    );
   }
   if (productMarketStats["product sport"]) {
-    Object.keys(productMarketStats["product sport"]).forEach(market => allProductMarkets.add(market));
+    Object.keys(productMarketStats["product sport"]).forEach((market) =>
+      allProductMarkets.add(market)
+    );
   }
   const sortedProductMarkets = Array.from(allProductMarkets).sort();
 
   const casinoSportPerMarketBiaxialData = sortedProductMarkets
     .map((market) => {
       const normalizedMarket = normalizeMarket(market);
-      const casinoStats = productMarketStats["product casino"]?.[market] || { tasks: 0 };
-      const sportStats = productMarketStats["product sport"]?.[market] || { tasks: 0 };
+      const casinoStats = productMarketStats["product casino"]?.[market] || {
+        tasks: 0,
+      };
+      const sportStats = productMarketStats["product sport"]?.[market] || {
+        tasks: 0,
+      };
       const marketColor = getMarketColor(normalizedMarket);
-      
+
       return {
         name: normalizedMarket,
         casino: casinoStats.tasks || 0,
@@ -523,12 +543,18 @@ export const calculateProductAnalyticsData = (tasks) => {
 
   // Create biaxial chart data: Total Casino vs Total Sport
   // Calculate totals from per-market data to ensure consistency with "Casino vs Sport: Tasks by Markets" chart
-  const totalCasinoFromMarkets = casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0), 0);
-  const totalSportFromMarkets = casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.sport || 0), 0);
-  
+  const totalCasinoFromMarkets = casinoSportPerMarketBiaxialData.reduce(
+    (sum, item) => sum + (item.casino || 0),
+    0
+  );
+  const totalSportFromMarkets = casinoSportPerMarketBiaxialData.reduce(
+    (sum, item) => sum + (item.sport || 0),
+    0
+  );
+
   const totalCasinoSportBiaxialData = [
     {
-      name: 'Total',
+      name: "Total",
       casino: totalCasinoFromMarkets,
       sport: totalSportFromMarkets,
     },
@@ -564,7 +590,11 @@ export const calculateProductAnalyticsData = (tasks) => {
   };
 };
 
-export const getProductAnalyticsCardProps = (tasks, users = [], isLoading = false) => {
+export const getProductAnalyticsCardProps = (
+  tasks,
+  users = [],
+  isLoading = false
+) => {
   const productData = calculateProductAnalyticsData(tasks);
 
   // Calculate per-user charts showing their markets breakdown for product tasks
@@ -620,19 +650,25 @@ export const getProductAnalyticsCardProps = (tasks, users = [], isLoading = fals
     productBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     productCasinoMarketsPieData: productData.productCasinoMarketsPieData,
     productCasinoMarketsPieTitle: `Product Casino: Markets Distribution (${productData.productCasinoTotalTasks} tasks, ${Math.round(productData.productCasinoTotalHours * 100) / 100}h)`,
-    productCasinoMarketsPieColors: productData.productCasinoMarketsPieData.map((item) => item.color),
-    productCasinoMarketsBiaxialData: productData.productCasinoMarketsBiaxialData,
+    productCasinoMarketsPieColors: productData.productCasinoMarketsPieData.map(
+      (item) => item.color
+    ),
+    productCasinoMarketsBiaxialData:
+      productData.productCasinoMarketsBiaxialData,
     productCasinoMarketsBiaxialTitle: `Product Casino: Markets Tasks & Hours (${productData.productCasinoTotalTasks} tasks, ${Math.round(productData.productCasinoTotalHours * 100) / 100}h)`,
     productCasinoMarketsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     productCasinoMarketsBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     productSportMarketsPieData: productData.productSportMarketsPieData,
     productSportMarketsPieTitle: `Product Sport: Markets Distribution (${productData.productSportTotalTasks} tasks, ${Math.round(productData.productSportTotalHours * 100) / 100}h)`,
-    productSportMarketsPieColors: productData.productSportMarketsPieData.map((item) => item.color),
+    productSportMarketsPieColors: productData.productSportMarketsPieData.map(
+      (item) => item.color
+    ),
     productSportMarketsBiaxialData: productData.productSportMarketsBiaxialData,
     productSportMarketsBiaxialTitle: `Product Sport: Markets Tasks & Hours (${productData.productSportTotalTasks} tasks, ${Math.round(productData.productSportTotalHours * 100) / 100}h)`,
     productSportMarketsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     productSportMarketsBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
-    casinoSportPerMarketBiaxialData: productData.casinoSportPerMarketBiaxialData,
+    casinoSportPerMarketBiaxialData:
+      productData.casinoSportPerMarketBiaxialData,
     totalCasinoSportBiaxialData: productData.totalCasinoSportBiaxialData,
     productUsersCharts: productUsersCharts,
     totalTasks,
@@ -650,4 +686,3 @@ export const getCachedProductAnalyticsCardProps = (
 ) => {
   return getProductAnalyticsCardProps(tasks, users, isLoading);
 };
-

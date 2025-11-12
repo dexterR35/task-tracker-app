@@ -213,9 +213,21 @@ const DeliverableTable = ({
   // Memoized bulk actions
   const bulkActions = useMemo(() => [
     {
+      label: "View Selected",
+      icon: "eye",
+      variant: "secondary",
+      onClick: (selectedDeliverables) => {
+        if (selectedDeliverables.length === 1) {
+          handleSelect(selectedDeliverables[0]);
+        } else {
+          showError("Please select only ONE deliverable to view");
+        }
+      }
+    },
+    {
       label: "Edit Selected",
       icon: "edit",
-      variant: "edit",
+      variant: "primary",
       onClick: (selectedDeliverables) => {
         if (selectedDeliverables.length === 1) {
           handleEditDeliverable(selectedDeliverables[0]);
@@ -227,7 +239,7 @@ const DeliverableTable = ({
     {
       label: "Delete Selected",
       icon: "delete",
-      variant: "danger",
+      variant: "crimson",
       onClick: async (selectedDeliverables) => {
         if (selectedDeliverables.length === 1) {
           handleDelete(selectedDeliverables[0]);
@@ -236,7 +248,7 @@ const DeliverableTable = ({
         }
       }
     }
-  ], [handleEditDeliverable, handleDelete]);
+  ], [handleSelect, handleEditDeliverable, handleDelete]);
 
   if (isLoading || loadingSettings) return <SkeletonTable className={className} />;
 

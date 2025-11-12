@@ -84,24 +84,12 @@ const ProductAnalyticsCard = memo(({
     <div id="product-analytics-card" className={`space-y-8 ${className}`}>
       {/* Section: Overview Table */}
       <div>
-  
         {productTableData && productTableData.length > 0 ? (
-          <div className="card-small-modern">
-            {/* Accent border on top */}
-            <div
-              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
-              }}
-            />
-            <div className="relative z-10 p-5">
-              <AnalyticsTable
-                data={productTableData}
-                columns={productTableColumns}
-                sectionTitle=""
-              />
-            </div>
-          </div>
+          <AnalyticsTable
+            data={productTableData}
+            columns={productTableColumns}
+            sectionTitle=""
+          />
         ) : (
           <div className="card-small-modern">
             <div className="text-center py-12">

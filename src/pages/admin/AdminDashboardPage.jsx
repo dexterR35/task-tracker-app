@@ -16,7 +16,6 @@ import { logger } from "@/utils/logger";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showTable, setShowTable] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   // Get auth functions separately
   const { canAccess, canCreateTask } = useAuth();
@@ -79,22 +78,6 @@ const AdminDashboardPage = () => {
   );
 
 
-  // Derive title based on context and role - simplified
-  const title = (() => {
-    const weekInfo = selectedWeek ? ` - Week ${selectedWeek.weekNumber}` : "";
-    
-    if (!isUserAdmin) return `My Tasks${weekInfo}`;
-    
-    if (selectedUserId && selectedReporterId) {
-      return `Tasks - ${selectedUserName} & ${selectedReporterName}${weekInfo}`;
-    } else if (selectedUserId) {
-      return `Tasks - ${selectedUserName}${weekInfo}`;
-    } else if (selectedReporterId) {
-      return `Tasks - ${selectedReporterName}${weekInfo}`;
-    } else {
-      return `All Tasks - All Users${weekInfo}`;
-    }
-  })();
 
   // Get current month ID for filtering - simplified
   const currentMonthId = selectedMonth?.monthId || currentMonth?.monthId;
@@ -189,6 +172,15 @@ const AdminDashboardPage = () => {
     }
   }, [isUserAdmin, selectedUserId, selectedUserName, user?.userUID]);
 
+  // Hardcoded efficiency data for performance card
+  const efficiencyData = {
+    averageTaskCompletion: 2.3, // days
+    productivityScore: 87, // percentage
+    qualityRating: 4.2, // out of 5
+    onTimeDelivery: 94, // percentage
+    clientSatisfaction: 4.6, // out of 5
+  };
+
   // Create small cards - optimized memoization to prevent re-renders
   const smallCards = useMemo(() => createCards({
     tasks,
@@ -214,6 +206,7 @@ const AdminDashboardPage = () => {
     handleWeekChange,
     selectMonth,
     availableMonths,
+    efficiency: efficiencyData,
   }, 'main'), [
     // Only include data that actually affects card content
     tasks, reporters, users, deliverables, selectedMonth, currentMonth, isCurrentMonth,
@@ -241,21 +234,8 @@ const AdminDashboardPage = () => {
   return (
     <div>
       {/* Page Header */}
-      <div className="mb-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <h2>Task Management </h2>
-            <p className="text-small mt-0">
-              {title} •{" "}
-              {isInitialLoading ? (
-                <span>Loading...</span>
-              ) : (
-                selectedMonth?.monthName ||
-                currentMonth?.monthName ||
-                "No month selected"
-              )}
-            </p>
-          </div>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-6">
           <DynamicButton
             onClick={handleCreateTask}
             variant="primary"
@@ -269,7 +249,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Month Progress Bar */}
-        <div className="mt-6 mb-8">
+        <div className="mb-6">
           <MonthProgressBar
             monthId={selectedMonth?.monthId || currentMonth?.monthId}
             monthName={selectedMonth?.monthName || currentMonth?.monthName}
@@ -282,8 +262,9 @@ const AdminDashboardPage = () => {
           />
         </div>
       </div>
+
       {/* top cards section */}
-      <div className="mb-2 ">
+      <div className="mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Dynamic Small Cards */}
           {isInitialLoading
@@ -294,64 +275,21 @@ const AdminDashboardPage = () => {
         </div>
       </div>
 
-
+      {/* Delimiter */}
+      <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-6"></div>
 
       {/* table task section */}
       <div>
-        <div className="pt-6 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3>
-                {(() => {
-                  const weekInfo = selectedWeek ? ` - Week ${selectedWeek.weekNumber}` : "";
-                  
-                  // For regular users, show "My Tasks"
-                  if (!isUserAdmin) {
-                    return `My Tasks - ${user?.name || user?.email || 'User'}${weekInfo}`;
-                  }
-                  
-                  // For admin users, show filtered titles
-                  if (selectedUserId && selectedReporterId) {
-                    return `${selectedUserName} & ${selectedReporterName} Tasks${weekInfo}`;
-                  } else if (selectedUserId) {
-                    return `${selectedUserName} Tasks${weekInfo}`;
-                  } else if (selectedReporterId) {
-                    return `${selectedReporterName} Tasks${weekInfo}`;
-                  } else {
-                    return `All Tasks${weekInfo}`;
-                  }
-                })()}
-              </h3>
-              <p className="text-sm">
-                Task management and tracking
-              </p>
-            </div>
-            <DynamicButton
-              onClick={() => setShowTable(!showTable)}
-              variant="primary"
-              size="md"
-              iconName={showTable ? "hide" : "show"}
-              iconPosition="left"
-              disabled={isInitialLoading}
-              className="w-24"
-            >
-              {showTable ? "Hide" : "Show"}
-            </DynamicButton>
-          </div>
-        </div>
-
         {/* Table Content */}
-        <div className="py-2">
-          {showTable && (
-            <TaskTable
-              selectedUserId={selectedUserId}
-              selectedReporterId={selectedReporterId}
-              selectedMonthId={currentMonthId}
-              selectedWeek={selectedWeek}
-              error={error}
-              isLoading={isLoading}
-            />
-          )}
+        <div>
+          <TaskTable
+            selectedUserId={selectedUserId}
+            selectedReporterId={selectedReporterId}
+            selectedMonthId={currentMonthId}
+            selectedWeek={selectedWeek}
+            error={error}
+            isLoading={isLoading}
+          />
         </div>
       </div>
 

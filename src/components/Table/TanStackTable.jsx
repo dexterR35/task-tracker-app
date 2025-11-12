@@ -48,8 +48,7 @@ const BulkActionsBar = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div
-      className="card">
+    <div className="card-small-modern">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-3">
@@ -114,124 +113,148 @@ const TableControls = ({
   departmentFilter, // New prop for department filter
   showUserExportButton = false, // Show user export button only when user is selected
 }) => (
-  <div className="flex justify-between items-center py-4 card">
-    {/* Left Section - Section Title, Search and Filters */}
-    <div className="flex items-center space-x-6 flex-1">
-      {/* Section Title - Show default for analytics tables if not provided */}
-      {(sectionTitle || tableType === "analytics") && (
-        <h3 className="text-lg font-semibold m-0">
+  <>
+  <div className="card-small-modern overflow-hidden p-0 relative">
+    {/* Accent line on top - matching table design */}
+    <div 
+      className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
+      style={{
+        background: CARD_SYSTEM.COLOR_HEX_MAP.blue
+      }}
+    />
+    
+    {/* Header Section - Only Title */}
+    {(sectionTitle || tableType === "analytics") && (
+      <div className="px-5 py-3 border-b border-gray-200/50 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white m-0">
           {sectionTitle || (tableType === "analytics" ? "Sport + Casino: Per User" : "")}
         </h3>
-      )}
-      {/* Global Filter */}
-      {showFilters && (
-        <div className="max-w-sm">
-          <TextField
-            field={{
-              name: `${tableType}-search`,
-              label: `Search ${tableType}...`,
-              required: false,
-              placeholder: `Search ${tableType}...`,
-            }}
-            register={() => ({})}
-            errors={{}}
-            setValue={(name, value) => setGlobalFilter(value)}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
-          />
-        </div>
-      )}
-      {/* Department Filter - right after search */}
-      {departmentFilter && (
-        <div className="w-64">
-          {departmentFilter}
-        </div>
-      )}
-      {/* Custom Filter - if provided */}
-      {customFilter && (
-        <div className="max-w-full">
-          {customFilter}
-        </div>
-      )}
-    </div>
+      </div>
+    )}
 
-    <div className="flex items-center space-x-3">
-      {/* Rows per page selector */}
-      {showPagination && enablePagination && (
-        <div className="flex items-center justify-center gap-3">
-          <label
-            htmlFor="page-size-select"
-            className="text-sm font-medium text-gray-800 dark:text-gray-300 m-0"
-          >
-            Rows
-          </label>
-          <select
-            id="page-size-select"
-            value={table.getState().pagination.pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400  backdrop-blur-sm"
-          >
-            {PAGE_SIZE_OPTIONS.map((pageSize) => (
-              <option key={pageSize} value={pageSize}>
-                {pageSize}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Column Toggle */}
-      {showColumnToggle && (
-        <div className="relative group">
-          <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  backdrop-blur-sm">
-            Columns
-          </button>
-          <div className="absolute right-0 mt-2 w-fit bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible  z-10 backdrop-blur-sm">
-            <div className="py-2">
-              {table
-                .getAllLeafColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <label
-                    key={column.id}
-                    className="flex items-center px-4 py-2 text-sm font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 cursor-pointer "
-                  >
-                    <input
-                      name={`column-${column.id}`}
-                      id={`column-${column.id}`}
-                      type="checkbox"
-                      checked={column.getIsVisible()}
-                      onChange={column.getToggleVisibilityHandler()}
-                      className="mr-3 w-4 h-4 text-blue-600 dark:text-blue-400"
-                    />
-                    {column.columnDef.header || column.id}
-                  </label>
-                ))}
+    {/* Main Content Section */}
+    <div className="px-5 py-4 bg-white dark:bg-smallCard">
+      <div className="flex justify-between items-center gap-4 flex-wrap">
+        {/* Left - Filters */}
+        <div className="flex items-center gap-4 flex-1 flex-wrap">
+          {/* Global Filter */}
+          {showFilters && (
+            <div className="min-w-[200px] max-w-sm">
+              <TextField
+                field={{
+                  name: `${tableType}-search`,
+                  label: `Search ${tableType}...`,
+                  required: false,
+                  placeholder: `Search ${tableType}...`,
+                }}
+                register={() => ({})}
+                errors={{}}
+                setValue={(name, value) => setGlobalFilter(value)}
+                trigger={() => {}}
+                clearErrors={() => {}}
+                formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
+              />
             </div>
-          </div>
+          )}
+          
+          {/* Department Filter */}
+          {departmentFilter && (
+            <div className="w-64">
+              {departmentFilter}
+            </div>
+          )}
+          
+          {/* Custom Filter */}
+          {customFilter && (
+            <div className="flex-1 min-w-0">
+              {customFilter}
+            </div>
+          )}
         </div>
-      )}
 
-      <button
-        onClick={handleCSVExport}
-        disabled={isExporting}
-        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
-      >
-        {isExporting ? "Exporting..." : "Export CSV"}
-      </button>
-      {/* User-specific export button - only shown when user is selected */}
-      {showUserExportButton && handleUserCSVExport && (
-        <button
-          onClick={handleUserCSVExport}
-          disabled={isExporting}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
-        >
-          {isExporting ? "Exporting..." : "Export User CSV"}
-        </button>
-      )}
+        {/* Right - Actions (Rows, Columns, Export) */}
+        <div className="flex items-center gap-3">
+          {/* Rows per page selector */}
+          {showPagination && enablePagination && (
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="page-size-select"
+                className="text-sm font-medium text-gray-800 dark:text-gray-300 m-0"
+              >
+                Rows
+              </label>
+              <select
+                id="page-size-select"
+                value={table.getState().pagination.pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 transition-colors shadow-sm"
+              >
+                {PAGE_SIZE_OPTIONS.map((pageSize) => (
+                  <option key={pageSize} value={pageSize}>
+                    {pageSize}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Column Toggle */}
+          {showColumnToggle && (
+            <div className="relative group">
+              <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors shadow-sm">
+                Columns
+              </button>
+              <div className="absolute right-0 mt-2 w-fit bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible z-10 backdrop-blur-sm">
+                <div className="py-2">
+                  {table
+                    .getAllLeafColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <label
+                        key={column.id}
+                        className="flex items-center px-4 py-2 text-sm font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 cursor-pointer"
+                      >
+                        <input
+                          name={`column-${column.id}`}
+                          id={`column-${column.id}`}
+                          type="checkbox"
+                          checked={column.getIsVisible()}
+                          onChange={column.getToggleVisibilityHandler()}
+                          className="mr-3 w-4 h-4 text-blue-600 dark:text-blue-400"
+                        />
+                        {column.columnDef.header || column.id}
+                      </label>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Export CSV */}
+          <button
+            onClick={handleCSVExport}
+            disabled={isExporting}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </button>
+          
+          {/* User-specific export button */}
+          {showUserExportButton && handleUserCSVExport && (
+            <button
+              onClick={handleUserCSVExport}
+              disabled={isExporting}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              {isExporting ? "Exporting..." : "Export User CSV"}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   </div>
+  <div class="border-t border-gray-200/50 dark:border-gray-700/50 my-6"></div>
+  </>
 );
 
 // Pagination component - TanStack pagination
@@ -246,34 +269,36 @@ const Pagination = ({
   if (!showPagination || !enablePagination) return null;
 
   return (
-    <div className="flex items-center justify-between space-x-4 py-4">
-      <div className="flex-1 text-sm font-medium text-gray-600 dark:text-gray-400">
-        {selectedCount} of {totalRows} row(s) selected.
-      </div>
-      <div className="flex items-center space-x-6">
-        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 card px-4 py-2 rounded-md ">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+    <div className="card-small-modern">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+          {selectedCount} of {totalRows} row(s) selected.
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() =>
-              onPageChange(table.getState().pagination.pageIndex - 1)
-            }
-            disabled={!table.getCanPreviousPage()}
-            className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-md card hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed "
-          >
-            ←
-          </button>
-          <button
-            onClick={() =>
-              onPageChange(table.getState().pagination.pageIndex + 1)
-            }
-            disabled={!table.getCanNextPage()}
-            className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-md card hover:bg-gray-50/80 dark:hover:bg-gray-700/50  disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            →
-          </button>
+        <div className="flex items-center space-x-4">
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2 bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-lg">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() =>
+                onPageChange(table.getState().pagination.pageIndex - 1)
+              }
+              disabled={!table.getCanPreviousPage()}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              ←
+            </button>
+            <button
+              onClick={() =>
+                onPageChange(table.getState().pagination.pageIndex + 1)
+              }
+              disabled={!table.getCanNextPage()}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              →
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -716,26 +741,30 @@ const TanStackTable = forwardRef(
             />
 
             {/* Table */}
-            <div className="overflow-x-auto rounded-md border-0">
-              <table className="min-w-full">
-                <thead
-                  style={{
-                    backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,
-                  }}
-                >
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className={`px-4 py-3 text-start ${tableType === "analytics" ? "font-bold text-sm" : "font-semibold text-[12px]"} text-gray-200 tracking-normal ${
-                            header.column.getCanSort()
-                              ? "cursor-pointer select-none hover:bg-gray-600/50"
-                              : ""
-                          }  first:rounded-tl-md last:rounded-tr-md`}
-                          onClick={header.column.getToggleSortingHandler()}
-                          style={{ width: header.getSize() }}
-                        >
+            <div className="card-small-modern overflow-hidden p-0 relative ">
+              {/* Accent line on top - using green from constants */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
+                style={{
+                  background: CARD_SYSTEM.COLOR_HEX_MAP.blue
+                }}
+              />
+              <div className="overflow-x-auto pt-1">
+                <table className="min-w-full">
+                  <thead>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className={`px-5 py-4 text-start ${tableType === "analytics" ? "font-bold text-sm" : "font-semibold text-[12px]"} text-gray-700 dark:text-gray-200 tracking-tight bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200/50 dark:border-gray-700/50 ${
+                              header.column.getCanSort()
+                                ? "cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition-colors"
+                                : ""
+                            }`}
+                            onClick={header.column.getToggleSortingHandler()}
+                            style={{ width: header.getSize() }}
+                          >
                           <div className="flex items-center space-x-2">
                             <span>
                               {flexRender(
@@ -744,7 +773,7 @@ const TanStackTable = forwardRef(
                               )}
                             </span>
                             {header.column.getCanSort() && (
-                              <span className="text-gray-200">
+                              <span className="text-gray-500 dark:text-gray-300 ml-1">
                                 {SORT_ICONS[header.column.getIsSorted()] ??
                                   SORT_ICONS.false}
                               </span>
@@ -754,8 +783,8 @@ const TanStackTable = forwardRef(
                       ))}
                     </tr>
                   ))}
-                </thead>
-                <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-500/70 ">
+                  </thead>
+                  <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-200/50 dark:divide-gray-700/30">
                   {hasRows ? (
                     table.getRowModel().rows.map((row, index) => {
                       const rowKey = row.original?.id || row.id;
@@ -767,24 +796,17 @@ const TanStackTable = forwardRef(
                       return (
                         <tr
                           key={rowKey}
-                          className={`cursor-pointer  border-b`}
-                           
-                          style={
-                            isSelected
-                  ? {
-                      // Apply all border styles when selected
-                      borderLeft: `2px solid ${CARD_SYSTEM.COLOR_HEX_MAP.pink}`,
-                      borderRight: `2px solid ${CARD_SYSTEM.COLOR_HEX_MAP.pink}`,
-                      backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.dark_gray,
-                    }
-                  : {}
-                          }
+                          className={`cursor-pointer transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30 ${
+                            isSelected 
+                              ? "bg-blue-50/50 dark:bg-blue-900/20 border-l-2 border-blue-500" 
+                              : ""
+                          }`}
                           onClick={() => handleRowClick(row)}
                         >
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={`${row.original?.id || row.id}-${cell.column.id}`}
-                              className={`px-3 py-4 ${tableType === "analytics" ? "text-sm" : "text-[13px]"} ${fontWeight} `}
+                              className={`px-5 py-4 ${tableType === "analytics" ? "text-sm" : "text-[13px]"} ${fontWeight} text-gray-700 dark:text-gray-300`}
                               style={{ width: cell.column.getSize() }}
                             >
                               {flexRender(
@@ -813,8 +835,9 @@ const TanStackTable = forwardRef(
                       </td>
                     </tr>
                   )}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Pagination - TanStack pagination */}

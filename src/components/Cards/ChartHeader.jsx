@@ -13,6 +13,7 @@ const ChartHeader = ({
   showIcon = true,
   className = "",
   variant = "default", // "default" or "section"
+  children = null, // Chart content to wrap
 }) => {
   // Default chart icon
   const ChartIcon = Icons.generic.chart;
@@ -26,19 +27,19 @@ const ChartHeader = ({
     boxShadow: `0 4px 12px ${color}25`,
   }), [color]);
 
-  // Section variant has different styling
+  // Section variant has different styling - acts as card container
   const isSection = variant === "section";
   const containerClasses = isSection 
-    ? `relative bg-white/95 dark:bg-smallCard rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50 shadow-md mb-6 overflow-hidden ${className}`
+    ? `card-small-modern overflow-hidden p-0 relative ${className}`
     : `relative ${className}`;
   
   // Check if padding should be removed (when className contains !px-0 or similar)
   const hasNoPadding = className.includes("!px-0") || className.includes("px-0");
-  const innerPadding = hasNoPadding ? "" : (isSection ? "pt-2" : "px-5 pt-4");
+  const innerPadding = hasNoPadding ? "" : (isSection ? "px-5 pt-4" : "px-5 pt-4");
   
   // Always use h3 for title
   const titleClasses = isSection 
-    ? "text-xl font-bold text-gray-900 dark:text-white mb-0.5"
+    ? "text-base font-bold text-gray-900 dark:text-white mb-0.5"
     : "text-base font-semibold text-gray-900 dark:text-white";
 
   return (
@@ -46,9 +47,9 @@ const ChartHeader = ({
       {/* Accent bar line on top - only show if variant is section */}
       {variant === "section" && (
         <div 
-          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
           style={{
-            background: `linear-gradient(90deg, ${color} 0%, ${color}cc 50%, ${color} 100%)`,
+            background: color
           }}
         />
       )}
@@ -100,6 +101,12 @@ const ChartHeader = ({
           </div>
         )}
       </div>
+      {/* Chart content - only render if children provided and variant is section */}
+      {children && variant === "section" && (
+        <div className="px-5 pb-5 relative z-10">
+          {children}
+        </div>
+      )}
     </div>
   );
 };

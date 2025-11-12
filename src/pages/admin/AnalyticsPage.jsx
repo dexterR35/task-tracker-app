@@ -325,9 +325,9 @@ const AnalyticsPage = () => {
       <div className="card-small-modern group">
         {/* Accent border on top */}
         <div
-          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
           style={{
-            background: `linear-gradient(90deg, ${cardColorHex} 0%, ${cardColorHex}cc 50%, ${cardColorHex} 100%)`,
+            background: cardColorHex,
           }}
         />
 
@@ -407,9 +407,9 @@ const AnalyticsPage = () => {
       >
         {/* Accent border on top */}
         <div
-          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
           style={{
-            background: `linear-gradient(90deg, ${cardColorHex} 0%, ${cardColorHex}cc 50%, ${cardColorHex} 100%)`,
+            background: cardColorHex,
           }}
         />
 

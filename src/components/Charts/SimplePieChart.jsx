@@ -28,8 +28,8 @@ const SimplePieChart = React.memo(({
 
   if (!processedData || processedData.length === 0) {
     return (
-      <div className={`card ${className}`}>
-        <h4>{title}</h4>
+      <div className={`${className}`}>
+        {title && <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{title}</h4>}
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm">No data available</p>
       </div>
     );
