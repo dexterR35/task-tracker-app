@@ -522,11 +522,15 @@ export const calculateProductAnalyticsData = (tasks) => {
     });
 
   // Create biaxial chart data: Total Casino vs Total Sport
+  // Calculate totals from per-market data to ensure consistency with "Casino vs Sport: Tasks by Markets" chart
+  const totalCasinoFromMarkets = casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0), 0);
+  const totalSportFromMarkets = casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.sport || 0), 0);
+  
   const totalCasinoSportBiaxialData = [
     {
       name: 'Total',
-      casino: productCasinoTotalTasks,
-      sport: productSportTotalTasks,
+      casino: totalCasinoFromMarkets,
+      sport: totalSportFromMarkets,
     },
   ];
 
