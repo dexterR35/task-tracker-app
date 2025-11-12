@@ -117,9 +117,11 @@ const TableControls = ({
   <div className="flex justify-between items-center py-4 card">
     {/* Left Section - Section Title, Search and Filters */}
     <div className="flex items-center space-x-6 flex-1">
-      {/* Section Title */}
-      {sectionTitle && (
-        <h3 className="text-lg font-semibold m-0">{sectionTitle}</h3>
+      {/* Section Title - Show default for analytics tables if not provided */}
+      {(sectionTitle || tableType === "analytics") && (
+        <h3 className="text-lg font-semibold m-0">
+          {sectionTitle || (tableType === "analytics" ? "Sport + Casino: Per User" : "")}
+        </h3>
       )}
       {/* Global Filter */}
       {showFilters && (

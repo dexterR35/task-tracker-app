@@ -82,10 +82,7 @@ const AcquisitionAnalyticsCard = memo(
       <div id="acquisition-analytics-card" className={`space-y-8 ${className}`}>
         {/* Section: Overview Tables */}
         <div>
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Overview</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Acquisition statistics and user breakdown</p>
-          </div>
+         
           
           {/* Main Acquisition Table */}
           {acquisitionTableData && acquisitionTableData.length > 0 ? (
@@ -125,9 +122,6 @@ const AcquisitionAnalyticsCard = memo(
                   }}
                 />
                 <div className="relative z-10 p-5">
-                  <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Casino: Per User</h4>
-                  </div>
                   <AnalyticsTable
                     data={casinoUserTableData}
                     columns={casinoUserTableColumns}
@@ -147,9 +141,6 @@ const AcquisitionAnalyticsCard = memo(
                   }}
                 />
                 <div className="relative z-10 p-5">
-                  <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Sport: Per User</h4>
-                  </div>
                   <AnalyticsTable
                     data={sportUserTableData}
                     columns={sportUserTableColumns}
@@ -170,9 +161,6 @@ const AcquisitionAnalyticsCard = memo(
                 }}
               />
               <div className="relative z-10 p-5">
-                <div className="mb-4">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Sport + Casino: Per User</h4>
-                </div>
                 <AnalyticsTable
                   data={sportCasinoUserTableData}
                   columns={sportCasinoUserTableColumns}
@@ -266,7 +254,7 @@ const AcquisitionAnalyticsCard = memo(
         <div>
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Performance Metrics</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Tasks and hours breakdown by markets</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Tasks and hours by markets</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino Biaxial Chart */}
@@ -449,7 +437,7 @@ const AcquisitionAnalyticsCard = memo(
         <div>
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">User Analytics</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Individual user performance breakdown</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Individual user performance</p>
           </div>
 
           {/* Casino Acquisition: Per-User Charts */}

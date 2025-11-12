@@ -70,11 +70,6 @@ const ReporterAnalyticsCard = memo(({
                 }}
               />
               <div className="relative z-10 p-5">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Reporter Statistics
-                  </h3>
-                </div>
                 <AnalyticsTable
                   data={reporterTableData}
                   columns={reporterTableColumns}

@@ -61,10 +61,7 @@ const MarketingAnalyticsCard = memo(({
     <div id="marketing-analytics-card" className={`space-y-8 ${className}`}>
       {/* Section: Overview Table */}
       <div>
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Overview</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Marketing statistics and performance</p>
-        </div>
+      
         <div>
           {/* Marketing Table */}
           {marketingTableData && marketingTableData.length > 0 ? (
@@ -77,11 +74,6 @@ const MarketingAnalyticsCard = memo(({
                 }}
               />
               <div className="relative z-10 p-5">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Marketing Statistics
-                  </h3>
-                </div>
                 <AnalyticsTable
                   data={marketingTableData}
                   columns={marketingTableColumns}
@@ -118,7 +110,7 @@ const MarketingAnalyticsCard = memo(({
             />
             <div className="relative z-10">
               <ChartHeader
-                title="Casino Marketing: Task by markets"
+                title="Casino Marketing: by markets"
                 badges={[
                   { value: `${casinoMarketingPieTotal} tasks` },
                   { value: `${Math.round(casinoMarketingPieHours * 10) / 10}h` }
@@ -147,7 +139,7 @@ const MarketingAnalyticsCard = memo(({
             />
             <div className="relative z-10">
               <ChartHeader
-                title="Sport Marketing: Task by markets"
+                title="Sport Marketing: by markets"
                 badges={[
                   { value: `${sportMarketingPieTotal} tasks` },
                   { value: `${Math.round(sportMarketingPieHours * 10) / 10}h` }
@@ -189,7 +181,7 @@ const MarketingAnalyticsCard = memo(({
                 />
                 <div className="relative z-10">
                   <ChartHeader
-                    title="Casino Marketing: Tasks & Hours by Markets"
+                    title="Casino Marketing: Hours by Markets"
                     badges={[
                       { value: `${totalTasks} tasks` },
                       { value: `${totalHours}h` }
@@ -226,7 +218,7 @@ const MarketingAnalyticsCard = memo(({
                 />
                 <div className="relative z-10">
                   <ChartHeader
-                    title="Sport Marketing: Tasks & Hours by Markets"
+                    title="Sport Marketing: Hours by Markets"
                     badges={[
                       { value: `${totalTasks} tasks` },
                       { value: `${totalHours}h` }
@@ -259,7 +251,7 @@ const MarketingAnalyticsCard = memo(({
             <p className="text-sm text-gray-500 dark:text-gray-400">Comparative analysis between casino and sport marketing</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Casino vs Sport: Tasks by Markets */}
+          {/* Casino vs Sport: by Markets */}
           {casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0 && (
             <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
               {/* Accent border on top */}
@@ -271,7 +263,7 @@ const MarketingAnalyticsCard = memo(({
               />
               <div className="relative z-10">
                 <ChartHeader
-                  title="Casino vs Sport: Tasks by Markets"
+                  title="Casino vs Sport: by Markets"
                   badges={[
                     `${casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
                   ]}
@@ -332,7 +324,7 @@ const MarketingAnalyticsCard = memo(({
       <div>
         <div className="mb-4">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">User Analytics</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Individual user performance breakdown</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Individual user performance </p>
         </div>
           
         {/* Casino Marketing: Per-User Charts */}

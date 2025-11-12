@@ -87,6 +87,11 @@ const PageWrapper = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const authState = useAuth();
 
+  // Show loading during initial auth check to prevent flash
+  if (authState.isLoading || authState.isAuthChecking) {
+    return <SimpleLoader />;
+  }
+
   // If user is authenticated, redirect to dashboard
   if (authState.user) {
     return <Navigate to="/dashboard" replace />;

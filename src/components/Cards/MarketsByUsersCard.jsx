@@ -631,11 +631,6 @@ const MarketsByUsersCard = memo(({
                 }}
               />
               <div className="relative z-10 p-5">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Markets by Users
-                  </h3>
-                </div>
                 <AnalyticsTable
                   data={analyticsByUserMarketsTableData}
                   columns={analyticsByUserMarketsTableColumns}
@@ -764,7 +759,7 @@ const MarketsByUsersCard = memo(({
             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <span>User Analytics</span>
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Individual user performance breakdown</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Individual user performance </p>
           </div>
           
           {/* Users by Markets - Separate Chart for Each User in 2-column grid */}

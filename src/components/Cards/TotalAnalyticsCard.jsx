@@ -44,14 +44,6 @@ const TotalAnalyticsCard = memo(({
               }}
             />
             <div className="relative z-10 p-5">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  Category Totals
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {totalTasks} total tasks • {totalHours}h total hours
-                </p>
-              </div>
               <AnalyticsTable
                 data={tableData}
                 columns={tableColumns}

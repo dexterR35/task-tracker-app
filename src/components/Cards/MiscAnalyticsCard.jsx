@@ -58,11 +58,6 @@ const MiscAnalyticsCard = memo(({
                 }}
               />
               <div className="relative z-10 p-5">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Users Misc Statistics
-                  </h3>
-                </div>
                 <AnalyticsTable
                   data={usersMiscTableData}
                   columns={usersMiscTableColumns}
@@ -138,7 +133,7 @@ const MiscAnalyticsCard = memo(({
             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <span>User Analytics</span>
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Individual user performance breakdown</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Individual user performance </p>
           </div>
           
           {/* Misc: Per-User Charts */}
