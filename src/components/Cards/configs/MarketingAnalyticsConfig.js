@@ -7,6 +7,7 @@ import {
   renderCountWithPercentage,
   calculateUsersChartsByCategory,
   normalizeMarket,
+  getMarketColor,
 } from "./analyticsSharedConfig";
 
 export const calculateMarketingAnalyticsData = (tasks) => {
@@ -332,6 +333,39 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     );
   }) || [];
 
+  // Create biaxial chart data: Casino vs Sport per market
+  // Each market will have casino and sport bars with market-specific colors
+  const casinoSportPerMarketBiaxialData = sortedMarkets
+    .map((market) => {
+      const normalizedMarket = normalizeMarket(market);
+      const casinoTasks = marketingData.casino[market] || 0;
+      const sportTasks = marketingData.sport[market] || 0;
+      const marketColor = getMarketColor(normalizedMarket);
+      
+      return {
+        name: normalizedMarket,
+        casino: casinoTasks,
+        sport: sportTasks,
+        color: marketColor, // Each market has its own color
+      };
+    })
+    .filter((item) => item.casino > 0 || item.sport > 0)
+    .sort((a, b) => {
+      // Sort by total tasks (casino + sport) descending
+      const totalA = a.casino + a.sport;
+      const totalB = b.casino + b.sport;
+      return totalB - totalA;
+    });
+
+  // Create biaxial chart data: Total Casino vs Total Sport
+  const totalCasinoSportBiaxialData = [
+    {
+      name: 'Total',
+      casino: casinoTotalTasks,
+      sport: sportTotalTasks,
+    },
+  ];
+
   return {
     tableData,
     tableColumns,
@@ -346,6 +380,8 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     calculateUsersChartsByCategory: calculateUsersChartsByCategoryWrapper,
     casinoMarketingTasks,
     sportMarketingTasks,
+    casinoSportPerMarketBiaxialData,
+    totalCasinoSportBiaxialData,
   };
 };
 
@@ -387,6 +423,8 @@ export const getMarketingAnalyticsCardProps = (tasks, users = [], isLoading = fa
     sportBiaxialTitle: `Sport Marketing Tasks & Hours by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
     sportBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     sportBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    casinoSportPerMarketBiaxialData: calculatedData.casinoSportPerMarketBiaxialData,
+    totalCasinoSportBiaxialData: calculatedData.totalCasinoSportBiaxialData,
     casinoUsersCharts: casinoUsersCharts,
     sportUsersCharts: sportUsersCharts,
     isLoading,

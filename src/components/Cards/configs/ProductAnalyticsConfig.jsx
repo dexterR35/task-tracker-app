@@ -488,6 +488,48 @@ export const calculateProductAnalyticsData = (tasks) => {
     0
   );
 
+  // Create biaxial chart data: Casino vs Sport per market
+  // Get all markets from both product casino and product sport
+  const allProductMarkets = new Set();
+  if (productMarketStats["product casino"]) {
+    Object.keys(productMarketStats["product casino"]).forEach(market => allProductMarkets.add(market));
+  }
+  if (productMarketStats["product sport"]) {
+    Object.keys(productMarketStats["product sport"]).forEach(market => allProductMarkets.add(market));
+  }
+  const sortedProductMarkets = Array.from(allProductMarkets).sort();
+
+  const casinoSportPerMarketBiaxialData = sortedProductMarkets
+    .map((market) => {
+      const normalizedMarket = normalizeMarket(market);
+      const casinoStats = productMarketStats["product casino"]?.[market] || { tasks: 0 };
+      const sportStats = productMarketStats["product sport"]?.[market] || { tasks: 0 };
+      const marketColor = getMarketColor(normalizedMarket);
+      
+      return {
+        name: normalizedMarket,
+        casino: casinoStats.tasks || 0,
+        sport: sportStats.tasks || 0,
+        color: marketColor, // Each market has its own color
+      };
+    })
+    .filter((item) => item.casino > 0 || item.sport > 0)
+    .sort((a, b) => {
+      // Sort by total tasks (casino + sport) descending
+      const totalA = a.casino + a.sport;
+      const totalB = b.casino + b.sport;
+      return totalB - totalA;
+    });
+
+  // Create biaxial chart data: Total Casino vs Total Sport
+  const totalCasinoSportBiaxialData = [
+    {
+      name: 'Total',
+      casino: productCasinoTotalTasks,
+      sport: productSportTotalTasks,
+    },
+  ];
+
   // Use shared calculateUsersChartsByCategory function
   // Wrapper to maintain API compatibility (product doesn't use categoryName)
   const calculateUsersChartsByProduct = (productTasks, users) => {
@@ -509,6 +551,8 @@ export const calculateProductAnalyticsData = (tasks) => {
     productSportMarketsBiaxialData,
     productSportTotalTasks,
     productSportTotalHours,
+    casinoSportPerMarketBiaxialData,
+    totalCasinoSportBiaxialData,
     calculateUsersChartsByProduct,
     filteredTasks,
     totalTasks,
@@ -584,6 +628,8 @@ export const getProductAnalyticsCardProps = (tasks, users = [], isLoading = fals
     productSportMarketsBiaxialTitle: `Product Sport: Markets Tasks & Hours (${productData.productSportTotalTasks} tasks, ${Math.round(productData.productSportTotalHours * 100) / 100}h)`,
     productSportMarketsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     productSportMarketsBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    casinoSportPerMarketBiaxialData: productData.casinoSportPerMarketBiaxialData,
+    totalCasinoSportBiaxialData: productData.totalCasinoSportBiaxialData,
     productUsersCharts: productUsersCharts,
     className: "",
     isLoading,

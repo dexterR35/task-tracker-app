@@ -693,6 +693,7 @@ const MarketsByUsersCard = memo(({
                       tasksColor={biaxialTasksColor}
                       hoursColor={biaxialHoursColor}
                       dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                      showHours={false}
                     />
                   </div>
                 </div>
@@ -719,6 +720,7 @@ const MarketsByUsersCard = memo(({
                       tasksColor={usersBiaxialTasksColor}
                       hoursColor={usersBiaxialHoursColor}
                       dataType={CARD_SYSTEM.CHART_DATA_TYPE.USER}
+                      showHours={false}
                     />
                   </div>
                 </div>
@@ -762,6 +764,7 @@ const MarketsByUsersCard = memo(({
                     tasksColor={CHART_COLORS.DEFAULT[0]}
                     hoursColor={CHART_COLORS.DEFAULT[1]}
                     dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                    showHours={true}
                   />
                 </div>
               </div>

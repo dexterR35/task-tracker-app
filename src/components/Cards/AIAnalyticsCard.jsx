@@ -300,6 +300,7 @@ const AIAnalyticsCard = memo(({
                       tasksColor={usersBiaxialTasksColor}
                       hoursColor={usersBiaxialTimeColor}
                       dataType={CARD_SYSTEM.CHART_DATA_TYPE.USER}
+                      showHours={true}
                     />
                   </div>
                 </div>

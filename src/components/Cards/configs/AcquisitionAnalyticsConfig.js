@@ -8,6 +8,7 @@ import {
   calculateUsersChartsByCategory,
   calculateUserTable,
   normalizeMarket,
+  getMarketColor,
 } from "./analyticsSharedConfig";
 
 export const calculateAcquisitionAnalyticsData = (tasks) => {
@@ -443,6 +444,39 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     return calculateUserTable(sportCasinoTasks, users);
   };
 
+  // Create biaxial chart data: Casino vs Sport per market
+  // Each market will have casino and sport bars with market-specific colors
+  const casinoSportPerMarketBiaxialData = sortedMarkets
+    .map((market) => {
+      const normalizedMarket = normalizeMarket(market);
+      const casinoTasks = acquisitionData.casino[market] || 0;
+      const sportTasks = acquisitionData.sport[market] || 0;
+      const marketColor = getMarketColor(normalizedMarket);
+      
+      return {
+        name: normalizedMarket,
+        casino: casinoTasks,
+        sport: sportTasks,
+        color: marketColor, // Each market has its own color
+      };
+    })
+    .filter((item) => item.casino > 0 || item.sport > 0)
+    .sort((a, b) => {
+      // Sort by total tasks (casino + sport) descending
+      const totalA = a.casino + a.sport;
+      const totalB = b.casino + b.sport;
+      return totalB - totalA;
+    });
+
+  // Create biaxial chart data: Total Casino vs Total Sport
+  const totalCasinoSportBiaxialData = [
+    {
+      name: 'Total',
+      casino: casinoTotalTasks,
+      sport: sportTotalTasks,
+    },
+  ];
+
   return {
     tableData,
     tableColumns,
@@ -460,6 +494,8 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     calculateCasinoUserTable,
     calculateSportUserTable,
     calculateSportCasinoUserTable,
+    casinoSportPerMarketBiaxialData,
+    totalCasinoSportBiaxialData,
   };
 };
 
@@ -527,6 +563,8 @@ export const getAcquisitionAnalyticsCardProps = (
     sportUserTableColumns: sportUserTable.tableColumns,
     sportCasinoUserTableData: sportCasinoUserTable.tableData,
     sportCasinoUserTableColumns: sportCasinoUserTable.tableColumns,
+    casinoSportPerMarketBiaxialData: calculatedData.casinoSportPerMarketBiaxialData,
+    totalCasinoSportBiaxialData: calculatedData.totalCasinoSportBiaxialData,
     isLoading,
   };
 };

@@ -4,7 +4,7 @@ import SimplePieChart from "@/components/Charts/SimplePieChart";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import ChartHeader from "./ChartHeader";
-import { CHART_COLORS } from "./configs/analyticsSharedConfig";
+import { CHART_COLORS, getProductColor } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
 
@@ -37,6 +37,8 @@ const AcquisitionAnalyticsCard = memo(
     sportUserTableColumns = [],
     sportCasinoUserTableData = [],
     sportCasinoUserTableColumns = [],
+    casinoSportPerMarketBiaxialData = [],
+    totalCasinoSportBiaxialData = [],
     className = "",
     isLoading = false,
   }) => {
@@ -252,6 +254,7 @@ const AcquisitionAnalyticsCard = memo(
                           tasksColor={casinoBiaxialTasksColor}
                           hoursColor={casinoBiaxialHoursColor}
                           dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                          showHours={false}
                         />
                       ) : (
                         <div className="card">
@@ -293,6 +296,7 @@ const AcquisitionAnalyticsCard = memo(
                           tasksColor={sportBiaxialTasksColor}
                           hoursColor={sportBiaxialHoursColor}
                           dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                          showHours={false}
                         />
                       ) : (
                         <div className="card">
@@ -308,6 +312,55 @@ const AcquisitionAnalyticsCard = memo(
                 );
               })()}
             </div>
+
+          {/* Casino vs Sport Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Casino vs Sport: Tasks by Markets */}
+            {casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0 && (
+              <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <ChartHeader
+                  title="Casino vs Sport: Tasks by Markets"
+                  badges={[
+                    `${casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                  ]}
+                />
+                <div className="p-5">
+                  <BiaxialBarChart
+                    data={casinoSportPerMarketBiaxialData}
+                    title=""
+                    bars={[
+                      { dataKey: 'casino', name: 'Casino', color: getProductColor('acquisition casino') },
+                      { dataKey: 'sport', name: 'Sport', color: getProductColor('acquisition sport') }
+                    ]}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Total Casino vs Total Sport */}
+            {totalCasinoSportBiaxialData && totalCasinoSportBiaxialData.length > 0 && (
+              <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <ChartHeader
+                  title="Total Casino vs Total Sport"
+                  badges={[
+                    `${totalCasinoSportBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                  ]}
+                />
+                <div className="p-5">
+                  <BiaxialBarChart
+                    data={totalCasinoSportBiaxialData}
+                    title=""
+                    bars={[
+                      { dataKey: 'casino', name: 'Casino', color: '#dc143c' }, // Crimson
+                      { dataKey: 'sport', name: 'Sport', color: '#22c55e' } // Green
+                    ]}
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
          
 
           {/* User Charts Section */}
@@ -352,6 +405,7 @@ const AcquisitionAnalyticsCard = memo(
                           tasksColor={CHART_COLORS.DEFAULT[0]}
                           hoursColor={CHART_COLORS.DEFAULT[1]}
                           dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                          showHours={true}
                         />
                       </div>
                     </div>
