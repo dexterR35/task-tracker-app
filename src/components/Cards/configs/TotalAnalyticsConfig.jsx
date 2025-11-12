@@ -17,6 +17,7 @@ export const calculateTotalAnalyticsData = (tasks) => {
     product: { tasks: 0, hours: 0, breakdown: {} },
     acquisition: { tasks: 0, hours: 0, breakdown: {} },
     marketing: { tasks: 0, hours: 0, breakdown: {} },
+    misc: { tasks: 0, hours: 0, breakdown: {} },
   };
 
   // Process tasks
@@ -81,6 +82,28 @@ export const calculateTotalAnalyticsData = (tasks) => {
         }
         categoryData.marketing.breakdown[subcategory].tasks += 1;
         categoryData.marketing.breakdown[subcategory].hours += timeInHours;
+      }
+    }
+    // Misc category
+    else if (productsLower.startsWith("misc ") || productsLower === "misc") {
+      categoryData.misc.tasks += 1;
+      categoryData.misc.hours += timeInHours;
+
+      // Extract subcategory (casino, sport, etc.) if it exists
+      let subcategory = "";
+      if (productsLower.includes("casino")) subcategory = "casino";
+      else if (productsLower.includes("sport")) subcategory = "sport";
+      else if (productsLower.includes("poker")) subcategory = "poker";
+      else if (productsLower.includes("lotto")) subcategory = "lotto";
+      // If it's just "misc" without a subcategory, use "general" or leave empty
+      else if (productsLower === "misc") subcategory = "general";
+
+      if (subcategory) {
+        if (!categoryData.misc.breakdown[subcategory]) {
+          categoryData.misc.breakdown[subcategory] = { tasks: 0, hours: 0 };
+        }
+        categoryData.misc.breakdown[subcategory].tasks += 1;
+        categoryData.misc.breakdown[subcategory].hours += timeInHours;
       }
     }
   });
@@ -161,6 +184,32 @@ export const calculateTotalAnalyticsData = (tasks) => {
       const subData = categoryData.marketing.breakdown[subcategory];
       tableData.push({
         category: "Marketing",
+        subcategory: capitalize(subcategory),
+        totalTasks: subData.tasks,
+        totalHours: Math.round(subData.hours * 100) / 100,
+        isMainCategory: false,
+      });
+    });
+  }
+
+  // Misc rows
+  if (categoryData.misc.tasks > 0) {
+    // Add main category row
+    const miscRow = {
+      category: "Misc",
+      subcategory: "",
+      totalTasks: categoryData.misc.tasks,
+      totalHours: Math.round(categoryData.misc.hours * 100) / 100,
+      isMainCategory: true,
+    };
+    tableData.push(miscRow);
+    
+    // Add subcategory rows
+    const miscSubcategories = Object.keys(categoryData.misc.breakdown).sort();
+    miscSubcategories.forEach((subcategory) => {
+      const subData = categoryData.misc.breakdown[subcategory];
+      tableData.push({
+        category: "Misc",
         subcategory: capitalize(subcategory),
         totalTasks: subData.tasks,
         totalHours: Math.round(subData.hours * 100) / 100,
@@ -255,6 +304,7 @@ export const calculateTotalAnalyticsData = (tasks) => {
     'Marketing': '#e11d48',     // Rose-600 (vibrant red/pink)
     'Acquisition': '#2563eb',   // Blue-600 (vibrant blue)
     'Product': '#f59e0b',       // Amber-500 (orange/gold)
+    'Misc': '#8C00FF',          // Purple-500 (purple/violet)
   };
 
   // Add specific colors to pie data
@@ -264,8 +314,8 @@ export const calculateTotalAnalyticsData = (tasks) => {
   }));
 
   // Calculate totals
-  const totalTasks = categoryData.product.tasks + categoryData.acquisition.tasks + categoryData.marketing.tasks;
-  const totalHours = categoryData.product.hours + categoryData.acquisition.hours + categoryData.marketing.hours;
+  const totalTasks = categoryData.product.tasks + categoryData.acquisition.tasks + categoryData.marketing.tasks + categoryData.misc.tasks;
+  const totalHours = categoryData.product.hours + categoryData.acquisition.hours + categoryData.marketing.hours + categoryData.misc.hours;
 
   return {
     tableData,
