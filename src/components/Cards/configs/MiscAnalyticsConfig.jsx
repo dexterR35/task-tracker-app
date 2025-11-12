@@ -461,6 +461,8 @@ export const getMiscAnalyticsCardProps = (tasks, users = [], isLoading = false) 
     categoryBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     categoryBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     miscUsersCharts: miscUsersCharts,
+    totalTasks: miscData.totalTasks,
+    totalHours: Math.round(miscData.totalHours * 100) / 100,
     className: "",
     isLoading,
   };

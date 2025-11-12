@@ -86,10 +86,10 @@ const BiaxialBarChart = React.memo(({
   }
 
   return (
-    <div className={`card rounded-lg p-4 ${className}`}>
-      {title && <h4 className='capitalize mb-2'>{title}</h4>}
+    <div className={className}>
+      {title && <h4 className='text-sm font-semibold text-gray-900 dark:text-white mb-3 capitalize'>{title}</h4>}
       
-      <div className="h-100">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}

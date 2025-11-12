@@ -11,6 +11,15 @@ import {
   getMarketColor,
 } from "./analyticsSharedConfig";
 
+// Helper function to check if a product string is acquisition
+const isAcquisitionProduct = (products) => {
+  if (typeof products !== "string") return false;
+  const productsLower = products.toLowerCase().trim();
+  return productsLower.startsWith("acquisition ") || 
+         productsLower === "acquisition" ||
+         (productsLower.includes("acquisition") && !productsLower.startsWith("product ") && !productsLower.startsWith("marketing ") && !productsLower.startsWith("misc "));
+};
+
 export const calculateAcquisitionAnalyticsData = (tasks) => {
   if (!tasks || tasks.length === 0) {
     return {
@@ -63,14 +72,15 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
 
     if (!products || !Array.isArray(markets) || markets.length === 0) return;
 
-    // Check if it's an acquisition task (products is a string)
-    if (typeof products === "string" && products.includes("acquisition")) {
-      // Determine acquisition category
-      let category = null;
-      if (products.includes("casino")) category = "casino";
-      else if (products.includes("sport")) category = "sport";
-      else if (products.includes("poker")) category = "poker";
-      else if (products.includes("lotto")) category = "lotto";
+      // Check if it's an acquisition task (products is a string)
+      if (isAcquisitionProduct(products)) {
+        const productsLower = products.toLowerCase().trim();
+        // Determine acquisition category
+        let category = null;
+        if (productsLower.includes("casino")) category = "casino";
+        else if (productsLower.includes("sport")) category = "sport";
+        else if (productsLower.includes("poker")) category = "poker";
+        else if (productsLower.includes("lotto")) category = "lotto";
 
       if (category) {
         // Process each market for this task
@@ -193,11 +203,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   const casinoTotalHours = tasks
     .filter((task) => {
       const products = task.data_task?.products || task.products;
-      return (
-        typeof products === "string" &&
-        products.includes("acquisition") &&
-        products.includes("casino")
-      );
+      if (!isAcquisitionProduct(products)) return false;
+      const productsLower = products.toLowerCase().trim();
+      return productsLower.includes("casino");
     })
     .reduce(
       (sum, task) =>
@@ -213,11 +221,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   const sportTotalHours = tasks
     .filter((task) => {
       const products = task.data_task?.products || task.products;
-      return (
-        typeof products === "string" &&
-        products.includes("acquisition") &&
-        products.includes("sport")
-      );
+      if (!isAcquisitionProduct(products)) return false;
+      const productsLower = products.toLowerCase().trim();
+      return productsLower.includes("sport");
     })
     .reduce(
       (sum, task) =>
@@ -244,11 +250,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   const casinoMarketHours = calculateMarketHours(
     tasks.filter((task) => {
       const products = task.data_task?.products || task.products;
-      return (
-        typeof products === "string" &&
-        products.includes("acquisition") &&
-        products.includes("casino")
-      );
+      if (!isAcquisitionProduct(products)) return false;
+      const productsLower = products.toLowerCase().trim();
+      return productsLower.includes("casino");
     }),
     sortedMarkets
   );
@@ -279,11 +283,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   const sportMarketHours = calculateMarketHours(
     tasks.filter((task) => {
       const products = task.data_task?.products || task.products;
-      return (
-        typeof products === "string" &&
-        products.includes("acquisition") &&
-        products.includes("sport")
-      );
+      if (!isAcquisitionProduct(products)) return false;
+      const productsLower = products.toLowerCase().trim();
+      return productsLower.includes("sport");
     }),
     sortedMarkets
   );
@@ -319,12 +321,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
           .filter((task) => {
             const products = task.data_task?.products || task.products;
             const taskMarkets = task.data_task?.markets || task.markets || [];
-            return (
-              typeof products === "string" &&
-              products.includes("acquisition") &&
-              products.includes("casino") &&
-              taskMarkets.includes(market)
-            );
+            if (!isAcquisitionProduct(products)) return false;
+            const productsLower = products.toLowerCase().trim();
+            return productsLower.includes("casino") && taskMarkets.includes(market);
           })
           .reduce(
             (sum, task) =>
@@ -361,12 +360,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
           .filter((task) => {
             const products = task.data_task?.products || task.products;
             const taskMarkets = task.data_task?.markets || task.markets || [];
-            return (
-              typeof products === "string" &&
-              products.includes("acquisition") &&
-              products.includes("sport") &&
-              taskMarkets.includes(market)
-            );
+            if (!isAcquisitionProduct(products)) return false;
+            const productsLower = products.toLowerCase().trim();
+            return productsLower.includes("sport") && taskMarkets.includes(market);
           })
           .reduce(
             (sum, task) =>
@@ -403,20 +399,16 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   // Get acquisition tasks filtered by category
   const casinoAcquisitionTasks = tasks.filter((task) => {
     const products = task.data_task?.products || task.products;
-    return (
-      typeof products === "string" &&
-      products.includes("acquisition") &&
-      products.includes("casino")
-    );
+    if (!isAcquisitionProduct(products)) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("casino");
   });
 
   const sportAcquisitionTasks = tasks.filter((task) => {
     const products = task.data_task?.products || task.products;
-    return (
-      typeof products === "string" &&
-      products.includes("acquisition") &&
-      products.includes("sport")
-    );
+    if (!isAcquisitionProduct(products)) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("sport");
   });
 
   // Use shared calculateUserTable function for both casino and sport
@@ -434,11 +426,9 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     // Filter tasks for both sport and casino acquisition
     const sportCasinoTasks = tasks.filter((task) => {
       const products = task.data_task?.products || task.products;
-      return (
-        typeof products === "string" &&
-        products.includes("acquisition") &&
-        (products.includes("sport") || products.includes("casino"))
-      );
+      if (!isAcquisitionProduct(products)) return false;
+      const productsLower = products.toLowerCase().trim();
+      return productsLower.includes("sport") || productsLower.includes("casino");
     });
 
     return calculateUserTable(sportCasinoTasks, users);
@@ -569,6 +559,8 @@ export const getAcquisitionAnalyticsCardProps = (
     sportCasinoUserTableColumns: sportCasinoUserTable.tableColumns,
     casinoSportPerMarketBiaxialData: calculatedData.casinoSportPerMarketBiaxialData,
     totalCasinoSportBiaxialData: calculatedData.totalCasinoSportBiaxialData,
+    totalTasks: (calculatedData.casinoTotalTasks || 0) + (calculatedData.sportTotalTasks || 0),
+    totalHours: (calculatedData.casinoTotalHours || 0) + (calculatedData.sportTotalHours || 0),
     isLoading,
   };
 };

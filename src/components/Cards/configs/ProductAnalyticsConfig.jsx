@@ -635,6 +635,8 @@ export const getProductAnalyticsCardProps = (tasks, users = [], isLoading = fals
     casinoSportPerMarketBiaxialData: productData.casinoSportPerMarketBiaxialData,
     totalCasinoSportBiaxialData: productData.totalCasinoSportBiaxialData,
     productUsersCharts: productUsersCharts,
+    totalTasks,
+    totalHours,
     className: "",
     isLoading,
   };

@@ -122,8 +122,8 @@ const SimplePieChart = React.memo(({
   };
 
   return (
-    <div className={`card ${className}`}>
-      <h4>{title}</h4>
+    <div className={className}>
+      {title && <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{title}</h4>}
       <div className="h-56 relative overflow-visible">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 30, right: 40, bottom: 30, left: 40 }}>

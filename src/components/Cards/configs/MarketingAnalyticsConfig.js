@@ -10,6 +10,15 @@ import {
   getMarketColor,
 } from "./analyticsSharedConfig";
 
+// Helper function to check if a product string is marketing
+const isMarketingProduct = (products) => {
+  if (typeof products !== "string") return false;
+  const productsLower = products.toLowerCase().trim();
+  return productsLower.startsWith("marketing ") || 
+         productsLower === "marketing" ||
+         (productsLower.includes("marketing") && !productsLower.startsWith("product ") && !productsLower.startsWith("acquisition ") && !productsLower.startsWith("misc "));
+};
+
 export const calculateMarketingAnalyticsData = (tasks) => {
   const marketingData = {
     casino: {},
@@ -31,13 +40,14 @@ export const calculateMarketingAnalyticsData = (tasks) => {
       if (!products || !Array.isArray(markets) || markets.length === 0) return;
 
       // Check if it's a marketing task (products is a string)
-      if (typeof products === "string" && products.includes("marketing")) {
-        // Determine marketing category
-        let category = null;
-        if (products.includes("casino")) category = "casino";
-        else if (products.includes("sport")) category = "sport";
-        else if (products.includes("poker")) category = "poker";
-        else if (products.includes("lotto")) category = "lotto";
+      if (isMarketingProduct(products)) {
+        const productsLower = products.toLowerCase().trim();
+          // Determine marketing category
+          let category = null;
+          if (productsLower.includes("casino")) category = "casino";
+          else if (productsLower.includes("sport")) category = "sport";
+          else if (productsLower.includes("poker")) category = "poker";
+          else if (productsLower.includes("lotto")) category = "lotto";
 
         if (category) {
           // Process each market for this task
@@ -138,11 +148,9 @@ export const calculateMarketingAnalyticsData = (tasks) => {
   // Calculate totals for casino marketing
   const casinoTasks = tasks?.filter((task) => {
     const products = task.data_task?.products || task.products;
-    return (
-      typeof products === "string" &&
-      products.includes("marketing") &&
-      products.includes("casino")
-    );
+    if (!isMarketingProduct(products)) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("casino");
   }) || [];
 
   const casinoTotalTasks = casinoTasks.length;
@@ -156,11 +164,9 @@ export const calculateMarketingAnalyticsData = (tasks) => {
   // Calculate totals for sport marketing
   const sportTasks = tasks?.filter((task) => {
     const products = task.data_task?.products || task.products;
-    return (
-      typeof products === "string" &&
-      products.includes("marketing") &&
-      products.includes("sport")
-    );
+    if (!isMarketingProduct(products)) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("sport");
   }) || [];
 
   const sportTotalTasks = sportTasks.length;
@@ -317,20 +323,16 @@ export const calculateMarketingAnalyticsData = (tasks) => {
   // Get marketing tasks filtered by category
   const casinoMarketingTasks = tasks?.filter((task) => {
     const products = task.data_task?.products || task.products;
-    return (
-      typeof products === "string" &&
-      products.includes("marketing") &&
-      products.includes("casino")
-    );
+    if (!isMarketingProduct(products)) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("casino");
   }) || [];
 
   const sportMarketingTasks = tasks?.filter((task) => {
     const products = task.data_task?.products || task.products;
-    return (
-      typeof products === "string" &&
-      products.includes("marketing") &&
-      products.includes("sport")
-    );
+    if (!isMarketingProduct(products)) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("sport");
   }) || [];
 
   // Create biaxial chart data: Casino vs Sport per market
@@ -405,6 +407,9 @@ export const getMarketingAnalyticsCardProps = (tasks, users = [], isLoading = fa
     "Sport Marketing"
   );
 
+  const totalTasks = (calculatedData.casinoTotalTasks || 0) + (calculatedData.sportTotalTasks || 0);
+  const totalHours = (calculatedData.casinoTotalHours || 0) + (calculatedData.sportTotalHours || 0);
+
   return {
     title: "Marketing Analytics",
     marketingTableData: calculatedData.tableData,
@@ -431,6 +436,8 @@ export const getMarketingAnalyticsCardProps = (tasks, users = [], isLoading = fa
     totalCasinoSportBiaxialData: calculatedData.totalCasinoSportBiaxialData,
     casinoUsersCharts: casinoUsersCharts,
     sportUsersCharts: sportUsersCharts,
+    totalTasks,
+    totalHours,
     isLoading,
   };
 };

@@ -50,17 +50,31 @@ const MiscAnalyticsCard = memo(({
         <div>
           {/* Users Misc Statistics Table */}
           {usersMiscTableData && usersMiscTableData.length > 0 ? (
-            <div className="table-container">
-              <AnalyticsTable
-                data={usersMiscTableData}
-                columns={usersMiscTableColumns}
-                sectionTitle="Users Misc Statistics"
+            <div className="card-small-modern">
+              <div
+                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                style={{
+                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.pink} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.pink}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.pink} 100%)`,
+                }}
               />
+              <div className="relative z-10 p-5">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    Users Misc Statistics
+                  </h3>
+                </div>
+                <AnalyticsTable
+                  data={usersMiscTableData}
+                  columns={usersMiscTableColumns}
+                  sectionTitle=""
+                />
+              </div>
             </div>
           ) : (
-            <div className="card">
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">No misc product data available</p>
+            <div className="card-small-modern">
+              <div className="text-center py-12">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">No misc product data available</p>
               </div>
             </div>
           )}

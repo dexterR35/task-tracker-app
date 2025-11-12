@@ -4,6 +4,7 @@ import SimplePieChart from "@/components/Charts/SimplePieChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import ChartHeader from "./ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
+import { Icons } from "@/components/icons";
 
 const TotalAnalyticsCard = memo(({
   title,
@@ -27,57 +28,77 @@ const TotalAnalyticsCard = memo(({
     [pieData]
   );
 
+  const cardColor = CARD_SYSTEM.COLOR_HEX_MAP.blue;
+
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {title}
-        </h2>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {totalTasks} total tasks • {totalHours}h total hours
-        </div>
-      </div>
-
       {/* Table Section - First Row */}
       <div>
         {tableData && tableData.length > 0 ? (
-          <div className="table-container">
-            <AnalyticsTable
-              data={tableData}
-              columns={tableColumns}
-              sectionTitle="Category Totals"
-              isLoading={isLoading}
-              enablePagination={false}
-              showPagination={false}
+          <div className="card-small-modern">
+            {/* Accent border on top */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+              style={{
+                background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
+              }}
             />
+            <div className="relative z-10 p-5">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  Category Totals
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {totalTasks} total tasks • {totalHours}h total hours
+                </p>
+              </div>
+              <AnalyticsTable
+                data={tableData}
+                columns={tableColumns}
+                sectionTitle=""
+                isLoading={isLoading}
+                enablePagination={false}
+                showPagination={false}
+              />
+            </div>
           </div>
         ) : (
-          <div className="card">
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No data</p>
+          <div className="card-small-modern">
+            <div className="text-center py-12">
+              <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">No data available</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Pie Chart Section - Second Row */}
-      <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-        <ChartHeader
-          title="Total Tasks by Category"
-          badges={[
-            `${pieTotal} tasks`,
-            `${totalHours}h`
-          ]}
+      <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
+        {/* Accent border on top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+          style={{
+            background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
+          }}
         />
-        <div className="p-5">
-          <SimplePieChart
-            data={pieData}
-            title=""
-            colors={pieColors}
-            showPercentages={true}
-            dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+        <div className="relative z-10">
+          <ChartHeader
+            title="Total Tasks by Category"
+            badges={[
+              `${pieTotal} tasks`,
+              `${totalHours}h`
+            ]}
+            color={cardColor}
           />
+          <div className="px-5 pb-5">
+            <SimplePieChart
+              data={pieData}
+              title=""
+              colors={pieColors}
+              showPercentages={true}
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+            />
+          </div>
         </div>
       </div>
     </div>

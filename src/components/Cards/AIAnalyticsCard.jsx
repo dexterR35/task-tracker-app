@@ -91,17 +91,31 @@ const AIAnalyticsCard = memo(({
         <div>
           {/* AI Usage Statistics Table */}
           {aiTableData && aiTableData.length > 0 ? (
-            <div className="table-container">
-              <AnalyticsTable
-                data={aiTableData}
-                columns={aiTableColumns}
-                sectionTitle="AI Usage Statistics"
+            <div className="card-small-modern">
+              <div
+                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                style={{
+                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.purple} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.purple}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.purple} 100%)`,
+                }}
               />
+              <div className="relative z-10 p-5">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    AI Usage Statistics
+                  </h3>
+                </div>
+                <AnalyticsTable
+                  data={aiTableData}
+                  columns={aiTableColumns}
+                  sectionTitle=""
+                />
+              </div>
             </div>
           ) : (
-            <div className="card">
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">No data</p>
+            <div className="card-small-modern">
+              <div className="text-center py-12">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">No data available</p>
               </div>
             </div>
           )}

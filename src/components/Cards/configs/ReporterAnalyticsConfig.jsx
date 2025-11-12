@@ -365,6 +365,8 @@ export const getReporterAnalyticsCardProps = (
     reporterMarketBiaxialDataProduct: calculatedData.reporterMarketBiaxialDataProduct,
     reporterMarketBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     reporterMarketBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
+    totalTasks,
+    totalHours,
     isLoading,
   };
 };

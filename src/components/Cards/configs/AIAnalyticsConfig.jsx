@@ -679,6 +679,8 @@ export const getAIAnalyticsCardProps = (tasks, users, isLoading = false) => {
     productsBiaxialTitle: `Products: AI Tasks & AI Time (${totalAITasks} tasks, ${Math.round(totalAITime * 100) / 100}h)`,
     productsBiaxialTasksColor: CHART_COLORS.DEFAULT[0],
     productsBiaxialTimeColor: CHART_COLORS.DEFAULT[1],
+    totalTasks: totalAITasks,
+    totalHours: Math.round(totalAITime * 100) / 100,
     isLoading,
   };
 };

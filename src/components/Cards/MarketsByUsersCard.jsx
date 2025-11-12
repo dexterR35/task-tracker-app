@@ -623,12 +623,25 @@ const MarketsByUsersCard = memo(({
         <div>
           {/* Markets by Users Table Div */}
           {hasRealData && (
-            <div className="table-container">
-              <AnalyticsTable
-                data={analyticsByUserMarketsTableData}
-                columns={analyticsByUserMarketsTableColumns}
-                sectionTitle="Markets by Users"
+            <div className="card-small-modern">
+              <div
+                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                style={{
+                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.green}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 100%)`,
+                }}
               />
+              <div className="relative z-10 p-5">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    Markets by Users
+                  </h3>
+                </div>
+                <AnalyticsTable
+                  data={analyticsByUserMarketsTableData}
+                  columns={analyticsByUserMarketsTableColumns}
+                  sectionTitle=""
+                />
+              </div>
             </div>
           )}
         </div>

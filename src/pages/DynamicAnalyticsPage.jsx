@@ -1,23 +1,19 @@
-import React, { useMemo, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import { Icons } from "@/components/icons";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { CARD_SYSTEM } from "@/constants";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { createCards, convertMarketsToBadges } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
-import { getWeeksInMonth } from "@/utils/monthUtils";
-import SelectField from "@/components/forms/components/SelectField";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Badge from "@/components/ui/Badge/Badge";
 import { logger } from "@/utils/logger";
 import { normalizeTimestamp } from "@/utils/dateUtils";
 import PerformanceQualityMetricsCard from "@/components/Cards/PerformanceQualityMetricsCard";
-import TanStackTable from "@/components/Table/TanStackTable";
-import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
 import { useAuth } from "@/context/AuthContext";
 import { matchesUserName, matchesReporterName } from "@/utils/taskFilters";
+import { getWeeksInMonth } from "@/utils/monthUtils";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -50,8 +46,12 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
 
   // Filter tasks based on parameters
   const filteredTasks = tasks.filter(task => {
-    // Filter by month
-    if (monthId && monthId !== 'current' && task.monthId !== monthId) return false;
+    // Filter by month only if explicitly provided
+    // null means show all months, otherwise filter by specific monthId
+    if (monthId && task.monthId !== monthId) {
+      return false;
+    }
+    // If monthId is null, don't filter by month (show all data)
     
     // Filter by user if specified (using shared utility)
     if (userName && !matchesUserName(task, userName)) {
@@ -63,12 +63,12 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
       return false;
     }
     
-    // Filter by week if specified
-    if (weekParam) {
+    // Filter by week if specified (requires monthId to be set)
+    if (weekParam && monthId) {
       try {
         const weekNumber = parseInt(weekParam);
         if (!isNaN(weekNumber)) {
-          // Get weeks for the current month
+          // Get weeks for the specified month
           const weeks = getWeeksInMonth(monthId);
           const week = weeks.find(w => w.weekNumber === weekNumber);
           
@@ -491,19 +491,11 @@ const DynamicAnalyticsPage = () => {
   const navigate = useNavigate();
   const [isDataReady, setIsDataReady] = useState(false);
   
-  // Set up form with React Hook Form
-  const { register, setValue, watch, formState: { errors } } = useForm({
-    defaultValues: {
-      weekSelect: '' // Default to "All Weeks"
-    }
-  });
-  
-  // Watch the week selection
-  const selectedWeekValue = watch('weekSelect');
   // Extract URL parameters
   const userName = searchParams.get('user');
   const reporterName = searchParams.get('reporter');
-  const monthId = searchParams.get('month') || 'current';
+  const monthIdParam = searchParams.get('month');
+  const monthId = monthIdParam || null; // null means show all months
   const weekParam = searchParams.get('week');
   
   
@@ -561,375 +553,10 @@ const DynamicAnalyticsPage = () => {
     ));
   };
 
-  // Helper function to get tasks for a specific week
-  const getWeekTasks = useCallback((week, tasksList) => {
-    if (!week || !tasksList) return [];
-    
-    // Get week date range - use full week range (includes weekends)
-    let weekStart = null;
-    let weekEnd = null;
-    
-    if (week.startDate) {
-      weekStart = week.startDate instanceof Date ? new Date(week.startDate) : new Date(week.startDate);
-    }
-    if (week.endDate) {
-      weekEnd = week.endDate instanceof Date ? new Date(week.endDate) : new Date(week.endDate);
-    }
-    
-    // If week dates not available, try to calculate from days array
-    if (!weekStart || !weekEnd || isNaN(weekStart.getTime()) || isNaN(weekEnd.getTime())) {
-      if (week.days && week.days.length > 0) {
-        const sortedDays = [...week.days].sort((a, b) => {
-          const dateA = a instanceof Date ? a : new Date(a);
-          const dateB = b instanceof Date ? b : new Date(b);
-          return dateA - dateB;
-        });
-        weekStart = sortedDays[0] instanceof Date ? new Date(sortedDays[0]) : new Date(sortedDays[0]);
-        weekEnd = sortedDays[sortedDays.length - 1] instanceof Date ? new Date(sortedDays[sortedDays.length - 1]) : new Date(sortedDays[sortedDays.length - 1]);
-      } else {
-        logger.warn('Invalid week dates:', week);
-        return [];
-      }
-    }
-    
-    // Normalize week dates to start/end of day for comparison
-    weekStart.setHours(0, 0, 0, 0);
-    weekEnd.setHours(23, 59, 59, 999);
-    
-    const weekTasks = [];
-    const seenTaskIds = new Set(); // Prevent duplicates
-    const errors = []; // Collect errors for tasks without startDate
-    
-    tasksList.forEach(task => {
-      try {
-        // Get task date - only use startDate, no fallback to createdAt
-        let taskDate = null;
-        
-        // Only use task.data_task.startDate (actual task date)
-        if (!task.data_task?.startDate) {
-          logger.error('Task missing startDate:', {
-            taskId: task.id,
-            taskName: task.data_task?.taskName,
-            task: task
-          });
-          throw new Error(`Task ${task.data_task?.taskName || task.id || 'unknown'} is missing startDate. All tasks must have a startDate to be included in week view.`);
-        }
-        
-        if (task.data_task.startDate instanceof Date) {
-          taskDate = new Date(task.data_task.startDate);
-        } else if (typeof task.data_task.startDate === 'string') {
-          // Handle ISO string dates - parse and convert to local date
-          const parsed = new Date(task.data_task.startDate);
-          if (!isNaN(parsed.getTime())) {
-            taskDate = parsed;
-          } else {
-            logger.error('Invalid startDate string format:', {
-              taskId: task.id,
-              taskName: task.data_task?.taskName,
-              startDate: task.data_task.startDate
-            });
-            throw new Error(`Task ${task.data_task?.taskName || task.id || 'unknown'} has invalid startDate format: ${task.data_task.startDate}`);
-          }
-        } else if (task.data_task.startDate.toDate && typeof task.data_task.startDate.toDate === 'function') {
-          taskDate = task.data_task.startDate.toDate();
-        } else if (task.data_task.startDate.seconds) {
-          taskDate = new Date(task.data_task.startDate.seconds * 1000);
-        } else {
-          logger.error('Unsupported startDate format:', {
-            taskId: task.id,
-            taskName: task.data_task?.taskName,
-            startDate: task.data_task.startDate,
-            startDateType: typeof task.data_task.startDate
-          });
-          throw new Error(`Task ${task.data_task?.taskName || task.id || 'unknown'} has unsupported startDate format. Expected Date, string, Firestore Timestamp, or object with seconds.`);
-        }
-        
-        // Validate parsed date
-        if (!taskDate || isNaN(taskDate.getTime())) {
-          logger.error('Failed to parse startDate:', {
-            taskId: task.id,
-            taskName: task.data_task?.taskName,
-            startDate: task.data_task.startDate,
-            parsedDate: taskDate
-          });
-          throw new Error(`Task ${task.data_task?.taskName || task.id || 'unknown'} has invalid startDate that could not be parsed.`);
-        }
-        
-        // Normalize task date to start of day for comparison
-        // Extract year, month, day from the date to avoid timezone issues
-        const taskYear = taskDate.getFullYear();
-        const taskMonth = taskDate.getMonth();
-        const taskDay = taskDate.getDate();
-        const normalizedTaskDate = new Date(taskYear, taskMonth, taskDay, 0, 0, 0, 0);
-        
-        // Also normalize week dates to ensure consistent comparison
-        // Extract year, month, day to avoid timezone issues
-        const weekStartYear = weekStart.getFullYear();
-        const weekStartMonth = weekStart.getMonth();
-        const weekStartDay = weekStart.getDate();
-        const normalizedWeekStart = new Date(weekStartYear, weekStartMonth, weekStartDay, 0, 0, 0, 0);
-        
-        const weekEndYear = weekEnd.getFullYear();
-        const weekEndMonth = weekEnd.getMonth();
-        const weekEndDay = weekEnd.getDate();
-        const normalizedWeekEnd = new Date(weekEndYear, weekEndMonth, weekEndDay, 23, 59, 59, 999);
-        
-        // Check if task date falls within the week range (includes weekends)
-        // Use direct date comparison (milliseconds) to avoid timezone conversion issues
-        const taskTime = normalizedTaskDate.getTime();
-        const weekStartTime = normalizedWeekStart.getTime();
-        const weekEndTime = normalizedWeekEnd.getTime();
-        
-        const isInWeek = taskTime >= weekStartTime && taskTime <= weekEndTime;
-        
-        if (!isInWeek) return;
-        
-        // Check if we've already added this task (prevent duplicates)
-        // Use a combination of task ID, taskName, and date to create unique identifier
-        const taskId = task.id || 
-          `${task.data_task?.taskName || 'task'}-${normalizedTaskDate.getTime()}-${task.createdAt?.seconds || task.createdAt || Date.now()}`;
-        if (seenTaskIds.has(taskId)) return;
-        seenTaskIds.add(taskId);
-        
-        // Filter by user if userName is specified
-        if (userName) {
-          const userMatch = (
-            task.createdByName === userName ||
-            task.userName === userName ||
-            (task.userUID && task.userUID.includes(userName)) ||
-            (task.createbyUID && task.createbyUID.includes(userName)) ||
-            (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
-            (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()))
-          );
-          if (!userMatch) return;
-        }
-        
-        // Filter by reporter if reporterName is specified
-        if (reporterName) {
-          const reporterMatch = (
-            task.data_task?.reporterName === reporterName ||
-            task.reporterName === reporterName ||
-            (task.data_task?.reporters && task.data_task.reporters === reporterName) ||
-            (task.reporterUID && task.reporterUID === reporterName) ||
-            (task.data_task?.reporterName && task.data_task.reporterName.toLowerCase().includes(reporterName.toLowerCase()))
-          );
-          if (!reporterMatch) return;
-        }
-        
-        weekTasks.push(task);
-      } catch (error) {
-        // Collect errors for tasks without startDate
-        errors.push({
-          taskId: task.id,
-          taskName: task.data_task?.taskName,
-          error: error.message
-        });
-        logger.error('Error processing task for week:', error, task);
-      }
-    });
-    
-    // If there are errors, log them and throw a summary error
-    if (errors.length > 0) {
-      const errorMessage = `${errors.length} task(s) missing or have invalid startDate:\n${errors.map(e => `- ${e.taskName || e.taskId || 'unknown'}: ${e.error}`).join('\n')}`;
-      logger.error('Tasks with missing/invalid startDate:', errors);
-      // Throw error to affect weeks filters
-      throw new Error(errorMessage);
-    }
-    
-    return weekTasks;
-  }, [userName, reporterName]);
-
-  // Helper function to format week date range
-  const formatWeekDates = useCallback((week) => {
-    try {
-      const startDate = week.startDate ? new Date(week.startDate).toLocaleDateString() : 'Invalid';
-      const endDate = week.endDate ? new Date(week.endDate).toLocaleDateString() : 'Invalid';
-      return `${startDate} - ${endDate}`;
-    } catch (error) {
-      logger.warn('Error formatting week dates:', error, week);
-      return 'Invalid dates';
-    }
-  }, []);
-
-  // Helper component to render a single week section - Modern Design
-  const renderWeekSection = useCallback((week, weekTasks) => {
-    const taskColor = weekTasks.length > 0 ? CARD_SYSTEM.COLOR_HEX_MAP.blue : CARD_SYSTEM.COLOR_HEX_MAP.gray;
-    
-    return (
-      <div 
-        key={week.weekNumber} 
-        className="relative bg-white/95 dark:bg-smallCard rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg overflow-hidden group transition-all duration-300 hover:shadow-xl"
-      >
-        {/* Accent border on top with color_default */}
-        <div 
-          className="absolute top-0 left-0 right-0 h-1.5 rounded-t-xl"
-          style={{
-            background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 100%)`,
-          }}
-        />
-        
-        {/* Week Header */}
-        <div className="flex items-start justify-between mb-6 relative z-10">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-                style={{
-                  background: `linear-gradient(135deg, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.color_default}dd 100%)`,
-                }}
-              >
-                <span className="text-white font-bold text-lg">{week.weekNumber}</span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-0.5">
-                  Week {week.weekNumber}
-                </h3>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {formatWeekDates(week)}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="text-right flex-shrink-0 ml-4">
-            <div 
-              className="text-3xl font-bold mb-1"
-              style={{ color: taskColor }}
-            >
-              {weekTasks.length}
-            </div>
-            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              {weekTasks.length === 1 ? 'Task' : 'Tasks'}
-            </div>
-          </div>
-        </div>
-        
-        {/* Tasks List */}
-        {weekTasks.length > 0 ? (
-          <div className="space-y-3 relative z-10">
-            {weekTasks.map((task, index) => {
-              const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
-              const hasAI = aiModels && (Array.isArray(aiModels) ? aiModels.length > 0 : Boolean(aiModels));
-              const taskColor = hasAI ? CARD_SYSTEM.COLOR_HEX_MAP.pink : CARD_SYSTEM.COLOR_HEX_MAP.green;
-              
-              return (
-                <div 
-                  key={task.id || index} 
-                  className="group/task relative bg-white dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-600"
-                >
-                  {/* Left border accent */}
-                  <div 
-                    className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
-                    style={{ backgroundColor: taskColor }}
-                  />
-                  
-                  <div className="flex items-start justify-between gap-4 pl-3">
-                    {/* Main Content */}
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Status Dot */}
-                      <div 
-                        className="w-3 h-3 rounded-full flex-shrink-0 mt-1.5 shadow-sm"
-                        style={{
-                          backgroundColor: taskColor,
-                          boxShadow: `0 0 8px ${taskColor}60`,
-                        }}
-                      />
-                      
-                      <div className="flex-1 min-w-0">
-                        {/* Task Name */}
-                        <div className="mb-2">
-                          {task.data_task?.taskName ? (
-                            <a 
-                              href={`https://gmrd.atlassian.net/browse/${task.data_task.taskName}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-base font-semibold text-gray-900 dark:text-white hover:underline inline-flex items-center gap-1.5 group/link"
-                              style={{ color: taskColor }}
-                            >
-                              {task.data_task.taskName}
-                              <Icons.generic.globe className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                            </a>
-                          ) : (
-                            <span className="text-base font-semibold text-gray-900 dark:text-white">
-                              {task.data_task?.title || 'Untitled Task'}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Metadata Row */}
-                        <div className="flex items-center flex-wrap gap-3 text-xs">
-                          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                            <Icons.generic.user className="w-3.5 h-3.5" />
-                            <span className="font-medium">{getReporterName(task)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
-                            <Icons.generic.clock className="w-3.5 h-3.5" />
-                            <span className="font-medium">
-                              {(() => {
-                                const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-                                const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
-                                return (taskHours + aiTime).toFixed(1);
-                              })()}h
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Badges Row */}
-                        <div className="flex items-center flex-wrap gap-2 mt-2.5">
-                          {/* AI Badges */}
-                          {(() => {
-                            const aiModels = task.data_task?.aiModels || (task.data_task?.aiUsed?.[0]?.aiModels || []);
-                            const aiTime = task.data_task?.aiTime || (task.data_task?.aiUsed?.[0]?.aiTime || 0);
-                            if (!aiModels || aiModels.length === 0) return null;
-                            const models = Array.isArray(aiModels) ? aiModels : [aiModels];
-                            return models.map((model, idx) => (
-                              <Badge key={idx} variant="pink" size="sm" className="shadow-sm">
-                                {model}{aiTime > 0 && idx === 0 ? ` (${aiTime}h)` : ''}
-                              </Badge>
-                            ));
-                          })()}
-                          {/* Market Badges */}
-                          {renderMarketBadges(task.data_task?.markets || task.markets)}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Right Side - User & Date */}
-                    <div className="flex-shrink-0 text-right border-l border-gray-200/50 dark:border-gray-700/50 pl-4">
-                      <div className="mb-1">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {task.createdByName || task.userName || 'Unknown User'}
-                        </div>
-                      </div>
-                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {(() => {
-                          if (!task.createdAt) return 'No date';
-                          const date = convertToDate(task.createdAt);
-                          if (!date || isNaN(date.getTime())) return 'Invalid date';
-                          return date.toLocaleDateString();
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12 relative z-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-gray-100 dark:bg-gray-800">
-              <Icons.generic.document className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-            </div>
-            <p className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-1">
-              No tasks for this week
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              Tasks will appear here when added
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  }, [getReporterName, renderMarketBadges, formatWeekDates]);
+  // Helper function to convert Firestore Timestamp to Date
+  const convertToDate = (timestamp) => {
+    return normalizeTimestamp(timestamp);
+  };
   
   // Manage data ready state to prevent flickering
   useEffect(() => {
@@ -944,49 +571,12 @@ const DynamicAnalyticsPage = () => {
     }
   }, [isLoading, loadingStates?.isInitialLoading, tasks]);
   
-  // Use actual monthId from context if 'current' is specified
+  // Use actual monthId from context if 'current' is specified, otherwise use the provided monthId or null for all data
   const actualMonthId = monthId === 'current' ? contextMonthId : monthId;
   
   // Generate real data based on parameters
   const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam, deliverablesOptions);
 
-  // Get task columns for the table
-  const taskColumns = useTaskColumns(actualMonthId, reporters, user, deliverables);
-
-  // Filter tasks by selected week for the table
-  const filteredTasksByWeek = useMemo(() => {
-    if (!tasks || !Array.isArray(tasks) || tasks.length === 0) return [];
-    
-    // Filter by month
-    let filtered = tasks.filter(task => {
-      if (actualMonthId && actualMonthId !== 'current' && task.monthId !== actualMonthId) return false;
-      return true;
-    });
-
-    // Filter by user if specified (using shared utility for name matching)
-    if (userName) {
-      filtered = filtered.filter(task => matchesUserName(task, userName));
-    }
-
-    // Filter by reporter if specified (using shared utility for name matching)
-    if (reporterName) {
-      filtered = filtered.filter(task => matchesReporterName(task, reporterName));
-    }
-
-    // Filter by selected week if specified
-    if (selectedWeekValue && selectedWeekValue !== '') {
-      const weeks = getWeeksInMonth(actualMonthId);
-      const weekNumber = parseInt(selectedWeekValue);
-      const selectedWeek = weeks.find(w => w.weekNumber === weekNumber);
-      
-      if (selectedWeek) {
-        const weekTasks = getWeekTasks(selectedWeek, filtered);
-        return weekTasks;
-      }
-    }
-
-    return filtered;
-  }, [tasks, actualMonthId, userName, reporterName, selectedWeekValue, getWeekTasks]);
   
   // Create analytics cards using centralized system
   const analyticsCards = createCards({ 
@@ -999,25 +589,21 @@ const DynamicAnalyticsPage = () => {
   
   // Create daily task cards using centralized system
   const dailyTaskCards = createCards(analyticsData, 'daily');
-  
-  // Helper function to convert Firestore Timestamp to Date
-  const convertToDate = (timestamp) => {
-    return normalizeTimestamp(timestamp);
-  };
 
   
   // Determine page title
   const pageTitle = (() => {
     const weekInfo = weekParam ? ` - Week ${weekParam}` : "";
+    const monthInfo = monthId ? (monthId === 'current' ? ' (Current Month)' : ` (Month: ${monthId})`) : ' (All Data)';
     
     if (userName && reporterName) {
-      return `Analytics: ${userName} & ${reporterName}${weekInfo}`;
+      return `Analytics: ${userName} & ${reporterName}${weekInfo}${monthInfo}`;
     } else if (userName) {
-      return `User Analytics: ${userName}${weekInfo}`;
+      return `User Analytics: ${userName}${weekInfo}${monthInfo}`;
     } else if (reporterName) {
-      return `Reporter Analytics: ${reporterName}${weekInfo}`;
+      return `Reporter Analytics: ${reporterName}${weekInfo}${monthInfo}`;
     }
-    return `Analytics Overview${weekInfo}`;
+    return `Analytics Overview${weekInfo}${monthInfo}`;
   })();
   
   // Show loading state with skeleton cards - use data ready state to prevent flickering
@@ -1088,12 +674,14 @@ const DynamicAnalyticsPage = () => {
               <h2 >{pageTitle}</h2>
               <p className="text-gray-300">
                 {userName && reporterName 
-                  ? ` Analytics for user ${userName} and reporter ${reporterName}`
+                  ? ` Analytics for user ${userName} and reporter ${reporterName}${monthId ? ` (${monthId === 'current' ? 'Current Month' : monthId})` : ' (All Data)'}`
                   : userName 
-                    ? ` Metrics for user ${userName}`
+                    ? ` Metrics for user ${userName}${monthId ? ` (${monthId === 'current' ? 'Current Month' : monthId})` : ' (All Data)'}`
                     : reporterName
-                      ? `Reporter analysis for ${reporterName}`
-                      : 'Overall system analytics'
+                      ? `Reporter analysis for ${reporterName}${monthId ? ` (${monthId === 'current' ? 'Current Month' : monthId})` : ' (All Data)'}`
+                      : monthId 
+                        ? `Overall system analytics (${monthId === 'current' ? 'Current Month' : monthId})`
+                        : 'Overall system analytics - All Data'
                 }
               </p>
             </div>
@@ -1133,59 +721,6 @@ const DynamicAnalyticsPage = () => {
               <SmallCard key={card.id} card={card} />
             ))}
           </div>
-        </div>
-        
-        {/* Tasks by Week Section - TanStack Table */}
-        <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-              Tasks by Week
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              View and manage tasks organized by week
-            </p>
-          </div>
-          
-          {/* Week Filter Component */}
-          {(() => {
-            const weekFilterComponent = (
-              <div className="w-full sm:w-64">
-                <SelectField
-                  field={{
-                    name: 'weekSelect',
-                    label: 'Select Week',
-                    options: [
-                      { value: '', label: 'All Weeks' },
-                      ...getWeeksInMonth(actualMonthId).map(week => ({
-                        value: week.weekNumber.toString(),
-                        label: `Week ${week.weekNumber}`
-                      }))
-                    ]
-                  }}
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  errors={errors}
-                />
-              </div>
-            );
-
-            return (
-              <TanStackTable
-                data={filteredTasksByWeek}
-                columns={taskColumns}
-                tableType="tasks"
-                error={error}
-                isLoading={isLoading}
-                showFilters={true}
-                showPagination={true}
-                customFilter={weekFilterComponent}
-                reporters={reporters}
-                users={[]}
-                deliverables={deliverables}
-              />
-            );
-          })()}
         </div>
         
       </div>
