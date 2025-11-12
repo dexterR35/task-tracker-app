@@ -136,30 +136,41 @@ const BiaxialBarChart = React.memo(({
               <Legend 
                 wrapperStyle={{ paddingTop: '20px' }}
                 iconType="rect"
-                content={({ payload }) => (
-                  <ul style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    gap: '20px', 
-                    padding: 0, 
-                    margin: 0,
-                    listStyle: 'none',
-                    color: '#f9fafb'
-                  }}>
-                    {payload?.map((entry, index) => (
-                      <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f9fafb' }}>
-                        <span style={{ 
-                          display: 'inline-block', 
-                          width: '14px', 
-                          height: '14px', 
-                          backgroundColor: entry.color,
-                          borderRadius: '2px'
-                        }}></span>
-                        <span style={{ color: '#f9fafb' }}>{entry.value}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                content={({ payload }) => {
+                  // Map payload entries to bar configurations to get correct colors
+                  const legendItems = payload?.map((entry) => {
+                    const barConfig = bars.find(b => b.dataKey === entry.dataKey || b.name === entry.value);
+                    return {
+                      ...entry,
+                      color: barConfig?.color || entry.color
+                    };
+                  }) || [];
+                  
+                  return (
+                    <ul style={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      gap: '20px', 
+                      padding: 0, 
+                      margin: 0,
+                      listStyle: 'none',
+                      color: '#f9fafb'
+                    }}>
+                      {legendItems.map((entry, index) => (
+                        <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f9fafb' }}>
+                          <span style={{ 
+                            display: 'inline-block', 
+                            width: '14px', 
+                            height: '14px', 
+                            backgroundColor: entry.color,
+                            borderRadius: '2px'
+                          }}></span>
+                          <span style={{ color: '#f9fafb' }}>{entry.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                }}
               />
             )}
             
@@ -176,12 +187,9 @@ const BiaxialBarChart = React.memo(({
                     radius={[2, 2, 0, 0]}
                   >
                     {chartData.map((entry, index) => {
-                      // Use market color from data if available (for per-market charts),
-                      // For PRODUCT dataType (total charts), always use bar color
-                      // For MARKET dataType, use entry color if available (for market-specific colors)
-                      const cellColor = dataType === 'product' 
-                        ? barColor 
-                        : (entry.color || barColor);
+                      // When bars prop is provided, always use bar color (for casino vs sport charts)
+                      // This ensures casino/sport colors are used instead of market colors
+                      const cellColor = barColor;
                       return (
                         <Cell key={`${barConfig.dataKey}-cell-${index}`} fill={cellColor} />
                       );

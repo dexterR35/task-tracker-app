@@ -325,15 +325,15 @@ const AcquisitionAnalyticsCard = memo(
                   ]}
                 />
                 <div className="p-5">
-                  <BiaxialBarChart
-                    data={casinoSportPerMarketBiaxialData}
-                    title=""
-                    bars={[
-                      { dataKey: 'casino', name: 'Casino', color: getProductColor('acquisition casino') },
-                      { dataKey: 'sport', name: 'Sport', color: getProductColor('acquisition sport') }
-                    ]}
-                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                  />
+                <BiaxialBarChart
+                  data={casinoSportPerMarketBiaxialData}
+                  title=""
+                  bars={[
+                    { dataKey: 'casino', name: 'Casino', color: '#dc143c' }, // Crimson
+                    { dataKey: 'sport', name: 'Sport', color: '#22c55e' } // Green
+                  ]}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                />
                 </div>
               </div>
             )}

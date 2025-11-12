@@ -197,8 +197,8 @@ const MarketingAnalyticsCard = memo(({
                   data={casinoSportPerMarketBiaxialData}
                   title=""
                   bars={[
-                    { dataKey: 'casino', name: 'Casino', color: getProductColor('marketing casino') },
-                    { dataKey: 'sport', name: 'Sport', color: getProductColor('marketing sport') }
+                    { dataKey: 'casino', name: 'Casino', color: '#dc143c' }, // Crimson
+                    { dataKey: 'sport', name: 'Sport', color: '#22c55e' } // Green
                   ]}
                   dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
                 />
