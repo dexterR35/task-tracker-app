@@ -72,31 +72,30 @@ const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverable
               </span>
             )}
           </div>
-          {isUserAdmin && (
-            <div className="text-xs text-gray-800 dark:text-gray-300 space-y-1">
-              {deliverable.configured ? (
-                <div className="text-xs block">
-                  <div className="block">
-                    {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
-                    {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && deliverable.variationsTimeInMinutes > 0 && (
-                      <span> + {(deliverable.variationsQuantity || deliverable.declinariQuantity)} × {(deliverable.variationsTimeInMinutes || 0).toFixed(0)}min</span>
-                    )}
-                  </div>
-                  <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
-                    Total: {deliverable.time.toFixed(1)}h ({((deliverable.time * 60) / 480).toFixed(2)} days)
-                  </div>
+          {/* Show calculation details to all users */}
+          <div className="text-xs text-gray-800 dark:text-gray-300 space-y-1">
+            {deliverable.configured ? (
+              <div className="text-xs block">
+                <div className="block">
+                  {deliverable.timePerUnit}{deliverable.timeUnit} × {deliverable.quantity}
+                  {(deliverable.variationsQuantity || deliverable.declinariQuantity) > 0 && deliverable.variationsTimeInMinutes > 0 && (
+                    <span> + {(deliverable.variationsQuantity || deliverable.declinariQuantity)} × {(deliverable.variationsTimeInMinutes || 0).toFixed(0)}min</span>
+                  )}
                 </div>
-              ) : deliverable.notConfigured ? (
-                <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
-                  ⚠️ Not configured in settings - Add to Settings → Deliverables
-                </span>
-              ) : (
-                <span className="text-gray-800 dark:text-gray-400">
-                  No time configuration
-                </span>
-              )}
-            </div>
-          )}
+                <div className="block font-semibold" style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
+                  Total: {deliverable.time.toFixed(1)}h ({((deliverable.time * 60) / 480).toFixed(2)} days)
+                </div>
+              </div>
+            ) : deliverable.notConfigured ? (
+              <span style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}>
+                ⚠️ Not configured in settings - Add to Settings → Deliverables
+              </span>
+            ) : (
+              <span className="text-gray-800 dark:text-gray-400">
+                No time configuration
+              </span>
+            )}
+          </div>
         </div>
       ))}
     </div>
