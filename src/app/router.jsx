@@ -35,6 +35,7 @@ import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
 import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
 import ProfilePage from "@/pages/ProfilePage";
+import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -271,6 +272,16 @@ export const createRouter = () => {
               <ErrorBoundary componentName="LandingPages">
                 <PageWrapper key="landing-pages">
                   <LandingPages />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "features",
+            element: (
+              <ErrorBoundary componentName="FeaturesSummaryPage">
+                <PageWrapper key="features">
+                  <FeaturesSummaryPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),

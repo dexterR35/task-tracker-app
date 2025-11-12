@@ -224,6 +224,13 @@ export const NAVIGATION_CONFIG = {
       color: "orange",
       adminOnly: false,
     },
+    {
+      name: "Documentation",
+      href: "/features",
+      icon: "help",
+      color: "blue",
+      adminOnly: false,
+    },
   ],
   DEPARTMENT: {
     name: "Design",
