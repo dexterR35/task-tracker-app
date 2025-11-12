@@ -175,6 +175,12 @@ export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey
     const nameToColorMap = new Map();
 
     return data.map(item => {
+      // Preserve existing color if it's already set
+      if (item.color) {
+        usedColors.add(item.color);
+        return item;
+      }
+
       const name = item[nameKey] || item.name || item.label || '';
 
       // Check if we've already assigned a color to this name
@@ -213,6 +219,11 @@ export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey
 
   // For other types, use the original logic
   return data.map(item => {
+    // Preserve existing color if it's already set
+    if (item.color) {
+      return item;
+    }
+
     const name = item[nameKey] || item.name || item.label || '';
     let color;
 

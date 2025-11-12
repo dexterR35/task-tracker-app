@@ -89,3 +89,10 @@ export {
   getMarketsByUsersCardProps,
   getCachedMarketsByUsersCardProps,
 } from "./configs/MarketsByUsersConfig";
+
+// Re-export Total Analytics
+export {
+  calculateTotalAnalyticsData,
+  getTotalAnalyticsCardProps,
+  getCachedTotalAnalyticsCardProps,
+} from "./configs/TotalAnalyticsConfig";

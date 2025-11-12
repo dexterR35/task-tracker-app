@@ -8,6 +8,7 @@ import ProductAnalyticsCard from "@/components/Cards/ProductAnalyticsCard";
 import MiscAnalyticsCard from "@/components/Cards/MiscAnalyticsCard";
 import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
+import TotalAnalyticsCard from "@/components/Cards/TotalAnalyticsCard";
 import {
   getCachedMarketingAnalyticsCardProps,
   getCachedAcquisitionAnalyticsCardProps,
@@ -16,6 +17,7 @@ import {
   getCachedAIAnalyticsCardProps,
   getCachedReporterAnalyticsCardProps,
   getCachedMarketsByUsersCardProps,
+  getCachedTotalAnalyticsCardProps,
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
@@ -92,6 +94,12 @@ const AnalyticsPage = () => {
         description:
           "Reporter metrics with tasks, hours, markets, and products",
       },
+      {
+        id: "total-analytics",
+        name: "Total Analytics",
+        description:
+          "Total tasks and hours breakdown by Product, Acquisition, and Marketing",
+      },
     ],
     []
   );
@@ -157,6 +165,8 @@ const AnalyticsPage = () => {
             tasks,
             users
           );
+        case "total-analytics":
+          return getCachedTotalAnalyticsCardProps(tasks);
         default:
           return null;
       }
@@ -356,6 +366,9 @@ const AnalyticsPage = () => {
                     )}
                     {activeTab === "ai-analytics" && (
                       <AIAnalyticsCard {...activeCardProps} />
+                    )}
+                    {activeTab === "total-analytics" && (
+                      <TotalAnalyticsCard {...activeCardProps} />
                     )}
                   </div>
                 </div>

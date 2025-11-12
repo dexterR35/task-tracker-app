@@ -19,6 +19,7 @@ const AnalyticsTable = ({
     columns.map(column => 
       columnHelper.accessor(column.key, {
         header: column.header,
+        enableSorting: false, // Disable sorting for analytics tables
         cell: ({ getValue, row }) => {
           const value = getValue();
           if (column.render) {
