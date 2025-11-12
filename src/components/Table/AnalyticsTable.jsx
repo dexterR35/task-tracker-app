@@ -42,7 +42,7 @@ const AnalyticsTable = ({
     columns: tableColumns,
     tableType: "analytics",
     isLoading,
-    className: "!text-md",
+    className: "!text-sm",
     enableRowSelection: false,
     showBulkActions: false,
     showFilters: false,

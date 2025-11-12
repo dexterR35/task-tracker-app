@@ -726,7 +726,7 @@ const TanStackTable = forwardRef(
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className={`px-4 py-3 text-start ${tableType === "analytics" ? "font-bold" : "font-semibold"} text-[12px] text-gray-200 tracking-normal ${
+                          className={`px-4 py-3 text-start ${tableType === "analytics" ? "font-bold text-sm" : "font-semibold text-[12px]"} text-gray-200 tracking-normal ${
                             header.column.getCanSort()
                               ? "cursor-pointer select-none hover:bg-gray-600/50"
                               : ""
@@ -782,7 +782,7 @@ const TanStackTable = forwardRef(
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={`${row.original?.id || row.id}-${cell.column.id}`}
-                              className={`px-3 py-4 text-[13px] ${fontWeight} `}
+                              className={`px-3 py-4 ${tableType === "analytics" ? "text-sm" : "text-[13px]"} ${fontWeight} `}
                               style={{ width: cell.column.getSize() }}
                             >
                               {flexRender(
