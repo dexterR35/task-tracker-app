@@ -11,7 +11,7 @@ import { getMarketColor, calculateCountWithPercentage, renderCountWithPercentage
 
 const CHART_COLORS = {
   DEFAULT: Object.values(CARD_SYSTEM.COLOR_HEX_MAP),
-  USER_BY_TASK: Object.values(CARD_SYSTEM.COLOR_HEX_MAP).slice(0, 10),
+  USER_BY_TASK: Object.values(CARD_SYSTEM.COLOR_HEX_MAP), // Show all users, use all available colors
 };
 
 const CALCULATION_OPTIONS = {
@@ -84,6 +84,8 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
   const userHours = {};
   const allMarkets = new Set();
   const allUsers = new Set();
+  let uniqueTasksCount = 0; // Count unique tasks (not market appearances)
+  let uniqueTasksTotalHours = 0; // Total hours from unique tasks (not duplicated)
 
   // Single pass: collect markets, users, count tasks, and calculate hours
   tasks.forEach((task) => {
@@ -92,6 +94,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
 
     if (userId && markets.length > 0) {
       allUsers.add(userId);
+      uniqueTasksCount++; // Count each unique task once
 
       if (!userMarketData[userId]) {
         userMarketData[userId] = {};
@@ -102,6 +105,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
       if (options.includeHours) {
         const taskHours = getTaskHours(task);
         userHours[userId] += taskHours;
+        uniqueTasksTotalHours += taskHours; // Add hours once per unique task
       }
 
       markets.forEach((market) => {
@@ -116,7 +120,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
           }
 
           userMarketData[userId][market]++;
-          marketTotals[market]++;
+          marketTotals[market]++; // This counts market appearances (for pie chart segments)
         }
       });
 
@@ -287,8 +291,8 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
           }
           return b.hours - a.hours;
         })
-        .map(({ hours, ...rest }) => rest) // Remove hours from final data
-        .slice(0, 10),
+        .map(({ hours, ...rest }) => rest), // Remove hours from final data
+      // Removed .slice(0, 10) to show all users in the pie chart
       "user"
     );
   }
@@ -299,6 +303,8 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
     chartData,
     colors: chartData.map((item) => item.color),
     userByTaskData,
+    uniqueTasksCount, // Total number of unique tasks (not market appearances)
+    uniqueTasksTotalHours, // Total hours from unique tasks (not duplicated)
   };
 };
 
@@ -488,10 +494,16 @@ const MarketsByUsersCard = memo(({
     const usersByMarketsCharts = calculateUsersByMarketsCharts(tasks, users);
 
     // Calculate totals from actual chart data for consistency
-    const marketsTotalTasks = calculatedData.chartData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
-    const marketsTotalHours = biaxialBarData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
+    // NOTE: Markets chart shows unique task count (not market appearances)
+    // - Pie chart segments show how many times each market appears (marketTotals)
+    // - But the total shows unique tasks count (each task counted once, regardless of how many markets it has)
+    // - Hours are also counted once per unique task (not duplicated per market)
+    const marketsTotalTasks = calculatedData.uniqueTasksCount || 0;
+    const marketsTotalHours = calculatedData.uniqueTasksTotalHours || 0;
     
-    const usersTotalTasks = calculatedData.userByTaskData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+    // Calculate users totals from ALL users (usersBiaxialData), not just the displayed top 10
+    // This ensures the total matches the actual total across all users, not just the pie chart slice
+    const usersTotalTasks = usersBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
     const usersTotalHours = usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
 
     return {
@@ -501,6 +513,8 @@ const MarketsByUsersCard = memo(({
       marketsData: calculatedData.chartData,
       marketsTitle: `Markets Distribution (${marketsTotalTasks} tasks, ${Math.round(marketsTotalHours * 10) / 10}h)`,
       marketsColors: calculatedData.colors,
+      marketsTotalTasks, // Store for pie chart display
+      marketsTotalHours, // Store for pie chart display
       userByTaskData: calculatedData.userByTaskData,
       userByTaskTitle: `Users by Task Count (${usersTotalTasks} tasks, ${Math.round(usersTotalHours * 10) / 10}h)`,
       userByTaskColors: CHART_COLORS.USER_BY_TASK,
@@ -531,6 +545,8 @@ const MarketsByUsersCard = memo(({
     marketsData,
     marketsTitle,
     marketsColors,
+    marketsTotalTasks,
+    marketsTotalHours,
     userByTaskData,
     userByTaskTitle,
     userByTaskColors,
@@ -566,17 +582,15 @@ const MarketsByUsersCard = memo(({
   const hasUsersByMarketsCharts = usersByMarketsCharts && usersByMarketsCharts.length > 0;
 
   // Calculate totals for pie charts
-  const marketsPieTotal = useMemo(() => 
-    marketsData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [marketsData]
-  );
-  const marketsPieHours = useMemo(() => 
-    biaxialBarData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
-    [biaxialBarData]
-  );
+  // Markets pie chart: total shows unique tasks count (not sum of market appearances)
+  // The pie segments show how many times each market appears, but total is unique tasks
+  const marketsPieTotal = marketsTotalTasks || 0;
+  const marketsPieHours = marketsTotalHours || 0;
+  // Calculate user totals from ALL users (usersBiaxialData), not just the displayed top 10 in pie chart
+  // This ensures the badge shows the actual total across all users
   const userByTaskPieTotal = useMemo(() => 
-    userByTaskData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [userByTaskData]
+    usersBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0,
+    [usersBiaxialData]
   );
   const userByTaskPieHours = useMemo(() => 
     usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
@@ -675,8 +689,9 @@ const MarketsByUsersCard = memo(({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Markets Biaxial Chart */}
             {hasMarketsBiaxialData && (() => {
-              const totalTasks = biaxialBarData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
-              const totalHours = biaxialBarData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
+              // Use unique tasks count and hours (not sum of market appearances)
+              const totalTasks = marketsTotalTasks || 0;
+              const totalHours = Math.round((marketsTotalHours || 0) * 10) / 10;
               return (
                 <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
                   <ChartHeader
