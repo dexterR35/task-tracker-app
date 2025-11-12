@@ -40,23 +40,25 @@ const TotalAnalyticsCard = memo(({
       </div>
 
       {/* Table Section - First Row */}
-      <div className="group relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-        <ChartHeader
-          title="Category Totals"
-          badges={[
-            `${pieTotal} tasks`,
-            `${totalHours}h`
-          ]}
-        />
-        <div className="p-5">
-          <AnalyticsTable
-            data={tableData}
-            columns={tableColumns}
-            isLoading={isLoading}
-            enablePagination={false}
-            showPagination={false}
-          />
-        </div>
+      <div>
+        {tableData && tableData.length > 0 ? (
+          <div className="table-container">
+            <AnalyticsTable
+              data={tableData}
+              columns={tableColumns}
+              sectionTitle="Category Totals"
+              isLoading={isLoading}
+              enablePagination={false}
+              showPagination={false}
+            />
+          </div>
+        ) : (
+          <div className="card">
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">No data</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pie Chart Section - Second Row */}
