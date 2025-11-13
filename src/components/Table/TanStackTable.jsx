@@ -119,7 +119,7 @@ const TableControls = ({
   showUserExportButton = false, // Show user export button only when user is selected
 }) => (
   <>
-    <div className="card-small-modern overflow-hidden p-0 relative">
+    <div className="card-small-modern overflow-visible p-0 relative">
       {/* Accent line on top - matching table design */}
       <div
         className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
@@ -129,7 +129,7 @@ const TableControls = ({
       />
 
       {/* Main Content Section */}
-      <div className="px-5 py-4 bg-white dark:bg-smallCard">
+      <div className="px-5 py-4 bg-white dark:bg-smallCard overflow-visible">
         {/* Title and Export Button Row */}
         {title && (
           <div className="flex flex-row-reverse justify-between items-center gap-4 py-2 ">
@@ -150,9 +150,9 @@ const TableControls = ({
           </div>
         )}
 
-        <div className="flex justify-between items-center gap-4 flex-wrap">
+        <div className="flex justify-between items-center gap-4 flex-wrap overflow-visible">
           {/* Left - Filters */}
-          <div className="flex items-center gap-4 flex-1 flex-wrap">
+          <div className="flex items-center gap-4 flex-1 flex-wrap overflow-visible">
             {/* Global Filter */}
             {showFilters && (
               <div className="min-w-[200px] max-w-sm">
