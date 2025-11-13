@@ -51,6 +51,7 @@ const AnalyticsPage = () => {
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
   // Calculate summary metrics (KPIs)
+  // All metrics use unique counts (not per-market/category counts)
   const summaryMetrics = useMemo(() => {
     if (!tasks || tasks.length === 0) {
       return {
@@ -64,6 +65,8 @@ const AnalyticsPage = () => {
       };
     }
 
+    // Use unique tasks count (not sum of market/category counts)
+    // This counts each task once, regardless of how many markets it has
     const totalTasks = tasks.length;
     const totalHours = tasks.reduce((sum, task) => {
       const hours = task.data_task?.timeInHours || task.timeInHours || 0;
