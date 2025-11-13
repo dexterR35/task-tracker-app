@@ -22,6 +22,7 @@ import {
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
@@ -521,12 +522,17 @@ const AnalyticsPage = () => {
                 There is no data available for {card?.name || "this section"}. Data will
                 appear once tasks are added for the selected month.
               </p>
-              <button
+              <DynamicButton
                 onClick={handleBackToOverview}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                variant="primary"
+                size="lg"
+                iconName="arrowLeft"
+                iconCategory="buttons"
+                iconPosition="left"
+                className="font-semibold shadow-md"
               >
-                Back
-              </button>
+                Back to Overview
+              </DynamicButton>
             </div>
           </div>
         </div>
@@ -535,30 +541,26 @@ const AnalyticsPage = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-1 min-w-0">
-            <button
+        <div className="mb-6">
+          <div className="mb-4">
+            <DynamicButton
               onClick={handleBackToOverview}
-              className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 transition-colors"
+              variant="primary"
+              size="md"
+              iconName="arrowLeft"
+              iconCategory="buttons"
+              iconPosition="left"
+              className="font-semibold shadow-md my-4 py-3"
             >
-              <Icons.buttons.arrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {card?.name}
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {card?.description}
-            </p>
+              Back to Overview
+            </DynamicButton>
           </div>
-          {/* Mobile Close Button */}
-          <button
-            onClick={handleBackToOverview}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors ml-4 flex-shrink-0"
-            aria-label="Close"
-          >
-            <Icons.buttons.cancel className="w-6 h-6" />
-          </button>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {card?.name}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            {card?.description}
+          </p>
         </div>
 
         <div id={`${selectedCard}-card`}>

@@ -662,12 +662,17 @@ const DynamicAnalyticsPage = () => {
       <div className="min-h-screen bg-smallCard text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading analytics data: {error.message}</p>
-          <button
+          <DynamicButton
             onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            variant="primary"
+            size="lg"
+            iconName="arrowLeft"
+            iconCategory="buttons"
+            iconPosition="left"
+            className="font-semibold shadow-md"
           >
-            Go Back
-          </button>
+            Back to Overview
+          </DynamicButton>
         </div>
       </div>
     );
@@ -697,12 +702,13 @@ const DynamicAnalyticsPage = () => {
             <DynamicButton
               onClick={() => navigate(-1)}
               variant="primary"
-              size="md"
-              iconName="back"
+              size="lg"
+              iconName="arrowLeft"
               iconCategory="buttons"
               iconPosition="left"
+              className="font-semibold shadow-md"
             >
-              Go Back
+              Back to Overview
             </DynamicButton>
           </div>
         </div>
