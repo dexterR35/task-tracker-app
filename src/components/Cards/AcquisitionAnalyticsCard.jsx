@@ -17,9 +17,11 @@ const AcquisitionAnalyticsCard = memo(
     acquisitionTableColumns = [],
     casinoAcquisitionData = [],
     casinoAcquisitionTitle = "Casino Acquisition by Markets",
+    casinoTotalTasks = 0, // Unique tasks count
     casinoAcquisitionColors = [],
     sportAcquisitionData = [],
     sportAcquisitionTitle = "Sport Acquisition by Markets",
+    sportTotalTasks = 0, // Unique tasks count
     sportAcquisitionColors = [],
     casinoBiaxialData = [],
     casinoBiaxialTitle = "Casino Acquisition Tasks & Hours by Markets",
@@ -47,28 +49,25 @@ const AcquisitionAnalyticsCard = memo(
     }
 
     // Calculate totals for pie charts
-    const casinoAcquisitionPieTotal = useMemo(
-      () =>
-        casinoAcquisitionData?.reduce(
-          (sum, item) => sum + (item.value || 0),
-          0
-        ) || 0,
-      [casinoAcquisitionData]
-    );
+    // Pie chart segments show per market counts (RO: 3, IE: 2, UK: 2)
+    // But totals should show unique tasks (3 tasks), not sum of market counts
+    const casinoAcquisitionPieTotal = useMemo(() => {
+      // Use unique tasks count from props (casinoTotalTasks is already unique tasks)
+      return casinoTotalTasks || 0;
+    }, [casinoTotalTasks]);
+    
     const casinoAcquisitionPieHours = useMemo(
       () =>
         casinoBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) ||
         0,
       [casinoBiaxialData]
     );
-    const sportAcquisitionPieTotal = useMemo(
-      () =>
-        sportAcquisitionData?.reduce(
-          (sum, item) => sum + (item.value || 0),
-          0
-        ) || 0,
-      [sportAcquisitionData]
-    );
+    
+    const sportAcquisitionPieTotal = useMemo(() => {
+      // Use unique tasks count from props (sportTotalTasks is already unique tasks)
+      return sportTotalTasks || 0;
+    }, [sportTotalTasks]);
+    
     const sportAcquisitionPieHours = useMemo(
       () =>
         sportBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) ||
@@ -223,11 +222,8 @@ const AcquisitionAnalyticsCard = memo(
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino Biaxial Chart */}
             {(() => {
-              const totalTasks =
-                casinoBiaxialData?.reduce(
-                  (sum, item) => sum + (item.tasks || 0),
-                  0
-                ) || 0;
+              // Use unique tasks count (not sum of market counts)
+              const totalTasks = casinoTotalTasks || 0;
               const totalHours =
                 casinoBiaxialData?.reduce(
                   (sum, item) => sum + (item.hours || 0),
@@ -271,11 +267,8 @@ const AcquisitionAnalyticsCard = memo(
 
             {/* Sport Biaxial Chart */}
             {(() => {
-              const totalTasks =
-                sportBiaxialData?.reduce(
-                  (sum, item) => sum + (item.tasks || 0),
-                  0
-                ) || 0;
+              // Use unique tasks count (not sum of market counts)
+              const totalTasks = sportTotalTasks || 0;
               const totalHours =
                 sportBiaxialData?.reduce(
                   (sum, item) => sum + (item.hours || 0),
@@ -341,7 +334,7 @@ const AcquisitionAnalyticsCard = memo(
                     <ChartHeader
                       title="By Markets"
                       badges={[
-                        `${casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                        `${(casinoTotalTasks || 0) + (sportTotalTasks || 0)} total tasks`
                       ]}
                       color={cardColor}
                     />
@@ -373,7 +366,7 @@ const AcquisitionAnalyticsCard = memo(
                     <ChartHeader
                       title="Total Comparison"
                       badges={[
-                        `${totalCasinoSportBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                        `${(casinoTotalTasks || 0) + (sportTotalTasks || 0)} total tasks`
                       ]}
                       color={cardColor}
                     />

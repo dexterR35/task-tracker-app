@@ -80,25 +80,42 @@ export const calculateMarketingAnalyticsData = (tasks) => {
   // Add rows for each marketing category
   Object.keys(marketingData).forEach((category) => {
     const categoryData = marketingData[category];
-    const categoryTotal = Object.values(categoryData).reduce(
+    
+    // Total tasks = unique tasks (not per market)
+    const categoryTotal = tasks?.filter((task) => {
+      const products = task.data_task?.products || task.products;
+      const markets = task.data_task?.markets || task.markets || [];
+      if (!isMarketingProduct(products)) return false;
+      if (!Array.isArray(markets) || markets.length === 0) return false;
+      const productsLower = products.toLowerCase().trim();
+      if (category === "casino" && productsLower.includes("casino")) return true;
+      if (category === "sport" && productsLower.includes("sport")) return true;
+      if (category === "poker" && productsLower.includes("poker")) return true;
+      if (category === "lotto" && productsLower.includes("lotto")) return true;
+      return false;
+    }).length || 0;
+
+    // Market counts are per market (RO: 3, IE: 2, UK: 2)
+    const marketCountsTotal = Object.values(categoryData).reduce(
       (sum, count) => sum + count,
       0
     );
 
-    if (categoryTotal > 0) {
+    if (marketCountsTotal > 0) {
       const row = {
         category: category.charAt(0).toUpperCase() + category.slice(1),
-        total: categoryTotal,
+        total: categoryTotal, // Unique tasks
       };
 
-      // Add market columns with percentages (categoryTotal is sum of all market counts, so percentages sum to 100%)
+      // Add market columns with percentages
+      // Market counts are per market (RO: 3, IE: 2, UK: 2), percentages based on market counts total
       const marketItems = sortedMarkets.map(market => ({
         key: market,
         count: categoryData[market] || 0
       }));
       sortedMarkets.forEach((market) => {
         const marketCount = categoryData[market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, categoryTotal, marketItems, market);
+        row[market] = calculateCountWithPercentage(marketCount, marketCountsTotal, marketItems, market);
       });
 
       tableData.push(row);
@@ -416,11 +433,13 @@ export const getMarketingAnalyticsCardProps = (tasks, users = [], isLoading = fa
     marketingTableColumns: calculatedData.tableColumns,
     casinoMarketingData: calculatedData.casinoMarketingData,
     casinoMarketingTitle: `Casino Marketing by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
+    casinoTotalTasks: calculatedData.casinoTotalTasks, // Unique tasks for pie chart totals
     casinoMarketingColors: calculatedData.casinoMarketingData.map(
       (item) => item.color
     ),
     sportMarketingData: calculatedData.sportMarketingData,
     sportMarketingTitle: `Sport Marketing by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
+    sportTotalTasks: calculatedData.sportTotalTasks, // Unique tasks for pie chart totals
     sportMarketingColors: calculatedData.sportMarketingData.map(
       (item) => item.color
     ),

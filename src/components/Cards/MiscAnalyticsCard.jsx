@@ -24,6 +24,7 @@ const MiscAnalyticsCard = memo(({
   categoryBiaxialTitle,
   categoryBiaxialTasksColor,
   categoryBiaxialHoursColor,
+  totalTasks = 0, // Unique tasks count
   miscUsersCharts = [],
   className = "",
   isLoading = false,
@@ -33,10 +34,12 @@ const MiscAnalyticsCard = memo(({
   }
 
   // Calculate totals for pie charts
-  const categoryPieTotal = useMemo(() => 
-    categoryPieData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [categoryPieData]
-  );
+  // Pie chart segments show per category counts, but totals should show unique tasks (not sum of category counts)
+  const categoryPieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
+  
   const categoryPieHours = useMemo(() => 
     categoryBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [categoryBiaxialData]
@@ -90,14 +93,15 @@ const MiscAnalyticsCard = memo(({
 
             {/* Misc Categories Biaxial Chart */}
             {(() => {
-              const totalTasks = categoryBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of category counts)
+              const biaxialTotalTasks = totalTasks || 0;
               const totalHours = categoryBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <ChartHeader
                   variant="section"
                   title="Misc Categories: Tasks & Hours by Category"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${biaxialTotalTasks} tasks`,
                     `${totalHours}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.pink}

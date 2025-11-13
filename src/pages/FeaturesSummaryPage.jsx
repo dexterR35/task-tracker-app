@@ -6,356 +6,7 @@ const FeaturesSummaryPage = () => {
   const { canAccess } = useAuth();
   const isAdmin = canAccess("admin");
 
-  const features = [
-    {
-      title: "Analytics System",
-      icon: "chart",
-      description: "Analytics system that processes task data across multiple dimensions to generate insights and reports.",
-      details: [
-        "Marketing Analytics: Tracks marketing subcategories, market distribution, and time allocation across marketing activities",
-        "Acquisition Analytics: Monitors acquisition efforts, showing which markets receive focus and how resources are distributed",
-        "Product Analytics: Analyzes product development activities, priorities, and time investment across product categories",
-        "AI Analytics: Tracks artificial intelligence usage, identifying which AI models are used most frequently, time spent using AI tools, and effectiveness metrics",
-        "Reporter Analytics: Examines individual reporter performance, showing task counts, hours invested, market coverage, and contribution patterns",
-        "Markets by Users: Visualizes task distribution across users and markets, revealing workload balance and market focus",
-        "Real-time calculations that update automatically as new tasks are recorded",
-        "Dynamic filtering capabilities to focus on specific time periods, individuals, or product categories",
-        "Visual chart representations including pie charts, bar charts, and biaxial charts for easy data comprehension"
-      ]
-    },
-    {
-      title: "User & Reporter Management",
-      icon: "users",
-      description: "Unified management system for users and reporters with the same operations, filtering, and analytics capabilities.",
-      details: [
-        "Full operations for both users and reporters: create, read, update, and delete",
-        "User management: Role-based access control with admin and user roles",
-        "User management: Explicit permission system allowing granular control over user capabilities",
-        "User management: User status management (active/inactive) to control system access",
-        "User management: User profile management with detailed information tracking",
-        "User management: Permission validation ensures users can only perform actions they're authorized for",
-        "User management: User filtering in analytics and dashboards to view individual or team performance",
-        "Reporter management: Reporter information storage and retrieval for tracking work sources",
-        "Reporter management: Reporter filtering in analytics to analyze work by source",
-        "Reporter management: Reporter performance tracking showing tasks, hours, and market coverage",
-        "Reporter management: Integration with task forms for reporter assignment",
-        "Reporter management: Searchable reporter selection in forms with search functionality",
-        "Reporter management: Reporter analytics showing individual contribution patterns and effectiveness",
-        "Shared features: Real-time data synchronization across the application",
-        "Shared features: Searchable selection in forms with consistent search functionality",
-        "Shared features: Analytics integration for both users and reporters",
-        "Shared features: Filtering capabilities in dashboards and analytics views"
-      ]
-    },
-    {
-      title: "Deliverables Management",
-      icon: "package",
-      description: "System for tracking deliverables associated with tasks, including quantities and variations.",
-      details: [
-        "Deliverable creation, editing, and deletion capabilities",
-        "Deliverable categorization and organization",
-        "Quantity tracking per deliverable in tasks",
-        "Variations support for deliverables with multiple versions or types",
-        "Searchable deliverable selection in task forms",
-        "Deliverable analytics showing usage patterns and frequency",
-        "Total deliverables counting across filtered data sets",
-        "Integration with task tracking to link work to specific outputs"
-      ]
-    },
-    {
-      title: "Calculations & Metrics",
-      icon: "target",
-      description: "Advanced calculation engine that processes task data to generate meaningful metrics and statistics.",
-      details: [
-        "Total task counts across filtered datasets",
-        "Total hours calculation summing time investment across tasks",
-        "Average metrics calculation for performance analysis",
-        "Percentage calculations for distribution analysis",
-        "Category breakdown calculations grouping tasks by product type",
-        "Market distribution calculations showing task allocation per market",
-        "User distribution calculations tracking individual contributions",
-        "AI usage calculations tracking time spent and model frequency",
-        "Week-based calculations for weekly performance tracking",
-        "Month-based aggregations for monthly reporting",
-        "Real-time calculation updates as data changes",
-        "Memoized calculations for optimal performance"
-      ]
-    },
-    {
-      title: "Charts & Visualizations",
-      icon: "chart",
-      description: "Rich charting system that transforms data into visual representations for easy understanding and analysis.",
-      details: [
-        "Pie charts for categorical distribution visualization (markets, products, AI models)",
-        "Bar charts for comparing metrics across different categories",
-        "Biaxial bar charts for displaying multiple metrics simultaneously",
-        "Color-coded visualizations with consistent color schemes",
-        "Hash-based color assignment ensuring consistent colors for same categories",
-        "Interactive chart components with hover states and tooltips",
-        "Dynamic chart generation based on filtered data",
-        "Chart data processing that transforms raw data into chart-ready formats",
-        "Responsive chart design adapting to different screen sizes"
-      ]
-    },
-    {
-      title: "Dynamic Tables & Data Display",
-      icon: "table",
-      description: "Powerful dynamic table system with advanced filtering, multiple value selection, search capabilities, and real-time data updates.",
-      details: [
-        "Dynamic table generation that adapts to data structure and content automatically",
-        "Advanced table functionality with sorting, filtering, and pagination",
-        "Column sorting capabilities (ascending, descending, toggle) with visual indicators",
-        "Global search filtering across all table columns with real-time results",
-        "Multiple value filtering supporting selection of multiple filter values simultaneously",
-        "Column-specific filtering for targeted data searches on individual columns",
-        "Combined filter logic allowing multiple filters to work together (AND logic)",
-        "Task-specific filters: filter by task type, status, department, deliverable, and more",
-        "Department filtering with multi-select capability for multiple departments",
-        "Deliverable filtering supporting multiple deliverable selection",
-        "Searchable filter dropdowns with type-ahead search functionality",
-        "URL parameter synchronization for bookmarkable filtered table views",
-        "Pagination with configurable page sizes (10, 25, 50, 100 rows per page)",
-        "Column visibility toggling to customize table views per user preference",
-        "Row selection with single selection mode and bulk action support",
-        "Bulk action capabilities when rows are selected (edit, delete, export)",
-        "CSV export functionality for filtered and visible data with all active filters",
-        "Dynamic column generation based on data structure and user permissions",
-        "Real-time table updates as data changes in the system",
-        "Responsive table design for mobile and desktop viewing",
-        "Color-coded cells for markets, AI models, departments, and status indicators",
-        "Clickable links for Jira tickets and external resources",
-        "Formatted date and number columns for better readability",
-        "Custom filter components integrated directly into table headers",
-        "Filter state persistence across page navigation and refreshes"
-      ]
-    },
-    {
-      title: "Task Forms & Data Entry",
-      icon: "document",
-      description: "Dynamic form system with multiple input types, searchable fields, multi-select capabilities, conditional logic, and validation.",
-      details: [
-        "Dynamic task form generation adapting to task type and user permissions",
-        "Form state management for efficient handling of user inputs",
-        "Data validation ensuring information is correct and complete",
-        "Multiple input field types: text, number, date, select, multi-select, checkbox, textarea, URL",
-        "Searchable select fields with type-ahead search for users, reporters, and deliverables",
-        "Multi-select fields supporting multiple value selection (markets, AI models, deliverables)",
-        "Searchable deliverables field with quantity input per deliverable and variations support",
-        "Conditional field display based on user selections (deliverables, AI tools)",
-        "Dynamic field rendering that shows/hides fields based on checkbox selections",
-        "Multiple value inputs: markets (multi-select), AI models (multi-select), deliverables (searchable multi-select)",
-        "Search functionality in all select fields with real-time filtering of options",
-        "Filtered options based on department selection for deliverables",
-        "Required field validation with visual indicators and error messages",
-        "Format validation for dates, URLs, numeric values, and Jira links",
-        "Business rule validation (date ranges, time increments, minimum/maximum values)",
-        "Conditional validation: deliverables required only when 'has deliverables' is checked",
-        "Conditional validation: AI models and time required only when 'AI tools used' is checked",
-        "Permission validation before form submission ensuring user has create/update rights",
-        "Duplicate task prevention checking for existing tasks by name, user, and gimodear",
-        "Month board validation ensuring tasks can only be created for active months",
-        "Auto-resolution of reporter names from IDs for seamless data entry",
-        "Real-time form error display with helpful messages and field-level validation",
-        "Form submission handling with loading states, success notifications, and error recovery",
-        "Form data preparation before submission",
-        "Hidden field support for storing data like quantities and variations",
-        "Form state persistence during navigation and modal interactions",
-        "Dynamic form sections organized by category (Basic Info, Deliverables, AI Tools, Notes)"
-      ]
-    },
-    {
-      title: "Dynamic Features",
-      icon: "zap",
-      description: "Dynamic system that adapts and generates content based on data, filters, and user selections.",
-      details: [
-        "Dynamic analytics page generation based on URL parameters",
-        "Dynamic card generation creating cards based on configuration",
-        "Dynamic filter application combining multiple filters simultaneously",
-        "Dynamic table column generation based on data structure",
-        "Dynamic chart generation adapting to available data",
-        "Dynamic form field rendering based on task type and permissions",
-        "Dynamic navigation menu based on user roles and permissions",
-        "Dynamic color assignment using hash-based algorithms",
-        "Dynamic month selection with automatic current month detection",
-        "Dynamic week calculation based on selected month",
-        "Dynamic data processing that adapts to filter combinations",
-        "Real-time dynamic updates as data changes in the system"
-      ]
-    },
-    {
-      title: "Landing Pages",
-      icon: "home",
-      description: "Customizable landing page system for creating and managing different landing page views.",
-      details: [
-        "Landing page creation and management",
-        "Customizable landing page content and layout",
-        "Landing page routing and navigation",
-        "Integration with main application navigation",
-        "Landing page access control and permissions"
-      ]
-    },
-    {
-      title: "Management Features",
-      icon: "settings",
-      description: "Administrative management capabilities for overseeing the entire application and user activities.",
-      details: [
-        "Admin dashboard with overview of system activity",
-        "User management interface for creating and managing user accounts",
-        "Month board management for creating and organizing monthly work periods",
-        "System-wide analytics access for administrators",
-        "Permission management for controlling user access",
-        "Data management tools for overseeing tasks, users, and reporters",
-        "System configuration and settings management",
-        "Activity monitoring and oversight capabilities"
-      ]
-    },
-    {
-      title: "Month Logic & Board System",
-      icon: "calendar",
-      description: "Sophisticated month-based organization system that structures work tracking around monthly cycles.",
-      details: [
-        "Month board creation for each work period (YYYY-MM format)",
-        "Automatic current month detection and selection",
-        "Month board validation ensuring tasks can only be created for active boards",
-        "Month selection dropdown with available months",
-        "Month switching that updates all data views to selected month",
-        "Month progress tracking with visual progress bars",
-        "Days in month calculation for accurate time tracking",
-        "Month start and end date management",
-        "Month-based task filtering and organization",
-        "Historical month access for viewing past work periods",
-        "Month context that persists across the application",
-        "Month board lifecycle management (creation, activation, archival)"
-      ]
-    },
-    {
-      title: "Task Logic & Management",
-      icon: "task",
-      description: "Task management system with filtering, multiple value selection, search capabilities, and real-time updates.",
-      details: [
-        "Task creation with metadata (Jira link, products, departments, markets, time, dates)",
-        "Task editing and updating with change tracking and validation",
-        "Task deletion with permission validation and confirmation",
-        "Task detail pages showing complete task information with all associations",
-        "Advanced task filtering supporting multiple filter combinations simultaneously",
-        "Task filtering by month, user, reporter, week, department, deliverable, and task type",
-        "Multiple value filtering: select multiple markets, departments, deliverables, or task types",
-        "Task search with global search filtering across all task fields",
-        "Searchable task filters with type-ahead search in filter dropdowns",
-        "Combined filter logic: apply multiple filters together (month + user + reporter + week + department + deliverable)",
-        "URL parameter synchronization for task filters enabling shareable filtered views",
-        "Task status tracking and management with visual indicators",
-        "Task association with deliverables and quantities with variations support",
-        "AI usage tracking within tasks (multiple AI models and time spent per model)",
-        "Market assignment to tasks with multi-market support (select multiple markets)",
-        "Product category assignment (marketing, acquisition, product) with subcategories",
-        "Department categorization for organizational structure and filtering",
-        "VIP task flagging for important tasks with visual highlighting",
-        "Reworked task tracking for revised work with status indicators",
-        "Task observations and notes for additional context and documentation",
-        "Real-time task updates across all users with instant synchronization",
-        "Task duplicate prevention checking multiple criteria (name, user, gimodear)",
-        "Task permission validation ensuring users can only modify authorized tasks",
-        "Task filtering by multiple criteria: combine user, reporter, department, deliverable, week, and month",
-        "Dynamic task table with real-time filtering and search capabilities"
-      ]
-    },
-    {
-      title: "Advanced Filtering System",
-      icon: "globe",
-      description: "Filtering system with multiple value selection, searchable filters, dynamic combinations, and real-time updates.",
-      details: [
-        "Month filtering to view data for specific months with dropdown selection",
-        "User filtering to focus on individual or team member work with searchable selection",
-        "Reporter filtering to analyze work by source with searchable dropdown",
-        "Week filtering to view weekly performance and activity with week selector",
-        "Department filtering with multiple value selection supporting multiple departments",
-        "Deliverable filtering with searchable multi-select for multiple deliverables",
-        "Task type filtering with multiple value selection for different task categories",
-        "Multiple value filtering: select multiple markets, departments, deliverables, or task types simultaneously",
-        "Searchable filter inputs: all filter dropdowns support type-ahead search functionality",
-        "Independent filter combination allowing multiple filters to work together",
-        "AND logic filtering showing only data matching all active filters simultaneously",
-        "Filter combination examples: Month + User + Reporter + Week + Department + Deliverable + Task Type",
-        "URL parameter synchronization for bookmarkable filtered views (?user=, ?reporter=, ?week=, ?department=, ?deliverable=, ?filter=)",
-        "Filter persistence across page navigation and browser refreshes",
-        "Filter reset capabilities for clearing individual or all filters",
-        "Real-time filter application updating views immediately as filters change",
-        "Filter state management across the application with context sharing",
-        "Dynamic filter options that update based on available data",
-        "Filter validation ensuring only valid filter combinations are applied",
-        "Filter indicators showing active filter count and selected values",
-        "Global search filtering that works alongside specific filters",
-        "Filter export: active filters included in CSV exports for data traceability"
-      ]
-    },
-    {
-      title: "Week Logic & Calculations",
-      icon: "clock",
-      description: "Week-based organization and calculation system for tracking and analyzing weekly work patterns.",
-      details: [
-        "Week calculation within months considering only weekdays (Monday-Friday)",
-        "Current week number detection and display",
-        "Week filtering to view tasks within specific weeks",
-        "Week selector dropdown for easy week selection",
-        "Week-based analytics and reporting",
-        "Week progress tracking and visualization",
-        "Week date range calculation for accurate filtering",
-        "Week-based task aggregation and statistics",
-        "Week navigation and selection in analytics views"
-      ]
-    },
-    {
-      title: "Real-Time Synchronization",
-      icon: "refresh",
-      description: "Real-time data synchronization ensuring all users see the latest information instantly.",
-      details: [
-        "Firestore real-time listeners for automatic data updates",
-        "Instant task updates when tasks are created, modified, or deleted",
-        "Real-time user data synchronization",
-        "Real-time analytics updates as data changes",
-        "Listener management preventing duplicate connections",
-        "Efficient listener cleanup on component unmount",
-        "Listener pausing when browser tabs are hidden",
-        "Listener resuming when tabs become visible",
-        "Real-time collaboration enabling multiple users to work simultaneously"
-      ]
-    },
-    {
-      title: "Permission & Security System",
-      icon: "check",
-      description: "Security system with role-based and explicit permissions for access control.",
-      details: [
-        "Role-based access control with admin and user roles",
-        "Explicit permission system for granular access control",
-        "Permission validation on all data mutations",
-        "Route protection ensuring only authorized users access pages",
-        "Permission checks before form submissions",
-        "User data isolation (users see only their own tasks unless admin)",
-        "Admin bypass capabilities for administrative operations",
-        "Permission hierarchy with admin role granting all permissions",
-        "Session management with 8-hour sessions and refresh",
-        "CSRF protection via session tokens",
-        "Authentication state management",
-        "Unauthorized access prevention and error handling"
-      ]
-    },
-    {
-      title: "Caching & Performance",
-      icon: "package",
-      description: "Intelligent caching system optimizing performance and reducing redundant data fetches.",
-      details: [
-        "Static data caching (users, reporters, deliverables) with infinite TTL",
-        "Month data caching with 30-day time-to-live",
-        "Cache invalidation on data mutations",
-        "Memory management with size limits and cleanup",
-        "Cache key management for efficient data retrieval",
-        "Performance optimization through memoized calculations",
-        "Efficient data fetching reducing Firestore reads",
-        "Cache cleanup for expired entries"
-      ]
-    }
-  ];
+
 
   return (
     <div className="min-h-screen  bg-primary py-8 px-4">
@@ -370,51 +21,253 @@ const FeaturesSummaryPage = () => {
           </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 gap-6">
-          {features.map((feature, index) => {
-            const Icon = Icons.generic[feature.icon] || Icons.generic.help;
-            return (
-              <div
-                key={index}
-                className="card  rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6"
-              >
-                <div className="flex items-start mb-4">
-                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-4">
-                    {React.createElement(Icon, {
-                      className: "w-6 h-6 text-blue-600 dark:text-blue-400"
-                    })}
+        {/* Comprehensive System Explanation Note */}
+        <div className="mb-12 card rounded-lg p-8 border-l-4 border-purple-500">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            📋 System Architecture & Logic Summary
+          </h2>
+          
+          <div className="space-y-6 text-gray-700 dark:text-gray-300">
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">How Everything Works Together</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                The application is built around a <strong>month-based organization system</strong> where work is tracked in monthly cycles. 
+                Each month requires an active board document in Firestore before tasks can be created. Tasks are stored in a hierarchical 
+                structure organized by department, year, and month, ensuring clean data organization and efficient querying.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Real-time synchronization</strong> is the backbone of the system. When any user creates, updates, or deletes a task, 
+                Firestore listeners automatically detect the change and push updates to all connected clients. This means all users see 
+                changes instantly without manual page refreshes. The same real-time mechanism applies to deliverables, ensuring the system 
+                stays synchronized across all users.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Task Form & Field Logic</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                The task form uses <strong>conditional field rendering</strong> based on checkbox selections. When "_hasDeliverables" is checked, 
+                the deliverables field becomes visible and required. When "_usedAIEnabled" is checked, AI models and AI time fields appear. 
+                This prevents form clutter and ensures users only see relevant fields.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Multiple select fields</strong> (MultiSelectField) allow selecting multiple values from a dropdown. Used for markets 
+                where a task can span multiple markets. Selected values are stored as arrays and displayed as removable badges. The component 
+                filters out already-selected options from the dropdown to prevent duplicates.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Searchable select fields</strong> (SearchableSelectField) provide type-ahead search functionality. As users type, options 
+                are filtered in real-time by matching label, name, email, or other searchable properties. The search is case-insensitive and 
+                supports partial matches. Used for reporters, users, and deliverables where the list can be long.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Searchable deliverables field</strong> combines search with quantity and variations tracking. When a deliverable is selected, 
+                if requiresQuantity=true, quantity and variations fields appear. Variations are only enabled if the deliverable has variationsTime 
+                configured. Department filtering automatically filters deliverable options based on selected department.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Filtering & Search System</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Filter combination logic</strong> uses AND logic - all active filters must match simultaneously. Filters include: month, 
+                user, reporter, week, department, deliverable, and task type. Multiple values can be selected for department, deliverable, and 
+                task type filters (multi-select), meaning a task matches if it belongs to ANY of the selected values in that filter category.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Searchable filters</strong> use SearchableSelectField components with type-ahead search. All filter dropdowns support 
+                real-time search filtering. Global table search filters across all columns simultaneously, while specific filters target individual 
+                fields. URL parameters sync filter state for bookmarkable filtered views.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Filter application order</strong>: First apply month/user/reporter/week filters → then apply department/deliverable/task type 
+                filters → finally apply global search. This ensures consistent filtering across all analytics and tables. Filters persist 
+                across page navigation via URL parameters.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Month Board Creation Logic</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Board creation flow</strong>: Admin selects month → validates monthId format (YYYY-MM) → checks if board already exists 
+                → parses monthId to Date object → calculates month info (monthName, daysInMonth, startDate, endDate) → generates unique boardId 
+                (board_YYYY-MM_timestamp) → creates Firestore document at departments/{dept}/{year}/{monthId} → sets status='active'.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Board validation</strong> occurs before task creation: Check if month document exists → verify boardId exists → verify 
+                status='active'. If any check fails, task creation is prevented with clear error message. Month board banner automatically appears 
+                when board is missing, allowing admins to create it with one click.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Month info calculation</strong>: Uses date-fns utilities to calculate month start (first day), month end (last day), 
+                daysInMonth, and monthName. All dates are converted to ISO strings for Firestore compatibility. The system handles timezone 
+                conversions and ensures consistent date representation.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Calculation Metrics & Variations</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Calculation variations</strong> handle different data scenarios: Base calculations (sum, count, average) → percentage 
+                calculations with zero-division handling → time conversions (hours/minutes/days) → deliverable time calculations with quantity 
+                and variations → week-based aggregations → category breakdowns by product/department/market/AI model.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Deliverable calculation variations</strong>: If requiresQuantity=false, only base time (timePerUnit) is used. If 
+                requiresQuantity=true, formula is: (timePerUnit × quantity) + (variationsTime × variationsQuantity). Variations are only 
+                included if variationsTime &gt; 0. All time is converted to minutes first, then to hours/days for display.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Metric aggregation patterns</strong>: tasks.reduce() for summing hours, tasks.filter().length for counting, 
+                sum/count for averages. Category grouping uses Object.groupBy() or reduce() to create breakdowns. Percentage calculations 
+                include fallback to 0% when total is zero to prevent division errors.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Calculation Tables & Data Display</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Analytics tables</strong> display calculated metrics in structured format. Table data is generated by grouping tasks 
+                → aggregating metrics → calculating percentages → formatting for display. Tables include columns for categories, task counts, 
+                total hours, market distribution, and percentage breakdowns.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Table calculation logic</strong>: Each row represents a category (product type, market, user, reporter). Columns show 
+                metrics (tasks, hours) and sub-metrics (market distribution, percentages). Grand total rows are automatically added showing 
+                sums across all categories. Percentages are calculated per row and per column for comprehensive analysis.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Table data transformation</strong>: Raw task data → filter by active filters → group by dimension → aggregate metrics 
+                → calculate percentages → format numbers (toFixed for precision) → add grand totals → sort by primary metric (descending) → 
+                generate table rows with consistent structure.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Performance & Caching Strategy</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                The system uses an <strong>intelligent caching strategy</strong> to minimize Firestore reads and improve performance. Static data 
+                like users, reporters, and deliverables are cached indefinitely since they change infrequently. Month data is cached for 30 days 
+                since it only changes once per month. Tasks are never cached and always fetched in real-time to ensure accuracy.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                When data changes, the cache is automatically updated by real-time listeners, ensuring cached data stays fresh. On manual 
+                mutations (create, update, delete), the cache is invalidated first, then the listener updates it with fresh data. This dual 
+                approach ensures both performance and data accuracy.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Deliverables & Time Calculations</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Deliverables</strong> are tracked with quantity and variations support. The time calculation formula multiplies the time 
+                per unit by the quantity, then adds variations time multiplied by variations quantity. This allows for accurate time tracking 
+                when deliverables have multiple units or variations. The system automatically converts between hours and minutes, and calculates 
+                days based on 8-hour workdays.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                Deliverables are organized by department and can be filtered accordingly. The system supports a "requires quantity" flag that 
+                determines whether quantity tracking is needed. When this flag is false, variations are ignored, simplifying the workflow for 
+                simple deliverables.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Charts & Visualizations</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Chart data transformation</strong>: Raw analytics data → group by category → calculate values and percentages → format 
+                for Recharts component → assign colors → sort by value (descending) → generate chart-ready data structure.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Pie chart logic</strong>: Map categories to {`{name, value, percentage}`} objects → sort by value descending → assign 
+                hash-based colors → render slices with labels and tooltips. Pie charts show distribution (markets, products, AI models, departments).
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Bar chart logic</strong>: Categories on X-axis → metrics on Y-axis → calculate max value for scale → render bars with 
+                value labels → add grid lines and axis labels. Bar charts compare metrics across categories (tasks, hours, percentages).
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Biaxial chart logic</strong>: Two Y-axes (left/right) → different metrics on each axis → different scales calculated 
+                independently → color-code by metric type → render grouped bars. Used to display tasks count and hours simultaneously for comparison.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Color assignment algorithm</strong>: Hash category name string → convert to hex color → ensure contrast against background 
+                → cache color mapping in memory → same category always gets same color across all charts for consistency. Colors persist across 
+                filter changes and page refreshes.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Dynamic chart updates</strong>: Filter changes → recalculate analytics → transform to chart format → update chart props 
+                → Recharts detects prop changes → re-renders with new data. Tooltips show on hover with formatted values (count, percentage, label).
+              </p>
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {feature.title}
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                      {feature.description}
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Analytics System & Processing</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Analytics processing flow</strong>: Filter tasks by month/user/reporter/week → group by dimension (product, market, user, etc.) 
+                → aggregate metrics (sum hours, count tasks) → calculate percentages → generate chart data → generate table data → format for display.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Marketing Analytics</strong>: Filter tasks.products='marketing' → group by subcategory (casino, sport, poker, lotto) → 
+                sum timeInHours per subcategory → calculate market distribution per subcategory → generate pie charts for subcategories and markets.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Acquisition Analytics</strong>: Filter tasks.products='acquisition' → group by market → aggregate time per market → 
+                calculate resource allocation percentages → identify markets with highest focus → visualize market distribution.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Product Analytics</strong>: Filter tasks.products='product' → group by category (casino, sport, poker, lotto) → sum hours 
+                per category → identify priority categories by time investment → calculate market distribution per product category.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>AI Analytics</strong>: Extract aiModels array from all tasks → flatten to individual models → count frequency per model 
+                → sum aiTime per model → calculate total AI time → identify most used models → show time distribution across models.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Reporter Analytics</strong>: Group tasks by reporter → count tasks per reporter → sum hours per reporter → calculate 
+                market/product distribution per reporter → identify top contributors → show individual performance metrics.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Markets by Users</strong>: Cross-tabulation matrix of user × market → count tasks per combination → calculate hours per 
+                combination → generate table with users as rows, markets as columns → visualize workload distribution and market focus per user.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Analytics table generation</strong>: For each analytics type, generate tableData array with rows for each category → 
+                add columns for metrics (tasks, hours) and sub-metrics (markets, percentages) → add grand total row with sums → format numbers 
+                and percentages → sort by primary metric → render in AnalyticsTable component.
                     </p>
                   </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Security & Data Isolation</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                The system implements a <strong>two-tier security model</strong> with role-based access control and explicit permissions. Admin 
+                users have full access to all features and data. Regular users can only view and edit their own tasks. The permission system 
+                checks user status, role, and explicit permissions before allowing any operation.
+              </p>
+              <p className="text-sm leading-relaxed mb-4">
+                <strong>Data isolation</strong> ensures users only see their own tasks unless they are admins. Task queries automatically filter 
+                by user ID for regular users, while admin queries return all tasks. This isolation is enforced both client-side and server-side 
+                through Firestore security rules, providing double-layer protection.
+              </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Key Capabilities:
-                  </h3>
-                  <ul className="space-y-1.5">
-                    {feature.details.map((detail, detailIndex) => (
-                      <li
-                        key={detailIndex}
-                        className="text-sm text-gray-600 dark:text-gray-400 flex items-start"
-                      >
-                        <span className="text-blue-500 mr-2 mt-1.5">•</span>
-                        <span>{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Week Calculation & Time Tracking</h3>
+              <p className="text-sm leading-relaxed mb-4">
+                The system calculates <strong>weeks within months</strong> considering only weekdays (Monday through Friday). This ensures accurate 
+                weekly reporting that reflects actual working days. Week numbers are assigned sequentially, and tasks can be filtered by week to 
+                analyze weekly performance patterns.
+              </p>
+              <p className="text-sm leading-relaxed">
+                All time calculations maintain precision by working in minutes as the base unit, then converting to hours or days for display. 
+                This prevents rounding errors and ensures accurate time tracking across deliverables, tasks, and analytics.
+              </p>
                 </div>
               </div>
-            );
-          })}
         </div>
+
+
 
         {/* Summary Section */}
         <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-8">
@@ -456,10 +309,12 @@ const FeaturesSummaryPage = () => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
 export default FeaturesSummaryPage;
+
 

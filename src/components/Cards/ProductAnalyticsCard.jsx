@@ -30,6 +30,7 @@ const ProductAnalyticsCard = memo(({
   productBiaxialHoursColor,
   productCasinoMarketsPieData,
   productCasinoMarketsPieTitle,
+  productCasinoTotalTasks = 0, // Unique tasks count
   productCasinoMarketsPieColors,
   productCasinoMarketsBiaxialData,
   productCasinoMarketsBiaxialTitle,
@@ -37,6 +38,7 @@ const ProductAnalyticsCard = memo(({
   productCasinoMarketsBiaxialHoursColor,
   productSportMarketsPieData,
   productSportMarketsPieTitle,
+  productSportTotalTasks = 0, // Unique tasks count
   productSportMarketsPieColors,
   productSportMarketsBiaxialData,
   productSportMarketsBiaxialTitle,
@@ -61,18 +63,23 @@ const ProductAnalyticsCard = memo(({
     categoryBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [categoryBiaxialData]
   );
-  const casinoMarketsPieTotal = useMemo(() => 
-    productCasinoMarketsPieData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [productCasinoMarketsPieData]
-  );
+  // Pie chart segments show per market counts (RO: 3, IE: 2, UK: 2)
+  // But totals should show unique tasks (3 tasks), not sum of market counts
+  const casinoMarketsPieTotal = useMemo(() => {
+    // Use unique tasks count from props (productCasinoTotalTasks is already unique tasks)
+    return productCasinoTotalTasks || 0;
+  }, [productCasinoTotalTasks]);
+  
   const casinoMarketsPieHours = useMemo(() => 
     productCasinoMarketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [productCasinoMarketsBiaxialData]
   );
-  const sportMarketsPieTotal = useMemo(() => 
-    productSportMarketsPieData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [productSportMarketsPieData]
-  );
+  
+  const sportMarketsPieTotal = useMemo(() => {
+    // Use unique tasks count from props (productSportTotalTasks is already unique tasks)
+    return productSportTotalTasks || 0;
+  }, [productSportTotalTasks]);
+  
   const sportMarketsPieHours = useMemo(() => 
     productSportMarketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [productSportMarketsBiaxialData]
@@ -241,7 +248,8 @@ const ProductAnalyticsCard = memo(({
 
           {/* Product Casino Markets Biaxial Chart */}
           {(() => {
-            const totalTasks = productCasinoMarketsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+            // Use unique tasks count (not sum of market counts)
+            const totalTasks = productCasinoTotalTasks || 0;
             const totalHours = productCasinoMarketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
               <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
@@ -277,7 +285,8 @@ const ProductAnalyticsCard = memo(({
 
           {/* Product Sport Markets Biaxial Chart */}
           {(() => {
-            const totalTasks = productSportMarketsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+            // Use unique tasks count (not sum of market counts)
+            const totalTasks = productSportTotalTasks || 0;
             const totalHours = productSportMarketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
               <div className="card-small-modern group hover:shadow-xl transition-all duration-300">

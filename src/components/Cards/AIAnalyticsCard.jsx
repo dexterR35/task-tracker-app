@@ -42,6 +42,7 @@ const AIAnalyticsCard = memo(({
   productsBiaxialTitle,
   productsBiaxialTasksColor,
   productsBiaxialTimeColor,
+  totalTasks = 0, // Unique tasks count
   className = "",
   isLoading = false,
 }) => {
@@ -50,34 +51,41 @@ const AIAnalyticsCard = memo(({
   }
 
   // Calculate totals for pie charts
-  const productsAIPieTotal = useMemo(() => 
-    productsAIData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [productsAIData]
-  );
+  // Pie chart segments show per category/market/user counts, but totals should show unique tasks (not sum of counts)
+  const productsAIPieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
+  
   const productsAIPieHours = useMemo(() => 
     productsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [productsBiaxialData]
   );
-  const marketsAIPieTotal = useMemo(() => 
-    marketsAIData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [marketsAIData]
-  );
+  
+  const marketsAIPieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
+  
   const marketsAIPieHours = useMemo(() => 
     marketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [marketsBiaxialData]
   );
-  const aiModelsPieTotal = useMemo(() => 
-    aiModelsData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [aiModelsData]
-  );
+  
+  const aiModelsPieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
+  
   const aiModelsPieHours = useMemo(() => 
     aiModelsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [aiModelsBiaxialData]
   );
-  const usersAIPieTotal = useMemo(() => 
-    usersAIData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [usersAIData]
-  );
+  
+  const usersAIPieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
   const usersAIPieHours = useMemo(() => 
     usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [usersBiaxialData]
@@ -133,14 +141,15 @@ const AIAnalyticsCard = memo(({
 
             {/* Products AI Analysis Biaxial Chart - Below pie chart */}
             {(() => {
-              const totalTasks = productsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of product counts)
+              const productsBiaxialTotalTasks = totalTasks || 0;
               const totalHours = productsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <ChartHeader
                   variant="section"
                   title="Products AI: AI Time vs AI Tasks by product"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${productsBiaxialTotalTasks} tasks`,
                     `${totalHours}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
@@ -180,14 +189,15 @@ const AIAnalyticsCard = memo(({
 
             {/* Markets AI Analysis Biaxial Chart - Below pie chart */}
             {(() => {
-              const totalTasks = marketsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of market counts)
+              const marketsBiaxialTotalTasks = totalTasks || 0;
               const totalHours = marketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <ChartHeader
                   variant="section"
                   title="Markets AI: AI Time vs AI Tasks by market"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${marketsBiaxialTotalTasks} tasks`,
                     `${totalHours}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
@@ -227,14 +237,15 @@ const AIAnalyticsCard = memo(({
 
             {/* AI Models Biaxial Chart - Below pie chart */}
             {(() => {
-              const totalTasks = aiModelsBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of model counts)
+              const aiModelsBiaxialTotalTasks = totalTasks || 0;
               const totalHours = aiModelsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <ChartHeader
                   variant="section"
                   title="AI Models: AI Time vs AI Tasks by model"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${aiModelsBiaxialTotalTasks} tasks`,
                     `${totalHours}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.purple}
@@ -274,14 +285,15 @@ const AIAnalyticsCard = memo(({
 
             {/* Users AI Time vs AI Tasks Biaxial Chart - Below pie chart */}
             {(() => {
-              const totalTasks = usersBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of user counts)
+              const usersBiaxialTotalTasks = totalTasks || 0;
               const totalHours = usersBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               return (
                 <ChartHeader
                   variant="section"
                   title="Users AI: AI time vs AI tasks by user"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${usersBiaxialTotalTasks} tasks`,
                     `${totalHours}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.purple}

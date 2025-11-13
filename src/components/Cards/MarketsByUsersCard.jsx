@@ -84,8 +84,8 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
   const userHours = {};
   const allMarkets = new Set();
   const allUsers = new Set();
-  let uniqueTasksCount = 0; // Count unique tasks (not market appearances)
-  let uniqueTasksTotalHours = 0; // Total hours from unique tasks (not duplicated)
+  let totalTasksCount = 0; // Count unique tasks (not per market)
+  let totalTasksTotalHours = 0; // Total hours from all tasks (hours counted once per task, not per market)
 
   // Single pass: collect markets, users, count tasks, and calculate hours
   tasks.forEach((task) => {
@@ -94,7 +94,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
 
     if (userId && markets.length > 0) {
       allUsers.add(userId);
-      uniqueTasksCount++; // Count each unique task once
+      totalTasksCount++; // Count unique tasks (1 task)
 
       if (!userMarketData[userId]) {
         userMarketData[userId] = {};
@@ -104,10 +104,12 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
 
       if (options.includeHours) {
         const taskHours = getTaskHours(task);
+        // Add hours once per task (not per market) for consistency
         userHours[userId] += taskHours;
-        uniqueTasksTotalHours += taskHours; // Add hours once per unique task
+        totalTasksTotalHours += taskHours;
       }
 
+      // Count markets per market (RO: 3, IE: 2, UK: 2)
       markets.forEach((market) => {
         if (market) {
           allMarkets.add(market);
@@ -123,7 +125,8 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
           marketTotals[market]++; // This counts market appearances (for pie chart segments)
         }
       });
-
+      
+      // Count unique tasks per user (1 task)
       userTotals[userId]++;
     }
   });
@@ -303,8 +306,8 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
     chartData,
     colors: chartData.map((item) => item.color),
     userByTaskData,
-    uniqueTasksCount, // Total number of unique tasks (not market appearances)
-    uniqueTasksTotalHours, // Total hours from unique tasks (not duplicated)
+    totalTasksCount, // Total number of tasks counted per market (consistent with acquisition counting)
+    totalTasksTotalHours, // Total hours from all tasks (hours counted once per task, not per market)
   };
 };
 
@@ -327,7 +330,17 @@ const calculateBiaxialBarData = (tasks) => {
             hours: 0,
           };
         }
+        // Count tasks per market for consistency with acquisition counting
         marketStats[normalizedMarket].tasks += 1;
+      }
+    });
+    
+    // Add hours once per task, distributed proportionally to markets
+    // For consistency, we'll add the full task hours to each market
+    // (This matches the acquisition config behavior where hours are counted per market)
+    taskMarkets.forEach((market) => {
+      if (market) {
+        const normalizedMarket = normalizeMarket(market);
         marketStats[normalizedMarket].hours += taskHours;
       }
     });
@@ -357,17 +370,20 @@ const calculateUsersBiaxialData = (tasks, users) => {
   const userStats = {};
 
   tasks.forEach((task) => {
+    const taskMarkets = getTaskMarkets(task);
     const taskHours = getTaskHours(task);
     const userId = getTaskUserUID(task);
 
-    if (userId) {
+    if (userId && taskMarkets.length > 0) {
       if (!userStats[userId]) {
         userStats[userId] = {
           tasks: 0,
           hours: 0,
         };
       }
+      // Count unique tasks (1 task)
       userStats[userId].tasks += 1;
+      // Add hours once per task (not per market) for consistency
       userStats[userId].hours += taskHours;
     }
   });
@@ -413,6 +429,11 @@ const calculateUsersByMarketsCharts = (tasks, users) => {
       };
     }
 
+    // Count unique tasks (1 task)
+    userMarketStats[userId].totalTasks += 1;
+    userMarketStats[userId].totalHours += taskHours;
+
+    // Count markets per market (RO: 3, IE: 2, UK: 2)
     taskMarkets.forEach((market) => {
       if (market) {
         // Normalize market (trim and uppercase) to ensure consistent matching
@@ -427,10 +448,6 @@ const calculateUsersByMarketsCharts = (tasks, users) => {
         userMarketStats[userId].markets[normalizedMarket].hours += taskHours;
       }
     });
-
-    // Update user totals
-    userMarketStats[userId].totalTasks += 1;
-    userMarketStats[userId].totalHours += taskHours;
   });
 
   // Create separate chart data for each user
@@ -494,12 +511,13 @@ const MarketsByUsersCard = memo(({
     const usersByMarketsCharts = calculateUsersByMarketsCharts(tasks, users);
 
     // Calculate totals from actual chart data for consistency
-    // NOTE: Markets chart shows unique task count (not market appearances)
+    // NOTE: Total tasks = unique tasks (not per market)
     // - Pie chart segments show how many times each market appears (marketTotals)
-    // - But the total shows unique tasks count (each task counted once, regardless of how many markets it has)
-    // - Hours are also counted once per unique task (not duplicated per market)
-    const marketsTotalTasks = calculatedData.uniqueTasksCount || 0;
-    const marketsTotalHours = calculatedData.uniqueTasksTotalHours || 0;
+    // - Total shows unique tasks (3 tasks)
+    // - Market breakdowns show per market (RO: 3, IE: 2, UK: 2)
+    // - Hours are counted once per task (not duplicated per market)
+    const marketsTotalTasks = calculatedData.totalTasksCount || 0;
+    const marketsTotalHours = calculatedData.totalTasksTotalHours || 0;
     
     // Calculate users totals from ALL users (usersBiaxialData), not just the displayed top 10
     // This ensures the total matches the actual total across all users, not just the pie chart slice
@@ -584,10 +602,13 @@ const MarketsByUsersCard = memo(({
   // Calculate totals for pie charts
   // Markets pie chart: total shows unique tasks count (not sum of market appearances)
   // The pie segments show how many times each market appears, but total is unique tasks
+  // Use unique tasks count (not sum of market counts)
   const marketsPieTotal = marketsTotalTasks || 0;
   const marketsPieHours = marketsTotalHours || 0;
   // Calculate user totals from ALL users (usersBiaxialData), not just the displayed top 10 in pie chart
   // This ensures the badge shows the actual total across all users
+  // Use unique tasks count (not sum of user counts)
+  // Note: usersBiaxialData already contains unique tasks per user, so summing is correct here
   const userByTaskPieTotal = useMemo(() => 
     usersBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0,
     [usersBiaxialData]

@@ -28,6 +28,7 @@ const ReporterAnalyticsCard = memo(({
   reporterMarketBiaxialDataSport,
   reporterMarketBiaxialTasksColor,
   reporterMarketBiaxialHoursColor,
+  totalTasks = 0, // Unique tasks count
   className = "",
   isLoading = false,
 }) => {
@@ -36,19 +37,25 @@ const ReporterAnalyticsCard = memo(({
   }
 
   // Calculate totals for pie charts
-  const reporterPieTotal1 = useMemo(() => 
-    reporterPieData1?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [reporterPieData1]
-  );
+  // Pie chart segments show per reporter counts, but totals should show unique tasks (not sum of reporter counts)
+  const reporterPieTotal1 = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    // For individual pie charts, we still need to calculate from data, but use totalTasks for combined total
+    return reporterPieData1?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+  }, [reporterPieData1]);
+  
   const reporterPieTotal2 = useMemo(() => 
     reporterPieData2?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
     [reporterPieData2]
   );
+  
   const reporterPieTotal3 = useMemo(() => 
     reporterPieData3?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
     [reporterPieData3]
   );
-  const reporterPieTotal = reporterPieTotal1 + reporterPieTotal2 + reporterPieTotal3;
+  
+  // Use unique tasks count for combined total (not sum of pie chart values)
+  const reporterPieTotal = totalTasks || 0;
   const reporterPieHours = useMemo(() => 
     reporterBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [reporterBiaxialData]
@@ -141,14 +148,15 @@ const ReporterAnalyticsCard = memo(({
         {/* Reporter Metrics Biaxial Chart - Single Column */}
         <div className="grid grid-cols-1 gap-6 mt-6">
           {(() => {
-            const totalTasks = reporterBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+            // Use unique tasks count (not sum of reporter counts)
+            const reporterBiaxialTotalTasks = totalTasks || 0;
             const totalHours = reporterBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
               <ChartHeader
                 variant="section"
                 title="Reporter Metrics: Tasks & Hours by reporter"
                 badges={[
-                  `${totalTasks} tasks`,
+                  `${reporterBiaxialTotalTasks} tasks`,
                   `${totalHours}h`
                 ]}
                 color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
@@ -169,7 +177,8 @@ const ReporterAnalyticsCard = memo(({
           <div className="grid grid-cols-1 gap-6 mt-6">
             {/* Casino Reporter-Market Chart */}
             {(() => {
-              const totalTasks = reporterMarketBiaxialDataCasino?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of market counts)
+              const casinoBiaxialTotalTasks = totalTasks || 0;
               const totalHours = reporterMarketBiaxialDataCasino?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               if (!reporterMarketBiaxialDataCasino || reporterMarketBiaxialDataCasino.length === 0) return null;
               return (
@@ -177,7 +186,7 @@ const ReporterAnalyticsCard = memo(({
                   variant="section"
                   title="Reporters by Markets: Casino"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${casinoBiaxialTotalTasks} tasks`,
                     `${Math.round(totalHours * 10) / 10}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
@@ -195,7 +204,8 @@ const ReporterAnalyticsCard = memo(({
 
             {/* Sport Reporter-Market Chart */}
             {(() => {
-              const totalTasks = reporterMarketBiaxialDataSport?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
+              // Use unique tasks count (not sum of market counts)
+              const sportBiaxialTotalTasks = totalTasks || 0;
               const totalHours = reporterMarketBiaxialDataSport?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
               if (!reporterMarketBiaxialDataSport || reporterMarketBiaxialDataSport.length === 0) return null;
               return (
@@ -203,7 +213,7 @@ const ReporterAnalyticsCard = memo(({
                   variant="section"
                   title="Reporters by Markets: Sport"
                   badges={[
-                    `${totalTasks} tasks`,
+                    `${sportBiaxialTotalTasks} tasks`,
                     `${Math.round(totalHours * 10) / 10}h`
                   ]}
                   color={CARD_SYSTEM.COLOR_HEX_MAP.orange}

@@ -46,9 +46,11 @@ export const calculateTotalAnalyticsData = (tasks) => {
     }
     // Acquisition category
     else if (productsLower.includes("acquisition")) {
-      categoryData.acquisition.tasks += 1;
-      categoryData.acquisition.hours += timeInHours;
-
+      const markets = task.data_task?.markets || task.markets || [];
+      
+      // Skip acquisition tasks without markets (consistent with AcquisitionAnalyticsConfig.js)
+      if (!Array.isArray(markets) || markets.length === 0) return;
+      
       // Extract subcategory (casino, sport, etc.)
       let subcategory = "";
       if (productsLower.includes("casino")) subcategory = "casino";
@@ -60,8 +62,12 @@ export const calculateTotalAnalyticsData = (tasks) => {
         if (!categoryData.acquisition.breakdown[subcategory]) {
           categoryData.acquisition.breakdown[subcategory] = { tasks: 0, hours: 0 };
         }
+        
+        // Count unique tasks (1 task), markets are counted per market separately
         categoryData.acquisition.breakdown[subcategory].tasks += 1;
+        categoryData.acquisition.tasks += 1;
         categoryData.acquisition.breakdown[subcategory].hours += timeInHours;
+        categoryData.acquisition.hours += timeInHours;
       }
     }
     // Marketing category
@@ -141,19 +147,30 @@ export const calculateTotalAnalyticsData = (tasks) => {
   }
 
   // Acquisition rows
-  if (categoryData.acquisition.tasks > 0) {
+  // Only count casino + sport to match details page (consistent with AcquisitionAnalyticsConfig.js)
+  const acquisitionCasinoTasks = categoryData.acquisition.breakdown.casino?.tasks || 0;
+  const acquisitionSportTasks = categoryData.acquisition.breakdown.sport?.tasks || 0;
+  const acquisitionCasinoHours = categoryData.acquisition.breakdown.casino?.hours || 0;
+  const acquisitionSportHours = categoryData.acquisition.breakdown.sport?.hours || 0;
+  const acquisitionTotalTasks = acquisitionCasinoTasks + acquisitionSportTasks;
+  const acquisitionTotalHours = acquisitionCasinoHours + acquisitionSportHours;
+  
+  if (acquisitionTotalTasks > 0) {
     // Add main category row
     const acquisitionRow = {
       category: "Acquisition",
       subcategory: "",
-      totalTasks: categoryData.acquisition.tasks,
-      totalHours: Math.round(categoryData.acquisition.hours * 100) / 100,
+      totalTasks: acquisitionTotalTasks,
+      totalHours: Math.round(acquisitionTotalHours * 100) / 100,
       isMainCategory: true,
     };
     tableData.push(acquisitionRow);
     
-    // Add subcategory rows
-    const acquisitionSubcategories = Object.keys(categoryData.acquisition.breakdown).sort();
+    // Add subcategory rows - only show casino and sport (matching details page)
+    const acquisitionSubcategories = ['casino', 'sport'].filter(subcategory => 
+      categoryData.acquisition.breakdown[subcategory] && 
+      categoryData.acquisition.breakdown[subcategory].tasks > 0
+    );
     acquisitionSubcategories.forEach((subcategory) => {
       const subData = categoryData.acquisition.breakdown[subcategory];
       tableData.push({
@@ -313,9 +330,9 @@ export const calculateTotalAnalyticsData = (tasks) => {
     color: categoryColors[item.name] || CHART_COLORS.DEFAULT[0],
   }));
 
-  // Calculate totals
-  const totalTasks = categoryData.product.tasks + categoryData.acquisition.tasks + categoryData.marketing.tasks + categoryData.misc.tasks;
-  const totalHours = categoryData.product.hours + categoryData.acquisition.hours + categoryData.marketing.hours + categoryData.misc.hours;
+  // Calculate totals - use acquisitionTotalTasks (casino + sport only) to match details page
+  const totalTasks = categoryData.product.tasks + acquisitionTotalTasks + categoryData.marketing.tasks + categoryData.misc.tasks;
+  const totalHours = categoryData.product.hours + acquisitionTotalHours + categoryData.marketing.hours + categoryData.misc.hours;
 
   return {
     tableData,

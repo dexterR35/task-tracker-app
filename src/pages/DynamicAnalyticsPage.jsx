@@ -269,73 +269,85 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
       }
       
       if (category === 'marketing') {
+        // Skip marketing tasks without markets (consistent with other configs)
+        if (!Array.isArray(markets) || markets.length === 0) return;
+        
         if (!marketingData[subcategory]) {
           marketingData[subcategory] = { tasks: 0, markets: {}, hours: 0 };
         }
+        
+        // Count unique tasks (1 task), but count markets per market
         marketingData[subcategory].tasks += 1;
         marketingData[subcategory].hours += timeInHours;
         
-        // Normalize and count markets
-        if (Array.isArray(markets) && markets.length > 0) {
-          markets.forEach(market => {
-            const normalizedMarket = normalizeMarket(market);
-            if (normalizedMarket) {
-              marketingData[subcategory].markets[normalizedMarket] = 
-                (marketingData[subcategory].markets[normalizedMarket] || 0) + 1;
-            }
-          });
-        }
+        // Count markets per market (RO: 3, IE: 2, UK: 2)
+        markets.forEach(market => {
+          const normalizedMarket = normalizeMarket(market);
+          if (normalizedMarket) {
+            marketingData[subcategory].markets[normalizedMarket] = 
+              (marketingData[subcategory].markets[normalizedMarket] || 0) + 1;
+          }
+        });
       } else if (category === 'acquisition') {
+        // Skip acquisition tasks without markets (consistent with AcquisitionAnalyticsConfig.js)
+        if (!Array.isArray(markets) || markets.length === 0) return;
+        
         if (!acquisitionData[subcategory]) {
           acquisitionData[subcategory] = { tasks: 0, markets: {}, hours: 0 };
         }
+        
+        // Count unique tasks (1 task), but count markets per market
         acquisitionData[subcategory].tasks += 1;
         acquisitionData[subcategory].hours += timeInHours;
         
-        // Normalize and count markets
-        if (Array.isArray(markets) && markets.length > 0) {
-          markets.forEach(market => {
-            const normalizedMarket = normalizeMarket(market);
-            if (normalizedMarket) {
-              acquisitionData[subcategory].markets[normalizedMarket] = 
-                (acquisitionData[subcategory].markets[normalizedMarket] || 0) + 1;
-            }
-          });
-        }
+        // Count markets per market (RO: 3, IE: 2, UK: 2)
+        markets.forEach(market => {
+          const normalizedMarket = normalizeMarket(market);
+          if (normalizedMarket) {
+            acquisitionData[subcategory].markets[normalizedMarket] = 
+              (acquisitionData[subcategory].markets[normalizedMarket] || 0) + 1;
+          }
+        });
       } else if (category === 'product') {
+        // Skip product tasks without markets (consistent with other configs)
+        if (!Array.isArray(markets) || markets.length === 0) return;
+        
         if (!productData[subcategory]) {
           productData[subcategory] = { tasks: 0, markets: {}, hours: 0 };
         }
+        
+        // Count unique tasks (1 task), but count markets per market
         productData[subcategory].tasks += 1;
         productData[subcategory].hours += timeInHours;
         
-        // Normalize and count markets
-        if (Array.isArray(markets) && markets.length > 0) {
-          markets.forEach(market => {
-            const normalizedMarket = normalizeMarket(market);
-            if (normalizedMarket) {
-              productData[subcategory].markets[normalizedMarket] = 
-                (productData[subcategory].markets[normalizedMarket] || 0) + 1;
-            }
-          });
-        }
+        // Count markets per market (RO: 3, IE: 2, UK: 2)
+        markets.forEach(market => {
+          const normalizedMarket = normalizeMarket(market);
+          if (normalizedMarket) {
+            productData[subcategory].markets[normalizedMarket] = 
+              (productData[subcategory].markets[normalizedMarket] || 0) + 1;
+          }
+        });
       } else if (category === 'misc') {
+        // Skip misc tasks without markets (consistent with other configs)
+        if (!Array.isArray(markets) || markets.length === 0) return;
+        
         if (!miscData[subcategory]) {
           miscData[subcategory] = { tasks: 0, markets: {}, hours: 0 };
         }
+        
+        // Count unique tasks (1 task), but count markets per market
         miscData[subcategory].tasks += 1;
         miscData[subcategory].hours += timeInHours;
         
-        // Normalize and count markets
-        if (Array.isArray(markets) && markets.length > 0) {
-          markets.forEach(market => {
-            const normalizedMarket = normalizeMarket(market);
-            if (normalizedMarket) {
-              miscData[subcategory].markets[normalizedMarket] = 
-                (miscData[subcategory].markets[normalizedMarket] || 0) + 1;
-            }
-          });
-        }
+        // Count markets per market (RO: 3, IE: 2, UK: 2)
+        markets.forEach(market => {
+          const normalizedMarket = normalizeMarket(market);
+          if (normalizedMarket) {
+            miscData[subcategory].markets[normalizedMarket] = 
+              (miscData[subcategory].markets[normalizedMarket] || 0) + 1;
+          }
+        });
       }
     }
     
@@ -358,12 +370,10 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
     .filter(([key]) => key !== 'totalTasks' && key !== 'totalHours')
     .reduce((sum, [, data]) => sum + (data?.hours || 0), 0);
   
-  acquisitionData.totalTasks = Object.entries(acquisitionData)
-    .filter(([key]) => key !== 'totalTasks' && key !== 'totalHours')
-    .reduce((sum, [, data]) => sum + (data?.tasks || 0), 0);
-  acquisitionData.totalHours = Object.entries(acquisitionData)
-    .filter(([key]) => key !== 'totalTasks' && key !== 'totalHours')
-    .reduce((sum, [, data]) => sum + (data?.hours || 0), 0);
+  // Calculate totals - only count casino and sport to match details page
+  // (details page only shows casino + sport, not poker/lotto)
+  acquisitionData.totalTasks = (acquisitionData.casino?.tasks || 0) + (acquisitionData.sport?.tasks || 0);
+  acquisitionData.totalHours = (acquisitionData.casino?.hours || 0) + (acquisitionData.sport?.hours || 0);
   
   productData.totalTasks = Object.entries(productData)
     .filter(([key]) => key !== 'totalTasks' && key !== 'totalHours')

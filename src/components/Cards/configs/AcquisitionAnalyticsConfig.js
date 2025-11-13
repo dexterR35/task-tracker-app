@@ -117,23 +117,56 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   Object.keys(acquisitionData).forEach((category) => {
     const categoryData = acquisitionData[category];
     const categoryHours = acquisitionHours[category];
-    const categoryTotal = Object.values(categoryData).reduce(
+    
+    // Total tasks = unique tasks (not per market)
+    const categoryTotal = tasks.filter((task) => {
+      const products = task.data_task?.products || task.products;
+      const markets = task.data_task?.markets || task.markets || [];
+      if (!isAcquisitionProduct(products)) return false;
+      if (!Array.isArray(markets) || markets.length === 0) return false;
+      const productsLower = products.toLowerCase().trim();
+      if (category === "casino" && productsLower.includes("casino")) return true;
+      if (category === "sport" && productsLower.includes("sport")) return true;
+      if (category === "poker" && productsLower.includes("poker")) return true;
+      if (category === "lotto" && productsLower.includes("lotto")) return true;
+      return false;
+    }).length;
+    
+    // Total hours = sum of hours from unique tasks
+    const categoryTotalHours = tasks
+      .filter((task) => {
+        const products = task.data_task?.products || task.products;
+        const markets = task.data_task?.markets || task.markets || [];
+        if (!isAcquisitionProduct(products)) return false;
+        if (!Array.isArray(markets) || markets.length === 0) return false;
+        const productsLower = products.toLowerCase().trim();
+        if (category === "casino" && productsLower.includes("casino")) return true;
+        if (category === "sport" && productsLower.includes("sport")) return true;
+        if (category === "poker" && productsLower.includes("poker")) return true;
+        if (category === "lotto" && productsLower.includes("lotto")) return true;
+        return false;
+      })
+      .reduce(
+        (sum, task) =>
+          sum + (task.data_task?.timeInHours || task.timeInHours || 0),
+        0
+      );
+
+    // Market counts are per market (RO: 3, IE: 2, UK: 2)
+    const marketCountsTotal = Object.values(categoryData).reduce(
       (sum, count) => sum + count,
       0
     );
-    const categoryTotalHours = Object.values(categoryHours).reduce(
-      (sum, hours) => sum + hours,
-      0
-    );
 
-    if (categoryTotal > 0) {
+    if (marketCountsTotal > 0) {
       const row = {
         category: category.charAt(0).toUpperCase() + category.slice(1),
-        total: categoryTotal,
+        total: categoryTotal, // Unique tasks
         totalHours: Math.round(categoryTotalHours * 100) / 100,
       };
 
-      // Add market columns with percentages (categoryTotal is sum of all market counts, so percentages sum to 100%)
+      // Add market columns with percentages
+      // Market counts are per market (RO: 3, IE: 2, UK: 2), percentages based on market counts total
       const marketItems = sortedMarkets.map((market) => ({
         key: market,
         count: categoryData[market] || 0,
@@ -142,7 +175,7 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
         const marketCount = categoryData[market] || 0;
         row[market] = calculateCountWithPercentage(
           marketCount,
-          categoryTotal,
+          marketCountsTotal, // Use market counts total for percentages
           marketItems,
           market
         );
@@ -196,10 +229,16 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
   });
 
   // Calculate totals for casino acquisition
-  const casinoTotalTasks = Object.values(acquisitionData.casino).reduce(
-    (sum, count) => sum + count,
-    0
-  );
+  // Total tasks = unique tasks (not per market), market counts are per market
+  const casinoTotalTasks = tasks.filter((task) => {
+    const products = task.data_task?.products || task.products;
+    const markets = task.data_task?.markets || task.markets || [];
+    if (!isAcquisitionProduct(products)) return false;
+    if (!Array.isArray(markets) || markets.length === 0) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("casino");
+  }).length;
+  
   const casinoTotalHours = tasks
     .filter((task) => {
       const products = task.data_task?.products || task.products;
@@ -214,10 +253,15 @@ export const calculateAcquisitionAnalyticsData = (tasks) => {
     );
 
   // Calculate totals for sport acquisition
-  const sportTotalTasks = Object.values(acquisitionData.sport).reduce(
-    (sum, count) => sum + count,
-    0
-  );
+  // Total tasks = unique tasks (not per market), market counts are per market
+  const sportTotalTasks = tasks.filter((task) => {
+    const products = task.data_task?.products || task.products;
+    const markets = task.data_task?.markets || task.markets || [];
+    if (!isAcquisitionProduct(products)) return false;
+    if (!Array.isArray(markets) || markets.length === 0) return false;
+    const productsLower = products.toLowerCase().trim();
+    return productsLower.includes("sport");
+  }).length;
   const sportTotalHours = tasks
     .filter((task) => {
       const products = task.data_task?.products || task.products;
@@ -533,11 +577,13 @@ export const getAcquisitionAnalyticsCardProps = (
     acquisitionTableColumns: calculatedData.tableColumns,
     casinoAcquisitionData: calculatedData.casinoAcquisitionData,
     casinoAcquisitionTitle: `Casino Acquisition by Markets (${calculatedData.casinoTotalTasks} tasks, ${calculatedData.casinoTotalHours}h)`,
+    casinoTotalTasks: calculatedData.casinoTotalTasks, // Unique tasks for pie chart totals
     casinoAcquisitionColors: calculatedData.casinoAcquisitionData.map(
       (item) => item.color
     ),
     sportAcquisitionData: calculatedData.sportAcquisitionData,
     sportAcquisitionTitle: `Sport Acquisition by Markets (${calculatedData.sportTotalTasks} tasks, ${calculatedData.sportTotalHours}h)`,
+    sportTotalTasks: calculatedData.sportTotalTasks, // Unique tasks for pie chart totals
     sportAcquisitionColors: calculatedData.sportAcquisitionData.map(
       (item) => item.color
     ),

@@ -225,26 +225,35 @@ const AnalyticsPage = () => {
   }, []);
 
   // Calculate props for all cards (for overview mode) or selected card (for detailed mode)
+  // All card props now include unique tasks count (not sum of market/category counts)
   const getCardProps = useCallback((cardId) => {
     if (isLoading || hasNoData) return null;
 
     try {
       switch (cardId) {
         case "reporter-analytics":
+          // Use unique tasks count (not sum of reporter counts)
           return getCachedReporterAnalyticsCardProps(tasks, reporters);
         case "markets-by-users":
+          // Use unique tasks count (not sum of market counts)
           return getCachedMarketsByUsersCardProps(tasks, users);
         case "marketing-analytics":
+          // Use unique tasks count (not sum of market counts)
           return getCachedMarketingAnalyticsCardProps(tasks, users);
         case "acquisition-analytics":
+          // Use unique tasks count (not sum of market counts)
           return getCachedAcquisitionAnalyticsCardProps(tasks, users);
         case "product-analytics":
+          // Use unique tasks count (not sum of market counts)
           return getCachedProductAnalyticsCardProps(tasks, users);
         case "misc-analytics":
+          // Use unique tasks count (not sum of category counts)
           return getCachedMiscAnalyticsCardProps(tasks, users);
         case "ai-analytics":
+          // Use unique tasks count (not sum of product/market/user counts)
           return getCachedAIAnalyticsCardProps(tasks, users);
         case "total-analytics":
+          // Use unique tasks count across all categories
           return getCachedTotalAnalyticsCardProps(tasks);
         default:
           return null;
@@ -394,10 +403,11 @@ const AnalyticsPage = () => {
       [cardColorHex]
     );
 
-    // Use totalTasks from cardProps (already calculated in configs)
+    // Use unique tasks count from cardProps (not sum of market/category counts)
+    // All analytics cards now show unique tasks in totals, with per-market/category counts in breakdowns
     const totalTasks = useMemo(() => {
       if (!cardProps || !hasData) return 0;
-      return cardProps.totalTasks || 0;
+      return cardProps.totalTasks || 0; // This is already unique tasks count from configs
     }, [cardProps, hasData]);
 
     return (
@@ -549,6 +559,7 @@ const AnalyticsPage = () => {
         </div>
 
         <div id={`${selectedCard}-card`}>
+          {/* All analytics cards now use unique tasks count in totals (not sum of market/category counts) */}
           {selectedCard === "reporter-analytics" && (
             <ReporterAnalyticsCard {...cardProps} />
           )}
@@ -674,6 +685,7 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
+
           {/* Analytics Cards Grid */}
           <div>
             <div className="mb-6">
@@ -711,6 +723,63 @@ const AnalyticsPage = () => {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Counting Logic Explanation */}
+          <div className="mb-8">
+            <div className="card  ">
+              <div className="p-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <Icons.generic.help className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      How Task and Market Counting Works
+                    </h3>
+                    <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                      <div>
+                        <p className="font-medium mb-2">Example: 3 tasks with markets [UK,RO,IE], [RO,UK], [RO,IE] will show:</p>
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                          <div className="space-y-2">
+                            <div>
+                              <span className="font-semibold text-gray-900 dark:text-white">Total: 3 tasks</span>
+                              <span className="text-gray-600 dark:text-gray-400 ml-2">(unique tasks - each task counted once)</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold text-gray-900 dark:text-white">RO: 3, IE: 2, UK: 2</span>
+                              <span className="text-gray-600 dark:text-gray-400 ml-2">(per market counts - how many times each market appears)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <p className="font-medium mb-2">How it works:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                          <li><span className="font-medium text-gray-900 dark:text-white">Total Tasks</span> = Count of unique tasks (3 tasks in the example)</li>
+                          <li><span className="font-medium text-gray-900 dark:text-white">RO: 3</span> = RO appears in 3 tasks (Task 1, Task 2, Task 3)</li>
+                          <li><span className="font-medium text-gray-900 dark:text-white">IE: 2</span> = IE appears in 2 tasks (Task 1, Task 3)</li>
+                          <li><span className="font-medium text-gray-900 dark:text-white">UK: 2</span> = UK appears in 2 tasks (Task 1, Task 2)</li>
+                        </ul>
+                      </div>
+                      
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
+                    
+                        <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                          <li><span className="font-medium">Acquisition, Marketing, Product, Misc</span> - Total shows unique tasks, market breakdowns show per-market counts</li>
+                          <li><span className="font-medium">AI Analytics</span> - Total shows unique tasks, breakdowns by product/market/user show per-category counts</li>
+                          <li><span className="font-medium">Reporter Analytics</span> - Total shows unique tasks, breakdowns by reporter/market show per-category counts</li>
+                          <li><span className="font-medium">Markets by Users</span> - Total shows unique tasks, market breakdowns show per-market counts</li>
+                          <li><span className="font-medium">Total Analytics</span> - Shows unique tasks across all categories</li>
+                        </ul>
+                  
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

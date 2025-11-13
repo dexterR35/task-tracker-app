@@ -204,28 +204,60 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     header: 'REPORTERS',
     cell: ({ getValue, row }) => {
       // First try to get reporterName if it exists
-      const reporterName = row.original?.data_task?.reporterName;
-      if (reporterName) {
-        return reporterName;
-      }
+      let name = row.original?.data_task?.reporterName;
       
       // Fallback to resolving reporter ID
-      const reporterId = getValue();
-      if (!reporterId) return '-';
+      if (!name) {
+        const reporterId = getValue();
+        if (!reporterId) return '-';
+        
+        const reporter = stableReporters.find(r => {
+          const reporterIdField = r.reporterUID;
+          return reporterIdField && 
+                 typeof reporterIdField === 'string' &&
+                 reporterIdField.toLowerCase() === reporterId.toLowerCase();
+        });
+        name = reporter?.name || reporterId;
+      }
       
-      const reporter = stableReporters.find(r => {
-        const reporterIdField = r.reporterUID;
-        return reporterIdField && 
-               typeof reporterIdField === 'string' &&
-               reporterIdField.toLowerCase() === reporterId.toLowerCase();
-      });
-      return reporter?.name || reporterId;
+      if (!name) return '-';
+      
+      // Format name on two lines
+      const nameParts = name.trim().split(/\s+/);
+      if (nameParts.length === 1) {
+        return nameParts[0];
+      }
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
+      return (
+        <div className="flex flex-col leading-tight">
+          <span>{firstName}</span>
+          <span>{lastName}</span>
+        </div>
+      );
     },
     size: 120,
   }),
   columnHelper.accessor('createdByName', {
     header: 'CREATED BY',
-    cell: createSimpleCell(),
+    cell: ({ getValue }) => {
+      const name = getValue();
+      if (!name) return '-';
+      
+      // Format name on two lines
+      const nameParts = name.trim().split(/\s+/);
+      if (nameParts.length === 1) {
+        return nameParts[0];
+      }
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
+      return (
+        <div className="flex flex-col leading-tight">
+          <span>{firstName}</span>
+          <span>{lastName}</span>
+        </div>
+      );
+    },
     size: 150,
   }),
   columnHelper.accessor('createdAt', {

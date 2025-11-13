@@ -650,6 +650,7 @@ export const getProductAnalyticsCardProps = (
     productBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     productCasinoMarketsPieData: productData.productCasinoMarketsPieData,
     productCasinoMarketsPieTitle: `Product Casino: Markets Distribution (${productData.productCasinoTotalTasks} tasks, ${Math.round(productData.productCasinoTotalHours * 100) / 100}h)`,
+    productCasinoTotalTasks: productData.productCasinoTotalTasks, // Unique tasks for pie chart totals
     productCasinoMarketsPieColors: productData.productCasinoMarketsPieData.map(
       (item) => item.color
     ),
@@ -660,6 +661,7 @@ export const getProductAnalyticsCardProps = (
     productCasinoMarketsBiaxialHoursColor: CHART_COLORS.DEFAULT[1],
     productSportMarketsPieData: productData.productSportMarketsPieData,
     productSportMarketsPieTitle: `Product Sport: Markets Distribution (${productData.productSportTotalTasks} tasks, ${Math.round(productData.productSportTotalHours * 100) / 100}h)`,
+    productSportTotalTasks: productData.productSportTotalTasks, // Unique tasks for pie chart totals
     productSportMarketsPieColors: productData.productSportMarketsPieData.map(
       (item) => item.color
     ),

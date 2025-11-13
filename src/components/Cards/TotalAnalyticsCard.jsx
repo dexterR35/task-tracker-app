@@ -23,10 +23,11 @@ const TotalAnalyticsCard = memo(({
   }
 
   // Calculate pie chart total
-  const pieTotal = useMemo(() => 
-    pieData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [pieData]
-  );
+  // Pie chart segments show per category counts, but totals should show unique tasks (not sum of category counts)
+  const pieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
 
   const cardColor = CARD_SYSTEM.COLOR_HEX_MAP.blue;
 
