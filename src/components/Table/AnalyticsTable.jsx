@@ -10,7 +10,7 @@ const AnalyticsTable = ({
   columns, 
   className = "",
   isLoading = false,
-  sectionTitle = "Tables",
+  title = "",
   enablePagination = false,
   showPagination = false
 }) => {
@@ -51,7 +51,7 @@ const AnalyticsTable = ({
     enablePagination: enablePagination,
     enableFiltering: false,
     pageSize: defaultPageSize,
-    sectionTitle: sectionTitle || "", // Empty string to trigger default title for analytics
+    title: title || "",
     initialState: {
       pagination: {
         pageSize: defaultPageSize

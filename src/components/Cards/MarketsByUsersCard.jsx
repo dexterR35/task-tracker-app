@@ -626,7 +626,7 @@ const MarketsByUsersCard = memo(({
             <AnalyticsTable
               data={analyticsByUserMarketsTableData}
               columns={analyticsByUserMarketsTableColumns}
-              sectionTitle=""
+              title="Markets by Users"
             />
           )}
         </div>

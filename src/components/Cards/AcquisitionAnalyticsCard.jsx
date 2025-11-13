@@ -90,7 +90,7 @@ const AcquisitionAnalyticsCard = memo(
               <AnalyticsTable
                 data={acquisitionTableData}
                 columns={acquisitionTableColumns}
-                sectionTitle=""
+                title="Acquisition Statistics"
               />
             </div>
           ) : (
@@ -109,7 +109,7 @@ const AcquisitionAnalyticsCard = memo(
               <AnalyticsTable
                 data={casinoUserTableData}
                 columns={casinoUserTableColumns}
-                sectionTitle=""
+                title="Casino: Per User"
               />
             )}
 
@@ -118,7 +118,7 @@ const AcquisitionAnalyticsCard = memo(
               <AnalyticsTable
                 data={sportUserTableData}
                 columns={sportUserTableColumns}
-                sectionTitle=""
+                title="Sport: Per User"
               />
             )}
           </div>
@@ -129,7 +129,7 @@ const AcquisitionAnalyticsCard = memo(
               <AnalyticsTable
                 data={sportCasinoUserTableData}
                 columns={sportCasinoUserTableColumns}
-                sectionTitle=""
+                title="Sport + Casino: Per User"
               />
             </div>
           )}

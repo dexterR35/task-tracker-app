@@ -65,7 +65,7 @@ const ReporterAnalyticsCard = memo(({
             <AnalyticsTable
               data={reporterTableData}
               columns={reporterTableColumns}
-              sectionTitle=""
+              title="Reporter Statistics"
               enablePagination={true}
               showPagination={true}
             />

@@ -53,7 +53,7 @@ const MiscAnalyticsCard = memo(({
             <AnalyticsTable
               data={usersMiscTableData}
               columns={usersMiscTableColumns}
-              sectionTitle=""
+              title="Users Misc Statistics"
             />
           ) : (
             <div className="card-small-modern">

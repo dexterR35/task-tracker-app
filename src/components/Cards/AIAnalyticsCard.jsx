@@ -94,7 +94,7 @@ const AIAnalyticsCard = memo(({
             <AnalyticsTable
               data={aiTableData}
               columns={aiTableColumns}
-              sectionTitle=""
+              title="AI Usage Statistics"
             />
           ) : (
             <div className="card-small-modern">

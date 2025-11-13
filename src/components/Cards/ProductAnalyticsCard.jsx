@@ -88,7 +88,7 @@ const ProductAnalyticsCard = memo(({
           <AnalyticsTable
             data={productTableData}
             columns={productTableColumns}
-            sectionTitle=""
+            title="Product Statistics"
           />
         ) : (
           <div className="card-small-modern">

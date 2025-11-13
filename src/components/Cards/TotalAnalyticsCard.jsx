@@ -38,7 +38,7 @@ const TotalAnalyticsCard = memo(({
           <AnalyticsTable
             data={tableData}
             columns={tableColumns}
-            sectionTitle=""
+            title="Category Totals"
             isLoading={isLoading}
             enablePagination={false}
             showPagination={false}
