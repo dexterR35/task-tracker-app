@@ -217,33 +217,31 @@ const SearchableSelectField = ({
       )}
       
       <div className="relative" ref={dropdownRef}>
-        <div className="relative">
-          <input
-            ref={inputRef}
-            id={field.name}
-            name={field.name}
-            type="text"
-            value={displayValue}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onKeyDown={handleInputKeyDown}
-            placeholder={field.placeholder || `Search ${field.label.toLowerCase()}...`}
-            className={`form-input w-full pr-10 ${fieldError ? 'error' : ''}`}
-            autoComplete="off"
-          />
-          
-          {/* Clear button */}
-          {/* {(currentValue || searchTerm) && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-              title="Clear selections"
-            >
-              <Icons.buttons.clear className="w-3.5 h-3.5" />
-            </button>
-          )} */}
-        </div>
+        <input
+          ref={inputRef}
+          id={field.name}
+          name={field.name}
+          type="text"
+          value={displayValue}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onKeyDown={handleInputKeyDown}
+          placeholder={field.placeholder || `Search ${field.label.toLowerCase()}...`}
+          className={`form-input w-full pr-10 ${fieldError ? 'error' : ''}`}
+          autoComplete="off"
+        />
+        
+        {/* Clear button */}
+        {/* {(currentValue || searchTerm) && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            title="Clear selections"
+          >
+            <Icons.buttons.clear className="w-3.5 h-3.5" />
+          </button>
+        )} */}
         
         {/* Hidden input for form registration */}
         <input

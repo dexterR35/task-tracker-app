@@ -25,7 +25,7 @@ const SmallCard = memo(
     );
 
     return (
-      <div className="card-small-modern group">
+      <div className="card-small-modern group overflow-visible">
         {/* Accent border on top */}
         <div
           className="absolute top-0 left-0 right-0 h-1 rounded-t-xl "
@@ -34,7 +34,7 @@ const SmallCard = memo(
           }}
         />
 
-        <div className="flex flex-col h-full relative z-10">
+        <div className="flex flex-col h-full relative z-10 overflow-visible">
           {/* Modern Header Section */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -83,7 +83,7 @@ const SmallCard = memo(
           </div>
 
           {/* Main Content Section */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-visible">
             {/* Value Display - Prominent */}
             <div className="mb-4">
               <p
@@ -101,7 +101,7 @@ const SmallCard = memo(
 
             {/* Filters/Inputs Content */}
             {card.content && (
-              <div className="leading-relaxed mb-4 text-sm">{card.content}</div>
+              <div className="leading-relaxed mb-4 text-sm overflow-visible">{card.content}</div>
             )}
 
             {/* Details Section - Modern Cards */}
