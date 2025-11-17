@@ -353,11 +353,11 @@ const TaskTable = ({
           filteredTasks = filteredTasks.filter((task) => {
             const taskData = getTaskData(task);
             
-            // Use startDate to determine which week the task belongs to
-            // If task has no startDate, exclude it when week filter is active
-            if (!taskData.startDate) {
+            // Use createdAt to determine which week the task belongs to
+            // If task has no createdAt, exclude it when week filter is active
+            if (!task.createdAt) {
               if (import.meta.env.MODE === "development") {
-                logger.log("Task excluded - no startDate:", {
+                logger.log("Task excluded - no createdAt:", {
                   taskId: task.id || task.taskId,
                   taskName: taskData.taskName,
                 });
@@ -366,52 +366,52 @@ const TaskTable = ({
             }
 
             try {
-              // Parse task start date - handle multiple formats
-              let taskStartDate;
-              if (taskData.startDate instanceof Date) {
-                taskStartDate = new Date(taskData.startDate);
-              } else if (typeof taskData.startDate === "string") {
-                taskStartDate = new Date(taskData.startDate);
+              // Parse task createdAt date - handle multiple formats (Firestore Timestamp, Date, string)
+              let taskCreatedDate;
+              if (task.createdAt instanceof Date) {
+                taskCreatedDate = new Date(task.createdAt);
+              } else if (typeof task.createdAt === "string") {
+                taskCreatedDate = new Date(task.createdAt);
               } else if (
-                taskData.startDate &&
-                typeof taskData.startDate === "object" &&
-                taskData.startDate.seconds
+                task.createdAt &&
+                typeof task.createdAt === "object" &&
+                task.createdAt.seconds
               ) {
-                taskStartDate = new Date(taskData.startDate.seconds * 1000);
+                taskCreatedDate = new Date(task.createdAt.seconds * 1000);
               } else if (
-                taskData.startDate &&
-                typeof taskData.startDate === "object" &&
-                taskData.startDate.toDate &&
-                typeof taskData.startDate.toDate === "function"
+                task.createdAt &&
+                typeof task.createdAt === "object" &&
+                task.createdAt.toDate &&
+                typeof task.createdAt.toDate === "function"
               ) {
-                taskStartDate = taskData.startDate.toDate();
+                taskCreatedDate = task.createdAt.toDate();
               } else {
-                taskStartDate = new Date(taskData.startDate);
+                taskCreatedDate = new Date(task.createdAt);
               }
 
-              if (isNaN(taskStartDate.getTime())) {
+              if (isNaN(taskCreatedDate.getTime())) {
                 if (import.meta.env.MODE === "development") {
-                  logger.warn("Task excluded - invalid startDate:", {
+                  logger.warn("Task excluded - invalid createdAt:", {
                     taskId: task.id || task.taskId,
-                    startDate: taskData.startDate,
+                    createdAt: task.createdAt,
                   });
                 }
                 return false;
               }
 
               // Normalize task date to start of day for comparison
-              taskStartDate.setHours(0, 0, 0, 0);
+              taskCreatedDate.setHours(0, 0, 0, 0);
 
-              // Check if task start date falls within the week range
-              // Task belongs to this week if its startDate is within weekStart and weekEnd
-              const isInWeek = taskStartDate >= weekStart && taskStartDate <= weekEnd;
+              // Check if task createdAt falls within the week range
+              // Task belongs to this week if its createdAt is within weekStart and weekEnd
+              const isInWeek = taskCreatedDate >= weekStart && taskCreatedDate <= weekEnd;
 
               if (import.meta.env.MODE === "development") {
                 if (isInWeek) {
                   logger.log("Task matches week:", {
                     taskId: task.id || task.taskId,
                     taskName: taskData.taskName,
-                    taskStartDate: taskStartDate.toISOString().split("T")[0],
+                    taskCreatedDate: taskCreatedDate.toISOString().split("T")[0],
                     weekStart: weekStart.toISOString().split("T")[0],
                     weekEnd: weekEnd.toISOString().split("T")[0],
                   });
@@ -422,7 +422,7 @@ const TaskTable = ({
             } catch (error) {
               logger.warn("Error processing task date for week filter:", error, {
                 taskId: task.id || task.taskId,
-                startDate: taskData.startDate,
+                createdAt: task.createdAt,
               });
               return false;
             }

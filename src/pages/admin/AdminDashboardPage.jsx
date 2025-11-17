@@ -235,7 +235,7 @@ const AdminDashboardPage = () => {
     <div>
       {/* Page Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-end mb-6">
           <DynamicButton
             onClick={handleCreateTask}
             variant="primary"

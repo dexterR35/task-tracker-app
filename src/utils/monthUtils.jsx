@@ -10,6 +10,7 @@ import {
   eachDayOfInterval,
   isWeekend,
   addWeeks,
+  addDays,
 } from "date-fns";
 import {
   parseMonthId,
@@ -35,33 +36,47 @@ export const getWeeksInMonth = (monthId) => {
   const monthEnd = endOfMonth(date);
 
   const weeks = [];
-  let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
-
-  // Adjust if week starts before month
+  // Find the first Monday within the month
+  let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday of the week containing month start
+  
+  // If the Monday is before the month starts, find the first Monday of the month
   if (currentWeekStart < monthStart) {
-    currentWeekStart = addWeeks(currentWeekStart, 1);
+    const dayOfWeek = monthStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    if (dayOfWeek === 1) {
+      // Month starts on Monday
+      currentWeekStart = monthStart;
+    } else {
+      // Calculate days to add to get to the first Monday
+      // If dayOfWeek is 0 (Sunday), add 1 day. Otherwise add (8 - dayOfWeek) days
+      const daysToAdd = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+      currentWeekStart = addDays(monthStart, daysToAdd);
+    }
   }
 
   let weekNumber = 1;
 
   while (currentWeekStart <= monthEnd) {
-    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 }); // Sunday
+    // Calculate Friday of the week (Monday + 4 days = Friday)
+    const weekEndFriday = addDays(currentWeekStart, 4);
 
     // Get week days (Monday-Friday only)
     const weekDays = eachDayOfInterval({
       start: currentWeekStart,
-      end: weekEnd,
+      end: weekEndFriday,
     }).filter((day) => !isWeekend(day) && day >= monthStart && day <= monthEnd);
 
     if (weekDays.length > 0) {
+      // Use Friday as endDate, but only if it's within the month
+      const actualWeekEnd = weekEndFriday <= monthEnd ? weekEndFriday : weekDays[weekDays.length - 1];
+      
       weeks.push({
         weekNumber,
         startDate: currentWeekStart,
-        endDate: weekEnd,
+        endDate: actualWeekEnd,
         days: weekDays,
         startDateStr: format(currentWeekStart, "yyyy-MM-dd"),
-        endDateStr: format(weekEnd, "yyyy-MM-dd"),
-        label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(weekEnd, "MMM dd")})`,
+        endDateStr: format(actualWeekEnd, "yyyy-MM-dd"),
+        label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(actualWeekEnd, "MMM dd")})`,
       });
     }
 
