@@ -196,7 +196,6 @@ const TableControls = ({
                   />
                 </div>
               )}
-
               {/* Department Filter */}
               {departmentFilter && (
                 <div className="w-64">{departmentFilter}</div>
