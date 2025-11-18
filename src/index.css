@@ -1,18 +1,14 @@
 @import "tailwindcss";
 
-
-/* Modern CSS cascade layers for better control */
 @layer theme, base, components, utilities;
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Critical fonts with font-display: swap to prevent render blocking */
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
 @import "@fontsource/inter/700.css";
 
-/* Modern Inter font loading optimization */
 @font-face {
   font-family: "Inter";
   font-style: normal;
@@ -66,20 +62,16 @@
 }
 
 @theme {
-  /* ===== BASE COLORS ===== */
+
   --color-primary: #0a0a13;
   --color-primary-80: #0a2470;
   --color-secondary: #1e2031;
   --color-secondary-dark: #4949492b;
   --color-hover: #c10f29;
   --color-focus: #aebfff;
-  --color-soft: #3d48c9; /* blue-soft */
+  --color-soft: #3d48c9;
   --color-smallCard: #131424;
   --color-smallCard-white: #e8edff;
-
-  /* ===== SPACING SCALE ===== */
-
-  /* ===== TYPOGRAPHY SCALE ===== */
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -88,14 +80,7 @@
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
-
-
-
-  
-  /* ===== GRAY SCALE ===== */
   --color-gray-dark: #252a3c;
- 
-  /* ===== STATUS COLORS ===== */
   --color-red-error: #FF204E;
   --color-red-500: #c10f29;
   --color-green-success: #2fd181;
@@ -103,17 +88,6 @@
   --color-warning: #eb2743;
   --color-blue-default: #2a9df4;
   --color-blue-dark: #1d2a4b;
-
-  /* ===== CARD COLORS ===== */
-  --color-card-green: #2fd181;
-  --color-card-blue: #2a9df4;
-  --color-card-purple: #3d48c9;
-  --color-card-red: #eb2743;
-  --color-card-yellow: #eb2743;
-  --color-card-pink: #c10f29;
-  --color-card-gray: #727e90;
-
-  /* ===== BUTTON COLORS ===== */
   --color-btn-primary: #3d48c9;
   --color-btn-secondary: #c10f29;
   --color-btn-danger: #c10f29;
@@ -122,51 +96,13 @@
   --color-btn-info: #538cff;
   --color-btn-light: #dce6f0;
   --color-btn-dark: #0a1225;
-
-
-
-  /* ===== AVATAR BACKGROUNDS ===== */
-  --color-avatar-primary: #3d48c9;
-  --color-avatar-success: #2fd181;
-  --color-avatar-warning: #eb2743;
-  --color-avatar-error: #eb2743;
-  --color-avatar-info: #2a9df4;
-  --color-avatar-secondary: #727e90;
-
-  /* ===== ICON COLORS ===== */
-  --color-icon-primary: #3d48c9;
-  --color-icon-success: #2fd181;
-  --color-icon-warning: #eb2743;
-  --color-icon-error: #eb2743;
-  --color-icon-info: #2a9df4;
-  --color-icon-muted: #a8b2c0;
-  --color-icon-dark: #374151;
-
-  /* ===== TEXT COLORS ===== */
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
   --color-text-muted: #9ca3af;
   --color-text-white: #ffffff;
   --color-text-dark: #1f2937;
-
-  /* ===== BACKGROUND COLORS ===== */
-  --color-bg-white: #ffffff;
-  --color-bg-light: #f9fafb;
-  --color-bg-dark: #111827;
-  --color-bg-card: #ffffff;
-  --color-bg-card-dark: #1f2937;
-
-  /* ===== BORDER COLORS ===== */
-  --color-border-light: #e5e7eb;
-  --color-border-medium: #d1d5db;
-  --color-border-dark: #9ca3af;
-  --color-border-focus: #aebfff;
-
-  /* ===== GRADIENTS ===== */
 }
 
-
-/* ---------------- Base layer ---------------- */
 @layer base {
   body {
     @apply [font-family:'Inter',sans-serif] bg-white dark:bg-primary transition-colors duration-300;
@@ -176,7 +112,6 @@
     @apply cursor-pointer;
   }
 
-  /* Form element defaults */
   form select option {
     @apply uppercase;
   }
@@ -184,92 +119,54 @@
   form > div span {
     @apply uppercase;
   }
-
+  .recharts_measurement_span {
+    display: none !important;
+  }
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
     @apply w-full px-4 py-3 bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-default focus:border-blue-default;
   }
-
-  /* Comprehensive error styling for all input types */
-  input:not([type="radio"]).error,
-  select.error,
-  textarea.error {
-    @apply border-red-error dark:border-red-error;
-  }
-
-  /* Checkbox error styling */
-  input[type="checkbox"].error {
-    @apply border-red-error dark:border-red-error;
-  }
-
-  /* Radio button error styling */
-  input[type="radio"].error {
-    @apply border-red-error dark:border-red-error;
-  }
-
-  /* Additional error styling for custom inputs */
-  .form-input.error,
   input.error,
   select.error,
-  textarea.error {
-    @apply border-red-error dark:border-red-error;
-  }
-
-  /* Error styling for any input with error class */
+  textarea.error,
+  input[type="checkbox"].error,
+  input[type="radio"].error,
+  .form-input.error,
+  .error input,
+  .error select,
+  .error textarea,
   [class*="error"] input,
   [class*="error"] select,
   [class*="error"] textarea {
     @apply border-red-error dark:border-red-error;
   }
-
-  /* Global error styling - catch all inputs with error class */
-  input.error,
-  select.error,
-  textarea.error,
-  .error input,
-  .error select,
-  .error textarea {
-    @apply border-red-error dark:border-red-error;
-  }
-  /* Select Fields */
   select {
     @apply cursor-pointer;
   }
-
-  /* Date Fields */
   input[type="date"] {
     @apply cursor-pointer;
   }
-
-  /* Number Fields */
   input[type="number"] {
     @apply text-right;
   }
-
-  /* Number input with left alignment */
   .number-input-left {
     @apply text-left;
   }
-
-  /* Hide number input arrows and position text to left */
   .number-input-left::-webkit-outer-spin-button,
   .number-input-left::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-
   .number-input-left[type="number"] {
     -moz-appearance: textfield;
   }
 
-  /* Disabled States */
   input:not([type="checkbox"]):not([type="radio"]):disabled,
   select:disabled,
   textarea:disabled {
     @apply opacity-50 cursor-not-allowed bg-gray-100 dark:bg-smallCard;
   }
-  /* Enhanced Global Label Styling */
   label {
     @apply block text-sm text-gray-800 dark:text-gray-200 mb-2;
   }
@@ -283,7 +180,6 @@
   input[type="checkbox"] {
     @apply w-4 h-4 text-blue-default focus:ring-blue-default dark:focus:ring-blue-default border-gray-300 dark:border-gray-600 rounded;
   }
-  /* Headings with theme colors */
   h1 {
     @apply text-4xl font-bold tracking-tight text-text-primary dark:text-text-white;
   }
@@ -291,7 +187,6 @@
   h2 {
     @apply text-2xl font-bold tracking-tight text-text-primary dark:text-text-white;
   }
-
   h3 {
     @apply font-semibold text-gray-900 dark:text-white mb-1 text-xl;
   }
@@ -302,14 +197,9 @@
     @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;
   }
 
-
-  /* Global Error Message Styling */
   .error-message {
     @apply text-xs text-red-error dark:text-red-error mt-2 flex items-center gap-0 justify-start;
   }
-
-
-  /* Global Required Indicator */
   .required-indicator {
     @apply text-red-error font-bold;
   }
@@ -346,7 +236,6 @@
 
   }
 
-
   .card-small-modern::before {
     content: '';
     position: absolute;
@@ -354,15 +243,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    /* background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%); */
     pointer-events: none;
     border-radius: inherit;
   }
-
-  .dark .card-small-modern::before {
-    /* background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.02) 100%); */
-  }
-
 
   /* Enhanced Typography with Better Font Sizes */
   .card-title {
@@ -440,11 +323,6 @@
     @apply flex items-center justify-center;
   }
 
-  /* Form Field Grouping */
-  /* .form-field-group {
-    @apply bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-600;
-  } */
-
   /* Form Section Divider */
   .form-section {
     @apply border-b border-gray-200 dark:border-gray-700 pb-4 mb-0 last:border-b-0 last:pb-0 last:mb-0;
@@ -474,5 +352,4 @@
   }
 }
 
-@layer utilities {
-}
+

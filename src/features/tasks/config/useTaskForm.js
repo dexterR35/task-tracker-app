@@ -146,6 +146,12 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
     required: false
   },
   {
+    name: 'useShutterstock',
+    type: 'checkbox',
+    label: 'Shutterstock',
+    required: false
+  },
+  {
     name: 'aiModels',
     type: 'multiSelect',
     label: 'AI Models Used',
@@ -280,6 +286,7 @@ export const createTaskFormSchema = () => Yup.object().shape({
   _usedAIEnabled: Yup.boolean(),
   isVip: Yup.boolean(),
   reworked: Yup.boolean(),
+  useShutterstock: Yup.boolean(),
   aiModels: Yup.array().when('_usedAIEnabled', {
     is: true,
     then: (schema) => schema.min(1, 'Please select at least one AI model when "AI Tools Used" is checked'),
@@ -418,6 +425,7 @@ const createDataTaskStructure = (formData) => {
     reporters: formData.reporters || '',
     reporterUID: formData.reporters || '', // Set reporterUID to match reporters ID for analytics
     reworked: formData.reworked || false,
+    useShutterstock: formData.useShutterstock || false,
     startDate: formData.startDate,
     taskName: formData.taskName,
     timeInHours: formData.timeInHours,

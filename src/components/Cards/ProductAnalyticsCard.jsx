@@ -115,91 +115,64 @@ const ProductAnalyticsCard = memo(({
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Product Categories Pie Chart */}
-          <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-            <div
-              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
-              }}
+          <ChartHeader
+            variant="section"
+            title="Categories Distribution"
+            badges={[
+              `${categoryPieTotal} tasks`,
+              `${Math.round(categoryPieHours * 10) / 10}h`
+            ]}
+            color={cardColor}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            <SimplePieChart
+              data={categoryPieData}
+              title=""
+              colors={categoryPieColors}
+              showPercentages={true}
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
             />
-            <div className="relative z-10">
-              <ChartHeader
-                title="Categories Distribution"
-                badges={[
-                  `${categoryPieTotal} tasks`,
-                  `${Math.round(categoryPieHours * 10) / 10}h`
-                ]}
-                color={cardColor}
-              />
-              <div className="px-5 pb-5">
-                <SimplePieChart
-                  data={categoryPieData}
-                  title=""
-                  colors={categoryPieColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                />
-              </div>
-            </div>
-          </div>
+          </ChartHeader>
 
           {/* Product Casino Markets Pie Chart */}
-          <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-            <div
-              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 100%)`,
-              }}
+          <ChartHeader
+            variant="section"
+            title="Casino Markets"
+            badges={[
+              `${casinoMarketsPieTotal} tasks`,
+              `${Math.round(casinoMarketsPieHours * 10) / 10}h`
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            <SimplePieChart
+              data={productCasinoMarketsPieData}
+              title=""
+              colors={productCasinoMarketsPieColors}
+              showPercentages={true}
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
             />
-            <div className="relative z-10">
-              <ChartHeader
-                title="Casino Markets"
-                badges={[
-                  `${casinoMarketsPieTotal} tasks`,
-                  `${Math.round(casinoMarketsPieHours * 10) / 10}h`
-                ]}
-                color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
-              />
-              <div className="px-5 pb-5">
-                <SimplePieChart
-                  data={productCasinoMarketsPieData}
-                  title=""
-                  colors={productCasinoMarketsPieColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                />
-              </div>
-            </div>
-          </div>
+          </ChartHeader>
 
           {/* Product Sport Markets Pie Chart */}
-          <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-            <div
-              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-              style={{
-                background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.green}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 100%)`,
-              }}
+          <ChartHeader
+            variant="section"
+            title="Sport Markets"
+            badges={[
+              `${sportMarketsPieTotal} tasks`,
+              `${Math.round(sportMarketsPieHours * 10) / 10}h`
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.green}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            <SimplePieChart
+              data={productSportMarketsPieData}
+              title=""
+              colors={productSportMarketsPieColors}
+              showPercentages={true}
+              dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
             />
-            <div className="relative z-10">
-              <ChartHeader
-                title="Sport Markets"
-                badges={[
-                  `${sportMarketsPieTotal} tasks`,
-                  `${Math.round(sportMarketsPieHours * 10) / 10}h`
-                ]}
-                color={CARD_SYSTEM.COLOR_HEX_MAP.green}
-              />
-              <div className="px-5 pb-5">
-                <SimplePieChart
-                  data={productSportMarketsPieData}
-                  title=""
-                  colors={productSportMarketsPieColors}
-                  showPercentages={true}
-                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                />
-              </div>
-            </div>
-          </div>
+          </ChartHeader>
         </div>
       </div>
 
@@ -215,34 +188,25 @@ const ProductAnalyticsCard = memo(({
             const totalTasks = categoryBiaxialData?.reduce((sum, item) => sum + (item.tasks || 0), 0) || 0;
             const totalHours = categoryBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
-              <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                  style={{
-                    background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
-                  }}
+              <ChartHeader
+                variant="section"
+                title="Categories Performance"
+                badges={[
+                  `${totalTasks} tasks`,
+                  `${totalHours}h`
+                ]}
+                color={cardColor}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                <BiaxialBarChart
+                  data={categoryBiaxialData}
+                  title=""
+                  tasksColor={categoryBiaxialTasksColor}
+                  hoursColor={categoryBiaxialHoursColor}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+                  showHours={false}
                 />
-                <div className="relative z-10">
-                  <ChartHeader
-                    title="Categories Performance"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
-                    color={cardColor}
-                  />
-                  <div className="px-5 pb-5">
-                    <BiaxialBarChart
-                      data={categoryBiaxialData}
-                      title=""
-                      tasksColor={categoryBiaxialTasksColor}
-                      hoursColor={categoryBiaxialHoursColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                      showHours={false}
-                    />
-                  </div>
-                </div>
-              </div>
+              </ChartHeader>
             );
           })()}
 
@@ -252,34 +216,25 @@ const ProductAnalyticsCard = memo(({
             const totalTasks = productCasinoTotalTasks || 0;
             const totalHours = productCasinoMarketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
-              <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                  style={{
-                    background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 100%)`,
-                  }}
+              <ChartHeader
+                variant="section"
+                title="Casino Markets Performance"
+                badges={[
+                  `${totalTasks} tasks`,
+                  `${totalHours}h`
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                <BiaxialBarChart
+                  data={productCasinoMarketsBiaxialData}
+                  title=""
+                  tasksColor={productCasinoMarketsBiaxialTasksColor}
+                  hoursColor={productCasinoMarketsBiaxialHoursColor}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                  showHours={false}
                 />
-                <div className="relative z-10">
-                  <ChartHeader
-                    title="Casino Markets Performance"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
-                    color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
-                  />
-                  <div className="px-5 pb-5">
-                    <BiaxialBarChart
-                      data={productCasinoMarketsBiaxialData}
-                      title=""
-                      tasksColor={productCasinoMarketsBiaxialTasksColor}
-                      hoursColor={productCasinoMarketsBiaxialHoursColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                      showHours={false}
-                    />
-                  </div>
-                </div>
-              </div>
+              </ChartHeader>
             );
           })()}
 
@@ -289,34 +244,25 @@ const ProductAnalyticsCard = memo(({
             const totalTasks = productSportTotalTasks || 0;
             const totalHours = productSportMarketsBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0;
             return (
-              <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                  style={{
-                    background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.green}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 100%)`,
-                  }}
+              <ChartHeader
+                variant="section"
+                title="Sport Markets Performance"
+                badges={[
+                  `${totalTasks} tasks`,
+                  `${totalHours}h`
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.green}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                <BiaxialBarChart
+                  data={productSportMarketsBiaxialData}
+                  title=""
+                  tasksColor={productSportMarketsBiaxialTasksColor}
+                  hoursColor={productSportMarketsBiaxialHoursColor}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                  showHours={false}
                 />
-                <div className="relative z-10">
-                  <ChartHeader
-                    title="Sport Markets Performance"
-                    badges={[
-                      `${totalTasks} tasks`,
-                      `${totalHours}h`
-                    ]}
-                    color={CARD_SYSTEM.COLOR_HEX_MAP.green}
-                  />
-                  <div className="px-5 pb-5">
-                    <BiaxialBarChart
-                      data={productSportMarketsBiaxialData}
-                      title=""
-                      tasksColor={productSportMarketsBiaxialTasksColor}
-                      hoursColor={productSportMarketsBiaxialHoursColor}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                      showHours={false}
-                    />
-                  </div>
-                </div>
-              </div>
+              </ChartHeader>
             );
           })()}
         </div>
@@ -333,66 +279,48 @@ const ProductAnalyticsCard = memo(({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino vs Sport: Tasks by Markets */}
             {casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0 && (
-              <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                  style={{
-                    background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.orange} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.orange}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.orange} 100%)`,
-                  }}
+              <ChartHeader
+                variant="section"
+                title="By Markets"
+                badges={[
+                  `${casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                <BiaxialBarChart
+                  data={casinoSportPerMarketBiaxialData}
+                  title=""
+                  bars={[
+                    { dataKey: 'casino', name: 'Casino', color: '#dc143c' },
+                    { dataKey: 'sport', name: 'Sport', color: '#22c55e' }
+                  ]}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
                 />
-                <div className="relative z-10">
-                  <ChartHeader
-                    title="By Markets"
-                    badges={[
-                      `${casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
-                    ]}
-                    color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
-                  />
-                  <div className="px-5 pb-5">
-                    <BiaxialBarChart
-                      data={casinoSportPerMarketBiaxialData}
-                      title=""
-                      bars={[
-                        { dataKey: 'casino', name: 'Casino', color: '#dc143c' },
-                        { dataKey: 'sport', name: 'Sport', color: '#22c55e' }
-                      ]}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                    />
-                  </div>
-                </div>
-              </div>
+              </ChartHeader>
             )}
 
             {/* Total Casino vs Total Sport */}
             {totalCasinoSportBiaxialData && totalCasinoSportBiaxialData.length > 0 && (
-              <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                  style={{
-                    background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.orange} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.orange}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.orange} 100%)`,
-                  }}
+              <ChartHeader
+                variant="section"
+                title="Total Comparison"
+                badges={[
+                  `${totalCasinoSportBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                <BiaxialBarChart
+                  data={totalCasinoSportBiaxialData}
+                  title=""
+                  bars={[
+                    { dataKey: 'casino', name: 'Casino', color: '#dc143c' },
+                    { dataKey: 'sport', name: 'Sport', color: '#22c55e' }
+                  ]}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
                 />
-                <div className="relative z-10">
-                  <ChartHeader
-                    title="Total Comparison"
-                    badges={[
-                      `${totalCasinoSportBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
-                    ]}
-                    color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
-                  />
-                  <div className="px-5 pb-5">
-                    <BiaxialBarChart
-                      data={totalCasinoSportBiaxialData}
-                      title=""
-                      bars={[
-                        { dataKey: 'casino', name: 'Casino', color: '#dc143c' },
-                        { dataKey: 'sport', name: 'Sport', color: '#22c55e' }
-                      ]}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
-                    />
-                  </div>
-                </div>
-              </div>
+              </ChartHeader>
             )}
           </div>
         </div>
@@ -407,41 +335,27 @@ const ProductAnalyticsCard = memo(({
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {productUsersCharts.map((userChart) => (
-              <div 
-                key={userChart.userId} 
-                className="card-small-modern group hover:shadow-xl transition-all duration-300"
+              <ChartHeader
+                key={userChart.userId}
+                variant="section"
+                title={userChart.userName}
+                subtitle="Product Markets"
+                badges={[
+                  `${userChart.totalTasks} tasks`,
+                  `${userChart.totalHours}h`
+                ]}
+                color={cardColor}
+                className="group hover:shadow-xl transition-all duration-300"
               >
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                  style={{
-                    background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}cc 50%, ${cardColor} 100%)`,
-                  }}
+                <BiaxialBarChart
+                  data={userChart.marketData}
+                  title=""
+                  tasksColor={CHART_COLORS.DEFAULT[0]}
+                  hoursColor={CHART_COLORS.DEFAULT[1]}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                  showHours={true}
                 />
-                <div className="relative z-10 px-5 pt-4">
-                  <ChartHeader
-                    title={userChart.userName}
-                    subtitle="Product Markets"
-                    badges={[
-                      `${userChart.totalTasks} tasks`,
-                      `${userChart.totalHours}h`
-                    ]}
-                    color={cardColor}
-                    className="!px-0 !py-0"
-                  />
-                  
-                  {/* Chart Container */}
-                  <div className="pb-5">
-                    <BiaxialBarChart
-                      data={userChart.marketData}
-                      title=""
-                      tasksColor={CHART_COLORS.DEFAULT[0]}
-                      hoursColor={CHART_COLORS.DEFAULT[1]}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                      showHours={true}
-                    />
-                  </div>
-                </div>
-              </div>
+              </ChartHeader>
             ))}
           </div>
         </div>

@@ -86,6 +86,7 @@ const TaskForm = ({
       aiTime: 0,
       isVip: false,
       reworked: false,
+      useShutterstock: false,
       reporters: '',
       observations: ''
     },
@@ -282,6 +283,7 @@ const TaskForm = ({
         reporters: taskData.reporters || null,
         isVip: taskData.isVip || false,
         reworked: taskData.reworked || false,
+        useShutterstock: taskData.useShutterstock || false,
         observations: taskData.observations || ''
       };
       
@@ -509,8 +511,8 @@ const TaskForm = ({
         {/* Task Properties Section */}
         <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Task Properties</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {renderFieldsByName(['isVip', 'reworked'])}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {renderFieldsByName(['isVip', 'reworked', 'useShutterstock'])}
           </div>
         </div>
 

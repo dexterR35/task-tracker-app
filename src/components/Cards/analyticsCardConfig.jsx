@@ -96,3 +96,10 @@ export {
   getTotalAnalyticsCardProps,
   getCachedTotalAnalyticsCardProps,
 } from "./configs/TotalAnalyticsConfig";
+
+// Re-export Shutterstock Analytics
+export {
+  calculateShutterstockAnalytics,
+  getShutterstockAnalyticsCardProps,
+  getCachedShutterstockAnalyticsCardProps,
+} from "./configs/ShutterstockAnalyticsConfig";

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { Icons } from "@/components/icons";
 import Badge from "@/components/ui/Badge/Badge";
@@ -10,6 +11,8 @@ import MiscAnalyticsCard from "@/components/Cards/MiscAnalyticsCard";
 import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import TotalAnalyticsCard from "@/components/Cards/TotalAnalyticsCard";
+import ShutterstockAnalyticsCard from "@/components/Cards/ShutterstockAnalyticsCard";
+import SmallCard from "@/components/Card/smallCards/SmallCard";
 import {
   getCachedMarketingAnalyticsCardProps,
   getCachedAcquisitionAnalyticsCardProps,
@@ -19,9 +22,10 @@ import {
   getCachedReporterAnalyticsCardProps,
   getCachedMarketsByUsersCardProps,
   getCachedTotalAnalyticsCardProps,
+  getCachedShutterstockAnalyticsCardProps,
 } from "@/components/Cards/analyticsCardConfig";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
-import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
+import Skeleton, { SkeletonAnalyticsCard, SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 import { CARD_SYSTEM } from "@/constants";
@@ -30,10 +34,11 @@ import { logger } from "@/utils/logger";
 const AnalyticsPage = () => {
   // Get real-time data from month selection
   const { users, reporters, error } = useAppDataContext();
+  const navigate = useNavigate();
+  const { cardId } = useParams();
 
-  // View mode state - 'overview' shows all cards, 'detailed' shows single card
-  const [viewMode, setViewMode] = useState("overview");
-  const [selectedCard, setSelectedCard] = useState(null);
+  // Use URL parameter for selected card, fallback to null for overview
+  const selectedCard = cardId || null;
 
   const {
     tasks, // Real-time tasks data (selected or current month)
@@ -175,90 +180,97 @@ const AnalyticsPage = () => {
         name: "Marketing Analytics",
         description: "View  marketing hours",
         icon: Icons.generic.target,
-        color: "purple",
+        color: "pink",
       },
       {
         id: "acquisition-analytics",
         name: "Acquisition Analytics",
         description: "View  acquisition tasks and hours",
         icon: Icons.generic.target,
-        color: "orange",
+        color: "amber",
       },
       {
         id: "product-analytics",
         name: "Product Analytics",
         description: "View  product tasks and hours",
         icon: Icons.generic.package,
-        color: "amber",
+        color: "orange",
       },
       {
         id: "misc-analytics",
         name: "Misc Analytics",
         description: "View misc product tasks and hours",
         icon: Icons.generic.product,
-        color: "pink",
+        color: "soft_purple",
       },
       {
         id: "ai-analytics",
         name: "AI Analytics",
         description: "View AI usage by users and models",
         icon: Icons.generic.ai,
-        color: "purple",
+        color: "yellow",
       },
       {
         id: "reporter-analytics",
         name: "Reporter Analytics",
         description: "View  tasks, hours, markets, and products by reporter",
         icon: Icons.admin.reporters,
-        color: "orange",
+        color: "purple",
+      },
+      {
+        id: "shutterstock-analytics",
+        name: "Shutterstock Analytics",
+        description: "View Shutterstock tasks and hours by user and market",
+        icon: Icons.generic.chart,
+        color: "blue",
       },
     ],
     []
   );
 
-  // Handle card click to view in detail
+  // Handle card click to view in detail - navigate to route
   const handleCardClick = useCallback((cardId) => {
-    setSelectedCard(cardId);
-    setViewMode("detailed");
-  }, []);
+    navigate(`/analytics/${cardId}`);
+  }, [navigate]);
 
-  // Handle back to overview
-  const handleBackToOverview = useCallback(() => {
-    setViewMode("overview");
-    setSelectedCard(null);
-  }, []);
+  // Handle back to analytics view - navigate to base analytics route
+  const handleBackToAnalytics = useCallback(() => {
+    navigate('/analytics');
+  }, [navigate]);
 
-  // Calculate props for all cards (for overview mode) or selected card (for detailed mode)
-  // All card props now include unique tasks count (not sum of market/category counts)
+  // All card props now include unique tasks count
   const getCardProps = useCallback((cardId) => {
     if (isLoading || hasNoData) return null;
 
     try {
       switch (cardId) {
         case "reporter-analytics":
-          // Use unique tasks count (not sum of reporter counts)
+          // Use unique tasks count 
           return getCachedReporterAnalyticsCardProps(tasks, reporters);
         case "markets-by-users":
-          // Use unique tasks count (not sum of market counts)
+          // Use unique tasks count
           return getCachedMarketsByUsersCardProps(tasks, users);
         case "marketing-analytics":
-          // Use unique tasks count (not sum of market counts)
+          // Use unique tasks count 
           return getCachedMarketingAnalyticsCardProps(tasks, users);
         case "acquisition-analytics":
-          // Use unique tasks count (not sum of market counts)
+          // Use unique tasks count 
           return getCachedAcquisitionAnalyticsCardProps(tasks, users);
         case "product-analytics":
-          // Use unique tasks count (not sum of market counts)
+          // Use unique tasks count 
           return getCachedProductAnalyticsCardProps(tasks, users);
         case "misc-analytics":
-          // Use unique tasks count (not sum of category counts)
+          // Use unique tasks count 
           return getCachedMiscAnalyticsCardProps(tasks, users);
         case "ai-analytics":
-          // Use unique tasks count (not sum of product/market/user counts)
+          // Use unique tasks count 
           return getCachedAIAnalyticsCardProps(tasks, users);
         case "total-analytics":
           // Use unique tasks count across all categories
           return getCachedTotalAnalyticsCardProps(tasks);
+        case "shutterstock-analytics":
+          // Filter tasks by useShutterstock = true
+          return getCachedShutterstockAnalyticsCardProps(tasks, users);
         default:
           return null;
       }
@@ -268,44 +280,38 @@ const AnalyticsPage = () => {
     }
   }, [tasks, users, reporters, isLoading, hasNoData]);
 
-  // Error handling function
-  const showError = (message) => {
-    logger.error(message);
-    // You can replace this with a toast notification if you have one
-    alert(message);
-  };
 
   if (isLoading || isInitialLoading) {
     return (
-      <div>
+      <div className="space-y-6 mt-4">
         {/* Page Header Skeleton */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-2 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-96 animate-pulse"></div>
+              <Skeleton height="2rem" width="16rem" className="mb-2" />
+              <Skeleton height="1rem" width="24rem" />
             </div>
             <div className="flex items-center space-x-3">
-              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse"></div>
+              <Skeleton height="2.5rem" width="10rem" rounded="lg" />
             </div>
           </div>
 
           {/* Month Progress Bar Skeleton */}
           <div className="mt-4">
-            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
+            <Skeleton height="6rem" width="100%" rounded="lg" />
           </div>
         </div>
 
         {/* KPI Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+            <SkeletonCard key={index} />
           ))}
         </div>
 
         {/* Analytics Cards Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {Array.from({ length: 2 }).map((_, index) => (
             <SkeletonAnalyticsCard key={index} />
           ))}
         </div>
@@ -316,7 +322,7 @@ const AnalyticsPage = () => {
   if (error || monthError) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-500 dark:text-red-400">
+        <div className="text-red-error dark:text-red-error">
           Error loading analytics:{" "}
           {(error || monthError)?.message || "Unknown error"}
         </div>
@@ -324,180 +330,41 @@ const AnalyticsPage = () => {
     );
   }
 
-  // Render KPI Card Component - Matching SmallCard design
-  const KPICard = ({ title, value, icon: IconComponent, color, subtitle }) => {
-    const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[color] || CARD_SYSTEM.COLOR_HEX_MAP.blue;
-    const styles = useMemo(
-      () => ({
-        iconGradient: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`,
-      }),
-      [cardColorHex]
-    );
-
-    return (
-      <div className="card-small-modern group">
-        {/* Accent border on top */}
-        <div
-          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
-          style={{
-            background: cardColorHex,
-          }}
-        />
-
-        <div className="flex flex-col h-full relative z-10">
-          {/* Modern Header Section */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              {/* Modern Icon with gradient background */}
-              <div
-                className="relative flex-shrink-0"
-                style={{
-                  background: styles.iconGradient,
-                  borderRadius: "12px",
-                  padding: "10px",
-                  boxShadow: `0 4px 12px ${cardColorHex}25`,
-                }}
-              >
-                <div
-                  className="absolute inset-0 rounded-xl"
-                  style={{ background: cardColorHex }}
-                />
-                <IconComponent className="relative w-5 h-5 text-white" />
-              </div>
-
-              {/* Title */}
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">
-                  {title}
-                </h4>
-              </div>
-            </div>
-          </div>
-
-          {/* Value Display */}
-          <div className="mb-2">
-            <p
-              className="text-4xl font-bold mb-2 leading-tight tracking-tight"
-              style={{ color: cardColorHex }}
-            >
-              {value}
-            </p>
-            {subtitle && (
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
-                {subtitle}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Analytics Card Preview - Matching SmallCard design
+  // Render Analytics Card Preview 
   const AnalyticsCardPreview = ({ card, onClick }) => {
     const cardProps = getCardProps(card.id);
     const hasData = cardProps && !cardProps.hasNoData;
-    const cardColorHex = CARD_SYSTEM.COLOR_HEX_MAP[card.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue;
-    const styles = useMemo(
-      () => ({
-        iconGradient: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`,
-        gradientBg: `linear-gradient(135deg, ${cardColorHex}15 0%, ${cardColorHex}05 100%)`,
-        regularDetailBorder: `${cardColorHex}30`,
-      }),
-      [cardColorHex]
-    );
-
-    // Use unique tasks count from cardProps (not sum of market/category counts)
-    // All analytics cards now show unique tasks in totals, with per-market/category counts in breakdowns
     const totalTasks = useMemo(() => {
       if (!cardProps || !hasData) return 0;
-      return cardProps.totalTasks || 0; // This is already unique tasks count from configs
+      return cardProps.totalTasks || 0;
     }, [cardProps, hasData]);
+
+    const cardData = useMemo(() => ({
+      id: card.id,
+      title: card.name,
+      subtitle: card.description,
+      icon: card.icon,
+      color: card.color,
+      value: hasData && totalTasks > 0 ? totalTasks.toLocaleString() : "0",
+      description: hasData ? `${totalTasks.toLocaleString()} tasks` : "No data available",
+      badge: hasData && totalTasks > 0 ? {
+        text: `${totalTasks.toLocaleString()} tasks`,
+        color: card.color
+      } : null,
+      details: [
+        {
+          label: hasData ? "Data available" : "No data available",
+          value: hasData ? "Yes" : "No"
+        }
+      ]
+    }), [card, hasData, totalTasks]);
 
     return (
       <div
-        className="card-small-modern group cursor-pointer hover:shadow-xl transition-all duration-300"
+        className="cursor-pointer group hover:scale-[1.02] transition-all duration-300"
         onClick={() => onClick(card.id)}
       >
-        {/* Accent border on top */}
-        <div
-          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
-          style={{
-            background: cardColorHex,
-          }}
-        />
-
-        <div className="flex flex-col h-full relative z-10">
-          {/* Modern Header Section */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              {/* Modern Icon with gradient background */}
-              <div
-                className="relative flex-shrink-0"
-                style={{
-                  background: styles.iconGradient,
-                  borderRadius: "12px",
-                  padding: "10px",
-                  boxShadow: `0 4px 12px ${cardColorHex}25`,
-                }}
-              >
-                <div
-                  className="absolute inset-0 rounded-xl"
-                  style={{ background: cardColorHex }}
-                />
-                <card.icon className="relative w-5 h-5 text-white" />
-              </div>
-
-              {/* Title */}
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">
-                  {card.name}
-                </h4>
-              </div>
-            </div>
-
-            {/* Arrow icon */}
-            <Icons.buttons.chevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors flex-shrink-0" />
-          </div>
-
-          {/* Description */}
-          <div className="mb-4">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
-              {card.description}
-            </p>
-          </div>
-
-          {/* Status indicator */}
-          <div
-            className="p-2 rounded-lg border flex items-center justify-between mt-auto"
-            style={{
-              background: styles.gradientBg,
-              borderColor: styles.regularDetailBorder,
-            }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm"
-                style={{
-                  backgroundColor: hasData ? cardColorHex : "#64748b",
-                  boxShadow: `0 0 8px ${hasData ? cardColorHex : "#64748b"}60`,
-                }}
-              />
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                {hasData ? "Data available" : "No data available"}
-              </span>
-            </div>
-            {hasData && totalTasks > 0 && (
-              <Badge
-                variant={card.color}
-                size="sm"
-                className="shadow-sm"
-              >
-                {totalTasks.toLocaleString()} tasks
-              </Badge>
-            )}
-          </div>
-        </div>
+        <SmallCard card={cardData} />
       </div>
     );
   };
@@ -523,7 +390,7 @@ const AnalyticsPage = () => {
                 appear once tasks are added for the selected month.
               </p>
               <DynamicButton
-                onClick={handleBackToOverview}
+                onClick={handleBackToAnalytics}
                 variant="primary"
                 size="lg"
                 iconName="arrowLeft"
@@ -531,7 +398,7 @@ const AnalyticsPage = () => {
                 iconPosition="left"
                 className="font-semibold shadow-md"
               >
-                Back to Overview
+                Back to Analytics
               </DynamicButton>
             </div>
           </div>
@@ -544,7 +411,7 @@ const AnalyticsPage = () => {
         <div className="mb-6">
           <div className="mb-4">
             <DynamicButton
-              onClick={handleBackToOverview}
+              onClick={handleBackToAnalytics}
               variant="primary"
               size="md"
               iconName="arrowLeft"
@@ -552,7 +419,7 @@ const AnalyticsPage = () => {
               iconPosition="left"
               className="font-semibold shadow-md my-4 py-3"
             >
-              Back to Overview
+              Back to Analytics
             </DynamicButton>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -588,6 +455,9 @@ const AnalyticsPage = () => {
           )}
           {selectedCard === "total-analytics" && (
             <TotalAnalyticsCard {...cardProps} />
+          )}
+          {selectedCard === "shutterstock-analytics" && (
+            <ShutterstockAnalyticsCard {...cardProps} />
           )}
         </div>
       </div>
@@ -643,10 +513,10 @@ const AnalyticsPage = () => {
       </div>
 
       {/* Detailed View */}
-      {viewMode === "detailed" && renderDetailedCard()}
+      {selectedCard && renderDetailedCard()}
 
-      {/* Overview Dashboard */}
-      {viewMode === "overview" && (
+      {/* Analytics Dashboard */}
+      {!selectedCard && (
         <div className="space-y-8">
           {/* KPI Cards Section */}
           <div>
@@ -659,33 +529,45 @@ const AnalyticsPage = () => {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <KPICard
-                title="Total Tasks"
-                value={summaryMetrics.totalTasks.toLocaleString()}
-                icon={Icons.generic.task}
-                color="blue"
-                subtitle={`${summaryMetrics.uniqueUsers} active users`}
+              <SmallCard
+                card={{
+                  id: 'total-tasks',
+                  title: 'Total Tasks',
+                  value: summaryMetrics.totalTasks.toLocaleString(),
+                  icon: Icons.generic.task,
+                  color: 'blue',
+                  subtitle: `${summaryMetrics.uniqueUsers} active users`
+                }}
               />
-              <KPICard
-                title="Total Hours"
-                value={summaryMetrics.totalHours.toLocaleString()}
-                icon={Icons.generic.clock}
-                color="green"
-                subtitle={`Avg ${summaryMetrics.totalTasks > 0 ? (summaryMetrics.totalHours / summaryMetrics.totalTasks).toFixed(1) : 0}h per task`}
+              <SmallCard
+                card={{
+                  id: 'total-hours',
+                  title: 'Total Hours',
+                  value: summaryMetrics.totalHours.toLocaleString(),
+                  icon: Icons.generic.clock,
+                  color: 'green',
+                  subtitle: `Avg ${summaryMetrics.totalTasks > 0 ? (summaryMetrics.totalHours / summaryMetrics.totalTasks).toFixed(1) : 0}h per task`
+                }}
               />
-              <KPICard
-                title="Marketing"
-                value={marketingMetrics.totalTasks.toLocaleString()}
-                icon={Icons.generic.target}
-                color="purple"
-                subtitle={`${marketingMetrics.totalHours}h total`}
+              <SmallCard
+                card={{
+                  id: 'marketing',
+                  title: 'Marketing',
+                  value: marketingMetrics.totalTasks.toLocaleString(),
+                  icon: Icons.generic.target,
+                  color: 'purple',
+                  subtitle: `${marketingMetrics.totalHours}h total`
+                }}
               />
-              <KPICard
-                title="Acquisition"
-                value={acquisitionMetrics.totalTasks.toLocaleString()}
-                icon={Icons.generic.globe}
-                color="orange"
-                subtitle={`${acquisitionMetrics.totalHours}h total`}
+              <SmallCard
+                card={{
+                  id: 'acquisition',
+                  title: 'Acquisition',
+                  value: acquisitionMetrics.totalTasks.toLocaleString(),
+                  icon: Icons.generic.globe,
+                  color: 'orange',
+                  subtitle: `${acquisitionMetrics.totalHours}h total`
+                }}
               />
             </div>
           </div>

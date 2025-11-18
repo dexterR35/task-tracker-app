@@ -199,16 +199,6 @@ export const NAVIGATION_CONFIG = {
       icon: "chart",
       color: "purple",
       adminOnly: true,
-      subItems: [
-        {
-          name: "Overview",
-          href: "/analytics",
-        },
-        {
-          name: "View All Data",
-          href: "/analytics-detail",
-        },
-      ],
     },
     {
       name: "Management",
@@ -222,13 +212,6 @@ export const NAVIGATION_CONFIG = {
       href: "/landing-pages",
       icon: "document",
       color: "orange",
-      adminOnly: false,
-    },
-    {
-      name: "Documentation",
-      href: "/features",
-      icon: "help",
-      color: "blue",
       adminOnly: false,
     },
   ],
@@ -245,7 +228,7 @@ export const NAVIGATION_CONFIG = {
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
     green: '#00d54d',      // Emerald-500 - Fresh, growth, success
-    blue: '#467dfd',      // Blue-600 - Professional, trust, primary
+    blue: '#1177ff',      // Blue-600 - Professional, trust, primary
     purple: '#0fc9ce',    // Violet-600 - Royal, premium, creative
     crimson: '#DC143C',   // Red-600 - Authority, admin, critical
     amber: '#ff9e08',     // Amber-500 - Warning, attention, caution

@@ -308,6 +308,18 @@ export const createRouter = () => {
             ),
           },
           {
+            path: "analytics/:cardId",
+            element: (
+              <AdminRoute>
+                <ErrorBoundary componentName="AnalyticsPage">
+                  <PageWrapper key="analytics-detail">
+                    <AnalyticsPage />
+                  </PageWrapper>
+                </ErrorBoundary>
+              </AdminRoute>
+            ),
+          },
+          {
             path: "users",
             element: (
               <AdminRoute>

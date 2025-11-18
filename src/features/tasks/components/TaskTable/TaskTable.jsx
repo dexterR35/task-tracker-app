@@ -31,6 +31,7 @@ const FILTER_OPTIONS = [
   { value: "product", label: "Product" },
   { value: "vip", label: "VIP" },
   { value: "reworked", label: "Reworked" },
+  { value: "shutterstock", label: "Shutterstock" },
 ];
 
 // import './TaskTable.css';
@@ -272,7 +273,7 @@ const TaskTable = ({
         });
       }
 
-      // Step 4: Apply task filter (AI Used, Marketing, Acquisition, Product, VIP, Reworked)
+      // Step 4: Apply task filter (AI Used, Marketing, Acquisition, Product, VIP, Reworked, Shutterstock)
       if (selectedFilter) {
         if (import.meta.env.MODE === "development") {
           logger.log("Applying filter:", selectedFilter);
@@ -294,6 +295,8 @@ const TaskTable = ({
               return taskData.isVip;
             case "reworked":
               return taskData.reworked;
+            case "shutterstock":
+              return taskData.useShutterstock === true;
             default:
               return true;
           }

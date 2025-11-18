@@ -815,13 +815,17 @@ export const calculateUserTable = (tasks, users) => {
         count: userData.markets[market]?.tasks || 0,
       }));
 
+      // Calculate total market occurrences (sum of all market counts)
+      // This ensures percentages sum to 100% across all markets
+      const totalMarketOccurrences = marketItems.reduce((sum, item) => sum + item.count, 0);
+
       // Add market columns with percentages and hours
       sortedMarkets.forEach((market) => {
         const marketData = userData.markets[market] || { tasks: 0, hours: 0 };
         const marketCount = marketData.tasks || 0;
         row[market] = calculateCountWithPercentage(
           marketCount,
-          userData.totalTasks,
+          totalMarketOccurrences || userData.totalTasks, // Use total market occurrences, fallback to totalTasks if 0
           marketItems,
           market
         );

@@ -49,7 +49,13 @@ const createDateCell = (format = DATE_FORMATS.SHORT) => ({ getValue }) => {
     </span>
   );
 };
-const createBooleanCell = (trueText = "✓", falseText = "-") => ({ getValue }) => getValue() ? trueText : falseText;
+const createBooleanCell = (trueText = "✓", falseText = "-") => ({ getValue }) => {
+  const value = getValue();
+  if (value) {
+    return <Badge variant="green" size="sm">Yes</Badge>;
+  }
+  return falseText;
+};
 
 // Optimized DeliverableCalculationCell component
 const DeliverableCalculationCell = ({ deliverablesUsed, isUserAdmin, deliverables = [] }) => {
@@ -348,6 +354,12 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
   columnHelper.accessor((row) => row.data_task?.reworked, {
     id: 'reworked',
     header: 'REWORKED',
+    cell: createBooleanCell(),
+    size: 40,
+  }),
+  columnHelper.accessor((row) => row.data_task?.useShutterstock, {
+    id: 'useShutterstock',
+    header: 'SHUTTERSTOCK',
     cell: createBooleanCell(),
     size: 40,
   }),

@@ -36,13 +36,13 @@ const AnalyticsTable = ({
   const totalRows = data?.length || 0;
   const defaultPageSize = enablePagination ? TABLE_SYSTEM.DEFAULT_PAGE_SIZE : (totalRows || 10000);
 
-  // Table props
+
   const tableProps = {
     data: data || [],
     columns: tableColumns,
     tableType: "analytics",
     isLoading,
-    className: "!text-sm",
+    className: "!text-sm !space-y-0",
     enableRowSelection: false,
     showBulkActions: false,
     showFilters: false,

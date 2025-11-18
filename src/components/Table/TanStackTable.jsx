@@ -117,162 +117,225 @@ const TableControls = ({
   title,
   departmentFilter, // New prop for department filter
   showUserExportButton = false, // Show user export button only when user is selected
-}) => (
-  <>
-    <div className="card-small-modern overflow-visible p-0 relative">
-      {/* Accent line on top - matching table design */}
-      <div
-        className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
-        style={{
-          background: CARD_SYSTEM.COLOR_HEX_MAP.blue,
-        }}
-      />
+}) => {
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const columnMenuRef = useRef(null);
 
-      {/* Main Content Section */}
-      <div className="px-5 py-4 bg-white dark:bg-smallCard overflow-visible">
-        {/* Title and Export Button Row */}
-        {title && (
-          <div className="flex flex-row-reverse justify-between items-center gap-4 py-2 ">
-            {/* Export Button - Right side */}
-            <DynamicButton
-              onClick={handleCSVExport}
-              disabled={isExporting}
-              variant="secondary"
-              size="sm"
-            >
-              {isExporting ? "Exporting..." : "Export CSV"}
-            </DynamicButton>
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        columnMenuRef.current &&
+        !columnMenuRef.current.contains(event.target)
+      ) {
+        setIsColumnMenuOpen(false);
+      }
+    };
 
-            {/* Title - Left side */}
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white m-0">
-              {title}
-            </h3>
-          </div>
-        )}
+    if (isColumnMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
 
-        <div className="flex justify-between items-center gap-4 flex-wrap overflow-visible">
-          {/* Left - Filters */}
-          <div className="flex items-center gap-4 flex-1 flex-wrap overflow-visible">
-            {/* Global Filter */}
-            {showFilters && (
-              <div className="min-w-[200px] max-w-sm">
-                <TextField
-                  field={{
-                    name: `${tableType}-search`,
-                    label: `Search ${tableType}...`,
-                    required: false,
-                    placeholder: `Search ${tableType}...`,
-                  }}
-                  register={() => ({})}
-                  errors={{}}
-                  setValue={(name, value) => setGlobalFilter(value)}
-                  trigger={() => {}}
-                  clearErrors={() => {}}
-                  formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
-                />
-              </div>
-            )}
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isColumnMenuOpen]);
 
-            {/* Department Filter */}
-            {departmentFilter && <div className="w-64">{departmentFilter}</div>}
+  return (
+    <>
+      <div className="card-small-modern overflow-visible p-2 px-0 relative rounded-none">
+        {/* Accent line on top - matching table design */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
+          style={{
+            background: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+          }}
+        />
 
-            {/* Custom Filter */}
-            {customFilter && (
-              <div className="flex-1 min-w-0">{customFilter}</div>
-            )}
-          </div>
+        {/* Main Content Section */}
+        <div className="px-5 py-4 bg-white dark:bg-smallCard overflow-visible rounded-none">
+          {/* Title and Export Button Row */}
+          {title && (
+            <div className="flex flex-row-reverse justify-between items-center gap-4 py-2 ">
+              {/* Export Button - Right side */}
+              <DynamicButton
+                onClick={handleCSVExport}
+                disabled={isExporting}
+                variant="secondary"
+                size="sm"
+              >
+                {isExporting ? "Exporting..." : "Export CSV"}
+              </DynamicButton>
 
-          {/* Right - Actions (Rows, Columns, Export) */}
-          <div className="flex items-center gap-3">
-            {/* Rows per page selector */}
-            {showPagination && enablePagination && (
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="page-size-select"
-                  className="text-sm font-medium text-gray-800 dark:text-gray-300 m-0"
-                >
-                  Rows
-                </label>
-                <select
-                  id="page-size-select"
-                  value={table.getState().pagination.pageSize}
-                  onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                  className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 transition-colors shadow-sm"
-                >
-                  {PAGE_SIZE_OPTIONS.map((pageSize) => (
-                    <option key={pageSize} value={pageSize}>
-                      {pageSize}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+              {/* Title - Left side */}
+              <h3 className="text-base">
+                {title}
+              </h3>
+            </div>
+          )}
 
-             {/* Column Toggle */}
-             {showColumnToggle && (
-               <div className="relative group">
-                 <DynamicButton
-                   variant="outline"
-                   size="sm"
-                 >
-                   Columns
-                 </DynamicButton>
-                <div className="absolute right-0 mt-2 w-fit bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible z-10 backdrop-blur-sm">
-                  <div className="py-2">
-                    {table
-                      .getAllLeafColumns()
-                      .filter((column) => column.getCanHide())
-                      .map((column) => (
-                        <label
-                          key={column.id}
-                          className="flex items-center px-4 py-2 text-sm font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 cursor-pointer"
-                        >
-                          <input
-                            name={`column-${column.id}`}
-                            id={`column-${column.id}`}
-                            type="checkbox"
-                            checked={column.getIsVisible()}
-                            onChange={column.getToggleVisibilityHandler()}
-                            className="mr-3 w-4 h-4 text-blue-600 dark:text-blue-400"
-                          />
-                          {column.columnDef.header || column.id}
-                        </label>
-                      ))}
+          <div className="flex justify-between items-center gap-4 flex-wrap overflow-visible">
+            {/* Left - Filters */}
+            <div className="flex items-center gap-4 flex-1 flex-wrap overflow-visible">
+              {/* Global Filter */}
+              {showFilters && (
+                <div className="min-w-[200px] max-w-sm">
+                  <TextField
+                    field={{
+                      name: `${tableType}-search`,
+                      label: `Search ${tableType}...`,
+                      required: false,
+                      placeholder: `Search ${tableType}...`,
+                    }}
+                    register={() => ({})}
+                    errors={{}}
+                    setValue={(name, value) => setGlobalFilter(value)}
+                    trigger={() => {}}
+                    clearErrors={() => {}}
+                    formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
+                  />
+                </div>
+              )}
+
+              {/* Department Filter */}
+              {departmentFilter && (
+                <div className="w-64">{departmentFilter}</div>
+              )}
+
+              {/* Custom Filter */}
+              {customFilter && (
+                <div className="flex-1 min-w-0">{customFilter}</div>
+              )}
+            </div>
+
+            {/* Right - Actions (Rows, Columns, Export) */}
+            <div className="flex items-center gap-3">
+              {/* Rows per page selector */}
+              {showPagination && enablePagination && (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="page-size-select"
+                    className="text-sm font-medium text-gray-800 dark:text-gray-300 m-0"
+                  >
+                    Rows
+                  </label>
+                  <select
+                    id="page-size-select"
+                    value={table.getState().pagination.pageSize}
+                    onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                    className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 transition-colors shadow-sm"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((pageSize) => (
+                      <option key={pageSize} value={pageSize}>
+                        {pageSize}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Column Toggle */}
+              {showColumnToggle && (
+                <div className="relative" ref={columnMenuRef}>
+                  <DynamicButton
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsColumnMenuOpen(!isColumnMenuOpen)}
+                    className="!hover:bg-transparent"
+                  >
+                    Columns
+                  </DynamicButton>
+                  <div
+                    className={`absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 transition-all duration-200 ${
+                      isColumnMenuOpen
+                        ? "opacity-100 visible"
+                        : "opacity-0 invisible"
+                    }`}
+                  >
+                    <div className="py-2 max-h-96 overflow-y-auto">
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Show/Hide Columns
+                        </h4>
+                      </div>
+                      <div className="py-1">
+                        {table
+                          .getAllLeafColumns()
+                          .filter((column) => column.getCanHide())
+                          .map((column) => (
+                            <label
+                              key={column.id}
+                              className="flex items-center px-4 py-2.5 text-sm font-normal text-gray-700 dark:text-gray-300 cursor-pointer transition-colors"
+                            >
+                              <input
+                                name={`column-${column.id}`}
+                                id={`column-${column.id}`}
+                                type="checkbox"
+                                checked={column.getIsVisible()}
+                                onChange={column.getToggleVisibilityHandler()}
+                                className="mr-3 w-4 h-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="flex-1">
+                                {column.columnDef.header || column.id}
+                              </span>
+                              {column.getIsVisible() ? (
+                                <span
+                                  className="text-xs font-medium"
+                                  style={{
+                                    color: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+                                  }}
+                                >
+                                  Visible
+                                </span>
+                              ) : (
+                                <span
+                                  className="text-xs font-medium"
+                                  style={{
+                                    color: CARD_SYSTEM.COLOR_HEX_MAP.pink,
+                                  }}
+                                >
+                                  Invisible
+                                </span>
+                              )}
+                            </label>
+                          ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-             {/* Export CSV - Only show if no title (title row has its own export button) */}
-             {!title && (
-               <DynamicButton
-                 onClick={handleCSVExport}
-                 disabled={isExporting}
-                 variant="secondary"
-                 size="sm"
-               >
-                 {isExporting ? "Exporting..." : "Export CSV"}
-               </DynamicButton>
-             )}
- 
-             {/* User-specific export button */}
-             {showUserExportButton && handleUserCSVExport && (
-               <DynamicButton
-                 onClick={handleUserCSVExport}
-                 disabled={isExporting}
-                 variant="secondary"
-                 size="sm"
-               >
-                 {isExporting ? "Exporting..." : "Export User CSV"}
-               </DynamicButton>
-             )}
+              {/* Export CSV - Only show if no title (title row has its own export button) */}
+              {!title && (
+                <DynamicButton
+                  onClick={handleCSVExport}
+                  disabled={isExporting}
+                  variant="secondary"
+                  size="sm"
+                >
+                  {isExporting ? "Exporting..." : "Export CSV"}
+                </DynamicButton>
+              )}
+
+              {/* User-specific export button */}
+              {showUserExportButton && handleUserCSVExport && (
+                <DynamicButton
+                  onClick={handleUserCSVExport}
+                  disabled={isExporting}
+                  variant="secondary"
+                  size="sm"
+                >
+                  {isExporting ? "Exporting..." : "Export User CSV"}
+                </DynamicButton>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="border-t border-gray-200/50 dark:border-gray-700/50 my-6"></div>
-  </>
-);
+ 
+    </>
+  );
+};
 
 // Pagination component - TanStack pagination
 const Pagination = ({
@@ -747,7 +810,7 @@ const TanStackTable = forwardRef(
     const hasRows = table.getRowModel().rows.length > 0;
 
     return (
-      <div ref={tableRef} className={`space-y-4 ${className}`}>
+      <div ref={tableRef} className={`space-y-0 ${className}`}>
         {shouldShowSkeleton ? (
           <SkeletonTable rows={3} />
         ) : (
@@ -787,107 +850,98 @@ const TanStackTable = forwardRef(
             />
 
             {/* Table */}
-            <div className="card-small-modern overflow-hidden p-0 relative ">
-              {/* Accent line on top - using green from constants */}
-              <div
-                className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
-                style={{
-                  background: CARD_SYSTEM.COLOR_HEX_MAP.blue,
-                }}
-              />
-              <div className="overflow-x-auto pt-1">
-                <table className="min-w-full">
-                  <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className={`px-5 py-4 text-start ${tableType === "analytics" ? "font-bold text-sm" : "font-semibold text-[12px]"} text-gray-700 dark:text-gray-200 tracking-tight bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200/50 dark:border-gray-700/50 ${
-                              header.column.getCanSort()
-                                ? "cursor-pointer select-none hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition-colors"
-                                : ""
-                            }`}
-                            onClick={header.column.getToggleSortingHandler()}
-                            style={{ width: header.getSize() }}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <span>
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                              </span>
-                              {header.column.getCanSort() && (
-                                <span className="text-gray-500 dark:text-gray-300 ml-1">
-                                  {SORT_ICONS[header.column.getIsSorted()] ??
-                                    SORT_ICONS.false}
-                                </span>
-                              )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-200/50 dark:divide-gray-700/30">
-                    {hasRows ? (
-                      table.getRowModel().rows.map((row, index) => {
-                        const rowKey = row.original?.id || row.id;
-                        const isSelected = rowSelection[row.id];
-                        const isBoldRow =
-                          row.original?.bold || row.original?.highlight;
-                        // Determine font weight: bold for analytics tables or rows marked as bold/highlight
-                        const fontWeight =
-                          tableType === "analytics" || isBoldRow
-                            ? "font-bold"
-                            : "font-normal";
-
-                        return (
-                          <tr
-                            key={rowKey}
-                            className={`cursor-pointer transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30 ${
-                              isSelected
-                                ? "bg-blue-50/50 dark:bg-blue-900/20 border-l-2 border-blue-500"
-                                : ""
-                            }`}
-                            onClick={() => handleRowClick(row)}
-                          >
-                            {row.getVisibleCells().map((cell) => (
-                              <td
-                                key={`${row.original?.id || row.id}-${cell.column.id}`}
-                                className={`px-5 py-4 ${tableType === "analytics" ? "text-sm" : "text-[13px]"} ${fontWeight} text-gray-700 dark:text-gray-300`}
-                                style={{ width: cell.column.getSize() }}
-                              >
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext()
-                                )}
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={table.getAllColumns().length}
-                          className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+            <div className=" overflow-hidden p-0 relative rounded-none ">
+              <table className="min-w-full">
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className={`p-4 text-start  ${tableType === "analytics" ? "font-bold text-sm" : "font-semibold text-[12px]"} text-gray-700 dark:text-gray-200 tracking-tight bg-smallCard border-b border-gray-200/50 dark:border-gray-700/90 ${
+                            header.column.getCanSort()
+                              ? "cursor-pointer select-nonebg-secondary"
+                              : ""
+                          }`}
+                          onClick={header.column.getToggleSortingHandler()}
+                          style={{ width: header.getSize() }}
                         >
-                          <div className="flex flex-col items-center justify-center">
-                            <div className="text-2xl mb-2">📊</div>
-                            <div className="text-sm font-medium">
-                              {tableType === "analytics"
-                                ? "No analytics data found for the selected criteria."
-                                : "No tasks found matching the current filters."}
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <span>
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                            </span>
+                            {header.column.getCanSort() && (
+                              <span className="text-gray-500 dark:text-gray-300 ml-1">
+                                {SORT_ICONS[header.column.getIsSorted()] ??
+                                  SORT_ICONS.false}
+                              </span>
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-200/50 dark:divide-gray-700/30">
+                  {hasRows ? (
+                    table.getRowModel().rows.map((row, index) => {
+                      const rowKey = row.original?.id || row.id;
+                      const isSelected = rowSelection[row.id];
+                      const isBoldRow =
+                        row.original?.bold || row.original?.highlight;
+                      // Determine font weight: bold for analytics tables or rows marked as bold/highlight
+                      const fontWeight =
+                        tableType === "analytics" || isBoldRow
+                          ? "font-bold"
+                          : "font-normal";
+
+                      return (
+                        <tr
+                          key={rowKey}
+                          className={`cursor-pointer transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30 ${
+                            isSelected
+                              ? "bg-blue-50/50 dark:bg-blue-900/20 border-l-2 border-blue-500"
+                              : ""
+                          }`}
+                          onClick={() => handleRowClick(row)}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <td
+                              key={`${row.original?.id || row.id}-${cell.column.id}`}
+                              className={`px-5 py-4 ${tableType === "analytics" ? "text-sm" : "text-[13px]"} ${fontWeight} text-gray-700 dark:text-gray-300`}
+                              style={{ width: cell.column.getSize() }}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={table.getAllColumns().length}
+                        className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                      >
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="text-2xl mb-2">📊</div>
+                          <div className="text-sm font-medium">
+                            {tableType === "analytics"
+                              ? "No analytics data found for the selected criteria."
+                              : "No tasks found matching the current filters."}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
 
             {/* Pagination - TanStack pagination */}
@@ -906,7 +960,7 @@ const TanStackTable = forwardRef(
         {isExporting && (
           <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
             <div className="card p-8 max-w-md w-full mx-4">
-              <div className="space-y-6">
+              <div className="space-y-6 ">
                 {/* Header */}
                 <div className="text-center">
                   <h3>Generating CSV Export</h3>

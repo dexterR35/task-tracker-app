@@ -142,74 +142,56 @@ const AcquisitionAnalyticsCard = memo(
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino Acquisition Chart */}
-            <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-              <div
-                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                style={{
-                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 100%)`,
-                }}
-              />
-              <div className="relative z-10">
-                <ChartHeader
-                  title="Casino Acquisition"
-                  badges={[
-                    `${casinoAcquisitionPieTotal} tasks`,
-                    `${Math.round(casinoAcquisitionPieHours * 10) / 10}h`,
-                  ]}
-                  color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
+            <ChartHeader
+              variant="section"
+              title="Casino Acquisition"
+              badges={[
+                `${casinoAcquisitionPieTotal} tasks`,
+                `${Math.round(casinoAcquisitionPieHours * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {casinoAcquisitionData && casinoAcquisitionData.length > 0 ? (
+                <SimplePieChart
+                  data={casinoAcquisitionData}
+                  title=""
+                  colors={casinoAcquisitionColors}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
                 />
-                <div className="px-5 pb-5">
-                  {casinoAcquisitionData && casinoAcquisitionData.length > 0 ? (
-                    <SimplePieChart
-                      data={casinoAcquisitionData}
-                      title=""
-                      colors={casinoAcquisitionColors}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                    />
-                  ) : (
-                    <div className="text-center py-8">
-                      <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 font-medium">No casino acquisition data</p>
-                    </div>
-                  )}
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">No casino acquisition data</p>
                 </div>
-              </div>
-            </div>
+              )}
+            </ChartHeader>
 
             {/* Sport Acquisition Chart */}
-            <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-              <div
-                className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                style={{
-                  background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.green}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 100%)`,
-                }}
-              />
-              <div className="relative z-10">
-                <ChartHeader
-                  title="Sport Acquisition"
-                  badges={[
-                    `${sportAcquisitionPieTotal} tasks`,
-                    `${Math.round(sportAcquisitionPieHours * 10) / 10}h`,
-                  ]}
-                  color={CARD_SYSTEM.COLOR_HEX_MAP.green}
+            <ChartHeader
+              variant="section"
+              title="Sport Acquisition"
+              badges={[
+                `${sportAcquisitionPieTotal} tasks`,
+                `${Math.round(sportAcquisitionPieHours * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.green}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {sportAcquisitionData && sportAcquisitionData.length > 0 ? (
+                <SimplePieChart
+                  data={sportAcquisitionData}
+                  title=""
+                  colors={sportAcquisitionColors}
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
                 />
-                <div className="px-5 pb-5">
-                  {sportAcquisitionData && sportAcquisitionData.length > 0 ? (
-                    <SimplePieChart
-                      data={sportAcquisitionData}
-                      title=""
-                      colors={sportAcquisitionColors}
-                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                    />
-                  ) : (
-                    <div className="text-center py-8">
-                      <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 font-medium">No sport acquisition data</p>
-                    </div>
-                  )}
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">No sport acquisition data</p>
                 </div>
-              </div>
-            </div>
+              )}
+            </ChartHeader>
           </div>
         </div>
 
@@ -230,38 +212,29 @@ const AcquisitionAnalyticsCard = memo(
                   0
                 ) || 0;
               return (
-                <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                  <div
-                    className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                    style={{
-                      background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.crimson} 100%)`,
-                    }}
-                  />
-                  <div className="relative z-10">
-                    <ChartHeader
-                      title="Casino Performance"
-                      badges={[`${totalTasks} tasks`, `${totalHours}h`]}
-                      color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
+                <ChartHeader
+                  variant="section"
+                  title="Casino Performance"
+                  badges={[`${totalTasks} tasks`, `${totalHours}h`]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.crimson}
+                  className="group hover:shadow-xl transition-all duration-300"
+                >
+                  {casinoBiaxialData && casinoBiaxialData.length > 0 ? (
+                    <BiaxialBarChart
+                      data={casinoBiaxialData}
+                      title=""
+                      tasksColor={casinoBiaxialTasksColor}
+                      hoursColor={casinoBiaxialHoursColor}
+                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                      showHours={false}
                     />
-                    <div className="px-5 pb-5">
-                      {casinoBiaxialData && casinoBiaxialData.length > 0 ? (
-                        <BiaxialBarChart
-                          data={casinoBiaxialData}
-                          title=""
-                          tasksColor={casinoBiaxialTasksColor}
-                          hoursColor={casinoBiaxialHoursColor}
-                          dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                          showHours={false}
-                        />
-                      ) : (
-                        <div className="text-center py-8">
-                          <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-                          <p className="text-gray-500 dark:text-gray-400 font-medium">No casino biaxial data</p>
-                        </div>
-                      )}
+                  ) : (
+                    <div className="text-center py-8">
+                      <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">No casino biaxial data</p>
                     </div>
-                  </div>
-                </div>
+                  )}
+                </ChartHeader>
               );
             })()}
 
@@ -275,38 +248,29 @@ const AcquisitionAnalyticsCard = memo(
                   0
                 ) || 0;
               return (
-                <div className="card-small-modern group hover:shadow-xl transition-all duration-300">
-                  <div
-                    className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                    style={{
-                      background: `linear-gradient(90deg, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 0%, ${CARD_SYSTEM.COLOR_HEX_MAP.green}cc 50%, ${CARD_SYSTEM.COLOR_HEX_MAP.green} 100%)`,
-                    }}
-                  />
-                  <div className="relative z-10">
-                    <ChartHeader
-                      title="Sport Performance"
-                      badges={[`${totalTasks} tasks`, `${totalHours}h`]}
-                      color={CARD_SYSTEM.COLOR_HEX_MAP.green}
+                <ChartHeader
+                  variant="section"
+                  title="Sport Performance"
+                  badges={[`${totalTasks} tasks`, `${totalHours}h`]}
+                  color={CARD_SYSTEM.COLOR_HEX_MAP.green}
+                  className="group hover:shadow-xl transition-all duration-300"
+                >
+                  {sportBiaxialData && sportBiaxialData.length > 0 ? (
+                    <BiaxialBarChart
+                      data={sportBiaxialData}
+                      title=""
+                      tasksColor={sportBiaxialTasksColor}
+                      hoursColor={sportBiaxialHoursColor}
+                      dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                      showHours={false}
                     />
-                    <div className="px-5 pb-5">
-                      {sportBiaxialData && sportBiaxialData.length > 0 ? (
-                        <BiaxialBarChart
-                          data={sportBiaxialData}
-                          title=""
-                          tasksColor={sportBiaxialTasksColor}
-                          hoursColor={sportBiaxialHoursColor}
-                          dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                          showHours={false}
-                        />
-                      ) : (
-                        <div className="text-center py-8">
-                          <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-                          <p className="text-gray-500 dark:text-gray-400 font-medium">No sport biaxial data</p>
-                        </div>
-                      )}
+                  ) : (
+                    <div className="text-center py-8">
+                      <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">No sport biaxial data</p>
                     </div>
-                  </div>
-                </div>
+                  )}
+                </ChartHeader>
               );
             })()}
           </div>
