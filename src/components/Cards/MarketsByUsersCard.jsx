@@ -641,7 +641,7 @@ const MarketsByUsersCard = memo(({
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* Tables Section */}
-        <div>
+      
           {/* Markets by Users Table Div */}
           {hasRealData && (
             <AnalyticsTable
@@ -650,10 +650,10 @@ const MarketsByUsersCard = memo(({
               title="Markets by Users"
             />
           )}
-        </div>
+     
 
         {/* Charts Section */}
-        <div>
+    
           {/* Charts Container - 2 charts in a row */}
           {(hasMarketsData || hasUserByTaskData) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -758,7 +758,7 @@ const MarketsByUsersCard = memo(({
             })()}
           </div>
           )}
-        </div>
+     
 
         {/* User Charts Section */}
         <div className="mt-8">

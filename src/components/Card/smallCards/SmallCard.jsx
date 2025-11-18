@@ -3,8 +3,6 @@ import React, { useMemo, memo } from "react";
 import { CARD_SYSTEM } from "@/constants";
 import Badge from "@/components/ui/Badge/Badge";
 
-const DETAILS_BG_COLOR_HEX = "#64748b"; // bg+border details cards comp
-
 const SmallCard = memo(
   ({ card }) => {
     const cardColorHex = useMemo(
@@ -13,67 +11,68 @@ const SmallCard = memo(
     );
     const styles = useMemo(
       () => ({
-        regularDetailBg: `${cardColorHex}10`, // 10% Opacity - matches icon-bg
-        regularDetailBorder: `${cardColorHex}30`, // 30% Opacity - matches card color theme
+        regularDetailBg: `${cardColorHex}08`, // 8% Opacity - more subtle
+        regularDetailBorder: `${cardColorHex}20`, // 20% Opacity - softer borders
         iconStyle: { color: cardColorHex },
         valueStyle: { color: cardColorHex },
-        dotStyle: { backgroundColor: cardColorHex, background: cardColorHex },
-        gradientBg: `linear-gradient(135deg, ${cardColorHex}15 0%, ${cardColorHex}05 100%)`,
-        iconGradient: `linear-gradient(135deg, ${cardColorHex} 0%, ${cardColorHex}dd 100%)`,
+        dotStyle: { backgroundColor: cardColorHex },
+        iconBg: `${cardColorHex}12`, // 12% Opacity for icon background
+        hoverGlow: `0 0 0 1px ${cardColorHex}15, 0 4px 12px ${cardColorHex}08`,
       }),
       [cardColorHex]
     );
 
     return (
-      <div className="card-small-modern group overflow-visible">
-        {/* Accent border on top */}
+      <div 
+        className="card-small-modern group overflow-visible transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 p-3 py-4 rounded-bl-none rounded-tl-none"
+      >
+        {/* Subtle left accent line instead of top border */}
         <div
-          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl "
+          className="absolute top-0 left-0 bottom-0 w-0.5 rounded-l-xl transition-all duration-300 group-hover:w-1"
           style={{
-            background: `linear-gradient(90deg, ${cardColorHex} 0%, ${cardColorHex}cc 50%, ${cardColorHex} 100%)`,
+            backgroundColor: cardColorHex,
+            opacity: 0.6,
           }}
         />
 
-        <div className="flex flex-col h-full relative z-10 overflow-visible">
-          {/* Modern Header Section */}
-          <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col h-full relative z-10 overflow-visible pl-2">
+          {/* Minimalist Header Section */}
+          <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              {/* Modern Icon with gradient background */}
+              {/* Clean Icon with subtle background */}
               <div
-                className="relative flex-shrink-0"
+                className="relative flex-shrink-0 transition-all duration-300 group-hover:scale-110"
                 style={{
-                  background: styles.iconGradient,
-                  borderRadius: "12px",
-                  padding: "10px",
-                  boxShadow: `0 4px 12px ${cardColorHex}25`,
+                  background: styles.iconBg,
+                  borderRadius: "10px",
+                  padding: "8px",
                 }}
               >
-                <div
-                  className="absolute inset-0 rounded-xl "
-                  style={{ background: cardColorHex }}
+                <card.icon 
+                  className="relative w-4 h-4 transition-colors duration-300" 
+                  style={styles.iconStyle}
                 />
-                <card.icon className="relative w-5 h-5 text-white" />
               </div>
 
-              {/* Title & Subtitle with better typography */}
+              {/* Title & Subtitle - Clean typography */}
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate leading-tight">
                   {card.title}
                 </h4>
                 {card.subtitle && (
-                  <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
+                  <h5 className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
                     {card.subtitle}
                   </h5>
                 )}
               </div>
             </div>
 
-            {/* Status Badge - Modern positioning */}
+            {/* Status Badge - Minimalist positioning */}
             {card.badge && (
               <div className="flex-shrink-0 ml-2">
                 <Badge
                   size="sm"
-                  className="shadow-sm"
+                  className="shadow-none border-0"
                   variant={card.badge.color}
                 >
                   {card.badge.text}
@@ -84,16 +83,16 @@ const SmallCard = memo(
 
           {/* Main Content Section */}
           <div className="flex-1 flex flex-col overflow-visible">
-            {/* Value Display - Prominent */}
-            <div className="mb-4">
+            {/* Value Display - Clean and prominent */}
+            <div className="mb-5">
               <p
-                className="text-4xl font-bold mb-2 leading-tight tracking-tight"
+                className="text-3xl font-bold mb-1.5 leading-none tracking-tight"
                 style={styles.valueStyle}
               >
                 {card.value}
               </p>
               {card.description && (
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
+                <p className="text-xs font-normal text-gray-500 dark:text-gray-400 leading-relaxed mt-1.5">
                   {card.description}
                 </p>
               )}
@@ -104,7 +103,7 @@ const SmallCard = memo(
               <div className="leading-relaxed mb-4 text-sm overflow-visible">{card.content}</div>
             )}
 
-            {/* Details Section - Modern Cards */}
+            {/* Details Section - Minimalist Cards */}
             {card.details && card.details.length > 0 && (
               <div className="space-y-2 mt-auto">
                 {card.details.map((detail, index) => {
@@ -118,48 +117,46 @@ const SmallCard = memo(
                       .slice(0, 5);
 
                     return (
-                      <div key={index} className="space-y-2.5">
-                        {/* Subcategory title */}
-                        <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      <div key={index} className="space-y-2">
+                        {/* Subcategory title - Minimalist */}
+                        <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           {detail.label}
                         </h4>
 
-                        {/* Markets section - Modern card design */}
+                        {/* Markets section - Clean card design */}
                         <div
-                          className="p-2 rounded-xl border "
+                          className="p-3 rounded-lg border transition-all duration-200 hover:border-opacity-40"
                           style={{
-                            background: styles.gradientBg,
+                            background: styles.regularDetailBg,
                             borderColor: styles.regularDetailBorder,
-                            boxShadow: `0 2px 8px ${cardColorHex}10`,
                           }}
                         >
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between pb-2 border-b border-gray-200/20 dark:border-gray-700/30">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between pb-2 border-b border-gray-200/30 dark:border-gray-700/20">
                               <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Markets
                               </p>
-                              <div
-                                className="text-xs font-bold px-2 py-0.5 rounded-md"
+                              <span
+                                className="text-xs font-semibold px-2 py-0.5 rounded"
                                 style={{
                                   color: cardColorHex,
-                                  backgroundColor: `${cardColorHex}15`,
+                                  backgroundColor: `${cardColorHex}12`,
                                 }}
                               >
                                 {detail.value}
-                              </div>
+                              </span>
                             </div>
-                            {/* Market badges - Modern layout */}
+                            {/* Market badges - Clean layout */}
                             <div className="flex flex-wrap gap-1.5">
                               {sortedBadges.map(
                                 ([market, count], badgeIndex) => (
                                   <Badge
                                     key={badgeIndex}
                                     size="sm"
-                                    className="border"
+                                    className="border-0 shadow-none"
                                     style={{
                                       color: cardColorHex,
-                                      backgroundColor: `${cardColorHex}15`,
-                                      borderColor: `${cardColorHex}40`,
+                                      backgroundColor: `${cardColorHex}12`,
                                     }}
                                   >
                                     {count}x{market.toUpperCase()}
@@ -172,33 +169,30 @@ const SmallCard = memo(
                       </div>
                     );
                   } else {
-                    // Regular detail item - Modern design
+                    // Regular detail item - Minimalist design
                     return (
                       <div
                         key={index}
-                        className="p-2 rounded-lg border flex items-center justify-between "
+                        className="p-2.5 rounded-lg border flex items-center justify-between transition-all duration-200 hover:border-opacity-40"
                         style={{
-                          background: styles.gradientBg,
+                          background: styles.regularDetailBg,
                           borderColor: styles.regularDetailBorder,
                         }}
                       >
                         <div className="flex items-center gap-2.5">
                           <div
-                            className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm"
-                            style={{
-                              ...styles.dotStyle,
-                              boxShadow: `0 0 8px ${cardColorHex}60`,
-                            }}
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={styles.dotStyle}
                           />
                           <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                             {detail.label}
                           </span>
                         </div>
                         <span
-                          className="text-xs font-bold px-2 py-0.5 rounded-md"
+                          className="text-xs font-semibold px-2 py-0.5 rounded"
                           style={{
                             color: cardColorHex,
-                            backgroundColor: `${cardColorHex}15`,
+                            backgroundColor: `${cardColorHex}12`,
                           }}
                         >
                           {detail.value}
