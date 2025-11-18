@@ -30,12 +30,13 @@ const ChartHeader = ({
   // Section variant has different styling - acts as card container
   const isSection = variant === "section";
   const containerClasses = isSection 
-    ? `card-small-modern overflow-hidden p-0 relative ${className}`
+    ? `card-small-modern overflow-visible p-0 relative rounded-bl-none rounded-tl-none ${className}`
     : `relative ${className}`;
   
   // Check if padding should be removed (when className contains !px-0 or similar)
   const hasNoPadding = className.includes("!px-0") || className.includes("px-0");
-  const innerPadding = hasNoPadding ? "" : (isSection ? "px-5 pt-4" : "px-5 pt-4");
+  // For section variant with left accent bar, add extra left padding to account for the bar
+  const innerPadding = hasNoPadding ? "" : (isSection ? "px-5 pt-4 pl-6" : "px-5 pt-4");
   
   // Always use h3 for title
   const titleClasses = isSection 
@@ -44,16 +45,17 @@ const ChartHeader = ({
 
   return (
     <div className={containerClasses}>
-      {/* Accent bar line on top - only show if variant is section */}
+      {/* Subtle left accent line instead of top border - only show if variant is section */}
       {variant === "section" && (
-        <div 
-          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
+        <div
+          className="absolute top-0 left-0 bottom-0 w-0.5 rounded-l-xl transition-all duration-300"
           style={{
-            background: color
+            backgroundColor: color,
+            opacity: 0.6,
           }}
         />
       )}
-      <div className={`flex items-center gap-3 relative z-10 ${innerPadding}`}>
+      <div className={`flex items-end gap-3 relative z-10 ${innerPadding}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Icon with gradient background - matching card-small-modern */}
           {showIcon && (
@@ -87,7 +89,7 @@ const ChartHeader = ({
           </div>
         </div>
         {badges.length > 0 && (
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center justify-end gap-2 flex-shrink-0">
             {badges.map((badge, index) => (
               <Badge 
                 key={index}
@@ -103,7 +105,7 @@ const ChartHeader = ({
       </div>
       {/* Chart content - only render if children provided and variant is section */}
       {children && variant === "section" && (
-        <div className="px-5 pb-5 relative z-10">
+        <div className="px-5 pb-5 pl-6 relative z-10">
           {children}
         </div>
       )}

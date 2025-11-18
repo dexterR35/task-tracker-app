@@ -155,7 +155,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         );
 
       return (
-        <Badge variant="select_badge" size="md">
+        <Badge variant="green" size="md">
           {taskName}
         </Badge>
       );
@@ -210,14 +210,14 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       return (
         <div className="flex flex-wrap gap-1 uppercase">
           {markets.map((market, index) => (
-            <Badge key={index} variant="green" size="md">
+            <Badge key={index} variant="pink" size="md">
               {market}
             </Badge>
           ))}
         </div>
       );
     },
-    size: 160,
+    size: 140,
   }),
   columnHelper.accessor((row) => row.data_task?.aiUsed?.[0]?.aiModels, {
     id: "aiModels",
@@ -245,7 +245,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         </div>
       );
     },
-    size: 120,
+    size: 80,
   }),
   columnHelper.accessor((row) => row.data_task?.deliverablesUsed, {
     id: "deliverables",
@@ -257,7 +257,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         deliverables={deliverables}
       />
     ),
-    size: 200,
+    size: 220,
   }),
   columnHelper.accessor((row) => row.data_task?.reporters, {
     id: "reporters",
@@ -298,7 +298,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         </div>
       );
     },
-    size: 120,
+    size: 60,
   }),
   columnHelper.accessor("createdByName", {
     header: "CREATED BY",
@@ -320,12 +320,12 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         </div>
       );
     },
-    size: 150,
+    size: 80,
   }),
   columnHelper.accessor("createdAt", {
     header: "TASK ADDED",
     cell: createDateCell(DATE_FORMATS.DATETIME_LONG),
-    size: 150,
+    size: 120,
   }),
   columnHelper.accessor((row) => row.data_task?.observations, {
     id: "observations",
@@ -343,7 +343,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         </span>
       );
     },
-    size: 200,
+    size: 80,
   }),
 
   // Additional task data columns (hidden by default)
@@ -351,13 +351,13 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     id: "startDate",
     header: "TASK START",
     cell: createDateCell(DATE_FORMATS.LONG),
-    size: 120,
+    size: 100,
   }),
   columnHelper.accessor((row) => row.data_task?.endDate, {
     id: "endDate",
     header: "TASK END",
     cell: createDateCell(DATE_FORMATS.LONG),
-    size: 120,
+    size: 80,
   }),
   columnHelper.accessor((row) => row.data_task?.startDate, {
     id: "done",
@@ -382,7 +382,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         </Badge>
       );
     },
-    size: 100,
+    size: 80,
   }),
   columnHelper.accessor((row) => row.data_task?.timeInHours, {
     id: "timeInHours",
@@ -429,7 +429,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       }
       return "-";
     },
-    size: 30,
+    size: 60,
   }),
   columnHelper.accessor((row) => row.data_task?.useShutterstock, {
     id: "useShutterstock",

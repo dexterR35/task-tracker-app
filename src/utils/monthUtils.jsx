@@ -12,18 +12,15 @@ import {
   addWeeks,
   addDays,
 } from "date-fns";
-import {
-  parseMonthId,
-  getCurrentMonthId,
-} from "@/utils/dateUtils";
+import { parseMonthId, getCurrentMonthId } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
 import { useAppDataContext } from "@/context/AppDataContext";
+import ChartHeader from "@/components/Cards/ChartHeader";
+import { CARD_SYSTEM } from "@/constants";
 import { useCreateMonthBoard } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import { CARD_SYSTEM } from "@/constants";
-
 
 export const getWeeksInMonth = (monthId) => {
   const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
@@ -38,7 +35,7 @@ export const getWeeksInMonth = (monthId) => {
   const weeks = [];
   // Find the first Monday within the month
   let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday of the week containing month start
-  
+
   // If the Monday is before the month starts, find the first Monday of the month
   if (currentWeekStart < monthStart) {
     const dayOfWeek = monthStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
@@ -48,7 +45,7 @@ export const getWeeksInMonth = (monthId) => {
     } else {
       // Calculate days to add to get to the first Monday
       // If dayOfWeek is 0 (Sunday), add 1 day. Otherwise add (8 - dayOfWeek) days
-      const daysToAdd = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+      const daysToAdd = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
       currentWeekStart = addDays(monthStart, daysToAdd);
     }
   }
@@ -67,8 +64,11 @@ export const getWeeksInMonth = (monthId) => {
 
     if (weekDays.length > 0) {
       // Use Friday as endDate, but only if it's within the month
-      const actualWeekEnd = weekEndFriday <= monthEnd ? weekEndFriday : weekDays[weekDays.length - 1];
-      
+      const actualWeekEnd =
+        weekEndFriday <= monthEnd
+          ? weekEndFriday
+          : weekDays[weekDays.length - 1];
+
       weeks.push({
         weekNumber,
         startDate: currentWeekStart,
@@ -341,34 +341,25 @@ export const MonthProgressBar = ({
   }
 
   const primaryColor = isCurrentMonth
-    ? '#2b67f6'
+    ? CARD_SYSTEM.COLOR_HEX_MAP.color_default
     : CARD_SYSTEM.COLOR_HEX_MAP.pink;
 
   return (
-    <div className="w-full card">
-      {/* Header Section */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h3 className="text-base font-semibold">
-            {monthName}
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {isCurrentMonth ? "Current Month" : "Past Month"}
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="text-xl font-bold" style={{ color: primaryColor }}>
-            {progressData.progress}%
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {progressData.daysPassed}/{progressData.totalDays} days
-          </div>
-        </div>
-      </div>
-
+    <ChartHeader
+      variant="section"
+      title={monthName}
+      subtitle={isCurrentMonth ? "Current Month" : "Past Month"}
+      badges={[
+        `${progressData.progress}%`,
+        `${progressData.daysPassed}/${progressData.totalDays} days`,
+      ]}
+      color={primaryColor}
+      showIcon={true}
+      className="w-full "
+    >
       {/* Progress Bar Section */}
-      <div className="mb-2">
-        <div className="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+      <div className="my-4">
+        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
             style={{
@@ -380,24 +371,22 @@ export const MonthProgressBar = ({
       </div>
 
       {/* Stats Section */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between  ">
         <div className="flex items-center space-x-1">
-          <div 
+          <div
             className="w-1.5 h-1.5 rounded-full"
             style={{ backgroundColor: primaryColor }}
           ></div>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-            {progressData.daysPassed} days passed
-          </span>
+          <span className="text-xs">{progressData.daysPassed} days passed</span>
         </div>
         <div className="flex items-center space-x-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500"></div>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-error"></div>
+          <span className="text-xs">
             {progressData.daysRemaining} days remaining
           </span>
         </div>
       </div>
-    </div>
+    </ChartHeader>
   );
 };
 

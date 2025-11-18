@@ -56,66 +56,6 @@ const AnalyticsPage = () => {
   const currentMonthName = currentMonth?.monthName || "Current Month";
   const selectedMonthName = selectedMonth?.monthName || currentMonthName;
 
-  // Calculate summary metrics (KPIs)
-  // All metrics use unique counts (not per-market/category counts)
-  const summaryMetrics = useMemo(() => {
-    if (!tasks || tasks.length === 0) {
-      return {
-        totalTasks: 0,
-        totalHours: 0,
-        totalDeliverables: 0,
-        totalVariations: 0,
-        uniqueUsers: 0,
-        uniqueMarkets: 0,
-        uniqueReporters: 0,
-      };
-    }
-
-    // Use unique tasks count (not sum of market/category counts)
-    // This counts each task once, regardless of how many markets it has
-    const totalTasks = tasks.length;
-    const totalHours = tasks.reduce((sum, task) => {
-      const hours = task.data_task?.timeInHours || task.timeInHours || 0;
-      return sum + (typeof hours === "number" ? hours : 0);
-    }, 0);
-
-    const totalDeliverables = tasks.reduce((sum, task) => {
-      const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-      return sum + deliverables.reduce((delSum, del) => {
-        return delSum + (del.count || 1);
-      }, 0);
-    }, 0);
-
-    const totalVariations = tasks.reduce((sum, task) => {
-      const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-      return sum + deliverables.reduce((delSum, del) => {
-        return delSum + (del.variationsCount || 0);
-      }, 0);
-    }, 0);
-
-    const uniqueUsers = new Set(
-      tasks.map((task) => task.userUID || task.createbyUID).filter(Boolean)
-    ).size;
-
-    const uniqueMarkets = new Set(
-      tasks.map((task) => task.data_task?.market || task.market).filter(Boolean)
-    ).size;
-
-    const uniqueReporters = new Set(
-      tasks.map((task) => task.data_task?.reporter || task.reporter).filter(Boolean)
-    ).size;
-
-    return {
-      totalTasks,
-      totalHours: Math.round(totalHours * 100) / 100,
-      totalDeliverables,
-      totalVariations,
-      uniqueUsers,
-      uniqueMarkets,
-      uniqueReporters,
-    };
-  }, [tasks]);
-
   // Helper function to check if data is empty
   const hasNoData = useMemo(() => {
     if (!tasks || tasks.length === 0) {
@@ -123,40 +63,6 @@ const AnalyticsPage = () => {
     }
     return false;
   }, [tasks]);
-
-  // Calculate Acquisition metrics for Markets KPI card
-  const acquisitionMetrics = useMemo(() => {
-    if (isLoading || hasNoData) {
-      return { totalTasks: 0, totalHours: 0 };
-    }
-    try {
-      const acquisitionProps = getCachedAcquisitionAnalyticsCardProps(tasks, users);
-      return {
-        totalTasks: acquisitionProps?.totalTasks || 0,
-        totalHours: acquisitionProps?.totalHours || 0,
-      };
-    } catch (error) {
-      logger.error('Error calculating acquisition metrics:', error);
-      return { totalTasks: 0, totalHours: 0 };
-    }
-  }, [tasks, users, isLoading, hasNoData]);
-
-  // Calculate Marketing metrics for Deliverables KPI card
-  const marketingMetrics = useMemo(() => {
-    if (isLoading || hasNoData) {
-      return { totalTasks: 0, totalHours: 0 };
-    }
-    try {
-      const marketingProps = getCachedMarketingAnalyticsCardProps(tasks, users);
-      return {
-        totalTasks: marketingProps?.totalTasks || 0,
-        totalHours: marketingProps?.totalHours || 0,
-      };
-    } catch (error) {
-      logger.error('Error calculating marketing metrics:', error);
-      return { totalTasks: 0, totalHours: 0 };
-    }
-  }, [tasks, users, isLoading, hasNoData]);
 
   // Analytics cards configuration
   const analyticsCards = useMemo(
@@ -338,6 +244,10 @@ const AnalyticsPage = () => {
       if (!cardProps || !hasData) return 0;
       return cardProps.totalTasks || 0;
     }, [cardProps, hasData]);
+    const totalHours = useMemo(() => {
+      if (!cardProps || !hasData) return 0;
+      return cardProps.totalHours || 0;
+    }, [cardProps, hasData]);
 
     const cardData = useMemo(() => ({
       id: card.id,
@@ -351,13 +261,13 @@ const AnalyticsPage = () => {
         text: `${totalTasks.toLocaleString()} tasks`,
         color: card.color
       } : null,
-      details: [
+      details: hasData ? [
         {
-          label: hasData ? "Data available" : "No data available",
-          value: hasData ? "Yes" : "No"
+          label: "Total Hours",
+          value: `${totalHours.toLocaleString()}h`
         }
-      ]
-    }), [card, hasData, totalTasks]);
+      ] : []
+    }), [card, hasData, totalTasks, totalHours]);
 
     return (
       <div
@@ -518,61 +428,6 @@ const AnalyticsPage = () => {
       {/* Analytics Dashboard */}
       {!selectedCard && (
         <div className="space-y-8">
-          {/* KPI Cards Section */}
-          <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Key Indicators
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                task performance metrics
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <SmallCard
-                card={{
-                  id: 'total-tasks',
-                  title: 'Total Tasks',
-                  value: summaryMetrics.totalTasks.toLocaleString(),
-                  icon: Icons.generic.task,
-                  color: 'blue',
-                  subtitle: `${summaryMetrics.uniqueUsers} active users`
-                }}
-              />
-              <SmallCard
-                card={{
-                  id: 'total-hours',
-                  title: 'Total Hours',
-                  value: summaryMetrics.totalHours.toLocaleString(),
-                  icon: Icons.generic.clock,
-                  color: 'green',
-                  subtitle: `Avg ${summaryMetrics.totalTasks > 0 ? (summaryMetrics.totalHours / summaryMetrics.totalTasks).toFixed(1) : 0}h per task`
-                }}
-              />
-              <SmallCard
-                card={{
-                  id: 'marketing',
-                  title: 'Marketing',
-                  value: marketingMetrics.totalTasks.toLocaleString(),
-                  icon: Icons.generic.target,
-                  color: 'purple',
-                  subtitle: `${marketingMetrics.totalHours}h total`
-                }}
-              />
-              <SmallCard
-                card={{
-                  id: 'acquisition',
-                  title: 'Acquisition',
-                  value: acquisitionMetrics.totalTasks.toLocaleString(),
-                  icon: Icons.generic.globe,
-                  color: 'orange',
-                  subtitle: `${acquisitionMetrics.totalHours}h total`
-                }}
-              />
-            </div>
-          </div>
-
-
           {/* Analytics Cards Grid */}
           <div>
             <div className="mb-6">
