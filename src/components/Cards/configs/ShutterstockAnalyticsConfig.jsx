@@ -50,6 +50,13 @@ export const calculateShutterstockAnalytics = (tasks, users) => {
       ],
       totalTasks: 0,
       totalHours: 0,
+      totalAllTasks: tasks?.length || 0,
+      comparisonTableData: [],
+      comparisonTableColumns: [
+        { key: "tool", header: "Tool Type", align: "left" },
+        { key: "tasks", header: "Tasks", align: "center", highlight: true },
+        { key: "percentage", header: "Percentage", align: "center", highlight: true, render: (value) => `${value}%` },
+      ],
     };
   }
 
@@ -174,11 +181,92 @@ export const calculateShutterstockAnalytics = (tasks, users) => {
     return sum + (typeof hours === "number" ? hours : 0);
   }, 0);
 
+  // Calculate Shutterstock vs AI Tools Comparison
+  const totalAllTasks = tasks.length;
+  
+  // Count tasks with Shutterstock only
+  const shutterstockOnlyTasks = tasks.filter((task) => {
+    const useShutterstock = task.data_task?.useShutterstock || task.useShutterstock || false;
+    const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+    return useShutterstock === true && (!aiUsed || aiUsed.length === 0);
+  }).length;
+  
+  // Count tasks with AI Tools only
+  const aiToolsOnlyTasks = tasks.filter((task) => {
+    const useShutterstock = task.data_task?.useShutterstock || task.useShutterstock || false;
+    const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+    return useShutterstock === false && aiUsed && aiUsed.length > 0;
+  }).length;
+  
+  // Count tasks with both Shutterstock and AI Tools
+  const bothTasks = tasks.filter((task) => {
+    const useShutterstock = task.data_task?.useShutterstock || task.useShutterstock || false;
+    const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
+    return useShutterstock === true && aiUsed && aiUsed.length > 0;
+  }).length;
+  
+  // Count tasks with neither
+  const neitherTasks = totalAllTasks - shutterstockOnlyTasks - aiToolsOnlyTasks - bothTasks;
+  
+  // Calculate total counts (including overlaps)
+  const totalShutterstockTasks = shutterstockOnlyTasks + bothTasks;
+  const totalAIToolsTasks = aiToolsOnlyTasks + bothTasks;
+  
+  // Calculate sum of visible rows (Shutterstock Only + AI Tools Only)
+  const totalVisibleTasks = shutterstockOnlyTasks + aiToolsOnlyTasks;
+  
+  // Calculate percentages based on total of all tasks (124)
+  const shutterstockOnlyPercentage = totalAllTasks > 0 ? Math.round((shutterstockOnlyTasks / totalAllTasks) * 100) : 0;
+  const aiToolsOnlyPercentage = totalAllTasks > 0 ? Math.round((aiToolsOnlyTasks / totalAllTasks) * 100) : 0;
+  const totalVisiblePercentage = totalAllTasks > 0 ? Math.round((totalVisibleTasks / totalAllTasks) * 100) : 0;
+  
+  // Create comparison table data
+  const comparisonTableData = [
+    {
+      tool: "Shutterstock Only",
+      tasks: shutterstockOnlyTasks,
+      percentage: shutterstockOnlyPercentage,
+    },
+    {
+      tool: "AI Tools Only",
+      tasks: aiToolsOnlyTasks,
+      percentage: aiToolsOnlyPercentage,
+    },
+    {
+      tool: "Total (Shutterstock + AI Tools)",
+      tasks: totalVisibleTasks,
+      percentage: totalVisiblePercentage,
+      bold: true,
+      highlight: true,
+    },
+  ];
+  
+  // Create comparison table columns
+  const comparisonTableColumns = [
+    { key: "tool", header: "Tool Type", align: "left" },
+    {
+      key: "tasks",
+      header: "Tasks",
+      align: "center",
+      highlight: true,
+    },
+    {
+      key: "percentage",
+      header: "Percentage",
+      align: "center",
+      highlight: true,
+      render: (value) => `${value}%`,
+    },
+  ];
+
   return {
     tableData: tableDataWithTotal,
     tableColumns,
+    comparisonTableData,
+    comparisonTableColumns,
     totalTasks,
     totalHours: Math.round(totalHours * 100) / 100,
+    totalAllTasks, // Total of all tasks for percentage calculation explanation
   };
 };
 
