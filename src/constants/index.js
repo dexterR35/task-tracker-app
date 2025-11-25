@@ -214,6 +214,13 @@ export const NAVIGATION_CONFIG = {
       color: "orange",
       adminOnly: false,
     },
+    {
+      name: "Team Days Off",
+      href: "/team-days-off",
+      icon: "calendar",
+      color: "blue",
+      adminOnly: false,
+    },
   ],
   DEPARTMENT: {
     name: "Design",

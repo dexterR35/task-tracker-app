@@ -596,6 +596,87 @@ const createReporterColumns = () => [
   }),
 ];
 
+// Team Days Off column definitions
+const createTeamDaysOffColumns = () => [
+  columnHelper.accessor('userName', {
+    header: 'USER',
+    cell: ({ getValue }) => (
+      <span className="font-medium text-gray-900 dark:text-white">
+        {getValue() || '-'}
+      </span>
+    ),
+    size: 200,
+  }),
+  columnHelper.accessor('daysTotal', {
+    header: 'DAYS TOTAL',
+    cell: ({ getValue, row }) => {
+      const total = getValue();
+      const baseDays = row.original.baseDays || 0;
+      const monthlyAccrual = row.original.monthlyAccrual || 0;
+      return (
+        <div className="flex flex-col">
+          <Badge variant="blue" size="md">
+            {total.toFixed(2)} days
+          </Badge>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Base: {baseDays} + Monthly: {monthlyAccrual.toFixed(2)}
+          </span>
+        </div>
+      );
+    },
+    size: 150,
+  }),
+  columnHelper.accessor('daysOff', {
+    header: 'DAYS OFF',
+    cell: ({ getValue }) => {
+      const daysOff = getValue() || 0;
+      return (
+        <Badge variant="amber" size="md">
+          {daysOff.toFixed(2)} days
+        </Badge>
+      );
+    },
+    size: 120,
+  }),
+  columnHelper.accessor('daysRemaining', {
+    header: 'DAYS REMAINING',
+    cell: ({ getValue }) => {
+      const remaining = getValue() || 0;
+      const variant = remaining < 5 ? 'red' : remaining < 10 ? 'amber' : 'green';
+      return (
+        <Badge variant={variant} size="md">
+          {remaining.toFixed(2)} days
+        </Badge>
+      );
+    },
+    size: 150,
+  }),
+  columnHelper.accessor('baseDays', {
+    header: 'BASE DAYS',
+    cell: ({ getValue }) => {
+      const baseDays = getValue() || 0;
+      return (
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {baseDays.toFixed(2)}
+        </span>
+      );
+    },
+    size: 100,
+  }),
+  columnHelper.accessor('monthlyAccrual', {
+    header: 'MONTHLY ACCRUAL',
+    cell: ({ getValue }) => {
+      const accrual = getValue() || 0;
+      return (
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {accrual.toFixed(2)} days
+        </span>
+      );
+    },
+    size: 130,
+  }),
+];
+
 // Unified column factory function for all tables
 export const getColumns = (
   tableType,
@@ -612,6 +693,8 @@ export const getColumns = (
       return createUserColumns();
     case "reporters":
       return createReporterColumns();
+    case "teamDaysOff":
+      return createTeamDaysOffColumns();
     default:
       return [];
   }

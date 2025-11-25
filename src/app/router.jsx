@@ -36,6 +36,7 @@ import LandingPages from "@/pages/LandingPages";
 import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
+import TeamDaysOffPage from "@/pages/TeamDaysOffPage";
 
 // Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
@@ -287,6 +288,16 @@ export const createRouter = () => {
               <ErrorBoundary componentName="FeaturesSummaryPage">
                 <PageWrapper key="features">
                   <FeaturesSummaryPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "team-days-off",
+            element: (
+              <ErrorBoundary componentName="TeamDaysOffPage">
+                <PageWrapper key="team-days-off">
+                  <TeamDaysOffPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),
