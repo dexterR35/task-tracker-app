@@ -27,6 +27,26 @@ const getUserColor = (user) => {
 };
 
 /**
+ * Generate a gradient background showing all user colors
+ * Creates a linear gradient that displays all colors horizontally
+ */
+const generateMultiColorGradient = (users) => {
+  if (!users || users.length === 0) return null;
+  if (users.length === 1) return users[0].color;
+  
+  // Create a gradient with all colors evenly distributed
+  const percentageStep = 100 / users.length;
+  const stops = users.map((u, index) => {
+    const start = index * percentageStep;
+    const end = (index + 1) * percentageStep;
+    // Use the same color for both start and end to create solid color blocks
+    return `${u.color} ${start}%, ${u.color} ${end}%`;
+  }).join(', ');
+  
+  return `linear-gradient(to right, ${stops})`;
+};
+
+/**
  * Calendar component to display and manage days off for users
  * Supports admin and regular user flows
  */
@@ -553,12 +573,15 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
                   const usersOff = getUsersOffOnDate(day.date);
                   const isDisabled = isDateDisabled(day.date);
                   
-                  // Filter usersOff based on role:
-                  // - Admin: see all users' colors
+                  // Filter usersOff based on role and selection:
+                  // - Admin with no user selected: see all users' colors
+                  // - Admin with user selected: see only selected user's color
                   // - Regular user: only see their own color
-                  const visibleUsersOff = isAdmin 
-                    ? usersOff 
-                    : usersOff.filter(u => u.userUID === authUser?.userUID);
+                  const visibleUsersOff = isAdmin
+                    ? (selectedUserId 
+                        ? usersOff.filter(u => u.userUID === selectedUserId) // Admin selected a user - show only that user
+                        : usersOff) // Admin no selection - show all users
+                    : usersOff.filter(u => u.userUID === authUser?.userUID); // Regular user - only their own
                   
                   // Allow selecting days only if user has available days and date is not disabled
                   const canSelect = selectedUserId && hasAvailableDays && !isOff && !isDisabled;
@@ -567,20 +590,17 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
                   let bgColor = 'bg-gray-50 dark:bg-gray-600';
                   let textColor = 'text-gray-600 dark:text-gray-200';
                   
+                  // Check if we should show colors
+                  // For admin with no selection: show if any users have off
+                  // For admin with selection or regular user: show if selected user has off or other visible users have off
+                  const shouldShowColors = (isOff && selectedUserId) || (!selectedUserId && isAdmin && visibleUsersOff.length > 0) || (selectedUserId && visibleUsersOff.length > 0 && !isOff);
+                  
                   if (isDisabled && visibleUsersOff.length === 0) {
                     // Disabled dates (weekend or past) with no visible users off
                     bgColor = 'bg-gray-100 dark:bg-gray-700';
                     textColor = 'text-gray-400 dark:text-gray-600';
-                  } else if (isOff && selectedUserId) {
-                    // Selected user's own off day
-                    bgColor = '';
-                    textColor = 'text-white font-semibold';
-                  } else if (isSelected) {
-                    // Temporarily selected
-                    bgColor = '';
-                    textColor = 'text-white font-semibold';
-                  } else if (visibleUsersOff.length > 0) {
-                    // Users off (show colors even in past months)
+                  } else if (shouldShowColors || isSelected) {
+                    // Show colors when users have off days or date is selected
                     bgColor = '';
                     textColor = 'text-white font-semibold';
                   }
@@ -589,28 +609,36 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
                   if (isDisabled && visibleUsersOff.length === 0) {
                     // Disabled dates with no users off - grayed out
                     style.opacity = 0.4;
-                  } else if (isOff && selectedUserId) {
-                    // Selected user's saved off day
+                  } else if (isSelected) {
+                    // Temporarily selected date - show selected user's color
                     style.backgroundColor = userColor;
                     // No opacity - full color
-                  } else if (isSelected) {
-                    // Temporarily selected date
+                  } else if (isOff && selectedUserId) {
+                    // Selected user's saved off day - show only selected user's color
                     style.backgroundColor = userColor;
                     // No opacity - full color
                   } else if (visibleUsersOff.length > 0) {
-                    // Show users' colors (even in past months)
-                    // If multiple users, show first user's color
-                    // Admin sees all, regular user sees only their own
-                    style.backgroundColor = visibleUsersOff[0].color;
+                    // Users off (admin with no selection sees all, admin with selection sees only selected user)
+                    // Show all colors in a gradient if multiple users
+                    const gradient = generateMultiColorGradient(visibleUsersOff);
+                    if (gradient && visibleUsersOff.length > 1) {
+                      // Multiple users - show gradient with all colors
+                      style.background = gradient;
+                    } else {
+                      // Single user - show single color
+                      style.backgroundColor = visibleUsersOff[0].color;
+                    }
                     style.opacity = isDisabled ? 0.6 : 1; // Slightly more visible if not disabled
                   }
 
                   // Get tooltip text
                   let tooltipText = '';
-                  if (isOff) {
+                  if (isOff && selectedUserId) {
                     tooltipText = `${selectedUser?.name || 'User'} - Off (Click × to remove)`;
                   } else if (visibleUsersOff.length > 0) {
-                    tooltipText = `${visibleUsersOff.map(u => u.userName).join(', ')} - Off${isDisabled ? ' (Past date)' : ''}`;
+                    const userNames = visibleUsersOff.map(u => u.userName).join(', ');
+                    const count = visibleUsersOff.length;
+                    tooltipText = `${userNames} - Off${count > 1 ? ` (${count} users)` : ''}${isDisabled ? ' (Past date)' : ''}`;
                   } else if (isDisabled) {
                     if (isWeekend(day.date)) {
                       tooltipText = 'Weekend - Cannot be selected';
@@ -622,7 +650,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
                   } else if (!hasAvailableDays && selectedUserId) {
                     tooltipText = 'User has no available days off. Add base days first.';
                   } else if (!selectedUserId) {
-                    tooltipText = isAdmin ? 'Select a user to manage their days off' : 'Your days off';
+                    tooltipText = isAdmin ? 'Select a user to manage their days off, or view all users\' days off' : 'Your days off';
                   }
 
                   return (
