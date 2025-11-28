@@ -131,6 +131,9 @@ const TeamDaysOffPage = () => {
         )}
       </div>
 
+      {/* Calendar */}
+      <DaysOffCalendar teamDaysOff={teamDaysOff || []} />
+
       {/* Table */}
       <div className="">
         <TanStackTable
@@ -168,9 +171,6 @@ const TeamDaysOffPage = () => {
           ] : []}
         />
       </div>
-
-      {/* Calendar */}
-      <DaysOffCalendar teamDaysOff={teamDaysOff || []} />
 
       {/* Create Modal */}
       {showCreateModal && (
