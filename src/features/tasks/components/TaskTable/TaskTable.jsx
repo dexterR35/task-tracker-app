@@ -46,7 +46,7 @@ const TaskTable = ({
   isLoading: initialLoading = false,
   onCountChange = null,
   enablePagination = true,
-  pageSize = TABLE_SYSTEM.DEFAULT_PAGE_SIZE,
+  pageSize = 5, // Default to 5 rows for task table (other tables use TABLE_SYSTEM.DEFAULT_PAGE_SIZE)
 }) => {
   // Get navigate function for React Router navigation
   const navigate = useNavigate();

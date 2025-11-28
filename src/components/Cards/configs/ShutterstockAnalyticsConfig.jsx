@@ -56,6 +56,7 @@ export const calculateShutterstockAnalytics = (tasks, users) => {
         { key: "tool", header: "Tool Type", align: "left" },
         { key: "tasks", header: "Tasks", align: "center", highlight: true },
         { key: "percentage", header: "Percentage", align: "center", highlight: true, render: (value) => `${value}%` },
+        { key: "ofTotalTask", header: "Of Total Task", align: "center", highlight: true, render: (value) => value !== undefined && value !== null ? `of ${value}` : "of 0" },
       ],
     };
   }
@@ -226,16 +227,19 @@ export const calculateShutterstockAnalytics = (tasks, users) => {
       tool: "Shutterstock Only",
       tasks: shutterstockOnlyTasks,
       percentage: shutterstockOnlyPercentage,
+      ofTotalTask: totalAllTasks,
     },
     {
       tool: "AI Tools Only",
       tasks: aiToolsOnlyTasks,
       percentage: aiToolsOnlyPercentage,
+      ofTotalTask: totalAllTasks,
     },
     {
       tool: "Total (Shutterstock + AI Tools)",
       tasks: totalVisibleTasks,
       percentage: totalVisiblePercentage,
+      ofTotalTask: totalAllTasks,
       bold: true,
       highlight: true,
     },
@@ -256,6 +260,13 @@ export const calculateShutterstockAnalytics = (tasks, users) => {
       align: "center",
       highlight: true,
       render: (value) => `${value}%`,
+    },
+    {
+      key: "ofTotalTask",
+      header: "Of Total Task",
+      align: "center",
+      highlight: true,
+      render: (value) => value !== undefined && value !== null ? `of ${value}` : "of 0",
     },
   ];
 
