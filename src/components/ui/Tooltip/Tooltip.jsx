@@ -1,0 +1,95 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+/**
+ * Custom Tooltip Component
+ * Displays user information with color indicators
+ */
+const Tooltip = ({ children, content, users = [] }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const tooltipRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (isVisible && triggerRef.current && tooltipRef.current) {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Calculate position
+      let top = triggerRect.top - tooltipRect.height - 8;
+      let left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+
+      // Adjust if tooltip goes off screen
+      if (left < 8) {
+        left = 8;
+      } else if (left + tooltipRect.width > viewportWidth - 8) {
+        left = viewportWidth - tooltipRect.width - 8;
+      }
+
+      if (top < 8) {
+        // Show below instead
+        top = triggerRect.bottom + 8;
+      }
+
+      tooltipRef.current.style.top = `${top}px`;
+      tooltipRef.current.style.left = `${left}px`;
+    }
+  }, [isVisible]);
+
+  const handleMouseEnter = () => {
+    setIsVisible(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsVisible(false);
+  };
+
+  if (!content && users.length === 0) {
+    return children;
+  }
+
+  return (
+    <div className="relative">
+      <div
+        ref={triggerRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="w-full h-full"
+      >
+        {children}
+      </div>
+      {isVisible && (content || users.length > 0) && (
+        <div
+          ref={tooltipRef}
+          className="fixed z-[9999] px-3 py-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-lg pointer-events-none"
+          style={{
+            transform: 'translateX(-50%)',
+          }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {content && (
+            <div className="mb-1 font-semibold">{content}</div>
+          )}
+          {users.length > 0 && (
+            <div className="space-y-1.5">
+              {users.map((user, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded border border-gray-600 flex-shrink-0"
+                    style={{ backgroundColor: user.color }}
+                  />
+                  <span className="whitespace-nowrap">{user.userName}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Tooltip;
+

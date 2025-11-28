@@ -7,6 +7,7 @@ import { useAppDataContext } from '@/context/AppDataContext';
 import { useUsers } from '@/features/users/usersApi';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
+import Tooltip from '@/components/ui/Tooltip/Tooltip';
 import { showSuccess, showError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 import { formatDateString } from '@/utils/dateUtils';
@@ -631,55 +632,67 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
                     style.opacity = isDisabled ? 0.6 : 1; // Slightly more visible if not disabled
                   }
 
-                  // Get tooltip text
-                  let tooltipText = '';
+                  // Prepare tooltip content
+                  let tooltipContent = '';
+                  let tooltipUsers = [];
+                  
                   if (isOff && selectedUserId) {
-                    tooltipText = `${selectedUser?.name || 'User'} - Off (Click × to remove)`;
+                    tooltipContent = `${selectedUser?.name || 'User'} - Off${isDisabled ? ' (Past date)' : ''}`;
+                    tooltipUsers = [{
+                      userName: selectedUser?.name || 'User',
+                      color: getUserColor(selectedUser)
+                    }];
                   } else if (visibleUsersOff.length > 0) {
-                    const userNames = visibleUsersOff.map(u => u.userName).join(', ');
-                    const count = visibleUsersOff.length;
-                    tooltipText = `${userNames} - Off${count > 1 ? ` (${count} users)` : ''}${isDisabled ? ' (Past date)' : ''}`;
+                    tooltipContent = `${visibleUsersOff.length > 1 ? `${visibleUsersOff.length} users off` : 'User off'}${isDisabled ? ' (Past date)' : ''}`;
+                    tooltipUsers = visibleUsersOff.map(u => ({
+                      userName: u.userName,
+                      color: u.color || getUserColor(u)
+                    }));
                   } else if (isDisabled) {
                     if (isWeekend(day.date)) {
-                      tooltipText = 'Weekend - Cannot be selected';
+                      tooltipContent = 'Weekend - Cannot be selected';
                     } else {
-                      tooltipText = 'Past date - Cannot be selected';
+                      tooltipContent = 'Past date - Cannot be selected';
                     }
                   } else if (canSelect) {
-                    tooltipText = 'Click to select';
+                    tooltipContent = 'Click to select';
                   } else if (!hasAvailableDays && selectedUserId) {
-                    tooltipText = 'User has no available days off. Add base days first.';
+                    tooltipContent = 'User has no available days off. Add base days first.';
                   } else if (!selectedUserId) {
-                    tooltipText = isAdmin ? 'Select a user to manage their days off, or view all users\' days off' : 'Your days off';
+                    tooltipContent = isAdmin ? 'Select a user to manage their days off, or view all users\' days off' : 'Your days off';
                   }
 
                   return (
-                    <div
-                      key={dayIndex}
-                      className={`
-                        rounded text-sm flex flex-col items-center justify-center relative
-                        ${bgColor} ${textColor}
-                        ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}
-                      `}
-                      style={{ ...style, aspectRatio: '5 / 3' }}
-                      onClick={() => canSelect && handleDateClick(day.date)}
-                      title={tooltipText}
+                    <Tooltip
+                      content={tooltipContent}
+                      users={tooltipUsers.length > 0 ? tooltipUsers : []}
                     >
-                      <span>{day.date.getDate()}</span>
-                      {isOff && selectedUserId && (
-                        <DynamicButton
-                          variant="danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemove(day.date);
-                          }}
-                          className="absolute top-0 right-0 text-[10px] w-3 h-4 min-w-[10px] p-0 flex items-center justify-center bg-red-500/80 hover:bg-red-600 text-white rounded-bl rounded-tr"
-                          title="Remove"
-                        >
-                          ×
-                        </DynamicButton>
-                      )}
-                    </div>
+                      <div
+                        key={dayIndex}
+                        className={`
+                          rounded text-sm flex flex-col items-center justify-center relative
+                          ${bgColor} ${textColor}
+                          ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}
+                        `}
+                        style={{ ...style, aspectRatio: '5 / 3' }}
+                        onClick={() => canSelect && handleDateClick(day.date)}
+                      >
+                        <span>{day.date.getDate()}</span>
+                        {isOff && selectedUserId && (
+                          <DynamicButton
+                            variant="danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemove(day.date);
+                            }}
+                            className="absolute top-0 right-0 text-[10px] w-3 h-4 min-w-[10px] p-0 flex items-center justify-center bg-red-500/80 hover:bg-red-600 text-white rounded-bl rounded-tr"
+                            title="Remove"
+                          >
+                            ×
+                          </DynamicButton>
+                        )}
+                      </div>
+                    </Tooltip>
                   );
                 })}
               </div>
