@@ -110,6 +110,24 @@ export const formatDate = (value, pattern = 'yyyy-MM-dd HH:mm', useRomanianTimez
 };
 
 /**
+ * Format date to YYYY-MM-DD string using local date components (not UTC)
+ * This avoids timezone shifts when working with calendar dates
+ * @param {Date|string|number} date - Date to format
+ * @returns {string} Date string in YYYY-MM-DD format
+ */
+export const formatDateString = (date) => {
+  if (!date) return '';
+  const dateObj = date instanceof Date ? date : new Date(date);
+  if (isNaN(dateObj.getTime())) return '';
+  
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth() + 1; // 1-12
+  const day = dateObj.getDate();
+  
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+/**
  * Format date as "time ago" with US language
  */
 export const fromNow = (value, useRomanianTimezone = true) => {
@@ -231,6 +249,7 @@ export const useFormat = () => {
   return {
     toMs,
     format: formatDate,
+    formatDateString,
     fromNow,
     formatMonth,
     getCurrentMonthId,

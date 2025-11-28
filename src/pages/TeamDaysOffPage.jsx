@@ -44,7 +44,9 @@ const TeamDaysOffPage = () => {
       const daysOffEntry = daysOffMap.get(userUID);
       
       if (daysOffEntry) {
-        // User has an entry, use that data
+        // User has an entry - use pre-calculated values from API hook
+        // API hook already calculates daysTotal, daysRemaining, monthlyAccrual, etc.
+        // No need to recalculate here - prevents duplicate calculations and ensures consistency
         return {
           id: daysOffEntry.id,
           userUID: userUID,
@@ -55,6 +57,7 @@ const TeamDaysOffPage = () => {
           daysRemaining: daysOffEntry.daysRemaining || 0,
           monthsAccrued: daysOffEntry.monthsAccrued || 0,
           monthlyAccrual: daysOffEntry.monthlyAccrual || 0,
+          offDays: daysOffEntry.offDays || [],
           hasEntry: true,
         };
       } else {
@@ -119,6 +122,7 @@ const TeamDaysOffPage = () => {
         {authUser?.role === 'admin' && (
           <DynamicButton
             variant="primary"
+             size="md"
             onClick={() => setShowCreateModal(true)}
             icon={Icons.buttons.add}
           >
@@ -128,7 +132,7 @@ const TeamDaysOffPage = () => {
       </div>
 
       {/* Table */}
-      <div className="card">
+      <div className="">
         <TanStackTable
           data={tableData || []}
           columns={columns}
@@ -167,6 +171,66 @@ const TeamDaysOffPage = () => {
 
       {/* Calendar */}
       <DaysOffCalendar teamDaysOff={teamDaysOff || []} />
+
+      {/* Usage Summary */}
+      <div className="card">
+        <div className="p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="flex-shrink-0 mt-1">
+              <Icons.generic.help className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                How to Use Team Days Off
+              </h3>
+              <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                <div>
+                  <p className="font-medium mb-2 text-gray-900 dark:text-white">Getting Started:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                    <li><span className="font-medium">Admins</span> - Click "Add Entry" to create a days off entry for a user with base days</li>
+                    <li><span className="font-medium">Regular Users</span> - Your entry is automatically selected when you open the calendar</li>
+                    <li><span className="font-medium">Base Days</span> - Initial days off allocated (e.g., from 30.11.2025)</li>
+                    <li><span className="font-medium">Monthly Accrual</span> - Automatically adds 1.75 days per month since entry creation</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2 text-gray-900 dark:text-white">Managing Days Off:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                    <li><span className="font-medium">Select User</span> - Admins can select any user from the dropdown (top right)</li>
+                    <li><span className="font-medium">Select Dates</span> - Click on calendar dates to select days off (weekends and past dates are disabled)</li>
+                    <li><span className="font-medium">Save</span> - Click "Save" button to save selected dates</li>
+                    <li><span className="font-medium">Remove</span> - Click the "×" button on saved dates to remove them</li>
+                    <li><span className="font-medium">Entry Button</span> - Edit base days and days off count for a user</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2 text-gray-900 dark:text-white">Calendar Features:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                    <li><span className="font-medium">Color Legend</span> - Shows all users with their assigned colors and total days off</li>
+                    <li><span className="font-medium">Year Navigation</span> - Use arrow buttons to navigate between years</li>
+                    <li><span className="font-medium">Visual Indicators</span> - Colored dates show who has days off on specific dates</li>
+                    <li><span className="font-medium">Real-time Updates</span> - Changes are reflected immediately across all users</li>
+                  </ul>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
+                  <p className="font-medium mb-2 text-gray-900 dark:text-white">Important Notes:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                    <li><span className="font-medium">Base Days Required</span> - Users must have base days configured before selecting dates in the calendar</li>
+                    <li><span className="font-medium">Days Total</span> = Base Days + Monthly Accrual (1.75 days × months since creation)</li>
+                    <li><span className="font-medium">Days Remaining</span> = Days Total - Days Off Used</li>
+                    <li><span className="font-medium">Email to HR</span> - After saving dates, use "Send Email to HR" to notify HR team</li>
+                    <li><span className="font-medium">Past Dates</span> - Cannot be selected or removed (grayed out)</li>
+                    <li><span className="font-medium">Weekends</span> - Cannot be selected (Saturday and Sunday are disabled)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Create Modal */}
       {showCreateModal && (
