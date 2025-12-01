@@ -224,7 +224,7 @@ const AdminManagementPage = () => {
               ) : (
                 <div className="py-6">
                   <div className="text-center">
-                    <div className="text-red-500 dark:text-red-400 text-lg font-medium mb-2">
+                    <div className="text-red-error  text-lg font-medium mb-2">
                       Access Denied
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
