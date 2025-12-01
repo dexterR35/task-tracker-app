@@ -87,31 +87,6 @@ const Sidebar = () => {
 
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {/* How to Use Link */}
-        <Link
-          to="/how-to-use"
-          className={`group flex items-center px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] ${
-            isActive("/how-to-use")
-              ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
-              : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-          }`}
-        >
-          <div
-            className={`p-2 rounded-lg transition-all duration-200 ${getColorClasses("help", isActive("/how-to-use"))}`}
-            style={isActive("/how-to-use") ? {
-              backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-              color: 'white'
-            } : {}}
-          >
-            {React.createElement(Icons.generic.help, { className: "w-4 h-4" })}
-          </div>
-          {!isCollapsed && (
-            <div className="ml-2.5 flex-1">
-              <p className="font-medium text-sm">How to Use</p>
-            </div>
-          )}
-        </Link>
-
         {navigationItems.map((item) => {
           if (item.adminOnly && !canAccess("admin")) return null;
 

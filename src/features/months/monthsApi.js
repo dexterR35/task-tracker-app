@@ -20,7 +20,7 @@ import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import dataCache from "@/utils/dataCache";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
-import { validateUserPermissions } from "@/features/utils/authUtils";
+import { canCreateBoard } from "@/features/utils/authUtils";
 
 // Date and month utilities
 import {
@@ -224,10 +224,9 @@ export const useAvailableMonths = () => {
 export const useCreateMonthBoard = () => {
   const createMonthBoard = useCallback(async (monthId, userData) => {
     try {
-      // Validate user permissions
-      const permissionValidation = validateUserPermissions(userData, 'create_board');
-      if (!permissionValidation.isValid) {
-        throw new Error(permissionValidation.errors.join(', '));
+      // Validate user permissions - only users with explicit 'create_boards' permission can create boards
+      if (!canCreateBoard(userData)) {
+        throw new Error('Contact administrator for creating board');
       }
 
       const monthRef = getMonthRef(monthId);

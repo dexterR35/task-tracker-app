@@ -34,7 +34,6 @@ import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
 import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
-import ProfilePage from "@/pages/ProfilePage";
 import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
 import TeamDaysOffPage from "@/pages/TeamDaysOffPage";
 import HowToUsePage from "@/pages/HowToUsePage";
@@ -256,9 +255,9 @@ export const createRouter = () => {
           {
             path: "profile",
             element: (
-              <ErrorBoundary componentName="ProfilePage">
+              <ErrorBoundary componentName="ComingSoonPage">
                 <PageWrapper>
-                  <ProfilePage />
+                  <ComingSoonPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),

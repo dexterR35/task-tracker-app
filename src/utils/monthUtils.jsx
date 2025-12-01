@@ -21,6 +21,7 @@ import { useCreateMonthBoard } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { canCreateBoard } from "@/features/utils/authUtils";
 
 export const getWeeksInMonth = (monthId) => {
   const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
@@ -426,6 +427,9 @@ export const MonthBoardBanner = () => {
     return null;
   }
 
+  // Check if user has permission to create boards
+  const userCanCreateBoard = canCreateBoard(appData?.user);
+
   const handleGenerateBoard = async () => {
     setIsGenerating(true);
     try {
@@ -470,18 +474,26 @@ export const MonthBoardBanner = () => {
               Create Month Board
             </h3>
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              Generate the task board for {monthName} to start tracking tasks
+              {userCanCreateBoard 
+                ? `Generate the task board for ${monthName} to start tracking tasks`
+                : `Contact administrator for creating board`}
             </p>
           </div>
         </div>
-        <DynamicButton
-          onClick={handleGenerateBoard}
-          disabled={isGenerating}
-          iconName="add"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm"
-        >
-          {isGenerating ? "Creating..." : "Create Board"}
-        </DynamicButton>
+        {userCanCreateBoard ? (
+          <DynamicButton
+            onClick={handleGenerateBoard}
+            disabled={isGenerating}
+            iconName="add"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm"
+          >
+            {isGenerating ? "Creating..." : "Create Board"}
+          </DynamicButton>
+        ) : (
+          <div className="text-sm text-gray-500 dark:text-gray-400 px-4 py-1.5">
+            No Permission
+          </div>
+        )}
       </div>
     </div>
   );

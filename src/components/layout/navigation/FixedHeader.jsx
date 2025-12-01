@@ -111,17 +111,13 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
               <div className="py-1">
                 <button
                   onClick={() => {
-                    navigate("/profile");
+                    navigate("/how-to-use");
                     setShowUserMenu(false);
                   }}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <Icons.generic.user className="w-4 h-4 inline mr-3" />
-                  Profile Settings
-                </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <Icons.generic.settings className="w-4 h-4 inline mr-3" />
-                  Preferences
+                  <Icons.generic.help className="w-4 h-4 inline mr-3" />
+                  How to Use
                 </button>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 py-1">
