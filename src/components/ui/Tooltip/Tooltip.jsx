@@ -8,33 +8,62 @@ const Tooltip = ({ children, content, users = [] }) => {
   const [isVisible, setIsVisible] = useState(false);
   const tooltipRef = useRef(null);
   const triggerRef = useRef(null);
+  const rafRef = useRef(null);
 
   useEffect(() => {
+    // Use requestAnimationFrame to batch DOM reads/writes and avoid forced reflow
     if (isVisible && triggerRef.current && tooltipRef.current) {
-      const triggerRect = triggerRef.current.getBoundingClientRect();
-      const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-
-      // Calculate position
-      let top = triggerRect.top - tooltipRect.height - 8;
-      let left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
-
-      // Adjust if tooltip goes off screen
-      if (left < 8) {
-        left = 8;
-      } else if (left + tooltipRect.width > viewportWidth - 8) {
-        left = viewportWidth - tooltipRect.width - 8;
+      // Cancel any pending animation frame
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
 
-      if (top < 8) {
-        // Show below instead
-        top = triggerRect.bottom + 8;
-      }
+      rafRef.current = requestAnimationFrame(() => {
+        // Check if nodes still exist (prevents "Node cannot be found" error)
+        if (!triggerRef.current || !tooltipRef.current) {
+          return;
+        }
 
-      tooltipRef.current.style.top = `${top}px`;
-      tooltipRef.current.style.left = `${left}px`;
+        try {
+          const triggerRect = triggerRef.current.getBoundingClientRect();
+          const tooltipRect = tooltipRef.current.getBoundingClientRect();
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+
+          // Calculate position
+          let top = triggerRect.top - tooltipRect.height - 8;
+          let left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+
+          // Adjust if tooltip goes off screen
+          if (left < 8) {
+            left = 8;
+          } else if (left + tooltipRect.width > viewportWidth - 8) {
+            left = viewportWidth - tooltipRect.width - 8;
+          }
+
+          if (top < 8) {
+            // Show below instead
+            top = triggerRect.bottom + 8;
+          }
+
+          // Batch style updates
+          if (tooltipRef.current) {
+            tooltipRef.current.style.top = `${top}px`;
+            tooltipRef.current.style.left = `${left}px`;
+          }
+        } catch (error) {
+          // Silently handle DOM access errors (node might have been removed)
+          console.warn('Tooltip positioning error:', error);
+        }
+      });
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   }, [isVisible]);
 
   const handleMouseEnter = () => {

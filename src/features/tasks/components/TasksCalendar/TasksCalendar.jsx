@@ -171,6 +171,15 @@ const TasksCalendar = () => {
   const tasksByDate = useMemo(() => {
     const map = new Map();
     
+    // Create user lookup map for O(1) access instead of O(n) find()
+    const userLookup = new Map();
+    allUsers.forEach(user => {
+      const uid = user.userUID || user.id;
+      if (uid) {
+        userLookup.set(uid, user);
+      }
+    });
+    
     filteredTasks.forEach(task => {
       // IMPORTANT: Use ONLY createdAt (when task was added) - this is the unique identifier
       // Do NOT use startDate, endDate, or any other date field
@@ -248,10 +257,10 @@ const TasksCalendar = () => {
       const hours = task.data_task?.timeInHours || task.timeInHours || 0;
       dayData.totalHours += typeof hours === 'number' ? hours : 0;
       
-      // Get user
+      // Get user (using optimized lookup map)
       const userUID = task.data_task?.userUID || task.userUID || task.userId;
       if (userUID) {
-        const user = allUsers.find(u => (u.userUID || u.id) === userUID);
+        const user = userLookup.get(userUID);
         if (user) {
           if (!dayData.users.has(userUID)) {
             dayData.users.set(userUID, {
