@@ -212,16 +212,25 @@ const TaskDetailPage = () => {
           color: "amber",
         },
         details: (() => {
+          // If no deliverables, return empty array
+          if (deliverablesUsed.length === 0) {
+            return [];
+          }
+
           const details = [
             {
               label: "Total Deliverables",
-              value: deliverablesUsed.length || 0,
-            },
-            {
-              label: "Total Deliverables Time",
-              value: `${deliverablesTotalTime.toFixed(1)}h (${((deliverablesTotalTime * 60) / 480).toFixed(2)} days)`,
+              value: deliverablesUsed.length.toString(),
             },
           ];
+
+          // Only show time if there's actual time
+          if (deliverablesTotalTime > 0) {
+            details.push({
+              label: "Total Deliverables Time",
+              value: `${deliverablesTotalTime.toFixed(1)}h (${((deliverablesTotalTime * 60) / 480).toFixed(2)} days)`,
+            });
+          }
 
           // Add detailed deliverable information
           if (deliverablesList && deliverablesList.length > 0) {
@@ -238,23 +247,18 @@ const TaskDetailPage = () => {
               });
 
               // Show calculation
+              details.push({
+                label: `  Calculation`,
+                value: hasVariations
+                  ? `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} + ${variationsQty} × ${variationsTime}${variationsTimeUnit}`
+                  : `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity}`,
+              });
+
+              // Only show variations if there are any
               if (hasVariations) {
-                details.push({
-                  label: `  Calculation`,
-                  value: `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} + ${variationsQty} × ${variationsTime}${variationsTimeUnit}`,
-                });
                 details.push({
                   label: `  Variations`,
                   value: `${variationsQty} × ${variationsTime}${variationsTimeUnit}`,
-                });
-              } else {
-                details.push({
-                  label: `  Calculation`,
-                  value: `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity}`,
-                });
-                details.push({
-                  label: `  Variations`,
-                  value: "None",
                 });
               }
 
@@ -266,6 +270,10 @@ const TaskDetailPage = () => {
           } else if (deliverablesUsed.length > 0) {
             // Show basic info if calculation not available
             deliverablesUsed.forEach((deliverable, index) => {
+              const variationsCount = deliverable.variationsCount ||
+                deliverable.variationsQuantity ||
+                0;
+
               details.push({
                 label: `Deliverable ${index + 1}`,
                 value: deliverable.name || "Unknown",
@@ -274,17 +282,22 @@ const TaskDetailPage = () => {
                 label: `  Quantity`,
                 value: deliverable.count || 1,
               });
-              details.push({
-                label: `  Variations Count`,
-                value:
-                  deliverable.variationsCount ||
-                  deliverable.variationsQuantity ||
-                  0,
-              });
-              details.push({
-                label: `  Variations Enabled`,
-                value: deliverable.variationsEnabled ? "Yes" : "No",
-              });
+
+              // Only show variations if there are any
+              if (variationsCount > 0) {
+                details.push({
+                  label: `  Variations Count`,
+                  value: variationsCount.toString(),
+                });
+              }
+
+              // Only show variations enabled if variations are actually enabled
+              if (deliverable.variationsEnabled) {
+                details.push({
+                  label: `  Variations Enabled`,
+                  value: "Yes",
+                });
+              }
             });
           }
 

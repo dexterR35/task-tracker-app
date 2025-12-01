@@ -107,9 +107,12 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   }, [teamDaysOff, selectedUserId]);
 
   // Get selected user's off days
+  // Create a new array reference to ensure reactivity when offDays changes
   const selectedUserOffDays = useMemo(() => {
-    return selectedUserEntry?.offDays || [];
-  }, [selectedUserEntry]);
+    if (!selectedUserEntry?.offDays) return [];
+    // Create a new array reference to ensure React detects changes
+    return Array.isArray(selectedUserEntry.offDays) ? [...selectedUserEntry.offDays] : [];
+  }, [selectedUserEntry?.offDays, selectedUserEntry?.id]);
 
   // Check if selected user has available days (baseDays > 0 or daysTotal > 0)
   const hasAvailableDays = useMemo(() => {
@@ -210,10 +213,13 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   }, [isWeekend, isPastDate]);
 
   // Create lookup map for date -> users (optimized to avoid filtering on every render)
+  // This updates in real-time when teamDaysOff changes
   const dateToUsersMap = useMemo(() => {
     const map = new Map();
     allUsersWithColors.forEach(user => {
-      user.offDays.forEach(offDay => {
+      // Ensure offDays is an array and create new reference for reactivity
+      const offDays = Array.isArray(user.offDays) ? [...user.offDays] : [];
+      offDays.forEach(offDay => {
         if (!map.has(offDay.dateString)) {
           map.set(offDay.dateString, []);
         }
@@ -221,7 +227,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       });
     });
     return map;
-  }, [allUsersWithColors]);
+  }, [allUsersWithColors, teamDaysOff.length]); // Add teamDaysOff.length to ensure updates
 
   // Check if a date is in selected user's off days
   const isDateOff = useCallback((date) => {
@@ -506,14 +512,17 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       {/* Action Buttons */}
       {selectedUserId && (
         <div className="flex items-center gap-3 flex-wrap">
-          <DynamicButton
-            variant="secondary"
-            size="md"
-            onClick={() => setShowEntryModal(true)}
-            icon={Icons.buttons.edit}
-          >
-            Entry
-          </DynamicButton>
+          {/* Entry button - only visible to admins */}
+          {isAdmin && (
+            <DynamicButton
+              variant="secondary"
+              size="md"
+              onClick={() => setShowEntryModal(true)}
+              icon={Icons.buttons.edit}
+            >
+              Entry
+            </DynamicButton>
+          )}
           
           <DynamicButton
             variant="primary"
@@ -645,6 +654,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
                   } else if (visibleUsersOff.length > 0) {
                     tooltipContent = `${visibleUsersOff.length > 1 ? `${visibleUsersOff.length} users off` : 'User off'}${isDisabled ? ' (Past date)' : ''}`;
                     tooltipUsers = visibleUsersOff.map(u => ({
+                      userUID: u.userUID,
                       userName: u.userName,
                       color: u.color || getUserColor(u)
                     }));
@@ -664,11 +674,11 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
 
                   return (
                     <Tooltip
+                      key={`${monthIndex}-${dayIndex}-${formatDateString(day.date)}`}
                       content={tooltipContent}
                       users={tooltipUsers.length > 0 ? tooltipUsers : []}
                     >
                       <div
-                        key={dayIndex}
                         className={`
                           rounded text-sm flex flex-col items-center justify-center relative
                           ${bgColor} ${textColor}
@@ -708,8 +718,8 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         </div>
       )}
 
-      {/* Entry Modal */}
-      {showEntryModal && (
+      {/* Entry Modal - only visible to admins */}
+      {isAdmin && showEntryModal && (
         <TeamDaysOffFormModal
           isOpen={showEntryModal}
           onClose={() => setShowEntryModal(false)}

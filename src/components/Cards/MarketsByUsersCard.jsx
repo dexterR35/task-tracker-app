@@ -141,6 +141,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
 
       const row = {
         user: userName,
+        userId: userId, // Include userId for color lookup from database
         totalTasks: userTotal,
       };
 
@@ -285,6 +286,7 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
             name: row.user,
             value: row.totalTasks || 0,
             hours: hoursValue,
+            userId: row.userId, // Include userId if available for color lookup
           };
         })
         .sort((a, b) => {
@@ -296,7 +298,9 @@ const calculateMarketsByUsersData = (tasks, users, options = CALCULATION_OPTIONS
         })
         .map(({ hours, ...rest }) => rest), // Remove hours from final data
       // Removed .slice(0, 10) to show all users in the pie chart
-      "user"
+      "user",
+      "name",
+      users // Pass users array for color_set lookup
     );
   }
 
@@ -395,12 +399,15 @@ const calculateUsersBiaxialData = (tasks, users) => {
 
         return {
           name: userName,
+          userId: userId, // Include userId for color lookup from database
           tasks: stats.tasks,
           hours: Math.round(stats.hours * 100) / 100,
         };
       })
       .sort((a, b) => b.tasks - a.tasks),
-    "user"
+    "user",
+    "name",
+    users // Pass users array for color_set lookup
   );
 };
 

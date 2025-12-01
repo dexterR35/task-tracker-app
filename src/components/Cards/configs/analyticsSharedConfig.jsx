@@ -149,13 +149,102 @@ export const getDepartmentColor = (department) => {
 };
 
 
-export const getUserColor = (userIdentifier) => {
+/**
+ * Get user object from users array by userId
+ * Only uses userUID for matching (as per DB schema)
+ */
+export const getUserObject = (userId, users) => {
+  if (!userId) {
+    return null;
+  }
+  
+  // Normalize userId for comparison (trim and ensure string)
+  const normalizedUserId = typeof userId === 'string' ? userId.trim() : String(userId);
+  
+  // If users array is not available or empty, return null
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    return null;
+  }
+  
+  // Try to find user by userUID (exact match, case-sensitive)
+  const user = users.find((u) => {
+    if (!u || typeof u !== 'object') return false;
+    
+    // Check userUID field (primary) - exact match
+    if (u.userUID !== undefined && u.userUID !== null) {
+      const userUID = typeof u.userUID === 'string' ? u.userUID.trim() : String(u.userUID);
+      if (userUID === normalizedUserId) {
+        return true;
+      }
+    }
+    
+    // Fallback: check id field if userUID doesn't exist (but only if it's not the Firestore doc ID)
+    if (u.id && u.id !== u.userUID) {
+      const userIdFromId = typeof u.id === 'string' ? u.id.trim() : String(u.id);
+      if (userIdFromId === normalizedUserId) {
+        return true;
+      }
+    }
+    
+    return false;
+  });
+  
+  return user || null;
+};
+
+/**
+ * Get color from user's color_set field in database
+ * Handles color with or without # prefix
+ * Falls back to hash-based color if color_set not available
+ */
+export const getUserColor = (userIdentifier, users = null) => {
+  // If userIdentifier is already a user object, use it directly
+  if (userIdentifier && typeof userIdentifier === 'object' && !Array.isArray(userIdentifier)) {
+    const colorSet = userIdentifier.color_set || userIdentifier.colorSet;
+    if (colorSet) {
+      // Add # prefix if not present
+      return colorSet.startsWith('#') ? colorSet : `#${colorSet}`;
+    }
+    // If no color_set, fall through to hash-based approach using name or userUID
+    const name = userIdentifier.name || userIdentifier.displayName || userIdentifier.userUID || '';
+    userIdentifier = name;
+  }
+  
+  // If we have users array and userIdentifier is a string (userId or name), try to find user
+  if (users && typeof userIdentifier === 'string') {
+    const user = getUserObject(userIdentifier, users);
+    if (user) {
+      const colorSet = user.color_set || user.colorSet;
+      if (colorSet) {
+        // Add # prefix if not present
+        return colorSet.startsWith('#') ? colorSet : `#${colorSet}`;
+      }
+    }
+    
+    // Also try to find by name if not found by userUID
+    const userByName = users.find((u) => {
+      if (!u || typeof u !== 'object') return false;
+      const userName = u.name || u.displayName || '';
+      return userName.toLowerCase() === userIdentifier.toLowerCase();
+    });
+    
+    if (userByName) {
+      const colorSet = userByName.color_set || userByName.colorSet;
+      if (colorSet) {
+        // Add # prefix if not present
+        return colorSet.startsWith('#') ? colorSet : `#${colorSet}`;
+      }
+    }
+  }
+  
+  // Fallback to hash-based color assignment if no color_set found
   if (!userIdentifier) return USER_COLORS[0];
 
   // Simple hash function to convert string to number
   let hash = 0;
-  for (let i = 0; i < userIdentifier.length; i++) {
-    const char = userIdentifier.charCodeAt(i);
+  const identifier = typeof userIdentifier === 'string' ? userIdentifier : String(userIdentifier);
+  for (let i = 0; i < identifier.length; i++) {
+    const char = identifier.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
@@ -166,7 +255,7 @@ export const getUserColor = (userIdentifier) => {
 };
 
 
-export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey = 'name') => {
+export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey = 'name', users = null) => {
   if (!data || !Array.isArray(data)) return [];
 
   // For USER and REPORTER types, ensure unique colors within the dataset
@@ -182,6 +271,7 @@ export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey
       }
 
       const name = item[nameKey] || item.name || item.label || '';
+      const userId = item.userId || item.userUID || item.id || name;
 
       // Check if we've already assigned a color to this name
       if (nameToColorMap.has(name)) {
@@ -190,20 +280,37 @@ export const addConsistentColors = (data, type = CHART_DATA_TYPE.MARKET, nameKey
           color: nameToColorMap.get(name)
         };
       }
+      
       // Try to get a unique color using hash, but ensure uniqueness
       // Use USER_COLORS for users, BASE_COLORS for reporters
       const colorPalette = type === CHART_DATA_TYPE.USER ? USER_COLORS : BASE_COLORS;
-      let color = type === CHART_DATA_TYPE.USER ? getUserColor(name) : getDepartmentColor(name);
-      let attempts = 0;
-      const maxAttempts = colorPalette.length * 2;
+      
+      // For USER type, try to get color from database color_set first
+      let color;
+      if (type === CHART_DATA_TYPE.USER && users) {
+        // Try to get color from user's color_set in database
+        color = getUserColor(userId, users);
+        // If we got a color from database, check if it's already used
+        // If used, we'll fall back to hash-based approach below
+        if (usedColors.has(color)) {
+          color = null; // Force fallback
+        }
+      }
+      
+      // Fallback to hash-based color if no database color or if color is already used
+      if (!color) {
+        color = type === CHART_DATA_TYPE.USER ? getUserColor(name, users) : getDepartmentColor(name);
+        let attempts = 0;
+        const maxAttempts = colorPalette.length * 2;
 
-      // If color is already used, try next colors in sequence
-      while (usedColors.has(color) && attempts < maxAttempts) {
-        // Get next color index
-        const currentIndex = colorPalette.indexOf(color);
-        const nextIndex = (currentIndex + 1) % colorPalette.length;
-        color = colorPalette[nextIndex];
-        attempts++;
+        // If color is already used, try next colors in sequence
+        while (usedColors.has(color) && attempts < maxAttempts) {
+          // Get next color index
+          const currentIndex = colorPalette.indexOf(color);
+          const nextIndex = (currentIndex + 1) % colorPalette.length;
+          color = colorPalette[nextIndex];
+          attempts++;
+        }
       }
 
       // If still no unique color found (very unlikely), use the hash color anyway

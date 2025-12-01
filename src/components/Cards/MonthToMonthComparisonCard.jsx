@@ -11,7 +11,7 @@ const ChartIcon = Icons.generic.chart;
 
 const MonthToMonthComparisonCard = memo(
   ({
-    title = "Month-to-Month Comparison",
+    title = "Month-to-Month",
     month1Name = "Month 1",
     month2Name = "Month 2",
     month3Name = null,
@@ -199,7 +199,7 @@ const MonthToMonthComparisonCard = memo(
             <AnalyticsTable
               data={comparisonTableData}
               columns={comparisonTableColumns}
-              title="Month-to-Month Comparison"
+              title="Month-to-Month"
             />
           </div>
         )}
@@ -208,7 +208,7 @@ const MonthToMonthComparisonCard = memo(
         <div>
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-              Casino & Sport Comparison
+              Casino & Sport
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Task distribution by markets for {month1Name} vs {month2Name}
@@ -277,7 +277,7 @@ const MonthToMonthComparisonCard = memo(
         <div>
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-              Market Acquisition Comparison
+              Market Acquisition
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Acquisition tasks by markets for {month1Name} vs {month2Name}
@@ -342,11 +342,11 @@ const MonthToMonthComparisonCard = memo(
           </div>
         </div>
 
-        {/* Comprehensive Charts Section */}
+        {/* Task Analysis Section */}
         <div>
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-              Comprehensive Task Analysis
+              Task Analysis
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Complete breakdown of all tasks by category, product, markets, and users

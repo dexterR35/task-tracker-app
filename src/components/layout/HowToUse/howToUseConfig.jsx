@@ -168,7 +168,7 @@ export const HOW_TO_USE_CONTENT = {
         items: [
           { text: "Admins", description: "Click \"Add Entry\" to create a user's days off record with base days. You can manage days off for any team member" },
           { text: "Regular Users", description: "Your days off record is automatically selected when opening the calendar. You can view and manage your own vacation days" },
-          { text: "Base Days", description: "Initial days off allocated to a user (e.g., from 30.11.2025). This is the starting number of vacation days" },
+          { text: "Base Days", description: "Initial days off allocated to a user. This is the starting number of vacation days" },
           { text: "Monthly Accrual", description: "System automatically adds 1.75 days per month since the record was created. This accumulates over time" },
           { text: "Calendar View", description: "The calendar shows all team members' days off with color coding. Each user has a unique color for easy identification" },
         ]

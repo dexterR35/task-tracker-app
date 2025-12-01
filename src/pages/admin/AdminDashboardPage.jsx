@@ -13,6 +13,13 @@ import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
 import { logger } from "@/utils/logger";
+import {
+  useTotalTasks,
+  useTotalHours,
+  useTotalDeliverables,
+  useDeliverablesHours,
+} from "@/hooks/useAnalytics";
+import { filterTasksByUserAndReporter } from "@/utils/taskFilters";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -181,6 +188,100 @@ const AdminDashboardPage = () => {
     clientSatisfaction: 4.6, // out of 5
   };
 
+  // Calculate values using hooks for user filter card
+  const userFilterFilters = useMemo(() => ({
+    userId: selectedUserId || user?.userUID,
+    monthId: currentMonthId,
+  }), [selectedUserId, user?.userUID, currentMonthId]);
+  const userFilterTasksData = useTotalTasks(tasks || [], users || [], userFilterFilters);
+  const userFilterHoursData = useTotalHours(tasks || [], users || [], userFilterFilters);
+
+  // Calculate values using hooks for reporter filter card
+  const reporterFilteredTasks = useMemo(() => {
+    if (!selectedReporterId || !tasks) return [];
+    return filterTasksByUserAndReporter(tasks, {
+      selectedReporterId,
+      currentMonthId,
+      isUserAdmin,
+      currentUserUID: user?.userUID,
+    });
+  }, [tasks, selectedReporterId, currentMonthId, isUserAdmin, user?.userUID]);
+  const reporterFilterFilters = useMemo(() => ({ monthId: currentMonthId }), [currentMonthId]);
+  const reporterFilterTasksData = useTotalTasks(reporterFilteredTasks, [], reporterFilterFilters);
+  const reporterFilterHoursData = useTotalHours(reporterFilteredTasks, [], reporterFilterFilters);
+
+  // Calculate values using hooks for actions card
+  const actionsFilteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    let filtered = tasks;
+    if (currentMonthId) {
+      filtered = filtered.filter(task => task.monthId === currentMonthId);
+    }
+    if (selectedWeek) {
+      // Filter by week if selected
+      const weekTasks = [];
+      selectedWeek.days?.forEach((day) => {
+        try {
+          const dayDate = day instanceof Date ? day : new Date(day);
+          if (isNaN(dayDate.getTime())) return;
+          const dayStr = dayDate.toISOString().split("T")[0];
+          const dayTasks = filtered.filter((task) => {
+            if (!task.createdAt) return false;
+            let taskDate;
+            if (task.createdAt && typeof task.createdAt === "object" && task.createdAt.seconds) {
+              taskDate = new Date(task.createdAt.seconds * 1000);
+            } else if (task.createdAt && typeof task.createdAt === "object" && task.createdAt.toDate) {
+              taskDate = task.createdAt.toDate();
+            } else {
+              taskDate = new Date(task.createdAt);
+            }
+            if (isNaN(taskDate.getTime())) return false;
+            const taskDateStr = taskDate.toISOString().split("T")[0];
+            return taskDateStr === dayStr;
+          });
+          weekTasks.push(...dayTasks);
+        } catch (error) {
+          logger.warn("Error processing day:", error, day);
+        }
+      });
+      filtered = weekTasks;
+    }
+    // Apply user and reporter filtering
+    if (selectedUserId || selectedReporterId) {
+      filtered = filterTasksByUserAndReporter(filtered, {
+        selectedUserId,
+        selectedReporterId,
+        currentMonthId: null, // Already filtered
+        isUserAdmin,
+        currentUserUID: user?.userUID,
+      });
+    }
+    return filtered;
+  }, [tasks, currentMonthId, selectedWeek, selectedUserId, selectedReporterId, isUserAdmin, user?.userUID]);
+  
+  const actionsFilters = useMemo(() => ({ monthId: null }), []); // Already filtered above
+  const actionsTasksData = useTotalTasks(actionsFilteredTasks, [], actionsFilters);
+  const actionsHoursData = useTotalHours(actionsFilteredTasks, [], actionsFilters);
+  const actionsDeliverablesData = useTotalDeliverables(actionsFilteredTasks, [], actionsFilters);
+  
+  // Transform deliverables to options format
+  const deliverablesOptions = useMemo(() => {
+    if (!deliverables || deliverables.length === 0) return [];
+    return deliverables.map(deliverable => ({
+      value: deliverable.name,
+      label: deliverable.name,
+      department: deliverable.department,
+      timePerUnit: deliverable.timePerUnit,
+      timeUnit: deliverable.timeUnit,
+      requiresQuantity: deliverable.requiresQuantity,
+      variationsTime: deliverable.variationsTime,
+      variationsTimeUnit: deliverable.variationsTimeUnit || 'min',
+      declinariTime: deliverable.declinariTime,
+      declinariTimeUnit: deliverable.declinariTimeUnit
+    }));
+  }, [deliverables]);
+  const actionsDeliverablesHoursData = useDeliverablesHours(actionsFilteredTasks, [], deliverablesOptions, actionsFilters);
+
   // Create small cards - optimized memoization to prevent re-renders
   const smallCards = useMemo(() => createCards({
     tasks,
@@ -207,11 +308,25 @@ const AdminDashboardPage = () => {
     selectMonth,
     availableMonths,
     efficiency: efficiencyData,
+    // Pre-calculated values from hooks
+    userFilterTotalTasks: userFilterTasksData.totalTasks,
+    userFilterTotalHours: userFilterHoursData.totalHours,
+    reporterFilterTotalTasks: reporterFilterTasksData.totalTasks,
+    reporterFilterTotalHours: reporterFilterHoursData.totalHours,
+    actionsTotalTasks: actionsTasksData.totalTasks,
+    actionsTotalHours: actionsHoursData.totalHours,
+    actionsTotalDeliverables: actionsDeliverablesData.totalDeliverables,
+    actionsTotalDeliverablesWithVariationsHours: actionsDeliverablesHoursData.totalDeliverablesWithVariationsHours,
   }, 'main'), [
     // Only include data that actually affects card content
     tasks, reporters, users, deliverables, selectedMonth, currentMonth, isCurrentMonth,
     isUserAdmin, user, selectedUserId, selectedUserName, selectedReporterId,
-    selectedReporterName, selectedWeek, canCreateTasks, selectMonth, availableMonths
+    selectedReporterName, selectedWeek, canCreateTasks, selectMonth, availableMonths,
+    // Include hook results
+    userFilterTasksData.totalTasks, userFilterHoursData.totalHours,
+    reporterFilterTasksData.totalTasks, reporterFilterHoursData.totalHours,
+    actionsTasksData.totalTasks, actionsHoursData.totalHours,
+    actionsDeliverablesData.totalDeliverables, actionsDeliverablesHoursData.totalDeliverablesWithVariationsHours,
     // Excluded handler functions to prevent cross-contamination
   ]);
 
@@ -235,7 +350,15 @@ const AdminDashboardPage = () => {
     <div>
       {/* Page Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-end mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manage your tasks and track your progress
+            </p>
+          </div>
           <DynamicButton
             onClick={handleCreateTask}
             variant="primary"

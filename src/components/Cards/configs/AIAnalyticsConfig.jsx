@@ -231,6 +231,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
 
     return {
       user: userName,
+      userId: userId, // Include userId for color lookup from database
       totalTasks: userData.totalTasks,
       aiUsedTasks: userData.aiUsedCount,
       aiTime: Math.round(userData.totalAITime * 100) / 100,
@@ -411,6 +412,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         value: row.aiTime, // Keep aiTime as value for pie chart display
         tasks: row.aiUsedTasks, // Add tasks for sorting
         hours: row.aiTime,
+        userId: row.userId, // Include userId for color lookup
       }))
       .sort((a, b) => {
         // Sort by tasks first (descending), then by hours (descending)
@@ -420,7 +422,9 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         return b.hours - a.hours;
       })
       .map(({ tasks, ...rest }) => rest), // Remove tasks from final data (keep value and hours if needed)
-    CHART_DATA_TYPE.USER
+    CHART_DATA_TYPE.USER,
+    "name",
+    users // Pass users array for color_set lookup
   );
 
   // Create users biaxial chart data (AI time vs AI tasks)
@@ -431,6 +435,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         name: row.user,
         tasks: row.aiUsedTasks,
         hours: row.aiTime,
+        userId: row.userId, // Include userId for color lookup
       }))
       .sort((a, b) => {
         // Sort by tasks first (descending), then by hours (descending)
@@ -439,7 +444,9 @@ export const calculateAIAnalyticsData = (tasks, users) => {
         }
         return b.hours - a.hours;
       }),
-    CHART_DATA_TYPE.USER
+    CHART_DATA_TYPE.USER,
+    "name",
+    users // Pass users array for color_set lookup
   );
 
   // Create markets AI usage pie chart data

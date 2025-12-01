@@ -12,6 +12,9 @@ import { db } from '@/app/firebase';
 import dataCache from '@/utils/dataCache';
 import { logger } from '@/utils/logger';
 
+// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
+const fetchLocks = new Map();
+
 /**
  * Centralized hook for deliverables API operations
  * @returns {Object} - Deliverables data and CRUD operations
@@ -42,24 +45,52 @@ export const useDeliverablesApi = () => {
           return;
         }
 
+        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
+        if (fetchLocks.has(cacheKey)) {
+          logger.log('🔍 [useDeliverablesApi] Fetch already in progress, waiting...');
+          // Wait for the existing fetch to complete
+          const existingPromise = fetchLocks.get(cacheKey);
+          try {
+            const result = await existingPromise;
+            setDeliverables(result);
+            setIsLoading(false);
+            setError(null);
+            return;
+          } catch (err) {
+            setError(err);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         logger.log('🔍 [useDeliverablesApi] Fetching deliverables from Firestore');
         setIsLoading(true);
         setError(null);
         const deliverablesRef = getDeliverablesRef();
 
-        const snapshot = await getDoc(deliverablesRef);
-        if (!snapshot || !snapshot.exists()) {
-          setDeliverables([]);
-          setIsLoading(false);
-          return;
-        }
+        // Create fetch promise and lock
+        const fetchPromise = (async () => {
+          try {
+            const snapshot = await getDoc(deliverablesRef);
+            if (!snapshot || !snapshot.exists()) {
+              return [];
+            }
 
-        const deliverablesData = snapshot.data();
-        const deliverablesList = deliverablesData.deliverables || [];
+            const deliverablesData = snapshot.data();
+            const deliverablesList = deliverablesData.deliverables || [];
 
-        // Cache the data indefinitely (deliverables are static and manually managed)
-        dataCache.set(cacheKey, deliverablesList, Infinity);
+            // Cache the data indefinitely (deliverables are static and manually managed)
+            dataCache.set(cacheKey, deliverablesList, Infinity);
+            return deliverablesList;
+          } finally {
+            // Remove lock when done
+            fetchLocks.delete(cacheKey);
+          }
+        })();
 
+        fetchLocks.set(cacheKey, fetchPromise);
+
+        const deliverablesList = await fetchPromise;
         setDeliverables(deliverablesList);
         setIsLoading(false);
         setError(null);

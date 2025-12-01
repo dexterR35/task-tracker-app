@@ -75,12 +75,12 @@ const ShutterstockAnalyticsCard = memo(({
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* Tables Section */}
         <div className="space-y-6">
-          {/* Shutterstock vs AI Tools Comparison Table */}
+          {/* Shutterstock vs AI Tools Table */}
           {comparisonTableData && comparisonTableData.length > 0 ? (
             <AnalyticsTable
               data={comparisonTableData}
               columns={comparisonTableColumns}
-              title="Comparison: Shutterstock vs AI Tools"
+              title="Shutterstock vs AI Tools"
             />
           ) : null}
           

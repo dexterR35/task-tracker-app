@@ -27,41 +27,14 @@ import dataCache from "@/utils/dataCache";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 
 /**
- * Calculate months accrued since entry creation date
- * @param {Date} createdAt - Entry creation date
- * @param {Date} currentDate - Current date (defaults to now)
- * @returns {number} - Number of months accrued
- */
-const calculateMonthsAccrued = (createdAt, currentDate = new Date()) => {
-  if (!createdAt) return 0;
-
-  // Convert Firestore timestamp to Date if needed
-  const createdDate = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
-  const monthsDiff =
-    (currentDate.getFullYear() - createdDate.getFullYear()) * 12 +
-    (currentDate.getMonth() - createdDate.getMonth());
-  return Math.max(0, monthsDiff);
-};
-
-/**
- * Calculate monthly accrual (1.75 days per month)
- * @param {Date} createdAt - Entry creation date
- * @param {Date} currentDate - Current date (defaults to now)
- * @returns {number} - Monthly accrual (months * 1.75)
- */
-const calculateMonthlyAccrual = (createdAt, currentDate = new Date()) => {
-  const monthsAccrued = calculateMonthsAccrued(createdAt, currentDate);
-  return monthsAccrued * 1.75;
-};
-
-/**
  * Calculate total days (base days + monthly accrual)
+ * Uses stored values from database instead of calculating
  * @param {number} baseDays - Base days
- * @param {number} monthlyAccrual - Monthly accrual from months
+ * @param {number} monthlyAccrual - Monthly accrual (stored in DB)
  * @returns {number} - Total days available
  */
 const calculateTotalDays = (baseDays, monthlyAccrual) => {
-  return baseDays + monthlyAccrual;
+  return baseDays + (monthlyAccrual || 0);
 };
 
 /**
@@ -82,24 +55,19 @@ export const useTeamDaysOff = () => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const currentDate = new Date();
-
         const data = snapshot.docs.map(doc => {
           const docData = doc.data();
-          const createdAt = docData.createdAt;
           const baseDays = docData.baseDays || 0;
+          const monthlyAccrual = docData.monthlyAccrual || 0;
 
-          // Always recalculate monthly accrual from creation date to ensure accuracy
-          // Don't use stale DB value - recalculate on every snapshot update
-          const monthlyAccrual = calculateMonthlyAccrual(createdAt, currentDate);
-          const monthsAccrued = calculateMonthsAccrued(createdAt, currentDate);
-
+          // Use stored values from database - no calculation needed
           // If offDays array exists, use its length, otherwise use daysOff field
           // Ensure offDays is always an array (create a new array reference to ensure reactivity)
           const offDays = Array.isArray(docData.offDays) ? [...docData.offDays] : [];
           const daysOff = offDays.length > 0 ? offDays.length : (docData.daysOff || 0);
 
-          const daysTotal = calculateTotalDays(baseDays, monthlyAccrual);
+          // Use stored daysTotal from DB, or calculate from stored baseDays and monthlyAccrual
+          const daysTotal = docData.daysTotal || calculateTotalDays(baseDays, monthlyAccrual);
           const daysRemaining = daysTotal - daysOff;
 
           return {
@@ -108,9 +76,8 @@ export const useTeamDaysOff = () => {
             offDays: offDays, // Include offDays array (new reference for reactivity)
             daysTotal,
             daysRemaining,
-            monthsAccrued,
-            monthlyAccrual, // Always use recalculated value
-            daysOff, // Use calculated daysOff
+            monthlyAccrual, // Use stored value from DB
+            daysOff, // Use calculated daysOff from array length
           };
         });
 
@@ -173,14 +140,11 @@ export const useTeamDaysOff = () => {
         entryRef = doc(teamDaysOffRef);
       }
 
-      // Calculate monthly accrual
-      const createdAt = currentEntry?.createdAt || serverTimestamp();
-      const currentDate = new Date();
-      const monthlyAccrual = isNewEntry ? 0 : calculateMonthlyAccrual(createdAt, currentDate);
-
+      // Use stored values from database - no calculation needed
       const baseDays = teamDaysOffData.baseDays !== undefined ? teamDaysOffData.baseDays : (currentEntry?.baseDays || 0);
+      const monthlyAccrual = teamDaysOffData.monthlyAccrual !== undefined ? teamDaysOffData.monthlyAccrual : (currentEntry?.monthlyAccrual || 0);
       const daysOff = teamDaysOffData.daysOff !== undefined ? teamDaysOffData.daysOff : (currentEntry?.daysOff || 0);
-      const daysTotal = baseDays + monthlyAccrual;
+      const daysTotal = teamDaysOffData.daysTotal !== undefined ? teamDaysOffData.daysTotal : calculateTotalDays(baseDays, monthlyAccrual);
       const daysRemaining = daysTotal - daysOff;
 
       const entryData = {
@@ -223,26 +187,23 @@ export const useTeamDaysOff = () => {
     try {
       const entryRef = doc(db, 'teamDaysOff', entryId);
 
-      // Get current entry to calculate accrued days
+      // Get current entry to use stored values
       const entryDoc = await getDoc(entryRef);
       let currentEntry = null;
       if (entryDoc.exists()) {
         currentEntry = { id: entryDoc.id, ...entryDoc.data() };
       }
 
-      // Calculate monthly accrual from creation date
-      const createdAt = currentEntry?.createdAt || updateData.createdAt;
-      const currentDate = new Date();
-      const monthlyAccrual = calculateMonthlyAccrual(createdAt, currentDate);
-
-      // Recalculate total days and days remaining
+      // Use stored values from database - no calculation needed
       const baseDays = updateData.baseDays !== undefined ? updateData.baseDays : (currentEntry?.baseDays || 0);
+      const monthlyAccrual = updateData.monthlyAccrual !== undefined ? updateData.monthlyAccrual : (currentEntry?.monthlyAccrual || 0);
 
       // If offDays array exists in updateData or currentEntry, use its length, otherwise use daysOff field
       const offDays = updateData.offDays || currentEntry?.offDays || [];
       const daysOff = offDays.length > 0 ? offDays.length : (updateData.daysOff !== undefined ? updateData.daysOff : (currentEntry?.daysOff || 0));
 
-      const daysTotal = baseDays + monthlyAccrual;
+      // Use stored daysTotal from updateData or calculate from stored values
+      const daysTotal = updateData.daysTotal !== undefined ? updateData.daysTotal : calculateTotalDays(baseDays, monthlyAccrual);
       const daysRemaining = daysTotal - daysOff;
 
       const updates = {
@@ -370,12 +331,10 @@ export const useTeamDaysOff = () => {
       // Calculate daysOff from the count of offDays
       const daysOff = mergedOffDays.length;
 
-      // Recalculate totals
-      const createdAt = isNewEntry ? serverTimestamp() : currentEntry.createdAt;
-      const currentDate = new Date();
-      const monthlyAccrual = isNewEntry ? 0 : calculateMonthlyAccrual(createdAt, currentDate);
+      // Use stored values from database - no calculation needed
       const baseDays = currentEntry.baseDays || 0;
-      const daysTotal = calculateTotalDays(baseDays, monthlyAccrual);
+      const monthlyAccrual = currentEntry.monthlyAccrual || 0;
+      const daysTotal = currentEntry.daysTotal || calculateTotalDays(baseDays, monthlyAccrual);
       const daysRemaining = daysTotal - daysOff;
 
       const updateData = {
@@ -445,12 +404,10 @@ export const useTeamDaysOff = () => {
       // Recalculate daysOff
       const daysOff = updatedOffDays.length;
 
-      // Recalculate totals
-      const createdAt = currentEntry.createdAt;
-      const currentDate = new Date();
-      const monthlyAccrual = calculateMonthlyAccrual(createdAt, currentDate);
+      // Use stored values from database - no calculation needed
       const baseDays = currentEntry.baseDays || 0;
-      const daysTotal = calculateTotalDays(baseDays, monthlyAccrual);
+      const monthlyAccrual = currentEntry.monthlyAccrual || 0;
+      const daysTotal = currentEntry.daysTotal || calculateTotalDays(baseDays, monthlyAccrual);
       const daysRemaining = daysTotal - daysOff;
 
       await updateDoc(entryRef, {

@@ -47,6 +47,9 @@ const checkReporterEmailExists = async (email) => {
   }
 };
 
+// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
+const fetchLocks = new Map();
+
 /**
  * Reporters Hook (One-time fetch - Reporters are static data)
  */
@@ -70,22 +73,52 @@ export const useReporters = () => {
           return;
         }
 
+        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
+        if (fetchLocks.has(cacheKey)) {
+          logger.log('🔍 [useReporters] Fetch already in progress, waiting...');
+          // Wait for the existing fetch to complete
+          const existingPromise = fetchLocks.get(cacheKey);
+          try {
+            const result = await existingPromise;
+            setReporters(result);
+            setIsLoading(false);
+            setError(null);
+            return;
+          } catch (err) {
+            setError(err);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         logger.log('🔍 [useReporters] Fetching reporters from Firestore');
         setIsLoading(true);
         setError(null);
 
-        const reportersRef = collection(db, 'reporters');
-        const q = query(reportersRef, orderBy('createdAt', 'desc'));
+        // Create fetch promise and lock
+        const fetchPromise = (async () => {
+          try {
+            const reportersRef = collection(db, 'reporters');
+            const q = query(reportersRef, orderBy('createdAt', 'desc'));
 
-        const snapshot = await getDocs(q);
-        const reportersData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+            const snapshot = await getDocs(q);
+            const reportersData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
 
-        // Cache the data indefinitely (reporters are manually managed and never change)
-        dataCache.set(cacheKey, reportersData, Infinity);
+            // Cache the data indefinitely (reporters are manually managed and never change)
+            dataCache.set(cacheKey, reportersData, Infinity);
+            return reportersData;
+          } finally {
+            // Remove lock when done
+            fetchLocks.delete(cacheKey);
+          }
+        })();
 
+        fetchLocks.set(cacheKey, fetchPromise);
+
+        const reportersData = await fetchPromise;
         setReporters(reportersData);
         setIsLoading(false);
         setError(null);

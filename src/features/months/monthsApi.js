@@ -37,6 +37,9 @@ import {
 // FIRESTORE REFERENCE HELPERS
 // ============================================================================
 
+// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
+const fetchLocks = new Map();
+
 /**
  * Get month document reference
  * @param {string} monthId - Month ID in format "YYYY-MM"
@@ -92,44 +95,77 @@ export const useCurrentMonth = (userUID = null, role = 'user', _userData = null)
           return;
         }
 
-        logger.log('🔍 [useCurrentMonth] Fetching months from Firestore');
-        // Fetch months data once (months are relatively static)
-        const monthsQuery = query(monthsRef);
-        const snapshot = await getDocs(monthsQuery);
-        logger.log('🔍 [useCurrentMonth] Months fetched, docs:', snapshot.docs.length);
-
-        let boardExistsResult = false;
-        let currentMonthBoardResult = null;
-
-        if (!snapshot.empty) {
-          // Find the current month in the available months
-          const currentMonthDoc = snapshot.docs.find(
-            (doc) => doc.id === currentMonthInfo.monthId
-          );
-
-          if (currentMonthDoc) {
-            logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
-            boardExistsResult = true;
-            currentMonthBoardResult = currentMonthDoc.data();
+        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
+        if (fetchLocks.has(cacheKey)) {
+          logger.log('🔍 [useCurrentMonth] Fetch already in progress, waiting...');
+          // Wait for the existing fetch to complete
+          const existingPromise = fetchLocks.get(cacheKey);
+          try {
+            const result = await existingPromise;
+            setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
+            setBoardExists(result.boardExists);
+            setCurrentMonthBoard(result.currentMonthBoard);
+            setIsLoading(false);
+            return;
+          } catch (err) {
+            setError(err);
+            setIsLoading(false);
+            return;
           }
         }
 
-        // Cache the result with extended TTL for months (30 days - changes once per month)
-        const cacheData = {
-          boardExists: boardExistsResult,
-          currentMonthBoard: currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null
-        };
-        dataCache.setMonthData(cacheKey, cacheData);
+        logger.log('🔍 [useCurrentMonth] Fetching months from Firestore');
 
-        logger.log('🔍 [useCurrentMonth] Setting current month data:', {
-          monthId: currentMonthInfo.monthId,
-          boardExists: boardExistsResult,
-          hasBoardData: !!currentMonthBoardResult
-        });
+        // Create fetch promise and lock
+        const fetchPromise = (async () => {
+          try {
+            // Fetch months data once (months are relatively static)
+            const monthsQuery = query(monthsRef);
+            const snapshot = await getDocs(monthsQuery);
+            logger.log('🔍 [useCurrentMonth] Months fetched, docs:', snapshot.docs.length);
+
+            let boardExistsResult = false;
+            let currentMonthBoardResult = null;
+
+            if (!snapshot.empty) {
+              // Find the current month in the available months
+              const currentMonthDoc = snapshot.docs.find(
+                (doc) => doc.id === currentMonthInfo.monthId
+              );
+
+              if (currentMonthDoc) {
+                logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
+                boardExistsResult = true;
+                currentMonthBoardResult = currentMonthDoc.data();
+              }
+            }
+
+            // Cache the result with extended TTL for months (30 days - changes once per month)
+            const cacheData = {
+              boardExists: boardExistsResult,
+              currentMonthBoard: currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null
+            };
+            dataCache.setMonthData(cacheKey, cacheData);
+
+            logger.log('🔍 [useCurrentMonth] Setting current month data:', {
+              monthId: currentMonthInfo.monthId,
+              boardExists: boardExistsResult,
+              hasBoardData: !!currentMonthBoardResult
+            });
+
+            return cacheData;
+          } finally {
+            // Remove lock when done
+            fetchLocks.delete(cacheKey);
+          }
+        })();
+
+        fetchLocks.set(cacheKey, fetchPromise);
+        const result = await fetchPromise;
 
         setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
-        setBoardExists(boardExistsResult);
-        setCurrentMonthBoard(currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null);
+        setBoardExists(result.boardExists);
+        setCurrentMonthBoard(result.currentMonthBoard);
         setIsLoading(false);
 
       } catch (err) {
@@ -162,46 +198,93 @@ export const useAvailableMonths = () => {
   useEffect(() => {
     const setupListener = async () => {
       try {
+        const cacheKey = 'available_months';
+
+        // Check cache first
+        const cachedData = dataCache.get(cacheKey);
+        if (cachedData) {
+          logger.log('🔍 [useAvailableMonths] Using cached available months data');
+          setAvailableMonths(cachedData);
+          setIsLoading(false);
+          setError(null);
+          return;
+        }
+
+        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
+        if (fetchLocks.has(cacheKey)) {
+          logger.log('🔍 [useAvailableMonths] Fetch already in progress, waiting...');
+          // Wait for the existing fetch to complete
+          const existingPromise = fetchLocks.get(cacheKey);
+          try {
+            const result = await existingPromise;
+            setAvailableMonths(result);
+            setIsLoading(false);
+            setError(null);
+            return;
+          } catch (err) {
+            setError(err);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         logger.log('🔍 [useAvailableMonths] Fetching months data (one-time)');
         setIsLoading(true);
         setError(null);
 
-        const currentMonthInfo = getMonthInfo();
-        const yearId = getCurrentYear();
-        const monthsRef = getMonthsRef(yearId);
+        // Create fetch promise and lock
+        const fetchPromise = (async () => {
+          try {
 
-        // Fetch months data once (one-time fetch instead of real-time listener)
-        logger.log('🔍 [useAvailableMonths] Fetching months from Firestore');
-        const monthsQuery = query(monthsRef);
-        const snapshot = await getDocs(monthsQuery);
-        logger.log('🔍 [useAvailableMonths] Months fetched, docs:', snapshot.docs.length);
+            const currentMonthInfo = getMonthInfo();
+            const yearId = getCurrentYear();
+            const monthsRef = getMonthsRef(yearId);
 
-        const months = [];
+            // Fetch months data once (one-time fetch instead of real-time listener)
+            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore');
+            const monthsQuery = query(monthsRef);
+            const snapshot = await getDocs(monthsQuery);
+            logger.log('🔍 [useAvailableMonths] Months fetched, docs:', snapshot.docs.length);
 
-        if (!snapshot.empty) {
-          snapshot.docs.forEach((doc) => {
-            const monthData = doc.data();
-            const monthId = doc.id;
+            const months = [];
 
-            // Parse month ID to get readable month name using month utilities
-            const monthDate = parseMonthId(monthId);
-            const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
+            if (!snapshot.empty) {
+              snapshot.docs.forEach((doc) => {
+                const monthData = doc.data();
+                const monthId = doc.id;
 
-            months.push({
-              monthId,
-              monthName,
-              boardId: monthData.boardId,
-              createdAt: monthData.createdAt,
-              createdBy: monthData.createdBy,
-              createdByName: monthData.createdByName,
-              createdByRole: monthData.createdByRole,
-              isCurrent: monthId === currentMonthInfo.monthId,
-              boardExists: true // All months in availableMonths have boards (they're in the collection)
-            });
-          });
-        }
+                // Parse month ID to get readable month name using month utilities
+                const monthDate = parseMonthId(monthId);
+                const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
 
-        logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
+                months.push({
+                  monthId,
+                  monthName,
+                  boardId: monthData.boardId,
+                  createdAt: monthData.createdAt,
+                  createdBy: monthData.createdBy,
+                  createdByName: monthData.createdByName,
+                  createdByRole: monthData.createdByRole,
+                  isCurrent: monthId === currentMonthInfo.monthId,
+                  boardExists: true // All months in availableMonths have boards (they're in the collection)
+                });
+              });
+            }
+
+            // Cache the data with extended TTL (30 days - changes once per month)
+            dataCache.set(cacheKey, months, 30 * 24 * 60 * 60 * 1000);
+
+            logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
+            return months;
+          } finally {
+            // Remove lock when done
+            fetchLocks.delete(cacheKey);
+          }
+        })();
+
+        fetchLocks.set(cacheKey, fetchPromise);
+        const months = await fetchPromise;
+
         setAvailableMonths(months);
         setIsLoading(false);
 

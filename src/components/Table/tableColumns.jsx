@@ -1,7 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { useMemo } from "react";
 import Badge from "@/components/ui/Badge/Badge";
-import Avatar from "@/components/ui/Avatar/Avatar";
 import { formatDate, normalizeTimestamp } from "@/utils/dateUtils";
 import {
   useDeliverableCalculation,
@@ -469,9 +468,7 @@ export const useTaskColumns = (
 const createUserColumns = () => [
   columnHelper.accessor("name", {
     header: "USERS",
-    cell: ({ row }) => (
-      <Avatar user={row.original} showEmail={false} size="md" />
-    ),
+    cell: createSimpleCell(),
     size: 200,
   }),
   columnHelper.accessor("email", {
@@ -531,9 +528,7 @@ const createUserColumns = () => [
 const createReporterColumns = () => [
   columnHelper.accessor("name", {
     header: "REPORTERS",
-    cell: ({ row }) => (
-      <Avatar user={row.original} showEmail={false} size="md" />
-    ),
+    cell: createSimpleCell(),
     size: 200,
   }),
   columnHelper.accessor("email", {

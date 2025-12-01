@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import { CARD_SYSTEM, NAVIGATION_CONFIG } from '@/constants';
@@ -7,12 +7,15 @@ import { CARD_SYSTEM, NAVIGATION_CONFIG } from '@/constants';
 const Sidebar = () => {
   const { logout, clearError, canAccess, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
 
   const handleLogout = async () => {
     try {
       await logout();
+      // Navigate to home page after logout
+      navigate('/', { replace: true });
     } catch (error) {
       clearError();
     }

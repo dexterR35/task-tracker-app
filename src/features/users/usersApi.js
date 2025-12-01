@@ -42,6 +42,9 @@ const checkUserEmailExists = async (email) => {
   }
 };
 
+// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
+const fetchLocks = new Map();
+
 /**
  * Users Hook (One-time fetch - Users are relatively static data)
  */
@@ -65,22 +68,52 @@ export const useUsers = () => {
           return;
         }
 
+        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
+        if (fetchLocks.has(cacheKey)) {
+          logger.log('🔍 [useUsers] Fetch already in progress, waiting...');
+          // Wait for the existing fetch to complete
+          const existingPromise = fetchLocks.get(cacheKey);
+          try {
+            const result = await existingPromise;
+            setUsers(result);
+            setIsLoading(false);
+            setError(null);
+            return;
+          } catch (err) {
+            setError(err);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         logger.log('🔍 [useUsers] Fetching users from Firestore');
         setIsLoading(true);
         setError(null);
 
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, orderBy('createdAt', 'desc'));
+        // Create fetch promise and lock
+        const fetchPromise = (async () => {
+          try {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, orderBy('createdAt', 'desc'));
 
-        const snapshot = await getDocs(q);
-        const usersData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+            const snapshot = await getDocs(q);
+            const usersData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
 
-        // Cache the data indefinitely (users are manually managed and never change)
-        dataCache.set(cacheKey, usersData, Infinity);
+            // Cache the data indefinitely (users are manually managed and never change)
+            dataCache.set(cacheKey, usersData, Infinity);
+            return usersData;
+          } finally {
+            // Remove lock when done
+            fetchLocks.delete(cacheKey);
+          }
+        })();
 
+        fetchLocks.set(cacheKey, fetchPromise);
+
+        const usersData = await fetchPromise;
         setUsers(usersData);
         setIsLoading(false);
         setError(null);

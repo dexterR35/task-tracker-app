@@ -13,6 +13,17 @@ import { normalizeTimestamp } from "@/utils/dateUtils";
 import { useAuth } from "@/context/AuthContext";
 import { matchesUserName, matchesReporterName } from "@/utils/taskFilters";
 import { getWeeksInMonth } from "@/utils/monthUtils";
+import {
+  useTotalTasks,
+  useTotalHours,
+  useTotalDeliverables,
+  useTotalVariations,
+  useDeliverablesHours,
+  useAcquisitionTasks,
+  useMarketingTasks,
+  useProductTasks,
+  useMiscTasks,
+} from "@/hooks/useAnalytics";
 
 // Hardcoded efficiency data for demonstration
 const HARDCODED_EFFICIENCY_DATA = {
@@ -114,82 +125,30 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
     return true;
   });
   
-  // Calculate statistics
+  // Note: Statistics (totalTasks, totalHours, deliverables, variations, deliverablesHours) 
+  // are now calculated using hooks in the component - these values will be overridden
+  // This function now only calculates: AI usage, markets, products, weekly/daily breakdowns, category data
+
+  // Calculate total tasks (will be overridden by hooks, but needed for return)
   const totalTasksThisMonth = filteredTasks.length;
   const totalHours = filteredTasks.reduce((sum, task) => {
     const hours = task.data_task?.timeInHours || task.timeInHours || 0;
     return sum + (typeof hours === 'number' ? hours : 0);
   }, 0);
-
   const totalDeliverables = filteredTasks.reduce((sum, task) => {
-    const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-    return sum + deliverables.reduce((delSum, del) => {
-      return delSum + (del.count || 1);
-    }, 0);
+    const deliverables = task.data_task?.deliverables || task.deliverables || [];
+    return sum + (Array.isArray(deliverables) ? deliverables.length : 0);
   }, 0);
-
   const totalVariations = filteredTasks.reduce((sum, task) => {
-    const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+    const deliverables = task.data_task?.deliverables || task.deliverables || [];
+    if (!Array.isArray(deliverables)) return sum;
     return sum + deliverables.reduce((delSum, del) => {
-      return delSum + (del.variationsCount || 0);
+      const variations = del.variations || [];
+      return delSum + (Array.isArray(variations) ? variations.length : 0);
     }, 0);
   }, 0);
-
-  // Calculate deliverables hours (base time and with variations)
-  let totalDeliverablesHours = 0; // Base time without variations
-  let totalDeliverablesWithVariationsHours = 0; // Base time + variations time
-
-  filteredTasks.forEach(task => {
-    const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-    if (!deliverables || deliverables.length === 0) return;
-
-    deliverables.forEach(deliverable => {
-      const deliverableName = deliverable?.name;
-      const quantity = deliverable?.count || 1;
-      const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
-
-      if (!deliverableName) return;
-
-      // Find deliverable in options
-      const deliverableOption = deliverablesOptions.find(d =>
-        d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
-      );
-
-      if (deliverableOption) {
-        const timePerUnit = deliverableOption.timePerUnit || 1;
-        const timeUnit = deliverableOption.timeUnit || 'hr';
-        const requiresQuantity = deliverableOption.requiresQuantity || false;
-
-        // Convert base time to hours
-        let baseTimeInHours = timePerUnit;
-        if (timeUnit === 'min') baseTimeInHours = timePerUnit / 60;
-        else if (timeUnit === 'hr') baseTimeInHours = timePerUnit;
-        else if (timeUnit === 'day') baseTimeInHours = timePerUnit * 8;
-
-        // Calculate base time for this deliverable (quantity × timePerUnit)
-        const deliverableBaseHours = baseTimeInHours * quantity;
-        totalDeliverablesHours += deliverableBaseHours;
-
-        // Calculate variations time if applicable
-        let variationsTimeInHours = 0;
-        if (requiresQuantity && variationsQuantity > 0) {
-          const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
-          const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
-
-          let variationsTimePerUnitInHours = variationsTime;
-          if (variationsTimeUnit === 'min') variationsTimePerUnitInHours = variationsTime / 60;
-          else if (variationsTimeUnit === 'hr') variationsTimePerUnitInHours = variationsTime;
-          else if (variationsTimeUnit === 'day') variationsTimePerUnitInHours = variationsTime * 8;
-
-          variationsTimeInHours = variationsTimePerUnitInHours * variationsQuantity;
-        }
-
-        // Total time with variations
-        const totalWithVariations = deliverableBaseHours + variationsTimeInHours;
-        totalDeliverablesWithVariationsHours += totalWithVariations;
-      }
-    });
-  });
+  const totalDeliverablesHours = 0; // Will be overridden by hooks
+  const totalDeliverablesWithVariationsHours = 0; // Will be overridden by hooks
 
   // AI Usage
   const aiUsed = filteredTasks.reduce((acc, task) => {
@@ -583,8 +542,170 @@ const DynamicAnalyticsPage = () => {
   // Use actual monthId from context if 'current' is specified, otherwise use the provided monthId or null for all data
   const actualMonthId = monthId === 'current' ? contextMonthId : monthId;
   
-  // Generate real data based on parameters
-  const analyticsData = !tasks ? null : generateRealData(tasks, userName, reporterName, actualMonthId, weekParam, deliverablesOptions);
+  // Filter tasks based on parameters (for hooks)
+  const filteredTasksForHooks = useMemo(() => {
+    if (!tasks || tasks.length === 0) return [];
+    
+    return tasks.filter(task => {
+      // Filter by month only if explicitly provided
+      if (actualMonthId && task.monthId !== actualMonthId) {
+        return false;
+      }
+      
+      // Filter by user if specified
+      if (userName && !matchesUserName(task, userName)) {
+        return false;
+      }
+      
+      // Filter by reporter if specified
+      if (reporterName && !matchesReporterName(task, reporterName)) {
+        return false;
+      }
+      
+      // Filter by week if specified (requires monthId to be set)
+      if (weekParam && actualMonthId) {
+        try {
+          const weekNumber = parseInt(weekParam);
+          if (!isNaN(weekNumber)) {
+            const weeks = getWeeksInMonth(actualMonthId);
+            const week = weeks.find(w => w.weekNumber === weekNumber);
+            
+            if (week && week.days) {
+              const taskDate = task.createdAt;
+              if (!taskDate) return false;
+              
+              let taskDateObj;
+              if (taskDate && typeof taskDate === 'object' && taskDate.seconds) {
+                taskDateObj = new Date(taskDate.seconds * 1000);
+              } else if (taskDate && typeof taskDate === 'object' && taskDate.toDate) {
+                taskDateObj = taskDate.toDate();
+              } else {
+                taskDateObj = new Date(taskDate);
+              }
+              
+              if (isNaN(taskDateObj.getTime())) return false;
+              
+              const taskDateStr = taskDateObj.toISOString().split('T')[0];
+              
+              const isInWeek = week.days.some(day => {
+                try {
+                  const dayDate = day instanceof Date ? day : new Date(day);
+                  if (isNaN(dayDate.getTime())) return false;
+                  const dayStr = dayDate.toISOString().split('T')[0];
+                  return dayStr === taskDateStr;
+                } catch (error) {
+                  logger.warn('Error processing week day:', error, day);
+                  return false;
+                }
+              });
+              
+              if (!isInWeek) return false;
+            }
+          }
+        } catch (error) {
+          logger.warn('Error processing week filter:', error);
+        }
+      }
+      
+      return true;
+    });
+  }, [tasks, userName, reporterName, actualMonthId, weekParam]);
+  
+  // Use hooks to calculate analytics data
+  const filters = useMemo(() => ({ monthId: actualMonthId }), [actualMonthId]);
+  const tasksData = useTotalTasks(filteredTasksForHooks, [], filters);
+  const hoursData = useTotalHours(filteredTasksForHooks, [], filters);
+  const deliverablesData = useTotalDeliverables(filteredTasksForHooks, [], filters);
+  const variationsData = useTotalVariations(filteredTasksForHooks, [], filters);
+  const deliverablesHoursData = useDeliverablesHours(filteredTasksForHooks, [], deliverablesOptions, filters);
+  const acquisitionData = useAcquisitionTasks(filteredTasksForHooks, [], filters);
+  const marketingData = useMarketingTasks(filteredTasksForHooks, [], filters);
+  const productData = useProductTasks(filteredTasksForHooks, [], filters);
+  const miscData = useMiscTasks(filteredTasksForHooks, [], filters);
+  
+  // Generate real data based on parameters (using hook results)
+  const analyticsData = useMemo(() => {
+    if (!tasks || tasks.length === 0) {
+      return {
+        totalTasksThisMonth: 0,
+        totalTasksMultipleMonths: 0,
+        totalHours: 0,
+        totalDeliverables: 0,
+        totalVariations: 0,
+        totalDeliverablesHours: 0,
+        totalDeliverablesWithVariationsHours: 0,
+        aiUsed: { total: 0, models: [], time: 0 },
+        marketsUsed: [],
+        productsUsed: [],
+        weeklyTasks: [0, 0, 0, 0, 0, 0, 0],
+        dailyHours: [0, 0, 0, 0, 0, 0, 0],
+        efficiency: HARDCODED_EFFICIENCY_DATA,
+        marketingData: {},
+        acquisitionData: {},
+        productData: {},
+        miscData: {},
+      };
+    }
+    
+    // Use hook results for basic stats
+    const totalTasksThisMonth = tasksData.totalTasks;
+    const totalHours = hoursData.totalHours;
+    const totalDeliverables = deliverablesData.totalDeliverables;
+    const totalVariations = variationsData.totalVariations;
+    const totalDeliverablesHours = deliverablesHoursData.totalDeliverablesHours;
+    const totalDeliverablesWithVariationsHours = deliverablesHoursData.totalDeliverablesWithVariationsHours;
+    
+    // Calculate other data that still needs the full generateRealData logic
+    const result = generateRealData(filteredTasksForHooks, userName, reporterName, actualMonthId, weekParam, deliverablesOptions);
+    
+    // Override with hook-calculated values
+    return {
+      ...result,
+      totalTasksThisMonth,
+      totalHours,
+      totalDeliverables,
+      totalVariations,
+      totalDeliverablesHours,
+      totalDeliverablesWithVariationsHours,
+      marketingData: {
+        totalTasks: marketingData.totalTasks,
+        totalHours: marketingData.totalHours,
+        ...result.marketingData,
+      },
+      acquisitionData: {
+        totalTasks: acquisitionData.totalTasks,
+        totalHours: acquisitionData.totalHours,
+        ...result.acquisitionData,
+      },
+      productData: {
+        totalTasks: productData.totalTasks,
+        totalHours: productData.totalHours,
+        ...result.productData,
+      },
+      miscData: {
+        totalTasks: miscData.totalTasks,
+        totalHours: miscData.totalHours,
+        ...result.miscData,
+      },
+    };
+  }, [
+    tasks,
+    filteredTasksForHooks,
+    userName,
+    reporterName,
+    actualMonthId,
+    weekParam,
+    deliverablesOptions,
+    tasksData,
+    hoursData,
+    deliverablesData,
+    variationsData,
+    deliverablesHoursData,
+    acquisitionData,
+    marketingData,
+    productData,
+    miscData,
+  ]);
 
   
   // Create analytics cards using centralized system

@@ -32,7 +32,7 @@ const CONFIG = {
     {
       name: "baseDays",
       type: "number",
-      label: "Base Days (from 30.11.2025)",
+      label: "Base Days",
       required: true,
       placeholder: "Enter base days",
       min: 0,

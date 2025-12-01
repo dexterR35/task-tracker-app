@@ -66,24 +66,53 @@ const AnalyticsPage = () => {
   const [comparisonMonth2Id, setComparisonMonth2Id] = useState(null);
   const [comparisonMonth3Id, setComparisonMonth3Id] = useState(null);
 
-  // Fetch tasks for comparison months
+  // Determine which months are already loaded in context
+  const contextMonthId = selectedMonth?.monthId || currentMonth?.monthId;
+  const month1MatchesContext = comparisonMonth1Id === contextMonthId;
+  const month2MatchesContext = comparisonMonth2Id === contextMonthId;
+  const month3MatchesContext = comparisonMonth3Id === contextMonthId;
+
+  // Only fetch tasks for months that aren't already in context
+  // This avoids duplicate listeners and refetches
   const {
-    tasks: month1Tasks,
+    tasks: month1TasksFromHook,
     isLoading: isLoadingMonth1,
     error: errorMonth1,
-  } = useTasks(comparisonMonth1Id, userIsAdmin ? 'admin' : 'user', userIsAdmin ? null : userUID);
+  } = useTasks(
+    month1MatchesContext ? null : comparisonMonth1Id, 
+    userIsAdmin ? 'admin' : 'user', 
+    userIsAdmin ? null : userUID
+  );
 
   const {
-    tasks: month2Tasks,
+    tasks: month2TasksFromHook,
     isLoading: isLoadingMonth2,
     error: errorMonth2,
-  } = useTasks(comparisonMonth2Id, userIsAdmin ? 'admin' : 'user', userIsAdmin ? null : userUID);
+  } = useTasks(
+    month2MatchesContext ? null : comparisonMonth2Id, 
+    userIsAdmin ? 'admin' : 'user', 
+    userIsAdmin ? null : userUID
+  );
 
   const {
-    tasks: month3Tasks,
+    tasks: month3TasksFromHook,
     isLoading: isLoadingMonth3,
     error: errorMonth3,
-  } = useTasks(comparisonMonth3Id, userIsAdmin ? 'admin' : 'user', userIsAdmin ? null : userUID);
+  } = useTasks(
+    month3MatchesContext ? null : comparisonMonth3Id, 
+    userIsAdmin ? 'admin' : 'user', 
+    userIsAdmin ? null : userUID
+  );
+
+  // Use context data if month matches, otherwise use fetched data
+  const month1Tasks = month1MatchesContext ? tasks : month1TasksFromHook;
+  const month2Tasks = month2MatchesContext ? tasks : month2TasksFromHook;
+  const month3Tasks = month3MatchesContext ? tasks : month3TasksFromHook;
+
+  // Use context loading state if month matches context, otherwise use hook loading state
+  const effectiveLoadingMonth1 = month1MatchesContext ? isLoading : isLoadingMonth1;
+  const effectiveLoadingMonth2 = month2MatchesContext ? isLoading : isLoadingMonth2;
+  const effectiveLoadingMonth3 = month3MatchesContext ? isLoading : isLoadingMonth3;
 
   // Get month names for comparison
   const month1Name = useMemo(() => {
@@ -184,7 +213,7 @@ const AnalyticsPage = () => {
       },
       {
         id: "month-to-month-comparison",
-        name: "Month-to-Month Comparison",
+        name: "Month-to-Month",
         description: "Compare analytics data between two months",
         icon: Icons.generic.chart,
         color: "blue",
@@ -251,7 +280,7 @@ const AnalyticsPage = () => {
   // Get month-to-month comparison props
   const getMonthToMonthComparisonProps = useCallback(() => {
     if (!comparisonMonth1Id || !comparisonMonth2Id) return null;
-    if (isLoadingMonth1 || isLoadingMonth2 || (comparisonMonth3Id && isLoadingMonth3)) return null;
+    if (effectiveLoadingMonth1 || effectiveLoadingMonth2 || (comparisonMonth3Id && effectiveLoadingMonth3)) return null;
     
     return getCachedMonthToMonthComparisonProps(
       month1Tasks || [],
@@ -262,7 +291,7 @@ const AnalyticsPage = () => {
       comparisonMonth3Id ? month3Tasks || [] : null,
       comparisonMonth3Id ? month3Name : null
     );
-  }, [comparisonMonth1Id, comparisonMonth2Id, comparisonMonth3Id, month1Tasks, month2Tasks, month3Tasks, month1Name, month2Name, month3Name, users, isLoadingMonth1, isLoadingMonth2, isLoadingMonth3]);
+  }, [comparisonMonth1Id, comparisonMonth2Id, comparisonMonth3Id, month1Tasks, month2Tasks, month3Tasks, month1Name, month2Name, month3Name, users, effectiveLoadingMonth1, effectiveLoadingMonth2, effectiveLoadingMonth3]);
 
 
   if (isLoading || isInitialLoading) {
@@ -572,7 +601,7 @@ const AnalyticsPage = () => {
 
           {/* Comparison Card */}
           <div id={`${selectedCard}-card`}>
-            {isLoadingMonth1 || isLoadingMonth2 || (comparisonMonth3Id && isLoadingMonth3) ? (
+            {effectiveLoadingMonth1 || effectiveLoadingMonth2 || (comparisonMonth3Id && effectiveLoadingMonth3) ? (
               <SkeletonAnalyticsCard />
             ) : comparisonProps ? (
               <MonthToMonthComparisonCard

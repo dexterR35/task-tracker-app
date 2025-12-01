@@ -55,7 +55,7 @@ const ChartHeader = ({
           }}
         />
       )}
-      <div className={`flex items-end gap-3 relative z-10 ${innerPadding}`}>
+      <div className={`flex items-center gap-3 relative z-10 ${innerPadding}`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Icon with gradient background - matching card-small-modern */}
           {showIcon && (
@@ -79,7 +79,7 @@ const ChartHeader = ({
           )}
           <div className="flex-1 min-w-0">
             <h3 className={`${titleClasses} truncate`}>
-              <span>{title}</span>
+              {title}
             </h3>
             {subtitle && (
               <p className={`${isSection ? "text-sm" : "text-xs"} text-gray-500 dark:text-gray-400 truncate`}>

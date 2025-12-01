@@ -18,6 +18,8 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
     try {
       await logout();
       setShowUserMenu(false);
+      // Navigate to home page after logout
+      navigate('/', { replace: true });
     } catch (error) {
       clearError();
     }

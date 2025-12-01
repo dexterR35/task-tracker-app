@@ -197,35 +197,9 @@ export const SMALL_CARD_CONFIGS = {
       </div>
     ),
     getDetails: (data) => {
-      // Calculate total tasks and hours for selected user, or logged-in user if none selected
-      let totalTasks = 0;
-      let totalHours = 0;
-      
-      if (data.tasks && Array.isArray(data.tasks)) {
-        const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
-        const targetUserId = data.selectedUserId || data.currentUser?.userUID;
-        
-        // Filter tasks by month if specified
-        let filteredTasks = data.tasks;
-        if (currentMonthId) {
-          filteredTasks = filteredTasks.filter((task) => task.monthId === currentMonthId);
-        }
-        
-        // Filter by target user (selected user or logged-in user)
-        if (targetUserId) {
-          filteredTasks = filteredTasks.filter((task) => {
-            return task.userUID === targetUserId || task.createbyUID === targetUserId;
-          });
-        }
-        
-        totalTasks = filteredTasks.length;
-        
-        // Calculate total hours
-        totalHours = filteredTasks.reduce((sum, task) => {
-          const hours = task.data_task?.timeInHours || task.timeInHours || 0;
-          return sum + (typeof hours === "number" ? hours : 0);
-        }, 0);
-      }
+      // Use pre-calculated values from hooks if available, otherwise calculate
+      const totalTasks = data.userFilterTotalTasks ?? 0;
+      const totalHours = data.userFilterTotalHours ?? 0;
       
       return [
         {
@@ -302,41 +276,9 @@ export const SMALL_CARD_CONFIGS = {
       </div>
     ),
     getDetails: (data) => {
-      // Calculate total tasks and hours for selected reporter only
-      let totalReporterTasks = 0;
-      let totalHours = 0;
-      
-      // Only calculate if a reporter is selected
-      if (data.selectedReporterId && data.tasks && Array.isArray(data.tasks)) {
-        const currentMonthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
-        
-        // Filter tasks by month if specified
-        let filteredTasks = data.tasks;
-        if (currentMonthId) {
-          filteredTasks = filteredTasks.filter((task) => task.monthId === currentMonthId);
-        }
-        
-        // Filter by selected reporter
-        filteredTasks = filteredTasks.filter((task) => {
-          // Check multiple possible reporter ID fields
-          const taskReporterId = 
-            task.data_task?.reporters || 
-            task.data_task?.reporterUID || 
-            task.reporters || 
-            task.reporterUID;
-          
-          // Compare task reporter ID with selected reporter ID
-          return taskReporterId && String(taskReporterId) === String(data.selectedReporterId);
-        });
-        
-        totalReporterTasks = filteredTasks.length;
-        
-        // Calculate total hours
-        totalHours = filteredTasks.reduce((sum, task) => {
-          const hours = task.data_task?.timeInHours || task.timeInHours || 0;
-          return sum + (typeof hours === "number" ? hours : 0);
-        }, 0);
-      }
+      // Use pre-calculated values from hooks if available
+      const totalReporterTasks = data.reporterFilterTotalTasks ?? 0;
+      const totalHours = data.reporterFilterTotalHours ?? 0;
       
       return [
         {
@@ -742,97 +684,11 @@ export const SMALL_CARD_CONFIGS = {
         });
       }
 
-      // Calculate statistics
-      const totalTasks = filteredTasks.length;
-      const totalHours = filteredTasks.reduce((sum, task) => {
-        const hours = task.data_task?.timeInHours || task.timeInHours || 0;
-        return sum + (typeof hours === "number" ? hours : 0);
-      }, 0);
-
-      const totalDeliverables = filteredTasks.reduce((sum, task) => {
-        const deliverables =
-          task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-        return (
-          sum +
-          deliverables.reduce((delSum, del) => {
-            return delSum + (del.count || 1);
-          }, 0)
-        );
-      }, 0);
-
-      // Calculate total hours for deliverables + variations
-      let totalDeliverablesWithVariationsHours = 0;
-      
-      // Get deliverables options from data if available, or transform from deliverables array
-      let deliverablesOptions = data.deliverablesOptions || [];
-      if (!deliverablesOptions.length && data.deliverables && Array.isArray(data.deliverables)) {
-        deliverablesOptions = data.deliverables.map(deliverable => ({
-          value: deliverable.name,
-          label: deliverable.name,
-          department: deliverable.department,
-          timePerUnit: deliverable.timePerUnit,
-          timeUnit: deliverable.timeUnit,
-          requiresQuantity: deliverable.requiresQuantity,
-          variationsTime: deliverable.variationsTime,
-          variationsTimeUnit: deliverable.variationsTimeUnit || 'min',
-          declinariTime: deliverable.declinariTime,
-          declinariTimeUnit: deliverable.declinariTimeUnit
-        }));
-      }
-
-      // Calculate deliverables hours with variations
-      if (deliverablesOptions.length > 0) {
-        filteredTasks.forEach(task => {
-          const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-          if (!deliverables || deliverables.length === 0) return;
-
-          deliverables.forEach(deliverable => {
-            const deliverableName = deliverable?.name;
-            const quantity = deliverable?.count || 1;
-            const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
-
-            if (!deliverableName) return;
-
-            // Find deliverable in options
-            const deliverableOption = deliverablesOptions.find(d =>
-              d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
-            );
-
-            if (deliverableOption) {
-              const timePerUnit = deliverableOption.timePerUnit || 1;
-              const timeUnit = deliverableOption.timeUnit || 'hr';
-              const requiresQuantity = deliverableOption.requiresQuantity || false;
-
-              // Convert base time to hours
-              let baseTimeInHours = timePerUnit;
-              if (timeUnit === 'min') baseTimeInHours = timePerUnit / 60;
-              else if (timeUnit === 'hr') baseTimeInHours = timePerUnit;
-              else if (timeUnit === 'day') baseTimeInHours = timePerUnit * 8;
-
-              // Calculate base time for this deliverable (quantity × timePerUnit)
-              const deliverableBaseHours = baseTimeInHours * quantity;
-
-              // Calculate variations time if applicable
-              let variationsTimeInHours = 0;
-              if (requiresQuantity && variationsQuantity > 0) {
-                const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
-                const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
-
-                let variationsTimePerUnitInHours = variationsTime;
-                if (variationsTimeUnit === 'min') variationsTimePerUnitInHours = variationsTime / 60;
-                else if (variationsTimeUnit === 'hr') variationsTimePerUnitInHours = variationsTime;
-                else if (variationsTimeUnit === 'day') variationsTimePerUnitInHours = variationsTime * 8;
-
-                variationsTimeInHours = variationsTimePerUnitInHours * variationsQuantity;
-              }
-
-              // Total time with variations
-              const totalWithVariations = deliverableBaseHours + variationsTimeInHours;
-              totalDeliverablesWithVariationsHours += totalWithVariations;
-            }
-          });
-        });
-      }
+      // Use pre-calculated values from hooks if available
+      const totalTasks = data.actionsTotalTasks ?? filteredTasks.length;
+      const totalHours = data.actionsTotalHours ?? 0;
+      const totalDeliverables = data.actionsTotalDeliverables ?? 0;
+      const totalDeliverablesWithVariationsHours = data.actionsTotalDeliverablesWithVariationsHours ?? 0;
 
       return [
         {
@@ -867,23 +723,45 @@ export const SMALL_CARD_CONFIGS = {
       text: `${data.totalHours || 0}h`,
       color: "blue",
     }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.clock,
-        label: "Total Hours This Month",
-        value: `${data.totalHours || 0}h`,
-      },
-      {
-        icon: Icons.generic.target,
-        label: "Weekly Average",
-        value: `${Math.round((data.weeklyTasks || []).reduce((a, b) => a + b, 0) / 7)} tasks`,
-      },
-      {
-        icon: Icons.generic.timer,
-        label: "Daily Average Hours",
-        value: `${((data.dailyHours || []).reduce((a, b) => a + b, 0) / 7).toFixed(1)}h`,
-      },
-    ],
+    getDetails: (data) => {
+      const totalHours = data.totalHours || 0;
+      const weeklyTasks = data.weeklyTasks || [];
+      const dailyHours = data.dailyHours || [];
+      const weeklyTotal = weeklyTasks.reduce((a, b) => a + b, 0);
+      const dailyTotal = dailyHours.reduce((a, b) => a + b, 0);
+
+      const details = [];
+
+      // Only show hours if there are any
+      if (totalHours > 0) {
+        details.push({
+          icon: Icons.generic.clock,
+          label: "Total Hours This Month",
+          value: `${totalHours.toFixed(1)}h`,
+        });
+      }
+
+      // Only show weekly/daily breakdown if there's actual data
+      if (weeklyTotal > 0 || dailyTotal > 0) {
+        if (weeklyTotal > 0) {
+          details.push({
+            icon: Icons.generic.target,
+            label: "Weekly Average",
+            value: `${Math.round(weeklyTotal / 7)} tasks`,
+          });
+        }
+
+        if (dailyTotal > 0) {
+          details.push({
+            icon: Icons.generic.timer,
+            label: "Daily Average Hours",
+            value: `${(dailyTotal / 7).toFixed(1)}h`,
+          });
+        }
+      }
+
+      return details;
+    },
   },
 
   [SMALL_CARD_TYPES.ANALYTICS_DELIVERABLES]: {
@@ -899,38 +777,62 @@ export const SMALL_CARD_CONFIGS = {
       color: "orange",
     }),
     getDetails: (data) => {
+      const totalDeliverables = data.totalDeliverables || 0;
+      const totalVariations = data.totalVariations || 0;
       const baseHours = data.totalDeliverablesHours || 0;
       const totalHours = data.totalDeliverablesWithVariationsHours || 0;
       const variationsHours = totalHours - baseHours;
 
-      return [
+      // If no deliverables, return empty array
+      if (totalDeliverables === 0) {
+        return [];
+      }
+
+      const details = [
         {
           icon: Icons.generic.package,
           label: "Total Deliverables",
-          value: (data.totalDeliverables || 0).toString(),
-        },
-        {
-          icon: Icons.generic.warning,
-          label: "Total Variations",
-          value: (data.totalVariations || 0).toString(),
-        },
-        {
-          icon: Icons.generic.clock,
-          label: "Base Hours (Deliverables Only)",
-          value: `${baseHours.toFixed(1)}h`,
-        },
-        {
-          icon:
-            variationsHours > 0 ? Icons.generic.warning : Icons.generic.clock,
-          label: "Variations Hours",
-          value: `${variationsHours.toFixed(1)}h`,
-        },
-        {
-          icon: Icons.generic.timer,
-          label: "Total Hours (Deliverables + Variations)",
-          value: `${totalHours.toFixed(1)}h`,
+          value: totalDeliverables.toString(),
         },
       ];
+
+      // Only show variations if there are any
+      if (totalVariations > 0) {
+        details.push({
+          icon: Icons.generic.warning,
+          label: "Total Variations",
+          value: totalVariations.toString(),
+        });
+      }
+
+      // Only show hours if there are any
+      if (baseHours > 0 || totalHours > 0) {
+        if (baseHours > 0) {
+          details.push({
+            icon: Icons.generic.clock,
+            label: "Base Hours (Deliverables Only)",
+            value: `${baseHours.toFixed(1)}h`,
+          });
+        }
+
+        if (variationsHours > 0) {
+          details.push({
+            icon: Icons.generic.warning,
+            label: "Variations Hours",
+            value: `${variationsHours.toFixed(1)}h`,
+          });
+        }
+
+        if (totalHours > 0) {
+          details.push({
+            icon: Icons.generic.timer,
+            label: "Total Hours (Deliverables + Variations)",
+            value: `${totalHours.toFixed(1)}h`,
+          });
+        }
+      }
+
+      return details;
     },
   },
 

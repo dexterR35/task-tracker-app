@@ -190,9 +190,6 @@ const AdminManagementPage = () => {
                 />
               ) : activeTab === 'deliverables' && canManageDeliverables(user) ? (
                 <div className="space-y-6">
-                  {/* Calculation Formula Card */}
-                  <CalculationFormula />
-                  
                   {/* Deliverables Table */}
                   <DeliverableTable
                     user={user}
@@ -201,6 +198,9 @@ const AdminManagementPage = () => {
                     className="rounded-lg"
                     deliverables={deliverables}
                   />
+                  
+                  {/* Calculation Formula Card - At bottom */}
+                  <CalculationFormula />
                 </div>
               ) : (
                 <div className="py-6">

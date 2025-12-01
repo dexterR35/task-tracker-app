@@ -276,12 +276,12 @@ const AcquisitionAnalyticsCard = memo(
           </div>
         </div>
 
-        {/* Section: Comparison Charts */}
+        {/* Section: Charts */}
         {((casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0) || 
           (totalCasinoSportBiaxialData && totalCasinoSportBiaxialData.length > 0)) && (
           <div>
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Casino vs Sport Comparison</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Casino vs Sport</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">Comparative analysis between casino and sport acquisition</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -328,7 +328,7 @@ const AcquisitionAnalyticsCard = memo(
                   />
                   <div className="relative z-10">
                     <ChartHeader
-                      title="Total Comparison"
+                      title="Total"
                       badges={[
                         `${(casinoTotalTasks || 0) + (sportTotalTasks || 0)} total tasks`
                       ]}
