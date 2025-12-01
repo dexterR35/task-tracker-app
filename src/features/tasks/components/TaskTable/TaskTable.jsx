@@ -610,7 +610,7 @@ const TaskTable = ({
     isVip: false, // Hide VIP column by default
     reworked: true, // Show Reworked column by default
     startDate: true, // Show Start Date column by default
-    endDate: false, // Hide End Date column by default
+    endDate: true, // Show End Date column by default
     observations: false, // Hide Observations column by default
   };
 

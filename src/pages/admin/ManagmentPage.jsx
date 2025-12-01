@@ -3,6 +3,7 @@ import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import ReporterFormModal from "@/features/reporters/components/ReporterForm/ReporterFormModal";
+import DeliverableFormModal from "@/features/deliverables/DeliverableFormModal";
 import UserTable from "@/features/users/components/UserTable/UserTable";
 import ReporterTable from "@/features/reporters/components/ReporterTable/ReporterTable";
 import { DeliverableTable } from "@/features/deliverables/DeliverablesManager";
@@ -25,7 +26,8 @@ const AdminManagementPage = () => {
   } = useAppDataContext();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'reporters', 'deliverables'
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateReporterModal, setShowCreateReporterModal] = useState(false);
+  const [showCreateDeliverableModal, setShowCreateDeliverableModal] = useState(false);
   
   // Show error state
   if (error) {
@@ -44,8 +46,12 @@ const AdminManagementPage = () => {
     );
   }
 
-  const handleCreate = () => {
-    setShowCreateModal(true);
+  const handleCreateReporter = () => {
+    setShowCreateReporterModal(true);
+  };
+
+  const handleCreateDeliverable = () => {
+    setShowCreateDeliverableModal(true);
   };
 
   // Tab change handler - memoized to prevent re-renders
@@ -158,13 +164,26 @@ const AdminManagementPage = () => {
               {activeTab === 'reporters' && canManageReporters(user) && (
                 <div className="flex gap-2">
                   <DynamicButton
-                    onClick={handleCreate}
+                    onClick={handleCreateReporter}
                     variant="primary"
                     size="sm"
                     iconName="add"
                     iconPosition="left"
                   >
                     Add Reporter
+                  </DynamicButton>
+                </div>
+              )}
+              {activeTab === 'deliverables' && canManageDeliverables(user) && (
+                <div className="flex gap-2">
+                  <DynamicButton
+                    onClick={handleCreateDeliverable}
+                    variant="primary"
+                    size="sm"
+                    iconName="add"
+                    iconPosition="left"
+                  >
+                    Add Deliverable
                   </DynamicButton>
                 </div>
               )}
@@ -222,13 +241,27 @@ const AdminManagementPage = () => {
       {/* Reporter Form Modal - Only show for reporters tab */}
       {activeTab === 'reporters' && canManageReporters(user) && (
         <ReporterFormModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          isOpen={showCreateReporterModal}
+          onClose={() => setShowCreateReporterModal(false)}
           mode="create"
           reporters={reporters}
           onSuccess={() => {
-            setShowCreateModal(false);
+            setShowCreateReporterModal(false);
           }}
+        />
+      )}
+
+      {/* Deliverable Form Modal - Only show for deliverables tab */}
+      {activeTab === 'deliverables' && canManageDeliverables(user) && (
+        <DeliverableFormModal
+          isOpen={showCreateDeliverableModal}
+          onClose={() => setShowCreateDeliverableModal(false)}
+          mode="create"
+          deliverable={null}
+          onSuccess={() => {
+            setShowCreateDeliverableModal(false);
+          }}
+          user={user}
         />
       )}
     </div>

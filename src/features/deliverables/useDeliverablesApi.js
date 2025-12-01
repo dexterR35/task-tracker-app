@@ -7,16 +7,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '@/app/firebase';
-import dataCache from '@/utils/dataCache';
 import { logger } from '@/utils/logger';
 
-// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
-const fetchLocks = new Map();
-
 /**
- * Centralized hook for deliverables API operations
+ * Centralized hook for deliverables API operations with real-time updates
  * @returns {Object} - Deliverables data and CRUD operations
  */
 export const useDeliverablesApi = () => {
@@ -29,80 +25,58 @@ export const useDeliverablesApi = () => {
     return doc(db, "settings", "app", "data", "deliverables");
   }, []);
 
-  // Setup one-time fetch with caching (deliverables are static data)
+  // Setup real-time listener for deliverables
   useEffect(() => {
-    const fetchDeliverables = async () => {
-      try {
-        const cacheKey = 'deliverables_list';
+    const deliverablesRef = getDeliverablesRef();
+    logger.log('🔍 [useDeliverablesApi] Setting up real-time listener for deliverables');
+    setIsLoading(true);
+    setError(null);
 
-        // Check cache first
-        const cachedData = dataCache.get(cacheKey);
-        if (cachedData) {
-          logger.log('🔍 [useDeliverablesApi] Using cached deliverables data');
-          setDeliverables(cachedData);
-          setIsLoading(false);
-          setError(null);
-          return;
-        }
-
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useDeliverablesApi] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setDeliverables(result);
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(
+      deliverablesRef,
+      (snapshot) => {
+        try {
+          if (!snapshot || !snapshot.exists()) {
+            logger.log('🔍 [useDeliverablesApi] No deliverables document found, using empty array');
+            setDeliverables([]);
             setIsLoading(false);
             setError(null);
             return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
           }
+
+          const deliverablesData = snapshot.data();
+          const deliverablesList = deliverablesData.deliverables || [];
+
+          // Sort deliverables by name for consistent display
+          const sortedDeliverables = [...deliverablesList].sort((a, b) => {
+            const nameA = (a.name || '').toLowerCase();
+            const nameB = (b.name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+
+          setDeliverables(sortedDeliverables);
+          setIsLoading(false);
+          setError(null);
+          logger.log('✅ [useDeliverablesApi] Deliverables updated in real-time:', sortedDeliverables.length);
+        } catch (error) {
+          logger.error('Error processing deliverables snapshot:', error);
+          setError(error);
+          setIsLoading(false);
         }
-
-        logger.log('🔍 [useDeliverablesApi] Fetching deliverables from Firestore');
-        setIsLoading(true);
-        setError(null);
-        const deliverablesRef = getDeliverablesRef();
-
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
-            const snapshot = await getDoc(deliverablesRef);
-            if (!snapshot || !snapshot.exists()) {
-              return [];
-            }
-
-            const deliverablesData = snapshot.data();
-            const deliverablesList = deliverablesData.deliverables || [];
-
-            // Cache the data indefinitely (deliverables are static and manually managed)
-            dataCache.set(cacheKey, deliverablesList, Infinity);
-            return deliverablesList;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
-          }
-        })();
-
-        fetchLocks.set(cacheKey, fetchPromise);
-
-        const deliverablesList = await fetchPromise;
-        setDeliverables(deliverablesList);
-        setIsLoading(false);
-        setError(null);
-        logger.log('✅ [useDeliverablesApi] Deliverables fetched and cached:', deliverablesList.length);
-      } catch (error) {
-        logger.error('Deliverables fetch error:', error);
+      },
+      (error) => {
+        logger.error('Deliverables real-time listener error:', error);
         setError(error);
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchDeliverables();
+    // Cleanup listener on unmount
+    return () => {
+      logger.log('🔍 [useDeliverablesApi] Cleaning up real-time listener');
+      unsubscribe();
+    };
   }, [getDeliverablesRef]);
 
   // Create deliverable

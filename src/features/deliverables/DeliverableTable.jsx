@@ -254,17 +254,6 @@ const DeliverableTable = ({
 
   return (
     <div className={`deliverable-table ${className}`}>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Deliverables Management ({deliverablesData.length} items)
-        </h3>
-        {canManageDeliverables && (
-          <DynamicButton onClick={() => setShowCreateModal(true)} iconName="add" variant="primary">
-            Add Deliverable
-          </DynamicButton>
-        )}
-      </div>
-
       {/* Info message when no deliverables */}
       {deliverablesData.length === 0 && (
         <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
