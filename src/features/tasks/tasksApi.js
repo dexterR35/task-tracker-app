@@ -194,14 +194,25 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
     }
 
     const cacheKey = getCacheKey(monthId, role, userUID);
+    const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
     
-    // Check cache first
-    if (taskCache.has(cacheKey)) {
+    // OPTIMIZED: Check cache AND listener first - if both exist, use cache, no fetch needed
+    if (taskCache.has(cacheKey) && listenerManager.hasListener(listenerKey)) {
       const cachedData = taskCache.get(cacheKey);
-      logger.log('🔍 [useTasks] Using cached data for:', cacheKey);
+      logger.log('🔍 [useTasks] Using cached data with existing listener (no fetch):', cacheKey);
       setTasks(cachedData);
       setIsLoading(false);
-      // Still set up listener to get updates, but don't show loading
+      setError(null);
+      return; // Skip setup entirely - data is cached and listener is active
+    }
+    
+    // Check cache first (but listener doesn't exist yet)
+    if (taskCache.has(cacheKey)) {
+      const cachedData = taskCache.get(cacheKey);
+      logger.log('🔍 [useTasks] Using cached data, setting up listener for updates:', cacheKey);
+      setTasks(cachedData);
+      setIsLoading(false);
+      // Still set up listener to get real-time updates, but data is already loaded
     } else {
       setIsLoading(true);
     }
@@ -212,6 +223,18 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
     const setupListener = async () => {
       try {
         setError(null);
+
+        // Check if listener already exists (double-check after cache check)
+        if (listenerManager.hasListener(listenerKey)) {
+          logger.log('Listener already exists, skipping duplicate setup for:', listenerKey);
+          // Get current data from cache if available
+          const existingData = taskCache.get(cacheKey);
+          if (existingData) {
+            setTasks(existingData);
+          }
+          setIsLoading(false);
+          return;
+        }
 
         // Check if month board exists
         const monthDocRef = getMonthRef(monthId);
@@ -227,20 +250,6 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
 
         const tasksRef = getTaskRef(monthId);
         const tasksQuery = buildTaskQuery(tasksRef, role, userUID);
-
-        const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
-
-        // Check if listener already exists
-        if (listenerManager.hasListener(listenerKey)) {
-          logger.log('Listener already exists, skipping duplicate setup for:', listenerKey);
-          // Get current data from listener if available
-          const existingData = taskCache.get(cacheKey);
-          if (existingData) {
-            setTasks(existingData);
-          }
-          setIsLoading(false);
-          return;
-        }
 
         unsubscribe = listenerManager.addListener(
           listenerKey,

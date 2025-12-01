@@ -1,16 +1,11 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import Tooltip from '@/components/ui/Tooltip/Tooltip';
 import { normalizeTimestamp, formatDateString } from '@/utils/dateUtils';
 import DynamicCalendar, { getUserColor, generateMultiColorGradient, useCalendarUsers, ColorLegend } from '@/components/Calendar/DynamicCalendar';
-import { Icons } from '@/components/icons';
-import { useAvailableMonths } from '@/features/months/monthsApi';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, onSnapshot, where } from 'firebase/firestore';
-import { db } from '@/app/firebase';
 import { serializeTimestampsForContext } from '@/utils/dateUtils';
 import { logger } from '@/utils/logger';
-import listenerManager from '@/features/utils/firebaseListenerManager';
 import { useAppDataContext } from '@/context/AppDataContext';
 
 /**
@@ -26,163 +21,40 @@ const TasksCalendar = () => {
   // Use shared hook for user fetching
   const allUsers = useCalendarUsers();
   
-  // Get current month tasks from context (already fetched by TaskTable)
-  const { tasks: currentMonthTasks = [], currentMonth } = useAppDataContext();
-  const currentMonthId = currentMonth?.monthId;
+  // Get tasks from context (already fetched by month selector - no duplicate fetch!)
+  const { tasks: contextTasks = [], selectedMonth, currentMonth } = useAppDataContext();
   
-  // Get all available months to fetch tasks for all months
-  const { availableMonths = [] } = useAvailableMonths();
+  // Get the month date for the calendar (use selected month or current month)
+  const calendarMonth = useMemo(() => {
+    if (selectedMonth?.monthId) {
+      const [year, month] = selectedMonth.monthId.split('-').map(Number);
+      return new Date(year, month - 1, 1); // month is 0-indexed in Date
+    } else if (currentMonth?.monthId) {
+      const [year, month] = currentMonth.monthId.split('-').map(Number);
+      return new Date(year, month - 1, 1);
+    }
+    return new Date(); // Fallback to current date
+  }, [selectedMonth, currentMonth]);
   
-  // Get current year for multi-month view
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  
-  // State for all tasks from all months
-  const [allTasks, setAllTasks] = useState([]);
-  
-  // Fetch tasks only for months in the current year (optimize Firebase reads)
-  useEffect(() => {
-    if (availableMonths.length === 0) {
-      return;
+  // Use tasks directly from context - already fetched by month selector, no duplicate listeners!
+  // The calendar will show tasks for the selected/current month only
+  const allTasks = useMemo(() => {
+    if (!contextTasks || contextTasks.length === 0) {
+      return [];
     }
     
-    // Filter months to only current year to reduce Firebase reads
-    const currentYearMonths = availableMonths.filter(month => {
-      const monthYear = month.monthId.split('-')[0];
-      return monthYear === String(currentYear);
+    // Deduplicate tasks by ID to ensure uniqueness
+    const uniqueTasksMap = new Map();
+    contextTasks.forEach(task => {
+      if (task && task.id) {
+        if (!uniqueTasksMap.has(task.id)) {
+          uniqueTasksMap.set(task.id, task);
+        }
+      }
     });
     
-    if (currentYearMonths.length === 0) {
-      setAllTasks([]);
-      return;
-    }
-    
-    const unsubscribes = [];
-    const tasksMap = new Map();
-    
-    // Fetch tasks only for months in current year
-    for (const month of currentYearMonths) {
-      try {
-        const monthId = month.monthId;
-        const yearId = monthId.split('-')[0];
-        
-        // Get tasks collection reference (using taskdata as per tasksApi.js)
-        const tasksRef = collection(db, 'departments', 'design', yearId, monthId, 'taskdata');
-        
-        // Build query based on role (same logic as buildTaskQuery in tasksApi.js)
-        let tasksQuery;
-        if (!isAdmin && userUID) {
-          // Regular users: fetch only their own tasks
-          tasksQuery = query(tasksRef, where('userUID', '==', userUID));
-        } else {
-          // Admin users: fetch all tasks
-          tasksQuery = query(tasksRef);
-        }
-        
-        // Use SAME listener key format as useTasks hook to prevent duplicate listeners
-        // This ensures if TaskTable already has a listener for this month, we reuse it
-        const role = isAdmin ? 'admin' : 'user';
-        const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
-        
-        // Check if listener already exists (prevents duplicates with TaskTable)
-        if (listenerManager.hasListener(listenerKey)) {
-          logger.log(`[TasksCalendar] Listener already exists for ${monthId} (shared with TaskTable), using cached data`);
-          
-          // If this is the current month, use tasks from context (already loaded by TaskTable)
-          if (monthId === currentMonthId && currentMonthTasks.length > 0) {
-            tasksMap.set(monthId, currentMonthTasks);
-            // Update combined tasks immediately
-            const allCombined = Array.from(tasksMap.values()).flat();
-            const uniqueTasksMap = new Map();
-            allCombined.forEach(task => {
-              if (task && task.id && !uniqueTasksMap.has(task.id)) {
-                uniqueTasksMap.set(task.id, task);
-              }
-            });
-            setAllTasks(Array.from(uniqueTasksMap.values()));
-          }
-          continue;
-        }
-        
-        // Set up real-time listener through listener manager
-        const unsubscribe = listenerManager.addListener(
-          listenerKey,
-          () => onSnapshot(
-            tasksQuery,
-            (snapshot) => {
-              if (!snapshot || !snapshot.docs) {
-                tasksMap.set(monthId, []);
-                // Update combined tasks
-                const allCombined = Array.from(tasksMap.values()).flat();
-                const uniqueTasksMap = new Map();
-                allCombined.forEach(task => {
-                  if (task && task.id && !uniqueTasksMap.has(task.id)) {
-                    uniqueTasksMap.set(task.id, task);
-                  }
-                });
-                setAllTasks(Array.from(uniqueTasksMap.values()));
-                return;
-              }
-              
-              const monthTasks = snapshot.docs
-                .map((d) => {
-                  if (!d || !d.exists() || !d.data() || !d.id) return null;
-                  return serializeTimestampsForContext({
-                    id: d.id,
-                    monthId: monthId,
-                    ...d.data(),
-                  });
-                })
-                .filter((task) => task !== null);
-              
-              tasksMap.set(monthId, monthTasks);
-              
-              // Combine all tasks from all months and deduplicate by task ID
-              const allCombined = Array.from(tasksMap.values()).flat();
-              const uniqueTasksMap = new Map();
-              allCombined.forEach(task => {
-                if (task && task.id) {
-                  // Use task.id as key to ensure uniqueness
-                  if (!uniqueTasksMap.has(task.id)) {
-                    uniqueTasksMap.set(task.id, task);
-                  }
-                }
-              });
-              const combinedTasks = Array.from(uniqueTasksMap.values());
-              setAllTasks(combinedTasks);
-            },
-            (err) => {
-              logger.error(`Error fetching tasks for month ${monthId}:`, err);
-              tasksMap.set(monthId, []);
-              // Combine and deduplicate
-              const allCombined = Array.from(tasksMap.values()).flat();
-              const uniqueTasksMap = new Map();
-              allCombined.forEach(task => {
-                if (task && task.id && !uniqueTasksMap.has(task.id)) {
-                  uniqueTasksMap.set(task.id, task);
-                }
-              });
-              const combinedTasks = Array.from(uniqueTasksMap.values());
-              setAllTasks(combinedTasks);
-            }
-          ),
-          true, // Preserve listener - calendar needs real-time updates
-          'tasks', // Category
-          'tasks-calendar' // Page identifier
-        );
-        
-        unsubscribes.push(() => {
-          listenerManager.removeListener(listenerKey);
-        });
-      } catch (err) {
-        logger.error(`Error setting up listener for month ${month.monthId}:`, err);
-      }
-    }
-    
-    // Cleanup listeners on unmount
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
-  }, [availableMonths, currentYear, isAdmin, userUID]);
+    return Array.from(uniqueTasksMap.values());
+  }, [contextTasks]);
 
   // Use ALL tasks - no filtering, but ensure uniqueness by task ID
   const filteredTasks = useMemo(() => {
@@ -493,40 +365,18 @@ const TasksCalendar = () => {
 
   return (
     <DynamicCalendar
-      initialMonth={new Date(currentYear, 0, 1)}
+      initialMonth={calendarMonth}
       getDayData={getDayData}
       renderDay={renderDay}
-      onMonthChange={(year) => setCurrentYear(year)}
       config={{
         title: 'Tasks Calendar',
-        description: 'View all tasks organized by date with user color coding',
+        description: 'View tasks organized by date with user color coding',
         showNavigation: true,
-        showMultipleMonths: true,
+        showMultipleMonths: false, // Show only current/selected month
         emptyMessage: 'No tasks found',
         emptyCheck: ({ hasData }) => !hasData && filteredTasks.length === 0,
         className: 'card p-6 space-y-6'
       }}
-      headerActions={
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentYear(prev => prev - 1)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-            aria-label="Previous year"
-          >
-            <Icons.buttons.chevronLeft className="w-5 h-5" />
-          </button>
-          <span className="text-lg font-medium text-gray-700 dark:text-gray-300 min-w-[100px] text-center">
-            {currentYear}
-          </span>
-          <button
-            onClick={() => setCurrentYear(prev => prev + 1)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-            aria-label="Next year"
-          >
-            <Icons.buttons.chevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      }
     >
       {/* Color Legend */}
       <ColorLegend

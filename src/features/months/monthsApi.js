@@ -114,30 +114,23 @@ export const useCurrentMonth = (userUID = null, role = 'user', _userData = null)
           }
         }
 
-        logger.log('🔍 [useCurrentMonth] Fetching months from Firestore');
+        logger.log('🔍 [useCurrentMonth] Fetching current month from Firestore');
 
         // Create fetch promise and lock
         const fetchPromise = (async () => {
           try {
-            // Fetch months data once (months are relatively static)
-            const monthsQuery = query(monthsRef);
-            const snapshot = await getDocs(monthsQuery);
-            logger.log('🔍 [useCurrentMonth] Months fetched, docs:', snapshot.docs.length);
+            // OPTIMIZED: Only fetch the current month document, not all months
+            const currentMonthRef = getMonthRef(currentMonthInfo.monthId);
+            const currentMonthDoc = await getDoc(currentMonthRef);
+            logger.log('🔍 [useCurrentMonth] Current month fetched');
 
             let boardExistsResult = false;
             let currentMonthBoardResult = null;
 
-            if (!snapshot.empty) {
-              // Find the current month in the available months
-              const currentMonthDoc = snapshot.docs.find(
-                (doc) => doc.id === currentMonthInfo.monthId
-              );
-
-              if (currentMonthDoc) {
-                logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
-                boardExistsResult = true;
-                currentMonthBoardResult = currentMonthDoc.data();
-              }
+            if (currentMonthDoc.exists()) {
+              logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
+              boardExistsResult = true;
+              currentMonthBoardResult = currentMonthDoc.data();
             }
 
             // Cache the result with extended TTL for months (30 days - changes once per month)
