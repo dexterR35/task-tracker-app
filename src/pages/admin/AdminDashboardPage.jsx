@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
+import TasksCalendar from "@/features/tasks/components/TasksCalendar/TasksCalendar";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
@@ -414,6 +415,19 @@ const AdminDashboardPage = () => {
             isLoading={isLoading}
           />
         </div>
+      </div>
+
+      {/* Delimiter */}
+      <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-6"></div>
+
+      {/* Tasks Calendar */}
+      <div className="mt-6">
+        <TasksCalendar 
+          tasks={tasks || []}
+          selectedUserId={selectedUserId || null}
+          selectedReporterId={selectedReporterId || null}
+          monthId={currentMonthId || null}
+        />
       </div>
 
       {/* Create Task Modal */}

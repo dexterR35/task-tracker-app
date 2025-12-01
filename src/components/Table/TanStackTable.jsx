@@ -808,6 +808,22 @@ const TanStackTable = forwardRef(
     // Check if there are any rows to display (after filtering)
     const hasRows = table.getRowModel().rows.length > 0;
 
+    // Check if there are active filters to determine the empty state message
+    const hasActiveFilters = useMemo(() => {
+      const columnFilters = table.getState().columnFilters;
+      const hasTanStackFilters =
+        Boolean(globalFilter) || (columnFilters && columnFilters.length > 0);
+      const hasCustomFilters =
+        customFilters &&
+        (Boolean(customFilters.selectedFilter) ||
+          Boolean(customFilters.selectedDepartmentFilter) ||
+          Boolean(customFilters.selectedDeliverableFilter) ||
+          Boolean(customFilters.selectedUserId) ||
+          Boolean(customFilters.selectedReporterId) ||
+          Boolean(customFilters.selectedWeek));
+      return hasTanStackFilters || hasCustomFilters;
+    }, [globalFilter, table.getState().columnFilters, customFilters]);
+
     return (
       <div ref={tableRef} className={`space-y-0 ${className}`}>
         {shouldShowSkeleton ? (
@@ -933,7 +949,9 @@ const TanStackTable = forwardRef(
                           <div className="text-sm font-medium">
                             {tableType === "analytics"
                               ? "No analytics data found for the selected criteria."
-                              : "No tasks found matching the current filters."}
+                              : hasActiveFilters
+                              ? "No tasks found matching the current filters."
+                              : "No tasks found in database."}
                           </div>
                         </div>
                       </td>

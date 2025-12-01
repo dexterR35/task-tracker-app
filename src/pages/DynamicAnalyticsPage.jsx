@@ -647,13 +647,13 @@ const DynamicAnalyticsPage = () => {
       };
     }
     
-    // Use hook results for basic stats
-    const totalTasksThisMonth = tasksData.totalTasks;
-    const totalHours = hoursData.totalHours;
-    const totalDeliverables = deliverablesData.totalDeliverables;
-    const totalVariations = variationsData.totalVariations;
-    const totalDeliverablesHours = deliverablesHoursData.totalDeliverablesHours;
-    const totalDeliverablesWithVariationsHours = deliverablesHoursData.totalDeliverablesWithVariationsHours;
+    // Use hook results for basic stats (with fallbacks for loading states)
+    const totalTasksThisMonth = tasksData?.totalTasks ?? 0;
+    const totalHours = hoursData?.totalHours ?? 0;
+    const totalDeliverables = deliverablesData?.totalDeliverables ?? 0;
+    const totalVariations = variationsData?.totalVariations ?? 0;
+    const totalDeliverablesHours = deliverablesHoursData?.totalDeliverablesHours ?? 0;
+    const totalDeliverablesWithVariationsHours = deliverablesHoursData?.totalDeliverablesWithVariationsHours ?? 0;
     
     // Calculate other data that still needs the full generateRealData logic
     const result = generateRealData(filteredTasksForHooks, userName, reporterName, actualMonthId, weekParam, deliverablesOptions);
@@ -668,23 +668,23 @@ const DynamicAnalyticsPage = () => {
       totalDeliverablesHours,
       totalDeliverablesWithVariationsHours,
       marketingData: {
-        totalTasks: marketingData.totalTasks,
-        totalHours: marketingData.totalHours,
+        totalTasks: marketingData?.totalTasks ?? 0,
+        totalHours: marketingData?.totalHours ?? 0,
         ...result.marketingData,
       },
       acquisitionData: {
-        totalTasks: acquisitionData.totalTasks,
-        totalHours: acquisitionData.totalHours,
+        totalTasks: acquisitionData?.totalTasks ?? 0,
+        totalHours: acquisitionData?.totalHours ?? 0,
         ...result.acquisitionData,
       },
       productData: {
-        totalTasks: productData.totalTasks,
-        totalHours: productData.totalHours,
+        totalTasks: productData?.totalTasks ?? 0,
+        totalHours: productData?.totalHours ?? 0,
         ...result.productData,
       },
       miscData: {
-        totalTasks: miscData.totalTasks,
-        totalHours: miscData.totalHours,
+        totalTasks: miscData?.totalTasks ?? 0,
+        totalHours: miscData?.totalHours ?? 0,
         ...result.miscData,
       },
     };

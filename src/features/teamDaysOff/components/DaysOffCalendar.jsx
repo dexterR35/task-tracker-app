@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth, getDaysInMonth, addDays, startOfWeek, eachMonthOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, getDaysInMonth, eachMonthOfInterval, isSameDay, parseISO } from 'date-fns';
 import { Icons } from '@/components/icons';
 import { useTeamDaysOff } from '../teamDaysOffApi';
 import { useAuth } from '@/context/AuthContext';
@@ -12,40 +12,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 import { formatDateString } from '@/utils/dateUtils';
 import TeamDaysOffFormModal from './TeamDaysOffFormModal';
-
-/**
- * Get color from user's color_set field in database
- * Handles color with or without # prefix
- */
-const getUserColor = (user) => {
-  if (!user) return '#64748B'; // Default gray
-  
-  const colorSet = user.color_set || user.colorSet;
-  if (!colorSet) return '#64748B'; // Default gray if no color_set
-  
-  // Add # prefix if not present
-  return colorSet.startsWith('#') ? colorSet : `#${colorSet}`;
-};
-
-/**
- * Generate a gradient background showing all user colors
- * Creates a linear gradient that displays all colors horizontally
- */
-const generateMultiColorGradient = (users) => {
-  if (!users || users.length === 0) return null;
-  if (users.length === 1) return users[0].color;
-  
-  // Create a gradient with all colors evenly distributed
-  const percentageStep = 100 / users.length;
-  const stops = users.map((u, index) => {
-    const start = index * percentageStep;
-    const end = (index + 1) * percentageStep;
-    // Use the same color for both start and end to create solid color blocks
-    return `${u.color} ${start}%, ${u.color} ${end}%`;
-  }).join(', ');
-  
-  return `linear-gradient(to right, ${stops})`;
-};
+import DynamicCalendar, { getUserColor, generateMultiColorGradient, generateCalendarDays, BaseCalendarGrid } from '@/components/Calendar/DynamicCalendar';
 
 /**
  * Calendar component to display and manage days off for users
@@ -122,39 +89,113 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     return baseDays > 0 || daysTotal > 0;
   }, [selectedUserEntry]);
 
-  // Generate calendar days for a month (memoized per month)
-  const generateCalendarDays = useCallback((monthDate) => {
-    const monthStart = startOfMonth(monthDate);
-    const monthEnd = endOfMonth(monthDate);
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
-
-    const days = [];
-    for (let i = 0; i < 42; i++) {
-      const date = addDays(calendarStart, i);
-      days.push({
-        date,
-        isCurrentMonth: date >= monthStart && date <= monthEnd,
-      });
-    }
-    return days;
+  // Check if a date is a weekend (Saturday = 6, Sunday = 0)
+  const isWeekend = useCallback((date) => {
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
   }, []);
 
-  // Generate months for the current year
-  // Show all months so users can see their saved days off, but past dates are disabled
-  const months = useMemo(() => {
-    const startDate = new Date(currentYear, 0, 1);
-    const endDate = new Date(currentYear, 11, 31);
-    return eachMonthOfInterval({ start: startDate, end: endDate });
-  }, [currentYear]);
+  // Check if a date is in the past
+  const isPastDate = useCallback((date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck < today;
+  }, []);
 
-  // Memoize calendar days for all months to avoid recalculation on every render
-  const monthsWithCalendarDays = useMemo(() => {
-    return months.map(monthDate => ({
-      monthDate,
-      calendarDays: generateCalendarDays(monthDate),
-      monthName: format(monthDate, 'MMMM yyyy')
-    }));
-  }, [months, generateCalendarDays]);
+  // Check if a date is disabled (weekend or past)
+  const isDateDisabled = useCallback((date) => {
+    return isWeekend(date) || isPastDate(date);
+  }, [isWeekend, isPastDate]);
+
+  // Create lookup map for date -> users (optimized to avoid filtering on every render)
+  // This updates in real-time when teamDaysOff changes
+  const dateToUsersMap = useMemo(() => {
+    const map = new Map();
+    teamDaysOff.forEach(entry => {
+      const userUID = entry.userUID || entry.userId;
+      if (!userUID) return;
+      
+      const user = allUsers.find(u => (u.userUID || u.id) === userUID);
+      if (!user) return;
+      
+      const offDays = Array.isArray(entry.offDays) ? entry.offDays : [];
+      offDays.forEach(offDay => {
+        // Handle offDay format: can be { dateString, year, month, day } object or Date/string
+        let dateString;
+        if (typeof offDay === 'string') {
+          dateString = offDay;
+        } else if (offDay && typeof offDay === 'object') {
+          // If it has dateString property, use it
+          if (offDay.dateString) {
+            dateString = offDay.dateString;
+          } 
+          // Otherwise construct from year/month/day
+          else if (offDay.year && offDay.month && offDay.day) {
+            const month = String(offDay.month).padStart(2, '0');
+            const day = String(offDay.day).padStart(2, '0');
+            dateString = `${offDay.year}-${month}-${day}`;
+          }
+          // Otherwise try to format as date
+          else {
+            dateString = formatDateString(offDay);
+          }
+        } else {
+          dateString = formatDateString(offDay);
+        }
+        
+        if (!dateString) return;
+        
+        if (!map.has(dateString)) {
+          map.set(dateString, []);
+        }
+        map.get(dateString).push({
+          userUID,
+          userName: user.name || user.email || 'Unknown',
+          color: getUserColor(user)
+        });
+      });
+    });
+    return map;
+  }, [teamDaysOff, allUsers]);
+
+  // Check if a date is an off day for the selected user
+  const isDateOff = useCallback((date) => {
+    if (!selectedUserId) return false;
+    const dateString = formatDateString(date);
+    const usersOff = dateToUsersMap.get(dateString) || [];
+    return usersOff.some(u => u.userUID === selectedUserId);
+  }, [selectedUserId, dateToUsersMap]);
+
+  // Check if a date is selected (temporarily, not saved)
+  const isDateSelected = useCallback((date) => {
+    if (!selectedUserId) return false;
+    const dateString = formatDateString(date);
+    return selectedDates.some(d => formatDateString(d) === dateString);
+  }, [selectedUserId, selectedDates]);
+
+  // Get users who have off on a specific date
+  const getUsersOffOnDate = useCallback((date) => {
+    const dateString = formatDateString(date);
+    return dateToUsersMap.get(dateString) || [];
+  }, [dateToUsersMap]);
+
+  // Get day data for a specific date (for DynamicCalendar)
+  const getDayData = useCallback((date) => {
+    const isOff = selectedUserId ? isDateOff(date) : false;
+    const isSelected = selectedUserId ? isDateSelected(date) : false;
+    const usersOff = getUsersOffOnDate(date);
+    const isDisabled = isDateDisabled(date);
+    
+    return {
+      isOff,
+      isSelected,
+      usersOff,
+      isDisabled,
+      canSelect: selectedUserId && hasAvailableDays && !isOff && !isDisabled
+    };
+  }, [selectedUserId, hasAvailableDays, isDateOff, isDateSelected, getUsersOffOnDate, isDateDisabled]);
 
   // Get all users with their assigned colors for legend
   // Admin sees all users, regular users see only themselves
@@ -191,62 +232,6 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   const usersWithOffDays = useMemo(() => {
     return allUsersWithColors.filter(user => user.offDays.length > 0);
   }, [allUsersWithColors]);
-
-  // Check if a date is a weekend (Saturday = 6, Sunday = 0)
-  const isWeekend = useCallback((date) => {
-    const dayOfWeek = date.getDay();
-    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
-  }, []);
-
-  // Check if a date is in the past
-  const isPastDate = useCallback((date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dateToCheck = new Date(date);
-    dateToCheck.setHours(0, 0, 0, 0);
-    return dateToCheck < today;
-  }, []);
-
-  // Check if a date is disabled (weekend or past)
-  const isDateDisabled = useCallback((date) => {
-    return isWeekend(date) || isPastDate(date);
-  }, [isWeekend, isPastDate]);
-
-  // Create lookup map for date -> users (optimized to avoid filtering on every render)
-  // This updates in real-time when teamDaysOff changes
-  const dateToUsersMap = useMemo(() => {
-    const map = new Map();
-    allUsersWithColors.forEach(user => {
-      // Ensure offDays is an array and create new reference for reactivity
-      const offDays = Array.isArray(user.offDays) ? [...user.offDays] : [];
-      offDays.forEach(offDay => {
-        if (!map.has(offDay.dateString)) {
-          map.set(offDay.dateString, []);
-        }
-        map.get(offDay.dateString).push(user);
-      });
-    });
-    return map;
-  }, [allUsersWithColors, teamDaysOff.length]); // Add teamDaysOff.length to ensure updates
-
-  // Check if a date is in selected user's off days
-  const isDateOff = useCallback((date) => {
-    if (!selectedUserId) return false;
-    const dateString = formatDateString(date);
-    return selectedUserOffDays.some(offDay => offDay.dateString === dateString);
-  }, [selectedUserId, selectedUserOffDays]);
-
-  // Check if a date is selected (temporarily, before saving)
-  const isDateSelected = useCallback((date) => {
-    const dateString = formatDateString(date);
-    return selectedDates.some(d => formatDateString(d) === dateString);
-  }, [selectedDates]);
-
-  // Get users who have off on a specific date (optimized with lookup map)
-  const getUsersOffOnDate = useCallback((date) => {
-    const dateString = formatDateString(date);
-    return dateToUsersMap.get(dateString) || [];
-  }, [dateToUsersMap]);
 
   // Handle date click
   const handleDateClick = useCallback((date) => {
@@ -398,43 +383,117 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     }));
   }, [isAdmin, allUsers, authUser]);
 
-  const navigateYear = (direction) => {
-    setCurrentYear(prev => direction === 'next' ? prev + 1 : prev - 1);
-  };
+  // Render day cell for days off calendar
+  const renderDay = useCallback((day, dayIndex, dayData, monthDate) => {
+    if (!dayData) {
+      dayData = getDayData(day.date);
+    }
+
+    const { isOff, isSelected, usersOff: usersOffData, isDisabled, canSelect } = dayData;
+    const usersOff = usersOffData || getUsersOffOnDate(day.date);
+    
+    // Filter usersOff based on role and selection
+    const visibleUsersOff = isAdmin
+      ? (selectedUserId 
+          ? usersOff.filter(u => u.userUID === selectedUserId)
+          : usersOff)
+      : usersOff.filter(u => u.userUID === authUser?.userUID);
+    
+    // Determine background color
+    let bgColor = 'bg-gray-50 dark:bg-gray-600';
+    let textColor = 'text-gray-600 dark:text-gray-200';
+    
+    const shouldShowColors = (isOff && selectedUserId) || (!selectedUserId && isAdmin && visibleUsersOff.length > 0) || (selectedUserId && visibleUsersOff.length > 0 && !isOff);
+    
+    if (isDisabled && visibleUsersOff.length === 0) {
+      bgColor = 'bg-gray-100 dark:bg-gray-700';
+      textColor = 'text-gray-400 dark:text-gray-600';
+    } else if (shouldShowColors || isSelected) {
+      bgColor = '';
+      textColor = 'text-white font-semibold';
+    }
+
+    const style = {};
+    if (isDisabled && visibleUsersOff.length === 0) {
+      style.opacity = 0.4;
+    } else if (isSelected) {
+      style.backgroundColor = userColor;
+    } else if (isOff && selectedUserId) {
+      style.backgroundColor = userColor;
+    } else if (visibleUsersOff.length > 0) {
+      const gradient = generateMultiColorGradient(visibleUsersOff);
+      if (gradient && visibleUsersOff.length > 1) {
+        style.background = gradient;
+      } else {
+        style.backgroundColor = visibleUsersOff[0].color;
+      }
+      style.opacity = isDisabled ? 0.6 : 1;
+    }
+
+    // Prepare tooltip content
+    let tooltipContent = '';
+    let tooltipUsers = [];
+    
+    if (isOff && selectedUserId) {
+      tooltipContent = `${selectedUser?.name || 'User'} - Off${isDisabled ? ' (Past date)' : ''}`;
+      tooltipUsers = [{
+        userName: selectedUser?.name || 'User',
+        color: getUserColor(selectedUser)
+      }];
+    } else if (visibleUsersOff.length > 0) {
+      tooltipContent = `${visibleUsersOff.length > 1 ? `${visibleUsersOff.length} users off` : 'User off'}${isDisabled ? ' (Past date)' : ''}`;
+      tooltipUsers = visibleUsersOff.map(u => ({
+        userUID: u.userUID,
+        userName: u.userName,
+        color: u.color || getUserColor(u)
+      }));
+    } else if (isDisabled) {
+      tooltipContent = isWeekend(day.date) ? 'Weekend - Cannot be selected' : 'Past date - Cannot be selected';
+    } else if (canSelect) {
+      tooltipContent = 'Click to select';
+    } else if (!hasAvailableDays && selectedUserId) {
+      tooltipContent = 'User has no available days off. Add base days first.';
+    } else if (!selectedUserId) {
+      tooltipContent = isAdmin ? 'Select a user to manage their days off, or view all users\' days off' : 'Your days off';
+    }
+
+    return (
+      <Tooltip
+        key={`${dayIndex}-${formatDateString(day.date)}`}
+        content={tooltipContent}
+        users={tooltipUsers.length > 0 ? tooltipUsers : []}
+      >
+        <div
+          className={`
+            rounded text-sm flex flex-col items-center justify-center relative
+            ${bgColor} ${textColor}
+            ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}
+          `}
+          style={{ ...style, aspectRatio: '5 / 3' }}
+          onClick={() => canSelect && handleDateClick(day.date)}
+        >
+          <span>{day.date.getDate()}</span>
+          {isOff && selectedUserId && (
+            <DynamicButton
+              variant="danger"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove(day.date);
+              }}
+              className="absolute top-0 right-0 text-[10px] w-3 h-4 min-w-[10px] p-0 flex items-center justify-center bg-red-500/80 hover:bg-red-600 text-white rounded-bl rounded-tr"
+              title="Remove"
+            >
+              ×
+            </DynamicButton>
+          )}
+        </div>
+      </Tooltip>
+    );
+  }, [selectedUserId, isAdmin, authUser, userColor, selectedUser, hasAvailableDays, getDayData, getUsersOffOnDate, isWeekend, handleDateClick, handleRemove]);
 
   return (
-    <div className="days-off-calendar card  p-6 space-y-6">
-      {/* Header with controls */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex-1">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Days Off Calendar
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {isAdmin ? 'Select a user and manage their days off' : 'Manage your days off'}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <DynamicButton
-            variant="secondary"
-            size="md"
-            onClick={() => navigateYear('prev')}
-            icon={Icons.buttons.chevronLeft}
-          />
-          <span className="text-lg font-medium text-gray-700 dark:text-gray-300 min-w-[100px] text-center">
-            {currentYear}
-          </span>
-          <DynamicButton
-            variant="secondary"
-            size="md"
-            onClick={() => navigateYear('next')}
-            icon={Icons.buttons.chevronRight}
-          />
-        </div>
-      </div>
-
-      {/* User Selection - Below header */}
+    <div className="days-off-calendar space-y-6">
+      {/* User Selection - Above calendar */}
       {isAdmin && (
         <div className="w-full max-w-md">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -465,7 +524,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         </div>
       )}
 
-      {/* Color Legend - Show all users with their assigned colors - Right corner */}
+      {/* Color Legend - Above calendar */}
       {allUsersWithColors.length > 0 && (
         <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <div className="flex justify-start">
@@ -490,7 +549,6 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
           </div>
         </div>
       )}
-      
 
       {/* Warning message if user has no available days */}
       {selectedUserId && !hasAvailableDays && (
@@ -509,7 +567,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Above calendar */}
       {selectedUserId && (
         <div className="flex items-center gap-3 flex-wrap">
           {/* Entry button - only visible to admins */}
@@ -547,176 +605,41 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         </div>
       )}
 
-      {/* Calendar Grid - Show all months */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {monthsWithCalendarDays.map(({ monthDate, calendarDays, monthName }, monthIndex) => {
-          return (
-            <div 
-              key={monthIndex} 
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-smallCard"
-            >
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 text-center">
-                {monthName}
-              </h4>
-              
-              {/* Day headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
-                  <div key={idx} className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar grid */}
-              <div 
-                className="grid grid-cols-7 gap-1"
-                onClick={(e) => e.stopPropagation()} // Prevent month selection when clicking dates
-              >
-                {calendarDays.map((day, dayIndex) => {
-                  if (!day.isCurrentMonth) {
-                    return <div key={dayIndex} style={{ aspectRatio: '5 / 3' }} />;
-                  }
-
-                  const isOff = selectedUserId ? isDateOff(day.date) : false;
-                  const isSelected = selectedUserId ? isDateSelected(day.date) : false;
-                  const usersOff = getUsersOffOnDate(day.date);
-                  const isDisabled = isDateDisabled(day.date);
-                  
-                  // Filter usersOff based on role and selection:
-                  // - Admin with no user selected: see all users' colors
-                  // - Admin with user selected: see only selected user's color
-                  // - Regular user: only see their own color
-                  const visibleUsersOff = isAdmin
-                    ? (selectedUserId 
-                        ? usersOff.filter(u => u.userUID === selectedUserId) // Admin selected a user - show only that user
-                        : usersOff) // Admin no selection - show all users
-                    : usersOff.filter(u => u.userUID === authUser?.userUID); // Regular user - only their own
-                  
-                  // Allow selecting days only if user has available days and date is not disabled
-                  const canSelect = selectedUserId && hasAvailableDays && !isOff && !isDisabled;
-                  
-                  // Determine background color
-                  let bgColor = 'bg-gray-50 dark:bg-gray-600';
-                  let textColor = 'text-gray-600 dark:text-gray-200';
-                  
-                  // Check if we should show colors
-                  // For admin with no selection: show if any users have off
-                  // For admin with selection or regular user: show if selected user has off or other visible users have off
-                  const shouldShowColors = (isOff && selectedUserId) || (!selectedUserId && isAdmin && visibleUsersOff.length > 0) || (selectedUserId && visibleUsersOff.length > 0 && !isOff);
-                  
-                  if (isDisabled && visibleUsersOff.length === 0) {
-                    // Disabled dates (weekend or past) with no visible users off
-                    bgColor = 'bg-gray-100 dark:bg-gray-700';
-                    textColor = 'text-gray-400 dark:text-gray-600';
-                  } else if (shouldShowColors || isSelected) {
-                    // Show colors when users have off days or date is selected
-                    bgColor = '';
-                    textColor = 'text-white font-semibold';
-                  }
-
-                  const style = {};
-                  if (isDisabled && visibleUsersOff.length === 0) {
-                    // Disabled dates with no users off - grayed out
-                    style.opacity = 0.4;
-                  } else if (isSelected) {
-                    // Temporarily selected date - show selected user's color
-                    style.backgroundColor = userColor;
-                    // No opacity - full color
-                  } else if (isOff && selectedUserId) {
-                    // Selected user's saved off day - show only selected user's color
-                    style.backgroundColor = userColor;
-                    // No opacity - full color
-                  } else if (visibleUsersOff.length > 0) {
-                    // Users off (admin with no selection sees all, admin with selection sees only selected user)
-                    // Show all colors in a gradient if multiple users
-                    const gradient = generateMultiColorGradient(visibleUsersOff);
-                    if (gradient && visibleUsersOff.length > 1) {
-                      // Multiple users - show gradient with all colors
-                      style.background = gradient;
-                    } else {
-                      // Single user - show single color
-                      style.backgroundColor = visibleUsersOff[0].color;
-                    }
-                    style.opacity = isDisabled ? 0.6 : 1; // Slightly more visible if not disabled
-                  }
-
-                  // Prepare tooltip content
-                  let tooltipContent = '';
-                  let tooltipUsers = [];
-                  
-                  if (isOff && selectedUserId) {
-                    tooltipContent = `${selectedUser?.name || 'User'} - Off${isDisabled ? ' (Past date)' : ''}`;
-                    tooltipUsers = [{
-                      userName: selectedUser?.name || 'User',
-                      color: getUserColor(selectedUser)
-                    }];
-                  } else if (visibleUsersOff.length > 0) {
-                    tooltipContent = `${visibleUsersOff.length > 1 ? `${visibleUsersOff.length} users off` : 'User off'}${isDisabled ? ' (Past date)' : ''}`;
-                    tooltipUsers = visibleUsersOff.map(u => ({
-                      userUID: u.userUID,
-                      userName: u.userName,
-                      color: u.color || getUserColor(u)
-                    }));
-                  } else if (isDisabled) {
-                    if (isWeekend(day.date)) {
-                      tooltipContent = 'Weekend - Cannot be selected';
-                    } else {
-                      tooltipContent = 'Past date - Cannot be selected';
-                    }
-                  } else if (canSelect) {
-                    tooltipContent = 'Click to select';
-                  } else if (!hasAvailableDays && selectedUserId) {
-                    tooltipContent = 'User has no available days off. Add base days first.';
-                  } else if (!selectedUserId) {
-                    tooltipContent = isAdmin ? 'Select a user to manage their days off, or view all users\' days off' : 'Your days off';
-                  }
-
-                  return (
-                    <Tooltip
-                      key={`${monthIndex}-${dayIndex}-${formatDateString(day.date)}`}
-                      content={tooltipContent}
-                      users={tooltipUsers.length > 0 ? tooltipUsers : []}
-                    >
-                      <div
-                        className={`
-                          rounded text-sm flex flex-col items-center justify-center relative
-                          ${bgColor} ${textColor}
-                          ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}
-                        `}
-                        style={{ ...style, aspectRatio: '5 / 3' }}
-                        onClick={() => canSelect && handleDateClick(day.date)}
-                      >
-                        <span>{day.date.getDate()}</span>
-                        {isOff && selectedUserId && (
-                          <DynamicButton
-                            variant="danger"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemove(day.date);
-                            }}
-                            className="absolute top-0 right-0 text-[10px] w-3 h-4 min-w-[10px] p-0 flex items-center justify-center bg-red-500/80 hover:bg-red-600 text-white rounded-bl rounded-tr"
-                            title="Remove"
-                          >
-                            ×
-                          </DynamicButton>
-                        )}
-                      </div>
-                    </Tooltip>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Instructions */}
-      {!selectedUserId && (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-          {isAdmin ? 'Please select a user to manage their days off' : 'Please select a month to manage your days off'}
-        </div>
-      )}
+      {/* Dynamic Calendar - Show all months */}
+      <DynamicCalendar
+        initialMonth={new Date(currentYear, 0, 1)}
+        getDayData={getDayData}
+        renderDay={renderDay}
+        onMonthChange={(year) => setCurrentYear(year)}
+        config={{
+          title: 'Days Off Calendar',
+          description: isAdmin ? 'Select a user and manage their days off' : 'Manage your days off',
+          showNavigation: true,
+          showMultipleMonths: true,
+          emptyMessage: 'No days off data',
+          emptyCheck: null,
+          className: 'card p-6 space-y-6'
+        }}
+        headerActions={
+          <div className="flex items-center gap-2">
+            <DynamicButton
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentYear(prev => prev - 1)}
+              icon={Icons.buttons.chevronLeft}
+            />
+            <span className="text-lg font-medium text-gray-700 dark:text-gray-300 min-w-[100px] text-center">
+              {currentYear}
+            </span>
+            <DynamicButton
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentYear(prev => prev + 1)}
+              icon={Icons.buttons.chevronRight}
+            />
+          </div>
+        }
+      />
 
       {/* Entry Modal - only visible to admins */}
       {isAdmin && showEntryModal && (
