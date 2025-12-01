@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { format, getDaysInMonth, eachMonthOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Icons } from '@/components/icons';
 import { useTeamDaysOff } from '../teamDaysOffApi';
 import { useAuth } from '@/context/AuthContext';
-import { useAppDataContext } from '@/context/AppDataContext';
-import { useUsers } from '@/features/users/usersApi';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import Tooltip from '@/components/ui/Tooltip/Tooltip';
@@ -12,7 +10,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 import { formatDateString } from '@/utils/dateUtils';
 import TeamDaysOffFormModal from './TeamDaysOffFormModal';
-import DynamicCalendar, { getUserColor, generateMultiColorGradient, generateCalendarDays, BaseCalendarGrid } from '@/components/Calendar/DynamicCalendar';
+import DynamicCalendar, { getUserColor, generateMultiColorGradient, useCalendarUsers, filterUsersByRole, ColorLegend } from '@/components/Calendar/DynamicCalendar';
 
 /**
  * Calendar component to display and manage days off for users
@@ -26,16 +24,8 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   // Always use real-time data from hook (prop is legacy/fallback, but hook should always have data)
   const teamDaysOff = realTimeTeamDaysOff.length > 0 ? realTimeTeamDaysOff : propTeamDaysOff;
   
-  // Get users from AppDataContext (includes color_set from database)
-  // Falls back to useUsers() API if context doesn't have users
-  // Both sources include the color_set field from the users collection
-  // Memoize to avoid unnecessary re-renders
-  const appData = useAppDataContext();
-  const { users: contextUsers = [] } = appData || {};
-  const { users: apiUsers = [] } = useUsers();
-  const allUsers = useMemo(() => {
-    return contextUsers.length > 0 ? contextUsers : apiUsers;
-  }, [contextUsers, apiUsers]);
+  // Use shared hook for user fetching
+  const allUsers = useCalendarUsers();
 
   // Admin starts with no user selected (can select any user)
   // Regular users automatically have themselves selected
@@ -201,7 +191,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   // Admin sees all users, regular users see only themselves
   // Colors are from database color_set field
   const allUsersWithColors = useMemo(() => {
-    return allUsers.map(user => {
+    const usersWithData = allUsers.map(user => {
       const userUID = user.userUID || user.id;
       const userName = user.name || user.email || 'Unknown';
       
@@ -219,14 +209,15 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         color,
         offDays
       };
-    }).filter(user => {
-      // For regular users, only show themselves
-      if (!isAdmin && user.userUID !== authUser?.userUID) {
-        return false;
-      }
-      return true;
     });
-  }, [allUsers, teamDaysOff, isAdmin, authUser]);
+    
+    // Use shared utility for filtering users by role
+    return filterUsersByRole(usersWithData, {
+      isAdmin,
+      authUserUID: authUser?.userUID,
+      selectedUserId
+    });
+  }, [allUsers, teamDaysOff, isAdmin, authUser, selectedUserId]);
 
   // Get all users with off days (for calendar display)
   const usersWithOffDays = useMemo(() => {
@@ -525,30 +516,12 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       )}
 
       {/* Color Legend - Above calendar */}
-      {allUsersWithColors.length > 0 && (
-        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-          <div className="flex justify-start">
-            <div className="text-start">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                Color Legend
-              </h4>
-              <div className="flex flex-wrap gap-4 justify-end">
-                {allUsersWithColors.map((user) => (
-                  <div key={user.userUID} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded border border-gray-300 dark:border-gray-600" 
-                      style={{ backgroundColor: user.color }}
-                    />
-                    <span className={`text-sm text-gray-700 dark:text-gray-300 ${selectedUserId === user.userUID ? 'font-semibold' : ''}`}>
-                      {user.userName} {user.offDays.length > 0 && `(${user.offDays.length} days)`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ColorLegend
+        users={allUsersWithColors}
+        selectedUserId={selectedUserId}
+        countLabel="days"
+        getCount={(user) => user.offDays?.length || 0}
+      />
 
       {/* Warning message if user has no available days */}
       {selectedUserId && !hasAvailableDays && (

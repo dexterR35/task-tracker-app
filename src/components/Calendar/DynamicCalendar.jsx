@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, addDays, startOfWeek } from 'date-fns';
 import { Icons } from '@/components/icons';
+import { useAppDataContext } from '@/context/AppDataContext';
+import { useUsers } from '@/features/users/usersApi';
 
 /**
  * Get color from user's color_set field in database
@@ -340,4 +342,98 @@ const DynamicCalendar = ({
 };
 
 export default DynamicCalendar;
+
+/**
+ * Hook to get users from context or API (with fallback)
+ * Used by both TasksCalendar and DaysOffCalendar
+ */
+export const useCalendarUsers = () => {
+  const appData = useAppDataContext();
+  const { users: contextUsers = [] } = appData || {};
+  const { users: apiUsers = [] } = useUsers();
+  
+  const allUsers = useMemo(() => {
+    return contextUsers.length > 0 ? contextUsers : apiUsers;
+  }, [contextUsers, apiUsers]);
+  
+  return allUsers;
+};
+
+/**
+ * Filter users based on admin role and selected user
+ * Used by both TasksCalendar and DaysOffCalendar
+ */
+export const filterUsersByRole = (users, { isAdmin, authUserUID, selectedUserId = null }) => {
+  return users.filter(user => {
+    const userUID = user.userUID || user.id;
+    
+    // If a user is selected, only show that user
+    if (selectedUserId && userUID !== selectedUserId) {
+      return false;
+    }
+    
+    // Regular users only see themselves
+    if (!isAdmin && userUID !== authUserUID) {
+      return false;
+    }
+    
+    return true;
+  });
+};
+
+/**
+ * Get user color from user object
+ * Wrapper around getUserColor for consistency
+ */
+export const getCalendarUserColor = (user) => {
+  return getUserColor(user);
+};
+
+/**
+ * Shared Color Legend Component
+ * Used by both TasksCalendar and DaysOffCalendar
+ * 
+ * @param {Array} users - Array of user objects with { userUID, userName, color, ... }
+ * @param {string} selectedUserId - Currently selected user ID (for highlighting)
+ * @param {string} countLabel - Label for the count (e.g., "tasks", "days")
+ * @param {Function} getCount - Function to get count for a user: (user) => number
+ */
+export const ColorLegend = ({ 
+  users = [], 
+  selectedUserId = null,
+  countLabel = '',
+  getCount = (user) => user.tasksCount || user.offDays?.length || 0
+}) => {
+  if (!users || users.length === 0) return null;
+
+  return (
+    <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+      <div className="flex justify-start">
+        <div className="text-start">
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            Color Legend
+          </h4>
+          <div className="flex flex-wrap gap-4 justify-end">
+            {users.map((user) => {
+              const count = getCount(user);
+              const countText = count > 0 ? ` (${count} ${countLabel})` : '';
+              
+              return (
+                <div key={user.userUID} className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded border border-gray-300 dark:border-gray-600" 
+                    style={{ backgroundColor: user.color }}
+                  />
+                  <span className={`text-sm text-gray-700 dark:text-gray-300 ${selectedUserId === user.userUID ? 'font-semibold' : ''}`}>
+                    {user.userName}{countText}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 

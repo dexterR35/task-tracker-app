@@ -420,14 +420,9 @@ const AdminDashboardPage = () => {
       {/* Delimiter */}
       <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-6"></div>
 
-      {/* Tasks Calendar */}
+      {/* Tasks Calendar - Shows all tasks across all months, independent of filters */}
       <div className="mt-6">
-        <TasksCalendar 
-          tasks={tasks || []}
-          selectedUserId={selectedUserId || null}
-          selectedReporterId={selectedReporterId || null}
-          monthId={currentMonthId || null}
-        />
+        <TasksCalendar />
       </div>
 
       {/* Create Task Modal */}

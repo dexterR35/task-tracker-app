@@ -1,74 +1,197 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { format } from 'date-fns';
-import { useAppDataContext } from '@/context/AppDataContext';
-import { useUsers } from '@/features/users/usersApi';
-import { useAuth } from '@/context/AuthContext';
 import Tooltip from '@/components/ui/Tooltip/Tooltip';
-import { normalizeTimestamp, formatDateString, parseMonthId } from '@/utils/dateUtils';
-import { filterTasksByUserAndReporter } from '@/utils/taskFilters';
-import DynamicCalendar, { getUserColor, generateMultiColorGradient } from '@/components/Calendar/DynamicCalendar';
+import { normalizeTimestamp, formatDateString } from '@/utils/dateUtils';
+import DynamicCalendar, { getUserColor, generateMultiColorGradient, useCalendarUsers, ColorLegend } from '@/components/Calendar/DynamicCalendar';
+import { Icons } from '@/components/icons';
+import { useAvailableMonths } from '@/features/months/monthsApi';
+import { useAuth } from '@/context/AuthContext';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
+import { db } from '@/app/firebase';
+import { serializeTimestampsForContext } from '@/utils/dateUtils';
+import { logger } from '@/utils/logger';
 
 /**
  * Tasks Calendar Component
- * Shows tasks per day with user colors (same as DaysOffCalendar)
- * Uses filters from dashboard cards/filters
+ * Shows all tasks per day with user colors across all months
+ * Fetches tasks for ALL months independently - does NOT use dashboard filters
  */
-const TasksCalendar = ({ 
-  tasks = [],
-  selectedUserId = null,
-  selectedReporterId = null,
-  monthId = null
-}) => {
+const TasksCalendar = () => {
   const { user: authUser } = useAuth();
   const isAdmin = authUser?.role === 'admin';
+  const userUID = authUser?.userUID || null;
   
-  const appData = useAppDataContext();
-  const { users: contextUsers = [] } = appData || {};
-  const { users: apiUsers = [] } = useUsers();
-  const allUsers = useMemo(() => {
-    return contextUsers.length > 0 ? contextUsers : apiUsers;
-  }, [contextUsers, apiUsers]);
-
-  // Get selected month date from monthId
-  const selectedMonthDate = useMemo(() => {
-    if (!monthId) {
-      // If no monthId, use current month
-      return new Date();
+  // Use shared hook for user fetching
+  const allUsers = useCalendarUsers();
+  
+  // Get all available months to fetch tasks for all months
+  const { availableMonths = [] } = useAvailableMonths();
+  
+  // Get current year for multi-month view
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  
+  // State for all tasks from all months
+  const [allTasks, setAllTasks] = useState([]);
+  
+  // Fetch tasks for all available months
+  useEffect(() => {
+    if (availableMonths.length === 0) {
+      return;
     }
-    try {
-      return parseMonthId(monthId);
-    } catch {
-      return new Date();
-    }
-  }, [monthId]);
-
-
-  // Filter tasks based on dashboard filters (including monthId - calendar shows only selected month)
-  const filteredTasks = useMemo(() => {
-    if (!tasks || tasks.length === 0) return [];
     
-    // Filter by user, reporter, AND monthId (calendar shows only selected month)
-    return filterTasksByUserAndReporter(tasks, {
-      selectedUserId: selectedUserId || null,
-      selectedReporterId: selectedReporterId || null,
-      currentMonthId: monthId || null, // Filter by selected month
-      isUserAdmin: isAdmin,
-      currentUserUID: authUser?.userUID || null,
+    const unsubscribes = [];
+    const tasksMap = new Map();
+    
+    // Fetch tasks for each month
+    availableMonths.forEach((month) => {
+      try {
+        const monthId = month.monthId;
+        const yearId = monthId.split('-')[0];
+        
+        // Get tasks collection reference (using taskdata as per tasksApi.js)
+        const tasksRef = collection(db, 'departments', 'design', yearId, monthId, 'taskdata');
+        
+        // Build query based on role (same logic as buildTaskQuery in tasksApi.js)
+        let tasksQuery;
+        if (!isAdmin && userUID) {
+          // Regular users: fetch only their own tasks
+          tasksQuery = query(tasksRef, where('userUID', '==', userUID));
+        } else {
+          // Admin users: fetch all tasks
+          tasksQuery = query(tasksRef);
+        }
+        
+        // Set up real-time listener for this month
+        const unsubscribe = onSnapshot(
+          tasksQuery,
+          (snapshot) => {
+            if (!snapshot || !snapshot.docs) {
+              tasksMap.set(monthId, []);
+              // Update combined tasks
+              const combinedTasks = Array.from(tasksMap.values()).flat();
+              setAllTasks(combinedTasks);
+              return;
+            }
+            
+            const monthTasks = snapshot.docs
+              .map((d) => {
+                if (!d || !d.exists() || !d.data() || !d.id) return null;
+                return serializeTimestampsForContext({
+                  id: d.id,
+                  monthId: monthId,
+                  ...d.data(),
+                });
+              })
+              .filter((task) => task !== null);
+            
+            tasksMap.set(monthId, monthTasks);
+            
+            // Combine all tasks from all months and deduplicate by task ID
+            const allCombined = Array.from(tasksMap.values()).flat();
+            const uniqueTasksMap = new Map();
+            allCombined.forEach(task => {
+              if (task && task.id) {
+                // Use task.id as key to ensure uniqueness
+                if (!uniqueTasksMap.has(task.id)) {
+                  uniqueTasksMap.set(task.id, task);
+                }
+              }
+            });
+            const combinedTasks = Array.from(uniqueTasksMap.values());
+            setAllTasks(combinedTasks);
+          },
+          (err) => {
+            logger.error(`Error fetching tasks for month ${monthId}:`, err);
+            tasksMap.set(monthId, []);
+            // Combine and deduplicate
+            const allCombined = Array.from(tasksMap.values()).flat();
+            const uniqueTasksMap = new Map();
+            allCombined.forEach(task => {
+              if (task && task.id) {
+                if (!uniqueTasksMap.has(task.id)) {
+                  uniqueTasksMap.set(task.id, task);
+                }
+              }
+            });
+            const combinedTasks = Array.from(uniqueTasksMap.values());
+            setAllTasks(combinedTasks);
+          }
+        );
+        
+        unsubscribes.push(unsubscribe);
+      } catch (err) {
+        logger.error(`Error setting up listener for month ${month.monthId}:`, err);
+      }
     });
-  }, [tasks, selectedUserId, selectedReporterId, monthId, isAdmin, authUser?.userUID]);
+    
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [availableMonths, isAdmin, userUID]);
+
+  // Use ALL tasks - no filtering, but ensure uniqueness by task ID
+  const filteredTasks = useMemo(() => {
+    if (!allTasks || allTasks.length === 0) return [];
+    
+    // Deduplicate tasks by ID to ensure each task is only counted once
+    const uniqueTasksMap = new Map();
+    allTasks.forEach(task => {
+      if (task && task.id) {
+        // Use task.id as key, keep the first occurrence
+        if (!uniqueTasksMap.has(task.id)) {
+          uniqueTasksMap.set(task.id, task);
+        }
+      }
+    });
+    
+    const uniqueTasks = Array.from(uniqueTasksMap.values());
+    
+    // Log task counts per month in development mode for verification
+    if (import.meta.env.MODE === 'development') {
+      const tasksByMonth = new Map();
+      uniqueTasks.forEach(task => {
+        const monthId = task.monthId || 'unknown';
+        if (!tasksByMonth.has(monthId)) {
+          tasksByMonth.set(monthId, 0);
+        }
+        tasksByMonth.set(monthId, tasksByMonth.get(monthId) + 1);
+      });
+      
+      logger.log('📅 [TasksCalendar] Task counts by month:', 
+        Object.fromEntries(tasksByMonth)
+      );
+      logger.log('📅 [TasksCalendar] Total unique tasks:', uniqueTasks.length);
+    }
+    
+    return uniqueTasks;
+  }, [allTasks]);
 
   // Group tasks by date and user
   const tasksByDate = useMemo(() => {
     const map = new Map();
     
     filteredTasks.forEach(task => {
-      // Get task date - use creation date (when task was added), not start/end date
-      let taskDate = task.createdAt || 
-                     task.timestamp ||
-                     task.data_task?.createdAt ||
-                     task.data_task?.timestamp;
+      // IMPORTANT: Use ONLY createdAt (when task was added) - this is the unique identifier
+      // Do NOT use startDate, endDate, or any other date field
+      let taskDate = task.createdAt;
       
-      if (!taskDate) return;
+      // Fallback only if createdAt is completely missing (shouldn't happen for valid tasks)
+      if (!taskDate) {
+        taskDate = task.timestamp || task.data_task?.createdAt || task.data_task?.timestamp;
+      }
+      
+      if (!taskDate) {
+        // Log missing createdAt in development
+        if (import.meta.env.MODE === 'development') {
+          console.warn('Task missing createdAt:', {
+            taskId: task.id,
+            taskName: task.data_task?.taskName,
+            task: task
+          });
+        }
+        return;
+      }
       
       // Handle Firestore timestamp formats more robustly
       let date = null;
@@ -92,15 +215,39 @@ const TasksCalendar = ({
         if (import.meta.env.MODE === 'development') {
           console.warn('Task date could not be parsed:', {
             taskId: task.id,
+            taskName: task.data_task?.taskName,
             taskDate: taskDate,
-            task: task
+            createdAt: task.createdAt,
+            date: date
           });
         }
         return;
       }
       
       // Use local date components to avoid timezone issues
+      // formatDateString uses getFullYear(), getMonth(), getDate() which are local timezone
+      // This ensures the date shown matches the user's local calendar view
       const dateString = formatDateString(date);
+      
+      // Debug logging for date verification in development
+      if (import.meta.env.MODE === 'development' && task.id) {
+        const taskMonth = date.getMonth() + 1;
+        const taskYear = date.getFullYear();
+        const taskDay = date.getDate();
+        const expectedMonthId = `${taskYear}-${String(taskMonth).padStart(2, '0')}`;
+        
+        // Log task placement for verification
+        logger.log('📅 [TasksCalendar] Task date placement:', {
+          taskId: task.id,
+          taskName: task.data_task?.taskName,
+          createdAt: date.toISOString(),
+          localDate: `${taskYear}-${String(taskMonth).padStart(2, '0')}-${String(taskDay).padStart(2, '0')}`,
+          dateString: dateString,
+          taskMonthId: task.monthId,
+          expectedMonthId: expectedMonthId,
+          dayOfWeek: date.getDay() // 0 = Sunday, 6 = Saturday
+        });
+      }
       
       if (!map.has(dateString)) {
         map.set(dateString, {
@@ -150,7 +297,7 @@ const TasksCalendar = ({
     return tasksByDate.get(dateString) || null;
   }, [tasksByDate]);
 
-  // Get users with tasks for legend (only show users that match current filters)
+  // Get all users with tasks for legend (show all users, no filtering)
   const allUsersWithTasks = useMemo(() => {
     const userMap = new Map();
     
@@ -169,19 +316,9 @@ const TasksCalendar = ({
       });
     });
     
-    // Filter users based on selected filters
-    return Array.from(userMap.values()).filter(user => {
-      // If a user is selected, only show that user
-      if (selectedUserId && user.userUID !== selectedUserId) {
-        return false;
-      }
-      // Regular users only see themselves
-      if (!isAdmin && user.userUID !== authUser?.userUID) {
-        return false;
-      }
-      return true;
-    });
-  }, [tasksByDate, isAdmin, authUser, selectedUserId]);
+    // Show all users (no filtering by role or selection)
+    return Array.from(userMap.values());
+  }, [tasksByDate]);
 
   // Get users with tasks on a specific date (ensures unique users)
   const getUsersWithTasksOnDate = useCallback((date) => {
@@ -213,18 +350,8 @@ const TasksCalendar = ({
     const dateString = formatDateString(day.date);
     const usersWithTasks = getUsersWithTasksOnDate(day.date);
     
-    // Filter users based on dashboard filters
-    let visibleUsers = usersWithTasks;
-    
-    // If a user is selected in dashboard, only show that user
-    if (selectedUserId) {
-      visibleUsers = usersWithTasks.filter(u => u.userUID === selectedUserId);
-    } else if (!isAdmin) {
-      // Regular users only see themselves
-      visibleUsers = usersWithTasks.filter(u => u.userUID === authUser?.userUID);
-    }
-    // Admin with no user filter sees all users
-    
+    // Show all users - no filtering
+    const visibleUsers = usersWithTasks;
     const hasTasks = visibleUsers.length > 0;
 
     // Determine background color
@@ -319,50 +446,52 @@ const TasksCalendar = ({
         </div>
       </Tooltip>
     );
-  }, [selectedUserId, isAdmin, authUser, getUsersWithTasksOnDate]);
+  }, [getUsersWithTasksOnDate]);
 
   return (
     <DynamicCalendar
-      initialMonth={selectedMonthDate}
+      initialMonth={new Date(currentYear, 0, 1)}
       getDayData={getDayData}
       renderDay={renderDay}
+      onMonthChange={(year) => setCurrentYear(year)}
       config={{
         title: 'Tasks Calendar',
-        description: 'View tasks organized by date with user color coding',
+        description: 'View all tasks organized by date with user color coding',
         showNavigation: true,
-        showMultipleMonths: false,
+        showMultipleMonths: true,
         emptyMessage: 'No tasks found',
         emptyCheck: ({ hasData }) => !hasData && filteredTasks.length === 0,
-        monthClassName: 'border-2 border-blue-500 dark:border-blue-400 shadow-lg shadow-blue-500/20',
-        selectedMonthId: monthId,
-        selectedMonthClassName: 'border-blue-500 dark:border-blue-400 border-2 shadow-md'
+        className: 'card p-6 space-y-6'
       }}
+      headerActions={
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentYear(prev => prev - 1)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+            aria-label="Previous year"
+          >
+            <Icons.buttons.chevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-lg font-medium text-gray-700 dark:text-gray-300 min-w-[100px] text-center">
+            {currentYear}
+          </span>
+          <button
+            onClick={() => setCurrentYear(prev => prev + 1)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+            aria-label="Next year"
+          >
+            <Icons.buttons.chevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      }
     >
       {/* Color Legend */}
-      {allUsersWithTasks.length > 0 && (
-        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-          <div className="flex justify-start">
-            <div className="text-start">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                Color Legend
-              </h4>
-              <div className="flex flex-wrap gap-4 justify-end">
-                {allUsersWithTasks.map((user) => (
-                  <div key={user.userUID} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded border border-gray-300 dark:border-gray-600" 
-                      style={{ backgroundColor: user.color }}
-                    />
-                    <span className={`text-sm text-gray-700 dark:text-gray-300 ${selectedUserId === user.userUID ? 'font-semibold' : ''}`}>
-                      {user.userName} ({user.tasksCount} tasks)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ColorLegend
+        users={allUsersWithTasks}
+        selectedUserId={null}
+        countLabel="tasks"
+        getCount={(user) => user.tasksCount}
+      />
     </DynamicCalendar>
   );
 };
