@@ -305,6 +305,9 @@ const DynamicCalendar = ({
         </div>
       )}
 
+      {/* Top Content (for legends, filters, etc. - rendered before calendar) */}
+      {children}
+
       {/* Calendar Grid(s) */}
       <div className={showMultipleMonths ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "w-[50%] "}>
         {months.map((monthDate, monthIndex) => {
@@ -327,9 +330,6 @@ const DynamicCalendar = ({
           );
         })}
       </div>
-
-      {/* Children (for additional content like legends, filters, etc.) */}
-      {children}
 
       {/* Footer */}
       {footer && (

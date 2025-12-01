@@ -449,8 +449,20 @@ const TaskTable = ({
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
+    
+    // First, deduplicate tasks by ID to ensure uniqueness
+    const uniqueTasksMap = new Map();
+    tasks.forEach(task => {
+      if (task && task.id) {
+        if (!uniqueTasksMap.has(task.id)) {
+          uniqueTasksMap.set(task.id, task);
+        }
+      }
+    });
+    const uniqueTasks = Array.from(uniqueTasksMap.values());
+    
     const filtered = getFilteredTasks(
-      tasks,
+      uniqueTasks,
       selectedUserId,
       selectedReporterId,
       selectedMonthId,

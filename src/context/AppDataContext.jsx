@@ -189,7 +189,20 @@ export const AppDataProvider = ({ children }) => {
       // Common data - serialize timestamps for consistent API responses
       reporters: serializeTimestamps(reporters),
       deliverables: serializeTimestamps(deliverablesData || []),
-      tasks: serializeTimestamps(tasksData || []),
+      // Deduplicate tasks by ID to ensure uniqueness
+      tasks: (() => {
+        const serialized = serializeTimestamps(tasksData || []);
+        // Deduplicate by task.id to ensure each task appears only once
+        const uniqueTasksMap = new Map();
+        serialized.forEach(task => {
+          if (task && task.id) {
+            if (!uniqueTasksMap.has(task.id)) {
+              uniqueTasksMap.set(task.id, task);
+            }
+          }
+        });
+        return Array.from(uniqueTasksMap.values());
+      })(),
       isLoading: isLoading || !isInitialized,
       backgroundLoading,
       error,
