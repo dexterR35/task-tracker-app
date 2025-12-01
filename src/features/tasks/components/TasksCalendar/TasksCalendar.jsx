@@ -229,26 +229,6 @@ const TasksCalendar = () => {
       // This ensures the date shown matches the user's local calendar view
       const dateString = formatDateString(date);
       
-      // Debug logging for date verification in development
-      if (import.meta.env.MODE === 'development' && task.id) {
-        const taskMonth = date.getMonth() + 1;
-        const taskYear = date.getFullYear();
-        const taskDay = date.getDate();
-        const expectedMonthId = `${taskYear}-${String(taskMonth).padStart(2, '0')}`;
-        
-        // Log task placement for verification
-        logger.log('📅 [TasksCalendar] Task date placement:', {
-          taskId: task.id,
-          taskName: task.data_task?.taskName,
-          createdAt: date.toISOString(),
-          localDate: `${taskYear}-${String(taskMonth).padStart(2, '0')}-${String(taskDay).padStart(2, '0')}`,
-          dateString: dateString,
-          taskMonthId: task.monthId,
-          expectedMonthId: expectedMonthId,
-          dayOfWeek: date.getDay() // 0 = Sunday, 6 = Saturday
-        });
-      }
-      
       if (!map.has(dateString)) {
         map.set(dateString, {
           date: date,
