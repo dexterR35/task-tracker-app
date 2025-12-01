@@ -10,6 +10,8 @@ import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/app/firebase';
 import { serializeTimestampsForContext } from '@/utils/dateUtils';
 import { logger } from '@/utils/logger';
+import listenerManager from '@/features/utils/firebaseListenerManager';
+import { useAppDataContext } from '@/context/AppDataContext';
 
 /**
  * Tasks Calendar Component
@@ -24,6 +26,10 @@ const TasksCalendar = () => {
   // Use shared hook for user fetching
   const allUsers = useCalendarUsers();
   
+  // Get current month tasks from context (already fetched by TaskTable)
+  const { tasks: currentMonthTasks = [], currentMonth } = useAppDataContext();
+  const currentMonthId = currentMonth?.monthId;
+  
   // Get all available months to fetch tasks for all months
   const { availableMonths = [] } = useAvailableMonths();
   
@@ -33,17 +39,28 @@ const TasksCalendar = () => {
   // State for all tasks from all months
   const [allTasks, setAllTasks] = useState([]);
   
-  // Fetch tasks for all available months
+  // Fetch tasks only for months in the current year (optimize Firebase reads)
   useEffect(() => {
     if (availableMonths.length === 0) {
+      return;
+    }
+    
+    // Filter months to only current year to reduce Firebase reads
+    const currentYearMonths = availableMonths.filter(month => {
+      const monthYear = month.monthId.split('-')[0];
+      return monthYear === String(currentYear);
+    });
+    
+    if (currentYearMonths.length === 0) {
+      setAllTasks([]);
       return;
     }
     
     const unsubscribes = [];
     const tasksMap = new Map();
     
-    // Fetch tasks for each month
-    availableMonths.forEach((month) => {
+    // Fetch tasks only for months in current year
+    for (const month of currentYearMonths) {
       try {
         const monthId = month.monthId;
         const yearId = monthId.split('-')[0];
@@ -61,74 +78,111 @@ const TasksCalendar = () => {
           tasksQuery = query(tasksRef);
         }
         
-        // Set up real-time listener for this month
-        const unsubscribe = onSnapshot(
-          tasksQuery,
-          (snapshot) => {
-            if (!snapshot || !snapshot.docs) {
-              tasksMap.set(monthId, []);
-              // Update combined tasks
-              const combinedTasks = Array.from(tasksMap.values()).flat();
-              setAllTasks(combinedTasks);
-              return;
-            }
-            
-            const monthTasks = snapshot.docs
-              .map((d) => {
-                if (!d || !d.exists() || !d.data() || !d.id) return null;
-                return serializeTimestampsForContext({
-                  id: d.id,
-                  monthId: monthId,
-                  ...d.data(),
-                });
-              })
-              .filter((task) => task !== null);
-            
-            tasksMap.set(monthId, monthTasks);
-            
-            // Combine all tasks from all months and deduplicate by task ID
+        // Use SAME listener key format as useTasks hook to prevent duplicate listeners
+        // This ensures if TaskTable already has a listener for this month, we reuse it
+        const role = isAdmin ? 'admin' : 'user';
+        const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
+        
+        // Check if listener already exists (prevents duplicates with TaskTable)
+        if (listenerManager.hasListener(listenerKey)) {
+          logger.log(`[TasksCalendar] Listener already exists for ${monthId} (shared with TaskTable), using cached data`);
+          
+          // If this is the current month, use tasks from context (already loaded by TaskTable)
+          if (monthId === currentMonthId && currentMonthTasks.length > 0) {
+            tasksMap.set(monthId, currentMonthTasks);
+            // Update combined tasks immediately
             const allCombined = Array.from(tasksMap.values()).flat();
             const uniqueTasksMap = new Map();
             allCombined.forEach(task => {
-              if (task && task.id) {
-                // Use task.id as key to ensure uniqueness
-                if (!uniqueTasksMap.has(task.id)) {
-                  uniqueTasksMap.set(task.id, task);
-                }
+              if (task && task.id && !uniqueTasksMap.has(task.id)) {
+                uniqueTasksMap.set(task.id, task);
               }
             });
-            const combinedTasks = Array.from(uniqueTasksMap.values());
-            setAllTasks(combinedTasks);
-          },
-          (err) => {
-            logger.error(`Error fetching tasks for month ${monthId}:`, err);
-            tasksMap.set(monthId, []);
-            // Combine and deduplicate
-            const allCombined = Array.from(tasksMap.values()).flat();
-            const uniqueTasksMap = new Map();
-            allCombined.forEach(task => {
-              if (task && task.id) {
-                if (!uniqueTasksMap.has(task.id)) {
-                  uniqueTasksMap.set(task.id, task);
-                }
-              }
-            });
-            const combinedTasks = Array.from(uniqueTasksMap.values());
-            setAllTasks(combinedTasks);
+            setAllTasks(Array.from(uniqueTasksMap.values()));
           }
+          continue;
+        }
+        
+        // Set up real-time listener through listener manager
+        const unsubscribe = listenerManager.addListener(
+          listenerKey,
+          () => onSnapshot(
+            tasksQuery,
+            (snapshot) => {
+              if (!snapshot || !snapshot.docs) {
+                tasksMap.set(monthId, []);
+                // Update combined tasks
+                const allCombined = Array.from(tasksMap.values()).flat();
+                const uniqueTasksMap = new Map();
+                allCombined.forEach(task => {
+                  if (task && task.id && !uniqueTasksMap.has(task.id)) {
+                    uniqueTasksMap.set(task.id, task);
+                  }
+                });
+                setAllTasks(Array.from(uniqueTasksMap.values()));
+                return;
+              }
+              
+              const monthTasks = snapshot.docs
+                .map((d) => {
+                  if (!d || !d.exists() || !d.data() || !d.id) return null;
+                  return serializeTimestampsForContext({
+                    id: d.id,
+                    monthId: monthId,
+                    ...d.data(),
+                  });
+                })
+                .filter((task) => task !== null);
+              
+              tasksMap.set(monthId, monthTasks);
+              
+              // Combine all tasks from all months and deduplicate by task ID
+              const allCombined = Array.from(tasksMap.values()).flat();
+              const uniqueTasksMap = new Map();
+              allCombined.forEach(task => {
+                if (task && task.id) {
+                  // Use task.id as key to ensure uniqueness
+                  if (!uniqueTasksMap.has(task.id)) {
+                    uniqueTasksMap.set(task.id, task);
+                  }
+                }
+              });
+              const combinedTasks = Array.from(uniqueTasksMap.values());
+              setAllTasks(combinedTasks);
+            },
+            (err) => {
+              logger.error(`Error fetching tasks for month ${monthId}:`, err);
+              tasksMap.set(monthId, []);
+              // Combine and deduplicate
+              const allCombined = Array.from(tasksMap.values()).flat();
+              const uniqueTasksMap = new Map();
+              allCombined.forEach(task => {
+                if (task && task.id && !uniqueTasksMap.has(task.id)) {
+                  uniqueTasksMap.set(task.id, task);
+                }
+              });
+              const combinedTasks = Array.from(uniqueTasksMap.values());
+              setAllTasks(combinedTasks);
+            }
+          ),
+          true, // Preserve listener - calendar needs real-time updates
+          'tasks', // Category
+          'tasks-calendar' // Page identifier
         );
         
-        unsubscribes.push(unsubscribe);
+        unsubscribes.push(() => {
+          listenerManager.removeListener(listenerKey);
+        });
       } catch (err) {
         logger.error(`Error setting up listener for month ${month.monthId}:`, err);
       }
-    });
+    }
     
     // Cleanup listeners on unmount
     return () => {
       unsubscribes.forEach(unsub => unsub());
     };
-  }, [availableMonths, isAdmin, userUID]);
+  }, [availableMonths, currentYear, isAdmin, userUID]);
 
   // Use ALL tasks - no filtering, but ensure uniqueness by task ID
   const filteredTasks = useMemo(() => {
