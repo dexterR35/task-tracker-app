@@ -226,7 +226,7 @@ const AcquisitionAnalyticsCard = memo(
                       tasksColor={casinoBiaxialTasksColor}
                       hoursColor={casinoBiaxialHoursColor}
                       dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                      showHours={false}
+                      showHours={true}
                     />
                   ) : (
                     <div className="text-center py-8">
@@ -262,7 +262,7 @@ const AcquisitionAnalyticsCard = memo(
                       tasksColor={sportBiaxialTasksColor}
                       hoursColor={sportBiaxialHoursColor}
                       dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
-                      showHours={false}
+                      showHours={true}
                     />
                   ) : (
                     <div className="text-center py-8">

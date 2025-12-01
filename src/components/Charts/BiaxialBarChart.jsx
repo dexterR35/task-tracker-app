@@ -58,13 +58,18 @@ const BiaxialBarChart = React.memo(({
     if (bars) {
       const barConfig = bars.find(b => b.dataKey === name);
       if (barConfig) {
-        return [`${value} ${barConfig.name.toLowerCase()}`, barConfig.name];
+        // For month-to-month comparison, show "X tasks" format
+        return [`${value} tasks`, barConfig.name];
       }
     }
     if (name === 'tasks') {
       return [`${value} tasks`, 'Tasks'];
     } else if (name === 'hours') {
       return [`${value}h`, 'Hours'];
+    }
+    // For month names in month-to-month comparison, show as "X tasks"
+    if (typeof value === 'number') {
+      return [`${value} tasks`, name];
     }
     return [value, name];
   }, [bars]);
@@ -132,6 +137,10 @@ const BiaxialBarChart = React.memo(({
                 color: '#f9fafb'
               }}
               formatter={tooltipFormatter}
+              labelFormatter={(label) => {
+                // Return just the label without duplication
+                return label || '';
+              }}
             />
             {bars && (
               <Legend 

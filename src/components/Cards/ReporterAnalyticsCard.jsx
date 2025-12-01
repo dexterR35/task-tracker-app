@@ -38,21 +38,25 @@ const ReporterAnalyticsCard = memo(({
 
   // Calculate totals for pie charts
   // Pie chart segments show per reporter counts, but totals should show unique tasks (not sum of reporter counts)
+  // Note: Individual pie charts (1, 2, 3) are split views, but each should still show unique task counts
+  // Since tasks can only have one reporter, summing pie values should equal unique tasks, but use totalTasks for consistency
   const reporterPieTotal1 = useMemo(() => {
     // Use unique tasks count from props (totalTasks is already unique tasks)
-    // For individual pie charts, we still need to calculate from data, but use totalTasks for combined total
-    return reporterPieData1?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
-  }, [reporterPieData1]);
+    // For split pie charts, we calculate from data but ensure it doesn't exceed totalTasks
+    const pieSum = reporterPieData1?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+    // Use the smaller value to ensure we don't exceed total unique tasks
+    return Math.min(pieSum, totalTasks || 0);
+  }, [reporterPieData1, totalTasks]);
   
-  const reporterPieTotal2 = useMemo(() => 
-    reporterPieData2?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [reporterPieData2]
-  );
+  const reporterPieTotal2 = useMemo(() => {
+    const pieSum = reporterPieData2?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+    return Math.min(pieSum, totalTasks || 0);
+  }, [reporterPieData2, totalTasks]);
   
-  const reporterPieTotal3 = useMemo(() => 
-    reporterPieData3?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [reporterPieData3]
-  );
+  const reporterPieTotal3 = useMemo(() => {
+    const pieSum = reporterPieData3?.reduce((sum, item) => sum + (item.value || 0), 0) || 0;
+    return Math.min(pieSum, totalTasks || 0);
+  }, [reporterPieData3, totalTasks]);
   
   // Use unique tasks count for combined total (not sum of pie chart values)
   const reporterPieTotal = totalTasks || 0;

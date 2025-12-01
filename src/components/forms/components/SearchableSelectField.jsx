@@ -19,6 +19,7 @@ const SearchableSelectField = ({
   formValues,
   noOptionsMessage = "No options found",
   variant, // Badge variant/color to use (e.g., "green", "blue", "purple")
+  disabled = false, // Disable the field
 
 }) => {
   const fieldError = errors[field.name];
@@ -53,6 +54,11 @@ const SearchableSelectField = ({
 
   // Filter options based on search term
   useEffect(() => {
+    if (disabled) {
+      setFilteredOptions([]);
+      setIsOpen(false);
+      return;
+    }
     if (!searchTerm) {
       setFilteredOptions(field.options || []);
     } else {
@@ -68,7 +74,7 @@ const SearchableSelectField = ({
       });
       setFilteredOptions(filtered);
     }
-  }, [searchTerm, field.options]);
+  }, [searchTerm, field.options, disabled]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -86,6 +92,7 @@ const SearchableSelectField = ({
   }, []);
 
   const handleInputChange = useCallback((e) => {
+    if (disabled) return;
     const value = e.target.value;
     setSearchTerm(value);
     setIsOpen(true);
@@ -105,6 +112,7 @@ const SearchableSelectField = ({
   }, [field.options, field.name, setValue, trigger]);
 
   const handleOptionSelect = useCallback((option) => {
+    if (disabled) return;
     setValue(field.name, option.value);
     setSearchTerm('');
     setIsOpen(false);
@@ -119,7 +127,9 @@ const SearchableSelectField = ({
   }, [field.name, setValue, clearErrors, trigger]);
 
   const handleInputFocus = () => {
-    setIsOpen(true);
+    if (!disabled) {
+      setIsOpen(true);
+    }
   };
 
   const handleInputKeyDown = (e) => {
@@ -216,7 +226,7 @@ const SearchableSelectField = ({
         </label>
       )}
       
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative z-10" ref={dropdownRef}>
         <input
           ref={inputRef}
           id={field.name}
@@ -227,7 +237,9 @@ const SearchableSelectField = ({
           onFocus={handleInputFocus}
           onKeyDown={handleInputKeyDown}
           placeholder={field.placeholder || `Search ${field.label.toLowerCase()}...`}
-          className={`form-input w-full pr-10 ${fieldError ? 'error' : ''}`}
+          disabled={disabled}
+          readOnly={disabled}
+          className={`form-input w-full pr-10 ${fieldError ? 'error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}`}
           autoComplete="off"
         />
         
@@ -262,7 +274,8 @@ const SearchableSelectField = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="ml-1 hover:opacity-75 transition-opacity text-inherit"
+                disabled={disabled}
+                className="ml-1 hover:opacity-75 transition-opacity text-inherit disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Remove selection"
               >
                 ×
@@ -272,26 +285,25 @@ const SearchableSelectField = ({
         )}
 
         {isOpen && (
-          <div className="absolute card p-0 z-50 w-full mt-1 max-h-60 overflow-auto">
+          <div className="absolute card p-0 z-[9999] w-full mt-1 max-h-60 overflow-auto shadow-lg">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={`${option.value}-${index}`}
                   onClick={() => handleOptionSelect(option)}
-                  className={`px-4 py-2 cursor-pointer hover:bg-blue-900 ${
+                  className={`px-4 py-2 cursor-pointer hover:bg-blue-900 transition-colors ${
                     option.value === currentValue ? 'bg-blue-900' : ''
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-300">
+                    <span className="text-sm font-medium text-gray-300 dark:text-gray-200 truncate">
                       {option.name || option.label}
                     </span>
                     {option.email && (
-                      <span className="text-[11px] text-gray-400 lowercase">
+                      <span className="text-[11px] text-gray-400 dark:text-gray-400 lowercase truncate">
                         {option.email}
                       </span>
                     )}
-             
                   </div>
                 </div>
               ))

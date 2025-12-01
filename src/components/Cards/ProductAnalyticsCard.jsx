@@ -47,6 +47,7 @@ const ProductAnalyticsCard = memo(({
   casinoSportPerMarketBiaxialData = [],
   totalCasinoSportBiaxialData = [],
   productUsersCharts,
+  totalTasks = 0, // Unique tasks count
   className = "",
   isLoading = false,
 }) => {
@@ -55,10 +56,11 @@ const ProductAnalyticsCard = memo(({
   }
 
   // Calculate totals for pie charts
-  const categoryPieTotal = useMemo(() => 
-    categoryPieData?.reduce((sum, item) => sum + (item.value || 0), 0) || 0,
-    [categoryPieData]
-  );
+  // Pie chart segments show per category counts, but totals should show unique tasks (not sum of category counts)
+  const categoryPieTotal = useMemo(() => {
+    // Use unique tasks count from props (totalTasks is already unique tasks)
+    return totalTasks || 0;
+  }, [totalTasks]);
   const categoryPieHours = useMemo(() => 
     categoryBiaxialData?.reduce((sum, item) => sum + (item.hours || 0), 0) || 0,
     [categoryBiaxialData]
@@ -283,7 +285,7 @@ const ProductAnalyticsCard = memo(({
                 variant="section"
                 title="By Markets"
                 badges={[
-                  `${casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                  `${(productCasinoTotalTasks || 0) + (productSportTotalTasks || 0)} total tasks`
                 ]}
                 color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
                 className="group hover:shadow-xl transition-all duration-300"
@@ -306,7 +308,7 @@ const ProductAnalyticsCard = memo(({
                 variant="section"
                 title="Total Comparison"
                 badges={[
-                  `${totalCasinoSportBiaxialData.reduce((sum, item) => sum + (item.casino || 0) + (item.sport || 0), 0)} total tasks`
+                  `${(productCasinoTotalTasks || 0) + (productSportTotalTasks || 0)} total tasks`
                 ]}
                 color={CARD_SYSTEM.COLOR_HEX_MAP.orange}
                 className="group hover:shadow-xl transition-all duration-300"

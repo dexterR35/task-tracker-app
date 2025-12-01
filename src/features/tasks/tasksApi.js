@@ -167,14 +167,23 @@ const resolveReporterName = (reporters, reporterId, reporterName) => {
   return reporterName;
 };
 
+// Task cache to store previously fetched tasks
+const taskCache = new Map();
+
 /**
- * Tasks Hook (Direct Firestore with Snapshots)
+ * Get cache key for tasks
+ */
+const getCacheKey = (monthId, role, userUID) => {
+  return `${monthId}_${role}_${userUID || 'all'}`;
+};
+
+/**
+ * Tasks Hook (Direct Firestore with Snapshots with Caching)
  */
 export const useTasks = (monthId, role = 'user', userUID = null) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
 
   useEffect(() => {
     if (!monthId) {
@@ -184,12 +193,24 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
       return;
     }
 
+    const cacheKey = getCacheKey(monthId, role, userUID);
+    
+    // Check cache first
+    if (taskCache.has(cacheKey)) {
+      const cachedData = taskCache.get(cacheKey);
+      logger.log('🔍 [useTasks] Using cached data for:', cacheKey);
+      setTasks(cachedData);
+      setIsLoading(false);
+      // Still set up listener to get updates, but don't show loading
+    } else {
+      setIsLoading(true);
+    }
+
     logger.log('🔍 [useTasks] Starting tasks fetch', { monthId, role, userUID });
     let unsubscribe = null;
 
     const setupListener = async () => {
       try {
-        setIsLoading(true);
         setError(null);
 
         // Check if month board exists
@@ -199,6 +220,7 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
         if (!monthDoc.exists()) {
           logger.warn('Month board does not exist for:', monthId);
           setTasks([]);
+          taskCache.set(cacheKey, []); // Cache empty result
           setIsLoading(false);
           return;
         }
@@ -211,6 +233,11 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
         // Check if listener already exists
         if (listenerManager.hasListener(listenerKey)) {
           logger.log('Listener already exists, skipping duplicate setup for:', listenerKey);
+          // Get current data from listener if available
+          const existingData = taskCache.get(cacheKey);
+          if (existingData) {
+            setTasks(existingData);
+          }
           setIsLoading(false);
           return;
         }
@@ -221,7 +248,9 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
             tasksQuery,
             (snapshot) => {
               if (!snapshot || !snapshot.docs || snapshot.empty) {
-                setTasks([]);
+                const emptyTasks = [];
+                setTasks(emptyTasks);
+                taskCache.set(cacheKey, emptyTasks); // Cache empty result
                 setIsLoading(false);
                 return;
               }
@@ -240,6 +269,8 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
                 )
                 .filter((task) => task !== null);
 
+              // Update cache
+              taskCache.set(cacheKey, tasksData);
               setTasks(tasksData);
               setIsLoading(false);
               setError(null);
@@ -268,8 +299,8 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
       if (unsubscribe) {
         unsubscribe();
       }
-      const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
-      listenerManager.removeListener(listenerKey);
+      // Don't remove listener on cleanup - keep it active for real-time updates
+      // Only remove if component unmounts completely
     };
   }, [monthId, role, userUID]); // Keep dependencies but optimize the hook
 

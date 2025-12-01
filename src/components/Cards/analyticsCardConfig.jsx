@@ -103,3 +103,9 @@ export {
   getShutterstockAnalyticsCardProps,
   getCachedShutterstockAnalyticsCardProps,
 } from "./configs/ShutterstockAnalyticsConfig";
+
+// Re-export Month-to-Month Comparison
+export {
+  calculateMonthToMonthComparison,
+  getCachedMonthToMonthComparisonProps,
+} from "./configs/MonthToMonthComparisonConfig.jsx";

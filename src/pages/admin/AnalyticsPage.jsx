@@ -12,7 +12,9 @@ import AIAnalyticsCard from "@/components/Cards/AIAnalyticsCard";
 import ReporterAnalyticsCard from "@/components/Cards/ReporterAnalyticsCard";
 import TotalAnalyticsCard from "@/components/Cards/TotalAnalyticsCard";
 import ShutterstockAnalyticsCard from "@/components/Cards/ShutterstockAnalyticsCard";
+import MonthToMonthComparisonCard from "@/components/Cards/MonthToMonthComparisonCard";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
+import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import {
   getCachedMarketingAnalyticsCardProps,
   getCachedAcquisitionAnalyticsCardProps,
@@ -23,7 +25,11 @@ import {
   getCachedMarketsByUsersCardProps,
   getCachedTotalAnalyticsCardProps,
   getCachedShutterstockAnalyticsCardProps,
+  getCachedMonthToMonthComparisonProps,
 } from "@/components/Cards/analyticsCardConfig";
+import { useTasks } from "@/features/tasks/tasksApi";
+import { useAuth } from "@/context/AuthContext";
+import { getUserUID, isUserAdmin } from "@/features/utils/authUtils";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
 import Skeleton, { SkeletonAnalyticsCard, SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
@@ -36,6 +42,9 @@ const AnalyticsPage = () => {
   const { users, reporters, error } = useAppDataContext();
   const navigate = useNavigate();
   const { cardId } = useParams();
+  const { user } = useAuth();
+  const userUID = getUserUID(user);
+  const userIsAdmin = isUserAdmin(user);
 
   // Use URL parameter for selected card, fallback to null for overview
   const selectedCard = cardId || null;
@@ -51,6 +60,49 @@ const AnalyticsPage = () => {
     error: monthError, // Error state
     selectMonth, // Function to select month
   } = useAppDataContext();
+
+  // State for month-to-month comparison
+  const [comparisonMonth1Id, setComparisonMonth1Id] = useState(null);
+  const [comparisonMonth2Id, setComparisonMonth2Id] = useState(null);
+  const [comparisonMonth3Id, setComparisonMonth3Id] = useState(null);
+
+  // Fetch tasks for comparison months
+  const {
+    tasks: month1Tasks,
+    isLoading: isLoadingMonth1,
+    error: errorMonth1,
+  } = useTasks(comparisonMonth1Id, userIsAdmin ? 'admin' : 'user', userIsAdmin ? null : userUID);
+
+  const {
+    tasks: month2Tasks,
+    isLoading: isLoadingMonth2,
+    error: errorMonth2,
+  } = useTasks(comparisonMonth2Id, userIsAdmin ? 'admin' : 'user', userIsAdmin ? null : userUID);
+
+  const {
+    tasks: month3Tasks,
+    isLoading: isLoadingMonth3,
+    error: errorMonth3,
+  } = useTasks(comparisonMonth3Id, userIsAdmin ? 'admin' : 'user', userIsAdmin ? null : userUID);
+
+  // Get month names for comparison
+  const month1Name = useMemo(() => {
+    if (!comparisonMonth1Id) return "Month 1";
+    const month = availableMonths.find((m) => m.monthId === comparisonMonth1Id);
+    return month?.monthName || "Month 1";
+  }, [comparisonMonth1Id, availableMonths]);
+
+  const month2Name = useMemo(() => {
+    if (!comparisonMonth2Id) return "Month 2";
+    const month = availableMonths.find((m) => m.monthId === comparisonMonth2Id);
+    return month?.monthName || "Month 2";
+  }, [comparisonMonth2Id, availableMonths]);
+
+  const month3Name = useMemo(() => {
+    if (!comparisonMonth3Id) return "Month 3";
+    const month = availableMonths.find((m) => m.monthId === comparisonMonth3Id);
+    return month?.monthName || "Month 3";
+  }, [comparisonMonth3Id, availableMonths]);
 
   // Get current month name for display
   const currentMonthName = currentMonth?.monthName || "Current Month";
@@ -130,6 +182,13 @@ const AnalyticsPage = () => {
         icon: Icons.generic.chart,
         color: "blue",
       },
+      {
+        id: "month-to-month-comparison",
+        name: "Month-to-Month Comparison",
+        description: "Compare analytics data between two months",
+        icon: Icons.generic.chart,
+        color: "blue",
+      },
     ],
     []
   );
@@ -177,6 +236,9 @@ const AnalyticsPage = () => {
         case "shutterstock-analytics":
           // Filter tasks by useShutterstock = true
           return getCachedShutterstockAnalyticsCardProps(tasks, users);
+        case "month-to-month-comparison":
+          // Month-to-month comparison uses separate month tasks
+          return null; // Handled separately
         default:
           return null;
       }
@@ -185,6 +247,22 @@ const AnalyticsPage = () => {
       return null;
     }
   }, [tasks, users, reporters, isLoading, hasNoData]);
+
+  // Get month-to-month comparison props
+  const getMonthToMonthComparisonProps = useCallback(() => {
+    if (!comparisonMonth1Id || !comparisonMonth2Id) return null;
+    if (isLoadingMonth1 || isLoadingMonth2 || (comparisonMonth3Id && isLoadingMonth3)) return null;
+    
+    return getCachedMonthToMonthComparisonProps(
+      month1Tasks || [],
+      month2Tasks || [],
+      month1Name,
+      month2Name,
+      users || [],
+      comparisonMonth3Id ? month3Tasks || [] : null,
+      comparisonMonth3Id ? month3Name : null
+    );
+  }, [comparisonMonth1Id, comparisonMonth2Id, comparisonMonth3Id, month1Tasks, month2Tasks, month3Tasks, month1Name, month2Name, month3Name, users, isLoadingMonth1, isLoadingMonth2, isLoadingMonth3]);
 
 
   if (isLoading || isInitialLoading) {
@@ -238,6 +316,33 @@ const AnalyticsPage = () => {
 
   // Render Analytics Card Preview 
   const AnalyticsCardPreview = ({ card, onClick }) => {
+    // Special handling for month-to-month comparison
+    if (card.id === "month-to-month-comparison") {
+      const cardData = useMemo(() => ({
+        id: card.id,
+        title: card.name,
+        subtitle: card.description,
+        icon: card.icon,
+        color: card.color,
+        value: "Compare",
+        description: "Select two months to compare",
+        badge: {
+          text: "Comparison",
+          color: card.color
+        },
+        details: []
+      }), [card]);
+
+      return (
+        <div
+          className="cursor-pointer group hover:scale-[1.02] transition-all duration-300"
+          onClick={() => onClick(card.id)}
+        >
+          <SmallCard card={cardData} />
+        </div>
+      );
+    }
+
     const cardProps = getCardProps(card.id);
     const hasData = cardProps && !cardProps.hasNoData;
     const totalTasks = useMemo(() => {
@@ -282,6 +387,215 @@ const AnalyticsPage = () => {
   // Render detailed card view
   const renderDetailedCard = () => {
     if (!selectedCard) return null;
+
+    // Special handling for month-to-month comparison
+    if (selectedCard === "month-to-month-comparison") {
+      const comparisonProps = getMonthToMonthComparisonProps();
+      const card = analyticsCards.find((c) => c.id === selectedCard);
+
+      return (
+        <div className="space-y-6">
+          <div className="mb-6">
+            <div className="mb-4">
+              <DynamicButton
+                onClick={handleBackToAnalytics}
+                variant="primary"
+                size="md"
+                iconName="arrowLeft"
+                iconCategory="buttons"
+                iconPosition="left"
+                className="font-semibold shadow-md my-4 py-3"
+              >
+                Back to Analytics
+              </DynamicButton>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {card?.name}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {card?.description}
+            </p>
+          </div>
+
+          {/* Month Selectors */}
+          <div className="card-small-modern mb-6 relative z-0">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Select Months to Compare
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <SearchableSelectField
+                    field={{
+                      name: "comparisonMonth1",
+                      type: "select",
+                      label: "First Month",
+                      required: false,
+                      options:
+                        availableMonths && availableMonths.length > 0
+                          ? availableMonths.map((month) => ({
+                              value: month.monthId,
+                              label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`,
+                            }))
+                          : currentMonth
+                          ? [
+                              {
+                                value: currentMonth.monthId,
+                                label: `${currentMonth.monthName} (Current)`,
+                              },
+                            ]
+                          : [],
+                      placeholder: "Search months...",
+                    }}
+                    register={() => {}}
+                    errors={{}}
+                    setValue={(fieldName, value) => {
+                      if (fieldName === "comparisonMonth1") {
+                        setComparisonMonth1Id(value || null);
+                        // Clear second month if it was the same as the newly selected first month
+                        if (value && comparisonMonth2Id === value) {
+                          setComparisonMonth2Id(null);
+                        }
+                        // Clear third month if it was the same as the newly selected first month
+                        if (value && comparisonMonth3Id === value) {
+                          setComparisonMonth3Id(null);
+                        }
+                      }
+                    }}
+                    watch={() => comparisonMonth1Id || ""}
+                    trigger={() => {}}
+                    clearErrors={() => {}}
+                    formValues={{}}
+                    noOptionsMessage="No months available"
+                    variant="blue"
+                  />
+                </div>
+                <div>
+                  <SearchableSelectField
+                    field={{
+                      name: "comparisonMonth2",
+                      type: "select",
+                      label: "Second Month",
+                      required: false,
+                      options:
+                        availableMonths && availableMonths.length > 0
+                          ? availableMonths
+                              .filter((month) => month.monthId !== comparisonMonth1Id && month.monthId !== comparisonMonth3Id)
+                              .map((month) => ({
+                                value: month.monthId,
+                                label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`,
+                              }))
+                          : currentMonth && currentMonth.monthId !== comparisonMonth1Id && currentMonth.monthId !== comparisonMonth3Id
+                          ? [
+                              {
+                                value: currentMonth.monthId,
+                                label: `${currentMonth.monthName} (Current)`,
+                              },
+                            ]
+                          : [],
+                      placeholder: comparisonMonth1Id ? "Search months..." : "Select first month first",
+                    }}
+                    register={() => {}}
+                    errors={{}}
+                    setValue={(fieldName, value) => {
+                      if (fieldName === "comparisonMonth2") {
+                        setComparisonMonth2Id(value || null);
+                        // Clear third month if it was the same as the newly selected second month
+                        if (value && comparisonMonth3Id === value) {
+                          setComparisonMonth3Id(null);
+                        }
+                      }
+                    }}
+                    watch={() => comparisonMonth2Id || ""}
+                    trigger={() => {}}
+                    clearErrors={() => {}}
+                    formValues={{}}
+                    noOptionsMessage="No months available"
+                    variant="blue"
+                    disabled={!comparisonMonth1Id}
+                  />
+                  {!comparisonMonth1Id && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Please select the first month to enable this field
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <SearchableSelectField
+                    field={{
+                      name: "comparisonMonth3",
+                      type: "select",
+                      label: "Third Month (Optional)",
+                      required: false,
+                      options:
+                        availableMonths && availableMonths.length > 0
+                          ? availableMonths
+                              .filter((month) => month.monthId !== comparisonMonth1Id && month.monthId !== comparisonMonth2Id)
+                              .map((month) => ({
+                                value: month.monthId,
+                                label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`,
+                              }))
+                          : currentMonth && currentMonth.monthId !== comparisonMonth1Id && currentMonth.monthId !== comparisonMonth2Id
+                          ? [
+                              {
+                                value: currentMonth.monthId,
+                                label: `${currentMonth.monthName} (Current)`,
+                              },
+                            ]
+                          : [],
+                      placeholder: comparisonMonth1Id && comparisonMonth2Id ? "Search months... (Optional)" : "Select first two months first",
+                    }}
+                    register={() => {}}
+                    errors={{}}
+                    setValue={(fieldName, value) => {
+                      if (fieldName === "comparisonMonth3") {
+                        setComparisonMonth3Id(value || null);
+                      }
+                    }}
+                    watch={() => comparisonMonth3Id || ""}
+                    trigger={() => {}}
+                    clearErrors={() => {}}
+                    formValues={{}}
+                    noOptionsMessage="No months available"
+                    variant="blue"
+                    disabled={!comparisonMonth1Id || !comparisonMonth2Id}
+                  />
+                  {(!comparisonMonth1Id || !comparisonMonth2Id) && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Please select the first two months to enable this field
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comparison Card */}
+          <div id={`${selectedCard}-card`}>
+            {isLoadingMonth1 || isLoadingMonth2 || (comparisonMonth3Id && isLoadingMonth3) ? (
+              <SkeletonAnalyticsCard />
+            ) : comparisonProps ? (
+              <MonthToMonthComparisonCard
+                {...comparisonProps}
+                isLoading={false}
+              />
+            ) : (
+              <div className="card-small-modern">
+                <div className="text-center py-16">
+                  <Icons.generic.document className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Select Months to Compare
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                    Please select at least two months from the dropdowns above to compare their analytics data. A third month is optional.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
 
     const cardProps = getCardProps(selectedCard);
     const card = analyticsCards.find((c) => c.id === selectedCard);
