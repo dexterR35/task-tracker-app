@@ -725,10 +725,6 @@ export const SMALL_CARD_CONFIGS = {
     }),
     getDetails: (data) => {
       const totalHours = data.totalHours || 0;
-      const weeklyTasks = data.weeklyTasks || [];
-      const dailyHours = data.dailyHours || [];
-      const weeklyTotal = weeklyTasks.reduce((a, b) => a + b, 0);
-      const dailyTotal = dailyHours.reduce((a, b) => a + b, 0);
 
       const details = [];
 
@@ -739,25 +735,6 @@ export const SMALL_CARD_CONFIGS = {
           label: "Total Hours This Month",
           value: `${totalHours.toFixed(1)}h`,
         });
-      }
-
-      // Only show weekly/daily breakdown if there's actual data
-      if (weeklyTotal > 0 || dailyTotal > 0) {
-        if (weeklyTotal > 0) {
-          details.push({
-            icon: Icons.generic.target,
-            label: "Weekly Average",
-            value: `${Math.round(weeklyTotal / 7)} tasks`,
-          });
-        }
-
-        if (dailyTotal > 0) {
-          details.push({
-            icon: Icons.generic.timer,
-            label: "Daily Average Hours",
-            value: `${(dailyTotal / 7).toFixed(1)}h`,
-          });
-        }
       }
 
       return details;
@@ -1030,176 +1007,6 @@ export const SMALL_CARD_CONFIGS = {
     ],
   },
 
-  // Daily task cards
-  [SMALL_CARD_TYPES.ANALYTICS_DAILY_MONDAY]: {
-    title: "Monday",
-    subtitle: "Daily Tasks",
-    description: "Tasks & Hours",
-    icon: Icons.generic.calendar,
-    color: "blue",
-    getValue: (data) => (data.weeklyTasks?.[0] || 0).toString(),
-    getStatus: (data) => `${(data.dailyHours?.[0] || 0).toFixed(1)}h`,
-    getBadge: (data) => ({
-      text: `${(data.dailyHours?.[0] || 0).toFixed(1)}h`,
-      color: "blue",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.task,
-        label: "Tasks",
-        value: (data.weeklyTasks?.[0] || 0).toString(),
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Hours",
-        value: `${(data.dailyHours?.[0] || 0).toFixed(1)}h`,
-      },
-      {
-        icon: Icons.generic.target,
-        label: "Avg Task",
-        value:
-          data.weeklyTasks?.[0] > 0
-            ? `${(data.dailyHours?.[0] / data.weeklyTasks?.[0]).toFixed(1)}h`
-            : "0.0h",
-      },
-    ],
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_DAILY_TUESDAY]: {
-    title: "Tuesday",
-    subtitle: "Daily Tasks",
-    description: "Tasks & Hours",
-    icon: Icons.generic.calendar,
-    color: "green",
-    getValue: (data) => (data.weeklyTasks?.[1] || 0).toString(),
-    getStatus: (data) => `${(data.dailyHours?.[1] || 0).toFixed(1)}h`,
-    getBadge: (data) => ({
-      text: `${(data.dailyHours?.[1] || 0).toFixed(1)}h`,
-      color: "green",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.task,
-        label: "Tasks",
-        value: (data.weeklyTasks?.[1] || 0).toString(),
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Hours",
-        value: `${(data.dailyHours?.[1] || 0).toFixed(1)}h`,
-      },
-      {
-        icon: Icons.generic.target,
-        label: "Avg Task",
-        value:
-          data.weeklyTasks?.[1] > 0
-            ? `${(data.dailyHours?.[1] / data.weeklyTasks?.[1]).toFixed(1)}h`
-            : "0.0h",
-      },
-    ],
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_DAILY_WEDNESDAY]: {
-    title: "Wednesday",
-    subtitle: "Daily Tasks",
-    description: "Tasks & Hours",
-    icon: Icons.generic.calendar,
-    color: "purple",
-    getValue: (data) => (data.weeklyTasks?.[2] || 0).toString(),
-    getStatus: (data) => `${(data.dailyHours?.[2] || 0).toFixed(1)}h`,
-    getBadge: (data) => ({
-      text: `${(data.dailyHours?.[2] || 0).toFixed(1)}h`,
-      color: "purple",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.task,
-        label: "Tasks",
-        value: (data.weeklyTasks?.[2] || 0).toString(),
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Hours",
-        value: `${(data.dailyHours?.[2] || 0).toFixed(1)}h`,
-      },
-      {
-        icon: Icons.generic.target,
-        label: "Avg Task",
-        value:
-          data.weeklyTasks?.[2] > 0
-            ? `${(data.dailyHours?.[2] / data.weeklyTasks?.[2]).toFixed(1)}h`
-            : "0.0h",
-      },
-    ],
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_DAILY_THURSDAY]: {
-    title: "Thursday",
-    subtitle: "Daily Tasks",
-    description: "Tasks & Hours",
-    icon: Icons.generic.calendar,
-    color: "orange",
-    getValue: (data) => (data.weeklyTasks?.[3] || 0).toString(),
-    getStatus: (data) => `${(data.dailyHours?.[3] || 0).toFixed(1)}h`,
-    getBadge: (data) => ({
-      text: `${(data.dailyHours?.[3] || 0).toFixed(1)}h`,
-      color: "orange",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.task,
-        label: "Tasks",
-        value: (data.weeklyTasks?.[3] || 0).toString(),
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Hours",
-        value: `${(data.dailyHours?.[3] || 0).toFixed(1)}h`,
-      },
-      {
-        icon: Icons.generic.target,
-        label: "Avg Task",
-        value:
-          data.weeklyTasks?.[3] > 0
-            ? `${(data.dailyHours?.[3] / data.weeklyTasks?.[3]).toFixed(1)}h`
-            : "0.0h",
-      },
-    ],
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_DAILY_FRIDAY]: {
-    title: "Friday",
-    subtitle: "Daily Tasks",
-    description: "Tasks & Hours",
-    icon: Icons.generic.calendar,
-    color: "yellow",
-    getValue: (data) => (data.weeklyTasks?.[4] || 0).toString(),
-    getStatus: (data) => `${(data.dailyHours?.[4] || 0).toFixed(1)}h`,
-    getBadge: (data) => ({
-      text: `${(data.dailyHours?.[4] || 0).toFixed(1)}h`,
-      color: "yellow",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.task,
-        label: "Tasks",
-        value: (data.weeklyTasks?.[4] || 0).toString(),
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Hours",
-        value: `${(data.dailyHours?.[4] || 0).toFixed(1)}h`,
-      },
-      {
-        icon: Icons.generic.target,
-        label: "Avg Task",
-        value:
-          data.weeklyTasks?.[4] > 0
-            ? `${(data.dailyHours?.[4] / data.weeklyTasks?.[4]).toFixed(1)}h`
-            : "0.0h",
-      },
-    ],
-  },
 };
 
 export const createCards = (data, mode = "main") => {
@@ -1230,15 +1037,6 @@ export const createCards = (data, mode = "main") => {
           SMALL_CARD_TYPES.ANALYTICS_ACQUISITION,
           SMALL_CARD_TYPES.ANALYTICS_PRODUCT,
           SMALL_CARD_TYPES.ANALYTICS_MISC,
-        ];
-        break;
-      case "daily":
-        cardTypes = [
-          SMALL_CARD_TYPES.ANALYTICS_DAILY_MONDAY,
-          SMALL_CARD_TYPES.ANALYTICS_DAILY_TUESDAY,
-          SMALL_CARD_TYPES.ANALYTICS_DAILY_WEDNESDAY,
-          SMALL_CARD_TYPES.ANALYTICS_DAILY_THURSDAY,
-          SMALL_CARD_TYPES.ANALYTICS_DAILY_FRIDAY,
         ];
         break;
       default:

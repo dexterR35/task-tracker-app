@@ -48,8 +48,6 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
       aiUsed: { total: 0, models: [], time: 0 },
       marketsUsed: [],
       productsUsed: [],
-      weeklyTasks: [0, 0, 0, 0, 0, 0, 0],
-      dailyHours: [0, 0, 0, 0, 0, 0, 0],
       efficiency: HARDCODED_EFFICIENCY_DATA,
     };
   }
@@ -399,38 +397,6 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
   const marketsUsed = Array.from(allMarkets);
   const productsUsed = Array.from(allProducts);
 
-  // Calculate weekly tasks and hours based on actual dates
-  const weeklyTasks = [0, 0, 0, 0, 0, 0, 0]; // Monday to Sunday
-  const dailyHours = [0, 0, 0, 0, 0, 0, 0]; // Monday to Sunday
-  
-  filteredTasks.forEach(task => {
-    // Get task date - try different possible date fields
-    const taskDate = task.data_task?.startDate || 
-                    task.data_task?.endDate || 
-                    task.createdAt || 
-                    task.timestamp;
-    
-    if (!taskDate) return;
-    
-    const date = normalizeTimestamp(taskDate);
-    if (!date || isNaN(date.getTime())) return;
-    
-    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    
-    // Convert to our array index (Monday = 0, Sunday = 6)
-    const arrayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    
-    // Count tasks
-    weeklyTasks[arrayIndex]++;
-    
-    // Add hours
-    const hours = task.data_task?.timeInHours || task.timeInHours || 0;
-    dailyHours[arrayIndex] += typeof hours === 'number' ? hours : 0;
-  });
-
-  // Round daily hours to 1 decimal for display
-  const roundedDailyHours = dailyHours.map(hours => Math.round(hours * 10) / 10);
-
   return {
     totalTasksThisMonth,
     totalTasksMultipleMonths: totalTasksThisMonth * 3, // Estimate
@@ -447,8 +413,6 @@ const generateRealData = (tasks, userName, reporterName, monthId, weekParam = nu
     marketsUsed,
     productsUsed,
     aiModelCounts,
-    weeklyTasks: weeklyTasks,
-    dailyHours: roundedDailyHours,
     efficiency: HARDCODED_EFFICIENCY_DATA,
   };
 };
@@ -637,8 +601,6 @@ const DynamicAnalyticsPage = () => {
         aiUsed: { total: 0, models: [], time: 0 },
         marketsUsed: [],
         productsUsed: [],
-        weeklyTasks: [0, 0, 0, 0, 0, 0, 0],
-        dailyHours: [0, 0, 0, 0, 0, 0, 0],
         efficiency: HARDCODED_EFFICIENCY_DATA,
         marketingData: {},
         acquisitionData: {},
@@ -716,10 +678,6 @@ const DynamicAnalyticsPage = () => {
     monthId: actualMonthId,
     tasks,
   }, 'analytics');
-  
-  // Create daily task cards using centralized system
-  const dailyTaskCards = createCards(analyticsData, 'daily');
-
   
   // Determine page title
   const pageTitle = (() => {
@@ -838,16 +796,6 @@ const DynamicAnalyticsPage = () => {
         <div className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {analyticsCards.map((card) => (
-              <SmallCard key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-        
-        {/* Daily Task Cards Grid */}
-        <div className="mb-6">
-          <h3 className="mb-6">Weekly Task (Monday-Friday)</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {dailyTaskCards.map((card) => (
               <SmallCard key={card.id} card={card} />
             ))}
           </div>

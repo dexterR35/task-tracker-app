@@ -122,7 +122,7 @@ const DeliverableCalculationCell = ({
                   className="block font-semibold"
                   style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.amber }}
                 >
-                  Total: {deliverable.time.toFixed(1)}h (
+                  Total: {deliverable.time.toFixed(2)}h (
                   {((deliverable.time * 60) / 480).toFixed(2)} days)
                 </div>
               </div>

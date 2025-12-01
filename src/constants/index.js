@@ -266,12 +266,6 @@ export const CARD_SYSTEM = {
     ANALYTICS_EFFICIENCY: 'analytics-efficiency',
     ANALYTICS_PRODUCT: 'analytics-product',
     ANALYTICS_MISC: 'analytics-misc',
-    // Daily card types
-    ANALYTICS_DAILY_MONDAY: 'analytics-daily-monday',
-    ANALYTICS_DAILY_TUESDAY: 'analytics-daily-tuesday',
-    ANALYTICS_DAILY_WEDNESDAY: 'analytics-daily-wednesday',
-    ANALYTICS_DAILY_THURSDAY: 'analytics-daily-thursday',
-    ANALYTICS_DAILY_FRIDAY: 'analytics-daily-friday',
   },
   ANALYTICS_CARD_TYPES: {
     USER_ANALYTICS: 'user-analytics',
