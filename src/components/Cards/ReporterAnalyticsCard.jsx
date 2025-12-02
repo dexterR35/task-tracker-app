@@ -7,6 +7,7 @@ import Badge from "@/components/ui/Badge/Badge";
 import ChartHeader from "./ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
+import CollapsibleSection from "@/components/ui/CollapsibleSection/CollapsibleSection";
 
 const ChartIcon = Icons.generic.chart;
 
@@ -91,9 +92,9 @@ const ReporterAnalyticsCard = memo(({
         </div>
 
         {/* Charts Section */}
-        <div>
+        <CollapsibleSection title="Reporter Metrics Distribution" defaultOpen={true}>
           {/* Charts Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Reporter Metrics Pie Chart 1 */}
           {reporterPieData1 && reporterPieData1.length > 0 && (
             <ChartHeader
@@ -108,6 +109,7 @@ const ReporterAnalyticsCard = memo(({
                 colors={reporterPieColors1}
                 showPercentages={true}
                 dataType={CARD_SYSTEM.CHART_DATA_TYPE.REPORTER}
+                showLegend={false}
               />
             </ChartHeader>
           )}
@@ -126,6 +128,7 @@ const ReporterAnalyticsCard = memo(({
                 colors={reporterPieColors2}
                 showPercentages={true}
                 dataType={CARD_SYSTEM.CHART_DATA_TYPE.REPORTER}
+                showLegend={false}
               />
             </ChartHeader>
           )}
@@ -144,13 +147,16 @@ const ReporterAnalyticsCard = memo(({
                 colors={reporterPieColors3}
                 showPercentages={true}
                 dataType={CARD_SYSTEM.CHART_DATA_TYPE.REPORTER}
+                showLegend={false}
               />
             </ChartHeader>
           )}
-        </div>
+          </div>
+        </CollapsibleSection>
 
         {/* Reporter Metrics Biaxial Chart - Single Column */}
-        <div className="grid grid-cols-1 gap-6 mt-6">
+        <CollapsibleSection title="Reporter Metrics Performance" defaultOpen={true} className="mt-6">
+          <div className="grid grid-cols-1 gap-6">
           {(() => {
             // Use unique tasks count (not sum of reporter counts)
             const reporterBiaxialTotalTasks = totalTasks || 0;
@@ -175,10 +181,12 @@ const ReporterAnalyticsCard = memo(({
               </ChartHeader>
             );
           })()}
-        </div>
+          </div>
+        </CollapsibleSection>
 
-          {/* Reporter-Market Biaxial Charts - Split by Product Type */}
-          <div className="grid grid-cols-1 gap-6 mt-6">
+        {/* Reporter-Market Biaxial Charts - Split by Product Type */}
+        <CollapsibleSection title="Reporters by Markets" defaultOpen={true} className="mt-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Casino Reporter-Market Chart */}
             {(() => {
               // Use unique tasks count (not sum of market counts)
@@ -233,7 +241,7 @@ const ReporterAnalyticsCard = memo(({
               );
             })()}
           </div>
-        </div>
+        </CollapsibleSection>
       </div>
     </div>
   );

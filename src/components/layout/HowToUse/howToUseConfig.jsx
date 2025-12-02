@@ -155,59 +155,21 @@ export const HOW_TO_USE_CONTENT = {
         items: [
           { text: "Base Days Required", description: "Users must have base days configured before selecting dates. Admins need to create a record with base days first" },
           { text: "Days Total Calculation", description: "Total days = Base Days + Monthly Accrual (1.75 days × number of months since record creation). This is calculated automatically" },
-          { text: "Days Remaining", description: "Remaining days = Total Days - Days Off Used. This shows how many vacation days are still available" },
-          { text: "Email to HR", description: "After saving dates, use \"Send Email to HR\" button to notify the HR team. The system uses EmailJS to send automated emails. The email includes employee name, email, total days requested, and a list of all requested dates. This helps with vacation planning and approval" },
-          { text: "Past Dates", description: "Past dates cannot be selected or removed. They are grayed out and locked to prevent changes to historical data" },
-          { text: "Weekends", description: "Weekends (Saturday and Sunday) cannot be selected. Only weekdays can be marked as days off" },
-          { text: "Multiple Users", description: "Admins can view and manage days off for all team members. Regular users can only see and manage their own days off" },
-          { text: "Accrual System", description: "Days off accumulate automatically at 1.75 days per month. This happens from the date the record was created, not from a specific start date" },
-        ]
-      },
-      {
-        title: "Getting Started:",
-        items: [
-          { text: "Admins", description: "Click \"Add Entry\" to create a user's days off record with base days. You can manage days off for any team member" },
-          { text: "Regular Users", description: "Your days off record is automatically selected when opening the calendar. You can view and manage your own vacation days" },
-          { text: "Base Days", description: "Initial days off allocated to a user. This is the starting number of vacation days" },
-          { text: "Monthly Accrual", description: "System automatically adds 1.75 days per month since the record was created. This accumulates over time" },
-          { text: "Calendar View", description: "The calendar shows all team members' days off with color coding. Each user has a unique color for easy identification" },
-        ]
-      },
-      {
-        title: "Managing Days Off:",
-        items: [
-          { text: "Select User", description: "Admins can select any user from the dropdown menu (top right of calendar). Regular users see only their own record" },
-          { text: "Select Dates", description: "Click on calendar dates to select days off. Weekends and past dates are automatically disabled and cannot be selected" },
-          { text: "Save Dates", description: "Click \"Save\" button to save your selected dates. Changes are saved immediately and visible to all users" },
-          { text: "Remove Dates", description: "Click the \"×\" button on saved dates to remove them. You can only remove future dates, not past ones" },
-          { text: "Edit User Record", description: "Admins can edit base days and total days off count for any user. Click the edit button to modify user settings" },
-          { text: "View All Users", description: "The calendar displays all team members' days off simultaneously. Use the color legend to identify who has time off on specific dates" },
-        ]
-      },
-      {
-        title: "Calendar Features:",
-        items: [
-          { text: "Color Legend", description: "Shows all users with their assigned colors and total days off. Each user has a unique color for easy visual identification" },
-          { text: "Year Navigation", description: "Use arrow buttons to navigate between years. View past and future years to plan ahead or review history" },
-          { text: "Visual Indicators", description: "Colored dates show who has days off on specific dates. Hover over dates to see which users are off" },
-          { text: "Real-time Updates", description: "Changes are reflected immediately across all users. When someone saves dates, everyone sees the update instantly" },
-          { text: "Month View", description: "Calendar displays a full month view with all dates. Weekends are clearly marked and cannot be selected" },
+          { text: "Days Remaining", description: "Remaining days = Total Days - Days Off Used." },
           { text: "Date Selection", description: "Click on any available date to select it. Selected dates are highlighted and can be saved or removed" },
-        ]
-      },
-      {
-        title: "Email to HR - EmailJS Integration:",
-        items: [
-          { text: "How It Works", description: "The app uses EmailJS (a third-party email service) to send emails directly from the browser without requiring a backend server. When you click \"Send Email to HR\", the system automatically formats your request and sends it to the configured HR email address" },
-          { text: "Email Content", description: "The email includes: Employee name and email address, total number of days requested, complete list of all requested dates (formatted as Month Day, Year), and a professional message template. The email is sent from your email address to the HR team" },
+          { text: "Date System ", description: "Days off accumulate automatically at 1.75 days per month. This happens from the date the record was created, not from a specific start date" },
+
+          { text: "Weekends", description: "Weekends (Saturday and Sunday) cannot be selected. Only weekdays can be marked as days off" },
+          { text: "How It Works", description: "The app send emails directly r. When you click \"Send Email to HR\", the system automatically formats your request and sends it to the configured HR email address" },
+          { text: "Multiple Users", description: "Admins can view and manage days off for all team members. Regular users can only see and manage their own days off" },
+          
+          { text: "View All Users", description: "The calendar displays all team members' days off simultaneously. Use the color legend to identify who has time off on specific dates" },
           { text: "Email Modal", description: "Before sending, a modal window shows: Employee information (name and email), list of all selected dates, preview of the email template that will be sent. Review the information and click \"Send Now\" to send the email" },
-          { text: "Email Requirements", description: "To send emails, you must have: A valid email address in your user profile, at least one saved day off date, and EmailJS must be properly configured by the administrator. If EmailJS is not configured, you'll see an error message" },
-          { text: "After Sending", description: "After successfully sending the email, you'll see a success notification. The email modal will close automatically after 1 second. The HR team will receive the email at the configured HR email address" },
-          { text: "EmailJS Configuration (Admin)", description: "EmailJS requires configuration in environment variables: VITE_EMAILJS_SERVICE_ID (EmailJS service ID), VITE_EMAILJS_TEMPLATE_ID (EmailJS template ID), VITE_EMAILJS_PUBLIC_KEY (EmailJS public key), VITE_HR_EMAIL (HR team email address). These are set up by administrators at https://www.emailjs.com/" },
-          { text: "EmailJS Setup Process", description: "Administrators need to: 1) Create an account at emailjs.com, 2) Create an email service (Gmail, Outlook, etc.), 3) Create an email template with variables (employee_name, employee_email, dates, total_days, message), 4) Get the Service ID, Template ID, and Public Key, 5) Add these values to environment variables (.env file), 6) Restart the application. Once configured, all users can send emails to HR" },
-          { text: "Email Template Variables", description: "The EmailJS template uses these variables: to_email (HR email address), from_email (employee email), from_name (employee name), subject (email subject line), message (formatted email body), dates (comma-separated list of dates), total_days (number of days as string), employee_name (employee name), employee_email (employee email). These are automatically populated by the app" },
         ]
       },
+  
+
+
     ]
   },
   analytics: {

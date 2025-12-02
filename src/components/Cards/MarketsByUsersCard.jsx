@@ -8,6 +8,7 @@ import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
 import { addConsistentColors } from "@/components/Cards/analyticsCardConfig";
 import { getMarketColor, calculateCountWithPercentage, renderCountWithPercentage, getUserName, normalizeMarket, getTaskMarkets, getTaskHours, getTaskUserUID } from "@/components/Cards/configs/analyticsSharedConfig";
+import CollapsibleSection from "@/components/ui/CollapsibleSection/CollapsibleSection";
 
 const CHART_COLORS = {
   DEFAULT: Object.values(CARD_SYSTEM.COLOR_HEX_MAP),
@@ -660,10 +661,10 @@ const MarketsByUsersCard = memo(({
      
 
         {/* Charts Section */}
-    
-          {/* Charts Container - 2 charts in a row */}
-          {(hasMarketsData || hasUserByTaskData) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {(hasMarketsData || hasUserByTaskData) && (
+          <CollapsibleSection title="Markets & Users Distribution" defaultOpen={true}>
+            {/* Charts Container - 2 charts in a row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Markets Distribution Pie Chart */}
             {hasMarketsData && (
               <ChartHeader
@@ -705,12 +706,14 @@ const MarketsByUsersCard = memo(({
                 />
               </ChartHeader>
             )}
-          </div>
-          )}
+            </div>
+          </CollapsibleSection>
+        )}
 
-          {/* Biaxial Charts Container - 2 charts in a row */}
-          {(hasMarketsBiaxialData || hasUsersBiaxialData) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Biaxial Charts Container - 2 charts in a row */}
+        {(hasMarketsBiaxialData || hasUsersBiaxialData) && (
+          <CollapsibleSection title="Markets & Users Performance" defaultOpen={true}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Markets Biaxial Chart */}
             {hasMarketsBiaxialData && (() => {
               // Use unique tasks count and hours (not sum of market appearances)
@@ -763,22 +766,15 @@ const MarketsByUsersCard = memo(({
                 </ChartHeader>
               );
             })()}
-          </div>
-          )}
-     
+            </div>
+          </CollapsibleSection>
+        )}
 
         {/* User Charts Section */}
-        <div className="mt-8">
-          <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span>User Analytics</span>
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Individual user performance </p>
-          </div>
-          
-          {/* Users by Markets - Separate Chart for Each User in 2-column grid */}
-          {hasUsersByMarketsCharts && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {hasUsersByMarketsCharts && (
+          <CollapsibleSection title="User Analytics" defaultOpen={true} className="mt-8">
+            {/* Users by Markets - Separate Chart for Each User in 2-column grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {usersByMarketsCharts.map((userChart) => (
               <ChartHeader
                 key={userChart.userId}
@@ -801,9 +797,9 @@ const MarketsByUsersCard = memo(({
                 />
               </ChartHeader>
             ))}
-          </div>
-          )}
-        </div>
+            </div>
+          </CollapsibleSection>
+        )}
       </div>
     </div>
   );

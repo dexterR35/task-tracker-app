@@ -7,6 +7,7 @@ import ChartHeader from "./ChartHeader";
 import { CHART_COLORS, getProductColor } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
+import CollapsibleSection from "@/components/ui/CollapsibleSection/CollapsibleSection";
 
 const ChartIcon = Icons.generic.chart;
 
@@ -110,11 +111,7 @@ const ProductAnalyticsCard = memo(({
       </div>
 
       {/* Section: Distribution Charts */}
-      <div>
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Distribution Analysis</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Task distribution by categories and markets</p>
-        </div>
+      <CollapsibleSection title="Distribution Analysis" defaultOpen={true}>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Product Categories Pie Chart */}
           <ChartHeader
@@ -176,14 +173,10 @@ const ProductAnalyticsCard = memo(({
             />
           </ChartHeader>
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Section: Performance Charts */}
-      <div>
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Performance Metrics</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Tasks and hours  by category and market</p>
-        </div>
+      <CollapsibleSection title="Performance Metrics" defaultOpen={true}>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Product Categories Biaxial Chart */}
           {(() => {
@@ -268,16 +261,12 @@ const ProductAnalyticsCard = memo(({
             );
           })()}
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Section: Charts */}
       {((casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0) || 
         (totalCasinoSportBiaxialData && totalCasinoSportBiaxialData.length > 0)) && (
-        <div>
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Casino vs Sport</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Comparative analysis between casino and sport products</p>
-          </div>
+        <CollapsibleSection title="Casino vs Sport" defaultOpen={true}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino vs Sport: Tasks by Markets */}
             {casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0 && (
@@ -325,16 +314,12 @@ const ProductAnalyticsCard = memo(({
               </ChartHeader>
             )}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Section: User Analytics */}
       {productUsersCharts && productUsersCharts.length > 0 && (
-        <div>
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">User Analytics</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Individual user performance </p>
-          </div>
+        <CollapsibleSection title="User Analytics" defaultOpen={true}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {productUsersCharts.map((userChart) => (
               <ChartHeader
@@ -360,7 +345,7 @@ const ProductAnalyticsCard = memo(({
               </ChartHeader>
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import ChartHeader from "./ChartHeader";
 import { CHART_COLORS, getProductColor } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
+import CollapsibleSection from "@/components/ui/CollapsibleSection/CollapsibleSection";
 
 const ChartIcon = Icons.generic.chart;
 
@@ -135,11 +136,7 @@ const AcquisitionAnalyticsCard = memo(
         </div>
 
         {/* Section: Distribution Charts */}
-        <div>
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Distribution Analysis</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Acquisition distribution by markets</p>
-          </div>
+        <CollapsibleSection title="Distribution Analysis" defaultOpen={true}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino Acquisition Chart */}
             <ChartHeader
@@ -193,14 +190,10 @@ const AcquisitionAnalyticsCard = memo(
               )}
             </ChartHeader>
           </div>
-        </div>
+        </CollapsibleSection>
 
         {/* Section: Performance Charts */}
-        <div>
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Performance Metrics</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Tasks and hours by markets</p>
-          </div>
+        <CollapsibleSection title="Performance Metrics" defaultOpen={true}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Casino Biaxial Chart */}
             {(() => {
@@ -274,16 +267,12 @@ const AcquisitionAnalyticsCard = memo(
               );
             })()}
           </div>
-        </div>
+        </CollapsibleSection>
 
         {/* Section: Charts */}
         {((casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0) || 
           (totalCasinoSportBiaxialData && totalCasinoSportBiaxialData.length > 0)) && (
-          <div>
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Casino vs Sport</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Comparative analysis between casino and sport acquisition</p>
-            </div>
+          <CollapsibleSection title="Casino vs Sport" defaultOpen={true}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Casino vs Sport: Tasks by Markets */}
               {casinoSportPerMarketBiaxialData && casinoSportPerMarketBiaxialData.length > 0 && (
@@ -349,18 +338,13 @@ const AcquisitionAnalyticsCard = memo(
                 </div>
               )}
             </div>
-          </div>
+          </CollapsibleSection>
         )}
 
       {/* Section: User Analytics */}
       {((casinoUsersCharts && casinoUsersCharts.length > 0) || 
         (sportUsersCharts && sportUsersCharts.length > 0)) && (
-        <div>
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">User Analytics</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Individual user performance</p>
-          </div>
-
+        <CollapsibleSection title="User Analytics" defaultOpen={true}>
           {/* Casino Acquisition: Per-User Charts */}
           {casinoUsersCharts && casinoUsersCharts.length > 0 && (
             <div className="mb-8">
@@ -426,7 +410,7 @@ const AcquisitionAnalyticsCard = memo(
               </div>
             </div>
           )}
-        </div>
+        </CollapsibleSection>
       )}
     </div>
   );

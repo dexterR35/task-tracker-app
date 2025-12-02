@@ -8,6 +8,7 @@ import { CHART_COLORS } from "./configs/analyticsSharedConfig";
 import { CARD_SYSTEM } from "@/constants";
 import Badge from "@/components/ui/Badge/Badge";
 import { Icons } from "@/components/icons";
+import CollapsibleSection from "@/components/ui/CollapsibleSection/CollapsibleSection";
 
 const ChartIcon = Icons.generic.chart;
 
@@ -69,7 +70,7 @@ const MiscAnalyticsCard = memo(({
         </div>
         
         {/* Charts Section */}
-        <div>
+        <CollapsibleSection title="Misc Categories Charts" defaultOpen={true}>
           {/* Charts Container - 3 columns grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Misc Categories Pie Chart */}
@@ -117,26 +118,13 @@ const MiscAnalyticsCard = memo(({
               );
             })()}
           </div>
-        </div>
+        </CollapsibleSection>
 
         {/* User Charts Section */}
-        <div className="mt-8">
-          <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span>User Analytics</span>
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Individual user performance </p>
-          </div>
-          
-          {/* Misc: Per-User Charts */}
-          <div>
-            <div className="mb-5">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                <span>Misc: Per User</span>
-              </h4>
-            </div>
-            {miscUsersCharts && miscUsersCharts.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {miscUsersCharts && miscUsersCharts.length > 0 && (
+          <CollapsibleSection title="User Analytics" defaultOpen={true} className="mt-8">
+            {/* Misc: Per-User Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {miscUsersCharts.map((userChart) => (
                   <ChartHeader
                     key={`misc-${userChart.userId}`}
@@ -159,18 +147,9 @@ const MiscAnalyticsCard = memo(({
                     />
                   </ChartHeader>
                 ))}
-              </div>
-            ) : (
-              <div className="card rounded-xl">
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                  </div>
-                  <p className="text-gray-500 dark:text-gray-400 font-medium">No misc user data</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </CollapsibleSection>
+        )}
       </div>
     </div>
   );

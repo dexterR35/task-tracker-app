@@ -7,6 +7,7 @@ import Badge from "@/components/ui/Badge/Badge";
 import ChartHeader from "./ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
+import CollapsibleSection from "@/components/ui/CollapsibleSection/CollapsibleSection";
 
 const ChartIcon = Icons.generic.chart;
 
@@ -115,9 +116,9 @@ const AIAnalyticsCard = memo(({
         </div>
 
         {/* Charts Section */}
-    
+        <CollapsibleSection title="AI Analytics Charts" defaultOpen={true}>
           {/* Charts Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: Products */}
           <div className="space-y-6">
             {/* Products AI Usage Pie Chart */}
@@ -311,7 +312,7 @@ const AIAnalyticsCard = memo(({
             })()}
           </div>
         </div>
-       
+        </CollapsibleSection>
       </div>
     </div>
   );

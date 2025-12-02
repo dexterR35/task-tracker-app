@@ -13,7 +13,8 @@ const SimplePieChart = React.memo(({
   leaderLineStyle = "solid", // "solid", "dashed", "dotted"
   showPercentages = true,
   minPercentageThreshold = 5,
-  dataType = 'market' // Type of data for consistent color mapping
+  dataType = 'market', // Type of data for consistent color mapping
+  showLegend = true // Show/hide legend
 }) => {
   // Process data with consistent colors and sort to reduce label collisions
   const processedData = useMemo(() => {
@@ -157,14 +158,16 @@ const SimplePieChart = React.memo(({
                 fontWeight: 'medium'
               }}
             />
-            <Legend 
-              verticalAlign="middle" 
-              align="right"
-              layout="vertical"
-              width={130}
-              iconType="circle"
-              wrapperStyle={{ fontSize: '12px', fontWeight: 'medium' }}
-            />
+            {showLegend && (
+              <Legend 
+                verticalAlign="middle" 
+                align="right"
+                layout="vertical"
+                width={130}
+                iconType="circle"
+                wrapperStyle={{ fontSize: '12px', fontWeight: 'medium' }}
+              />
+            )}
           </PieChart>
         </ResponsiveContainer>
       </div>
