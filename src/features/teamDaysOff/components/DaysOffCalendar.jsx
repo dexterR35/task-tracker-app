@@ -22,7 +22,13 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   // Use real-time data from hook - prop is redundant since hook provides real-time updates
   const { teamDaysOff: realTimeTeamDaysOff = [], addOffDays, removeOffDays } = useTeamDaysOff();
   // Always use real-time data from hook (prop is legacy/fallback, but hook should always have data)
+  // Use realTimeTeamDaysOff directly to ensure real-time updates are reflected immediately
   const teamDaysOff = realTimeTeamDaysOff.length > 0 ? realTimeTeamDaysOff : propTeamDaysOff;
+  
+  // Debug: Log when teamDaysOff changes
+  useEffect(() => {
+    logger.log('📅 [DaysOffCalendar] teamDaysOff updated:', teamDaysOff.length, 'entries');
+  }, [teamDaysOff]);
   
   // Use shared hook for user fetching
   const allUsers = useCalendarUsers();
@@ -100,7 +106,20 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   }, [isWeekend, isPastDate]);
 
   // Create lookup map for date -> users
+  // Create a stable key to track changes - use JSON.stringify for reliable change detection
+  const teamDaysOffKey = useMemo(() => {
+    return JSON.stringify(teamDaysOff.map(e => ({
+      id: e.id,
+      userUID: e.userUID || e.userId,
+      offDaysLength: (e.offDays || []).length,
+      offDays: (e.offDays || []).map(d => 
+        typeof d === 'string' ? d : (d?.dateString || `${d?.year}-${d?.month}-${d?.day}` || '')
+      )
+    })));
+  }, [teamDaysOff]);
+  
   const dateToUsersMap = useMemo(() => {
+    // Always create a new Map instance to ensure React detects the change
     const map = new Map();
     teamDaysOff.forEach(entry => {
       const userUID = entry.userUID || entry.userId;
@@ -140,11 +159,14 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         });
       });
     });
+    // Log map size for debugging
+    logger.log('📅 [DaysOffCalendar] dateToUsersMap updated:', map.size, 'dates');
     return map;
-  }, [teamDaysOff, allUsers]);
+  }, [teamDaysOffKey, teamDaysOff, allUsers]);
 
 
   // Get day data for a specific date
+  // Include teamDaysOffKey in dependencies to force recalculation when data changes
   const getDayData = useCallback((date) => {
     const dateString = formatDateString(date);
     const usersOff = dateToUsersMap.get(dateString) || [];
@@ -159,7 +181,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       isDisabled,
       canSelect: selectedUserId && hasAvailableDays && !isOff && !isDisabled
     };
-  }, [selectedUserId, hasAvailableDays, dateToUsersMap, selectedDates, isDateDisabled]);
+  }, [selectedUserId, hasAvailableDays, dateToUsersMap, selectedDates, isDateDisabled, teamDaysOffKey]);
 
   // Get all users with their assigned colors for legend
   // Admin sees all users, regular users see only themselves
@@ -266,6 +288,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     try {
       await removeOffDays(selectedUserId, [date], authUser);
       showSuccess('Day off removed successfully');
+      // Real-time listener will update automatically - no delay needed
     } catch (error) {
       logger.error('Error removing off day:', error);
       showError(error.message || 'Failed to remove off day');
@@ -303,10 +326,17 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       `Thank you,\n${userName}`
     );
     
-    // Open mailto link (using support email from constants or default to hr@company.com)
-    const hrEmail = 'hr@company.com'; // You can change this to use a constant if needed
+    // Open mailto link using anchor element (more reliable than window.location.href)
+    const hrEmail = 'hr@company.com';
     const mailtoLink = `mailto:${hrEmail}?subject=${subject}&body=${body}`;
-    window.location.href = mailtoLink;
+    
+    // Create a temporary anchor element and click it
+    const link = document.createElement('a');
+    link.href = mailtoLink;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
     // Clear recently saved dates after opening email
     setRecentlySavedDates([]);
@@ -438,7 +468,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       >
         <div
           className={`rounded text-sm flex flex-col items-center justify-center relative ${bgColor} ${textColor} ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}`}
-          style={{ ...style, aspectRatio: '5 / 3' }}
+          style={{ ...style, aspectRatio: '1 / 1' }}
           onClick={() => canSelect && handleDateClick(day.date)}
         >
           <span>{day.date.getDate()}</span>
@@ -562,6 +592,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
 
       {/* Dynamic Calendar - Show all months */}
       <DynamicCalendar
+        key={`calendar-${currentYear}-${selectedUserId || 'none'}-${teamDaysOffKey.substring(0, 100)}`}
         initialMonth={new Date(currentYear, 0, 1)}
         getDayData={getDayData}
         renderDay={renderDay}

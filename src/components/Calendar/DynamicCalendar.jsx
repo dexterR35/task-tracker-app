@@ -94,7 +94,7 @@ export const BaseCalendarGrid = ({
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((day, dayIndex) => {
           if (!day.isCurrentMonth) {
-            return <div key={dayIndex} style={{ aspectRatio: '5 / 3' }} />;
+            return <div key={dayIndex} style={{ aspectRatio: '1 / 1' }} />;
           }
           return renderDay(day, dayIndex);
         })}
