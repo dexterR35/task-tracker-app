@@ -10,7 +10,10 @@ import { showSuccess, showError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 import { formatDateString } from '@/utils/dateUtils';
 import TeamDaysOffFormModal from './TeamDaysOffFormModal';
+import Modal from '@/components/ui/Modal/Modal';
 import DynamicCalendar, { getUserColor, generateMultiColorGradient, useCalendarUsers, filterUsersByRole, ColorLegend } from '@/components/Calendar/DynamicCalendar';
+import { send } from '@emailjs/browser';
+import { EMAILJS_CONFIG } from '@/constants';
 
 /**
  * Calendar component to display and manage days off for users
@@ -50,6 +53,8 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   const [saving, setSaving] = useState(false);
   const [recentlySavedDates, setRecentlySavedDates] = useState([]); // Track recently saved dates for email
   const [showEntryModal, setShowEntryModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Get selected user
   const selectedUser = useMemo(() => {
@@ -297,51 +302,132 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     }
   }, [selectedUserId, removeOffDays, authUser]);
 
-  // Handle send email to HR (for recently saved dates) - Opens mailto: link
+  // Handle send email to HR - Opens email modal
   const handleSendEmail = useCallback(() => {
     if (!selectedUserId || recentlySavedDates.length === 0) {
       showError('No saved dates to send email for');
       return;
     }
+    // Open email modal
+    setShowEmailModal(true);
+  }, [selectedUserId, recentlySavedDates]);
 
-    // Get selected user info
-    const user = selectedUser || allUsers.find(u => (u.userUID || u.id) === selectedUserId);
-    const userName = user?.name || user?.email || 'User';
-    
-    // Format dates for email (format as readable dates)
-    const formattedDates = recentlySavedDates.map(date => {
-      const dateObj = date instanceof Date ? date : new Date(date);
-      return format(dateObj, 'MMMM dd, yyyy');
-    }).join(', ');
-    
-    // Create email subject
-    const subject = encodeURIComponent(`Days Off Request - ${userName}`);
-    
-    // Create email body
-    const body = encodeURIComponent(
-      `Hello HR Team,\n\n` +
-      `I would like to request the following days off:\n\n` +
-      `Dates: ${formattedDates}\n` +
-      `Total Days: ${recentlySavedDates.length}\n\n` +
-      `Thank you,\n${userName}`
-    );
-    
-    // Open mailto link using anchor element (more reliable than window.location.href)
-    const hrEmail = 'hr@company.com';
-    const mailtoLink = `mailto:${hrEmail}?subject=${subject}&body=${body}`;
-    
-    // Create a temporary anchor element and click it
-    const link = document.createElement('a');
-    link.href = mailtoLink;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clear recently saved dates after opening email
+  // Handle email modal close - clear recently saved dates
+  const handleEmailModalClose = useCallback(() => {
+    setShowEmailModal(false);
+    // Clear recently saved dates after email is sent or modal is closed
     setRecentlySavedDates([]);
-    showSuccess('Email client opened. Please send the email to HR.');
-  }, [selectedUserId, recentlySavedDates, selectedUser, allUsers]);
+  }, []);
+
+  // Format dates for email display
+  const formattedEmailDates = useMemo(() => {
+    if (!recentlySavedDates || recentlySavedDates.length === 0) return [];
+    return recentlySavedDates.map(date => {
+      const dateObj = date instanceof Date ? date : new Date(date);
+      return {
+        dateString: format(dateObj, 'yyyy-MM-dd'),
+        displayString: format(dateObj, 'MMMM dd, yyyy'),
+        dateObj
+      };
+    });
+  }, [recentlySavedDates]);
+
+  // Determine which user to use for email (selected user or auth user)
+  const emailUser = useMemo(() => {
+    return selectedUser || authUser;
+  }, [selectedUser, authUser]);
+
+  // Get user email for email modal
+  const userEmail = useMemo(() => {
+    return emailUser?.email || '';
+  }, [emailUser?.email]);
+
+  // Get user name for email modal
+  const userName = useMemo(() => {
+    return emailUser?.name || emailUser?.email || 'User';
+  }, [emailUser?.name, emailUser?.email]);
+
+  // Create email template content
+  const emailTemplate = useMemo(() => {
+    const datesList = formattedEmailDates.map(d => d.displayString).join('\n');
+    const totalDays = formattedEmailDates.length;
+    
+    return `Hello HR Team,
+
+I would like to request the following days off:
+
+Employee: ${userName}
+Email: ${userEmail}
+Total Days: ${totalDays}
+
+Requested Dates:
+${datesList}
+
+Thank you for your consideration.
+
+Best regards,
+${userName}`;
+  }, [formattedEmailDates, userName, userEmail]);
+
+  // Handle send email
+  const handleSendEmailNow = useCallback(async () => {
+    if (!userEmail) {
+      showError('User email is required to send email');
+      return;
+    }
+
+    if (formattedEmailDates.length === 0) {
+      showError('No dates selected to send email for');
+      return;
+    }
+
+    // Check if EmailJS is configured
+    if (EMAILJS_CONFIG.SERVICE_ID === 'YOUR_SERVICE_ID' || 
+        EMAILJS_CONFIG.TEMPLATE_ID === 'YOUR_TEMPLATE_ID' || 
+        EMAILJS_CONFIG.PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+      showError('EmailJS is not configured. Please contact administrator.');
+      logger.error('EmailJS configuration missing');
+      return;
+    }
+
+    setSendingEmail(true);
+
+    try {
+      // Prepare template parameters for EmailJS
+      const templateParams = {
+        to_email: EMAILJS_CONFIG.HR_EMAIL,
+        from_email: userEmail,
+        from_name: userName,
+        subject: `Days Off Request - ${userName}`,
+        message: emailTemplate,
+        dates: formattedEmailDates.map(d => d.displayString).join(', '),
+        total_days: formattedEmailDates.length.toString(),
+        employee_name: userName,
+        employee_email: userEmail
+      };
+
+      // Send email using EmailJS
+      await send(
+        EMAILJS_CONFIG.SERVICE_ID,
+        EMAILJS_CONFIG.TEMPLATE_ID,
+        templateParams,
+        EMAILJS_CONFIG.PUBLIC_KEY
+      );
+
+      logger.log('Email sent successfully to HR');
+      showSuccess('Email sent successfully to HR!');
+      
+      // Close modal after successful send
+      setTimeout(() => {
+        handleEmailModalClose();
+      }, 1000);
+    } catch (error) {
+      logger.error('Error sending email:', error);
+      showError(error.message || 'Failed to send email. Please try again.');
+    } finally {
+      setSendingEmail(false);
+    }
+  }, [userEmail, formattedEmailDates, emailTemplate, userName, handleEmailModalClose]);
 
   // Handle user selection change
   const handleUserSelect = useCallback((userId) => {
@@ -638,6 +724,101 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
           onSuccess={handleEntrySuccess}
         />
       )}
+
+      {/* Email Modal */}
+      <Modal
+        isOpen={showEmailModal}
+        onClose={handleEmailModalClose}
+        title="Send Email to HR"
+        maxWidth="max-w-4xl"
+        bgColor="primary"
+        showClose={true}
+      >
+        <div className="p-5 space-y-4">
+          {/* Employee Information Section */}
+          <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Employee Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Employee Email
+                </label>
+                <div className="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200/60 dark:border-gray-700/50">
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {userEmail || 'No email available'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Employee Name
+                </label>
+                <div className="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200/60 dark:border-gray-700/50">
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {userName}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Days Off Section */}
+          <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">
+              Days Off ({formattedEmailDates.length} day{formattedEmailDates.length !== 1 ? 's' : ''})
+            </h3>
+            <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200/60 dark:border-gray-700/50 max-h-48 overflow-y-auto">
+              <div className="space-y-1">
+                {formattedEmailDates.map((date, index) => (
+                  <div key={index} className="text-sm text-gray-900 dark:text-gray-100">
+                    {date.displayString}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Email Template Preview Section */}
+          <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Email Template</h3>
+            <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200/60 dark:border-gray-700/50">
+              <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans">
+                {emailTemplate}
+              </pre>
+            </div>
+          </div>
+
+          {/* Thanks Message */}
+          <div className="bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200/60 dark:border-blue-800/50 rounded-lg p-4">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Thank you for submitting your days off request. HR will review and respond to your request shortly.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200/60 dark:border-gray-700/50">
+            <DynamicButton
+              variant="secondary"
+              size="md"
+              onClick={handleEmailModalClose}
+              disabled={sendingEmail}
+            >
+              Close
+            </DynamicButton>
+            <DynamicButton
+              variant="primary"
+              size="md"
+              onClick={handleSendEmailNow}
+              loading={sendingEmail}
+              disabled={!userEmail || formattedEmailDates.length === 0 || sendingEmail}
+              icon={Icons.generic.message}
+            >
+              Send Now
+            </DynamicButton>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
