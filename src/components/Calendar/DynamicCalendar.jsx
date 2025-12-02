@@ -105,7 +105,7 @@ export const BaseCalendarGrid = ({
 
 /**
  * Dynamic Calendar Component
- * A flexible calendar that can be configured for different use cases (tasks, days off, etc.)
+ * A flexible calendar that can be configured for different use cases (days off, etc.)
  * 
  * @param {Object} props
  * @param {Date} props.initialMonth - Initial month to display
@@ -212,11 +212,23 @@ const DynamicCalendar = ({
   }, []);
 
   // Notify parent of month changes
+  // Use ref to track previous values to avoid unnecessary calls
+  const prevYearRef = React.useRef(currentYear);
+  const prevMonthRef = React.useRef(currentMonth);
+  
   React.useEffect(() => {
-    if (onMonthChange) {
-      onMonthChange(currentYear, currentMonth);
+    // Only call if year or month actually changed
+    if (onMonthChange && (prevYearRef.current !== currentYear || prevMonthRef.current !== currentMonth)) {
+      prevYearRef.current = currentYear;
+      prevMonthRef.current = currentMonth;
+      // For multiple months view, only pass year
+      if (showMultipleMonths) {
+        onMonthChange(currentYear);
+      } else {
+        onMonthChange(currentYear, currentMonth);
+      }
     }
-  }, [currentYear, currentMonth, onMonthChange]);
+  }, [currentYear, currentMonth, onMonthChange, showMultipleMonths]);
 
   // Check if a month is selected (for highlighting)
   const isMonthSelected = useCallback((monthDate) => {
@@ -345,7 +357,7 @@ export default DynamicCalendar;
 
 /**
  * Hook to get users from context or API (with fallback)
- * Used by both TasksCalendar and DaysOffCalendar
+ * Used by DaysOffCalendar
  */
 export const useCalendarUsers = () => {
   const appData = useAppDataContext();
@@ -361,7 +373,7 @@ export const useCalendarUsers = () => {
 
 /**
  * Filter users based on admin role and selected user
- * Used by both TasksCalendar and DaysOffCalendar
+ * Used by DaysOffCalendar
  */
 export const filterUsersByRole = (users, { isAdmin, authUserUID, selectedUserId = null }) => {
   return users.filter(user => {
@@ -391,18 +403,18 @@ export const getCalendarUserColor = (user) => {
 
 /**
  * Shared Color Legend Component
- * Used by both TasksCalendar and DaysOffCalendar
+ * Used by DaysOffCalendar
  * 
  * @param {Array} users - Array of user objects with { userUID, userName, color, ... }
  * @param {string} selectedUserId - Currently selected user ID (for highlighting)
- * @param {string} countLabel - Label for the count (e.g., "tasks", "days")
+ * @param {string} countLabel - Label for the count (e.g., "days")
  * @param {Function} getCount - Function to get count for a user: (user) => number
  */
 export const ColorLegend = ({ 
   users = [], 
   selectedUserId = null,
   countLabel = '',
-  getCount = (user) => user.tasksCount || user.offDays?.length || 0
+  getCount = (user) => user.offDays?.length || 0
 }) => {
   if (!users || users.length === 0) return null;
 

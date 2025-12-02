@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Icons } from '@/components/icons';
 import { useTeamDaysOff } from '../teamDaysOffApi';
@@ -99,8 +99,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     return isWeekend(date) || isPastDate(date);
   }, [isWeekend, isPastDate]);
 
-  // Create lookup map for date -> users (optimized to avoid filtering on every render)
-  // This updates in real-time when teamDaysOff changes
+  // Create lookup map for date -> users
   const dateToUsersMap = useMemo(() => {
     const map = new Map();
     teamDaysOff.forEach(entry => {
@@ -112,23 +111,17 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       
       const offDays = Array.isArray(entry.offDays) ? entry.offDays : [];
       offDays.forEach(offDay => {
-        // Handle offDay format: can be { dateString, year, month, day } object or Date/string
         let dateString;
         if (typeof offDay === 'string') {
           dateString = offDay;
         } else if (offDay && typeof offDay === 'object') {
-          // If it has dateString property, use it
           if (offDay.dateString) {
             dateString = offDay.dateString;
-          } 
-          // Otherwise construct from year/month/day
-          else if (offDay.year && offDay.month && offDay.day) {
+          } else if (offDay.year && offDay.month && offDay.day) {
             const month = String(offDay.month).padStart(2, '0');
             const day = String(offDay.day).padStart(2, '0');
             dateString = `${offDay.year}-${month}-${day}`;
-          }
-          // Otherwise try to format as date
-          else {
+          } else {
             dateString = formatDateString(offDay);
           }
         } else {
@@ -150,32 +143,13 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     return map;
   }, [teamDaysOff, allUsers]);
 
-  // Check if a date is an off day for the selected user
-  const isDateOff = useCallback((date) => {
-    if (!selectedUserId) return false;
+
+  // Get day data for a specific date
+  const getDayData = useCallback((date) => {
     const dateString = formatDateString(date);
     const usersOff = dateToUsersMap.get(dateString) || [];
-    return usersOff.some(u => u.userUID === selectedUserId);
-  }, [selectedUserId, dateToUsersMap]);
-
-  // Check if a date is selected (temporarily, not saved)
-  const isDateSelected = useCallback((date) => {
-    if (!selectedUserId) return false;
-    const dateString = formatDateString(date);
-    return selectedDates.some(d => formatDateString(d) === dateString);
-  }, [selectedUserId, selectedDates]);
-
-  // Get users who have off on a specific date
-  const getUsersOffOnDate = useCallback((date) => {
-    const dateString = formatDateString(date);
-    return dateToUsersMap.get(dateString) || [];
-  }, [dateToUsersMap]);
-
-  // Get day data for a specific date (for DynamicCalendar)
-  const getDayData = useCallback((date) => {
-    const isOff = selectedUserId ? isDateOff(date) : false;
-    const isSelected = selectedUserId ? isDateSelected(date) : false;
-    const usersOff = getUsersOffOnDate(date);
+    const isOff = selectedUserId ? usersOff.some(u => u.userUID === selectedUserId) : false;
+    const isSelected = selectedUserId ? selectedDates.some(d => formatDateString(d) === dateString) : false;
     const isDisabled = isDateDisabled(date);
     
     return {
@@ -185,7 +159,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       isDisabled,
       canSelect: selectedUserId && hasAvailableDays && !isOff && !isDisabled
     };
-  }, [selectedUserId, hasAvailableDays, isDateOff, isDateSelected, getUsersOffOnDate, isDateDisabled]);
+  }, [selectedUserId, hasAvailableDays, dateToUsersMap, selectedDates, isDateDisabled]);
 
   // Get all users with their assigned colors for legend
   // Admin sees all users, regular users see only themselves
@@ -219,11 +193,6 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     });
   }, [allUsers, teamDaysOff, isAdmin, authUser, selectedUserId]);
 
-  // Get all users with off days (for calendar display)
-  const usersWithOffDays = useMemo(() => {
-    return allUsersWithColors.filter(user => user.offDays.length > 0);
-  }, [allUsersWithColors]);
-
   // Handle date click
   const handleDateClick = useCallback((date) => {
     if (!selectedUserId) {
@@ -248,10 +217,11 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     }
 
     const dateString = formatDateString(date);
+    const usersOff = dateToUsersMap.get(dateString) || [];
+    const isOff = usersOff.some(u => u.userUID === selectedUserId);
     
     // Check if date is already saved
-    if (isDateOff(date)) {
-      // Don't allow clicking on saved dates - use Edit/Remove buttons instead
+    if (isOff) {
       return;
     }
 
@@ -264,7 +234,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         return [...prev, date];
       }
     });
-  }, [selectedUserId, isDateOff, isDateDisabled, isWeekend]);
+  }, [selectedUserId, dateToUsersMap, isDateDisabled, isWeekend]);
 
   // Handle save
   const handleSave = useCallback(async () => {
@@ -359,6 +329,12 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     // Data will be updated automatically via real-time hook
   }, []);
 
+  // Handle year change from calendar (memoized to prevent re-renders)
+  const handleYearChange = useCallback((year) => {
+    // Only update if year actually changed to prevent loops
+    setCurrentYear(prev => prev !== year ? year : prev);
+  }, []);
+
   // Prepare user options for select
   const userOptions = useMemo(() => {
     if (!isAdmin) {
@@ -374,69 +350,75 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
     }));
   }, [isAdmin, allUsers, authUser]);
 
-  // Render day cell for days off calendar
-  const renderDay = useCallback((day, dayIndex, dayData, monthDate) => {
+  // Memoize user color and selected user name to avoid recalculation
+  const selectedUserName = useMemo(() => selectedUser?.name || 'User', [selectedUser?.name]);
+  const selectedUserColor = useMemo(() => {
+    if (!selectedUser) return '#64748B';
+    const colorSet = selectedUser.color_set || selectedUser.colorSet;
+    return colorSet ? (colorSet.startsWith('#') ? colorSet : `#${colorSet}`) : '#64748B';
+  }, [selectedUser?.color_set, selectedUser?.colorSet]);
+  
+  // Render day cell
+  const renderDay = useCallback((day, dayIndex, dayData) => {
     if (!dayData) {
       dayData = getDayData(day.date);
     }
 
-    const { isOff, isSelected, usersOff: usersOffData, isDisabled, canSelect } = dayData;
-    const usersOff = usersOffData || getUsersOffOnDate(day.date);
+    const { isOff, isSelected, usersOff, isDisabled, canSelect } = dayData;
     
-    // Filter usersOff based on role and selection
-    const visibleUsersOff = isAdmin
-      ? (selectedUserId 
-          ? usersOff.filter(u => u.userUID === selectedUserId)
-          : usersOff)
-      : usersOff.filter(u => u.userUID === authUser?.userUID);
+    // Filter users based on admin/selected user
+    let visibleUsersOff = usersOff;
+    if (isAdmin) {
+      if (selectedUserId) {
+        visibleUsersOff = usersOff.filter(u => u.userUID === selectedUserId);
+      }
+    } else {
+      visibleUsersOff = usersOff.filter(u => u.userUID === authUser?.userUID);
+    }
     
-    // Determine background color
+    const hasUsersOff = visibleUsersOff.length > 0;
+    
+    // Determine styles
     let bgColor = 'bg-gray-50 dark:bg-gray-600';
     let textColor = 'text-gray-600 dark:text-gray-200';
+    const style = {};
     
-    const shouldShowColors = (isOff && selectedUserId) || (!selectedUserId && isAdmin && visibleUsersOff.length > 0) || (selectedUserId && visibleUsersOff.length > 0 && !isOff);
-    
-    if (isDisabled && visibleUsersOff.length === 0) {
+    if (isDisabled && !hasUsersOff) {
       bgColor = 'bg-gray-100 dark:bg-gray-700';
       textColor = 'text-gray-400 dark:text-gray-600';
-    } else if (shouldShowColors || isSelected) {
-      bgColor = '';
-      textColor = 'text-white font-semibold';
-    }
-
-    const style = {};
-    if (isDisabled && visibleUsersOff.length === 0) {
       style.opacity = 0.4;
     } else if (isSelected) {
+      bgColor = '';
+      textColor = 'text-white font-semibold';
       style.backgroundColor = userColor;
     } else if (isOff && selectedUserId) {
+      bgColor = '';
+      textColor = 'text-white font-semibold';
       style.backgroundColor = userColor;
-    } else if (visibleUsersOff.length > 0) {
-      const gradient = generateMultiColorGradient(visibleUsersOff);
-      if (gradient && visibleUsersOff.length > 1) {
-        style.background = gradient;
+    } else if (hasUsersOff) {
+      bgColor = '';
+      textColor = 'text-white font-semibold';
+      if (visibleUsersOff.length > 1) {
+        style.background = generateMultiColorGradient(visibleUsersOff);
       } else {
         style.backgroundColor = visibleUsersOff[0].color;
       }
       style.opacity = isDisabled ? 0.6 : 1;
     }
 
-    // Prepare tooltip content
+    // Tooltip content
     let tooltipContent = '';
     let tooltipUsers = [];
     
     if (isOff && selectedUserId) {
-      tooltipContent = `${selectedUser?.name || 'User'} - Off${isDisabled ? ' (Past date)' : ''}`;
-      tooltipUsers = [{
-        userName: selectedUser?.name || 'User',
-        color: getUserColor(selectedUser)
-      }];
-    } else if (visibleUsersOff.length > 0) {
+      tooltipContent = `${selectedUserName} - Off${isDisabled ? ' (Past date)' : ''}`;
+      tooltipUsers = [{ userName: selectedUserName, color: selectedUserColor }];
+    } else if (hasUsersOff) {
       tooltipContent = `${visibleUsersOff.length > 1 ? `${visibleUsersOff.length} users off` : 'User off'}${isDisabled ? ' (Past date)' : ''}`;
       tooltipUsers = visibleUsersOff.map(u => ({
         userUID: u.userUID,
         userName: u.userName,
-        color: u.color || getUserColor(u)
+        color: u.color
       }));
     } else if (isDisabled) {
       tooltipContent = isWeekend(day.date) ? 'Weekend - Cannot be selected' : 'Past date - Cannot be selected';
@@ -452,14 +434,10 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       <Tooltip
         key={`${dayIndex}-${formatDateString(day.date)}`}
         content={tooltipContent}
-        users={tooltipUsers.length > 0 ? tooltipUsers : []}
+        users={tooltipUsers}
       >
         <div
-          className={`
-            rounded text-sm flex flex-col items-center justify-center relative
-            ${bgColor} ${textColor}
-            ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}
-          `}
+          className={`rounded text-sm flex flex-col items-center justify-center relative ${bgColor} ${textColor} ${canSelect ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors' : 'cursor-not-allowed'}`}
           style={{ ...style, aspectRatio: '5 / 3' }}
           onClick={() => canSelect && handleDateClick(day.date)}
         >
@@ -480,7 +458,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         </div>
       </Tooltip>
     );
-  }, [selectedUserId, isAdmin, authUser, userColor, selectedUser, hasAvailableDays, getDayData, getUsersOffOnDate, isWeekend, handleDateClick, handleRemove]);
+  }, [selectedUserId, isAdmin, authUser, userColor, selectedUserName, selectedUserColor, hasAvailableDays, getDayData, isWeekend, handleDateClick, handleRemove]);
 
   return (
     <div className="days-off-calendar space-y-6">
@@ -559,7 +537,11 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
             variant="primary"
             size="md"
             onClick={handleSave}
-            disabled={!hasAvailableDays || selectedDates.length === 0 || saving || selectedDates.some(date => isDateOff(date))}
+            disabled={!hasAvailableDays || selectedDates.length === 0 || saving || selectedDates.some(date => {
+              const dateString = formatDateString(date);
+              const usersOff = dateToUsersMap.get(dateString) || [];
+              return usersOff.some(u => u.userUID === selectedUserId);
+            })}
             loading={saving}
             icon={Icons.buttons.save}
           >
@@ -583,7 +565,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
         initialMonth={new Date(currentYear, 0, 1)}
         getDayData={getDayData}
         renderDay={renderDay}
-        onMonthChange={(year) => setCurrentYear(year)}
+        onMonthChange={handleYearChange}
         config={{
           title: 'Days Off Calendar',
           description: isAdmin ? 'Select a user and manage their days off' : 'Manage your days off',
