@@ -39,7 +39,7 @@ const App = () => {
               pauseOnFocusLoss
               draggable
               pauseOnHover
-              theme="light"
+              className="toast-container"
               style={{ zIndex: 9999 }}
             />
           </AppDataProvider>

@@ -367,6 +367,67 @@
   .hover-blue {
     @apply hover:text-blue-default;
   }
+
+  /* Toast Notification Styles - Match App Design */
+  .toast-container .Toastify__toast {
+    @apply bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg;
+    @apply text-gray-900 dark:text-white;
+    min-height: 64px;
+  }
+
+  .toast-container .Toastify__toast--success {
+    @apply bg-white dark:bg-smallCard;
+  }
+
+  .toast-container .Toastify__toast--error {
+    @apply bg-white dark:bg-smallCard;
+  }
+
+  .toast-container .Toastify__toast--warning {
+    @apply bg-white dark:bg-smallCard;
+  }
+
+  .toast-container .Toastify__toast--info {
+    @apply bg-white dark:bg-smallCard;
+  }
+
+  .toast-container .Toastify__toast-body {
+    @apply text-gray-900 dark:text-white;
+    padding: 12px 16px;
+  }
+
+  .toast-container .Toastify__progress-bar {
+    @apply bg-primary dark:bg-primary;
+    height: 3px;
+  }
+
+  .toast-container .Toastify__progress-bar--success {
+    @apply bg-green-success;
+  }
+
+  .toast-container .Toastify__progress-bar--error {
+    @apply bg-red-error;
+  }
+
+  .toast-container .Toastify__progress-bar--warning {
+    @apply bg-warning;
+  }
+
+  .toast-container .Toastify__progress-bar--info {
+    @apply bg-blue-default;
+  }
+
+  .toast-container .Toastify__close-button {
+    @apply text-gray-500 dark:text-gray-400 opacity-70 hover:opacity-100;
+  }
+
+  .toast-container .Toastify__close-button > svg {
+    @apply fill-current;
+  }
+
+  .toast-container .Toastify__toast-icon {
+    @apply text-gray-900 dark:text-white;
+  }
 }
 
 

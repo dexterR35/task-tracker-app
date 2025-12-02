@@ -349,7 +349,7 @@ const MonthToMonthComparisonCard = memo(
               Task Analysis
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Complete breakdown of all tasks by category, product, markets, and users
+              Complete view of all tasks by category, product, markets, and users
             </p>
           </div>
 

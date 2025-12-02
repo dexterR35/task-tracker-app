@@ -557,7 +557,7 @@ export const useMiscTasks = (tasks, users = [], filters = {}) => {
 };
 
 /**
- * Hook: Get comprehensive analytics for a specific user and market
+ * Hook: Get analytics for a specific user and market
  * @param {Array} tasks - Array of tasks
  * @param {Array} users - Array of user objects
  * @param {string} userId - User ID

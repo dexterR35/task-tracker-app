@@ -386,7 +386,7 @@ export const calculateMonthToMonthComparison = (
       (item) => item[month1Name] > 0 || item[month2Name] > 0 || (month3Metrics && item[month3Name] > 0)
     );
 
-  // Create comprehensive chart data - Categories
+  // Create chart data - Categories
   const categoriesChartData = [
     {
       name: "Marketing",
@@ -420,7 +420,7 @@ export const calculateMonthToMonthComparison = (
     return item;
   }).filter(item => item[month1Name] > 0 || item[month2Name] > 0 || (month3Metrics && item[month3Name] > 0));
 
-  // Create comprehensive chart data - Products (Casino, Sport, etc.)
+  // Create chart data - Products (Casino, Sport, etc.)
   const productsChartData = [
     {
       name: "Casino",
@@ -460,7 +460,7 @@ export const calculateMonthToMonthComparison = (
     return item;
   }).filter(item => item[month1Name] > 0 || item[month2Name] > 0 || (month3Metrics && item[month3Name] > 0));
 
-  // Create comprehensive chart data - All Markets
+  // Create chart data - All Markets
   const allMarketsChartData = sortedMarkets
     .map((market) => {
       // Market is already normalized
@@ -482,7 +482,7 @@ export const calculateMonthToMonthComparison = (
     })
     .slice(0, 15); // Top 15 markets
 
-  // Create comprehensive chart data - Users
+  // Create chart data - Users
   const usersChartData = sortedUsers
     .map((user) => {
       const item = {
@@ -558,7 +558,7 @@ export const calculateMonthToMonthComparison = (
     sportChartData,
     casinoAcquisitionChartData,
     sportAcquisitionChartData,
-    // Comprehensive charts
+    // Charts
     categoriesChartData,
     productsChartData,
     allMarketsChartData,

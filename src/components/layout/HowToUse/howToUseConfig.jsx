@@ -156,7 +156,7 @@ export const HOW_TO_USE_CONTENT = {
           { text: "Base Days Required", description: "Users must have base days configured before selecting dates. Admins need to create a record with base days first" },
           { text: "Days Total Calculation", description: "Total days = Base Days + Monthly Accrual (1.75 days × number of months since record creation). This is calculated automatically" },
           { text: "Days Remaining", description: "Remaining days = Total Days - Days Off Used. This shows how many vacation days are still available" },
-          { text: "Email to HR", description: "After saving dates, use \"Send Email to HR\" button to notify the HR team. This helps with vacation planning and approval" },
+          { text: "Email to HR", description: "After saving dates, use \"Send Email to HR\" button to notify the HR team. The system uses EmailJS to send automated emails. The email includes employee name, email, total days requested, and a list of all requested dates. This helps with vacation planning and approval" },
           { text: "Past Dates", description: "Past dates cannot be selected or removed. They are grayed out and locked to prevent changes to historical data" },
           { text: "Weekends", description: "Weekends (Saturday and Sunday) cannot be selected. Only weekdays can be marked as days off" },
           { text: "Multiple Users", description: "Admins can view and manage days off for all team members. Regular users can only see and manage their own days off" },
@@ -195,6 +195,19 @@ export const HOW_TO_USE_CONTENT = {
           { text: "Date Selection", description: "Click on any available date to select it. Selected dates are highlighted and can be saved or removed" },
         ]
       },
+      {
+        title: "Email to HR - EmailJS Integration:",
+        items: [
+          { text: "How It Works", description: "The app uses EmailJS (a third-party email service) to send emails directly from the browser without requiring a backend server. When you click \"Send Email to HR\", the system automatically formats your request and sends it to the configured HR email address" },
+          { text: "Email Content", description: "The email includes: Employee name and email address, total number of days requested, complete list of all requested dates (formatted as Month Day, Year), and a professional message template. The email is sent from your email address to the HR team" },
+          { text: "Email Modal", description: "Before sending, a modal window shows: Employee information (name and email), list of all selected dates, preview of the email template that will be sent. Review the information and click \"Send Now\" to send the email" },
+          { text: "Email Requirements", description: "To send emails, you must have: A valid email address in your user profile, at least one saved day off date, and EmailJS must be properly configured by the administrator. If EmailJS is not configured, you'll see an error message" },
+          { text: "After Sending", description: "After successfully sending the email, you'll see a success notification. The email modal will close automatically after 1 second. The HR team will receive the email at the configured HR email address" },
+          { text: "EmailJS Configuration (Admin)", description: "EmailJS requires configuration in environment variables: VITE_EMAILJS_SERVICE_ID (EmailJS service ID), VITE_EMAILJS_TEMPLATE_ID (EmailJS template ID), VITE_EMAILJS_PUBLIC_KEY (EmailJS public key), VITE_HR_EMAIL (HR team email address). These are set up by administrators at https://www.emailjs.com/" },
+          { text: "EmailJS Setup Process", description: "Administrators need to: 1) Create an account at emailjs.com, 2) Create an email service (Gmail, Outlook, etc.), 3) Create an email template with variables (employee_name, employee_email, dates, total_days, message), 4) Get the Service ID, Template ID, and Public Key, 5) Add these values to environment variables (.env file), 6) Restart the application. Once configured, all users can send emails to HR" },
+          { text: "Email Template Variables", description: "The EmailJS template uses these variables: to_email (HR email address), from_email (employee email), from_name (employee name), subject (email subject line), message (formatted email body), dates (comma-separated list of dates), total_days (number of days as string), employee_name (employee name), employee_email (employee email). These are automatically populated by the app" },
+        ]
+      },
     ]
   },
   analytics: {
@@ -205,14 +218,14 @@ export const HOW_TO_USE_CONTENT = {
         isImportant: true,
         items: [
           { text: "Admin Only", description: "Analytics page is only accessible to users with admin role. Regular users cannot access this page" },
-          { text: "Task Counting Logic", description: "Total tasks shows unique tasks (each task counted once). Market breakdowns show per-market counts (how many times each market appears across all tasks). Example: 3 tasks with markets [UK,RO,IE], [RO,UK], [RO,IE] shows Total: 3 tasks, but RO: 3, IE: 2, UK: 2" },
+          { text: "Task Counting Logic", description: "Total tasks shows unique tasks (each task counted once). Market counts show per-market counts (how many times each market appears across all tasks). Example: 3 tasks with markets [UK,RO,IE], [RO,UK], [RO,IE] shows Total: 3 tasks, but RO: 3, IE: 2, UK: 2" },
           { text: "Month Selection", description: "Select a month from the dropdown to view analytics for that specific month. Analytics are calculated based on tasks in the selected month" },
           { text: "Data Updates", description: "Analytics update automatically when tasks are added, modified, or deleted. Changes are reflected immediately in all charts and statistics" },
           { text: "Percentage Calculation Logic", description: "Percentages are calculated to always sum to exactly 100%. System uses floor values (rounds down) and allocates remainder percentage points to items with largest remainders. Example: 3 items with 33.3%, 33.3%, 33.4% display as 33%, 33%, 34% (sums to 100%). This ensures no rounding errors" },
           { text: "Total Calculation Formula", description: "Totals use reduce function to sum all values: total = sum of all individual values. For tasks: count unique tasks. For hours: sum all task hours. For markets: sum market occurrences. Totals are rounded to 2 decimal places for hours" },
-          { text: "Per User Calculations", description: "Data divided per user shows: total tasks per user (unique count), total hours per user (sum of hours), market distribution per user (which markets each user worked on), category breakdown per user (Marketing/Acquisition/Product per user), and percentage of total workload per user" },
+          { text: "Per User Calculations", description: "Data divided per user shows: total tasks per user (unique count), total hours per user (sum of hours), market distribution per user (which markets each user worked on), category distribution per user (Marketing/Acquisition/Product per user), and percentage of total workload per user" },
           { text: "Per Market Calculations", description: "Market statistics calculated as: task count per market (how many tasks include this market), total hours per market (sum of hours for tasks with this market), percentage distribution (market count / total market occurrences × 100%). Markets are normalized (uppercase, trimmed) for consistency" },
-          { text: "Per Category Calculations", description: "Tasks grouped by category: Product (product casino, product sport, product poker, product lotto), Acquisition (acquisition casino, acquisition sport, etc.), Marketing (marketing casino, marketing sport, etc.), Misc (miscellaneous). Each category shows subcategory breakdown and market distribution" },
+          { text: "Per Category Calculations", description: "Tasks grouped by category: Product (product casino, product sport, product poker, product lotto), Acquisition (acquisition casino, acquisition sport, etc.), Marketing (marketing casino, marketing sport, etc.), Misc (miscellaneous). Each category shows subcategory distribution and market distribution" },
           { text: "Per Reporter Calculations", description: "Reporter analytics show: total tasks per reporter (unique count), total hours per reporter (sum of hours), markets covered per reporter (which markets reporter's tasks target), products worked on per reporter, and performance metrics per reporter" },
           { text: "Per Month Calculations", description: "All analytics filtered by selected month. Tasks must match selected month's monthId. Switch months to compare different time periods. Month comparison done manually by selecting different months" },
           { text: "Chart Data Generation", description: "Charts display: count with percentage format (e.g., '15 (25.5%)'), color-coded by type (markets have market colors, products have product colors, users have user colors). Pie charts show distribution, biaxial charts show tasks and hours together. Colors are consistent across all views" },
@@ -221,10 +234,10 @@ export const HOW_TO_USE_CONTENT = {
           { text: "Market Normalization", description: "Markets are normalized before calculations: trimmed (remove spaces), uppercase conversion (RO, UK, IE). This ensures 'ro', 'RO', ' Ro ' all count as same market. Prevents duplicate market entries" },
           { text: "Category Type Detection", description: "Tasks categorized by product name: starts with 'product ' = Product category, contains 'acquisition' = Acquisition category, contains 'marketing' = Marketing category, starts with 'misc' = Misc category. Subcategories extracted from product name (casino, sport, poker, lotto)" },
           { text: "Data Division Dimensions", description: "Analytics divide data by multiple dimensions simultaneously: by user (who worked), by market (which markets), by category (department type), by reporter (who reported), by product (which products), by time (month/week), by AI model (which AI tools used)" },
-          { text: "Biaxial Chart Logic", description: "Biaxial charts show two metrics together: tasks count (left axis) and hours (right axis). Each data point shows both values. Helps visualize relationship between task count and time spent. Used in market, category, and user breakdowns" },
+          { text: "Biaxial Chart Logic", description: "Biaxial charts show two metrics together: tasks count (left axis) and hours (right axis). Each data point shows both values. Helps visualize relationship between task count and time spent. Used in market, category, and user distributions" },
           { text: "Pie Chart Logic", description: "Pie charts show distribution percentages. Each segment represents a category/market/user with its percentage. Segments colored consistently. Total shown in center. Percentages sum to exactly 100% using floor and remainder allocation" },
-          { text: "User Analytics Breakdown", description: "Per user shows: total tasks (unique count), total hours (sum), market distribution (tasks and hours per market), category breakdown (Marketing/Acquisition/Product tasks and hours), percentage of total workload (user tasks / total tasks × 100%), and market percentages per user" },
-          { text: "Reporter Analytics Breakdown", description: "Per reporter shows: total tasks assigned (unique count), total hours (sum), markets covered (which markets reporter's tasks target), products worked on (which products), performance metrics (tasks per reporter, hours per reporter), and market distribution per reporter" },
+          { text: "User Analytics", description: "Per user shows: total tasks (unique count), total hours (sum), market distribution (tasks and hours per market), category distribution (Marketing/Acquisition/Product tasks and hours), percentage of total workload (user tasks / total tasks × 100%), and market percentages per user" },
+          { text: "Reporter Analytics", description: "Per reporter shows: total tasks assigned (unique count), total hours (sum), markets covered (which markets reporter's tasks target), products worked on (which products), performance metrics (tasks per reporter, hours per reporter), and market distribution per reporter" },
         ]
       },
       {
@@ -254,9 +267,9 @@ export const HOW_TO_USE_CONTENT = {
         title: "Using Analytics Cards:",
         items: [
           { text: "Card Overview", description: "Each card shows total tasks count and total hours. Cards are color-coded for easy identification. Hover over cards to see more details" },
-          { text: "View Details", description: "Click on any analytics card to view detailed breakdown. See charts, market distributions, user breakdowns, and category statistics" },
+          { text: "View Details", description: "Click on any analytics card to view detailed information. See charts, market distributions, user distributions, and category statistics" },
           { text: "Back to Overview", description: "Click \"Back to Analytics\" button to return to the main overview page. Navigate between different analytics types easily" },
-          { text: "Charts and Visualizations", description: "Detailed views show charts with market distribution, user breakdowns, and category statistics. Charts are color-coded for clarity" },
+          { text: "Charts and Visualizations", description: "Detailed views show charts with market distribution, user distributions, and category statistics. Charts are color-coded for clarity" },
           { text: "No Data Message", description: "If no data is available for selected month, a message appears explaining that data will show once tasks are added" },
         ]
       },
@@ -266,7 +279,7 @@ export const HOW_TO_USE_CONTENT = {
           { text: "Total Tasks", description: "Shows the count of unique tasks in the selected month. Each task is counted once, regardless of how many markets it has" },
           { text: "Market Counts", description: "Shows how many times each market appears across all tasks. A task with multiple markets counts toward each market's total" },
           { text: "Total Hours", description: "Sum of all task hours in the selected month. Includes regular task hours, excluding AI hours in some views" },
-          { text: "Category Breakdown", description: "Tasks are grouped by category (Marketing, Acquisition, Product). Each category shows subcategories and market distribution" },
+          { text: "Category Distribution", description: "Tasks are grouped by category (Marketing, Acquisition, Product). Each category shows subcategories and market distribution" },
           { text: "User Distribution", description: "Shows which users worked on tasks in each category or market. Helps identify workload distribution across team members" },
           { text: "AI Usage Statistics", description: "Shows which AI models were used, total AI time spent, and usage patterns. Helps track AI tool adoption and efficiency" },
         ]

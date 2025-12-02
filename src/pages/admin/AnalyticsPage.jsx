@@ -852,10 +852,10 @@ const AnalyticsPage = () => {
                       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
                     
                         <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
-                          <li><span className="font-medium">Acquisition, Marketing, Product, Misc</span> - Total shows unique tasks, market breakdowns show per-market counts</li>
-                          <li><span className="font-medium">AI Analytics</span> - Total shows unique tasks, breakdowns by product/market/user show per-category counts</li>
-                          <li><span className="font-medium">Reporter Analytics</span> - Total shows unique tasks, breakdowns by reporter/market show per-category counts</li>
-                          <li><span className="font-medium">Markets by Users</span> - Total shows unique tasks, market breakdowns show per-market counts</li>
+                          <li><span className="font-medium">Acquisition, Marketing, Product, Misc</span> - Total shows unique tasks, market counts show per-market counts</li>
+                          <li><span className="font-medium">AI Analytics</span> - Total shows unique tasks, distributions by product/market/user show per-category counts</li>
+                          <li><span className="font-medium">Reporter Analytics</span> - Total shows unique tasks, distributions by reporter/market show per-category counts</li>
+                          <li><span className="font-medium">Markets by Users</span> - Total shows unique tasks, market counts show per-market counts</li>
                           <li><span className="font-medium">Total Analytics</span> - Shows unique tasks across all categories</li>
                         </ul>
                   
