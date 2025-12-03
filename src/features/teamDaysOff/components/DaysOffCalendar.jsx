@@ -12,8 +12,7 @@ import { formatDateString } from '@/utils/dateUtils';
 import TeamDaysOffFormModal from './TeamDaysOffFormModal';
 import Modal from '@/components/ui/Modal/Modal';
 import DynamicCalendar, { getUserColor, generateMultiColorGradient, useCalendarUsers, filterUsersByRole, ColorLegend } from '@/components/Calendar/DynamicCalendar';
-import { send } from '@emailjs/browser';
-import { EMAILJS_CONFIG } from '@/constants';
+import { RESEND_CONFIG } from '@/constants';
 
 /**
  * Calendar component to display and manage days off for users
@@ -381,40 +380,60 @@ ${userName}`;
       return;
     }
 
-    // Check if EmailJS is configured
-    if (EMAILJS_CONFIG.SERVICE_ID === 'YOUR_SERVICE_ID' || 
-        EMAILJS_CONFIG.TEMPLATE_ID === 'YOUR_TEMPLATE_ID' || 
-        EMAILJS_CONFIG.PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
-      showError('EmailJS is not configured. Please contact administrator.');
-      logger.error('EmailJS configuration missing');
+    // Check if Resend is configured
+    if (RESEND_CONFIG.API_KEY === 'YOUR_RESEND_API_KEY' || !RESEND_CONFIG.API_KEY) {
+      showError('Resend is not configured. Please contact administrator.');
+      logger.error('Resend configuration missing');
       return;
     }
 
     setSendingEmail(true);
 
     try {
-      // Prepare template parameters for EmailJS
-      const templateParams = {
-        to_email: EMAILJS_CONFIG.HR_EMAIL,
-        from_email: userEmail,
-        from_name: userName,
+      // Prepare email data for Resend
+      const emailData = {
+        from: RESEND_CONFIG.FROM_EMAIL,
+        to: [RESEND_CONFIG.HR_EMAIL],
+        reply_to: userEmail,
         subject: `Days Off Request - ${userName}`,
-        message: emailTemplate,
-        dates: formattedEmailDates.map(d => d.displayString).join(', '),
-        total_days: formattedEmailDates.length.toString(),
-        employee_name: userName,
-        employee_email: userEmail
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Days Off Request</h2>
+            <p>Hello HR Team,</p>
+            <p>I would like to request the following days off:</p>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Employee:</strong> ${userName}</p>
+              <p><strong>Email:</strong> ${userEmail}</p>
+              <p><strong>Total Days:</strong> ${formattedEmailDates.length}</p>
+            </div>
+            <h3 style="color: #333; margin-top: 20px;">Requested Dates:</h3>
+            <ul style="list-style-type: none; padding: 0;">
+              ${formattedEmailDates.map(d => `<li style="padding: 5px 0;">• ${d.displayString}</li>`).join('')}
+            </ul>
+            <p style="margin-top: 20px;">Thank you for your consideration.</p>
+            <p>Best regards,<br>${userName}</p>
+          </div>
+        `,
+        text: emailTemplate
       };
 
-      // Send email using EmailJS
-      await send(
-        EMAILJS_CONFIG.SERVICE_ID,
-        EMAILJS_CONFIG.TEMPLATE_ID,
-        templateParams,
-        EMAILJS_CONFIG.PUBLIC_KEY
-      );
+      // Send email using Resend API
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_CONFIG.API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
 
-      logger.log('Email sent successfully to HR');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      logger.log('Email sent successfully to HR:', result);
       showSuccess('Email sent successfully to HR!');
       
       // Close modal after successful send
