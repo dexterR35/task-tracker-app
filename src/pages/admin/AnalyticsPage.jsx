@@ -151,7 +151,7 @@ const AnalyticsPage = () => {
       {
         id: "total-analytics",
         name: "Total Analytics",
-        description: "View  all hours by Product, Acquisition, and Marketing",
+        description: "View  all hours by Product, Acquisition, Marketing, and Misc",
         icon: Icons.generic.chart,
         color: "blue",
       },

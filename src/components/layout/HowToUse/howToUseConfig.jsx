@@ -214,7 +214,7 @@ export const HOW_TO_USE_CONTENT = {
       {
         title: "Analytics Types:",
         items: [
-          { text: "Total Analytics", description: "View all hours by Product, Acquisition, and Marketing. Shows overall performance across all departments" },
+          { text: "Total Analytics", description: "View all hours by Product, Acquisition, Marketing, and Misc. Shows overall performance across all departments" },
           { text: "Markets by Users", description: "View tasks distribution by markets and users. See which users work on which markets and how tasks are distributed" },
           { text: "Marketing Analytics", description: "View marketing hours breakdown by subcategories and markets. Analyze marketing performance and market distribution" },
           { text: "Acquisition Analytics", description: "View acquisition tasks and hours by subcategories and markets. Track acquisition performance across different markets" },

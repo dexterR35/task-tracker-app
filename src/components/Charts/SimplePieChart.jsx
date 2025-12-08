@@ -16,6 +16,59 @@ const SimplePieChart = React.memo(({
   dataType = 'market', // Type of data for consistent color mapping
   showLegend = true // Show/hide legend
 }) => {
+  // Calculate percentages that sum to exactly 100% (with 1 decimal place)
+  const calculatedPercentages = useMemo(() => {
+    if (!data || data.length === 0) return {};
+    
+    const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+    if (total === 0) {
+      const result = {};
+      data.forEach(item => {
+        result[item.name || item.key] = 0;
+      });
+      return result;
+    }
+
+    // Calculate raw percentages with 1 decimal place
+    const percentages = data.map(item => {
+      const rawPercentage = ((item.value || 0) / total) * 100;
+      // Round to 1 decimal place, then multiply by 10 to work with integers
+      const rounded = Math.round(rawPercentage * 10) / 10;
+      const floored = Math.floor(rounded * 10); // Floor in tenths (e.g., 33.3 -> 333)
+      const remainder = (rawPercentage * 10) - floored;
+      return {
+        name: item.name || item.key,
+        value: item.value || 0,
+        floored,
+        remainder,
+        rawPercentage
+      };
+    });
+
+    // Calculate sum of floored values (in tenths)
+    const sumFloored = percentages.reduce((sum, p) => sum + p.floored, 0);
+    const targetTotal = 1000; // 100.0% in tenths
+    const difference = targetTotal - sumFloored;
+
+    // Sort by remainder (descending) to allocate extra tenths to largest remainders
+    const sorted = [...percentages].sort((a, b) => b.remainder - a.remainder);
+    // Allocate the difference (which should be between 0 and number of items)
+    const differenceToAllocate = Math.max(0, Math.min(Math.round(difference), percentages.length));
+    
+    // Allocate final percentages (in tenths)
+    sorted.forEach((item, index) => {
+      item.finalPercentage = index < differenceToAllocate ? item.floored + 1 : item.floored;
+    });
+
+    // Create result object (convert back from tenths to percentage)
+    const result = {};
+    percentages.forEach(p => {
+      result[p.name] = p.finalPercentage / 10; // Convert from tenths back to percentage
+    });
+
+    return result;
+  }, [data]);
+
   // Process data with consistent colors and sort to reduce label collisions
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -91,6 +144,11 @@ const SimplePieChart = React.memo(({
     // Capitalize the name
     const capitalizedName = capitalizeText(name);
 
+    // Use calculated percentage that sums to 100%, fallback to Recharts percent if not available
+    const calculatedPercent = calculatedPercentages[name] !== undefined 
+      ? calculatedPercentages[name] 
+      : percent * 100;
+
     return (
       <g style={{ pointerEvents: 'none' }}>
         {/* Leader line from pie edge to label */}
@@ -116,7 +174,18 @@ const SimplePieChart = React.memo(({
           className="dark:fill-gray-200"
           style={{ pointerEvents: 'none' }}
         >
-          {showPercentages ? `${capitalizedName} (${(percent * 100).toFixed(0)}%)` : capitalizedName}
+          {showPercentages ? (() => {
+            // If percentage is very small but greater than 0, show "<1%" instead of "0.0%"
+            if (calculatedPercent > 0 && calculatedPercent < 0.5) {
+              return `${capitalizedName} (<1%)`;
+            }
+            // For whole numbers, show without decimal
+            if (calculatedPercent === Math.floor(calculatedPercent)) {
+              return `${capitalizedName} (${calculatedPercent}%)`;
+            }
+            // Otherwise show with 1 decimal place
+            return `${capitalizedName} (${calculatedPercent.toFixed(1)}%)`;
+          })() : capitalizedName}
         </text>
       </g>
     );

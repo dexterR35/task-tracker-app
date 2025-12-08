@@ -330,6 +330,16 @@ export const calculateTotalAnalyticsData = (tasks) => {
     color: categoryColors[item.name] || CHART_COLORS.DEFAULT[0],
   }));
 
+  // Create bar chart data (only main categories, exclude grand total) with tasks and hours
+  const barChartData = tableData
+    .filter((row) => row.isMainCategory && !row.isGrandTotal)
+    .map((row) => ({
+      name: row.category,
+      tasks: row.totalTasks,
+      hours: row.totalHours,
+      color: categoryColors[row.category] || CHART_COLORS.DEFAULT[0],
+    }));
+
   // Calculate totals - use acquisitionTotalTasks (casino + sport only) to match details page
   const totalTasks = categoryData.product.tasks + acquisitionTotalTasks + categoryData.marketing.tasks + categoryData.misc.tasks;
   const totalHours = categoryData.product.hours + acquisitionTotalHours + categoryData.marketing.hours + categoryData.misc.hours;
@@ -338,6 +348,7 @@ export const calculateTotalAnalyticsData = (tasks) => {
     tableData,
     tableColumns,
     pieData: pieDataWithColors,
+    barChartData,
     totalTasks,
     totalHours: Math.round(totalHours * 100) / 100,
     categoryData, // Include breakdown for potential future use
@@ -355,6 +366,7 @@ export const getTotalAnalyticsCardProps = (tasks, isLoading = false) => {
     tableData: totalData.tableData,
     tableColumns: totalData.tableColumns,
     pieData: totalData.pieData,
+    barChartData: totalData.barChartData,
     pieTitle: `Total Tasks by Category (${totalTasks} tasks, ${totalHours}h)`,
     pieColors: totalData.pieData.map((item) => item.color),
     totalTasks,
