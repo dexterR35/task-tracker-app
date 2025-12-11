@@ -2,12 +2,7 @@ import { logger } from "@/utils/logger";
 import { showError, showSuccess } from "@/utils/toast";
 import { ERROR_SYSTEM } from '@/constants';
 
-/**
- * Standardized error handling utilities
- * Provides consistent error handling patterns across the application
- */
 
-// Re-export constants from centralized location for backward compatibility
 export const ERROR_TYPES = ERROR_SYSTEM.TYPES;
 export const ERROR_SEVERITY = ERROR_SYSTEM.SEVERITY;
 
@@ -54,11 +49,7 @@ export const createErrorResponse = (type, message, details = null, severity = ER
   };
 };
 
-/**
- * Parse Firebase/Firestore errors into standardized format
- * @param {Error} error - The error object
- * @returns {Object} - Standardized error response
- */
+
 export const parseFirebaseError = (error) => {
   if (!error) {
     return createErrorResponse(ERROR_TYPES.UNKNOWN, 'An unknown error occurred');
@@ -126,13 +117,7 @@ export const parseFirebaseError = (error) => {
   return createErrorResponse(ERROR_TYPES.UNKNOWN, errorMessage, { originalError: error }, ERROR_SEVERITY.MEDIUM);
 };
 
-/**
- * Handle API errors with standardized response
- * @param {Error} error - The error object
- * @param {string} operation - The operation that failed (for logging)
- * @param {Object} options - Additional options
- * @returns {Object} - Standardized error response
- */
+
 export const handleApiError = (error, operation = 'API operation', options = {}) => {
   const { showToast = true, logError = true } = options;
 
@@ -153,12 +138,7 @@ export const handleApiError = (error, operation = 'API operation', options = {})
   return errorResponse;
 };
 
-/**
- * Handle form validation errors
- * @param {Object} errors - Form errors object
- * @param {string} formName - Name of the form (for logging)
- * @returns {Object} - Standardized error response
- */
+
 export const handleValidationError = (errors, formName = 'form') => {
   const errorFields = Object.keys(errors);
 
@@ -184,13 +164,7 @@ export const handleValidationError = (errors, formName = 'form') => {
   return errorResponse;
 };
 
-/**
- * Handle success responses
- * @param {string} message - Success message
- * @param {Object} data - Success data
- * @param {string} operation - The operation that succeeded
- * @returns {Object} - Standardized success response
- */
+
 export const handleSuccess = (message, data = null, operation = 'operation') => {
   const successResponse = {
     type: 'SUCCESS',
@@ -205,12 +179,7 @@ export const handleSuccess = (message, data = null, operation = 'operation') => 
   return successResponse;
 };
 
-/**
- * Create a standardized async error handler
- * @param {Function} operation - The async operation to execute
- * @param {Object} options - Error handling options
- * @returns {Function} - Wrapped function with error handling
- */
+
 export const withErrorHandling = (operation, options = {}) => {
   return async (...args) => {
     try {
@@ -222,12 +191,7 @@ export const withErrorHandling = (operation, options = {}) => {
   };
 };
 
-/**
- * Create a standardized async operation wrapper for RTK Query
- * @param {Function} mutationFn - The RTK Query mutation function
- * @param {Object} options - Error handling options
- * @returns {Function} - Wrapped mutation function
- */
+
 export const withMutationErrorHandling = (mutationFn, options = {}) => {
   return async (arg) => {
     try {
@@ -246,12 +210,7 @@ export const withMutationErrorHandling = (mutationFn, options = {}) => {
   };
 };
 
-/**
- * Error boundary helper for React components
- * @param {Error} error - The error object
- * @param {string} componentName - Name of the component
- * @returns {Object} - Error information for display
- */
+
 export const getErrorBoundaryInfo = (error, componentName = 'Component') => {
   const errorResponse = parseFirebaseError(error);
 

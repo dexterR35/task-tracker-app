@@ -103,27 +103,7 @@ export const BaseCalendarGrid = ({
   );
 };
 
-/**
- * Dynamic Calendar Component
- * A flexible calendar that can be configured for different use cases (days off, etc.)
- * 
- * @param {Object} props
- * @param {Date} props.initialMonth - Initial month to display
- * @param {Function} props.renderDay - Function to render each day cell: (day, dayIndex, dayData) => ReactNode
- * @param {Function} props.getDayData - Function to get data for a specific day: (date) => any
- * @param {Function} props.onMonthChange - Callback when month changes: (year, month) => void
- * @param {Object} props.config - Configuration object
- * @param {boolean} config.showNavigation - Show month/year navigation (default: true)
- * @param {boolean} config.showMultipleMonths - Show all months in year (default: false)
- * @param {string} config.title - Calendar title
- * @param {string} config.description - Calendar description
- * @param {string} config.emptyMessage - Message when no data
- * @param {Function} config.emptyCheck - Function to check if calendar should be hidden: (data) => boolean
- * @param {string} config.className - Additional CSS classes
- * @param {Object} config.monthClassName - CSS classes for month container
- * @param {ReactNode} props.headerActions - Additional actions in header
- * @param {ReactNode} props.footer - Footer content
- */
+
 const DynamicCalendar = ({
   initialMonth = new Date(),
   renderDay,
@@ -401,15 +381,7 @@ export const getCalendarUserColor = (user) => {
   return getUserColor(user);
 };
 
-/**
- * Shared Color Legend Component
- * Used by DaysOffCalendar
- * 
- * @param {Array} users - Array of user objects with { userUID, userName, color, ... }
- * @param {string} selectedUserId - Currently selected user ID (for highlighting)
- * @param {string} countLabel - Label for the count (e.g., "days")
- * @param {Function} getCount - Function to get count for a user: (user) => number
- */
+
 export const ColorLegend = ({ 
   users = [], 
   selectedUserId = null,

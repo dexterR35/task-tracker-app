@@ -9,13 +9,6 @@ import {
   addGrandTotalRow,
 } from "./analyticsSharedConfig";
 
-/**
- * Calculate Shutterstock analytics data
- * Filters tasks by useShutterstock = true
- * @param {Array} tasks - All tasks
- * @param {Array} users - All users
- * @returns {Object} - Object with tableData and tableColumns
- */
 export const calculateShutterstockAnalytics = (tasks, users) => {
   // Filter tasks to only include those with useShutterstock = true
   const shutterstockTasks = (tasks || []).filter((task) => {
@@ -281,13 +274,7 @@ export const calculateShutterstockAnalytics = (tasks, users) => {
   };
 };
 
-/**
- * Get Shutterstock Analytics Card Props
- * @param {Array} tasks - All tasks
- * @param {Array} users - All users
- * @param {boolean} isLoading - Loading state
- * @returns {Object} - Card props
- */
+
 export const getShutterstockAnalyticsCardProps = (tasks, users, isLoading = false) => {
   const calculatedData = calculateShutterstockAnalytics(tasks, users);
 
@@ -301,13 +288,7 @@ export const getShutterstockAnalyticsCardProps = (tasks, users, isLoading = fals
   };
 };
 
-/**
- * Cached version of getShutterstockAnalyticsCardProps
- * @param {Array} tasks - All tasks
- * @param {Array} users - All users
- * @param {boolean} isLoading - Loading state
- * @returns {Object} - Card props
- */
+
 export const getCachedShutterstockAnalyticsCardProps = (
   tasks,
   users = [],

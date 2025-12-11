@@ -25,11 +25,7 @@ import { logger } from "@/utils/logger";
 import dataCache from "@/utils/dataCache";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 
-/**
- * Check if user email already exists
- * @param {string} email - Email to check
- * @returns {Promise<boolean>} - True if email exists
- */
+
 const checkUserEmailExists = async (email) => {
   try {
     const usersRef = collection(db, 'users');
@@ -298,11 +294,7 @@ export const useDeleteUserMutation = () => {
   return [deleteUser];
 };
 
-/**
- * Fetch user by UID from Firestore (direct function for AuthContext)
- * @param {string} userUID - User UID to fetch
- * @returns {Promise<Object|null>} - User data or null if not found
- */
+
 export const fetchUserByUIDFromFirestore = async (userUID) => {
   try {
     if (!userUID) {

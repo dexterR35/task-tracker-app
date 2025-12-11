@@ -693,12 +693,7 @@ export const normalizeMarket = (market) => {
 // SHARED CALCULATION UTILITIES
 // ============================================================================
 
-/**
- * Calculate percentages for a group of counts, ensuring they sum to exactly 100%
- * @param {Array<{key: string, count: number}>} items - Array of items with key and count
- * @param {number} total - Total count
- * @returns {Object} - Object mapping keys to percentages that sum to 100%
- */
+
 export const calculatePercentagesForGroup = (items, total) => {
   if (!items || !Array.isArray(items) || items.length === 0) {
     return {};
@@ -747,13 +742,7 @@ export const calculatePercentagesForGroup = (items, total) => {
   return result;
 };
 
-/**
- * Calculate per-user charts by category (generic function for acquisition, marketing, product, etc.)
- * @param {Array} tasks - Array of tasks
- * @param {Array} users - Array of user objects
- * @param {string} categoryName - Optional category name for display
- * @returns {Array} - Array of user chart objects with marketData
- */
+
 export const calculateUsersChartsByCategory = (tasks, users, categoryName = null) => {
   if (!tasks || tasks.length === 0) return [];
 
@@ -839,12 +828,7 @@ export const calculateUsersChartsByCategory = (tasks, users, categoryName = null
     });
 };
 
-/**
- * Calculate user table data with markets (generic function)
- * @param {Array} tasks - Array of tasks
- * @param {Array} users - Array of user objects
- * @returns {Object} - Object with tableData and tableColumns
- */
+
 export const calculateUserTable = (tasks, users) => {
   if (!tasks || tasks.length === 0 || !users || users.length === 0) {
     return {

@@ -23,17 +23,7 @@ const isAcquisitionProduct = (products) => {
   );
 };
 
-/**
- * Calculate month-to-month comparison data
- * @param {Array} month1Tasks - Tasks for first month
- * @param {Array} month2Tasks - Tasks for second month
- * @param {String} month1Name - Name of first month
- * @param {String} month2Name - Name of second month
- * @param {Array} users - Users array
- * @param {Array} month3Tasks - Tasks for third month (optional)
- * @param {String} month3Name - Name of third month (optional)
- * @returns {Object} Comparison data with charts and table
- */
+
 export const calculateMonthToMonthComparison = (
   month1Tasks = [],
   month2Tasks = [],

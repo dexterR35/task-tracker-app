@@ -172,15 +172,7 @@ class FirebaseListenerManager {
     }
   }
 
-  /**
-   * Add a listener with automatic deduplication and memory leak prevention
-   * @param {string} key - Unique key for the listener
-   * @param {Function} setupFn - Function that returns unsubscribe function
-   * @param {boolean} preserve - Whether to preserve this listener during cleanup
-   * @param {string} category - Listener category for tracking
-   * @param {string} page - Current page for tracking
-   * @returns {Function} - Unsubscribe function
-   */
+
   addListener(key, setupFn, preserve = false, category = 'general', page = 'unknown') {
     // Check for excessive listeners - use selective cleanup instead of removing all
     if (this.listeners.size >= this.maxListeners) {
@@ -231,10 +223,7 @@ class FirebaseListenerManager {
     return unsubscribe;
   }
 
-  /**
-   * Remove a specific listener with error handling
-   * @param {string} key - Key of the listener to remove
-   */
+
   removeListener(key) {
     if (this.listeners.has(key)) {
       const unsubscribe = this.listeners.get(key);
@@ -413,37 +402,22 @@ class FirebaseListenerManager {
     this.pausedListeners.clear();
   }
 
-  /**
-   * Get listener count
-   * @returns {number} - Number of active listeners
-   */
+  
   getListenerCount() {
     return this.listeners.size;
   }
 
-  /**
-   * Get all listener keys
-   * @returns {Array<string>} - Array of listener keys
-   */
+
   getListenerKeys() {
     return Array.from(this.listeners.keys());
   }
 
-  /**
-   * Check if a listener exists
-   * @param {string} key - Key to check
-   * @returns {boolean} - Whether listener exists
-   */
+
   hasListener(key) {
     return this.listeners.has(key);
   }
 
-  /**
-   * Track listener usage for monitoring
-   * @param {string} key - Listener key
-   * @param {string} category - Listener category
-   * @param {string} page - Current page
-   */
+ 
   trackListenerUsage(key, category, page) {
     // Update total listeners
     this.usageStats.totalListeners = this.listeners.size;
@@ -475,17 +449,12 @@ class FirebaseListenerManager {
     }
   }
 
-  /**
-   * Track cleanup events
-   */
+ 
   trackCleanup() {
     this.usageStats.cleanupCount++;
   }
 
-  /**
-   * Get usage statistics
-   * @returns {Object} - Usage statistics
-   */
+
   getUsageStats() {
     return {
       ...this.usageStats,
@@ -496,36 +465,21 @@ class FirebaseListenerManager {
     };
   }
 
-  /**
-   * Get listeners per page breakdown
-   * @returns {Object} - Listeners per page
-   */
+ 
   getListenersPerPage() {
     return Object.fromEntries(this.usageStats.listenersPerPage);
   }
 
-  /**
-   * Get listeners per category breakdown
-   * @returns {Object} - Listeners per category
-   */
+ 
   getListenersPerCategory() {
     return Object.fromEntries(this.usageStats.listenersPerCategory);
   }
 
-  /**
-   * Get navigation history
-   * @returns {Array} - Navigation history
-   */
   getNavigationHistory() {
     return this.usageStats.navigationHistory;
   }
 
-  /**
-   * Check if a listener should be preserved based on recent usage
-   * @param {string} key - Listener key
-   * @param {number} recentMinutes - Minutes to consider as recent (default: 10)
-   * @returns {boolean} - Whether listener should be preserved
-   */
+
   shouldPreserveListener(key, recentMinutes = 10) {
     const recentTime = Date.now() - (recentMinutes * 60 * 1000);
 
@@ -546,11 +500,7 @@ class FirebaseListenerManager {
     return wasUsedRecently || categoryConfig.preserve;
   }
 
-  /**
-   * Get listener category from key
-   * @param {string} key - Listener key
-   * @returns {string} - Category name
-   */
+
   getListenerCategory(key) {
     if (key.includes('auth')) return 'auth';
     if (key.includes('tasks')) return 'tasks';
@@ -565,11 +515,7 @@ class FirebaseListenerManager {
     return 'general';
   }
 
-  /**
-   * Get category configuration
-   * @param {string} category - Category name
-   * @returns {Object} - Category configuration
-   */
+ 
   getCategoryConfig(category) {
     const configs = {
       'auth': { priority: 1, preserve: true },

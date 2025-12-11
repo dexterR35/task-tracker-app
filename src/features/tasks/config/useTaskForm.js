@@ -358,11 +358,7 @@ const sanitizeTaskFormData = (formData) => {
 
 // ===== TASK FORM DATA PROCESSING =====
 
-/**
- * Extract task name from Jira URL
- * @param {string} jiraLink - The Jira URL
- * @returns {string} - Extracted task name
- */
+
 const extractTaskNameFromJira = (jiraLink) => {
   if (!jiraLink) {
     throw new Error('Jira link is required');
@@ -376,11 +372,7 @@ const extractTaskNameFromJira = (jiraLink) => {
   }
 };
 
-/**
- * Process conditional fields based on checkbox states
- * @param {Object} formData - The form data
- * @returns {Object} - Processed form data
- */
+
 const processConditionalFields = (formData) => {
   const processedData = { ...formData };
 
@@ -398,11 +390,7 @@ const processConditionalFields = (formData) => {
   return processedData;
 };
 
-/**
- * Create the data_task structure for database storage
- * @param {Object} formData - Processed form data
- * @returns {Object} - Data task structure
- */
+
 const createDataTaskStructure = (formData) => {
   return {
     aiUsed: formData._usedAIEnabled ? [{
@@ -433,11 +421,7 @@ const createDataTaskStructure = (formData) => {
   };
 };
 
-/**
- * Main function to prepare task form data for database storage
- * @param {Object} formData - Raw form data
- * @returns {Object} - Processed and serialized data for database
- */
+
 export const prepareTaskFormData = (formData) => {
   if (!formData) {
     return formData;

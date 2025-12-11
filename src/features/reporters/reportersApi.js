@@ -1,10 +1,3 @@
-/**
- * Reporters API (Direct Firestore with Snapshots)
- *
- * @fileoverview Direct Firestore hooks for reporters with real-time updates
- * @author Senior Developer
- * @version 3.0.0
- */
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -24,11 +17,7 @@ import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import dataCache from "@/utils/dataCache";
 
-/**
- * Check if reporter email already exists
- * @param {string} email - Email to check
- * @returns {Promise<boolean>} - True if email exists
- */
+
 const checkReporterEmailExists = async (email) => {
   try {
     // Validate email parameter

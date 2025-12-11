@@ -26,13 +26,7 @@ import { logger } from "@/utils/logger";
 import dataCache from "@/utils/dataCache";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 
-/**
- * Calculate total days (base days + monthly accrual)
- * Uses stored values from database instead of calculating
- * @param {number} baseDays - Base days
- * @param {number} monthlyAccrual - Monthly accrual (stored in DB)
- * @returns {number} - Total days available
- */
+
 const calculateTotalDays = (baseDays, monthlyAccrual) => {
   return baseDays + (monthlyAccrual || 0);
 };

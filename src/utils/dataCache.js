@@ -19,12 +19,7 @@ class DataCache {
     this.cleanupThreshold = 0.8; // Clean up when 80% of limits are reached
   }
 
-  /**
-   * Set data in cache with TTL
-   * @param {string} key - Cache key
-   * @param {any} data - Data to cache
-   * @param {number} ttl - Time to live in milliseconds
-   */
+
   set(key, data, ttl = this.defaultTTL) {
     // Check memory limits before adding
     this.checkMemoryLimits();
@@ -102,80 +97,46 @@ class DataCache {
     logger.log(`[DataCache] Aggressive cleanup removed ${entriesToRemove} entries`);
   }
 
-  /**
-   * Set month data with extended TTL (30 days - changes once per month)
-   * @param {string} key - Cache key
-   * @param {any} data - Month data to cache
-   */
+ 
   setMonthData(key, data) {
     this.set(key, data, this.monthCacheTTL);
   }
 
-  /**
-   * Set static data with infinite cache (users, reporters, deliverables, tasks)
-   * @param {string} key - Cache key
-   * @param {any} data - Static data to cache
-   */
+
   setStaticData(key, data) {
     this.set(key, data, this.staticDataTTL);
   }
 
-  /**
-   * Set tasks data with infinite cache (only changes when you add/edit/remove tasks)
-   * @param {string} key - Cache key
-   * @param {any} data - Tasks data to cache
-   */
+
   setTasksData(key, data) {
     this.set(key, data, this.staticDataTTL);
   }
 
-  /**
-   * Force clear static data cache (when users/reporters/deliverables change)
-   * @param {string} key - Cache key to clear
-   */
+
   clearStaticData(key) {
     this.delete(key);
   }
 
-  /**
-   * Force clear tasks data cache (when tasks are added/edited/removed)
-   * @param {string} key - Cache key to clear
-   */
+ 
   clearTasksData(key) {
     this.delete(key);
   }
 
-  /**
-   * Force clear month data cache (when month changes)
-   * @param {string} key - Cache key to clear
-   */
+
   clearMonthData(key) {
     this.delete(key);
   }
 
-  /**
-   * Get month data with extended cache
-   * @param {string} key - Cache key
-   * @returns {any|null} Cached month data or null if expired/not found
-   */
+
   getMonthData(key) {
     return this.get(key);
   }
 
-  /**
-   * Get static data with extended cache
-   * @param {string} key - Cache key
-   * @returns {any|null} Cached static data or null if expired/not found
-   */
+
   getStaticData(key) {
     return this.get(key);
   }
 
-  /**
-   * Get data from cache if not expired
-   * @param {string} key - Cache key
-   * @returns {any|null} Cached data or null if expired/not found
-   */
   get(key) {
     const expiry = this.cacheExpiry.get(key);
     if (!expiry || Date.now() > expiry) {
@@ -185,11 +146,7 @@ class DataCache {
     return this.cache.get(key) || null;
   }
 
-  /**
-   * Check if key exists and is not expired
-   * @param {string} key - Cache key
-   * @returns {boolean} True if key exists and is not expired
-   */
+
   has(key) {
     const expiry = this.cacheExpiry.get(key);
     if (!expiry || Date.now() > expiry) {
@@ -199,10 +156,7 @@ class DataCache {
     return this.cache.has(key);
   }
 
-  /**
-   * Delete key from cache
-   * @param {string} key - Cache key
-   */
+
   delete(key) {
     this.cache.delete(key);
     this.cacheExpiry.delete(key);

@@ -40,21 +40,13 @@ import {
 // Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
 const fetchLocks = new Map();
 
-/**
- * Get month document reference
- * @param {string} monthId - Month ID in format "YYYY-MM"
- * @returns {DocumentReference} Month document reference
- */
+
 const getMonthRef = (monthId) => {
   const yearId = monthId.split('-')[0]; // Extract year from monthId (e.g., "2025" from "2025-09")
   return doc(db, "departments", "design", yearId, monthId); // Month document
 };
 
-/**
- * Get months collection reference
- * @param {string} yearId - Year ID (defaults to current year)
- * @returns {CollectionReference} Months collection reference
- */
+
 const getMonthsRef = (yearId = null) => {
   const targetYear = yearId || getCurrentYear();
   return collection(db, "departments", "design", targetYear);
