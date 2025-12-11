@@ -1,6 +1,8 @@
 import React, { memo, useMemo } from "react";
 import AnalyticsTable from "@/components/Table/AnalyticsTable";
 import BiaxialBarChart from "@/components/Charts/BiaxialBarChart";
+import SimplePieChart from "@/components/Charts/SimplePieChart";
+import MultiLineChart from "@/components/Charts/MultiLineChart";
 import { SkeletonAnalyticsCard } from "@/components/ui/Skeleton/Skeleton";
 import ChartHeader from "./ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
@@ -28,6 +30,16 @@ const MonthToMonthComparisonCard = memo(
     productsChartData = [],
     allMarketsChartData = [],
     usersChartData = [],
+    marketingPieChartDataMonth1 = [],
+    marketingPieChartDataMonth2 = [],
+    marketingPieChartDataMonth3 = null,
+    marketingBarChartData = [],
+    marketingLineChartData = [],
+    acquisitionPieChartDataMonth1 = [],
+    acquisitionPieChartDataMonth2 = [],
+    acquisitionPieChartDataMonth3 = null,
+    acquisitionBarChartData = [],
+    acquisitionLineChartData = [],
     className = "",
     isLoading = false,
     hasNoData = false,
@@ -182,6 +194,59 @@ const MonthToMonthComparisonCard = memo(
         });
       }
       return bars;
+    };
+
+    // Helper to build line chart configs for tasks and hours combined with distinct colors
+    const buildCombinedLines = (month1Color, month2Color, month3Color = CARD_SYSTEM.COLOR_HEX_MAP.purple) => {
+      // Define distinct colors for each line
+      const distinctColors = [
+        CARD_SYSTEM.COLOR_HEX_MAP.blue,        // Month 1 Tasks
+        CARD_SYSTEM.COLOR_HEX_MAP.green,       // Month 2 Tasks
+        CARD_SYSTEM.COLOR_HEX_MAP.crimson,     // Month 1 Hours
+        CARD_SYSTEM.COLOR_HEX_MAP.amber,       // Month 2 Hours
+        CARD_SYSTEM.COLOR_HEX_MAP.purple,      // Month 3 Tasks
+        CARD_SYSTEM.COLOR_HEX_MAP.pink,        // Month 3 Hours
+      ];
+      
+      const lines = [
+        // Tasks lines
+        {
+          dataKey: `${month1Name} Tasks`,
+          name: `${month1Name} Tasks`,
+          color: distinctColors[0],
+        },
+        {
+          dataKey: `${month2Name} Tasks`,
+          name: `${month2Name} Tasks`,
+          color: distinctColors[1],
+        },
+        // Hours lines
+        {
+          dataKey: `${month1Name} Hours`,
+          name: `${month1Name} Hours`,
+          color: distinctColors[2],
+        },
+        {
+          dataKey: `${month2Name} Hours`,
+          name: `${month2Name} Hours`,
+          color: distinctColors[3],
+        },
+      ];
+      if (month3Name) {
+        lines.push(
+          {
+            dataKey: `${month3Name} Tasks`,
+            name: `${month3Name} Tasks`,
+            color: distinctColors[4],
+          },
+          {
+            dataKey: `${month3Name} Hours`,
+            name: `${month3Name} Hours`,
+            color: distinctColors[5],
+          }
+        );
+      }
+      return lines;
     };
 
     return (
@@ -340,6 +405,314 @@ const MonthToMonthComparisonCard = memo(
               )}
             </ChartHeader>
           </div>
+        </div>
+
+        {/* Marketing Charts Section */}
+        <div>
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+              Marketing Analysis
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Marketing tasks by markets - {month1Name} vs {month2Name}{month3Name ? ` vs ${month3Name}` : ''}
+            </p>
+          </div>
+          
+          {/* Marketing Pie Charts */}
+          <div className={`grid grid-cols-1 ${month3Name ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6 mb-6`}>
+            {/* Month 1 Pie Chart */}
+            <ChartHeader
+              variant="section"
+              title={`Marketing - ${month1Name}`}
+              badges={[
+                `${month1Metrics?.categories?.marketing?.tasks || 0} tasks`,
+                `${Math.round((month1Metrics?.categories?.marketing?.hours || 0) * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {marketingPieChartDataMonth1 && marketingPieChartDataMonth1.length > 0 ? (
+                <SimplePieChart
+                  data={marketingPieChartDataMonth1}
+                  title=""
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No marketing data for {month1Name}
+                  </p>
+                </div>
+              )}
+            </ChartHeader>
+
+            {/* Month 2 Pie Chart */}
+            <ChartHeader
+              variant="section"
+              title={`Marketing - ${month2Name}`}
+              badges={[
+                `${month2Metrics?.categories?.marketing?.tasks || 0} tasks`,
+                `${Math.round((month2Metrics?.categories?.marketing?.hours || 0) * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {marketingPieChartDataMonth2 && marketingPieChartDataMonth2.length > 0 ? (
+                <SimplePieChart
+                  data={marketingPieChartDataMonth2}
+                  title=""
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No marketing data for {month2Name}
+                  </p>
+                </div>
+              )}
+            </ChartHeader>
+
+            {/* Month 3 Pie Chart */}
+            {month3Name && marketingPieChartDataMonth3 && (
+              <ChartHeader
+                variant="section"
+                title={`Marketing - ${month3Name}`}
+                badges={[
+                  `${month3Metrics?.categories?.marketing?.tasks || 0} tasks`,
+                  `${Math.round((month3Metrics?.categories?.marketing?.hours || 0) * 10) / 10}h`,
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                {marketingPieChartDataMonth3 && marketingPieChartDataMonth3.length > 0 ? (
+                  <SimplePieChart
+                    data={marketingPieChartDataMonth3}
+                    title=""
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">
+                      No marketing data for {month3Name}
+                    </p>
+                  </div>
+                )}
+              </ChartHeader>
+            )}
+          </div>
+
+          {/* Marketing Bar Chart */}
+          <ChartHeader
+            variant="section"
+            title="Marketing Tasks by Markets - Month Comparison"
+            badges={[
+              `${(month1Metrics?.categories?.marketing?.tasks || 0) + (month2Metrics?.categories?.marketing?.tasks || 0) + (month3Metrics?.categories?.marketing?.tasks || 0)} total tasks`,
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            {marketingBarChartData && marketingBarChartData.length > 0 ? (
+              <BiaxialBarChart
+                data={marketingBarChartData}
+                title=""
+                bars={buildChartBars(CARD_SYSTEM.COLOR_HEX_MAP.pink, CARD_SYSTEM.COLOR_HEX_MAP.blue, CARD_SYSTEM.COLOR_HEX_MAP.purple)}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  No marketing bar chart data available
+                </p>
+              </div>
+            )}
+          </ChartHeader>
+
+          {/* Marketing Combined Line Chart (Tasks & Hours) */}
+          <ChartHeader
+            variant="section"
+            title="Marketing Tasks & Hours by Markets - Month Comparison"
+            badges={[
+              `${(month1Metrics?.categories?.marketing?.tasks || 0) + (month2Metrics?.categories?.marketing?.tasks || 0) + (month3Metrics?.categories?.marketing?.tasks || 0)} tasks`,
+              `${Math.round(((month1Metrics?.categories?.marketing?.hours || 0) + (month2Metrics?.categories?.marketing?.hours || 0) + (month3Metrics?.categories?.marketing?.hours || 0)) * 10) / 10}h`,
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.pink}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            {marketingLineChartData && marketingLineChartData.length > 0 ? (
+              <MultiLineChart
+                data={marketingLineChartData}
+                title=""
+                lines={buildCombinedLines(CARD_SYSTEM.COLOR_HEX_MAP.pink, CARD_SYSTEM.COLOR_HEX_MAP.blue, CARD_SYSTEM.COLOR_HEX_MAP.purple)}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                showHours={true}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  No marketing line chart data available
+                </p>
+              </div>
+            )}
+          </ChartHeader>
+        </div>
+
+        {/* Acquisition Charts Section */}
+        <div>
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+              Acquisition Analysis
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Acquisition tasks by markets - {month1Name} vs {month2Name}{month3Name ? ` vs ${month3Name}` : ''}
+            </p>
+          </div>
+          
+          {/* Acquisition Pie Charts */}
+          <div className={`grid grid-cols-1 ${month3Name ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6 mb-6`}>
+            {/* Month 1 Pie Chart */}
+            <ChartHeader
+              variant="section"
+              title={`Acquisition - ${month1Name}`}
+              badges={[
+                `${month1Metrics?.categories?.acquisition?.tasks || 0} tasks`,
+                `${Math.round((month1Metrics?.categories?.acquisition?.hours || 0) * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {acquisitionPieChartDataMonth1 && acquisitionPieChartDataMonth1.length > 0 ? (
+                <SimplePieChart
+                  data={acquisitionPieChartDataMonth1}
+                  title=""
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No acquisition data for {month1Name}
+                  </p>
+                </div>
+              )}
+            </ChartHeader>
+
+            {/* Month 2 Pie Chart */}
+            <ChartHeader
+              variant="section"
+              title={`Acquisition - ${month2Name}`}
+              badges={[
+                `${month2Metrics?.categories?.acquisition?.tasks || 0} tasks`,
+                `${Math.round((month2Metrics?.categories?.acquisition?.hours || 0) * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {acquisitionPieChartDataMonth2 && acquisitionPieChartDataMonth2.length > 0 ? (
+                <SimplePieChart
+                  data={acquisitionPieChartDataMonth2}
+                  title=""
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No acquisition data for {month2Name}
+                  </p>
+                </div>
+              )}
+            </ChartHeader>
+
+            {/* Month 3 Pie Chart */}
+            {month3Name && acquisitionPieChartDataMonth3 && (
+              <ChartHeader
+                variant="section"
+                title={`Acquisition - ${month3Name}`}
+                badges={[
+                  `${month3Metrics?.categories?.acquisition?.tasks || 0} tasks`,
+                  `${Math.round((month3Metrics?.categories?.acquisition?.hours || 0) * 10) / 10}h`,
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                {acquisitionPieChartDataMonth3 && acquisitionPieChartDataMonth3.length > 0 ? (
+                  <SimplePieChart
+                    data={acquisitionPieChartDataMonth3}
+                    title=""
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">
+                      No acquisition data for {month3Name}
+                    </p>
+                  </div>
+                )}
+              </ChartHeader>
+            )}
+          </div>
+
+          {/* Acquisition Bar Chart */}
+          <ChartHeader
+            variant="section"
+            title="Acquisition Tasks by Markets - Month Comparison"
+            badges={[
+              `${(month1Metrics?.categories?.acquisition?.tasks || 0) + (month2Metrics?.categories?.acquisition?.tasks || 0) + (month3Metrics?.categories?.acquisition?.tasks || 0)} total tasks`,
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            {acquisitionBarChartData && acquisitionBarChartData.length > 0 ? (
+              <BiaxialBarChart
+                data={acquisitionBarChartData}
+                title=""
+                bars={buildChartBars(CARD_SYSTEM.COLOR_HEX_MAP.amber, CARD_SYSTEM.COLOR_HEX_MAP.blue, CARD_SYSTEM.COLOR_HEX_MAP.purple)}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  No acquisition bar chart data available
+                </p>
+              </div>
+            )}
+          </ChartHeader>
+
+          {/* Acquisition Combined Line Chart (Tasks & Hours) */}
+          <ChartHeader
+            variant="section"
+            title="Acquisition Tasks & Hours by Markets - Month Comparison"
+            badges={[
+              `${(month1Metrics?.categories?.acquisition?.tasks || 0) + (month2Metrics?.categories?.acquisition?.tasks || 0) + (month3Metrics?.categories?.acquisition?.tasks || 0)} tasks`,
+              `${Math.round(((month1Metrics?.categories?.acquisition?.hours || 0) + (month2Metrics?.categories?.acquisition?.hours || 0) + (month3Metrics?.categories?.acquisition?.hours || 0)) * 10) / 10}h`,
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.amber}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            {acquisitionLineChartData && acquisitionLineChartData.length > 0 ? (
+              <MultiLineChart
+                data={acquisitionLineChartData}
+                title=""
+                lines={buildCombinedLines(CARD_SYSTEM.COLOR_HEX_MAP.amber, CARD_SYSTEM.COLOR_HEX_MAP.blue, CARD_SYSTEM.COLOR_HEX_MAP.purple)}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.MARKET}
+                showHours={true}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  No acquisition line chart data available
+                </p>
+              </div>
+            )}
+          </ChartHeader>
         </div>
 
         {/* Task Analysis Section */}

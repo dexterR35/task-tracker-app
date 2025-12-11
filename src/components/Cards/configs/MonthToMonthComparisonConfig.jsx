@@ -76,9 +76,9 @@ export const calculateMonthToMonthComparison = (
       ),
       // Category breakdown (marketing, product, acquisition, misc)
       categories: {
-        marketing: { tasks: 0, hours: 0 },
+        marketing: { tasks: 0, hours: 0, markets: {}, marketHours: {} },
         product: { tasks: 0, hours: 0 },
-        acquisition: { tasks: 0, hours: 0 },
+        acquisition: { tasks: 0, hours: 0, markets: {}, marketHours: {} },
         misc: { tasks: 0, hours: 0 },
       },
       // Product subcategory breakdown (casino, sport, etc.)
@@ -138,6 +138,21 @@ export const calculateMonthToMonthComparison = (
       if (category && metrics.categories[category]) {
         metrics.categories[category].tasks += 1;
         metrics.categories[category].hours += taskHours;
+        
+        // Track marketing and acquisition tasks by market
+        if ((category === 'marketing' || category === 'acquisition') && Array.isArray(markets) && markets.length > 0) {
+          markets.forEach((market) => {
+            if (market) {
+              const normalizedMarket = normalizeMarket(market);
+              if (!metrics.categories[category].markets[normalizedMarket]) {
+                metrics.categories[category].markets[normalizedMarket] = 0;
+                metrics.categories[category].marketHours[normalizedMarket] = 0;
+              }
+              metrics.categories[category].markets[normalizedMarket] += 1;
+              metrics.categories[category].marketHours[normalizedMarket] += taskHours;
+            }
+          });
+        }
       }
 
       // Count by product subcategory
@@ -503,6 +518,175 @@ export const calculateMonthToMonthComparison = (
     })
     .slice(0, 15); // Top 15 users
 
+  // Get all markets for marketing and acquisition
+  const marketingMarkets = new Set();
+  const acquisitionMarkets = new Set();
+  
+  // Collect markets from all months
+  [month1Metrics, month2Metrics, month3Metrics].forEach((metrics) => {
+    if (metrics) {
+      Object.keys(metrics.categories?.marketing?.markets || {}).forEach(market => marketingMarkets.add(market));
+      Object.keys(metrics.categories?.acquisition?.markets || {}).forEach(market => acquisitionMarkets.add(market));
+    }
+  });
+  
+  const sortedMarketingMarkets = Array.from(marketingMarkets).sort();
+  const sortedAcquisitionMarkets = Array.from(acquisitionMarkets).sort();
+
+  // Create Marketing pie chart data for each month
+  const marketingPieChartDataMonth1 = sortedMarketingMarkets
+    .map((market) => ({
+      name: market,
+      value: month1Metrics.categories?.marketing?.markets[market] || 0,
+      color: getMarketColor(market),
+    }))
+    .filter((item) => item.value > 0);
+
+  const marketingPieChartDataMonth2 = sortedMarketingMarkets
+    .map((market) => ({
+      name: market,
+      value: month2Metrics.categories?.marketing?.markets[market] || 0,
+      color: getMarketColor(market),
+    }))
+    .filter((item) => item.value > 0);
+
+  const marketingPieChartDataMonth3 = month3Metrics && month3Name
+    ? sortedMarketingMarkets
+        .map((market) => ({
+          name: market,
+          value: month3Metrics.categories?.marketing?.markets[market] || 0,
+          color: getMarketColor(market),
+        }))
+        .filter((item) => item.value > 0)
+    : null;
+
+  // Create Marketing bar chart data (month-to-month comparison)
+  const marketingBarChartData = sortedMarketingMarkets
+    .map((market) => {
+      const item = {
+        name: market,
+        [month1Name]: month1Metrics.categories?.marketing?.markets[market] || 0,
+        [month2Name]: month2Metrics.categories?.marketing?.markets[market] || 0,
+        color: getMarketColor(market),
+      };
+      return addMonth3ToChartItem(item, (m) => m.categories?.marketing?.markets[market] || 0);
+    })
+    .filter(
+      (item) => item[month1Name] > 0 || item[month2Name] > 0 || (month3Metrics && item[month3Name] > 0)
+    )
+    .sort((a, b) => {
+      const aTotal = a[month1Name] + a[month2Name] + (month3Metrics ? (a[month3Name] || 0) : 0);
+      const bTotal = b[month1Name] + b[month2Name] + (month3Metrics ? (b[month3Name] || 0) : 0);
+      return bTotal - aTotal;
+    });
+
+  // Create Acquisition pie chart data for each month
+  const acquisitionPieChartDataMonth1 = sortedAcquisitionMarkets
+    .map((market) => ({
+      name: market,
+      value: month1Metrics.categories?.acquisition?.markets[market] || 0,
+      color: getMarketColor(market),
+    }))
+    .filter((item) => item.value > 0);
+
+  const acquisitionPieChartDataMonth2 = sortedAcquisitionMarkets
+    .map((market) => ({
+      name: market,
+      value: month2Metrics.categories?.acquisition?.markets[market] || 0,
+      color: getMarketColor(market),
+    }))
+    .filter((item) => item.value > 0);
+
+  const acquisitionPieChartDataMonth3 = month3Metrics && month3Name
+    ? sortedAcquisitionMarkets
+        .map((market) => ({
+          name: market,
+          value: month3Metrics.categories?.acquisition?.markets[market] || 0,
+          color: getMarketColor(market),
+        }))
+        .filter((item) => item.value > 0)
+    : null;
+
+  // Create Acquisition bar chart data (month-to-month comparison)
+  const acquisitionBarChartData = sortedAcquisitionMarkets
+    .map((market) => {
+      const item = {
+        name: market,
+        [month1Name]: month1Metrics.categories?.acquisition?.markets[market] || 0,
+        [month2Name]: month2Metrics.categories?.acquisition?.markets[market] || 0,
+        color: getMarketColor(market),
+      };
+      return addMonth3ToChartItem(item, (m) => m.categories?.acquisition?.markets[market] || 0);
+    })
+    .filter(
+      (item) => item[month1Name] > 0 || item[month2Name] > 0 || (month3Metrics && item[month3Name] > 0)
+    )
+    .sort((a, b) => {
+      const aTotal = a[month1Name] + a[month2Name] + (month3Metrics ? (a[month3Name] || 0) : 0);
+      const bTotal = b[month1Name] + b[month2Name] + (month3Metrics ? (b[month3Name] || 0) : 0);
+      return bTotal - aTotal;
+    });
+
+  // Create Marketing line chart data with both tasks and hours (month-to-month comparison)
+  const marketingLineChartData = sortedMarketingMarkets
+    .map((market) => {
+      const item = {
+        name: market,
+        [`${month1Name} Tasks`]: month1Metrics.categories?.marketing?.markets[market] || 0,
+        [`${month2Name} Tasks`]: month2Metrics.categories?.marketing?.markets[market] || 0,
+        [`${month1Name} Hours`]: Math.round((month1Metrics.categories?.marketing?.marketHours[market] || 0) * 10) / 10,
+        [`${month2Name} Hours`]: Math.round((month2Metrics.categories?.marketing?.marketHours[market] || 0) * 10) / 10,
+        color: getMarketColor(market),
+      };
+      if (month3Metrics && month3Name) {
+        item[`${month3Name} Tasks`] = month3Metrics.categories?.marketing?.markets[market] || 0;
+        item[`${month3Name} Hours`] = Math.round((month3Metrics.categories?.marketing?.marketHours[market] || 0) * 10) / 10;
+      }
+      return item;
+    })
+    .filter(
+      (item) => {
+        const hasTasks = item[`${month1Name} Tasks`] > 0 || item[`${month2Name} Tasks`] > 0 || (month3Metrics && item[`${month3Name} Tasks`] > 0);
+        const hasHours = item[`${month1Name} Hours`] > 0 || item[`${month2Name} Hours`] > 0 || (month3Metrics && item[`${month3Name} Hours`] > 0);
+        return hasTasks || hasHours;
+      }
+    )
+    .sort((a, b) => {
+      const aTotal = (a[`${month1Name} Tasks`] || 0) + (a[`${month2Name} Tasks`] || 0) + (month3Metrics ? (a[`${month3Name} Tasks`] || 0) : 0);
+      const bTotal = (b[`${month1Name} Tasks`] || 0) + (b[`${month2Name} Tasks`] || 0) + (month3Metrics ? (b[`${month3Name} Tasks`] || 0) : 0);
+      return bTotal - aTotal;
+    });
+
+  // Create Acquisition line chart data with both tasks and hours (month-to-month comparison)
+  const acquisitionLineChartData = sortedAcquisitionMarkets
+    .map((market) => {
+      const item = {
+        name: market,
+        [`${month1Name} Tasks`]: month1Metrics.categories?.acquisition?.markets[market] || 0,
+        [`${month2Name} Tasks`]: month2Metrics.categories?.acquisition?.markets[market] || 0,
+        [`${month1Name} Hours`]: Math.round((month1Metrics.categories?.acquisition?.marketHours[market] || 0) * 10) / 10,
+        [`${month2Name} Hours`]: Math.round((month2Metrics.categories?.acquisition?.marketHours[market] || 0) * 10) / 10,
+        color: getMarketColor(market),
+      };
+      if (month3Metrics && month3Name) {
+        item[`${month3Name} Tasks`] = month3Metrics.categories?.acquisition?.markets[market] || 0;
+        item[`${month3Name} Hours`] = Math.round((month3Metrics.categories?.acquisition?.marketHours[market] || 0) * 10) / 10;
+      }
+      return item;
+    })
+    .filter(
+      (item) => {
+        const hasTasks = item[`${month1Name} Tasks`] > 0 || item[`${month2Name} Tasks`] > 0 || (month3Metrics && item[`${month3Name} Tasks`] > 0);
+        const hasHours = item[`${month1Name} Hours`] > 0 || item[`${month2Name} Hours`] > 0 || (month3Metrics && item[`${month3Name} Hours`] > 0);
+        return hasTasks || hasHours;
+      }
+    )
+    .sort((a, b) => {
+      const aTotal = (a[`${month1Name} Tasks`] || 0) + (a[`${month2Name} Tasks`] || 0) + (month3Metrics ? (a[`${month3Name} Tasks`] || 0) : 0);
+      const bTotal = (b[`${month1Name} Tasks`] || 0) + (b[`${month2Name} Tasks`] || 0) + (month3Metrics ? (b[`${month3Name} Tasks`] || 0) : 0);
+      return bTotal - aTotal;
+    });
+
   // Build table columns
   const comparisonTableColumns = [
     { key: "metric", header: "Metric", align: "left" },
@@ -563,6 +747,18 @@ export const calculateMonthToMonthComparison = (
     productsChartData,
     allMarketsChartData,
     usersChartData,
+    // Marketing charts
+    marketingPieChartDataMonth1,
+    marketingPieChartDataMonth2,
+    marketingPieChartDataMonth3,
+    marketingBarChartData,
+    marketingLineChartData,
+    // Acquisition charts
+    acquisitionPieChartDataMonth1,
+    acquisitionPieChartDataMonth2,
+    acquisitionPieChartDataMonth3,
+    acquisitionBarChartData,
+    acquisitionLineChartData,
   };
 };
 
