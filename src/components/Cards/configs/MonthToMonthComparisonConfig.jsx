@@ -46,7 +46,7 @@ export const calculateMonthToMonthComparison = (
 
   // Helper to get product subcategory (casino, sport, etc.)
   const getProductSubcategory = (products) => {
-    if (!products || typeof products !== "string") return null;
+    if (!products || typeof products !== "string") return "other";
     const productsLower = products.toLowerCase().trim();
     if (productsLower.includes("casino")) return "casino";
     if (productsLower.includes("sport")) return "sport";
@@ -125,27 +125,30 @@ export const calculateMonthToMonthComparison = (
       const subcategory = getProductSubcategory(products);
 
       // Count by category
-      if (category && metrics.categories[category]) {
-        metrics.categories[category].tasks += 1;
-        metrics.categories[category].hours += taskHours;
+      // If no category found, count as misc to ensure all tasks are included
+      const finalCategory = category || 'misc';
+      if (metrics.categories[finalCategory]) {
+        metrics.categories[finalCategory].tasks += 1;
+        metrics.categories[finalCategory].hours += taskHours;
         
         // Track marketing and acquisition tasks by market
-        if ((category === 'marketing' || category === 'acquisition') && Array.isArray(markets) && markets.length > 0) {
+        if ((finalCategory === 'marketing' || finalCategory === 'acquisition') && Array.isArray(markets) && markets.length > 0) {
           markets.forEach((market) => {
             if (market) {
               const normalizedMarket = normalizeMarket(market);
-              if (!metrics.categories[category].markets[normalizedMarket]) {
-                metrics.categories[category].markets[normalizedMarket] = 0;
-                metrics.categories[category].marketHours[normalizedMarket] = 0;
+              if (!metrics.categories[finalCategory].markets[normalizedMarket]) {
+                metrics.categories[finalCategory].markets[normalizedMarket] = 0;
+                metrics.categories[finalCategory].marketHours[normalizedMarket] = 0;
               }
-              metrics.categories[category].markets[normalizedMarket] += 1;
-              metrics.categories[category].marketHours[normalizedMarket] += taskHours;
+              metrics.categories[finalCategory].markets[normalizedMarket] += 1;
+              metrics.categories[finalCategory].marketHours[normalizedMarket] += taskHours;
             }
           });
         }
       }
 
-      // Count by product subcategory
+      // Count by product subcategory (always returns a value, ensures all tasks are counted)
+      // This ensures category and product charts have the same total
       if (subcategory && metrics.products[subcategory]) {
         metrics.products[subcategory].tasks += 1;
         metrics.products[subcategory].hours += taskHours;
@@ -302,8 +305,14 @@ export const calculateMonthToMonthComparison = (
   };
 
   // Create comparison table data
+  // Calculate Total Tasks as sum of all categories to ensure misc is included
   const comparisonTableData = [
-    createTableRow("Total Tasks", (m) => m.totalTasks),
+    createTableRow("Total Tasks", (m) => 
+      (m.categories.marketing.tasks || 0) + 
+      (m.categories.product.tasks || 0) + 
+      (m.categories.acquisition.tasks || 0) + 
+      (m.categories.misc.tasks || 0)
+    ),
     createTableRow("Total Hours", (m) => Math.round(m.totalHours * 100) / 100),
     createTableRow("Casino Tasks", (m) => m.casino.tasks),
     createTableRow("Casino Hours", (m) => Math.round(m.casino.hours * 100) / 100),
@@ -716,6 +725,97 @@ export const calculateMonthToMonthComparison = (
     },
   });
 
+  // Define category constants (sport, casino, loto, poker)
+  const categoryConstants = ['sport', 'casino', 'lotto', 'poker'];
+  
+  // Helper to get category color
+  const getCategoryColor = (category) => {
+    const colorMap = {
+      casino: CARD_SYSTEM.COLOR_HEX_MAP.pink,
+      sport: CARD_SYSTEM.COLOR_HEX_MAP.green,
+      poker: CARD_SYSTEM.COLOR_HEX_MAP.purple,
+      lotto: CARD_SYSTEM.COLOR_HEX_MAP.blue,
+    };
+    return colorMap[category] || CARD_SYSTEM.COLOR_HEX_MAP.gray;
+  };
+
+  // Calculate category totals across all product types (acq, marketing, product) for each month
+  const calculateCategoryTotals = (metrics) => {
+    const totals = {
+      sport: { tasks: 0, hours: 0 },
+      casino: { tasks: 0, hours: 0 },
+      lotto: { tasks: 0, hours: 0 },
+      poker: { tasks: 0, hours: 0 },
+    };
+
+    // Aggregate from products breakdown (already includes all categories)
+    categoryConstants.forEach(category => {
+      if (metrics.products[category]) {
+        totals[category].tasks = metrics.products[category].tasks || 0;
+        totals[category].hours = metrics.products[category].hours || 0;
+      }
+    });
+
+    return totals;
+  };
+
+  const month1CategoryTotals = calculateCategoryTotals(month1Metrics);
+  const month2CategoryTotals = calculateCategoryTotals(month2Metrics);
+  const month3CategoryTotals = month3Metrics ? calculateCategoryTotals(month3Metrics) : null;
+
+  // Create Category pie chart data for each month (always include all categories, even if 0)
+  const categoryPieChartDataMonth1 = categoryConstants.map((category) => ({
+    name: category.charAt(0).toUpperCase() + category.slice(1),
+    value: month1CategoryTotals[category].tasks || 0,
+    color: getCategoryColor(category),
+  }));
+
+  const categoryPieChartDataMonth2 = categoryConstants.map((category) => ({
+    name: category.charAt(0).toUpperCase() + category.slice(1),
+    value: month2CategoryTotals[category].tasks || 0,
+    color: getCategoryColor(category),
+  }));
+
+  const categoryPieChartDataMonth3 = month3Metrics && month3Name
+    ? categoryConstants.map((category) => ({
+        name: category.charAt(0).toUpperCase() + category.slice(1),
+        value: month3CategoryTotals[category].tasks || 0,
+        color: getCategoryColor(category),
+      }))
+    : null;
+
+  // Create Category bar chart data (biaxial - month-to-month comparison, always include all categories)
+  const categoryBarChartData = categoryConstants.map((category) => {
+    // Use red (crimson) for casino in bar chart, otherwise use default category color
+    const barColor = category === 'casino' ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : getCategoryColor(category);
+    const item = {
+      name: category.charAt(0).toUpperCase() + category.slice(1),
+      [month1Name]: month1CategoryTotals[category].tasks || 0,
+      [month2Name]: month2CategoryTotals[category].tasks || 0,
+      color: barColor,
+    };
+    return addMonth3ToChartItem(item, (m) => {
+      const totals = calculateCategoryTotals(m);
+      return totals[category].tasks || 0;
+    });
+  });
+
+  // Create Category line chart data with only tasks (month-to-month comparison, always include all categories)
+  const categoryLineChartData = categoryConstants.map((category) => {
+    // Use red (crimson) for casino in line chart, otherwise use default category color
+    const lineColor = category === 'casino' ? CARD_SYSTEM.COLOR_HEX_MAP.crimson : getCategoryColor(category);
+    const item = {
+      name: category.charAt(0).toUpperCase() + category.slice(1),
+      [month1Name]: month1CategoryTotals[category].tasks || 0,
+      [month2Name]: month2CategoryTotals[category].tasks || 0,
+      color: lineColor,
+    };
+    if (month3Metrics && month3Name) {
+      item[month3Name] = month3CategoryTotals[category].tasks || 0;
+    }
+    return item;
+  });
+
   return {
     // Summary metrics
     month1Metrics,
@@ -749,6 +849,12 @@ export const calculateMonthToMonthComparison = (
     acquisitionPieChartDataMonth3,
     acquisitionBarChartData,
     acquisitionLineChartData,
+    // Category charts (sport, casino, loto, poker aggregated across all product types)
+    categoryPieChartDataMonth1,
+    categoryPieChartDataMonth2,
+    categoryPieChartDataMonth3,
+    categoryBarChartData,
+    categoryLineChartData,
   };
 };
 

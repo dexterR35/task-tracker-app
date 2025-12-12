@@ -40,6 +40,11 @@ const MonthToMonthComparisonCard = memo(
     acquisitionPieChartDataMonth3 = null,
     acquisitionBarChartData = [],
     acquisitionLineChartData = [],
+    categoryPieChartDataMonth1 = [],
+    categoryPieChartDataMonth2 = [],
+    categoryPieChartDataMonth3 = null,
+    categoryBarChartData = [],
+    categoryLineChartData = [],
     className = "",
     isLoading = false,
     hasNoData = false,
@@ -194,6 +199,30 @@ const MonthToMonthComparisonCard = memo(
         });
       }
       return bars;
+    };
+
+    // Helper to build line chart configs for tasks only
+    const buildTaskLines = (month1Color, month2Color, month3Color = CARD_SYSTEM.COLOR_HEX_MAP.purple) => {
+      const lines = [
+        {
+          dataKey: month1Name,
+          name: month1Name,
+          color: month1Color,
+        },
+        {
+          dataKey: month2Name,
+          name: month2Name,
+          color: month2Color,
+        },
+      ];
+      if (month3Name) {
+        lines.push({
+          dataKey: month3Name,
+          name: month3Name,
+          color: month3Color,
+        });
+      }
+      return lines;
     };
 
     // Helper to build line chart configs for tasks and hours combined with distinct colors
@@ -709,6 +738,159 @@ const MonthToMonthComparisonCard = memo(
                 <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400 font-medium">
                   No acquisition line chart data available
+                </p>
+              </div>
+            )}
+          </ChartHeader>
+        </div>
+
+        {/* Category Charts Section (Sport, Casino, Loto, Poker - All Product Types) */}
+        <div>
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+              Category Analysis (All Product Types)
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Tasks by category (Sport, Casino, Loto, Poker) aggregated across all product types (Acquisition, Marketing, Product) - {month1Name} vs {month2Name}{month3Name ? ` vs ${month3Name}` : ''}
+            </p>
+          </div>
+          
+          {/* Category Pie Charts */}
+          <div className={`grid grid-cols-1 ${month3Name ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6 mb-6`}>
+            {/* Month 1 Pie Chart */}
+            <ChartHeader
+              variant="section"
+              title={`Categories - ${month1Name}`}
+              badges={[
+                `${(categoryPieChartDataMonth1?.reduce((sum, item) => sum + (item.value || 0), 0) || 0)} tasks`,
+                `${Math.round(((month1Metrics?.products?.sport?.hours || 0) + (month1Metrics?.products?.casino?.hours || 0) + (month1Metrics?.products?.lotto?.hours || 0) + (month1Metrics?.products?.poker?.hours || 0)) * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.blue}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {categoryPieChartDataMonth1 && categoryPieChartDataMonth1.length > 0 ? (
+                <SimplePieChart
+                  data={categoryPieChartDataMonth1}
+                  title=""
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No category data for {month1Name}
+                  </p>
+                </div>
+              )}
+            </ChartHeader>
+
+            {/* Month 2 Pie Chart */}
+            <ChartHeader
+              variant="section"
+              title={`Categories - ${month2Name}`}
+              badges={[
+                `${(categoryPieChartDataMonth2?.reduce((sum, item) => sum + (item.value || 0), 0) || 0)} tasks`,
+                `${Math.round(((month2Metrics?.products?.sport?.hours || 0) + (month2Metrics?.products?.casino?.hours || 0) + (month2Metrics?.products?.lotto?.hours || 0) + (month2Metrics?.products?.poker?.hours || 0)) * 10) / 10}h`,
+              ]}
+              color={CARD_SYSTEM.COLOR_HEX_MAP.blue}
+              className="group hover:shadow-xl transition-all duration-300"
+            >
+              {categoryPieChartDataMonth2 && categoryPieChartDataMonth2.length > 0 ? (
+                <SimplePieChart
+                  data={categoryPieChartDataMonth2}
+                  title=""
+                  dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    No category data for {month2Name}
+                  </p>
+                </div>
+              )}
+            </ChartHeader>
+
+            {/* Month 3 Pie Chart */}
+            {month3Name && categoryPieChartDataMonth3 && (
+              <ChartHeader
+                variant="section"
+                title={`Categories - ${month3Name}`}
+                badges={[
+                  `${(categoryPieChartDataMonth3?.reduce((sum, item) => sum + (item.value || 0), 0) || 0)} tasks`,
+                  `${Math.round(((month3Metrics?.products?.sport?.hours || 0) + (month3Metrics?.products?.casino?.hours || 0) + (month3Metrics?.products?.lotto?.hours || 0) + (month3Metrics?.products?.poker?.hours || 0)) * 10) / 10}h`,
+                ]}
+                color={CARD_SYSTEM.COLOR_HEX_MAP.blue}
+                className="group hover:shadow-xl transition-all duration-300"
+              >
+                {categoryPieChartDataMonth3 && categoryPieChartDataMonth3.length > 0 ? (
+                  <SimplePieChart
+                    data={categoryPieChartDataMonth3}
+                    title=""
+                    dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">
+                      No category data for {month3Name}
+                    </p>
+                  </div>
+                )}
+              </ChartHeader>
+            )}
+          </div>
+
+          {/* Category Bar Chart */}
+          <ChartHeader
+            variant="section"
+            title="Category Tasks by Month Comparison"
+            badges={[
+              `${(categoryBarChartData?.reduce((sum, item) => sum + (item[month1Name] || 0) + (item[month2Name] || 0) + (month3Name ? (item[month3Name] || 0) : 0), 0) || 0)} total tasks`,
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.blue}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            {categoryBarChartData && categoryBarChartData.length > 0 ? (
+              <BiaxialBarChart
+                data={categoryBarChartData}
+                title=""
+                bars={buildChartBars(CARD_SYSTEM.COLOR_HEX_MAP.blue, CARD_SYSTEM.COLOR_HEX_MAP.green, CARD_SYSTEM.COLOR_HEX_MAP.purple)}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  No category bar chart data available
+                </p>
+              </div>
+            )}
+          </ChartHeader>
+
+          {/* Category Line Chart (Tasks Only) */}
+          <ChartHeader
+            variant="section"
+            title="Category Tasks by Month Comparison"
+            badges={[
+              `${(categoryLineChartData?.reduce((sum, item) => sum + (item[month1Name] || 0) + (item[month2Name] || 0) + (month3Name ? (item[month3Name] || 0) : 0), 0) || 0)} tasks`,
+            ]}
+            color={CARD_SYSTEM.COLOR_HEX_MAP.blue}
+            className="group hover:shadow-xl transition-all duration-300"
+          >
+            {categoryLineChartData && categoryLineChartData.length > 0 ? (
+              <MultiLineChart
+                data={categoryLineChartData}
+                title=""
+                lines={buildTaskLines(CARD_SYSTEM.COLOR_HEX_MAP.blue, CARD_SYSTEM.COLOR_HEX_MAP.green, CARD_SYSTEM.COLOR_HEX_MAP.purple)}
+                dataType={CARD_SYSTEM.CHART_DATA_TYPE.PRODUCT}
+                showHours={false}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <Icons.generic.document className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                  No category line chart data available
                 </p>
               </div>
             )}
