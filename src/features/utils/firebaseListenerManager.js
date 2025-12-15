@@ -370,6 +370,23 @@ class FirebaseListenerManager {
 
             resumedCount++;
           }
+        } else if (pausedInfo.wasPreserved) {
+          // If it was preserved but setupFn is missing, it means it was stored in preservedListeners
+          // Try to restore from preservedListeners
+          const preserved = this.preservedListeners.get(key);
+          if (preserved && preserved.setupFn && !this.listeners.has(key)) {
+            try {
+              const newUnsubscribe = preserved.setupFn();
+              this.listeners.set(key, newUnsubscribe);
+              this.preservedListeners.set(key, {
+                setupFn: preserved.setupFn,
+                unsubscribe: newUnsubscribe
+              });
+              resumedCount++;
+            } catch (error) {
+              logger.error(`[ListenerManager] Error restoring preserved listener ${key}:`, error);
+            }
+          }
         }
         // Non-preserved listeners will be recreated automatically by components when needed
       } catch (error) {

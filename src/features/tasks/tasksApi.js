@@ -257,6 +257,18 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
             tasksQuery,
             (snapshot) => {
               if (!snapshot || !snapshot.docs || snapshot.empty) {
+                // Check cache before overwriting with empty data
+                // This prevents losing data when listener is restored after tab becomes visible
+                const cachedData = taskCache.get(cacheKey);
+                if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+                  // Keep cached data if snapshot is empty (might be initial sync after resume)
+                  logger.log('🔍 [useTasks] Snapshot empty but cache has data, keeping cache');
+                  setTasks(cachedData);
+                  setIsLoading(false);
+                  return;
+                }
+                
+                // Only set empty if cache is also empty (truly no data)
                 const emptyTasks = [];
                 setTasks(emptyTasks);
                 taskCache.set(cacheKey, emptyTasks); // Cache empty result
@@ -286,8 +298,16 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
             },
             (err) => {
               logger.error('Tasks real-time error:', err);
-              setError(err);
-              setIsLoading(false);
+              // On error, try to use cached data if available
+              const cachedData = taskCache.get(cacheKey);
+              if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+                logger.log('🔍 [useTasks] Error occurred but cache has data, using cache');
+                setTasks(cachedData);
+                setIsLoading(false);
+              } else {
+                setError(err);
+                setIsLoading(false);
+              }
             }
           ),
           true, // preserve setup function for restoration, but will be paused when tab hidden
