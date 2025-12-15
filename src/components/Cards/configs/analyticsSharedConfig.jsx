@@ -97,12 +97,12 @@ export const AI_MODEL_COLOR_MAP = {
   [AI_MODEL_NAMES.PHOTOSHOP]: '#e11d48',      // Rose-600
   [AI_MODEL_NAMES.FIREFLY]: '#2563eb',         // Blue-600
   [AI_MODEL_NAMES.CHATGPT]: '#7c3aed',        // Purple-600
-  [AI_MODEL_NAMES.SHUTTERSTOCK]: '#22c55e',    // Green-500
+  [AI_MODEL_NAMES.SHUTTERSTOCK]: '#14b8a6',    // Teal-500
   [AI_MODEL_NAMES.MIDJOURNEY]: '#f59e0b',      // Amber-500
   [AI_MODEL_NAMES.NIGHTCAFE]: '#06b6d4',      // Cyan-500
   [AI_MODEL_NAMES.FREEPICK]: '#db2777',        // Pink-600
   [AI_MODEL_NAMES.CURSOR]: '#84cc16',          // Lime-500
-  [AI_MODEL_NAMES.RUN_DIFFUSION]: '#22c55e',   // Red-600
+  [AI_MODEL_NAMES.RUN_DIFFUSION]: '#3b82f6',   // Blue-500
 };
 
 // Department-specific color mapping (using constants from FORM_OPTIONS)
