@@ -820,7 +820,9 @@ const TanStackTable = forwardRef(
           Boolean(customFilters.selectedDeliverableFilter) ||
           Boolean(customFilters.selectedUserId) ||
           Boolean(customFilters.selectedReporterId) ||
-          Boolean(customFilters.selectedWeek));
+          Boolean(customFilters.selectedWeek) ||
+          Boolean(customFilters.weekStart) ||
+          Boolean(customFilters.weekEnd));
       return hasTanStackFilters || hasCustomFilters;
     }, [globalFilter, table.getState().columnFilters, customFilters]);
 

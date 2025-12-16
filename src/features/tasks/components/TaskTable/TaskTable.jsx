@@ -13,7 +13,7 @@ import { useTaskColumns } from "@/components/Table/tableColumns.jsx";
 import { useTableActions } from "@/hooks/useTableActions";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
-import { useDeleteTask } from "@/features/tasks/tasksApi";
+import { useDeleteTask, useTasks } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import DepartmentFilter from "@/components/filters/DepartmentFilter";
@@ -22,6 +22,8 @@ import { logger } from "@/utils/logger";
 import { updateURLParam, updateURLParams, getURLParam } from "@/utils/urlParams";
 import { matchesUser, getTaskReporterId, getTaskData, filterTasksByUserAndReporter } from "@/utils/taskFilters";
 import { saveUserPreference, loadUserPreference } from "@/utils/userPreferences";
+import { parseMonthId } from "@/utils/dateUtils";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 // Available filter options
 const FILTER_OPTIONS = [
@@ -87,17 +89,102 @@ const TaskTable = ({
 
   // Get data from useAppData hook
   const {
-    tasks: contextTasks,
     reporters,
     deliverables,
     user: userData,
     users,
   } = useAppDataContext();
 
-  // Use context tasks with TanStack pagination
-  const tasks = contextTasks || [];
-  const isLoading = initialLoading;
-  const error = tasksError;
+  // Calculate date ranges for week/month filters
+  const weekStart = useMemo(() => {
+    if (!selectedWeek) return null;
+    if (selectedWeek.startDate) {
+      const date = new Date(selectedWeek.startDate);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+    if (selectedWeek.days && selectedWeek.days.length > 0) {
+      const sortedDays = [...selectedWeek.days]
+        .map(day => day instanceof Date ? day : new Date(day))
+        .filter(day => !isNaN(day.getTime()))
+        .sort((a, b) => a - b);
+      if (sortedDays.length > 0) {
+        const date = new Date(sortedDays[0]);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+    }
+    return null;
+  }, [selectedWeek]);
+
+  const weekEnd = useMemo(() => {
+    if (!selectedWeek) return null;
+    if (selectedWeek.endDate) {
+      const date = new Date(selectedWeek.endDate);
+      date.setHours(23, 59, 59, 999);
+      return date;
+    }
+    if (selectedWeek.days && selectedWeek.days.length > 0) {
+      const sortedDays = [...selectedWeek.days]
+        .map(day => day instanceof Date ? day : new Date(day))
+        .filter(day => !isNaN(day.getTime()))
+        .sort((a, b) => a - b);
+      if (sortedDays.length > 0) {
+        const date = new Date(sortedDays[sortedDays.length - 1]);
+        date.setHours(23, 59, 59, 999);
+        return date;
+      }
+    }
+    return null;
+  }, [selectedWeek]);
+
+  // Note: monthStart/monthEnd are not needed for database filtering
+  // Month filtering is already done via monthId in the query path
+  // Only week filtering uses createdAt date range
+  const monthStart = null;
+  const monthEnd = null;
+
+  // Build filters object for database-level filtering
+  const userUID = user?.userUID || null;
+  const tasksFilters = useMemo(() => {
+    return {
+      selectedUserId: isUserAdmin && selectedUserId ? selectedUserId : null,
+      selectedReporterId: selectedReporterId || null,
+      selectedDepartment: selectedDepartmentFilter || null,
+      selectedDeliverable: selectedDeliverableFilter || null, // Will be filtered client-side (needs schema change)
+      selectedFilter: selectedFilter || null,
+      weekStart,
+      weekEnd,
+      // monthStart/monthEnd not needed - month filtering done via monthId in query path
+    };
+  }, [
+    isUserAdmin,
+    selectedUserId,
+    selectedReporterId,
+    selectedDepartmentFilter,
+    selectedDeliverableFilter,
+    selectedFilter,
+    weekStart,
+    weekEnd,
+  ]);
+
+  // Get tasks with database-level filtering
+  const {
+    tasks: dbFilteredTasks = [],
+    isLoading: tasksLoading,
+    error: dbTasksError,
+  } = useTasks(
+    selectedMonthId || null,
+    isUserAdmin ? 'admin' : 'user',
+    userUID,
+    tasksFilters
+  );
+
+  // All filtering is done at database level - no client-side filtering needed
+  const tasks = dbFilteredTasks;
+
+  const isLoading = tasksLoading || initialLoading;
+  const error = dbTasksError || tasksError;
 
   // Get delete task hook
   const [deleteTask] = useDeleteTask();
@@ -172,308 +259,16 @@ const TaskTable = ({
     setPageSizeState(newPageSize);
   }, []);
 
-  // Extract stable user values
-  const userUID = user?.userUID;
-
-  // Reusable filtering function with role-based access control
-  // All filters work together with AND logic - a task must pass ALL active filters to be shown
-  // Filter order: 1) User/Reporter/Month, 2) Department, 3) Deliverable, 4) Task Filter, 5) Week
-  const getFilteredTasks = useCallback(
-    (
-      tasks,
-      selectedUserId,
-      selectedReporterId,
-      currentMonthId,
-      selectedWeek,
-      selectedFilter,
-      selectedDepartmentFilter,
-      selectedDeliverableFilter
-    ) => {
-      if (!tasks || !Array.isArray(tasks)) {
-        return [];
-      }
-
-      // Normalize empty strings to null for proper filtering
-      const normalizedUserId = selectedUserId && selectedUserId.trim() !== "" ? selectedUserId : null;
-      const normalizedReporterId = selectedReporterId && selectedReporterId.trim() !== "" ? selectedReporterId : null;
-
-      // Step 1: Filter by User, Reporter, and Month (using shared utility)
-      let filteredTasks = filterTasksByUserAndReporter(tasks, {
-        selectedUserId: normalizedUserId,
-        selectedReporterId: normalizedReporterId,
-        currentMonthId,
-        isUserAdmin,
-        currentUserUID: userUID,
-      });
-
-      if (import.meta.env.MODE === "development") {
-        logger.log("Filtering tasks:", {
-          totalTasks: tasks.length,
-          afterUserReporterFilter: filteredTasks.length,
-          normalizedUserId,
-          normalizedReporterId,
-          currentMonthId,
-          selectedWeek: selectedWeek ? `Week ${selectedWeek.weekNumber}` : null,
-          selectedFilter,
-          selectedDepartmentFilter,
-          selectedDeliverableFilter,
-        });
-      }
-
-      // Step 2: Apply department filter
-      if (selectedDepartmentFilter) {
-        if (import.meta.env.MODE === "development") {
-          logger.log("Applying department filter:", selectedDepartmentFilter);
-        }
-        filteredTasks = filteredTasks.filter((task) => {
-          const taskData = getTaskData(task);
-          const taskDepartments = taskData.departments;
-
-          // Normalize the selected filter to lowercase for comparison
-          const normalizedFilter = selectedDepartmentFilter.toLowerCase();
-
-          // Handle both array and string formats
-          if (Array.isArray(taskDepartments)) {
-            return taskDepartments.some(
-              (dept) => dept?.toLowerCase() === normalizedFilter
-            );
-          } else if (typeof taskDepartments === "string") {
-            return taskDepartments.toLowerCase() === normalizedFilter;
-          }
-          return false;
-        });
-      }
-
-      // Step 3: Apply deliverable filter
-      if (selectedDeliverableFilter) {
-        if (import.meta.env.MODE === "development") {
-          logger.log("Applying deliverable filter:", selectedDeliverableFilter);
-        }
-        filteredTasks = filteredTasks.filter((task) => {
-          const taskData = getTaskData(task);
-          const deliverablesUsed = taskData.deliverablesUsed;
-
-          if (
-            !deliverablesUsed ||
-            !Array.isArray(deliverablesUsed) ||
-            deliverablesUsed.length === 0
-          ) {
-            return false;
-          }
-
-          // Check if any deliverable matches the selected filter
-          return deliverablesUsed.some((deliverable) => {
-            const deliverableName = deliverable?.name;
-            return (
-              deliverableName &&
-              deliverableName.toLowerCase() ===
-                selectedDeliverableFilter.toLowerCase()
-            );
-          });
-        });
-      }
-
-      // Step 4: Apply task filter (AI Used, Marketing, Acquisition, Product, VIP, Reworked, Shutterstock)
-      if (selectedFilter) {
-        if (import.meta.env.MODE === "development") {
-          logger.log("Applying filter:", selectedFilter);
-        }
-        filteredTasks = filteredTasks.filter((task) => {
-          const taskData = getTaskData(task);
-
-          // Apply the selected filter
-          switch (selectedFilter) {
-            case "aiUsed":
-              return taskData.aiUsed?.length > 0;
-            case "marketing":
-              return taskData.products?.includes("marketing");
-            case "acquisition":
-              return taskData.products?.includes("acquisition");
-            case "product":
-              return taskData.products?.includes("product");
-            case "vip":
-              return taskData.isVip;
-            case "reworked":
-              return taskData.reworked;
-            case "shutterstock":
-              return taskData.useShutterstock === true;
-            default:
-              return true;
-          }
-        });
-      }
-
-      // Step 5: Apply week filter (if week is selected, filter by task startDate)
-      if (selectedWeek) {
-        if (import.meta.env.MODE === "development") {
-          logger.log("Applying week filter:", {
-            weekNumber: selectedWeek.weekNumber,
-            startDate: selectedWeek.startDate,
-            endDate: selectedWeek.endDate,
-            days: selectedWeek.days?.length || 0,
-            tasksBeforeWeekFilter: filteredTasks.length,
-          });
-        }
-        
-        // Get week date range - use startDate and endDate if available, otherwise calculate from days
-        let weekStart, weekEnd;
-        
-        if (selectedWeek.startDate && selectedWeek.endDate) {
-          weekStart = new Date(selectedWeek.startDate);
-          weekEnd = new Date(selectedWeek.endDate);
-        } else if (selectedWeek.days && Array.isArray(selectedWeek.days) && selectedWeek.days.length > 0) {
-          // Calculate from days array if dates not available
-          const sortedDays = [...selectedWeek.days]
-            .map(day => day instanceof Date ? day : new Date(day))
-            .filter(day => !isNaN(day.getTime()))
-            .sort((a, b) => a - b);
-          
-          if (sortedDays.length > 0) {
-            weekStart = new Date(sortedDays[0]);
-            weekEnd = new Date(sortedDays[sortedDays.length - 1]);
-          } else {
-            // If no valid days, skip week filter
-            if (import.meta.env.MODE === "development") {
-              logger.warn("Week has no valid days, skipping week filter");
-            }
-            weekStart = null;
-            weekEnd = null;
-          }
-        } else {
-          // If no date info available, skip week filter
-          if (import.meta.env.MODE === "development") {
-            logger.warn("Week has no date information, skipping week filter");
-          }
-          weekStart = null;
-          weekEnd = null;
-        }
-
-        if (weekStart && weekEnd) {
-          // Normalize week dates to start/end of day for comparison
-          weekStart.setHours(0, 0, 0, 0);
-          weekEnd.setHours(23, 59, 59, 999);
-
-          filteredTasks = filteredTasks.filter((task) => {
-            const taskData = getTaskData(task);
-            
-            // Use createdAt to determine which week the task belongs to
-            // If task has no createdAt, exclude it when week filter is active
-            if (!task.createdAt) {
-              if (import.meta.env.MODE === "development") {
-                logger.log("Task excluded - no createdAt:", {
-                  taskId: task.id || task.taskId,
-                  taskName: taskData.taskName,
-                });
-              }
-              return false;
-            }
-
-            try {
-              // Parse task createdAt date - handle multiple formats (Firestore Timestamp, Date, string)
-              let taskCreatedDate;
-              if (task.createdAt instanceof Date) {
-                taskCreatedDate = new Date(task.createdAt);
-              } else if (typeof task.createdAt === "string") {
-                taskCreatedDate = new Date(task.createdAt);
-              } else if (
-                task.createdAt &&
-                typeof task.createdAt === "object" &&
-                task.createdAt.seconds
-              ) {
-                taskCreatedDate = new Date(task.createdAt.seconds * 1000);
-              } else if (
-                task.createdAt &&
-                typeof task.createdAt === "object" &&
-                task.createdAt.toDate &&
-                typeof task.createdAt.toDate === "function"
-              ) {
-                taskCreatedDate = task.createdAt.toDate();
-              } else {
-                taskCreatedDate = new Date(task.createdAt);
-              }
-
-              if (isNaN(taskCreatedDate.getTime())) {
-                if (import.meta.env.MODE === "development") {
-                  logger.warn("Task excluded - invalid createdAt:", {
-                    taskId: task.id || task.taskId,
-                    createdAt: task.createdAt,
-                  });
-                }
-                return false;
-              }
-
-              // Normalize task date to start of day for comparison
-              taskCreatedDate.setHours(0, 0, 0, 0);
-
-              // Check if task createdAt falls within the week range
-              // Task belongs to this week if its createdAt is within weekStart and weekEnd
-              const isInWeek = taskCreatedDate >= weekStart && taskCreatedDate <= weekEnd;
-
-              if (import.meta.env.MODE === "development") {
-                if (isInWeek) {
-                  logger.log("Task matches week:", {
-                    taskId: task.id || task.taskId,
-                    taskName: taskData.taskName,
-                    taskCreatedDate: taskCreatedDate.toISOString().split("T")[0],
-                    weekStart: weekStart.toISOString().split("T")[0],
-                    weekEnd: weekEnd.toISOString().split("T")[0],
-                  });
-                }
-              }
-
-              return isInWeek;
-            } catch (error) {
-              logger.warn("Error processing task date for week filter:", error, {
-                taskId: task.id || task.taskId,
-                createdAt: task.createdAt,
-              });
-              return false;
-            }
-          });
-
-          if (import.meta.env.MODE === "development") {
-            logger.log("After week filter:", {
-              tasksAfterWeekFilter: filteredTasks.length,
-            });
-          }
-        }
-      }
-
-      return filteredTasks;
-    },
-    [isUserAdmin, userUID, matchesUser, getTaskData, getTaskReporterId]
-  );
-
-  // Get filtered tasks and sort by createdAt (newest first) - memoized for performance
+  // Sort tasks by createdAt (newest first) - memoized for performance
   const filteredTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
     
-    // First, deduplicate tasks by ID to ensure uniqueness
-    const uniqueTasksMap = new Map();
-    tasks.forEach(task => {
-      if (task && task.id) {
-        if (!uniqueTasksMap.has(task.id)) {
-          uniqueTasksMap.set(task.id, task);
-        }
-      }
-    });
-    const uniqueTasks = Array.from(uniqueTasksMap.values());
-    
-    const filtered = getFilteredTasks(
-      uniqueTasks,
-      selectedUserId,
-      selectedReporterId,
-      selectedMonthId,
-      selectedWeek,
-      selectedFilter,
-      selectedDepartmentFilter,
-      selectedDeliverableFilter
-    );
+    // Tasks are already filtered at database level, just sort them
 
     // Sort by createdAt in descending order (newest first)
-    return filtered.sort((a, b) => {
+    return tasks.sort((a, b) => {
       // Handle Firebase Timestamps and different date formats
       let dateA, dateB;
 
@@ -507,14 +302,7 @@ const TaskTable = ({
     });
   }, [
     tasks,
-    selectedUserId,
-    selectedReporterId,
-    selectedMonthId,
-    selectedWeek,
-    selectedFilter,
-    selectedDepartmentFilter,
-    selectedDeliverableFilter,
-    getFilteredTasks,
+    // Note: Other filters are handled at database level via useTasks hook
   ]);
 
   // Bulk actions - build array efficiently without re-creation

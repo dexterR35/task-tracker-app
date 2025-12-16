@@ -1,77 +1,10 @@
 import { Icons } from "@/components/icons";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
-import { matchesUser, getTaskReporterId, filterTasksByUserAndReporter } from "@/utils/taskFilters";
+import { filterTasksByUserAndReporter } from "@/utils/taskFilters";
 
-export const getCardColor = (cardType, data = {}) => {
-  const palette = [
-    "green",
-    "blue",
-    "purple",
-    "amber",
-    "pink",
-    "red",
-    "yellow",
-    "orange",
-    "crimson",
-  ].filter((key) => Boolean(CARD_SYSTEM.COLOR_HEX_MAP[key]));
-  // Fallback if palette is somehow empty
-  if (palette.length === 0) return "color_default";
-  const hashString = (str) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0; // Convert to 32bit integer
-    }
-    return Math.abs(hash);
-  };
-  const index = hashString(String(cardType)) % palette.length;
-  return palette[index];
-};
-
-
-export const convertMarketsToBadges = (markets, defaultCount = 1) => {
-  if (!markets) return null;
-
-  // If already an object (badges format), return as-is (same as smallCardConfig pattern)
-  if (typeof markets === "object" && !Array.isArray(markets)) {
-    const keys = Object.keys(markets);
-    return keys.length > 0 ? markets : null;
-  }
-
-  // Handle array - convert to object format
-  let marketsArray = [];
-  if (Array.isArray(markets)) {
-    marketsArray = markets;
-  } else if (typeof markets === "string") {
-    // Handle comma-separated string
-    marketsArray = markets
-      .split(",")
-      .map((m) => m.trim())
-      .filter(Boolean);
-  } else {
-    return null;
-  }
-
-  if (marketsArray.length === 0) return null;
-
-  // Convert array to object with default count for each market (same pattern as analytics configs)
-  const badgesObj = {};
-  marketsArray.forEach((market) => {
-    if (market) {
-      const marketKey =
-        typeof market === "string" ? market.trim() : String(market);
-      if (marketKey) {
-        badgesObj[marketKey] = defaultCount;
-      }
-    }
-  });
-
-  return Object.keys(badgesObj).length > 0 ? badgesObj : null;
-};
 
 // Small Card Types
 export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
@@ -83,15 +16,15 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Months",
     icon: Icons.generic.clock,
-    color: "blue",
+    color: "soft_purple",
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getBadge: (data) => ({
       text: data.isCurrentMonth ? "Current" : "History",
-      color: "blue",
+      color: "soft_purple",
     }),
     getContent: (data) => (
-      <div className="">
+      <div>
         <SearchableSelectField
           field={{
             name: "selectedMonth",
@@ -103,10 +36,8 @@ export const SMALL_CARD_CONFIGS = {
                 value: month.monthId,
                 label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`,
               })) || [],
-            placeholder: "Search months...",
+            placeholder: "Select months...",
           }}
-          register={() => {}} // Not needed for this use case
-          errors={{}}
           setValue={(fieldName, value) => {
             if (fieldName === "selectedMonth" && data.selectMonth) {
               data.selectMonth(value);
@@ -115,11 +46,8 @@ export const SMALL_CARD_CONFIGS = {
           watch={() =>
             data.selectedMonth?.monthId || data.currentMonth?.monthId || ""
           }
-          trigger={() => {}}
-          clearErrors={() => {}}
-          formValues={{}}
           noOptionsMessage="No months available"
-          variant="blue"
+          variant="soft_purple"
         />
       </div>
     ),
@@ -150,9 +78,8 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: "amber",
+    color: "soft_purple",
     getValue: (data) => {
-      // Show total number of users, not tasks
       return (data.users?.length || 0).toString();
     },
     getStatus: (data) => {
@@ -163,7 +90,7 @@ export const SMALL_CARD_CONFIGS = {
     },
     getBadge: (data) => ({
       text: data.selectedUserId ? "Filtered" : "All Users",
-      color: "amber",
+      color: "soft_purple",
     }),
     getContent: (data) => (
       <div className=" space-y-3">
@@ -175,39 +102,35 @@ export const SMALL_CARD_CONFIGS = {
             required: false,
             options:
               data.users?.map((user) => ({
-                value: user.userUID || user.id,
-                label: user.name || user.email,
+                value: user.userUID,
+                label: user.name,
               })) || [],
-            placeholder: "Search users...",
+            placeholder: "Select users...",
           }}
-          register={() => {}} // Not needed for this use case
-          errors={{}}
           setValue={(fieldName, value) => {
             if (fieldName === "selectedUser" && data.handleUserSelect) {
               data.handleUserSelect(value);
             }
           }}
           watch={() => data.selectedUserId || ""}
-          trigger={() => {}}
-          clearErrors={() => {}}
-          formValues={{}}
           noOptionsMessage="No users found"
-          variant="amber"
+          variant="soft_purple"
         />
       </div>
     ),
     getDetails: (data) => {
-      // Use pre-calculated values from hooks if available, otherwise calculate
+      // Only if available
       const totalTasks = data.userFilterTotalTasks ?? 0;
       const totalHours = data.userFilterTotalHours ?? 0;
-      
+
       return [
         {
           icon: Icons.generic.user,
           label: "Current User",
-          value: data.selectedUserId 
-            ? data.selectedUserName 
-            : (data.currentUser?.name || data.currentUser?.email || "Current User"),
+          value: data.selectedUserId
+            ? data.selectedUserName
+            : data.currentUser?.name ||
+              "Current User",
         },
         {
           icon: Icons.generic.task,
@@ -228,7 +151,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: "orange",
+    color: "soft_purple",
     getValue: (data) => {
       return (data.reporters?.length || 0).toString();
     },
@@ -242,7 +165,7 @@ export const SMALL_CARD_CONFIGS = {
       text: data.selectedReporterId
         ? `${data.selectedReporterName}`
         : "All Reporters",
-      color: "orange",
+      color: "soft_purple",
     }),
     getContent: (data) => (
       <div className="space-y-1">
@@ -255,38 +178,31 @@ export const SMALL_CARD_CONFIGS = {
             options:
               data.reporters?.map((reporter) => ({
                 value: reporter.reporterUID,
-                label: reporter.name || reporter.reporterName,
+                label: reporter.name,
               })) || [],
             placeholder: "Search Reporters...",
           }}
-          register={() => {}} // Not needed for this use case
-          errors={{}}
           setValue={(fieldName, value) => {
             if (fieldName === "selectedReporter" && data.handleReporterSelect) {
               data.handleReporterSelect(value);
             }
           }}
           watch={() => data.selectedReporterId || ""}
-          trigger={() => {}}
-          clearErrors={() => {}}
-          formValues={{}}
           noOptionsMessage="No reporters found"
-          variant="orange"
+          variant="soft_purple"
         />
       </div>
     ),
     getDetails: (data) => {
-      // Use pre-calculated values from hooks if available
+      // Only if available
       const totalReporterTasks = data.reporterFilterTotalTasks ?? 0;
       const totalHours = data.reporterFilterTotalHours ?? 0;
-      
+
       return [
         {
           icon: Icons.admin.reporters,
           label: "Selected",
-          value: data.selectedReporterId
-            ? data.selectedReporterName
-            : "0",
+          value: data.selectedReporterId ? data.selectedReporterName : "0",
         },
         {
           icon: Icons.admin.reporters,
@@ -310,7 +226,7 @@ export const SMALL_CARD_CONFIGS = {
     color: "pink",
     getBadge: (data) => ({
       text: data.currentUser?.role || "user",
-      color: 'pink'
+      color: "pink",
     }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
@@ -318,19 +234,16 @@ export const SMALL_CARD_CONFIGS = {
       const selectedReporterId = data.selectedReporterId;
       const currentMonthId =
         data.selectedMonth?.monthId || data.currentMonth?.monthId;
-      const isUserAdmin = data.isUserAdmin || data.currentUser?.role === "admin";
+      const isUserAdmin =
+        data.isUserAdmin || data.currentUser?.role === "admin";
       const currentUserId = data.currentUser?.userUID;
-      
+
       // Determine target user: selected user or current user (never show all tasks)
       const targetUserId = selectedUserId || currentUserId;
 
-      // Use shared utility for filtering
+      // Filter by reporter only (user and month filtering done at database level)
       const filteredTasks = filterTasksByUserAndReporter(data.tasks, {
-        selectedUserId: targetUserId,
         selectedReporterId,
-        currentMonthId,
-        isUserAdmin: data.isUserAdmin || data.currentUser?.role === "admin",
-        currentUserUID: currentUserId,
       });
       return filteredTasks.length.toString();
     },
@@ -364,7 +277,7 @@ export const SMALL_CARD_CONFIGS = {
         label: "Current User",
         value: data.currentUser?.name || data.currentUser?.email || "N/A",
       });
-      
+
       // Add selected week section (without "All Weeks")
       const monthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
       if (monthId) {
@@ -373,8 +286,8 @@ export const SMALL_CARD_CONFIGS = {
           const selectedWeek = data.selectedWeek;
           details.push({
             label: "Selected Week",
-            value: selectedWeek 
-              ? `Week ${selectedWeek.weekNumber}` 
+            value: selectedWeek
+              ? `Week ${selectedWeek.weekNumber}`
               : "All Weeks",
             icon: Icons.generic.calendar,
           });
@@ -394,136 +307,9 @@ export const SMALL_CARD_CONFIGS = {
           icon: Icons.generic.calendar,
         });
       }
-      
+
       return details;
     },
-    getContent: (data) => (
-      <div className="mt-2">
-        <DynamicButton
-          onClick={() => {
-            // Build URL parameters based on current selections
-            const params = new URLSearchParams();
-            // Handle user selection - always show current user's data by default
-            if (data.selectedUserId && data.currentUser?.role === "admin") {
-              // Admin viewing specific user
-              const selectedUser = data.users?.find(
-                (u) => u.userUID === data.selectedUserId
-              );
-              const userName =
-                selectedUser?.name || selectedUser?.email || "Unknown";
-              params.set("user", userName);
-            } else {
-              // Always show current user's data by default
-              const userName =
-                data.currentUser?.name || data.currentUser?.email || "My Data";
-              params.set("user", userName);
-            }
-            // Handle reporter selection
-            if (data.selectedReporterId) {
-              const selectedReporter = data.reporters?.find(
-                (r) => r.reporterUID === data.selectedReporterId
-              );
-              const reporterName =
-                selectedReporter?.name ||
-                selectedReporter?.reporterName ||
-                "Unknown Reporter";
-              params.set("reporter", reporterName);
-            }
-            // Week selection logic is REMOVED
-
-            // Handle month selection
-            if (data.selectedMonth?.monthId) {
-              params.set("month", data.selectedMonth.monthId);
-            } else if (data.currentMonth?.monthId) {
-              params.set("month", data.currentMonth.monthId);
-            }
-            const url = `/analytics-detail?${params.toString()}`;
-            if (data.navigate) {
-              data.navigate(url);
-            } else {
-              window.history.pushState({}, "", url);
-              window.dispatchEvent(new PopStateEvent("popstate"));
-            }
-          }}
-          iconName="view"
-          variant="primary"
-          size="sm"
-          className="w-full uppercase"
-        >
-          {(() => {
-            const parts = [];
-            // User part - always show current user data
-            if (data.selectedUserId && data.currentUser?.role === "admin") {
-              // Admin viewing specific user
-              const selectedUser = data.users?.find(
-                (u) => u.userUID === data.selectedUserId
-              );
-              const userName =
-                selectedUser?.name?.toUpperCase() ||
-                selectedUser?.email?.toUpperCase() ||
-                "USER";
-              parts.push(userName);
-            } else {
-              // Always show current user data
-              const currentUserName =
-                data.currentUser?.name?.toUpperCase() ||
-                data.currentUser?.email?.toUpperCase() ||
-                "MY";
-              parts.push(currentUserName);
-            }
-            // Reporter part - only add if both user and reporter are selected
-            if (data.selectedReporterId && data.selectedUserId) {
-              const selectedReporter = data.reporters?.find(
-                (r) => r.reporterUID === data.selectedReporterId
-              );
-              const reporterName =
-                selectedReporter?.name?.toUpperCase() ||
-                selectedReporter?.reporterName?.toUpperCase() ||
-                "REPORTER";
-              parts.push(reporterName);
-            }
-            // Build final text
-            if (parts.length === 0) {
-              // Fallback if somehow no user data is available
-              return `VIEW DATA`;
-            } else if (parts.length === 1) {
-              return ` ${parts[0]} Task`;
-            } else {
-              return ` ${parts.join(" + ")} Tasks`;
-            }
-          })()}
-        </DynamicButton>
-
-        {/* Second button for all data tasks - admin only */}
-        {data.isUserAdmin && (
-          <DynamicButton
-            onClick={() => {
-              // Build URL parameters for ALL data tasks with selected month
-              const params = new URLSearchParams();
-              // Handle month selection - use selected month or current month
-              if (data.selectedMonth?.monthId) {
-                params.set("month", data.selectedMonth.monthId);
-              } else if (data.currentMonth?.monthId) {
-                params.set("month", data.currentMonth.monthId);
-              }
-              const url = `/analytics-detail?${params.toString()}`;
-              if (data.navigate) {
-                data.navigate(url);
-              } else {
-                window.history.pushState({}, "", url);
-                window.dispatchEvent(new PopStateEvent("popstate"));
-              }
-            }}
-            iconName="users"
-            variant="primary"
-            size="sm"
-            className="w-full mt-2 uppercase"
-          >
-            VIEW ALL TASKS
-          </DynamicButton>
-        )}
-      </div>
-    ),
   },
 
   [SMALL_CARD_TYPES.ACTIONS]: {
@@ -531,12 +317,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Total Tasks",
     icon: Icons.buttons.add,
-    color: "green",
+    color: "soft_purple",
     getBadge: (data) => ({
       text: data.selectedWeek
         ? `Week ${data.selectedWeek.weekNumber}`
         : "All Weeks",
-      color: "green",
+      color: "soft_purple",
     }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
@@ -562,7 +348,7 @@ export const SMALL_CARD_CONFIGS = {
       if (monthId) {
         try {
           const weeks = getWeeksInMonth(monthId);
-          // Add "All Weeks" option at the beginning
+          // "All Weeks" option at the beginning
           weekOptions = [
             { value: "", label: "All Weeks" },
             ...weeks.map((week) => ({
@@ -576,7 +362,7 @@ export const SMALL_CARD_CONFIGS = {
       }
 
       return (
-        <div className="">
+ 
           <SearchableSelectField
             field={{
               name: "selectedWeek",
@@ -584,10 +370,8 @@ export const SMALL_CARD_CONFIGS = {
               label: "Filter by Week",
               required: false,
               options: weekOptions,
-              placeholder: "Search weeks...",
+              placeholder: "Select weeks...",
             }}
-            register={() => {}} // Not needed for this use case
-            errors={{}}
             setValue={(fieldName, value) => {
               if (fieldName === "selectedWeek" && data.handleWeekChange) {
                 if (!value || value === "") {
@@ -608,15 +392,12 @@ export const SMALL_CARD_CONFIGS = {
               if (data.selectedWeek) {
                 return data.selectedWeek.weekNumber.toString();
               }
-              return ""; // Return empty string when no week is selected
+              return ""; // Return empty string to match "All Weeks" option when no week is selected
             }}
-            trigger={() => {}}
-            clearErrors={() => {}}
-            formValues={{}}
             noOptionsMessage="No weeks available"
-            variant="green"
+            variant="soft_purple"
           />
-        </div>
+    
       );
     },
     getDetails: (data) => {
@@ -675,20 +456,18 @@ export const SMALL_CARD_CONFIGS = {
 
       // Apply user and reporter filtering if specified using shared utility
       if (data.selectedUserId || data.selectedReporterId) {
+        // Filter by reporter only (user and month filtering done at database level)
         filteredTasks = filterTasksByUserAndReporter(filteredTasks, {
-          selectedUserId: data.selectedUserId,
           selectedReporterId: data.selectedReporterId,
-          currentMonthId: null, // Already filtered by month above
-          isUserAdmin: data.isUserAdmin || data.currentUser?.role === "admin",
-          currentUserUID: data.currentUser?.userUID,
         });
       }
 
-      // Use pre-calculated values from hooks if available
+      // Only if available
       const totalTasks = data.actionsTotalTasks ?? filteredTasks.length;
       const totalHours = data.actionsTotalHours ?? 0;
       const totalDeliverables = data.actionsTotalDeliverables ?? 0;
-      const totalDeliverablesWithVariationsHours = data.actionsTotalDeliverablesWithVariationsHours ?? 0;
+      const totalDeliverablesWithVariationsHours =
+        data.actionsTotalDeliverablesWithVariationsHours ?? 0;
 
       return [
         {
@@ -709,309 +488,11 @@ export const SMALL_CARD_CONFIGS = {
       ];
     },
   },
-
-  // Analytics card configurations
-  [SMALL_CARD_TYPES.ANALYTICS_TASK_OVERVIEW]: {
-    title: "Task Overview",
-    subtitle: (data) => data.userName || data.reporterName || "Total Tasks",
-    description: "Total Tasks",
-    icon: Icons.generic.task,
-    color: "blue",
-    getValue: (data) => data.totalTasksThisMonth?.toString() || "0",
-    getStatus: (data) => `${data.totalHours || 0}h`,
-    getBadge: (data) => ({
-      text: `${data.totalHours || 0}h`,
-      color: "blue",
-    }),
-    getDetails: (data) => {
-      const totalHours = data.totalHours || 0;
-
-      const details = [];
-
-      // Only show hours if there are any
-      if (totalHours > 0) {
-        details.push({
-          icon: Icons.generic.clock,
-          label: "Total Hours This Month",
-          value: `${totalHours.toFixed(1)}h`,
-        });
-      }
-
-      return details;
-    },
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_DELIVERABLES]: {
-    title: "Deliverables",
-    subtitle: "NB Stats",
-    description: "deliverables",
-    icon: Icons.generic.deliverable,
-    color: "orange",
-    getValue: (data) => (data.totalDeliverables || 0).toString(),
-    getStatus: (data) => `${data.totalVariations || 0} variations`,
-    getBadge: (data) => ({
-      text: `${data.totalVariations || 0} var`,
-      color: "orange",
-    }),
-    getDetails: (data) => {
-      const totalDeliverables = data.totalDeliverables || 0;
-      const totalVariations = data.totalVariations || 0;
-      const baseHours = data.totalDeliverablesHours || 0;
-      const totalHours = data.totalDeliverablesWithVariationsHours || 0;
-      const variationsHours = totalHours - baseHours;
-
-      // If no deliverables, return empty array
-      if (totalDeliverables === 0) {
-        return [];
-      }
-
-      const details = [
-        {
-          icon: Icons.generic.package,
-          label: "Total Deliverables",
-          value: totalDeliverables.toString(),
-        },
-      ];
-
-      // Only show variations if there are any
-      if (totalVariations > 0) {
-        details.push({
-          icon: Icons.generic.warning,
-          label: "Total Variations",
-          value: totalVariations.toString(),
-        });
-      }
-
-      // Only show hours if there are any
-      if (baseHours > 0 || totalHours > 0) {
-        if (baseHours > 0) {
-          details.push({
-            icon: Icons.generic.clock,
-            label: "Base Hours (Deliverables Only)",
-            value: `${baseHours.toFixed(1)}h`,
-          });
-        }
-
-        if (variationsHours > 0) {
-          details.push({
-            icon: Icons.generic.warning,
-            label: "Variations Hours",
-            value: `${variationsHours.toFixed(1)}h`,
-          });
-        }
-
-        if (totalHours > 0) {
-          details.push({
-            icon: Icons.generic.timer,
-            label: "Total Hours (Deliverables + Variations)",
-            value: `${totalHours.toFixed(1)}h`,
-          });
-        }
-      }
-
-      return details;
-    },
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_MARKETING]: {
-    title: "Marketing",
-    subtitle: "Marketing Tasks",
-    description: "CRM Tasks",
-    icon: Icons.generic.target,
-    color: "purple",
-    getValue: (data) => (data.marketingData?.totalTasks || 0).toString(),
-    getStatus: (data) => `${data.marketingData?.totalHours || 0}h`,
-    getBadge: (data) => ({
-      text: `${data.marketingData?.totalHours || 0}h`,
-      color: "purple",
-    }),
-    getDetails: (data) => {
-      const marketingData = data.marketingData || {};
-      const details = [];
-
-      // Add each marketing subcategory
-      Object.entries(marketingData).forEach(([subcategory, info]) => {
-        if (subcategory !== "totalTasks" && subcategory !== "totalHours") {
-          details.push({
-            icon: Icons.generic.task,
-            label: subcategory,
-            value: `${info.tasks} tasks`,
-            badges:
-              info.markets && Object.keys(info.markets).length > 0
-                ? info.markets
-                : null,
-          });
-        }
-      });
-
-      return details;
-    },
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_ACQUISITION]: {
-    title: "Acquisition",
-    subtitle: "Acquisition Tasks",
-    description: "ACQ Tasks ",
-    icon: Icons.generic.users,
-    color: "yellow",
-    getValue: (data) => (data.acquisitionData?.totalTasks || 0).toString(),
-    getStatus: (data) => `${data.acquisitionData?.totalHours || 0}h`,
-    getBadge: (data) => ({
-      text: `${data.acquisitionData?.totalHours || 0}h`,
-      color: "yellow",
-    }),
-    getDetails: (data) => {
-      const acquisitionData = data.acquisitionData || {};
-      const details = [];
-
-      // Add each acquisition subcategory
-      Object.entries(acquisitionData).forEach(([subcategory, info]) => {
-        if (subcategory !== "totalTasks" && subcategory !== "totalHours") {
-          details.push({
-            icon: Icons.generic.task,
-            label: subcategory,
-            value: `${info.tasks} tasks`,
-            badges:
-              info.markets && Object.keys(info.markets).length > 0
-                ? info.markets
-                : null,
-          });
-        }
-      });
-
-      return details;
-    },
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_PRODUCT]: {
-    title: "Product",
-    subtitle: "Product Tasks",
-    description: "Product Analysis",
-    icon: Icons.generic.package,
-    color: "orange",
-    getValue: (data) => (data.productData?.totalTasks || 0).toString(),
-    getStatus: (data) => `${data.productData?.totalHours || 0}h`,
-    getBadge: (data) => ({
-      text: `${data.productData?.totalHours || 0}h`,
-      color: "orange",
-    }),
-    getDetails: (data) => {
-      const productData = data.productData || {};
-      const details = [];
-
-      // Add total hours first
-      if (productData.totalHours) {
-        details.push({
-          icon: Icons.generic.clock,
-          label: "Total Hours",
-          value: `${productData.totalHours}h`,
-        });
-      }
-
-      // Add each product subcategory
-      Object.entries(productData).forEach(([subcategory, info]) => {
-        if (subcategory !== "totalTasks" && subcategory !== "totalHours") {
-          details.push({
-            icon: Icons.generic.task,
-            label: subcategory,
-            value: `${info.tasks} tasks`,
-            badges:
-              info.markets && Object.keys(info.markets).length > 0
-                ? info.markets
-                : null,
-          });
-        }
-      });
-
-      return details;
-    },
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_MISC]: {
-    title: "Misc",
-    subtitle: "Miscellaneous Tasks",
-    description: "Misc Analysis",
-    icon: Icons.generic.document,
-    color: "gray",
-    getValue: (data) => (data.miscData?.totalTasks || 0).toString(),
-    getStatus: (data) => `${data.miscData?.totalHours || 0}h`,
-    getBadge: (data) => ({
-      text: `${data.miscData?.totalHours || 0}h`,
-      color: "gray",
-    }),
-    getDetails: (data) => {
-      const miscData = data.miscData || {};
-      const details = [];
-
-      // Add total hours first
-      if (miscData.totalHours) {
-        details.push({
-          icon: Icons.generic.clock,
-          label: "Total Hours",
-          value: `${miscData.totalHours}h`,
-        });
-      }
-
-      // Add each misc subcategory
-      Object.entries(miscData).forEach(([subcategory, info]) => {
-        if (subcategory !== "totalTasks" && subcategory !== "totalHours") {
-          details.push({
-            icon: Icons.generic.task,
-            label: subcategory,
-            value: `${info.tasks} tasks`,
-            badges:
-              info.markets && Object.keys(info.markets).length > 0
-                ? info.markets
-                : null,
-          });
-        }
-      });
-
-      return details;
-    },
-  },
-
-  [SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY]: {
-    title: "Performance",
-    subtitle: "Quality Metrics",
-    description: "Performance",
-    icon: Icons.generic.chart,
-    color: "crimson",
-    getValue: (data) => "In Progress",
-    getStatus: (data) => `${data.efficiency?.productivityScore || 0}%`,
-    getBadge: (data) => ({
-      text: `${data.efficiency?.productivityScore || 0}%`,
-      color: "crimson",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.target,
-        label: "Productivity Score",
-        value: `${data.efficiency?.productivityScore || 0}%`,
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Avg Task Completion",
-        value: `${data.efficiency?.averageTaskCompletion || 0} days`,
-      },
-      {
-        icon: Icons.generic.star,
-        label: "Quality Rating",
-        value: `${data.efficiency?.qualityRating || 0}/5`,
-      },
-      {
-        icon: Icons.generic.check,
-        label: "On-Time Delivery",
-        value: `${data.efficiency?.onTimeDelivery || 0}%`,
-      },
-    ],
-  },
-
+ 
 };
 
 export const createCards = (data, mode = "main") => {
   let cardTypes = [];
-  // Allow passing a custom list of types as the second argument
   if (Array.isArray(mode)) {
     cardTypes = mode;
   } else {
@@ -1020,23 +501,10 @@ export const createCards = (data, mode = "main") => {
         cardTypes = [
           SMALL_CARD_TYPES.MONTH_SELECTION,
           SMALL_CARD_TYPES.ACTIONS,
-          SMALL_CARD_TYPES.WEEK_SELECTOR,
           ...(data.isUserAdmin
             ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
             : [SMALL_CARD_TYPES.REPORTER_FILTER]),
           SMALL_CARD_TYPES.USER_PROFILE,
-          // Performance card only for user role (not admin)
-          ...(data.isUserAdmin ? [] : [SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY]),
-        ];
-        break;
-      case "analytics":
-        cardTypes = [
-          SMALL_CARD_TYPES.ANALYTICS_TASK_OVERVIEW,
-          SMALL_CARD_TYPES.ANALYTICS_DELIVERABLES,
-          SMALL_CARD_TYPES.ANALYTICS_MARKETING,
-          SMALL_CARD_TYPES.ANALYTICS_ACQUISITION,
-          SMALL_CARD_TYPES.ANALYTICS_PRODUCT,
-          SMALL_CARD_TYPES.ANALYTICS_MISC,
         ];
         break;
       default:

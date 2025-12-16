@@ -266,7 +266,6 @@ export const CARD_SYSTEM = {
   },
   SMALL_CARD_TYPES: {
     MONTH_SELECTION: 'month-selection',
-    WEEK_SELECTOR: 'week-selector',
     USER_FILTER: 'user-filter',
     REPORTER_FILTER: 'reporter-filter',
     USER_PROFILE: 'user-profile',

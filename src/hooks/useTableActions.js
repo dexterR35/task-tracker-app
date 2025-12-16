@@ -47,14 +47,6 @@ export const useTableActions = (tableType, options = {}) => {
       if (item.createdByName) params.set('user', item.createdByName);
 
       navigate(`/task/${item.id}?${params.toString()}`);
-    } else if (tableType === 'user') {
-      // For users, navigate to user analytics page
-      const userName = item?.name || item?.email || 'Unknown';
-      navigate(`/analytics-detail?user=${encodeURIComponent(userName)}`);
-    } else if (tableType === 'reporter') {
-      // For reporters, navigate to reporter analytics page
-      const reporterName = item?.name || item?.reporterName || 'Unknown';
-      navigate(`/analytics-detail?reporter=${encodeURIComponent(reporterName)}`);
     } else {
       const displayName = getItemDisplayName(item);
       showSuccess(`Selected ${tableType}: ${displayName}`);

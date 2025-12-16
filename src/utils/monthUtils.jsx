@@ -53,7 +53,7 @@ export const getWeeksInMonth = (monthId) => {
 
   let weekNumber = 1;
 
-  while (currentWeekStart <= monthEnd) {
+  while (currentWeekStart <= monthEnd && weeks.length < 4) {
     // Calculate Friday of the week (Monday + 4 days = Friday)
     const weekEndFriday = addDays(currentWeekStart, 4);
 
@@ -63,7 +63,8 @@ export const getWeeksInMonth = (monthId) => {
       end: weekEndFriday,
     }).filter((day) => !isWeekend(day) && day >= monthStart && day <= monthEnd);
 
-    if (weekDays.length > 0) {
+    // Only include weeks with at least 3 workdays to avoid very short partial weeks
+    if (weekDays.length >= 3) {
       // Use Friday as endDate, but only if it's within the month
       const actualWeekEnd =
         weekEndFriday <= monthEnd
@@ -79,10 +80,11 @@ export const getWeeksInMonth = (monthId) => {
         endDateStr: format(actualWeekEnd, "yyyy-MM-dd"),
         label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(actualWeekEnd, "MMM dd")})`,
       });
+      
+      weekNumber++;
     }
 
     currentWeekStart = addWeeks(currentWeekStart, 1);
-    weekNumber++;
   }
 
   return weeks;

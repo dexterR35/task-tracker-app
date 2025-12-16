@@ -1,11 +1,3 @@
-/**
- * Application Router Configuration
- * 
- * @fileoverview Main router configuration with route protection and layouts
- * @author Senior Developer
- * @version 2.0.0
- * Updated: Removed WeekViewPage references
- */
 
 import React from "react";
 import {
@@ -16,50 +8,31 @@ import {
 } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-// Removed authUtils imports - using auth context directly
-
 import AuthLayout from "@/components/layout/AuthLayout";
 import Loader from "@/components/ui/Loader/Loader";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
-
-// Import static pages directly (no lazy loading needed)
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
-
-
-// Import all pages directly
 import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
 import LandingPages from "@/pages/LandingPages";
-import DynamicAnalyticsPage from "@/pages/DynamicAnalyticsPage";
 import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
 import TeamDaysOffPage from "@/pages/TeamDaysOffPage";
 import HowToUsePage from "@/pages/HowToUsePage";
-
-// Import simple components directly (no lazy loading needed)
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 
-/**
- * Simple loading component for app initialization
- * @returns {JSX.Element} - Loading component
- */
+
 const SimpleLoader = () => (
   <div className="min-h-screen flex-center bg-primary">
-    <Loader size="lg" text="Initializing app…" variant="spinner" />
+    <Loader size="lg" text="Initializing application..." variant="spinner" />
   </div>
 );
 
 
-/**
- * Page wrapper with smooth transitions
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components to render
- * @returns {JSX.Element} - Page wrapper component
- */
 const PageWrapper = ({ children }) => {
   const location = useLocation();
   
@@ -78,13 +51,6 @@ const PageWrapper = ({ children }) => {
 
 
 
-/**
- * Public route protection component
- * Redirects authenticated users to dashboard, allows unauthenticated users to access public pages
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components to render
- * @returns {JSX.Element} - Public route component
- */
 const PublicRoute = ({ children }) => {
   const authState = useAuth();
 
@@ -102,13 +68,7 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-/**
- * Protected route component with authentication and role-based access control
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components to render
- * @param {string|null} props.requiredRole - Required role for access (optional)
- * @returns {JSX.Element} - Protected route component
- */
+
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const authState = useAuth();
   const { canAccess } = authState;
@@ -146,18 +106,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   return children;
 };
 
-/**
- * Admin-only route protection component
- * Assumes user is already authenticated by parent ProtectedRoute
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components to render
- * @returns {JSX.Element} - Admin route component
- */
+
 const AdminRoute = ({ children }) => {
   const authState = useAuth();
   const { canAccess } = authState;
 
-  // Only check admin role since authentication is already verified by parent ProtectedRoute
   if (!canAccess("admin")) {
     return <Navigate to="/unauthorized" replace />;
   }
@@ -169,12 +122,6 @@ ProtectedRoute.displayName = "ProtectedRoute";
 
 
 
-
-/**
- * Root layout with error boundary
- * Auth loading is handled by ProtectedRoute components
- * @returns {JSX.Element} - Root layout component
- */
 const RootLayout = () => {
   return (
     <ErrorBoundary componentName="RootLayout">
@@ -183,11 +130,7 @@ const RootLayout = () => {
   );
 };
 
-/**
- * Main application router configuration
- * Defines all routes with proper protection and layouts
- * @returns {Router} - Created browser router instance
- */
+
 export const createRouter = () => {
   return createBrowserRouter([
     {
@@ -258,16 +201,6 @@ export const createRouter = () => {
               <ErrorBoundary componentName="ComingSoonPage">
                 <PageWrapper>
                   <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics-detail",
-            element: (
-              <ErrorBoundary componentName="DynamicAnalyticsPage">
-                <PageWrapper>
-                  <DynamicAnalyticsPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),

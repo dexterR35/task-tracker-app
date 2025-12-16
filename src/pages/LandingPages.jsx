@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue, useRef } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import TanStackTable from '@/components/Table/TanStackTable';
 import SmallCard from '@/components/Card/smallCards/SmallCard';
@@ -265,8 +265,11 @@ const LandingPages = () => {
     };
   }, [filteredData, filters.Brand]);
 
-  // Create statistics cards
-  const statisticsCards = useMemo(() => [
+  // Cache for stable card references (ID badge)
+  const cardCacheRef = useRef(new Map());
+
+  // Create statistics cards with stable references
+  const statisticsCardsRaw = useMemo(() => [
     {
       id: 'total-active',
       title: 'Total Active',
@@ -314,7 +317,28 @@ const LandingPages = () => {
     },
   ], [globalStats]);
 
-  const brandStatisticsCards = useMemo(() => [
+  const statisticsCards = useMemo(() => {
+    return statisticsCardsRaw.map(newCard => {
+      const cacheKey = `${newCard.id}-${newCard.color}-${newCard.value}-${newCard.title}-${newCard.subtitle}-${JSON.stringify(newCard.details)}-${JSON.stringify(newCard.badge)}`;
+      const cachedCard = cardCacheRef.current.get(cacheKey);
+      
+      if (cachedCard && 
+          cachedCard.id === newCard.id &&
+          cachedCard.color === newCard.color &&
+          cachedCard.value === newCard.value &&
+          cachedCard.title === newCard.title &&
+          cachedCard.subtitle === newCard.subtitle &&
+          JSON.stringify(cachedCard.details) === JSON.stringify(newCard.details) &&
+          JSON.stringify(cachedCard.badge) === JSON.stringify(newCard.badge)) {
+        return cachedCard;
+      }
+      
+      cardCacheRef.current.set(cacheKey, newCard);
+      return newCard;
+    });
+  }, [statisticsCardsRaw]);
+
+  const brandStatisticsCardsRaw = useMemo(() => [
     {
       id: 'brand-active',
       title: 'Brand Active',
@@ -361,6 +385,27 @@ const LandingPages = () => {
       icon: Icons.generic.product,
     },
   ], [brandStats]);
+
+  const brandStatisticsCards = useMemo(() => {
+    return brandStatisticsCardsRaw.map(newCard => {
+      const cacheKey = `${newCard.id}-${newCard.color}-${newCard.value}-${newCard.title}-${newCard.subtitle}-${JSON.stringify(newCard.details)}-${JSON.stringify(newCard.badge)}`;
+      const cachedCard = cardCacheRef.current.get(cacheKey);
+      
+      if (cachedCard && 
+          cachedCard.id === newCard.id &&
+          cachedCard.color === newCard.color &&
+          cachedCard.value === newCard.value &&
+          cachedCard.title === newCard.title &&
+          cachedCard.subtitle === newCard.subtitle &&
+          JSON.stringify(cachedCard.details) === JSON.stringify(newCard.details) &&
+          JSON.stringify(cachedCard.badge) === JSON.stringify(newCard.badge)) {
+        return cachedCard;
+      }
+      
+      cardCacheRef.current.set(cacheKey, newCard);
+      return newCard;
+    });
+  }, [brandStatisticsCardsRaw]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

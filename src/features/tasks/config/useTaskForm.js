@@ -392,17 +392,31 @@ const processConditionalFields = (formData) => {
 
 
 const createDataTaskStructure = (formData) => {
+  const deliverablesUsed = formData._hasDeliverables ? [{
+    name: formData.deliverables || '',
+    count: formData.deliverableQuantities?.[formData.deliverables] || 1,
+    variationsEnabled: formData.variationsDeliverables?.[formData.deliverables] || false,
+    variationsCount: formData.variationsQuantities?.[formData.deliverables] || 0
+  }] : [];
+  
+  const aiUsed = formData._usedAIEnabled ? [{
+    aiModels: formData.aiModels || [],
+    aiTime: formData.aiTime || 0
+  }] : [];
+  
+  // Extract deliverable names for DB-level filtering
+  const deliverableNames = deliverablesUsed
+    .map(d => d.name)
+    .filter(name => name && name.trim() !== '');
+  
+  // Calculate hasAiUsed for DB-level filtering
+  const hasAiUsed = aiUsed.length > 0 && aiUsed[0]?.aiModels?.length > 0;
+  
   return {
-    aiUsed: formData._usedAIEnabled ? [{
-      aiModels: formData.aiModels || [],
-      aiTime: formData.aiTime || 0
-    }] : [],
-    deliverablesUsed: formData._hasDeliverables ? [{
-      name: formData.deliverables || '',
-      count: formData.deliverableQuantities?.[formData.deliverables] || 1,
-      variationsEnabled: formData.variationsDeliverables?.[formData.deliverables] || false,
-      variationsCount: formData.variationsQuantities?.[formData.deliverables] || 0
-    }] : [],
+    aiUsed,
+    deliverablesUsed,
+    deliverableNames, // Array of deliverable names for DB-level filtering
+    hasAiUsed, // Boolean flag for DB-level filtering
     departments: formData.departments ? [formData.departments] : [],
     markets: formData.markets || [],
     endDate: formData.endDate,

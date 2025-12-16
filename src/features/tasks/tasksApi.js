@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   collection,
   query,
@@ -17,7 +17,6 @@ import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { getCurrentYear } from "@/utils/dateUtils";
-import listenerManager from "@/features/utils/firebaseListenerManager";
 import { validateTaskPermissions } from '@/utils/permissionValidation';
 import { getUserUID } from '@/features/utils/authUtils';
 
@@ -40,17 +39,127 @@ const getMonthRef = (monthId) => {
 };
 
 
-const buildTaskQuery = (tasksRef, role, userUID) => {
+/**
+ * Build Firestore query with all database-level filters
+ * 
+ * INDEX REQUIREMENTS:
+ * - Single where() clauses: NO index needed
+ * - Multiple where() on same field (e.g., createdAt >= AND <=): NO composite index needed
+ * - Multiple where() on DIFFERENT fields: Composite index REQUIRED
+ * 
+ * Why filters work without explicit indexes:
+ * 1. Collection path filtering (monthId in path) narrows collection before querying - very efficient
+ * 2. Single filters don't need indexes
+ * 3. Firebase Console auto-creates composite indexes when queries run (check Firebase Console > Firestore > Indexes)
+ * 4. Some filters (aiUsed, deliverable) are client-side, so no DB index needed
+ * 
+ * If you combine multiple filters (userUID + department + reporter), check Firebase Console
+ * for auto-created composite indexes or create them manually for better performance.
+ * 
+ * @param {Object} tasksRef - Firestore collection reference
+ * @param {string} role - User role ('user' or 'admin')
+ * @param {string|null} userUID - Current user UID
+ * @param {Object} filters - Filter options
+ * @param {string|null} filters.selectedUserId - Selected user ID for admin filtering
+ * @param {string|null} filters.selectedReporterId - Reporter ID filter
+ * @param {string|null} filters.selectedDepartment - Department filter
+ * @param {string|null} filters.selectedDeliverable - Deliverable name filter
+ * @param {string|null} filters.selectedFilter - Task type filter (aiUsed, marketing, etc.)
+ * @param {Date|null} filters.weekStart - Week start date for createdAt filter
+ * @param {Date|null} filters.weekEnd - Week end date for createdAt filter
+ * @param {Date|null} filters.monthStart - Month start date for createdAt filter (when "All Weeks")
+ * @param {Date|null} filters.monthEnd - Month end date for createdAt filter (when "All Weeks")
+ * @returns {Query} Firestore query
+ */
+const buildTaskQuery = (tasksRef, role, userUID, filters = {}) => {
+  const {
+    selectedUserId = null,
+    selectedReporterId = null,
+    selectedDepartment = null,
+    selectedDeliverable = null,
+    selectedFilter = null,
+    weekStart = null,
+    weekEnd = null,
+    monthStart = null,
+    monthEnd = null,
+  } = filters;
+
+  // Use selectedUserId if provided (for admin filtering), otherwise use userUID
+  const targetUserId = selectedUserId || userUID;
+  
+  // Start building query constraints
+  const constraints = [];
+
+  // 1. User filter (always applied)
   if (role === "user") {
     // Regular users: fetch only their own tasks
-    return query(tasksRef, where("userUID", "==", userUID));
-  } else if (role === "admin" && userUID) {
+    constraints.push(where("userUID", "==", userUID));
+  } else if (role === "admin" && targetUserId) {
     // Admin users: specific user's tasks when a user is selected
-    return query(tasksRef, where("userUID", "==", userUID));
-  } else {
-    // Admin users: all tasks when no specific user is selected
+    constraints.push(where("userUID", "==", targetUserId));
+  }
+  // If admin and no targetUserId, don't filter by user (show all)
+
+  // 2. Reporter filter
+  if (selectedReporterId) {
+    // Try reporterUID first, fallback to reporters field
+    constraints.push(where("data_task.reporterUID", "==", selectedReporterId));
+  }
+
+  // 3. Department filter
+  if (selectedDepartment) {
+    constraints.push(where("data_task.departments", "array-contains", selectedDepartment));
+  }
+
+  // 4. Deliverable filter (DB-level using deliverableNames array)
+  if (selectedDeliverable) {
+    constraints.push(where("data_task.deliverableNames", "array-contains", selectedDeliverable));
+  }
+  
+  // 5. Task type filters
+  if (selectedFilter) {
+    switch (selectedFilter) {
+      case "aiUsed":
+        // DB-level filter using hasAiUsed boolean field
+        constraints.push(where("data_task.hasAiUsed", "==", true));
+        break;
+      case "marketing":
+        constraints.push(where("data_task.products", "==", "marketing"));
+        break;
+      case "acquisition":
+        constraints.push(where("data_task.products", "==", "acquisition"));
+        break;
+      case "product":
+        constraints.push(where("data_task.products", "==", "product"));
+        break;
+      case "vip":
+        constraints.push(where("data_task.isVip", "==", true));
+        break;
+      case "reworked":
+        constraints.push(where("data_task.reworked", "==", true));
+        break;
+      case "shutterstock":
+        constraints.push(where("data_task.useShutterstock", "==", true));
+        break;
+    }
+  }
+
+  // 6. Date range filter (createdAt - when task was added)
+  // Note: Month filtering is already done via monthId in the query path (getTaskRef)
+  // Filter by createdAt to show tasks that were added within the week
+  // Firestore only allows one range query per field
+  if (weekStart && weekEnd) {
+    constraints.push(where("createdAt", ">=", weekStart));
+    constraints.push(where("createdAt", "<=", weekEnd));
+  }
+  // Don't apply monthStart/monthEnd filters - monthId in query path already filters by month
+
+  // Build and return query
+  if (constraints.length === 0) {
     return query(tasksRef);
   }
+
+  return query(tasksRef, ...constraints);
 };
 
 /**
@@ -173,165 +282,122 @@ const taskCache = new Map();
 /**
  * Get cache key for tasks
  */
-const getCacheKey = (monthId, role, userUID) => {
-  return `${monthId}_${role}_${userUID || 'all'}`;
+const getCacheKey = (monthId, role, userUID, filters = {}) => {
+  const {
+    selectedUserId = null,
+    selectedReporterId = null,
+    selectedDepartment = null,
+    selectedDeliverable = null,
+    selectedFilter = null,
+    weekStart = null,
+    weekEnd = null,
+    monthStart = null,
+    monthEnd = null,
+  } = filters;
+  
+  const targetUserId = selectedUserId || userUID;
+  const filterParts = [
+    monthId,
+    role,
+    targetUserId || 'all',
+    selectedReporterId || 'no-reporter',
+    selectedDepartment || 'no-dept',
+    selectedDeliverable || 'no-deliv',
+    selectedFilter || 'no-filter',
+    weekStart ? weekStart.toISOString().split('T')[0] : (monthStart ? monthStart.toISOString().split('T')[0] : 'no-date'),
+  ];
+  return filterParts.join('_');
 };
 
 /**
  * Tasks Hook (Direct Firestore with Snapshots with Caching)
  */
-export const useTasks = (monthId, role = 'user', userUID = null) => {
+export const useTasks = (monthId, role = 'user', userUID = null, filters = {}) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Serialize filters for stable comparison
+  const filtersKey = useMemo(() => {
+    return JSON.stringify({
+      selectedUserId: filters.selectedUserId || null,
+      selectedReporterId: filters.selectedReporterId || null,
+      selectedDepartment: filters.selectedDepartment || null,
+      selectedDeliverable: filters.selectedDeliverable || null,
+      selectedFilter: filters.selectedFilter || null,
+      weekStart: filters.weekStart?.getTime() || null,
+      weekEnd: filters.weekEnd?.getTime() || null,
+    });
+  }, [
+    filters.selectedUserId,
+    filters.selectedReporterId,
+    filters.selectedDepartment,
+    filters.selectedDeliverable,
+    filters.selectedFilter,
+    filters.weekStart?.getTime(),
+    filters.weekEnd?.getTime(),
+  ]);
+
   useEffect(() => {
     if (!monthId) {
-      logger.log('🔍 [useTasks] No monthId provided, skipping tasks fetch');
       setTasks([]);
       setIsLoading(false);
       return;
     }
 
-    const cacheKey = getCacheKey(monthId, role, userUID);
-    const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
-    
-    // OPTIMIZED: Check cache AND listener first - if both exist, use cache, no fetch needed
-    if (taskCache.has(cacheKey) && listenerManager.hasListener(listenerKey)) {
-      const cachedData = taskCache.get(cacheKey);
-      logger.log('🔍 [useTasks] Using cached data with existing listener (no fetch):', cacheKey);
-      setTasks(cachedData);
-      setIsLoading(false);
-      setError(null);
-      return; // Skip setup entirely - data is cached and listener is active
-    }
-    
-    // Check cache first (but listener doesn't exist yet)
-    if (taskCache.has(cacheKey)) {
-      const cachedData = taskCache.get(cacheKey);
-      logger.log('🔍 [useTasks] Using cached data, setting up listener for updates:', cacheKey);
-      setTasks(cachedData);
-      setIsLoading(false);
-      // Still set up listener to get real-time updates, but data is already loaded
-    } else {
-      setIsLoading(true);
-    }
+    setIsLoading(true);
+    setError(null);
 
-    logger.log('🔍 [useTasks] Starting tasks fetch', { monthId, role, userUID });
-    let unsubscribe = null;
+    const tasksRef = getTaskRef(monthId);
+    const tasksQuery = buildTaskQuery(tasksRef, role, userUID, filters);
 
-    const setupListener = async () => {
-      try {
-        setError(null);
-
-        // Check if listener already exists (double-check after cache check)
-        if (listenerManager.hasListener(listenerKey)) {
-          logger.log('Listener already exists, skipping duplicate setup for:', listenerKey);
-          // Get current data from cache if available
-          const existingData = taskCache.get(cacheKey);
-          if (existingData) {
-            setTasks(existingData);
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        // Check if month board exists
-        const monthDocRef = getMonthRef(monthId);
-        const monthDoc = await getDoc(monthDocRef);
-
-        if (!monthDoc.exists()) {
-          logger.warn('Month board does not exist for:', monthId);
+    // Set up real-time listener - simple and direct
+    // onSnapshot automatically handles errors and empty collections
+    const unsubscribe = onSnapshot(
+      tasksQuery,
+      (snapshot) => {
+        if (!snapshot || !snapshot.docs) {
           setTasks([]);
-          taskCache.set(cacheKey, []); // Cache empty result
           setIsLoading(false);
           return;
         }
 
-        const tasksRef = getTaskRef(monthId);
-        const tasksQuery = buildTaskQuery(tasksRef, role, userUID);
+        if (snapshot.empty) {
+          setTasks([]);
+          setIsLoading(false);
+          return;
+        }
 
-        unsubscribe = listenerManager.addListener(
-          listenerKey,
-          () => onSnapshot(
-            tasksQuery,
-            (snapshot) => {
-              if (!snapshot || !snapshot.docs || snapshot.empty) {
-                // Check cache before overwriting with empty data
-                // This prevents losing data when listener is restored after tab becomes visible
-                const cachedData = taskCache.get(cacheKey);
-                if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-                  // Keep cached data if snapshot is empty (might be initial sync after resume)
-                  logger.log('🔍 [useTasks] Snapshot empty but cache has data, keeping cache');
-                  setTasks(cachedData);
-                  setIsLoading(false);
-                  return;
-                }
-                
-                // Only set empty if cache is also empty (truly no data)
-                const emptyTasks = [];
-                setTasks(emptyTasks);
-                taskCache.set(cacheKey, emptyTasks); // Cache empty result
-                setIsLoading(false);
-                return;
-              }
-
-              const validDocs = snapshot.docs.filter(
-                (doc) => doc && doc.exists() && doc.data() && doc.id
-              );
-
-              const tasksData = validDocs
-                .map((d) =>
-                  serializeTimestampsForContext({
-                    id: d.id,
-                    monthId: monthId,
-                    ...d.data(),
-                  })
-                )
-                .filter((task) => task !== null);
-
-              // Update cache
-              taskCache.set(cacheKey, tasksData);
-              setTasks(tasksData);
-              setIsLoading(false);
-              setError(null);
-            },
-            (err) => {
-              logger.error('Tasks real-time error:', err);
-              // On error, try to use cached data if available
-              const cachedData = taskCache.get(cacheKey);
-              if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-                logger.log('🔍 [useTasks] Error occurred but cache has data, using cache');
-                setTasks(cachedData);
-                setIsLoading(false);
-              } else {
-                setError(err);
-                setIsLoading(false);
-              }
-            }
-          ),
-          true, // preserve setup function for restoration, but will be paused when tab hidden
-          'tasks', // category
-          'tasks' // page
+        const validDocs = snapshot.docs.filter(
+          (doc) => doc && doc.exists() && doc.data() && doc.id
         );
 
-      } catch (err) {
-        logger.error('Error setting up tasks listener:', err);
+        const tasksData = validDocs
+          .map((d) =>
+            serializeTimestampsForContext({
+              id: d.id,
+              monthId: monthId,
+              ...d.data(),
+            })
+          )
+          .filter((task) => task !== null);
+
+        setTasks(tasksData);
+        setIsLoading(false);
+        setError(null);
+      },
+      (err) => {
+        logger.error('Tasks real-time error:', err);
         setError(err);
         setIsLoading(false);
       }
-    };
+    );
 
-    setupListener();
-
+    // Cleanup: unsubscribe when filters change or component unmounts
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-      // Don't remove listener on cleanup - keep it active for real-time updates
-      // Only remove if component unmounts completely
+      unsubscribe();
     };
-  }, [monthId, role, userUID]); // Keep dependencies but optimize the hook
+  }, [monthId, role, userUID, filtersKey]);
 
   return { tasks, isLoading, error };
 };
@@ -498,6 +564,19 @@ export const useUpdateTask = () => {
       // Set reporterUID to match reporters ID for analytics consistency
       if (updates.reporters && !updates.reporterUID) {
         updates.reporterUID = updates.reporters;
+      }
+
+      // Update deliverableNames and hasAiUsed for DB-level filtering
+      if (updates.deliverablesUsed !== undefined) {
+        const deliverablesUsed = Array.isArray(updates.deliverablesUsed) ? updates.deliverablesUsed : [];
+        updates.deliverableNames = deliverablesUsed
+          .map(d => d?.name)
+          .filter(name => name && name.trim() !== '');
+      }
+      
+      if (updates.aiUsed !== undefined) {
+        const aiUsed = Array.isArray(updates.aiUsed) ? updates.aiUsed : [];
+        updates.hasAiUsed = aiUsed.length > 0 && aiUsed[0]?.aiModels?.length > 0;
       }
 
       // Structure the updates with data_task wrapper

@@ -113,69 +113,36 @@ export const getTaskData = (task) => {
  * @param {string|null} options.currentUserUID - Current user UID (for non-admin filtering)
  * @returns {Array} Filtered tasks
  */
+/**
+ * Filter tasks by reporter only (user and month filtering done at database level)
+ * @param {Array} tasks - Array of tasks (already filtered by user/month at DB level)
+ * @param {Object} options - Filtering options
+ * @param {string|null} options.selectedReporterId - Selected reporter ID
+ * @returns {Array} Filtered tasks
+ */
 export const filterTasksByUserAndReporter = (tasks, options = {}) => {
   const {
-    selectedUserId = null,
     selectedReporterId = null,
-    currentMonthId = null,
-    isUserAdmin = false,
-    currentUserUID = null,
   } = options;
 
   // Normalize empty strings to null for proper filtering
-  const normalizedUserId = selectedUserId && selectedUserId.trim() !== "" ? selectedUserId : null;
   const normalizedReporterId = selectedReporterId && selectedReporterId.trim() !== "" ? selectedReporterId : null;
 
   if (!tasks || !Array.isArray(tasks)) {
     return [];
   }
 
+  // If no reporter filter, return all tasks (user/month already filtered at DB level)
+  if (!normalizedReporterId) {
+    return tasks;
+  }
+
+  // Only filter by reporter (user and month filtering done at database level)
   return tasks.filter((task) => {
-    // Always filter by month first
-    if (currentMonthId && task.monthId !== currentMonthId) {
-      return false;
-    }
-
-    // Role-based filtering: Regular users can only see their own tasks
-    if (!isUserAdmin) {
-      // Check if this task belongs to the current user
-      const isUserTask = currentUserUID && matchesUser(task, currentUserUID);
-      if (!isUserTask) return false;
-
-      // If reporter is selected, also filter by reporter
-      if (normalizedReporterId) {
-        return matchesReporter(task, normalizedReporterId);
-      }
-
-      // Regular users can ONLY see their own tasks
-      return true;
-    }
-
-    // Admin filtering logic
-    // If both user and reporter are selected, show tasks that match BOTH
-    if (normalizedUserId && normalizedReporterId) {
-      const matchesSelectedUser = matchesUser(task, normalizedUserId);
-      const taskReporterId = getTaskReporterId(task);
-      if (!taskReporterId) return false;
-      // Compare task reporter ID directly with selectedReporterId (exact match)
-      return matchesSelectedUser && String(taskReporterId) === String(normalizedReporterId);
-    }
-
-    // If only user is selected, show tasks for that user
-    if (normalizedUserId && !normalizedReporterId) {
-      return matchesUser(task, normalizedUserId);
-    }
-
-    // If only reporter is selected, show tasks for that reporter
-    if (normalizedReporterId && !normalizedUserId) {
-      const taskReporterId = getTaskReporterId(task);
-      if (!taskReporterId) return false;
-      // Compare task reporter ID directly with selectedReporterId (exact match)
-      return String(taskReporterId) === String(normalizedReporterId);
-    }
-
-    // If neither user nor reporter is selected, admin sees all tasks
-    return true;
+    const taskReporterId = getTaskReporterId(task);
+    if (!taskReporterId) return false;
+    // Compare task reporter ID directly with selectedReporterId (exact match)
+    return String(taskReporterId) === String(normalizedReporterId);
   });
 };
 

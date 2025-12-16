@@ -345,6 +345,9 @@ const AnalyticsPage = () => {
 
   // Render Analytics Card Preview 
   const AnalyticsCardPreview = ({ card, onClick }) => {
+    // Guard against null/undefined card
+    if (!card || !card.color) return null;
+
     // Special handling for month-to-month comparison
     if (card.id === "month-to-month-comparison") {
       const cardData = useMemo(() => ({

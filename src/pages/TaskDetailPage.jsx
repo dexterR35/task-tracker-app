@@ -16,7 +16,6 @@ import {
   useDeliverablesOptions,
   useDeliverableCalculation,
 } from "@/features/deliverables/DeliverablesManager";
-import { convertMarketsToBadges } from "@/components/Card/smallCards/smallCardConfig";
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -124,8 +123,11 @@ const TaskDetailPage = () => {
           },
           {
             label: "Markets",
-            value: task?.data_task?.markets?.length || 0,
-            badges: convertMarketsToBadges(task?.data_task?.markets),
+            value: task?.data_task?.markets 
+              ? (Array.isArray(task.data_task.markets) 
+                  ? task.data_task.markets.length 
+                  : Object.keys(task.data_task.markets).length)
+              : 0,
           },
           {
             label: "Reporter",

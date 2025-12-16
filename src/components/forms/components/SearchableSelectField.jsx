@@ -1,24 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
-import { CARD_SYSTEM } from '@/constants';
-import { Icons } from '@/components/icons';
-
-// Function to get badge color - use select_badge for all selected badges
-const getFieldBadgeColor = (fieldName) => {
-  return 'select_badge';
-};
 
 const SearchableSelectField = ({ 
   field, 
-  register, 
-  errors, 
+  register = () => ({}), // Optional - only needed for React Hook Form integration
+  errors = {}, 
   setValue, 
   watch, 
-  trigger,
-  clearErrors,
-  formValues,
+  trigger = () => {}, // Optional - for form validation
+  clearErrors = () => {}, // Optional - for clearing form errors
   noOptionsMessage = "No options found",
-  variant, // Badge variant/color to use (e.g., "green", "blue", "purple")
+  variant = 'select_badge', // Badge variant/color to use (default: 'select_badge')
   disabled = false, // Disable the field
 
 }) => {
@@ -31,23 +23,10 @@ const SearchableSelectField = ({
   
   const currentValue = watch(field.name);
   const selectedOption = field.options?.find(option => option.value === currentValue);
-  
-
-  // Handle initial value when form is reset - fixed infinite loop
-  useEffect(() => {
-    if (currentValue && field.options && field.options.length > 0) {
-      const option = field.options.find(opt => opt.value === currentValue);
-      if (option && searchTerm === '') {
-        // Only update if we need to show the selected option
-        return; // No state update needed
-      }
-    }
-  }, [currentValue, field.options, searchTerm]);
-
 
   // Trigger validation when value changes
   useEffect(() => {
-    if (trigger && currentValue) {
+    if (currentValue) {
       trigger(field.name);
     }
   }, [currentValue, trigger, field.name]);
@@ -105,9 +84,7 @@ const SearchableSelectField = ({
     )) {
       setValue(field.name, '');
       // Trigger validation when clearing
-      if (trigger) {
-        trigger(field.name);
-      }
+      trigger(field.name);
     }
   }, [field.options, field.name, setValue, trigger]);
 
@@ -118,12 +95,8 @@ const SearchableSelectField = ({
     setIsOpen(false);
     
     // Clear any existing errors and trigger validation
-    if (clearErrors) {
-      clearErrors(field.name);
-    }
-    if (trigger) {
-      trigger(field.name);
-    }
+    clearErrors(field.name);
+    trigger(field.name);
   }, [field.name, setValue, clearErrors, trigger]);
 
   const handleInputFocus = () => {
@@ -149,9 +122,7 @@ const SearchableSelectField = ({
     setIsOpen(false);
     
     // Trigger validation after clearing
-    if (trigger) {
-      trigger(field.name);
-    }
+    trigger(field.name);
     
     if (inputRef.current) {
       inputRef.current.focus();
@@ -182,7 +153,6 @@ const SearchableSelectField = ({
         return fallbackOption.name || fallbackOption.label || '';
       }
     }
-    
     // If we have a currentValue but no matching option found,
     // it might be a timing issue - try to preserve the display value
     if (currentValue) {
@@ -204,18 +174,6 @@ const SearchableSelectField = ({
   };
   
   const displayValue = getDisplayValue();
-  
-  // Debug display value
-  if (field.name === 'reporters') {
-    
-    // Additional debugging for edit mode
-    if (currentValue && !selectedOption && field.options?.length > 0) {
-    }
-    
-    // Debug the getDisplayValue function step by step
-    if (currentValue) {
-    }
-  }
 
   return (
     <div className="field-wrapper">
@@ -243,30 +201,20 @@ const SearchableSelectField = ({
           autoComplete="off"
         />
         
-        {/* Clear button */}
-        {/* {(currentValue || searchTerm) && (
-          <button
-            type="button"
-            onClick={handleClear}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-            title="Clear selections"
-          >
-            <Icons.buttons.clear className="w-3.5 h-3.5" />
-          </button>
-        )} */}
-        
-        {/* Hidden input for form registration */}
-        <input
-          {...register(field.name)}
-          type="hidden"
-          value={currentValue || ''}
-        />
+        {/* Hidden input for form registration - only needed for React Hook Form */}
+        {register && typeof register === 'function' && (
+          <input
+            {...(register(field.name) || {})}
+            type="hidden"
+            value={currentValue || ''}
+          />
+        )}
 
         {/* Badge display for selected value */}
         {displayValue && (
           <div className="mt-1">
             <Badge
-              variant={variant || getFieldBadgeColor(field.name)}
+              variant={variant}
               size="sm"
               className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm"
             >

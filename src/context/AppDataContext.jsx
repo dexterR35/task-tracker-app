@@ -94,6 +94,14 @@ export const AppDataProvider = ({ children }) => {
   const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonthFromData;
   const targetMonthId = selectedMonthId || monthId;
   
+  // Determine target user ID: use selectedUserId if admin and selected, otherwise use userUID
+  const targetUserId = userIsAdmin && globalSelectedUserId ? globalSelectedUserId : (userIsAdmin ? null : userUID);
+  
+  // Build filters object for useTasks
+  const tasksFilters = {
+    selectedUserId: userIsAdmin ? globalSelectedUserId : null,
+  };
+
   const { 
     tasks: tasksData = [], 
     isLoading: monthTasksLoading, 
@@ -101,7 +109,8 @@ export const AppDataProvider = ({ children }) => {
   } = useTasks(
     targetMonthId,
     userIsAdmin ? 'admin' : 'user',
-    userIsAdmin ? null : userUID
+    userIsAdmin ? null : userUID,
+    tasksFilters
   );
   
   // Combine errors

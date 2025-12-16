@@ -19,25 +19,16 @@ const Badge = ({
     lg: "px-3 py-1.5 text-xs",
   };
 
-  // Default fallback color
-  const defaultColorHex = "#64748b";
-
   const baseClasses = "inline-flex items-center font-semibold rounded-md ";
   const sizeClass = sizeClasses[size] || sizeClasses.sm;
-
-  // Get colorHex from colorHex prop, color prop using CARD_SYSTEM (like small cards), variant prop, or fallback
-  const finalColorHex =
-    colorHex ||
-    CARD_SYSTEM.COLOR_HEX_MAP[color] ||
-    CARD_SYSTEM.COLOR_HEX_MAP[variant] ||
-    defaultColorHex;
+  // Get colorHex from variant prop, fallback to gray from constants
+  const finalColorHex = CARD_SYSTEM.COLOR_HEX_MAP[variant] || CARD_SYSTEM.COLOR_HEX_MAP.gray;
 
   const badgeStyle = {
-    backgroundColor: `${finalColorHex}20`,
+    backgroundColor: `${finalColorHex}30`,
     color: finalColorHex,
-    border: `1px solid ${finalColorHex}80`,
-    fontWeight: "700",
-    // boxShadow: `0 1px 3px ${finalColorHex}0`,
+    border: `1px solid ${finalColorHex}90`,
+    fontWeight: "600",
   };
 
   return (

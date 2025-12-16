@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { updateURLParam } from "@/utils/urlParams";
 import { useAppDataContext } from "@/context/AppDataContext";
@@ -20,6 +20,9 @@ import {
   useDeliverablesHours,
 } from "@/hooks/useAnalytics";
 import { filterTasksByUserAndReporter } from "@/utils/taskFilters";
+import { parseMonthId } from "@/utils/dateUtils";
+import { startOfMonth, endOfMonth } from "date-fns";
+import { useTasks } from "@/features/tasks/tasksApi";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,6 +33,8 @@ const AdminDashboardPage = () => {
   const selectedUserId = searchParams.get("user") || "";
   const selectedReporterId = searchParams.get("reporter") || "";
   const selectedWeekParam = searchParams.get("week") || "";
+  const selectedDepartmentFilter = searchParams.get("department") || "";
+  const selectedFilter = searchParams.get("filter") || "";
   
   // Initialize selectedWeek from URL parameter
   const [selectedWeek, setSelectedWeek] = useState(null);
@@ -199,70 +204,101 @@ const AdminDashboardPage = () => {
   // Calculate values using hooks for reporter filter card
   const reporterFilteredTasks = useMemo(() => {
     if (!selectedReporterId || !tasks) return [];
+    // Filter by reporter only (user and month filtering done at database level)
     return filterTasksByUserAndReporter(tasks, {
       selectedReporterId,
-      currentMonthId,
-      isUserAdmin,
-      currentUserUID: user?.userUID,
     });
   }, [tasks, selectedReporterId, currentMonthId, isUserAdmin, user?.userUID]);
   const reporterFilterFilters = useMemo(() => ({ monthId: currentMonthId }), [currentMonthId]);
   const reporterFilterTasksData = useTotalTasks(reporterFilteredTasks, [], reporterFilterFilters);
   const reporterFilterHoursData = useTotalHours(reporterFilteredTasks, [], reporterFilterFilters);
 
-  // Calculate values using hooks for actions card
-  const actionsFilteredTasks = useMemo(() => {
-    if (!tasks) return [];
-    let filtered = tasks;
-    if (currentMonthId) {
-      filtered = filtered.filter(task => task.monthId === currentMonthId);
+  // Calculate date ranges for week/month filters
+  const weekStart = useMemo(() => {
+    if (!selectedWeek) return null;
+    if (selectedWeek.startDate) {
+      const date = new Date(selectedWeek.startDate);
+      date.setHours(0, 0, 0, 0);
+      return date;
     }
-    if (selectedWeek) {
-      // Filter by week if selected
-      const weekTasks = [];
-      selectedWeek.days?.forEach((day) => {
-        try {
-          const dayDate = day instanceof Date ? day : new Date(day);
-          if (isNaN(dayDate.getTime())) return;
-          const dayStr = dayDate.toISOString().split("T")[0];
-          const dayTasks = filtered.filter((task) => {
-            if (!task.createdAt) return false;
-            let taskDate;
-            if (task.createdAt && typeof task.createdAt === "object" && task.createdAt.seconds) {
-              taskDate = new Date(task.createdAt.seconds * 1000);
-            } else if (task.createdAt && typeof task.createdAt === "object" && task.createdAt.toDate) {
-              taskDate = task.createdAt.toDate();
-            } else {
-              taskDate = new Date(task.createdAt);
-            }
-            if (isNaN(taskDate.getTime())) return false;
-            const taskDateStr = taskDate.toISOString().split("T")[0];
-            return taskDateStr === dayStr;
-          });
-          weekTasks.push(...dayTasks);
-        } catch (error) {
-          logger.warn("Error processing day:", error, day);
-        }
-      });
-      filtered = weekTasks;
+    if (selectedWeek.days && selectedWeek.days.length > 0) {
+      const sortedDays = [...selectedWeek.days]
+        .map(day => day instanceof Date ? day : new Date(day))
+        .filter(day => !isNaN(day.getTime()))
+        .sort((a, b) => a - b);
+      if (sortedDays.length > 0) {
+        const date = new Date(sortedDays[0]);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
     }
-    // Apply user and reporter filtering
-    if (selectedUserId || selectedReporterId) {
-      filtered = filterTasksByUserAndReporter(filtered, {
-        selectedUserId,
-        selectedReporterId,
-        currentMonthId: null, // Already filtered
-        isUserAdmin,
-        currentUserUID: user?.userUID,
-      });
+    return null;
+  }, [selectedWeek]);
+
+  const weekEnd = useMemo(() => {
+    if (!selectedWeek) return null;
+    if (selectedWeek.endDate) {
+      const date = new Date(selectedWeek.endDate);
+      date.setHours(23, 59, 59, 999);
+      return date;
     }
-    return filtered;
-  }, [tasks, currentMonthId, selectedWeek, selectedUserId, selectedReporterId, isUserAdmin, user?.userUID]);
+    if (selectedWeek.days && selectedWeek.days.length > 0) {
+      const sortedDays = [...selectedWeek.days]
+        .map(day => day instanceof Date ? day : new Date(day))
+        .filter(day => !isNaN(day.getTime()))
+        .sort((a, b) => a - b);
+      if (sortedDays.length > 0) {
+        const date = new Date(sortedDays[sortedDays.length - 1]);
+        date.setHours(23, 59, 59, 999);
+        return date;
+      }
+    }
+    return null;
+  }, [selectedWeek]);
+
+  // Note: monthStart/monthEnd are not needed for database filtering
+  // Month filtering is already done via monthId in the query path
+  // Only week filtering uses createdAt date range
+  const monthStart = null;
+  const monthEnd = null;
+
+  // Build filters for database-level filtering (for cards and actions)
+  const cardsFilters = useMemo(() => ({
+    selectedUserId: isUserAdmin && selectedUserId ? selectedUserId : null,
+    selectedReporterId: selectedReporterId || null,
+    selectedDepartment: selectedDepartmentFilter || null,
+    selectedFilter: selectedFilter || null,
+    weekStart,
+    weekEnd,
+    // monthStart/monthEnd not needed - month filtering done via monthId in query path
+  }), [
+    isUserAdmin,
+    selectedUserId,
+    selectedReporterId,
+    selectedDepartmentFilter,
+    selectedFilter,
+    weekStart,
+    weekEnd,
+  ]);
+
+  // Get filtered tasks from database for cards (with all filters)
+  const {
+    tasks: filteredTasksForCards = [],
+  } = useTasks(
+    currentMonthId || null,
+    isUserAdmin ? 'admin' : 'user',
+    user?.userUID || null,
+    cardsFilters
+  );
+
+  // Use same filters for actions
+  const actionsFilters = cardsFilters;
+  const actionsFilteredTasks = filteredTasksForCards;
   
-  const actionsFilters = useMemo(() => ({ monthId: null }), []); // Already filtered above
-  const actionsTasksData = useTotalTasks(actionsFilteredTasks, [], actionsFilters);
-  const actionsHoursData = useTotalHours(actionsFilteredTasks, [], actionsFilters);
-  const actionsDeliverablesData = useTotalDeliverables(actionsFilteredTasks, [], actionsFilters);
+  const actionsFiltersForHooks = useMemo(() => ({ monthId: null }), []); // Already filtered above
+  const actionsTasksData = useTotalTasks(actionsFilteredTasks, [], actionsFiltersForHooks);
+  const actionsHoursData = useTotalHours(actionsFilteredTasks, [], actionsFiltersForHooks);
+  const actionsDeliverablesData = useTotalDeliverables(actionsFilteredTasks, [], actionsFiltersForHooks);
   
   // Transform deliverables to options format
   const deliverablesOptions = useMemo(() => {
@@ -282,44 +318,72 @@ const AdminDashboardPage = () => {
   }, [deliverables]);
   const actionsDeliverablesHoursData = useDeliverablesHours(actionsFilteredTasks, [], deliverablesOptions, actionsFilters);
 
+  // Cache for stable card references (ID badge)
+  const cardCacheRef = useRef(new Map());
+
   // Create small cards - optimized memoization to prevent re-renders
-  const smallCards = useMemo(() => createCards({
-    tasks,
-    reporters,
-    users,
-    deliverables,
-    periodName: selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
-    periodId: selectedMonth?.monthId || currentMonth?.monthId || "unknown",
-    isCurrentMonth,
-    isUserAdmin,
-    currentUser: user,
-    selectedMonth,
-    currentMonth,
-    selectedUserId,
-    selectedUserName,
-    selectedReporterId,
-    selectedReporterName,
-    selectedWeek,
-    canCreateTasks,
-    handleCreateTask,
-    handleUserSelect,
-    handleReporterSelect,
-    handleWeekChange,
-    selectMonth,
-    availableMonths,
-    efficiency: efficiencyData,
-    // Pre-calculated values from hooks
-    userFilterTotalTasks: userFilterTasksData.totalTasks,
-    userFilterTotalHours: userFilterHoursData.totalHours,
-    reporterFilterTotalTasks: reporterFilterTasksData.totalTasks,
-    reporterFilterTotalHours: reporterFilterHoursData.totalHours,
-    actionsTotalTasks: actionsTasksData.totalTasks,
-    actionsTotalHours: actionsHoursData.totalHours,
-    actionsTotalDeliverables: actionsDeliverablesData.totalDeliverables,
-    actionsTotalDeliverablesWithVariationsHours: actionsDeliverablesHoursData.totalDeliverablesWithVariationsHours,
-  }, 'main'), [
+  const smallCards = useMemo(() => {
+    const newCards = createCards({
+      tasks: filteredTasksForCards, // Use filtered tasks with all filters
+      reporters,
+      users,
+      deliverables,
+      periodName: selectedMonth?.monthName || currentMonth?.monthName || "Loading...",
+      periodId: selectedMonth?.monthId || currentMonth?.monthId || "unknown",
+      isCurrentMonth,
+      isUserAdmin,
+      currentUser: user,
+      selectedMonth,
+      currentMonth,
+      selectedUserId,
+      selectedUserName,
+      selectedReporterId,
+      selectedReporterName,
+      selectedWeek,
+      canCreateTasks,
+      handleCreateTask,
+      handleUserSelect,
+      handleReporterSelect,
+      handleWeekChange,
+      selectMonth,
+      availableMonths,
+      efficiency: efficiencyData,
+      // Pre-calculated values from hooks
+      userFilterTotalTasks: userFilterTasksData.totalTasks,
+      userFilterTotalHours: userFilterHoursData.totalHours,
+      reporterFilterTotalTasks: reporterFilterTasksData.totalTasks,
+      reporterFilterTotalHours: reporterFilterHoursData.totalHours,
+      actionsTotalTasks: actionsTasksData.totalTasks,
+      actionsTotalHours: actionsHoursData.totalHours,
+      actionsTotalDeliverables: actionsDeliverablesData.totalDeliverables,
+      actionsTotalDeliverablesWithVariationsHours: actionsDeliverablesHoursData.totalDeliverablesWithVariationsHours,
+    }, 'main');
+
+    // Memoize each card individually to ensure stable references (ID badge)
+    // This ensures the card object reference never changes unless the data actually changes
+    return newCards.map(newCard => {
+      const cacheKey = `${newCard.id}-${newCard.color}-${newCard.value}-${newCard.title}-${newCard.subtitle}-${JSON.stringify(newCard.details)}-${JSON.stringify(newCard.badge)}`;
+      const cachedCard = cardCacheRef.current.get(cacheKey);
+      
+      // If card data matches cached version, return cached card (stable reference)
+      if (cachedCard && 
+          cachedCard.id === newCard.id &&
+          cachedCard.color === newCard.color &&
+          cachedCard.value === newCard.value &&
+          cachedCard.title === newCard.title &&
+          cachedCard.subtitle === newCard.subtitle &&
+          JSON.stringify(cachedCard.details) === JSON.stringify(newCard.details) &&
+          JSON.stringify(cachedCard.badge) === JSON.stringify(newCard.badge)) {
+        return cachedCard;
+      }
+      
+      // Otherwise, cache and return new card
+      cardCacheRef.current.set(cacheKey, newCard);
+      return newCard;
+    });
+  }, [
     // Only include data that actually affects card content
-    tasks, reporters, users, deliverables, selectedMonth, currentMonth, isCurrentMonth,
+    filteredTasksForCards, reporters, users, deliverables, selectedMonth, currentMonth, isCurrentMonth,
     isUserAdmin, user, selectedUserId, selectedUserName, selectedReporterId,
     selectedReporterName, selectedWeek, canCreateTasks, selectMonth, availableMonths,
     // Include hook results
