@@ -16,14 +16,13 @@ import {
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
-import { getCurrentYear } from "@/utils/dateUtils";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import { validateTaskPermissions } from '@/utils/permissionValidation';
 import { getUserUID } from '@/features/utils/authUtils';
 
 
 const getTaskRef = (monthId, taskId = null) => {
-  const yearId = getCurrentYear();
+  const yearId = monthId.split('-')[0]; // Extract year from monthId (e.g., "2025" from "2025-12")
   const basePath = ["departments", "design", yearId, monthId, "taskdata"];
 
   if (taskId) {

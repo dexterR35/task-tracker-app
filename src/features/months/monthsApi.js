@@ -183,7 +183,8 @@ export const useAvailableMonths = () => {
   useEffect(() => {
     const setupListener = async () => {
       try {
-        const cacheKey = 'available_months';
+        const currentYearId = getCurrentYear();
+        const cacheKey = `available_months_${currentYearId}`;
 
         // Check cache first
         const cachedData = dataCache.get(cacheKey);
@@ -222,19 +223,22 @@ export const useAvailableMonths = () => {
           try {
 
             const currentMonthInfo = getMonthInfo();
-            const yearId = getCurrentYear();
-            const monthsRef = getMonthsRef(yearId);
-
-            // Fetch months data once (one-time fetch instead of real-time listener)
-            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore');
-            const monthsQuery = query(monthsRef);
-            const snapshot = await getDocs(monthsQuery);
-            logger.log('🔍 [useAvailableMonths] Months fetched, docs:', snapshot.docs.length);
-
+            const currentYearId = getCurrentYear();
+            const previousYearId = (parseInt(currentYearId) - 1).toString();
+            
+            // Fetch months from both current year and previous year
+            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore for years:', { currentYearId, previousYearId });
+            
             const months = [];
 
-            if (!snapshot.empty) {
-              snapshot.docs.forEach((doc) => {
+            // Fetch from current year
+            const currentYearRef = getMonthsRef(currentYearId);
+            const currentYearQuery = query(currentYearRef);
+            const currentYearSnapshot = await getDocs(currentYearQuery);
+            logger.log('🔍 [useAvailableMonths] Current year months fetched, docs:', currentYearSnapshot.docs.length);
+
+            if (!currentYearSnapshot.empty) {
+              currentYearSnapshot.docs.forEach((doc) => {
                 const monthData = doc.data();
                 const monthId = doc.id;
 
@@ -255,6 +259,42 @@ export const useAvailableMonths = () => {
                 });
               });
             }
+
+            // Fetch from previous year
+            const previousYearRef = getMonthsRef(previousYearId);
+            const previousYearQuery = query(previousYearRef);
+            const previousYearSnapshot = await getDocs(previousYearQuery);
+            logger.log('🔍 [useAvailableMonths] Previous year months fetched, docs:', previousYearSnapshot.docs.length);
+
+            if (!previousYearSnapshot.empty) {
+              previousYearSnapshot.docs.forEach((doc) => {
+                const monthData = doc.data();
+                const monthId = doc.id;
+
+                // Parse month ID to get readable month name using month utilities
+                const monthDate = parseMonthId(monthId);
+                const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
+
+                months.push({
+                  monthId,
+                  monthName,
+                  boardId: monthData.boardId,
+                  createdAt: monthData.createdAt,
+                  createdBy: monthData.createdBy,
+                  createdByName: monthData.createdByName,
+                  createdByRole: monthData.createdByRole,
+                  isCurrent: monthId === currentMonthInfo.monthId,
+                  boardExists: true // All months in availableMonths have boards (they're in the collection)
+                });
+              });
+            }
+
+            // Sort months by monthId descending (most recent first)
+            months.sort((a, b) => {
+              if (a.monthId > b.monthId) return -1;
+              if (a.monthId < b.monthId) return 1;
+              return 0;
+            });
 
             // Cache the data with extended TTL (30 days - changes once per month)
             dataCache.set(cacheKey, months, 30 * 24 * 60 * 60 * 1000);

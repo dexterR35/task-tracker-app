@@ -8,53 +8,31 @@ import { getFirestore } from "firebase/firestore";
 import { logger } from "@/utils/logger";
 
 
-/**
- * Firebase configuration with automatic environment detection
- * @returns {FirebaseConfig} Firebase configuration object
- */
 const getFirebaseConfig = () => {
-  // const isDevelopment = import.meta.env.MODE === "development";
 
-  // Use development Firebase project in development mode
-  // if (isDevelopment) {
-  //   logger.log("🔧 Using Development Firebase Project");
-  //   return {
-  //     apiKey: "AIzaSyBKCRN8f7dOaNrzjhOGIUpB__jQs-PX6MU",
-  //     authDomain: "track-app-stage.firebaseapp.com",
-  //     projectId: "track-app-stage",
-  //     storageBucket: "track-app-stage.firebasestorage.app",
-  //     messagingSenderId: "236939384499",
-  //     appId: "1:236939384499:web:5767e2dcbcebd67ed882c6",
-  //   };
-  // }
 
   // Use production Firebase project in production (Vercel)
   logger.log("🚀 Using Production Firebase Project");
-  // return {
-  //   apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
-  //   authDomain: "task-tracker-app-eb03e.firebaseapp.com",
-  //   projectId: "task-tracker-app-eb03e",
-  //   storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
-  //   messagingSenderId: "976694748809",
-  //   appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
-  // };
-      return {
-   apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
+  return {
+    apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
     authDomain: "task-tracker-app-eb03e.firebaseapp.com",
     projectId: "task-tracker-app-eb03e",
     storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
     messagingSenderId: "976694748809",
     appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
-    };
+  };
+  //     return {
+  //  apiKey: "AIzaSyABUgnH7wwm9RVFaf7wuSHEzfhUDtiXCtI",
+  //   authDomain: "task-tracker-app-eb03e.firebaseapp.com",
+  //   projectId: "task-tracker-app-eb03e",
+  //   storageBucket: "task-tracker-app-eb03e.firebasestorage.app",
+  //   messagingSenderId: "976694748809",
+  //   appId: "1:976694748809:web:4a1d4c0a72ad588e2fc858",
+  //   };
 };
 
 const firebaseConfig = getFirebaseConfig();
 
-/**
- * Initializes Firebase app instance with proper error handling
- * @returns {FirebaseApp} Initialized Firebase app instance
- * @throws {Error} If Firebase initialization fails
- */
 const initializeFirebaseApp = () => {
   try {
     if (!getApps().length) {
@@ -83,12 +61,7 @@ if (import.meta.env.MODE === "development") {
   logger.log("Firebase debug logging enabled for development");
 }
 
-/**
- * Sets up Firebase auth persistence with exponential backoff retry logic
- * @param {number} maxRetries - Maximum number of retry attempts
- * @returns {Promise<void>} Promise that resolves when persistence is set
- * @throws {Error} If persistence setup fails after all retries
- */
+
 const setupAuthPersistence = async (maxRetries = 3) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -111,10 +84,7 @@ const setupAuthPersistence = async (maxRetries = 3) => {
   }
 };
 
-/**
- * Initializes Firebase auth persistence
- * Handles errors gracefully to prevent app crashes
- */
+
 const initializeAuthPersistence = async () => {
   try {
     // Only set up persistence in browser environment
