@@ -8,6 +8,7 @@ import {
 } from "@/features/deliverables/DeliverablesManager";
 import { TABLE_SYSTEM, CARD_SYSTEM } from "@/constants";
 import { differenceInDays } from "date-fns";
+import { calculateLevel } from "@/features/experience/experienceConfig";
 
 const columnHelper = createColumnHelper();
 // Constants
@@ -516,6 +517,81 @@ const createUserColumns = () => [
     header: "DEPARTMENT",
     cell: createSimpleCell(),
     size: 150,
+  }),
+  columnHelper.accessor("experience", {
+    header: "LEVEL",
+    cell: ({ getValue, row }) => {
+      const experience = getValue();
+      if (!experience || !experience.points) {
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">-</span>
+          </div>
+        );
+      }
+      
+      const level = calculateLevel(experience.points || 0);
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{level.badge}</span>
+          <div className="flex flex-col">
+            <span 
+              className="text-xs font-semibold"
+              style={{ color: level.color }}
+            >
+              Level {level.level}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {level.name}
+            </span>
+          </div>
+        </div>
+      );
+    },
+    size: 150,
+  }),
+  columnHelper.accessor((row) => row.experience?.taskCount || 0, {
+    id: "activity",
+    header: "ACTIVITY",
+    cell: ({ getValue }) => {
+      const taskCount = getValue() || 0;
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+            {taskCount}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            tasks
+          </span>
+        </div>
+      );
+    },
+    size: 120,
+  }),
+  columnHelper.accessor((row) => row.experience?.unlockedAchievements || [], {
+    id: "achievements",
+    header: "ACHIEVEMENTS",
+    cell: ({ getValue }) => {
+      const achievements = getValue() || [];
+      if (!Array.isArray(achievements) || achievements.length === 0) {
+        return (
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            No achievements
+          </span>
+        );
+      }
+      
+      return (
+        <div className="flex flex-wrap gap-1">
+          {achievements.map((achievement, index) => (
+            <Badge key={index} variant="yellow" size="xs">
+              {achievement}
+            </Badge>
+          ))}
+        </div>
+      );
+    },
+    size: 250,
   }),
   columnHelper.accessor("createdAt", {
     header: "CREATED",

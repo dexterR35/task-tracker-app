@@ -21,6 +21,7 @@ import LandingPages from "@/pages/LandingPages";
 import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
 import TeamDaysOffPage from "@/pages/TeamDaysOffPage";
 import HowToUsePage from "@/pages/HowToUsePage";
+import ExperienceSystemPage from "@/pages/ExperienceSystemPage";
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
@@ -241,6 +242,16 @@ export const createRouter = () => {
               <ErrorBoundary componentName="HowToUsePage">
                 <PageWrapper key="how-to-use">
                   <HowToUsePage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "experience",
+            element: (
+              <ErrorBoundary componentName="ExperienceSystemPage">
+                <PageWrapper key="experience">
+                  <ExperienceSystemPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),

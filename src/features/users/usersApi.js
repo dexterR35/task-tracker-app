@@ -134,8 +134,14 @@ export const useUsers = () => {
       }
 
       const usersRef = collection(db, 'users');
+      
+      // Initialize experience data for new user
+      const { initializeUserExperience } = await import('@/features/experience/experienceApi');
+      const experience = initializeUserExperience();
+      
       const newUser = {
         ...userData,
+        experience,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: adminUserData?.userUID,

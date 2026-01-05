@@ -99,7 +99,9 @@ const Tooltip = ({ children, content, users = [] }) => {
           onMouseLeave={handleMouseLeave}
         >
           {content && (
-            <div className="mb-1 font-semibold">{content}</div>
+            <div className={typeof content === 'string' ? 'mb-1 font-semibold' : ''}>
+              {typeof content === 'string' ? content : content}
+            </div>
           )}
           {users.length > 0 && (
             <div className="space-y-1.5">

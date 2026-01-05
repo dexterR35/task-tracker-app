@@ -174,6 +174,12 @@ export const useCurrentMonth = (userUID = null, role = 'user', _userData = null)
 
 /**
  * Available Months Hook (Direct Firestore - One-time fetch)
+ * 
+ * IMPORTANT: This hook ONLY fetches month METADATA (monthId, monthName, etc.) from all years.
+ * It does NOT fetch tasks. Tasks are only fetched when a specific month is selected via useTasks().
+ * 
+ * This allows the month selector to show all available months from previous years,
+ * but tasks are only loaded on-demand when a user selects a specific month.
  */
 export const useAvailableMonths = () => {
   const [availableMonths, setAvailableMonths] = useState([]);
@@ -222,39 +228,66 @@ export const useAvailableMonths = () => {
           try {
 
             const currentMonthInfo = getMonthInfo();
-            const yearId = getCurrentYear();
-            const monthsRef = getMonthsRef(yearId);
+            
+            // Get current year and query range (2020 to current year + 1)
+            const currentYear = new Date().getFullYear();
+            const startYear = 2020;
+            const endYear = currentYear + 1;
+            const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
-            // Fetch months data once (one-time fetch instead of real-time listener)
-            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore');
-            const monthsQuery = query(monthsRef);
-            const snapshot = await getDocs(monthsQuery);
-            logger.log('🔍 [useAvailableMonths] Months fetched, docs:', snapshot.docs.length);
+            // Fetch months data from all years (one-time fetch instead of real-time listener)
+            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore for all years');
+            
+            // Query all years in parallel to get all months
+            const yearPromises = years.map(async (yearId) => {
+              try {
+                const monthsRef = getMonthsRef(yearId.toString());
+                const monthsQuery = query(monthsRef);
+                const snapshot = await getDocs(monthsQuery);
+                
+                return snapshot.docs.map((doc) => ({
+                  yearId: yearId.toString(),
+                  monthData: doc.data(),
+                  monthId: doc.id
+                }));
+              } catch (err) {
+                // Ignore errors for years that don't exist
+                logger.log(`🔍 [useAvailableMonths] No months found for year ${yearId}`);
+                return [];
+              }
+            });
+
+            const yearMonths = await Promise.all(yearPromises);
+            const allMonthDocs = yearMonths.flat();
+            
+            logger.log('🔍 [useAvailableMonths] Months fetched, docs:', allMonthDocs.length);
 
             const months = [];
 
-            if (!snapshot.empty) {
-              snapshot.docs.forEach((doc) => {
-                const monthData = doc.data();
-                const monthId = doc.id;
+            allMonthDocs.forEach(({ monthData, monthId }) => {
+              // Parse month ID to get readable month name using month utilities
+              const monthDate = parseMonthId(monthId);
+              const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
 
-                // Parse month ID to get readable month name using month utilities
-                const monthDate = parseMonthId(monthId);
-                const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
-
-                months.push({
-                  monthId,
-                  monthName,
-                  boardId: monthData.boardId,
-                  createdAt: monthData.createdAt,
-                  createdBy: monthData.createdBy,
-                  createdByName: monthData.createdByName,
-                  createdByRole: monthData.createdByRole,
-                  isCurrent: monthId === currentMonthInfo.monthId,
-                  boardExists: true // All months in availableMonths have boards (they're in the collection)
-                });
+              months.push({
+                monthId,
+                monthName,
+                boardId: monthData.boardId,
+                createdAt: monthData.createdAt,
+                createdBy: monthData.createdBy,
+                createdByName: monthData.createdByName,
+                createdByRole: monthData.createdByRole,
+                isCurrent: monthId === currentMonthInfo.monthId,
+                boardExists: true // All months in availableMonths have boards (they're in the collection)
               });
-            }
+            });
+
+            // Sort months by monthId (newest first) - monthId format is YYYY-MM, so string sort works
+            months.sort((a, b) => {
+              if (a.monthId > b.monthId) return -1;
+              if (a.monthId < b.monthId) return 1;
+              return 0;
+            });
 
             // Cache the data with extended TTL (30 days - changes once per month)
             dataCache.set(cacheKey, months, 30 * 24 * 60 * 60 * 1000);

@@ -22,7 +22,8 @@ import { getUserUID } from '@/features/utils/authUtils';
 
 
 const getTaskRef = (monthId, taskId = null) => {
-  const yearId = getCurrentYear();
+  // Extract year from monthId (e.g., "2024" from "2024-09")
+  const yearId = monthId ? monthId.split('-')[0] : getCurrentYear();
   const basePath = ["departments", "design", yearId, monthId, "taskdata"];
 
   if (taskId) {
@@ -311,6 +312,18 @@ const getCacheKey = (monthId, role, userUID, filters = {}) => {
 
 /**
  * Tasks Hook (Direct Firestore with Snapshots with Caching)
+ * 
+ * IMPORTANT: This hook ONLY fetches tasks for the SPECIFIC monthId provided.
+ * It does NOT fetch tasks from all years/months - only the selected month.
+ * 
+ * Tasks are fetched from: /departments/design/{yearId}/{monthId}/taskdata
+ * Where yearId is extracted from monthId (e.g., "2024" from "2024-09")
+ * 
+ * @param {string} monthId - The specific month to fetch tasks for (e.g., "2024-09")
+ * @param {string} role - User role ('user' or 'admin')
+ * @param {string|null} userUID - Current user UID
+ * @param {Object} filters - Additional filters (selectedUserId, selectedReporterId, etc.)
+ * @returns {Object} - { tasks, isLoading, error }
  */
 export const useTasks = (monthId, role = 'user', userUID = null, filters = {}) => {
   const [tasks, setTasks] = useState([]);
@@ -339,6 +352,8 @@ export const useTasks = (monthId, role = 'user', userUID = null, filters = {}) =
   ]);
 
   useEffect(() => {
+    // Only fetch tasks when a specific monthId is provided
+    // If no monthId, return empty array (no fetching)
     if (!monthId) {
       setTasks([]);
       setIsLoading(false);
@@ -398,6 +413,186 @@ export const useTasks = (monthId, role = 'user', userUID = null, filters = {}) =
       unsubscribe();
     };
   }, [monthId, role, userUID, filtersKey]);
+
+  return { tasks, isLoading, error };
+};
+
+/**
+ * Get all tasks for a user across ALL years and ALL months (for experience system)
+ * Queries each year/month collection individually to avoid collection group index requirement
+ * 
+ * Queries across: 
+ * - /departments/design/2024/{monthId}/taskdata
+ * - /departments/design/2025/{monthId}/taskdata
+ * - /departments/design/2026/{monthId}/taskdata
+ * - ... (all years from 2020 to current year + 1, all months)
+ * 
+ * @param {string} userUID - User UID to filter tasks
+ * @param {string} role - User role ('user' or 'admin')
+ * @returns {Object} - { tasks, isLoading, error }
+ */
+export const useAllUserTasks = (userUID, role = 'user') => {
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!userUID) {
+      setTasks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    // Get current year and query range (2020 to current year + 1)
+    const currentYear = new Date().getFullYear();
+    const startYear = 2020;
+    const endYear = currentYear + 1;
+    const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+
+    // Set up listeners for each year/month combination
+    const unsubscribes = [];
+    const tasksMap = new Map(); // Track tasks by monthId+taskId for deduplication
+
+    // Function to setup listener for a specific month
+    const setupMonthListener = (yearId, monthId) => {
+      try {
+        const taskdataRef = collection(db, 'departments', 'design', yearId.toString(), monthId, 'taskdata');
+        
+        // Build query - ALWAYS filter by userUID for experience calculation
+        // This ensures each user only sees their own tasks for experience/achievements
+        const constraints = [where("userUID", "==", userUID)];
+
+        const tasksQuery = query(taskdataRef, ...constraints);
+
+        // Set up real-time listener for this month
+        const unsubscribe = onSnapshot(
+          tasksQuery,
+          (snapshot) => {
+            // Remove all tasks from this month first (to handle deletions)
+            const keysToDelete = [];
+            tasksMap.forEach((task, key) => {
+              if (key.startsWith(`${monthId}_`)) {
+                keysToDelete.push(key);
+              }
+            });
+            keysToDelete.forEach(key => tasksMap.delete(key));
+
+            // Add/update tasks from this month
+            snapshot.docs.forEach((doc) => {
+              const taskData = doc.data();
+              const taskKey = `${monthId}_${doc.id}`;
+              
+              // Debug: Log task userUID for verification
+              if (snapshot.docs.length <= 5) { // Only log if few tasks to avoid spam
+                console.log(`[useAllUserTasks] Task from ${yearId}/${monthId}:`, {
+                  taskId: doc.id,
+                  taskUserUID: taskData.userUID,
+                  createbyUID: taskData.createbyUID,
+                  expectedUserUID: userUID,
+                  matches: taskData.userUID === userUID || taskData.createbyUID === userUID,
+                  timeInHours: taskData.data_task?.timeInHours,
+                  gimodear: taskData.data_task?.gimodear,
+                  monthId: monthId
+                });
+              }
+              
+              tasksMap.set(taskKey, serializeTimestampsForContext({
+                id: doc.id,
+                monthId: monthId,
+                department: 'design',
+                ...taskData,
+              }));
+            });
+
+            // Update state with all tasks
+            const allTasks = Array.from(tasksMap.values());
+            
+            // Debug: Log total tasks and verify filtering
+            const tasksByUserUID = allTasks.filter(t => t.userUID === userUID).length;
+            const tasksByCreatebyUID = allTasks.filter(t => t.createbyUID === userUID).length;
+            console.log(`[useAllUserTasks] Updated tasks for user ${userUID}:`, {
+              totalTasks: allTasks.length,
+              tasksByUserUID: tasksByUserUID,
+              tasksByCreatebyUID: tasksByCreatebyUID,
+              sampleTaskUserUIDs: allTasks.slice(0, 3).map(t => ({
+                id: t.id,
+                userUID: t.userUID,
+                createbyUID: t.createbyUID,
+                timeInHours: t.data_task?.timeInHours,
+                gimodear: t.data_task?.gimodear
+              })),
+              recentTasks: allTasks.slice(-3).map(t => ({
+                id: t.id,
+                timeInHours: t.data_task?.timeInHours,
+                gimodear: t.data_task?.gimodear,
+                monthId: t.monthId
+              }))
+            });
+            
+            setTasks(allTasks);
+            setIsLoading(false);
+            setError(null);
+          },
+          (err) => {
+            // Ignore errors for months that don't exist yet
+            if (err.code !== 'not-found' && err.code !== 'permission-denied') {
+              logger.error(`[useAllUserTasks] Error listening to ${yearId}/${monthId}:`, err);
+            }
+            // Still set loading to false if this was the last listener
+            setIsLoading(false);
+          }
+        );
+
+        unsubscribes.push(unsubscribe);
+      } catch (err) {
+        // Ignore errors for months that don't exist
+        logger.log(`[useAllUserTasks] Could not set up listener for ${yearId}/${monthId}:`, err.message);
+      }
+    };
+
+    // Initial fetch: Get all months and set up listeners
+    (async () => {
+      try {
+        // Query all years in parallel to get all months
+        const yearPromises = years.map(async (yearId) => {
+          try {
+            const monthsRef = collection(db, 'departments', 'design', yearId.toString());
+            const monthsSnapshot = await getDocs(query(monthsRef));
+            
+            return monthsSnapshot.docs.map((monthDoc) => ({
+              yearId,
+              monthId: monthDoc.id
+            }));
+          } catch (err) {
+            // Ignore errors for years that don't exist
+            return [];
+          }
+        });
+
+        const yearMonths = await Promise.all(yearPromises);
+        const allMonths = yearMonths.flat();
+
+        // Set up listeners for all months
+        allMonths.forEach(({ yearId, monthId }) => {
+          setupMonthListener(yearId, monthId);
+        });
+
+        logger.log(`[useAllUserTasks] Set up ${allMonths.length} month listeners for user ${userUID}`);
+      } catch (err) {
+        logger.error('[useAllUserTasks] Error setting up listeners:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    })();
+
+    // Cleanup: unsubscribe all listeners when component unmounts
+    return () => {
+      unsubscribes.forEach(unsubscribe => unsubscribe());
+    };
+  }, [userUID, role]);
 
   return { tasks, isLoading, error };
 };
@@ -518,6 +713,7 @@ export const useCreateTask = () => {
       };
 
       logger.log('Task created successfully:', ref.id);
+      
       return { success: true, data: serializeTimestampsForContext(result) };
     } catch (err) {
       logger.error('Error creating task:', err);

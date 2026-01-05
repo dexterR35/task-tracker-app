@@ -4,7 +4,9 @@ import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import logo from "@/assets/Logo4.webp";
-import Avatar from "@/components/ui/Avatar/Avatar"
+import Avatar from "@/components/ui/Avatar/Avatar";
+import UserBadge from "@/features/experience/components/UserBadge";
+import LevelProgressBar from "@/features/experience/components/LevelProgressBar";
 
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const { user, canAccess, logout, clearError } = useAuth();
@@ -69,6 +71,13 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-error rounded-full"></span>
         </button> */}
 
+        {/* Level Progress Bar - Real-time experience tracking */}
+        {user?.experience && (
+          <div className="hidden md:block">
+            <LevelProgressBar experience={user.experience} compact={true} />
+          </div>
+        )}
+
         {/* Dark Mode Toggle */}
         <div className="hidden sm:block">
           <DarkModeToggle />
@@ -102,7 +111,7 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
           {/* User Dropdown Menu */}
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 rounded-md shadow-lg  py-2 z-50">
-              <div className="px-4 py-3 ">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {user?.name || "User"}
                 </p>
@@ -110,6 +119,12 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
                   {user?.email}
                 </p>
               </div>
+              {/* User Badge/Level Display */}
+              {user?.experience && (
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <UserBadge experience={user.experience} showProgress={true} size="small" />
+                </div>
+              )}
               <div className="py-1">
                 <button
                   onClick={() => {

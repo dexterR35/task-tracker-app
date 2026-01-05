@@ -234,6 +234,13 @@ export const NAVIGATION_CONFIG = {
       color: "blue",
       adminOnly: false,
     },
+    {
+      name: "Experience System",
+      href: "/experience",
+      icon: "star",
+      color: "yellow",
+      adminOnly: false,
+    },
   ],
   DEPARTMENT: {
     name: "Design",

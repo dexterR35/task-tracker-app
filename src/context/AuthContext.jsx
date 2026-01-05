@@ -12,10 +12,11 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { auth } from "@/app/firebase";
+import { auth, db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 import { fetchUserByUIDFromFirestore } from "@/features/users/usersApi";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { AUTH } from '@/constants';
 import {
   isUserComplete,
@@ -165,11 +166,13 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [error, setError] = useState(null);
-
+  const [firebaseUserUID, setFirebaseUserUID] = useState(null);
+  const [firebaseUserEmail, setFirebaseUserEmail] = useState(null);
 
   // Initialize auth state listener
   useEffect(() => {
     let isMounted = true;
+    let userSnapshotUnsubscribe = null;
 
     const initializeAuth = async () => {
       try {
@@ -184,35 +187,87 @@ export const AuthProvider = ({ children }) => {
 
             try {
               if (firebaseUser) {
-                logger.log("User authenticated, fetching user data");
+                logger.log("User authenticated, setting up real-time user data listener");
                 
-                const firestoreData = await fetchUserByUIDFromFirestore(firebaseUser.uid);
-                
-                if (!firestoreData) {
-                  throw new Error("Failed to fetch user data from Firestore");
+                // Store Firebase user info
+                setFirebaseUserUID(firebaseUser.uid);
+                setFirebaseUserEmail(firebaseUser.email);
+
+                // Clean up previous listener if exists
+                if (userSnapshotUnsubscribe) {
+                  userSnapshotUnsubscribe();
+                  userSnapshotUnsubscribe = null;
                 }
 
-                // Simple user data - only what you actually have in your database
-                const completeUserData = {
-                  // Firebase auth data (minimal)
-                  email: firebaseUser.email,
-                  
-                  // Your Firestore data (exactly as stored)
-                  ...firestoreData,
-                  
-                  // Only essential Firebase mapping
-                  userUID: firebaseUser.uid
-                };
+                // Set up real-time listener for user document in Firestore
+                const usersRef = collection(db, 'users');
+                const userQuery = query(usersRef, where('userUID', '==', firebaseUser.uid));
+                
+                userSnapshotUnsubscribe = onSnapshot(
+                  userQuery,
+                  (snapshot) => {
+                    if (!isMounted) return;
 
-                if (isMounted) {
-                  setUser(completeUserData);
-                  setIsLoading(false);
-                  setIsAuthChecking(false);
-                  setError(null);
-                }
+                    if (snapshot.empty) {
+                      logger.warn("User document not found in Firestore");
+                      if (isMounted) {
+                        setError("User document not found");
+                        setUser(null);
+                        setIsLoading(false);
+                        setIsAuthChecking(false);
+                      }
+                      return;
+                    }
+
+                    const firestoreData = snapshot.docs[0].data();
+                    const userId = snapshot.docs[0].id;
+
+                    // Simple user data - only what you actually have in your database
+                    const completeUserData = {
+                      // Firebase auth data (minimal)
+                      email: firebaseUser.email,
+                      
+                      // Your Firestore data (exactly as stored)
+                      id: userId,
+                      ...firestoreData,
+                      
+                      // Only essential Firebase mapping
+                      userUID: firebaseUser.uid
+                    };
+
+                    logger.log("User data updated from Firestore (real-time)", {
+                      userId,
+                      experience: completeUserData.experience
+                    });
+
+                    if (isMounted) {
+                      setUser(completeUserData);
+                      setIsLoading(false);
+                      setIsAuthChecking(false);
+                      setError(null);
+                    }
+                  },
+                  (err) => {
+                    logger.error("User document real-time listener error:", err);
+                    if (isMounted) {
+                      setError(err.message || "Failed to fetch user data");
+                      setIsLoading(false);
+                      setIsAuthChecking(false);
+                    }
+                  }
+                );
               } else {
                 logger.log("User not authenticated, clearing user state");
+                
+                // Clean up listener
+                if (userSnapshotUnsubscribe) {
+                  userSnapshotUnsubscribe();
+                  userSnapshotUnsubscribe = null;
+                }
+
                 if (isMounted) {
+                  setFirebaseUserUID(null);
+                  setFirebaseUserEmail(null);
                   setUser(null);
                   setIsLoading(false);
                   setIsAuthChecking(false);
@@ -257,6 +312,10 @@ export const AuthProvider = ({ children }) => {
       if (authUnsubscribe) {
         authUnsubscribe();
         authUnsubscribe = null;
+      }
+      if (userSnapshotUnsubscribe) {
+        userSnapshotUnsubscribe();
+        userSnapshotUnsubscribe = null;
       }
     };
   }, []);
