@@ -427,11 +427,13 @@ export const useTasks = (monthId, role = 'user', userUID = null, filters = {}) =
  * - /departments/design/2026/{monthId}/taskdata
  * - ... (all years from 2020 to current year + 1, all months)
  * 
- * @param {string} userUID - User UID to filter tasks
- * @param {string} role - User role ('user' or 'admin')
+ * Note: Tasks are filtered by userUID directly. The role parameter is not needed
+ * because filtering is done at the database level using userUID field.
+ * 
+ * @param {string} userUID - User UID to filter tasks (required)
  * @returns {Object} - { tasks, isLoading, error }
  */
-export const useAllUserTasks = (userUID, role = 'user') => {
+export const useAllUserTasks = (userUID) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -461,8 +463,10 @@ export const useAllUserTasks = (userUID, role = 'user') => {
       try {
         const taskdataRef = collection(db, 'departments', 'design', yearId.toString(), monthId, 'taskdata');
         
-        // Build query - ALWAYS filter by userUID for experience calculation
-        // This ensures each user only sees their own tasks for experience/achievements
+        // CRITICAL: Build query - ALWAYS filter by userUID for experience calculation
+        // Tasks in database have userUID field at root level: { userUID: "...", data_task: {...} }
+        // This ensures experience points are calculated ONLY from tasks belonging to this user
+        // Each user's experience is based on their own tasks in the database
         const constraints = [where("userUID", "==", userUID)];
 
         const tasksQuery = query(taskdataRef, ...constraints);
@@ -592,7 +596,7 @@ export const useAllUserTasks = (userUID, role = 'user') => {
     return () => {
       unsubscribes.forEach(unsubscribe => unsubscribe());
     };
-  }, [userUID, role]);
+  }, [userUID]);
 
   return { tasks, isLoading, error };
 };

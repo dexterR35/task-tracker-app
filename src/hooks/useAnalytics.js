@@ -2,11 +2,11 @@ import { useMemo } from 'react';
 import {
   getTaskMarkets,
   getTaskProducts,
-  getTaskHours,
   getTaskUserUID,
   getUserName,
   normalizeMarket,
 } from '@/components/Cards/configs/analyticsSharedConfig';
+import { getTaskHours } from '@/utils/taskMetricsCalculator';
 
 /**
  * Analytics Hooks

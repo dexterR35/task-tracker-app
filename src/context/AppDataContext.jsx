@@ -15,13 +15,43 @@ import { normalizeTimestamp, serializeTimestamps } from "@/utils/dateUtils";
 import { logger } from '@/utils/logger';
 import { AUTH } from '@/constants';
 
-const AppDataContext = createContext();
+// Provide default/initial context value to prevent errors during initial render
+const defaultContextValue = {
+  isInitialized: false,
+  user: null,
+  users: [],
+  isAdmin: false,
+  reporters: [],
+  deliverables: [],
+  tasks: [],
+  isLoading: true,
+  backgroundLoading: false,
+  error: null,
+  monthId: null,
+  monthName: null,
+  daysInMonth: null,
+  startDate: null,
+  endDate: null,
+  boardExists: false,
+  availableMonths: [],
+  currentMonth: null,
+  selectedMonth: null,
+  isCurrentMonth: true,
+  isInitialLoading: true,
+  isMonthDataReady: false,
+  selectMonth: () => {},
+  resetToCurrentMonth: () => {},
+  selectedUserId: null,
+  setSelectedUserId: () => {},
+  canManageReporters: () => false,
+  canManageDeliverables: () => false,
+  canManageUsers: () => false,
+};
+
+const AppDataContext = createContext(defaultContextValue);
 
 export const useAppDataContext = (selectedUserId = null) => {
   const context = useContext(AppDataContext);
-  if (!context) {
-    throw new Error('useAppDataContext must be used within an AppDataProvider');
-  }
   
   // If a specific selectedUserId is provided, use it, otherwise use the global one
   const effectiveSelectedUserId = selectedUserId !== null ? selectedUserId : context.selectedUserId;

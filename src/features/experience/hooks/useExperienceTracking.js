@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { calculateTaskPoints, calculateBonusAchievements, calculateTotalExperience } from '../experienceCalculator';
+import { calculateTaskPoints, calculateBonusAchievements, calculateCompleteExperienceFromTasks } from '../experienceCalculator';
 import { addExperiencePoints, getUserExperience } from '../experienceApi';
 import { calculateLevel } from '../experienceConfig';
 import { logger } from '@/utils/logger';
@@ -36,16 +36,13 @@ export const useExperienceTracking = () => {
       const allTasks = [...allUserTasks, task];
       const bonuses = calculateBonusAchievements(allTasks, currentExperience);
       
-      // Calculate total experience summary
-      const experienceSummary = calculateTotalExperience(allTasks);
+      // Calculate total experience summary (use complete function for consistency)
+      // Note: allTasks should already be filtered by userUID, but we don't have userUID here
+      // so we rely on the tasks being pre-filtered
+      const experienceSummary = calculateCompleteExperienceFromTasks(allTasks, [], null);
       
       // Add points and update experience
-      const result = await addExperiencePoints(userId, taskPoints, {
-        shutterstockCount: experienceSummary.shutterstockCount,
-        aiCount: experienceSummary.aiCount,
-        taskCount: experienceSummary.taskCount,
-        unlockedAchievements: bonuses.map(b => b.name)
-      });
+      const result = await addExperiencePoints(userId, taskPoints);
 
       // Check for level up
       if (result.levelUp) {
@@ -104,16 +101,11 @@ export const useExperienceTracking = () => {
         // Recalculate bonus achievements
         const bonuses = calculateBonusAchievements(allUserTasks, currentExperience);
         
-        // Calculate total experience summary
-        const experienceSummary = calculateTotalExperience(allUserTasks);
+        // Calculate total experience summary (use complete function for consistency)
+        const experienceSummary = calculateCompleteExperienceFromTasks(allUserTasks, [], null);
         
         // Add difference in points
-        const result = await addExperiencePoints(userId, pointsDifference, {
-          shutterstockCount: experienceSummary.shutterstockCount,
-          aiCount: experienceSummary.aiCount,
-          taskCount: experienceSummary.taskCount,
-          unlockedAchievements: bonuses.map(b => b.name)
-        });
+        const result = await addExperiencePoints(userId, pointsDifference);
 
         // Check for level up
         if (result.levelUp) {
@@ -159,7 +151,7 @@ export const useExperienceTracking = () => {
         return;
       }
 
-      const experienceSummary = calculateTotalExperience(allUserTasks);
+      const experienceSummary = calculateCompleteExperienceFromTasks(allUserTasks, [], null);
       const bonuses = calculateBonusAchievements(allUserTasks, null);
       
       // Update experience with total points

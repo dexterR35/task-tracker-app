@@ -1,19 +1,82 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useAppDataContext } from "@/context/AppDataContext";
 import { Icons } from "@/components/icons";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import logo from "@/assets/Logo4.webp";
 import Avatar from "@/components/ui/Avatar/Avatar";
 import UserBadge from "@/features/experience/components/UserBadge";
 import LevelProgressBar from "@/features/experience/components/LevelProgressBar";
+import { calculateLevel } from "@/features/experience/experienceConfig";
+import { useAllUserTasks } from "@/features/tasks/tasksApi";
+import { calculateCompleteExperienceFromTasks } from "@/features/experience/experienceCalculator";
+import { getUserUID } from "@/features/utils/authUtils";
 
 const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
   const { user, canAccess, logout, clearError } = useAuth();
+  const { deliverables } = useAppDataContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Get user UID for fetching tasks
+  const userUID = getUserUID(user);
+
+  // Fetch all user tasks across all months (real-time listener)
+  const { tasks: allTasks = [], isLoading: tasksLoading } = useAllUserTasks(userUID);
+
+  // Transform deliverables to options format for time calculations
+  const deliverablesOptions = useMemo(() => {
+    if (!deliverables || deliverables.length === 0) return [];
+    return deliverables.map((deliverable) => ({
+      value: deliverable.name,
+      label: deliverable.name,
+      department: deliverable.department,
+      timePerUnit: deliverable.timePerUnit,
+      timeUnit: deliverable.timeUnit,
+      requiresQuantity: deliverable.requiresQuantity,
+      variationsTime: deliverable.variationsTime,
+      variationsTimeUnit: deliverable.variationsTimeUnit || "min",
+    }));
+  }, [deliverables]);
+
+  // Calculate experience from all tasks (same as ExperienceSystemPage)
+  // Always calculate from tasks - never use stored experience to avoid inconsistencies
+  const calculatedExperience = useMemo(() => {
+    // Don't show anything until tasks are loaded to avoid flickering
+    if (tasksLoading || !user || !userUID) {
+      return null;
+    }
+
+    // If no tasks yet, return empty experience (will show 0 points, level 1)
+    if (!allTasks || allTasks.length === 0) {
+      const level = calculateLevel(0);
+      return {
+        points: 0,
+        level: level.level,
+        levelName: level.name,
+      };
+    }
+
+    const calculated = calculateCompleteExperienceFromTasks(
+      allTasks,
+      deliverablesOptions,
+      userUID
+    );
+
+    const level = calculateLevel(calculated.points);
+
+    return {
+      ...calculated,
+      level: level.level,
+      levelName: level.name,
+    };
+  }, [allTasks, deliverablesOptions, tasksLoading, userUID, user]);
+
+  // Always use calculated experience (never stored experience to avoid inconsistencies)
+  const displayExperience = calculatedExperience;
 
   // Handle logout
   const handleLogout = async () => {
@@ -72,11 +135,30 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
         </button> */}
 
         {/* Level Progress Bar - Real-time experience tracking */}
-        {user?.experience && (
-          <div className="hidden md:block">
-            <LevelProgressBar experience={user.experience} compact={true} />
-          </div>
-        )}
+        <div className="hidden md:flex items-center gap-3">
+          {tasksLoading || !user || !userUID ? (
+            // Loading skeleton for level progress bar
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 animate-pulse">
+              {/* Badge skeleton */}
+              <div className="w-5 h-5 bg-gray-300 dark:bg-gray-600 rounded"></div>
+              {/* Progress bar skeleton */}
+              <div className="flex-1 min-w-[120px] max-w-[200px]">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-8 h-3 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                    <div className="w-1/3 h-full bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <div className="w-12 h-2.5 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                  <div className="w-16 h-2.5 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ) : displayExperience ? (
+            <LevelProgressBar experience={displayExperience} compact={true} />
+          ) : null}
+        </div>
 
         {/* Dark Mode Toggle */}
         <div className="hidden sm:block">
@@ -120,9 +202,9 @@ const FixedHeader = ({ onToggleSidebar, sidebarOpen }) => {
                 </p>
               </div>
               {/* User Badge/Level Display */}
-              {user?.experience && (
+              {displayExperience && (
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <UserBadge experience={user.experience} showProgress={true} size="small" />
+                  <UserBadge experience={displayExperience} showProgress={true} size="small" />
                 </div>
               )}
               <div className="py-1">

@@ -44,11 +44,19 @@ const LevelProgressBar = ({ experience, compact = false }) => {
               />
             </div>
           </div>
-          <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400">
-            <span>{points} XP</span>
-            {pointsToNext > 0 && (
-              <span>{pointsToNext} to next</span>
-            )}
+          <div className="flex items-center justify-between gap-2">
+            <span 
+              className="text-[10px] font-semibold"
+              style={{ color: currentLevel.color }}
+            >
+              {currentLevel.name}
+            </span>
+            <div className="flex gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+              <span>{points} XP</span>
+              {pointsToNext > 0 && (
+                <span>{pointsToNext} to next</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

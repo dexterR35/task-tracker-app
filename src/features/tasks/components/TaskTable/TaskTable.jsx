@@ -14,6 +14,7 @@ import { useTableActions } from "@/hooks/useTableActions";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask, useTasks } from "@/features/tasks/tasksApi";
+import { useExperience } from "@/features/experience/components/ExperienceProvider";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import DepartmentFilter from "@/components/filters/DepartmentFilter";
