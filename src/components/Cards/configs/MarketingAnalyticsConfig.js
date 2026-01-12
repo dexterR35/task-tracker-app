@@ -95,46 +95,64 @@ export const calculateMarketingAnalyticsData = (tasks) => {
       return false;
     }).length || 0;
 
-    // Market counts are per market (RO: 3, IE: 2, UK: 2)
-    const marketCountsTotal = Object.values(categoryData).reduce(
-      (sum, count) => sum + count,
-      0
-    );
-
-    if (marketCountsTotal > 0) {
+    // Market counts are unique tasks per market (a task with [IT, RO] counts in both IT and RO)
+    // But percentages should be based on total unique tasks, not sum of market counts
+    if (categoryTotal > 0) {
       const row = {
         category: category.charAt(0).toUpperCase() + category.slice(1),
         total: categoryTotal, // Unique tasks
       };
 
       // Add market columns with percentages
-      // Market counts are per market (RO: 3, IE: 2, UK: 2), percentages based on market counts total
+      // Market counts show unique tasks per market, percentages based on total unique tasks
       const marketItems = sortedMarkets.map(market => ({
         key: market,
         count: categoryData[market] || 0
       }));
       sortedMarkets.forEach((market) => {
         const marketCount = categoryData[market] || 0;
-        row[market] = calculateCountWithPercentage(marketCount, marketCountsTotal, marketItems, market);
+        row[market] = calculateCountWithPercentage(marketCount, categoryTotal, marketItems, market);
       });
 
       tableData.push(row);
     }
   });
 
-  // Add grand total row using shared utility
+  // Add grand total row with unique task counts and percentages
   if (tableData.length > 0) {
-    const grandTotal = Object.values(marketTotals).reduce(
-      (sum, count) => sum + count,
-      0
-    );
-    if (grandTotal > 0) {
-      tableData = addGrandTotalRow(tableData, {
-        labelKey: 'category',
-        labelValue: 'Grand Total',
-        sumColumns: ['total'],
-        marketColumns: sortedMarkets,
+    // Calculate total unique tasks across all categories
+    const totalUniqueTasks = tableData.reduce((sum, row) => {
+      const value = row.total;
+      return sum + (typeof value === 'number' ? value : 0);
+    }, 0);
+
+    if (totalUniqueTasks > 0) {
+      // Create grand total row
+      const grandTotalRow = {
+        category: 'Grand Total',
+        total: totalUniqueTasks,
+        bold: true,
+        highlight: true,
+      };
+
+      // Calculate market totals (sum of per-market counts from all categories)
+      // and percentages based on total unique tasks
+      const grandTotalMarketItems = sortedMarkets.map(market => ({
+        key: market,
+        count: marketTotals[market] || 0
+      }));
+
+      sortedMarkets.forEach((market) => {
+        const marketCount = marketTotals[market] || 0;
+        grandTotalRow[market] = calculateCountWithPercentage(
+          marketCount,
+          totalUniqueTasks,
+          grandTotalMarketItems,
+          market
+        );
       });
+
+      tableData.push(grandTotalRow);
     }
   }
 
@@ -377,15 +395,12 @@ export const calculateMarketingAnalyticsData = (tasks) => {
     });
 
   // Create biaxial chart data: Total Casino vs Total Sport
-  // Calculate totals from per-market data to ensure consistency with "Casino vs Sport: Tasks by Markets" chart
-  const totalCasinoFromMarkets = casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.casino || 0), 0);
-  const totalSportFromMarkets = casinoSportPerMarketBiaxialData.reduce((sum, item) => sum + (item.sport || 0), 0);
-  
+  // Use unique task counts to match the table totals (not per-market counts which would double-count tasks with multiple markets)
   const totalCasinoSportBiaxialData = [
     {
       name: 'Total',
-      casino: totalCasinoFromMarkets,
-      sport: totalSportFromMarkets,
+      casino: casinoTotalTasks,
+      sport: sportTotalTasks,
     },
   ];
 
