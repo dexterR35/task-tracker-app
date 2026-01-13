@@ -155,6 +155,7 @@ export const recalculateExperienceFromTasks = async (
 
 /**
  * Add experience points - kept for backward compatibility
+ * Returns level change information for detecting level ups/downgrades
  */
 export const addExperiencePoints = async (userId, pointsToAdd) => {
   try {
@@ -165,7 +166,9 @@ export const addExperiencePoints = async (userId, pointsToAdd) => {
     const currentExperience = await getUserExperience(userId);
     const experience = currentExperience || initializeUserExperience();
     const oldPoints = experience.points || 0;
-    const newPoints = oldPoints + pointsToAdd;
+    const oldLevel = calculateLevel(oldPoints);
+    const newPoints = Math.max(0, oldPoints + pointsToAdd); // Prevent negative points
+    const newLevel = calculateLevel(newPoints);
 
     await updateUserExperience(userId, {
       points: newPoints,
@@ -174,6 +177,16 @@ export const addExperiencePoints = async (userId, pointsToAdd) => {
     return {
       success: true,
       pointsAdded: pointsToAdd,
+      oldPoints,
+      newPoints,
+      oldLevel: oldLevel.level,
+      newLevel: newLevel.level,
+      levelUp: newLevel.level > oldLevel.level,
+      levelDown: newLevel.level < oldLevel.level,
+      experience: {
+        points: newPoints,
+        level: newLevel.level,
+      },
     };
   } catch (error) {
     logger.error("Error adding experience points:", error);

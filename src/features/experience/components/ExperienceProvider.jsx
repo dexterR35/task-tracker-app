@@ -50,6 +50,7 @@ export const ExperienceProvider = ({ children }) => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimableAchievement, setClaimableAchievement] = useState(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [isLevelDown, setIsLevelDown] = useState(false);
 
   // Get all user tasks for experience calculation
   const { tasks: allTasks = [], isLoading: tasksLoading } = useAllUserTasks(userUID);
@@ -75,7 +76,7 @@ export const ExperienceProvider = ({ children }) => {
     };
   }, [allTasks, deliverablesOptions, tasksLoading, userUID, userData]);
 
-  // Check for new level reached and show modal (don't auto-update - wait for claim)
+  // Check for level changes and show modal (don't auto-update - wait for claim)
   useEffect(() => {
     if (!userId || tasksLoading || !calculatedExperience || !userData) return;
 
@@ -84,7 +85,7 @@ export const ExperienceProvider = ({ children }) => {
     const currentLevel = calculatedExperience.level || 1;
     const storedLevel = storedExperience?.level || 1;
 
-    // Check for new level reached (level increased) - show modal but don't store yet
+    // Check for level up (level increased) - show modal but don't store yet
     if (currentLevel > storedLevel) {
       const level = calculateLevel(currentPoints);
       setClaimableAchievement({
@@ -96,6 +97,30 @@ export const ExperienceProvider = ({ children }) => {
         points: currentPoints,
       });
       setShowClaimModal(true);
+    }
+    // Check for level downgrade (level decreased) - show modal and auto-update
+    else if (currentLevel < storedLevel) {
+      const level = calculateLevel(currentPoints);
+      const oldLevel = calculateLevel(storedExperience?.points || 0);
+      setIsLevelDown(true);
+      setClaimableAchievement({
+        type: "levelDown",
+        oldLevel: storedLevel,
+        newLevel: currentLevel,
+        levelName: level.name,
+        oldLevelName: oldLevel.name,
+        badge: level.badge,
+        color: level.color,
+        points: currentPoints - (storedExperience?.points || 0), // Negative points
+      });
+      setShowClaimModal(true);
+      // Auto-update experience for level downgrades (no claim needed)
+      updateUserExperience(userId, {
+        points: currentPoints,
+        level: currentLevel,
+      }).catch(error => {
+        console.error('Error updating experience for level downgrade:', error);
+      });
     }
   }, [userId, userData?.experience, calculatedExperience, tasksLoading]);
 
@@ -113,6 +138,7 @@ export const ExperienceProvider = ({ children }) => {
 
       setShowClaimModal(false);
       setClaimableAchievement(null);
+      setIsLevelDown(false);
     } catch (error) {
       console.error('Error claiming experience:', error);
     } finally {
@@ -120,18 +146,25 @@ export const ExperienceProvider = ({ children }) => {
     }
   };
 
+  // Handle close for level downgrade (no claim needed, just close)
+  const handleCloseLevelDown = () => {
+    setShowClaimModal(false);
+    setClaimableAchievement(null);
+    setIsLevelDown(false);
+  };
+
   const value = {};
 
   return (
     <ExperienceContext.Provider value={value}>
       {children}
-      {/* Level Up Claim Modal - shows when level increases */}
+      {/* Level Up/Down Modal - shows when level changes */}
       <AchievementModal
         achievement={claimableAchievement}
         isOpen={showClaimModal}
-        onClose={() => {}} // Disabled - modal can only be closed by claiming
+        onClose={isLevelDown ? handleCloseLevelDown : () => {}} // Level down can be closed, level up requires claim
         onClaim={handleClaimExperience}
-        showClaimButton={true}
+        showClaimButton={!isLevelDown} // Only show claim button for level ups
       />
     </ExperienceContext.Provider>
   );

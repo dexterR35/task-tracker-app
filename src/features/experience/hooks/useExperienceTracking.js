@@ -1,6 +1,6 @@
 /**
  * Experience Tracking Hook
- * 
+ *
  * Manages experience points calculation and updates when tasks are created/updated
  */
 
@@ -28,19 +28,19 @@ export const useExperienceTracking = () => {
 
       // Calculate points from this task
       const taskPoints = calculateTaskPoints(task);
-      
+
       // Get current experience
       const currentExperience = await getUserExperience(userId);
-      
+
       // Calculate bonus achievements from all tasks (including the new one)
       const allTasks = [...allUserTasks, task];
       const bonuses = calculateBonusAchievements(allTasks, currentExperience);
-      
+
       // Calculate total experience summary (use complete function for consistency)
       // Note: allTasks should already be filtered by userUID, but we don't have userUID here
       // so we rely on the tasks being pre-filtered
-      const experienceSummary = calculateCompleteExperienceFromTasks(allTasks, [], null);
-      
+      // const _experienceSummary = calculateCompleteExperienceFromTasks(allTasks, [], null);
+
       // Add points and update experience
       const result = await addExperiencePoints(userId, taskPoints);
 
@@ -79,6 +79,49 @@ export const useExperienceTracking = () => {
   }, []);
 
   /**
+   * Track experience from task deletion
+   * Subtracts XP points that were earned from the deleted task
+   */
+  const trackTaskDeletion = useCallback(async (task, userId) => {
+    try {
+      if (!userId || !task) {
+        return;
+      }
+
+      // Calculate points that were earned from this task
+      const taskPoints = calculateTaskPoints(task);
+
+      // Subtract points (pass negative value to addExperiencePoints)
+      if (taskPoints > 0) {
+        const result = await addExperiencePoints(userId, -taskPoints);
+        logger.log(`Subtracted ${taskPoints} XP points for deleted task: ${task.id}`);
+
+        // Check for level downgrade
+        if (result.levelDown) {
+          const newLevel = calculateLevel(result.newPoints);
+          const oldLevel = calculateLevel(result.oldPoints);
+          setAchievement({
+            type: 'levelDown',
+            oldLevel: result.oldLevel,
+            newLevel: result.newLevel,
+            levelName: newLevel.name,
+            oldLevelName: oldLevel.name,
+            badge: newLevel.badge,
+            color: newLevel.color,
+            points: -taskPoints, // Negative points to show deduction
+          });
+          setShowAchievement(true);
+        }
+      }
+
+      return { success: true, pointsSubtracted: taskPoints };
+    } catch (error) {
+      logger.error('Error tracking task deletion experience:', error);
+      // Don't throw - experience tracking shouldn't break task deletion
+    }
+  }, []);
+
+  /**
    * Track experience from task update
    * Note: We only add points for newly added features (e.g., newly added deliverable)
    */
@@ -97,13 +140,13 @@ export const useExperienceTracking = () => {
       if (pointsDifference > 0) {
         // Get current experience
         const currentExperience = await getUserExperience(userId);
-        
+
         // Recalculate bonus achievements
         const bonuses = calculateBonusAchievements(allUserTasks, currentExperience);
-        
+
         // Calculate total experience summary (use complete function for consistency)
-        const experienceSummary = calculateCompleteExperienceFromTasks(allUserTasks, [], null);
-        
+        // const _experienceSummary = calculateCompleteExperienceFromTasks(allUserTasks, [], null);
+
         // Add difference in points
         const result = await addExperiencePoints(userId, pointsDifference);
 
@@ -153,7 +196,7 @@ export const useExperienceTracking = () => {
 
       const experienceSummary = calculateCompleteExperienceFromTasks(allUserTasks, [], null);
       const bonuses = calculateBonusAchievements(allUserTasks, null);
-      
+
       // Update experience with total points
       const result = await addExperiencePoints(userId, 0, {
         shutterstockCount: experienceSummary.shutterstockCount,
@@ -184,6 +227,7 @@ export const useExperienceTracking = () => {
   return {
     trackTaskCreation,
     trackTaskUpdate,
+    trackTaskDeletion,
     recalculateExperience,
     achievement,
     showAchievement,

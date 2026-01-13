@@ -22,6 +22,7 @@ const AchievementModal = ({
   if (!isOpen || !achievement) return null;
 
   const isLevelUp = achievement.type === "levelUp";
+  const isLevelDown = achievement.type === "levelDown";
   const isBonus = achievement.type === "bonus";
 
   const handleClaim = async () => {
@@ -76,10 +77,15 @@ const AchievementModal = ({
           </div>
         )}
 
+        {/* Dark overlay effect for level downgrade */}
+        {isLevelDown && (
+          <div className="absolute inset-0 pointer-events-none bg-gray-900 bg-opacity-20 rounded-lg" />
+        )}
+
         {/* Achievement Icon/Emoji */}
         <div className="text-center mb-4">
-          <div className="text-8xl mb-4 animate-bounce">
-            {isLevelUp ? achievement.badge : achievement.icon || "🏆"}
+          <div className={`text-8xl mb-4 ${isLevelDown ? 'animate-pulse' : 'animate-bounce'}`}>
+            {isLevelUp || isLevelDown ? achievement.badge : achievement.icon || "🏆"}
           </div>
         </div>
 
@@ -87,17 +93,19 @@ const AchievementModal = ({
         <h2 className="text-3xl font-bold text-center mb-2">
           {isLevelUp
             ? `Level ${achievement.newLevel} - ${achievement.levelName}`
+            : isLevelDown
+            ? `Level ${achievement.newLevel} - ${achievement.levelName}`
             : achievement.name || "Achievement"}
         </h2>
 
         {/* Subtitle - Unlocked Badge */}
         <div className="text-center mb-2">
           <Badge
-            variant="green"
+            variant={isLevelDown ? "red" : "green"}
             size="md"
             className="!text-sm"
           >
-            {isLevelUp ? "Level Up!" : "Unlocked"}
+            {isLevelUp ? "Level Up!" : isLevelDown ? "Level Down!" : "Unlocked"}
           </Badge>
         </div>
 
@@ -105,20 +113,20 @@ const AchievementModal = ({
         <p className="text-center text-lg mb-2">
           {isLevelUp
             ? `Congratulations! You've reached ${achievement.levelName}!`
+            : isLevelDown
+            ? `You've been downgraded from ${achievement.oldLevelName || `Level ${achievement.oldLevel}`} to ${achievement.levelName}.`
             : achievement.description || `You've unlocked: ${achievement.name}`}
         </p>
 
-        {/* Points Earned */}
-        {achievement.points && (
+        {/* Points Earned/Lost */}
+        {achievement.points !== undefined && (
           <div className="text-center mb-6">
-         
-
             <Badge
-              variant= "pink"
+              variant={achievement.points < 0 ? "red" : "pink"}
               size="md"
               className="!text-lg !font-bold"
             >
-            + {achievement.points} Points
+              {achievement.points > 0 ? "+" : ""} {achievement.points} Points
             </Badge>
           </div>
         )}
@@ -150,7 +158,7 @@ const AchievementModal = ({
               iconCategory="generic"
               iconPosition="left"
             >
-              {isLevelUp ? "🚀 Awesome!" : "🎉 Great!"}
+              {isLevelUp ? "🚀 Awesome!" : isLevelDown ? "😔 Understood" : "🎉 Great!"}
             </DynamicButton>
           )}
         </div>

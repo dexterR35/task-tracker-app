@@ -9,7 +9,7 @@
 // ============================================================================
 
 export const EXPERIENCE_POINTS = {
-  TASK_ADDED: 1000,
+  TASK_ADDED: 100,
   DELIVERABLE: 10,
   VARIATION: 5,
   SHUTTERSTOCK_USED: 5,
