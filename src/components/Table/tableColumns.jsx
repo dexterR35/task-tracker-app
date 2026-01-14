@@ -263,24 +263,22 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     id: "reporters",
     header: "REPORTERS",
     cell: ({ getValue, row }) => {
-      // First try to get reporterName if it exists
-      let name = row.original?.data_task?.reporterName;
+      const reporterId = getValue();
+      if (!reporterId) return "-";
 
-      // Fallback to resolving reporter ID
-      if (!name) {
-        const reporterId = getValue();
-        if (!reporterId) return "-";
+      // Prioritize looking up reporter name from reporters collection (always up-to-date)
+      // This ensures we show the latest name even if task hasn't been updated yet
+      const reporter = stableReporters.find((r) => {
+        const reporterIdField = r.reporterUID;
+        return (
+          reporterIdField &&
+          typeof reporterIdField === "string" &&
+          reporterIdField.toLowerCase() === reporterId.toLowerCase()
+        );
+      });
 
-        const reporter = stableReporters.find((r) => {
-          const reporterIdField = r.reporterUID;
-          return (
-            reporterIdField &&
-            typeof reporterIdField === "string" &&
-            reporterIdField.toLowerCase() === reporterId.toLowerCase()
-          );
-        });
-        name = reporter?.name || reporterId;
-      }
+      // Use reporter name from collection if found, otherwise fallback to stored name
+      let name = reporter?.name || row.original?.data_task?.reporterName || reporterId;
 
       if (!name) return "-";
 
@@ -561,7 +559,7 @@ const createUserColumns = () => [
             {taskCount}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            tasks
+            tasks overall
           </span>
         </div>
       );

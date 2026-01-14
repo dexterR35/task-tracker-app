@@ -1,5 +1,5 @@
 import React from "react";
-import { useDeleteReporterMutation } from "@/features/reporters/reportersApi";
+import { useReporters } from "@/features/reporters/reportersApi";
 import { getColumns } from "@/components/Table/tableColumns.jsx";
 import { showError, showSuccess } from "@/utils/toast.js";
 import TanStackTable from "@/components/Table/TanStackTable";
@@ -15,7 +15,7 @@ const ReporterTable = ({
   isLoading = false, // Loading state
 }) => {
   // API hooks for reporter CRUD
-  const [deleteReporter] = useDeleteReporterMutation();
+  const { deleteReporter } = useReporters();
   
   // Get reporter columns
   const reporterColumns = getColumns('reporters');

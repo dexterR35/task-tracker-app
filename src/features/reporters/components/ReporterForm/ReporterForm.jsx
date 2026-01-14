@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useCreateReporterMutation, useUpdateReporterMutation } from '@/features/reporters/reportersApi';
+import { useReporters } from '@/features/reporters/reportersApi';
 import { useAuth } from '@/context/AuthContext';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
@@ -23,8 +23,7 @@ const ReporterForm = ({
   reporters = [] // Pass existing reporters for dynamic options
 }) => {
   const { user } = useAuth();
-  const [createReporter] = useCreateReporterMutation();
-  const [updateReporter] = useUpdateReporterMutation();
+  const { createReporter, updateReporter } = useReporters();
   
   // Generate static form fields from constants
   const formFields = createReporterFormFields();

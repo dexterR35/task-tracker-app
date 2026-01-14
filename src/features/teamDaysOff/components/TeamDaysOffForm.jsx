@@ -10,6 +10,7 @@ import { handleValidationError } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, prepareFormData } from '@/utils/formUtils';
 import { showSuccess } from '@/utils/toast';
 import { VALIDATION } from '@/constants';
+import { requiredSelect, numberField } from '@/utils/validationSchemas';
 import { 
   TextField, 
   NumberField, 
@@ -66,27 +67,12 @@ const CONFIG = {
   }
 };
 
-// ===== FORM SCHEMA CREATOR =====
-const createFormSchema = (fields) => {
-  const schemaFields = {};
-  fields.forEach(field => {
-    let fieldSchema = field.type === 'number' ? Yup.number() : Yup.string();
-    
-    if (field.validation) {
-      Object.keys(field.validation).forEach(rule => {
-        if (rule === 'required' && field.validation[rule]) {
-          fieldSchema = fieldSchema.required(field.validation[rule]);
-        } else if (rule === 'min') {
-          fieldSchema = fieldSchema.min(field.validation[rule].value, field.validation[rule].message);
-        } else if (rule === 'max') {
-          fieldSchema = fieldSchema.max(field.validation[rule].value, field.validation[rule].message);
-        }
-      });
-    }
-    schemaFields[field.name] = fieldSchema;
-  });
-  return Yup.object().shape(schemaFields);
-};
+// ===== TEAM DAYS OFF FORM VALIDATION SCHEMA =====
+const teamDaysOffFormSchema = Yup.object().shape({
+  userUID: requiredSelect(),
+  baseDays: numberField(0, 100, true),
+  daysOff: numberField(0, 100, true)
+});
 
 // ===== TEAM DAYS OFF FORM COMPONENT =====
 const TeamDaysOffForm = ({ 
@@ -105,7 +91,6 @@ const TeamDaysOffForm = ({
   const { users: apiUsers = [] } = useUsers();
   const users = contextUsers.length > 0 ? contextUsers : apiUsers;
   const [saving, setSaving] = React.useState(false);
-  const schema = createFormSchema(CONFIG.FORM_FIELDS);
   
   const { 
     register, 
@@ -118,7 +103,7 @@ const TeamDaysOffForm = ({
     clearErrors, 
     setError 
   } = useForm({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(teamDaysOffFormSchema),
     defaultValues: {
       userUID: teamDaysOff?.userUID || teamDaysOff?.userId || initialUserId || '',
       baseDays: teamDaysOff?.baseDays || 0,

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   collection,
+  collectionGroup,
   query,
   orderBy,
   addDoc,
@@ -10,12 +11,13 @@ import {
   doc,
   serverTimestamp,
   where,
+  onSnapshot,
   getDocs,
-  getDoc
+  getDoc,
+  writeBatch
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-import dataCache from "@/utils/dataCache";
 
 
 const checkReporterEmailExists = async (email) => {
@@ -25,7 +27,6 @@ const checkReporterEmailExists = async (email) => {
       logger.warn('Invalid email provided to checkReporterEmailExists:', email);
       return false;
     }
-
     const reportersRef = collection(db, 'reporters');
     const q = query(reportersRef, where('email', '==', email.toLowerCase().trim()));
     const snapshot = await getDocs(q);
@@ -36,11 +37,44 @@ const checkReporterEmailExists = async (email) => {
   }
 };
 
-// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
-const fetchLocks = new Map();
+
+const updateTasksWithReporterName = async (reporterId, newReporterName) => {
+  if (!reporterId || !newReporterName) {
+    logger.warn('Invalid parameters for updateTasksWithReporterName');
+    return { updatedCount: 0 };
+  }
+
+  // Use collection group query to find all tasks across all months/years
+  const taskdataGroup = collectionGroup(db, 'taskdata');
+  const q = query(taskdataGroup, where('data_task.reporterUID', '==', reporterId));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    logger.log(`[updateTasksWithReporterName] No tasks found for reporter ${reporterId}`);
+    return { updatedCount: 0 };
+  }
+
+  const tasks = snapshot.docs;
+  const batchSize = 500;
+  let totalUpdated = 0;
+
+  // Update tasks in batches
+  for (let i = 0; i < tasks.length; i += batchSize) {
+    const batch = writeBatch(db);
+    tasks.slice(i, i + batchSize).forEach((taskDoc) => {
+      batch.update(taskDoc.ref, { 'data_task.reporterName': newReporterName });
+    });
+    
+    await batch.commit();
+    totalUpdated += Math.min(batchSize, tasks.length - i);
+  }
+
+  logger.log(`[updateTasksWithReporterName] Updated ${totalUpdated} tasks for reporter ${reporterId}`);
+  return { updatedCount: totalUpdated };
+};
 
 /**
- * Reporters Hook (One-time fetch - Reporters are static data)
+ * Reporters Hook - Real-time listener for reporters collection
  */
 export const useReporters = () => {
   const [reporters, setReporters] = useState([]);
@@ -48,89 +82,43 @@ export const useReporters = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchReporters = async () => {
-      try {
-        const cacheKey = 'reporters_list';
+    setIsLoading(true);
+    setError(null);
 
-        // Check cache first
-        const cachedData = dataCache.get(cacheKey);
-        if (cachedData) {
-          logger.log('🔍 [useReporters] Using cached reporters data');
-          setReporters(cachedData);
-          setIsLoading(false);
-          setError(null);
-          return;
-        }
+    const reportersRef = collection(db, 'reporters');
+    const q = query(reportersRef, orderBy('createdAt', 'desc'));
 
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useReporters] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setReporters(result);
-            setIsLoading(false);
-            setError(null);
-            return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
-          }
-        }
+    // Firebase onSnapshot provides real-time updates
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const reportersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-        logger.log('🔍 [useReporters] Fetching reporters from Firestore');
-        setIsLoading(true);
-        setError(null);
-
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
-            const reportersRef = collection(db, 'reporters');
-            const q = query(reportersRef, orderBy('createdAt', 'desc'));
-
-            const snapshot = await getDocs(q);
-            const reportersData = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-
-            // Cache the data indefinitely (reporters are manually managed and never change)
-            dataCache.set(cacheKey, reportersData, Infinity);
-            return reportersData;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
-          }
-        })();
-
-        fetchLocks.set(cacheKey, fetchPromise);
-
-        const reportersData = await fetchPromise;
         setReporters(reportersData);
         setIsLoading(false);
         setError(null);
-        logger.log('✅ [useReporters] Reporters fetched and cached:', reportersData.length);
-      } catch (err) {
-        logger.error('❌ [useReporters] Fetch error:', err);
+        logger.log('✅ [useReporters] Reporters updated in real-time:', reportersData.length);
+      },
+      (err) => {
+        logger.error('❌ [useReporters] Real-time error:', err);
         setError(err);
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchReporters();
+    // Cleanup: unsubscribe when component unmounts
+    return () => unsubscribe();
   }, []);
 
   // Create reporter
   const createReporter = useCallback(async (reporterData, userData = null) => {
     try {
-      // Validate user permissions - Role-based
-      if (userData) {
-        // Check for admin role or has_permission (universal admin permission)
-        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
-          throw new Error('Only admin users can manage reporters');
-        }
+      // Only admin can manage reporters
+      if (!userData || userData.role !== 'admin') {
+        throw new Error('Only admin users can manage reporters');
       }
 
       // Validate reporter data
@@ -163,9 +151,7 @@ export const useReporters = () => {
         reporterUID: docRef.id
       });
 
-      // Invalidate cache when data changes
-      dataCache.delete('reporters_list');
-
+    
       logger.log('Reporter created successfully:', docRef.id);
       return { success: true, id: docRef.id };
     } catch (err) {
@@ -177,25 +163,24 @@ export const useReporters = () => {
   // Update reporter
   const updateReporter = useCallback(async (reporterId, updateData, userData = null) => {
     try {
-      // Validate user permissions - Role-based
-      if (userData) {
-        // Check for admin role or has_permission (universal admin permission)
-        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
-          throw new Error('Only admin users can manage reporters');
-        }
+      // Only admin can manage reporters
+      if (!userData || userData.role !== 'admin') {
+        throw new Error('Only admin users can manage reporters');
       }
-
-      // Check if email is being updated and if it already exists (excluding current reporter)
-      if (updateData.email) {
-        // First get the current reporter to check if email is actually changing
-        const currentReporterRef = doc(db, 'reporters', reporterId);
-        const currentReporterDoc = await getDoc(currentReporterRef);
-
-        if (currentReporterDoc.exists()) {
-          const currentData = currentReporterDoc.data();
+      
+      // Get current reporter data to check if name is changing
+      const currentReporterRef = doc(db, 'reporters', reporterId);
+      const currentReporterDoc = await getDoc(currentReporterRef);
+      
+      let oldReporterName = null;
+      if (currentReporterDoc.exists()) {
+        const currentData = currentReporterDoc.data();
+        oldReporterName = currentData.name;
+        
+        // Check if email is being updated and if it already exists (excluding current reporter)
+        if (updateData.email) {
           const currentEmail = currentData.email?.toLowerCase().trim();
           const newEmail = updateData.email.toLowerCase().trim();
-
           // Only check for email conflicts if the email is actually changing
           if (currentEmail !== newEmail) {
             const emailExists = await checkReporterEmailExists(updateData.email);
@@ -210,7 +195,6 @@ export const useReporters = () => {
       const updates = {
         ...updateData,
         updatedAt: serverTimestamp(),
-        // Only add user info if user is authenticated (optional)
         ...(userData && userData.userUID && {
           updatedBy: userData.userUID,
           updatedByName: userData.name || 'Unknown User'
@@ -219,9 +203,19 @@ export const useReporters = () => {
 
       await updateDoc(reporterRef, updates);
 
-      // Invalidate cache when data changes
-      dataCache.delete('reporters_list');
+      // If reporter name changed, update all tasks that reference this reporter
+      if (updateData.name && oldReporterName && updateData.name !== oldReporterName) {
+        logger.log(`[updateReporter] Reporter name changed from "${oldReporterName}" to "${updateData.name}", updating tasks...`);
+        try {
+          const updateResult = await updateTasksWithReporterName(reporterId, updateData.name);
+          logger.log(`[updateReporter] Updated ${updateResult.updatedCount} tasks with new reporter name`);
+        } catch (taskUpdateError) {
+          // Log error but don't fail the reporter update
+          logger.error('[updateReporter] Error updating tasks with new reporter name:', taskUpdateError);
+        }
+      }
 
+      // Real-time listener will automatically update the state
       logger.log('Reporter updated successfully:', reporterId);
       return { success: true };
     } catch (err) {
@@ -231,22 +225,16 @@ export const useReporters = () => {
   }, []);
 
   // Delete reporter
+  // NOTE: This only deletes the reporter document. Tasks referencing this reporter are NOT deleted.
+  // Tasks will still exist with the reporterUID and reporterName fields intact.
   const deleteReporter = useCallback(async (reporterId, userData = null) => {
     try {
-      // Validate user permissions - Role-based
-      if (userData) {
-        // Check for admin role or has_permission (universal admin permission)
-        if (userData.role !== 'admin' && !userData.permissions?.includes('has_permission')) {
-          throw new Error('Only admin users can manage reporters');
-        }
+      // Only admin can manage reporters
+      if (!userData || userData.role !== 'admin') {
+        throw new Error('Only admin users can manage reporters');
       }
-
       const reporterRef = doc(db, 'reporters', reporterId);
       await deleteDoc(reporterRef);
-
-      // Invalidate cache when data changes
-      dataCache.delete('reporters_list');
-
       logger.log('Reporter deleted successfully:', reporterId);
       return { success: true };
     } catch (err) {
@@ -266,19 +254,4 @@ export const useReporters = () => {
     updateReporter,
     deleteReporter
   };
-};
-
-// Export hooks for backward compatibility
-export const useGetReportersQuery = useReporters;
-export const useCreateReporterMutation = () => {
-  const { createReporter } = useReporters();
-  return [createReporter];
-};
-export const useUpdateReporterMutation = () => {
-  const { updateReporter } = useReporters();
-  return [updateReporter];
-};
-export const useDeleteReporterMutation = () => {
-  const { deleteReporter } = useReporters();
-  return [deleteReporter];
 };

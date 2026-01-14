@@ -1,8 +1,8 @@
 import * as Yup from 'yup';
 import { VALIDATION, FORM_OPTIONS } from '@/constants';
+import { nameField, emailField, requiredSelect } from '@/utils/validationSchemas';
 
-// ===== STATIC REPORTER FORM OPTIONS =====
-// Use predefined constants from FORM_OPTIONS
+
 export const getReporterDepartmentOptions = () => {
   return FORM_OPTIONS.REPORTER_DEPARTMENTS;
 };
@@ -15,7 +15,6 @@ export const getReporterCountryOptions = () => {
   return FORM_OPTIONS.REPORTER_COUNTRIES;
 };
 
-// ===== REPORTER FORM FIELD CONFIGURATION =====
 // This function creates form fields with static options from constants
 export const createReporterFormFields = () => [
   {
@@ -75,29 +74,12 @@ export const createReporterFormFields = () => [
   }
 ];
 
-// ===== BACKWARD COMPATIBILITY =====
-// For components that still expect the old static form fields
-export const REPORTER_FORM_FIELDS = createReporterFormFields();
-
 // ===== REPORTER FORM VALIDATION SCHEMA =====
 export const reporterFormSchema = Yup.object().shape({
-  name: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  email: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .email(VALIDATION.MESSAGES.EMAIL),
-
-  departament: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  country: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  channelName: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
+  name: nameField(),
+  email: emailField(),
+  departament: requiredSelect(),
+  country: requiredSelect(),
+  channelName: requiredSelect()
 });
-
-// ===== REPORTER FORM UTILITIES =====
-// Note: Data preparation is now handled by the centralized prepareFormData function in formUtils.js
 

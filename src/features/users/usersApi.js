@@ -10,7 +10,6 @@ import {
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 
-
 /**
  * Users Hook - Fetches all users (for tables, lists, dropdowns)
  */
@@ -126,7 +125,3 @@ export const useUserByUID = (userUID) => {
     error
   };
 };
-
-// Export hooks for backward compatibility
-export const useGetUsersQuery = useUsers;
-export const useGetUserByUIDQuery = useUserByUID;

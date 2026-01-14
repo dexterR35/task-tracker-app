@@ -376,8 +376,3 @@ export const useCreateMonthBoard = () => {
 
   return [createMonthBoard];
 };
-
-// Export hooks for backward compatibility
-export const useGetCurrentMonthQuery = useCurrentMonth;
-export const useGetAvailableMonthsQuery = useAvailableMonths;
-export const useCreateMonthBoardMutation = useCreateMonthBoard;

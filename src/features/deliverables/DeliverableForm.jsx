@@ -9,6 +9,7 @@ import { createFormSubmissionHandler, prepareFormData } from '@/utils/formUtils'
 import { showSuccess } from '@/utils/toast';
 import { VALIDATION } from '@/constants';
 import { TASK_FORM_OPTIONS } from '@/features/tasks/config/useTaskForm';
+import { nameField, requiredSelect, numberField } from '@/utils/validationSchemas';
 import { 
   TextField, 
   NumberField, 
@@ -93,34 +94,15 @@ const CONFIG = {
   }
 };
 
-// ===== FORM SCHEMA CREATOR =====
-const createFormSchema = (fields) => {
-  const schemaFields = {};
-  fields.forEach(field => {
-    let fieldSchema = field.type === 'number' ? Yup.number() : 
-                     field.type === 'checkbox' ? Yup.boolean() : Yup.string();
-    
-    if (field.validation) {
-      Object.keys(field.validation).forEach(rule => {
-        if (rule === 'required' && field.validation[rule]) {
-          fieldSchema = fieldSchema.required(field.validation[rule]);
-        } else if (rule === 'minLength') {
-          fieldSchema = fieldSchema.min(field.validation[rule].value, field.validation[rule].message);
-        } else if (rule === 'maxLength') {
-          fieldSchema = fieldSchema.max(field.validation[rule].value, field.validation[rule].message);
-        } else if (rule === 'min') {
-          fieldSchema = fieldSchema.min(field.validation[rule].value, field.validation[rule].message);
-        } else if (rule === 'max') {
-          fieldSchema = fieldSchema.max(field.validation[rule].value, field.validation[rule].message);
-        } else if (rule === 'pattern') {
-          fieldSchema = fieldSchema.matches(field.validation[rule].value, field.validation[rule].message);
-        }
-      });
-    }
-    schemaFields[field.name] = fieldSchema;
-  });
-  return Yup.object().shape(schemaFields);
-};
+// ===== DELIVERABLE FORM VALIDATION SCHEMA =====
+const deliverableFormSchema = Yup.object().shape({
+  name: nameField(),
+  department: requiredSelect(),
+  timePerUnit: numberField(VALIDATION.LIMITS.TIME_MIN, VALIDATION.LIMITS.TIME_MAX, true),
+  timeUnit: requiredSelect(),
+  variationsTime: numberField(0, 999, false),
+  requiresQuantity: Yup.boolean()
+});
 
 // ===== DELIVERABLE FORM COMPONENT =====
 const DeliverableForm = ({ 
@@ -134,7 +116,6 @@ const DeliverableForm = ({
   const { user: authUser } = useAuth();
   const { createDeliverable, updateDeliverable } = useDeliverablesApi();
   const [saving, setSaving] = React.useState(false);
-  const schema = createFormSchema(CONFIG.FORM_FIELDS);
   
   const { 
     register, 
@@ -147,7 +128,7 @@ const DeliverableForm = ({
     clearErrors, 
     setError 
   } = useForm({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(deliverableFormSchema),
     defaultValues: {
       name: deliverable?.name || '',
       department: deliverable?.department || '',

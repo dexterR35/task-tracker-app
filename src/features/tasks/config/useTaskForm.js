@@ -2,6 +2,16 @@ import * as Yup from 'yup';
 import { serializeTimestampsForContext } from '@/utils/dateUtils';
 import { prepareFormData } from '@/utils/formUtils';
 import { VALIDATION, FORM_OPTIONS } from '@/constants';
+import { 
+  jiraUrlField, 
+  requiredSelect, 
+  arrayField, 
+  timeInHoursField, 
+  dateField, 
+  endDateField,
+  optionalStringField,
+  numberField
+} from '@/utils/validationSchemas';
 
 // ===== CONDITIONAL FIELD LOGIC =====
 export const shouldShowField = (field, formValues) => {
@@ -195,60 +205,13 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
 
 // ===== TASK FORM VALIDATION SCHEMA =====
 export const createTaskFormSchema = () => Yup.object().shape({
-  jiraLink: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .matches(VALIDATION.PATTERNS.JIRA_URL_ONLY, VALIDATION.MESSAGES.JIRA_URL_FORMAT)
-    .max(200, VALIDATION.MESSAGES.MAX_LENGTH(200)),
-
-  products: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  departments: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  markets: Yup.array()
-    .min(1, VALIDATION.MESSAGES.SELECT_ONE)
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  timeInHours: Yup.number()
-    .typeError('Please enter a valid number')
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .min(0.5, VALIDATION.MESSAGES.MIN_VALUE(0.5))
-    .max(999, VALIDATION.MESSAGES.MAX_VALUE(999))
-    .test('valid-increment', 'Time must be in 0.5 hour increments (0, 0.5, 1, 1.5, 2, etc.)', function(value) {
-      if (value === undefined || value === null) return true;
-      // Check if the value is a valid 0.5 increment
-      const remainder = value % 0.5;
-      if (remainder !== 0) {
-        return this.createError({
-          message: '❌ Time must be in 0.5 hour increments (0, 0.5, 1, 1.5, 2, etc.)'
-        });
-      }
-      return true;
-    }),
-
-  startDate: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
-    .test('valid-date', 'Please enter a valid start date', function(value) {
-      if (!value) return false;
-      const date = new Date(value + 'T00:00:00.000Z');
-      return !isNaN(date.getTime());
-    }),
-
-  endDate: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .matches(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date format (YYYY-MM-DD)')
-    .test('valid-date', 'Please enter a valid end date', function(value) {
-      if (!value) return false;
-      const date = new Date(value + 'T00:00:00.000Z');
-      return !isNaN(date.getTime());
-    })
-    .test('after-start', 'End date must be after start date', function(value) {
-      const { startDate } = this.parent;
-      if (!value || !startDate) return true;
-      return new Date(value + 'T00:00:00.000Z') >= new Date(startDate + 'T00:00:00.000Z');
-    }),
+  jiraLink: jiraUrlField(),
+  products: requiredSelect(),
+  departments: requiredSelect(),
+  markets: arrayField(1),
+  timeInHours: timeInHoursField(0.5, 999),
+  startDate: dateField(true),
+  endDate: endDateField('startDate'),
 
   _hasDeliverables: Yup.boolean(),
 
@@ -295,31 +258,13 @@ export const createTaskFormSchema = () => Yup.object().shape({
 
   aiTime: Yup.number().when('_usedAIEnabled', {
     is: true,
-    then: (schema) => schema
-      .typeError('Please enter a valid number')
-      .required('AI time is required when "AI Tools Used" is checked')
-      .min(0.5, 'AI time must be at least 0.5 hours')
-      .max(999, 'AI time cannot exceed 999 hours')
-      .test('valid-increment', 'AI time must be in 0.5 hour increments ', function(value) {
-        if (value === undefined || value === null) return true;
-        // Check if the value is a valid 0.5 increment
-        const remainder = value % 0.5;
-        if (remainder !== 0) {
-          return this.createError({
-            message: '❌ AI time must be in 0.5 hour increments '
-          });
-        }
-        return true;
-      }),
+    then: (schema) => timeInHoursField(0.5, 999)
+      .required('AI time is required when "AI Tools Used" is checked'),
     otherwise: (schema) => schema.notRequired()
   }),
 
-  reporters: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED),
-
-  observations: Yup.string()
-    .optional()
-    .max(300, VALIDATION.MESSAGES.MAX_LENGTH(300))
+  reporters: requiredSelect(),
+  observations: optionalStringField(300)
 });
 
 

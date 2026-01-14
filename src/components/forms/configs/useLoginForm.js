@@ -2,6 +2,7 @@
 
 import * as Yup from "yup";
 import { VALIDATION } from '@/constants';
+import { emailFieldWithPattern, passwordField } from '@/utils/validationSchemas';
 
 // ============================================================================
 // LOGIN FORM FIELD CONFIGURATION
@@ -31,15 +32,9 @@ export const LOGIN_FORM_FIELDS = [
 // ============================================================================
 
 export const loginSchema = Yup.object().shape({
-  email: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .email(VALIDATION.MESSAGES.INVALID_EMAIL)
-    .matches(
-      VALIDATION.PATTERNS.NETBET_EMAIL,
-      VALIDATION.MESSAGES.NETBET_EMAIL
-    ),
-
-  password: Yup.string()
-    .required(VALIDATION.MESSAGES.REQUIRED)
-    .min(6, VALIDATION.MESSAGES.MIN_LENGTH(6)),
+  email: emailFieldWithPattern(
+    VALIDATION.PATTERNS.NETBET_EMAIL,
+    VALIDATION.MESSAGES.NETBET_EMAIL
+  ),
+  password: passwordField(6)
 });
