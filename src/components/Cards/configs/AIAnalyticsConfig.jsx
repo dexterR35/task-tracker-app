@@ -166,7 +166,7 @@ export const calculateAIAnalyticsData = (tasks, users) => {
 
   // Process tasks to extract AI usage data
   tasks.forEach((task) => {
-    const userId = task.userUID || task.createbyUID;
+    const userId = task.userUID || task.createdByUID || task.createbyUID;
     const aiUsed = task.data_task?.aiUsed || task.aiUsed || [];
     const markets = task.data_task?.markets || task.markets || [];
     const products = task.data_task?.products || task.products || "";

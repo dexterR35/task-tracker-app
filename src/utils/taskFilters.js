@@ -13,9 +13,9 @@ export const matchesUser = (task, userId) => {
   if (!userId) return false;
   // Convert both to strings for reliable comparison
   const taskUserUID = task.userUID ? String(task.userUID) : null;
-  const taskCreatebyUID = task.createbyUID ? String(task.createbyUID) : null;
+  const taskCreatedByUID = (task.createdByUID || task.createbyUID) ? String(task.createdByUID || task.createbyUID) : null;
   const normalizedUserId = String(userId);
-  return taskUserUID === normalizedUserId || taskCreatebyUID === normalizedUserId;
+  return taskUserUID === normalizedUserId || taskCreatedByUID === normalizedUserId;
 };
 
 /**
@@ -85,7 +85,7 @@ export const matchesUserName = (task, userName) => {
     task.createdByName === userName ||
     task.userName === userName ||
     (task.userUID && task.userUID.includes(userName)) ||
-    (task.createbyUID && task.createbyUID.includes(userName)) ||
+    ((task.createdByUID || task.createbyUID) && (task.createdByUID || task.createbyUID).includes(userName)) ||
     (task.createdByName && task.createdByName.toLowerCase().includes(userName.toLowerCase())) ||
     (task.data_task?.createdByName && task.data_task.createdByName.toLowerCase().includes(userName.toLowerCase()))
   );

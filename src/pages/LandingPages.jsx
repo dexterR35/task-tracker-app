@@ -4,7 +4,6 @@ import TanStackTable from '@/components/Table/TanStackTable';
 import SmallCard from '@/components/Card/smallCards/SmallCard';
 import { Icons } from '@/components/icons';
 import Badge from '@/components/ui/Badge/Badge';
-import { CARD_SYSTEM } from '@/constants';
 import Loader from '@/components/ui/Loader/Loader';
 import { TextField } from '@/components/forms/components';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';

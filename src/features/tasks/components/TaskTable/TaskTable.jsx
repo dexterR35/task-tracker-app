@@ -203,7 +203,7 @@ const TaskTable = ({
     try {
       // Track XP deduction before deleting the task
       // Only track if the task belongs to the current user (to prevent XP manipulation)
-      const taskUserId = task.userUID || task.createbyUID;
+      const taskUserId = task.userUID || task.createdByUID || task.createbyUID;
       const currentUserId = userData?.id;
       
       if (trackTaskDeletion && taskUserId === currentUserId && currentUserId) {

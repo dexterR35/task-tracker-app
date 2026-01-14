@@ -244,7 +244,6 @@ const AdminManagementPage = () => {
           isOpen={showCreateReporterModal}
           onClose={() => setShowCreateReporterModal(false)}
           mode="create"
-          reporters={reporters}
           onSuccess={() => {
             setShowCreateReporterModal(false);
           }}

@@ -544,7 +544,7 @@ Tables support various column types including simple text display, color-coded b
 
 **Firestore Document Structure:**
 
-Each task document contains a data_task object with task details including taskName (Jira ticket ID), products category, departments, markets array, timeInHours, startDate, endDate, reporter information, deliverablesUsed array, aiUsed array with AI models and time, boolean flags for isVip and reworked, and observations. The document also includes metadata: userUID (task owner), monthId, boardId, creator information (createbyUID, createdByName), and timestamps (createdAt, updatedAt).
+Each task document contains a data_task object with task details including taskName (Jira ticket ID), products category, departments, markets array, timeInHours, startDate, endDate, reporter information, deliverablesUsed array, aiUsed array with AI models and time, boolean flags for isVip and reworked, and observations. The document also includes metadata: userUID (task owner), monthId, boardId, creator information (createdByUID, createdByName), and timestamps (createdAt, updatedAt).
 
 ### Task CRUD Operations
 

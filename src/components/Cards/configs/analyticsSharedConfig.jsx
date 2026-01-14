@@ -500,7 +500,7 @@ export const getTaskReporterUID = (task) => {
 
 // Extract user UID from task
 export const getTaskUserUID = (task) => {
-  return task.userUID || task.createbyUID || task.data_task?.userUID || task.data_task?.createbyUID || "";
+  return task.userUID || task.createdByUID || task.createbyUID || task.data_task?.userUID || task.data_task?.createdByUID || task.data_task?.createbyUID || "";
 };
 
 // Extract AI used from task

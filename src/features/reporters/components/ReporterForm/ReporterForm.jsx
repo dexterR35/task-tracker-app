@@ -3,24 +3,17 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useReporters } from '@/features/reporters/reportersApi';
 import { useAuth } from '@/context/AuthContext';
-import { showSuccess, showError, showAuthError } from '@/utils/toast';
-import { handleValidationError, handleSuccess } from '@/features/utils/errorHandling';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { reporterFormSchema, createReporterFormFields } from '@/features/reporters/config/useReporterForm';
 import { TextField, SelectField } from '@/components/forms/components';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { logger } from '@/utils/logger';
 
-/**
- * Dedicated Reporter Form Component
- * Handles creating and updating reporter records
- */
+
 const ReporterForm = ({ 
   mode = 'create', 
   initialData = null, 
   onSuccess, 
-  className = "",
-  reporters = [] // Pass existing reporters for dynamic options
+  className = ""
 }) => {
   const { user } = useAuth();
   const { createReporter, updateReporter } = useReporters();
@@ -96,17 +89,12 @@ const ReporterForm = ({
     handleFormValidation(errors, 'Reporter Form');
   };
 
-  const formTitle = mode === 'edit' ? 'Edit Reporter' : 'Create New Reporter';
   const submitButtonText = mode === 'edit' ? 'Update Reporter' : 'Create Reporter';
 
   return (
     <div className={`card ${className}`}>
-      <h2 className="text-2xl font-bold mb-4 ">
-        {/* {formTitle} */}
-      </h2>
-      
       <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-6">
-        {formFields.map((field, index) => {
+        {formFields.map((field) => {
           const FieldComponent = field.type === 'select' ? SelectField : TextField;
           return (
             <FieldComponent

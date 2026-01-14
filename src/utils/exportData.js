@@ -58,7 +58,7 @@ const formatValueForCSV = (
   // Handle createdByName - always show user name instead of UID
   if (columnId === "createdByName") {
     // If value exists, check if it's a UID (long alphanumeric string) or email
-    const userUID = row?.userUID || row?.createbyUID;
+    const userUID = row?.userUID || row?.createdByUID || row?.createbyUID;
     const valueToCheck = value || userUID;
 
     if (valueToCheck && users.length > 0) {

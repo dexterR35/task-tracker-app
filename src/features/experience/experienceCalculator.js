@@ -127,6 +127,7 @@ export const calculateCompleteExperienceFromTasks = (
       // Fallback checks for legacy data or edge cases
       const taskUserUID =
         task.userUID ||
+        task.createdByUID ||
         task.createbyUID ||
         task.data_task?.userUID ||
         task.createdBy;

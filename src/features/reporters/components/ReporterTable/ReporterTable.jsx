@@ -16,15 +16,8 @@ const ReporterTable = ({
 }) => {
   // API hooks for reporter CRUD
   const { deleteReporter } = useReporters();
-  
   // Get reporter columns
   const reporterColumns = getColumns('reporters');
-  
-  
-  // Custom delete mutation wrapper for reporters - simplified since useTableActions now handles permission errors
-  const handleReporterDeleteMutation = async (reporter) => {
-    return await deleteReporter(reporter.id, user);
-  };
 
   // Use table actions hook
   const {
@@ -42,10 +35,7 @@ const ReporterTable = ({
     handleEditSuccess,
   } = useTableActions('reporter', {
     getItemDisplayName: (reporter) => reporter?.name,
-    deleteMutation: handleReporterDeleteMutation,
-    onSelectSuccess: (reporter) => {
-      // Error toast is handled by useTableActions hook
-    },
+    deleteMutation: (reporter) => deleteReporter(reporter.id, user)
   });
 
   return (
@@ -55,7 +45,6 @@ const ReporterTable = ({
         columns={reporterColumns}
         tableType="reporters"
         error={reportersError}
-        className=""
         isLoading={isLoading}
         enableRowSelection={true}
         showBulkActions={true}
@@ -67,8 +56,6 @@ const ReporterTable = ({
             onClick: (selectedReporters) => {
               if (selectedReporters.length === 1) {
                 handleSelect(selectedReporters[0]);
-              } else {
-                showSuccess(`Viewing ${selectedReporters.length} selected reporters`);
               }
             }
           },
@@ -79,8 +66,6 @@ const ReporterTable = ({
             onClick: (selectedReporters) => {
               if (selectedReporters.length === 1) {
                 handleEdit(selectedReporters[0]);
-              } else {
-                showSuccess(`Editing ${selectedReporters.length} selected reporters`);
               }
             }
           },
@@ -94,7 +79,7 @@ const ReporterTable = ({
               } else {
                 try {
                   for (const reporter of selectedReporters) {
-                    await handleReporterDeleteMutation(reporter);
+                    await deleteReporter(reporter.id, user);
                   }
                   showSuccess(`Deleted ${selectedReporters.length} reporters successfully!`);
                 } catch (error) {
@@ -120,7 +105,6 @@ const ReporterTable = ({
           onSuccess={handleEditSuccess}
           mode="edit"
           reporter={editingItem}
-          reporters={reporters}
         />
       )}
 

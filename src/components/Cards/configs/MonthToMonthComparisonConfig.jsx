@@ -117,7 +117,7 @@ export const calculateMonthToMonthComparison = (
       const products = task.data_task?.products || task.products;
       const markets = task.data_task?.markets || task.markets || [];
       const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      const userUID = task.userUID || task.createbyUID || task.data_task?.userUID || task.data_task?.createbyUID;
+      const userUID = task.userUID || task.createdByUID || task.createbyUID || task.data_task?.userUID || task.data_task?.createdByUID || task.data_task?.createbyUID;
 
       // Count all tasks regardless of products/markets
       const productsLower = products ? products.toLowerCase().trim() : "";
