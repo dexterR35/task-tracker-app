@@ -1,36 +1,17 @@
 import React from "react";
 import { getColumns } from "@/components/Table/tableColumns.jsx";
 import TanStackTable from "@/components/Table/TanStackTable";
-import { useTableActions } from "@/hooks/useTableActions";
 
+/**
+ * Users are managed manually (no CRUD operations)
+ */
 const UserTable = ({
   className = "",
   users = [],
-  monthId,
   error: usersError = null,
-  isLoading = false, // Loading state
+  isLoading = false,
 }) => {
-  // Get user columns
-  const userColumns = getColumns('users', monthId);
-  
-  // Use table actions hook with disabled functionality
-  const {
-    handleSelect,
-    handleEdit,
-    handleDelete,
-  } = useTableActions('user', {
-    getItemDisplayName: (user) => user?.name || user?.email || 'Unknown User',
-    onSelectSuccess: (user) => {
-      // Error toast is handled by useTableActions hook
-    },
-    onEditSuccess: (user) => {
-      // Error toast is handled by useTableActions hook
-    },
-    onDeleteSuccess: (user) => {
-      // Error toast is handled by useTableActions hook
-    },
-  });
-
+  const userColumns = getColumns('users');
   return (
     <TanStackTable
       data={users || []}
@@ -40,6 +21,8 @@ const UserTable = ({
       className={className}
       isLoading={isLoading}
       enableRowSelection={false}
+      showBulkActions={false}
+      showFilters={true}
       initialColumnVisibility={{
         createdAt: false
       }}

@@ -79,18 +79,19 @@ export const AppDataProvider = ({ children }) => {
     }
   }, [authLoading, user]);
   
-  // Get user data - only fetch if not admin to reduce unnecessary calls
+  // Get all users (for tables, dropdowns, etc.)
   const { 
-    user: userData, 
-    isLoading: userLoading, 
-    error: userError 
-  } = useUserByUID(userIsAdmin ? null : userUID);
-  
-  const { 
-    users: allUsers = [], 
+    users: allUsers = [],
     isLoading: usersLoading, 
     error: usersError 
   } = useUsers();
+  
+  // Get current user (only if not admin - more efficient than fetching all users)
+  const { 
+    user: userData = null,
+    isLoading: userLoading,
+    error: userError
+  } = useUserByUID(userIsAdmin ? null : userUID);
   
   // Get month data
   const { 

@@ -194,7 +194,6 @@ const AdminManagementPage = () => {
               {activeTab === 'users' && canManageUsers(user) ? (
                 <UserTable
                   users={users}
-                  monthId={monthId}
                   error={error}
                   isLoading={isLoading}
                   className="rounded-lg"

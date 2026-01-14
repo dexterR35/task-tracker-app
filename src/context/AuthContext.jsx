@@ -15,7 +15,6 @@ import {
 import { auth, db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import listenerManager from "@/features/utils/firebaseListenerManager";
-import { fetchUserByUIDFromFirestore } from "@/features/users/usersApi";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { AUTH } from '@/constants';
 import {
@@ -339,38 +338,11 @@ export const AuthProvider = ({ children }) => {
         throw new Error("Login failed - no user returned");
       }
 
-      // Fetch user data from Firestore
-      const firestoreData = await fetchUserByUIDFromFirestore(firebaseUser.uid);
+      // User data will be fetched by the real-time listener (onSnapshot) below
+      // No need to fetch immediately - the listener will update user state automatically
+      // The listener will handle setting user state and showing welcome message
       
-      if (!firestoreData) {
-        throw new Error("Failed to fetch user data from Firestore");
-      }
-
-      // Simple user data - only what you actually have in your database
-      const completeUserData = {
-        // Firebase auth data (minimal)
-        email: firebaseUser.email,
-        
-        // Your Firestore data (exactly as stored)
-        ...firestoreData,
-        
-        // Only essential Firebase mapping
-        userUID: firebaseUser.uid
-      };
-
-      setUser(completeUserData);
-      setIsLoading(false);
-
-      // Show welcome message
-      if (completeUserData) {
-        const welcomeMessage = `Welcome, ${completeUserData.name || completeUserData.email}! 👋`;
-        showSuccess(welcomeMessage, { 
-          autoClose: 3000,
-          position: "top-center"
-        });
-      }
-
-      return { user: completeUserData };
+      return { success: true };
     } catch (error) {
       logger.error("Login error:", error);
       setError(error.message || "Login failed");

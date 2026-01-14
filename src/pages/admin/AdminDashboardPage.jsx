@@ -60,7 +60,7 @@ const AdminDashboardPage = () => {
   } = appData || {};
 
   // Get selected user and reporter info - simplified without excessive memoization
-  const selectedUser = users.find((u) => (u.userUID || u.id) === selectedUserId);
+  const selectedUser = users.find(u => u.userUID === selectedUserId) || null;
   const selectedUserName = selectedUser?.name || selectedUser?.email || "Unknown User";
   
   const selectedReporter = reporters.find((r) => r.reporterUID === selectedReporterId);

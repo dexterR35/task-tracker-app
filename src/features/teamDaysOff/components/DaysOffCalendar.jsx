@@ -58,7 +58,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
   // Get selected user
   const selectedUser = useMemo(() => {
     if (!selectedUserId) return null;
-    return allUsers.find(u => (u.userUID || u.id) === selectedUserId);
+    return allUsers.find(u => u.userUID === selectedUserId) || null;
   }, [selectedUserId, allUsers]);
 
   // Get user's color from database color_set field
@@ -129,7 +129,7 @@ const DaysOffCalendar = ({ teamDaysOff: propTeamDaysOff = [] }) => {
       const userUID = entry.userUID || entry.userId;
       if (!userUID) return;
       
-      const user = allUsers.find(u => (u.userUID || u.id) === userUID);
+      const user = allUsers.find(u => u.userUID === userUID) || null;
       if (!user) return;
       
       const offDays = Array.isArray(entry.offDays) ? entry.offDays : [];

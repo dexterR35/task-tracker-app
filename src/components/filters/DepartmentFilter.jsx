@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import SearchableSelectField from '@/components/forms/components/SearchableSelectField';
 import { FORM_OPTIONS } from '@/constants';
 
-const DepartmentFilter = ({ selectedDepartmentFilter, onFilterChange, departmentOptions = null }) => {
+const DepartmentFilter = ({ selectedDepartmentFilter, onFilterChange }) => {
   const departmentFilterComponent = useMemo(() => (
     <div className="min-w-[200px] max-w-sm">
       <SearchableSelectField
@@ -11,7 +11,7 @@ const DepartmentFilter = ({ selectedDepartmentFilter, onFilterChange, department
           type: "select",
           label: "Department",
           required: false,
-          options: departmentOptions || FORM_OPTIONS.DEPARTMENTS,
+          options: FORM_OPTIONS.DEPARTMENTS,
           placeholder: "Search department ",
         }}
         register={() => {}}
@@ -24,7 +24,7 @@ const DepartmentFilter = ({ selectedDepartmentFilter, onFilterChange, department
         noOptionsMessage="No departments found"
       />
     </div>
-  ), [selectedDepartmentFilter, onFilterChange, departmentOptions]);
+  ), [selectedDepartmentFilter, onFilterChange]);
 
   return departmentFilterComponent;
 };

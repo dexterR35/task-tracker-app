@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Icons } from "@/components/icons";
-import { HOW_TO_USE_CONTENT, HOW_TO_USE_ITEMS } from "@/components/layout/HowToUse/howToUseConfig";
+import { HOW_TO_USE_CONTENT, HOW_TO_USE_ITEMS } from "@/utils/HowToUse/howToUseConfig";
 
 const HowToUsePage = () => {
   const [selectedItem, setSelectedItem] = useState(HOW_TO_USE_ITEMS[0]?.id || null);

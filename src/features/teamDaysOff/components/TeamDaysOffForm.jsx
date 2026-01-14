@@ -141,7 +141,7 @@ const TeamDaysOffForm = ({
   // Get user name from selected user UID
   React.useEffect(() => {
     if (selectedUserUID && users.length > 0) {
-      const selectedUser = users.find(u => u.userUID === selectedUserUID || u.id === selectedUserUID);
+      const selectedUser = users.find(u => u.userUID === selectedUserUID) || null;
       if (selectedUser && mode === 'create') {
         setValue('userName', selectedUser.name);
       }
@@ -155,7 +155,7 @@ const TeamDaysOffForm = ({
         const preparedData = prepareFormData(data);
         
         // Find user to get name
-        const selectedUser = users.find(u => u.userUID === preparedData.userUID || u.id === preparedData.userUID);
+        const selectedUser = users.find(u => u.userUID === preparedData.userUID) || null;
         if (!selectedUser) {
           throw new Error('Selected user not found');
         }

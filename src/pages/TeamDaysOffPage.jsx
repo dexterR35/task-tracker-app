@@ -1,57 +1,54 @@
-import React, { useMemo } from 'react';
-import TanStackTable from '@/components/Table/TanStackTable';
-import { getColumns } from '@/components/Table/tableColumns';
-import { useTeamDaysOff } from '@/features/teamDaysOff/teamDaysOffApi';
-import { useAppDataContext } from '@/context/AppDataContext';
-import { useUsers } from '@/features/users/usersApi';
-import { useTableActions } from '@/hooks/useTableActions';
-import TeamDaysOffFormModal from '@/features/teamDaysOff/components/TeamDaysOffFormModal';
-import DaysOffCalendar from '@/features/teamDaysOff/components/DaysOffCalendar';
-import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
-import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { useAuth } from '@/context/AuthContext';
-import { Icons } from '@/components/icons';
-import { HOW_TO_USE_CONTENT } from '@/components/layout/HowToUse/howToUseConfig';
+import React, { useMemo } from "react";
+import TanStackTable from "@/components/Table/TanStackTable";
+import { getColumns } from "@/components/Table/tableColumns";
+import { useTeamDaysOff } from "@/features/teamDaysOff/teamDaysOffApi";
+import { useAppDataContext } from "@/context/AppDataContext";
+import { useUsers } from "@/features/users/usersApi";
+import { useTableActions } from "@/hooks/useTableActions";
+import TeamDaysOffFormModal from "@/features/teamDaysOff/components/TeamDaysOffFormModal";
+import DaysOffCalendar from "@/features/teamDaysOff/components/DaysOffCalendar";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { useAuth } from "@/context/AuthContext";
+import { Icons } from "@/components/icons";
+import { HOW_TO_USE_CONTENT } from "@/utils/HowToUse/howToUseConfig";
 
-/**
- * Team Days Off Page
- * Displays a table with all users and their holiday/days off information
- */
 const TeamDaysOffPage = () => {
   const { user: authUser } = useAuth();
-  const { teamDaysOff, isLoading: teamDaysOffLoading, error, createTeamDaysOff, updateTeamDaysOff, deleteTeamDaysOff } = useTeamDaysOff();
-  
+  const {
+    teamDaysOff,
+    isLoading: teamDaysOffLoading,
+    error,
+  } = useTeamDaysOff();
   // Get users from context or API
   const appData = useAppDataContext();
   const { users: contextUsers = [] } = appData || {};
   const { users: apiUsers = [], isLoading: usersLoading } = useUsers();
   const allUsers = contextUsers.length > 0 ? contextUsers : apiUsers;
   const isLoading = teamDaysOffLoading || usersLoading;
-  
+
   // Merge users with teamDaysOff data
   const tableData = useMemo(() => {
     // Create a map of userUID -> teamDaysOff entry
     const daysOffMap = new Map();
-    teamDaysOff.forEach(entry => {
+    teamDaysOff.forEach((entry) => {
       const userUID = entry.userUID || entry.userId; // Support both for backward compatibility
       if (userUID) {
         daysOffMap.set(userUID, entry);
       }
     });
-    
+
     // Merge all users with their days off data
-    return allUsers.map(user => {
+    return allUsers.map((user) => {
       const userUID = user.userUID || user.id;
       const daysOffEntry = daysOffMap.get(userUID);
-      
+
       if (daysOffEntry) {
         // User has an entry - use pre-calculated values from API hook
         // API hook already calculates daysTotal, daysRemaining, monthlyAccrual, etc.
-        // No need to recalculate here - prevents duplicate calculations and ensures consistency
         return {
           id: daysOffEntry.id,
           userUID: userUID,
-          userName: user.name || user.email || 'Unknown',
+          userName: user.name,
           baseDays: daysOffEntry.baseDays || 0,
           daysOff: daysOffEntry.daysOff || 0,
           daysTotal: daysOffEntry.daysTotal || 0,
@@ -66,11 +63,11 @@ const TeamDaysOffPage = () => {
         const monthsAccrued = 0;
         const monthlyAccrual = 0;
         const daysTotal = 0; // Default: 0 base days, no accrual until entry is created
-        
+
         return {
           id: null,
           userUID: userUID,
-          userName: user.name || user.email || 'Unknown',
+          userName: user.name,
           baseDays: 0,
           daysOff: 0,
           daysTotal: daysTotal,
@@ -82,28 +79,21 @@ const TeamDaysOffPage = () => {
       }
     });
   }, [allUsers, teamDaysOff]);
-  
+
   const {
     showEditModal,
     editingItem,
-    showDeleteConfirm,
-    itemToDelete,
     handleEdit,
-    handleDelete,
-    confirmDelete,
     closeEditModal,
-    closeDeleteModal,
     handleEditSuccess,
-  } = useTableActions('teamDaysOff', {
-    getItemDisplayName: (item) => item?.userName || 'Unknown User',
+  } = useTableActions("teamDaysOff", {
+    getItemDisplayName: (item) => item?.userName,
     deleteMutation: null, // Disable delete functionality
   });
 
   // Get table columns from tableColumns.jsx
-  const columns = useMemo(() => getColumns('teamDaysOff'), []);
-
+  const columns = useMemo(() => getColumns("teamDaysOff"), []);
   const [showCreateModal, setShowCreateModal] = React.useState(false);
-
   const handleCreateSuccess = () => {
     setShowCreateModal(false);
   };
@@ -120,10 +110,10 @@ const TeamDaysOffPage = () => {
             Manage holiday days and time off for team members
           </p>
         </div>
-        {authUser?.role === 'admin' && (
+        {authUser?.role === "admin" && (
           <DynamicButton
             variant="primary"
-             size="md"
+            size="md"
             onClick={() => setShowCreateModal(true)}
             icon={Icons.buttons.add}
           >
@@ -143,33 +133,37 @@ const TeamDaysOffPage = () => {
           tableType="teamDaysOff"
           error={error}
           isLoading={isLoading}
-          enableRowSelection={authUser?.role === 'admin'}
-          showBulkActions={authUser?.role === 'admin'}
+          enableRowSelection={authUser?.role === "admin"}
+          showBulkActions={authUser?.role === "admin"}
           onSelect={handleEdit}
           onEdit={handleEdit}
           onDelete={null}
-          bulkActions={authUser?.role === 'admin' ? [
-            {
-              label: "View Selected",
-              icon: "eye",
-              variant: "secondary",
-              onClick: (selectedItems) => {
-                if (selectedItems.length === 1) {
-                  handleEdit(selectedItems[0]);
-                }
-              }
-            },
-            {
-              label: "Edit Selected",
-              icon: "edit",
-              variant: "primary",
-              onClick: (selectedItems) => {
-                if (selectedItems.length === 1) {
-                  handleEdit(selectedItems[0]);
-                }
-              }
-            }
-          ] : []}
+          bulkActions={
+            authUser?.role === "admin"
+              ? [
+                  {
+                    label: "View Selected",
+                    icon: "eye",
+                    variant: "secondary",
+                    onClick: (selectedItems) => {
+                      if (selectedItems.length === 1) {
+                        handleEdit(selectedItems[0]);
+                      }
+                    },
+                  },
+                  {
+                    label: "Edit Selected",
+                    icon: "edit",
+                    variant: "primary",
+                    onClick: (selectedItems) => {
+                      if (selectedItems.length === 1) {
+                        handleEdit(selectedItems[0]);
+                      }
+                    },
+                  },
+                ]
+              : []
+          }
         />
       </div>
 
@@ -199,69 +193,76 @@ const TeamDaysOffPage = () => {
       <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {HOW_TO_USE_CONTENT.teamDaysOff?.title || 'How to Use Team Days Off'}
+            {HOW_TO_USE_CONTENT.teamDaysOff?.title ||
+              "How to Use Team Days Off"}
           </h2>
 
-          {HOW_TO_USE_CONTENT.teamDaysOff?.sections?.map((section, sectionIndex) => (
-            <div
-              key={sectionIndex}
-              className={section.isImportant
-                ? "bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500"
-                : ""
-              }
-            >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                {section.isImportant && (
-                  <Icons.generic.warning className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                )}
-                {section.title}
-              </h3>
-              <div className="space-y-3">
-                {section.items?.map((item, itemIndex) => (
-                  <div key={itemIndex}>
-                    {item.subItems ? (
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white mb-2">
-                          {item.text}
-                        </p>
-                        <ul className="list-disc list-inside ml-4 space-y-1">
-                          {item.subItems.map((subItem, subIndex) => (
-                            <li key={subIndex} className="text-sm text-gray-600 dark:text-gray-400">
-                              <span className="font-medium text-gray-700 dark:text-gray-300">
-                                {subItem.text}
-                              </span>
-                              {subItem.description && (
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {" "}- {subItem.description}
+          {HOW_TO_USE_CONTENT.teamDaysOff?.sections?.map(
+            (section, sectionIndex) => (
+              <div
+                key={sectionIndex}
+                className={
+                  section.isImportant
+                    ? "bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500"
+                    : ""
+                }
+              >
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  {section.isImportant && (
+                    <Icons.generic.warning className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  )}
+                  {section.title}
+                </h3>
+                <div className="space-y-3">
+                  {section.items?.map((item, itemIndex) => (
+                    <div key={itemIndex}>
+                      {item.subItems ? (
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white mb-2">
+                            {item.text}
+                          </p>
+                          <ul className="list-disc list-inside ml-4 space-y-1">
+                            {item.subItems.map((subItem, subIndex) => (
+                              <li
+                                key={subIndex}
+                                className="text-sm text-gray-600 dark:text-gray-400"
+                              >
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  {subItem.text}
                                 </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">
-                          {item.text}
-                        </span>
-                        {item.description && (
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {" "}- {item.description}
+                                {subItem.description && (
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {" "}
+                                    - {subItem.description}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            {item.text}
                           </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          {item.description && (
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {" "}
+                              - {item.description}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       </div>
-
     </div>
   );
 };
 
 export default TeamDaysOffPage;
-

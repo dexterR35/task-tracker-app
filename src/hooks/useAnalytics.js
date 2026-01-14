@@ -3,7 +3,6 @@ import {
   getTaskMarkets,
   getTaskProducts,
   getTaskUserUID,
-  getUserName,
   normalizeMarket,
 } from '@/components/Cards/configs/analyticsSharedConfig';
 import { getTaskHours } from '@/utils/taskMetricsCalculator';
@@ -12,10 +11,6 @@ import { getTaskHours } from '@/utils/taskMetricsCalculator';
  * Analytics Hooks
  * Reusable hooks for calculating analytics data per user, per market, per category
  * Each hook is independent and can be used separately
- */
-
-/**
- * Check if a product string matches a category
  */
 const isProductCategory = (products, category) => {
   if (!products || typeof products !== 'string') return false;
@@ -43,9 +38,6 @@ const isProductCategory = (products, category) => {
   }
 };
 
-/**
- * Filter tasks by various criteria
- */
 const filterTasks = (tasks, filters = {}) => {
   if (!tasks || !Array.isArray(tasks)) return [];
   

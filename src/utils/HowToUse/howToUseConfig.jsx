@@ -1,7 +1,3 @@
-/**
- * How to Use Content Configuration
- * Centralized documentation content for all pages
- */
 
 export const HOW_TO_USE_CONTENT = {
   dashboard: {
@@ -254,6 +250,5 @@ export const HOW_TO_USE_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
   { id: "teamDaysOff", label: "Team Days Off", icon: "calendar" },
   { id: "analytics", label: "Analytics", icon: "chart" },
-  // Add more items as needed
 ];
 
