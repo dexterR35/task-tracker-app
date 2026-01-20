@@ -776,63 +776,6 @@ const TanStackTable = forwardRef(
             />
           </>
         )}
-
-        {/* Export Progress Modal */}
-        {isExporting && (
-          <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-            <div className="card p-8 max-w-md w-full mx-4">
-              <div className="space-y-6 ">
-                {/* Header */}
-                <div className="text-center">
-                  <h3>Generating CSV Export</h3>
-                  <p className="text-gray-200">{exportStep}</p>
-                </div>
-
-                {/* Progress bar */}
-                <div className="space-y-4">
-                  <div className="w-full bg-gray-200 dark:bg-gray-500 rounded-full h-3">
-                    <div
-                      className="bg-blue-600 dark:bg-blue-500 h-3 rounded-full  ease-out"
-                      style={{ width: `${exportProgress}%` }}
-                    ></div>
-                  </div>
-
-                  {/* Progress percentage */}
-                  <div className="text-center">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      {exportProgress}% complete
-                    </span>
-                  </div>
-                </div>
-
-                {/* Processing details */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-gray-800 dark:text-gray-400">
-                    <div>• Table type: {tableType}</div>
-                    <div>• Rows: {table.getFilteredRowModel().rows.length}</div>
-                  </div>
-                </div>
-
-                {/* Success/Error message */}
-                {(exportStep.includes("successfully") ||
-                  exportStep.includes("failed")) && (
-                  <div className="text-center">
-                    <p
-                      className={`text-sm font-medium ${
-                        exportStep.includes("successfully")
-                          ? "text-green-600 dark:text-green-400"
-                          : "text-red-600 dark:text-red-400"
-                      }`}
-                    >
-                      {exportStep.includes("successfully") ? "✅" : "❌"}{" "}
-                      {exportStep}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
