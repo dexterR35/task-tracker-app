@@ -19,7 +19,6 @@ import {
 import { CARD_SYSTEM, TABLE_SYSTEM } from "@/constants";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
-import { exportToCSV, exportTasksToCSVForUser } from "@/utils/exportData";
 import { CheckboxField, TextField } from "@/components/forms/components";
 import { logger } from "@/utils/logger";
 
@@ -109,14 +108,10 @@ const TableControls = ({
   tableType,
   globalFilter,
   setGlobalFilter,
-  handleCSVExport,
-  handleUserCSVExport, // New prop for user-specific export
-  isExporting,
   onPageSizeChange,
   customFilter,
   title,
-  departmentFilter, // New prop for department filter
-  showUserExportButton = false, // Show user export button only when user is selected
+  departmentFilter
 }) => {
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const columnMenuRef = useRef(null);
@@ -154,20 +149,9 @@ const TableControls = ({
 
         {/* Main Content Section */}
         <div className="px-5 py-4 bg-white dark:bg-smallCard overflow-visible rounded-none">
-          {/* Title and Export Button Row */}
+          {/* Title Row */}
           {title && (
-            <div className="flex flex-row-reverse justify-between items-center gap-4 py-2 ">
-              {/* Export Button - Right side */}
-              <DynamicButton
-                onClick={handleCSVExport}
-                disabled={isExporting}
-                variant="secondary"
-                size="sm"
-              >
-                {isExporting ? "Exporting..." : "Export CSV"}
-              </DynamicButton>
-
-              {/* Title - Left side */}
+            <div className="flex justify-between items-center gap-4 py-2">
               <h3 className="text-base">
                 {title}
               </h3>
@@ -302,30 +286,6 @@ const TableControls = ({
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Export CSV - Only show if no title (title row has its own export button) */}
-              {!title && (
-                <DynamicButton
-                  onClick={handleCSVExport}
-                  disabled={isExporting}
-                  variant="secondary"
-                  size="sm"
-                >
-                  {isExporting ? "Exporting..." : "Export CSV"}
-                </DynamicButton>
-              )}
-
-              {/* User-specific export button */}
-              {showUserExportButton && handleUserCSVExport && (
-                <DynamicButton
-                  onClick={handleUserCSVExport}
-                  disabled={isExporting}
-                  variant="secondary"
-                  size="sm"
-                >
-                  {isExporting ? "Exporting..." : "Export User CSV"}
-                </DynamicButton>
               )}
             </div>
           </div>
@@ -506,11 +466,6 @@ const TanStackTable = forwardRef(
       pageSize: pageSize,
     });
 
-    const [isExporting, setIsExporting] = useState(false);
-    const [exportType, setExportType] = useState(null);
-    const [exportProgress, setExportProgress] = useState(0);
-    const [exportStep, setExportStep] = useState("");
-
     // Ref for click outside detection
     const tableRef = useRef(null);
 
@@ -659,146 +614,6 @@ const TanStackTable = forwardRef(
       [table]
     );
 
-    // Export handler with progress simulation
-    const handleCSVExport = useCallback(async () => {
-      setIsExporting(true);
-      setExportType("csv");
-      setExportProgress(0);
-      setExportStep("Preparing CSV export...");
-
-      try {
-        // Simulate progress steps
-        const progressSteps = [
-          { step: "Preparing data...", progress: 10 },
-          { step: "Processing rows...", progress: 30 },
-          { step: "Formatting data...", progress: 50 },
-          { step: "Generating CSV...", progress: 70 },
-          { step: "Finalizing export...", progress: 90 },
-          { step: "Saving file...", progress: 100 },
-        ];
-
-        // Process each step quickly
-        for (const { step, progress } of progressSteps) {
-          setExportStep(step);
-          setExportProgress(progress);
-          await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced from 300ms to 50ms
-        }
-
-        // Check if any filters are active
-        const hasTanStackFilters =
-          Boolean(globalFilter) || (columnFilters && columnFilters.length > 0);
-        const hasCustomFilters =
-          customFilters &&
-          (Boolean(customFilters.selectedFilter) ||
-            Boolean(customFilters.selectedDepartmentFilter) ||
-            Boolean(customFilters.selectedDeliverableFilter) ||
-            Boolean(customFilters.selectedUserId) ||
-            Boolean(customFilters.selectedReporterId) ||
-            Boolean(customFilters.selectedWeek));
-        const hasActiveFilters = hasTanStackFilters || hasCustomFilters;
-
-        // Get visible columns based on column visibility state
-        const visibleColumns = table
-          .getAllColumns()
-          .filter(
-            (col) =>
-              col.getIsVisible() && col.id !== "select" && col.id !== "actions"
-          );
-
-        // Perform actual export with reporters and users data for proper name resolution
-        const success = exportToCSV(
-          table.getFilteredRowModel().rows.map((row) => row.original),
-          visibleColumns.length > 0 ? visibleColumns : columns, // Use visible columns if available, fallback to all columns
-          tableType,
-          {
-            filename: `${tableType}_export_${new Date().toISOString().split("T")[0]}.csv`,
-            reporters: additionalProps?.reporters || [],
-            users: additionalProps?.users || [],
-            deliverables: additionalProps?.deliverables || [],
-            hasActiveFilters, // Pass filter state to export function
-          }
-        );
-
-        if (success) {
-          setExportStep("CSV exported successfully!");
-          await new Promise((resolve) => setTimeout(resolve, 200)); // Reduced from 1000ms to 200ms
-        } else {
-          setExportStep("CSV export failed. Please try again.");
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
-        }
-      } catch (error) {
-        setExportStep("CSV export failed. Please try again.");
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Reduced from 2000ms to 500ms
-      } finally {
-        setIsExporting(false);
-        setExportType(null);
-        setExportProgress(0);
-        setExportStep("");
-      }
-    }, [
-      table,
-      columns,
-      tableType,
-      additionalProps?.reporters,
-      globalFilter,
-      columnFilters,
-      customFilters,
-    ]);
-
-    // User-specific export handler (only for tasks table when user is selected)
-    const handleUserCSVExport = useCallback(async () => {
-      if (tableType !== "tasks") return;
-
-      setIsExporting(true);
-      setExportType("csv");
-      setExportProgress(0);
-      setExportStep("Preparing user CSV export...");
-
-      try {
-        // Simulate progress steps
-        const progressSteps = [
-          { step: "Preparing data...", progress: 10 },
-          { step: "Processing rows...", progress: 30 },
-          { step: "Formatting data...", progress: 50 },
-          { step: "Generating CSV...", progress: 70 },
-          { step: "Finalizing export...", progress: 90 },
-          { step: "Saving file...", progress: 100 },
-        ];
-
-        for (const { step, progress } of progressSteps) {
-          setExportStep(step);
-          setExportProgress(progress);
-          await new Promise((resolve) => setTimeout(resolve, 50));
-        }
-
-        // Use user-specific export function
-        const success = exportTasksToCSVForUser(
-          table.getFilteredRowModel().rows.map((row) => row.original),
-          {
-            filename: `tasks_user_export_${new Date().toISOString().split("T")[0]}.csv`,
-            deliverables: additionalProps?.deliverables || [],
-          }
-        );
-
-        if (success) {
-          setExportStep("User CSV exported successfully!");
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        } else {
-          setExportStep("User CSV export failed. Please try again.");
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-      } catch (error) {
-        logger.error("Error exporting user CSV:", error);
-        setExportStep("User CSV export failed. Please try again.");
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      } finally {
-        setIsExporting(false);
-        setExportType(null);
-        setExportProgress(0);
-        setExportStep("");
-      }
-    }, [table, tableType, additionalProps?.deliverables]);
-
     // Memoized values
     const selectedCount = getSelectedCount(rowSelection);
     const totalRows = table.getFilteredRowModel().rows.length;
@@ -832,7 +647,7 @@ const TanStackTable = forwardRef(
           <SkeletonTable rows={3} />
         ) : (
           <>
-            {/* Table Controls - Always show export button, show other controls based on props */}
+            {/* Table Controls */}
             <TableControls
               showFilters={showFilters}
               showPagination={showPagination}
@@ -843,18 +658,10 @@ const TanStackTable = forwardRef(
               globalFilter={globalFilter}
               setGlobalFilter={handleGlobalFilterChange}
               columns={columns}
-              handleCSVExport={handleCSVExport}
-              handleUserCSVExport={
-                tableType === "tasks" ? handleUserCSVExport : null
-              }
-              isExporting={isExporting}
               onPageSizeChange={handlePageSizeChange}
               customFilter={customFilter}
               title={additionalProps?.title}
               departmentFilter={departmentFilter}
-              showUserExportButton={
-                tableType === "tasks" && Boolean(customFilters?.selectedUserId)
-              }
             />
 
             {/* Bulk Actions Bar */}

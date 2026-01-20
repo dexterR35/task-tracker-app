@@ -296,15 +296,7 @@ const FeaturesSummaryPage = () => {
             </div>
 
             <div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-              <h3 className="font-bold text-xl mb-4 text-gray-900 dark:text-white">Export Data & Table Logic</h3>
-              <p className="text-sm leading-relaxed mb-4">
-                SYNC supports <strong>CSV export</strong> for tasks data. When filters are active, exports include all visible 
-                columns. When no filters are active, exports use a simplified format with only key columns (Department, JIRA Link, Market, Total Hours, Deliverables).
-              </p>
-              <p className="text-sm leading-relaxed mb-4">
-                <strong>Export functionality</strong>: Table exports format data for CSV, handle dates and arrays, and create downloadable files. Exports 
-                exports convert data objects to CSV format. Export filenames include date stamps for organization.
-              </p>
+              <h3 className="font-bold text-xl mb-4 text-gray-900 dark:text-white">Table System</h3>
               <p className="text-sm leading-relaxed mb-4">
                 <strong>Table system</strong> uses TanStack Table for sorting, filtering, pagination, and column management. Tables support column visibility 
                 toggles, resizing, and custom cell rendering.

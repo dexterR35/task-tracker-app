@@ -213,18 +213,6 @@ const DeliverableTable = ({
   // Memoized bulk actions
   const bulkActions = useMemo(() => [
     {
-      label: "View Selected",
-      icon: "eye",
-      variant: "secondary",
-      onClick: (selectedDeliverables) => {
-        if (selectedDeliverables.length === 1) {
-          handleSelect(selectedDeliverables[0]);
-        } else {
-          showError("Please select only ONE deliverable to view");
-        }
-      }
-    },
-    {
       label: "Edit Selected",
       icon: "edit",
       variant: "primary",

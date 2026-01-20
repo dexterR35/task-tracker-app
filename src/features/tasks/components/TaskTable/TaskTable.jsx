@@ -21,7 +21,6 @@ import { TABLE_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 import { updateURLParam, updateURLParams, getURLParam } from "@/utils/urlParams";
 import { matchesUser, getTaskReporterId, getTaskData, filterTasksByUserAndReporter } from "@/utils/taskFilters";
-import { saveUserPreference, loadUserPreference } from "@/utils/userPreferences";
 import { parseMonthId } from "@/utils/dateUtils";
 import { startOfMonth, endOfMonth } from "date-fns";
 
@@ -331,26 +330,6 @@ const TaskTable = ({
       },
     });
 
-    // Add view action if user has permission
-    if (userCanViewTasks) {
-      actions.push({
-        label: "View Selected",
-        icon: "eye",
-        variant: "secondary",
-        onClick: (selectedTasks) => {
-          if (selectedTasks.length === 1) {
-            const task = selectedTasks[0];
-            const params = new URLSearchParams();
-            if (task.monthId) params.set("monthId", task.monthId);
-            if (task.createdByName) params.set("user", task.createdByName);
-            navigate(`/task/${task.id}?${params.toString()}`);
-          } else {
-            showError("Please select only ONE task to view");
-          }
-        },
-      });
-    }
-
     // Add edit action if user has permission
     if (userCanUpdateTasks) {
       actions.push({
@@ -402,33 +381,18 @@ const TaskTable = ({
     observations: false, // Hide Observations column by default
   };
 
-  // Load saved column visibility from localStorage (per user)
-  // Note: userUID is already declared above (line 175)
-  const [columnVisibility, setColumnVisibility] = useState(() => {
-    if (userUID) {
-      const saved = loadUserPreference(userUID, 'taskTable_columnVisibility', defaultColumnVisibility);
-      return { ...defaultColumnVisibility, ...saved };
-    }
-    return defaultColumnVisibility;
-  });
+  // Use default column visibility
+  const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility);
 
-  // Handle column visibility changes - save to localStorage
+  // Handle column visibility changes
   const handleColumnVisibilityChange = useCallback((newVisibility) => {
     setColumnVisibility(newVisibility);
-    if (userUID) {
-      saveUserPreference(userUID, 'taskTable_columnVisibility', newVisibility);
-    }
-  }, [userUID]);
+  }, []);
 
-  // Reload column visibility when user changes
+  // Reset to default when user changes
   useEffect(() => {
-    if (userUID) {
-      const saved = loadUserPreference(userUID, 'taskTable_columnVisibility', defaultColumnVisibility);
-      setColumnVisibility({ ...defaultColumnVisibility, ...saved });
-    } else {
-      setColumnVisibility(defaultColumnVisibility);
-    }
-  }, [userUID]); // Only depend on userUID, not defaultColumnVisibility
+    setColumnVisibility(defaultColumnVisibility);
+  }, [userUID]);
 
   // Use columnVisibility state as initialColumnVisibility for TanStackTable
   const initialColumnVisibility = columnVisibility;

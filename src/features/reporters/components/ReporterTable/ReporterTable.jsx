@@ -50,16 +50,6 @@ const ReporterTable = ({
         showBulkActions={true}
         bulkActions={[
           {
-            label: "View Selected",
-            icon: "eye",
-            variant: "secondary",
-            onClick: (selectedReporters) => {
-              if (selectedReporters.length === 1) {
-                handleSelect(selectedReporters[0]);
-              }
-            }
-          },
-          {
             label: "Edit Selected",
             icon: "edit",
             variant: "primary",

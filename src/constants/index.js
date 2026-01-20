@@ -403,7 +403,6 @@ export const ROUTES = {
   // Protected routes
   DASHBOARD: '/dashboard',
   USERS: '/users',
-  VIEW_MY_DATA: '/view-my-data',
   TASK_DETAIL: '/task/:taskId',
   PREVIEW_MONTH: '/preview/:monthId',
   PROFILE: '/profile',
@@ -477,16 +476,6 @@ export const DATE_TIME = {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ],
-};
-
-// ============================================================================
-// EXPORT CONSTANTS
-// ============================================================================
-
-export const EXPORT_CONFIG = {
-  CSV_DELIMITER: ',',
-  CSV_ENCODING: 'utf-8',
-  MAX_EXPORT_ROWS: 10000,
 };
 
 // ============================================================================
@@ -564,7 +553,6 @@ export default {
   API_CONFIG,
   UI_CONFIG,
   DATE_TIME,
-  EXPORT_CONFIG,
   NOTIFICATIONS,
   THEME,
   DEV_CONFIG,
