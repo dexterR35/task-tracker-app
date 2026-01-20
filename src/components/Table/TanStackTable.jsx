@@ -875,7 +875,7 @@ const TanStackTable = forwardRef(
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className={`p-4 text-start  ${tableType === "analytics" ? "font-bold text-sm" : "font-semibold text-[12px]"} text-gray-700 dark:text-gray-200 tracking-tight bg-smallCard border-b border-gray-200/50 dark:border-gray-700/90 ${
+                          className={`p-4 text-start font-semibold text-[12px] text-gray-700 dark:text-gray-200 tracking-tight bg-smallCard border-b border-gray-200/50 dark:border-gray-700/90 ${
                             header.column.getCanSort()
                               ? "cursor-pointer select-nonebg-secondary"
                               : ""
@@ -909,11 +909,8 @@ const TanStackTable = forwardRef(
                       const isSelected = rowSelection[row.id];
                       const isBoldRow =
                         row.original?.bold || row.original?.highlight;
-                      // Determine font weight: bold for analytics tables or rows marked as bold/highlight
-                      const fontWeight =
-                        tableType === "analytics" || isBoldRow
-                          ? "font-bold"
-                          : "font-normal";
+                      // Determine font weight: bold for rows marked as bold/highlight
+                      const fontWeight = isBoldRow ? "font-bold" : "font-normal";
 
                       return (
                         <tr
@@ -928,7 +925,7 @@ const TanStackTable = forwardRef(
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={`${row.original?.id || row.id}-${cell.column.id}`}
-                              className={`px-5 py-4 ${tableType === "analytics" ? "text-sm" : "text-[13px]"} ${fontWeight} text-gray-700 dark:text-gray-300`}
+                              className={`px-5 py-4 text-[13px] ${fontWeight} text-gray-700 dark:text-gray-300`}
                               style={{ width: cell.column.getSize() }}
                             >
                               {flexRender(
@@ -949,9 +946,7 @@ const TanStackTable = forwardRef(
                         <div className="flex flex-col items-center justify-center">
                           <div className="text-2xl mb-2">📊</div>
                           <div className="text-sm font-medium">
-                            {tableType === "analytics"
-                              ? "No analytics data found for the selected criteria."
-                              : hasActiveFilters
+                            {hasActiveFilters
                               ? "No tasks found matching the current filters."
                               : "No tasks found in database."}
                           </div>

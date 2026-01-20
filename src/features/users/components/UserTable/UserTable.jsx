@@ -1,8 +1,12 @@
 import React, { useMemo } from "react";
 import { getColumns } from "@/components/Table/tableColumns.jsx";
 import TanStackTable from "@/components/Table/TanStackTable";
-import { getTaskUserUID } from "@/components/Cards/configs/analyticsSharedConfig";
 import { useAllTasks } from "@/features/tasks/tasksApi";
+
+// Helper function to get task user UID
+const getTaskUserUID = (task) => {
+  return task?.userUID || task?.user?.userUID || task?.user?.id || null;
+};
 
 /**
  * Users are managed manually (no CRUD operations)
@@ -39,10 +43,7 @@ const UserTable = ({
 
       return {
         ...user,
-        experience: {
-          ...user.experience,
-          taskCount: taskCount // Overall task count across all months
-        }
+        taskCount: taskCount // Overall task count across all months
       };
     });
   }, [users, taskCountsByUser]);

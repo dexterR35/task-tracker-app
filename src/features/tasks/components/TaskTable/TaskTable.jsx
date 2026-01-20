@@ -14,8 +14,6 @@ import { useTableActions } from "@/hooks/useTableActions";
 import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask, useTasks } from "@/features/tasks/tasksApi";
-import { useExperienceTracking } from "@/features/experience/hooks/useExperienceTracking";
-import AchievementModal from "@/features/experience/components/AchievementModal";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
 import DepartmentFilter from "@/components/filters/DepartmentFilter";
@@ -190,9 +188,6 @@ const TaskTable = ({
 
   // Get delete task hook
   const [deleteTask] = useDeleteTask();
-  
-  // Get experience tracking for XP deduction on task deletion
-  const { trackTaskDeletion, achievement, showAchievement, closeAchievement } = useExperienceTracking();
 
   // Delete wrapper - simplified since useTableActions now handles permission errors
   const handleTaskDeleteMutation = async (task) => {
@@ -201,20 +196,6 @@ const TaskTable = ({
     }
 
     try {
-      // Track XP deduction before deleting the task
-      // Only track if the task belongs to the current user (to prevent XP manipulation)
-      const taskUserId = task.userUID || task.createdByUID || task.createbyUID;
-      const currentUserId = userData?.id;
-      
-      if (trackTaskDeletion && taskUserId === currentUserId && currentUserId) {
-        try {
-          await trackTaskDeletion(task, currentUserId);
-        } catch (xpError) {
-          // Log but don't fail deletion if XP tracking fails
-          logger.error('Error tracking XP deduction on task deletion:', xpError);
-        }
-      }
-
       await deleteTask(
         task.monthId, // Always use task's own monthId
         task.id,
@@ -694,13 +675,6 @@ const TaskTable = ({
         isLoading={rowActionId === itemToDelete?.id}
       />
 
-      {/* Achievement Modal for Level Changes (Level Up/Down) */}
-      <AchievementModal
-        achievement={achievement}
-        isOpen={showAchievement}
-        onClose={closeAchievement}
-        showClaimButton={false}
-      />
     </div>
   );
 };

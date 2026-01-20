@@ -121,50 +121,6 @@ export const SkeletonTable = ({ rows = 5, className = '' }) => (
   </div>
 );
 
-export const SkeletonAnalyticsCard = ({ className = '' }) => (
-  <div className={`space-y-8 ${className}`}>
-    {/* Table Section */}
-    <div>
-      <Skeleton height="1.25rem" width="30%" className="mb-4" />
-      <SkeletonTable rows={4} />
-    </div>
-    
-    {/* Charts Section - First Set */}
-    <div>
-      <Skeleton height="1.25rem" width="35%" className="mb-4" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-small-modern">
-          <div className="flex items-center justify-center h-64">
-            <Skeleton height="200px" width="200px" rounded="full" />
-          </div>
-        </div>
-        <div className="card-small-modern">
-          <div className="flex items-center justify-center h-64">
-            <Skeleton height="200px" width="200px" rounded="full" />
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    {/* Charts Section - Second Set */}
-    <div>
-      <Skeleton height="1.25rem" width="35%" className="mb-4" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-small-modern">
-          <div className="flex items-center justify-center h-64">
-            <Skeleton height="200px" width="200px" rounded="full" />
-          </div>
-        </div>
-        <div className="card-small-modern">
-          <div className="flex items-center justify-center h-64">
-            <Skeleton height="200px" width="200px" rounded="full" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 export const SkeletonDashboardCard = ({ className = '' }) => (
   <div className={`card-small-modern ${className}`}>
     <div className="mb-4">

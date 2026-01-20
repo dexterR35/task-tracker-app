@@ -370,7 +370,7 @@ const createDataTaskStructure = (formData) => {
     products: formData.products || '',
     reporterName: formData.reporterName || '',
     reporters: formData.reporters || '',
-    reporterUID: formData.reporters || '', // Set reporterUID to match reporters ID for analytics
+    reporterUID: formData.reporters || '', // Set reporterUID to match reporters ID for data consistency
     reworked: formData.reworked || false,
     useShutterstock: formData.useShutterstock || false,
     startDate: formData.startDate,

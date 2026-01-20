@@ -13,12 +13,6 @@ import { MonthProgressBar, getWeeksInMonth, getCurrentWeekNumber } from "@/utils
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
 import { logger } from "@/utils/logger";
-import {
-  useTotalTasks,
-  useTotalHours,
-  useTotalDeliverables,
-  useDeliverablesHours,
-} from "@/hooks/useAnalytics";
 import { filterTasksByUserAndReporter } from "@/utils/taskFilters";
 import { parseMonthId } from "@/utils/dateUtils";
 import { startOfMonth, endOfMonth } from "date-fns";
@@ -193,25 +187,30 @@ const AdminDashboardPage = () => {
     clientSatisfaction: 4.6, // out of 5
   };
 
-  // Calculate values using hooks for user filter card
-  const userFilterFilters = useMemo(() => ({
-    userId: selectedUserId || user?.userUID,
-    monthId: currentMonthId,
-  }), [selectedUserId, user?.userUID, currentMonthId]);
-  const userFilterTasksData = useTotalTasks(tasks || [], users || [], userFilterFilters);
-  const userFilterHoursData = useTotalHours(tasks || [], users || [], userFilterFilters);
+  // Simple inline calculations for user filter card
+  const userFilterTasksData = useMemo(() => ({
+    totalTasks: (tasks || []).length,
+  }), [tasks]);
+  
+  const userFilterHoursData = useMemo(() => ({
+    totalHours: (tasks || []).reduce((sum, task) => sum + (parseFloat(task.totalTime) || 0), 0),
+  }), [tasks]);
 
-  // Calculate values using hooks for reporter filter card
+  // Calculate values for reporter filter card
   const reporterFilteredTasks = useMemo(() => {
     if (!selectedReporterId || !tasks) return [];
-    // Filter by reporter only (user and month filtering done at database level)
     return filterTasksByUserAndReporter(tasks, {
       selectedReporterId,
     });
-  }, [tasks, selectedReporterId, currentMonthId, isUserAdmin, user?.userUID]);
-  const reporterFilterFilters = useMemo(() => ({ monthId: currentMonthId }), [currentMonthId]);
-  const reporterFilterTasksData = useTotalTasks(reporterFilteredTasks, [], reporterFilterFilters);
-  const reporterFilterHoursData = useTotalHours(reporterFilteredTasks, [], reporterFilterFilters);
+  }, [tasks, selectedReporterId]);
+  
+  const reporterFilterTasksData = useMemo(() => ({
+    totalTasks: reporterFilteredTasks.length,
+  }), [reporterFilteredTasks]);
+  
+  const reporterFilterHoursData = useMemo(() => ({
+    totalHours: reporterFilteredTasks.reduce((sum, task) => sum + (parseFloat(task.totalTime) || 0), 0),
+  }), [reporterFilteredTasks]);
 
   // Calculate date ranges for week/month filters
   const weekStart = useMemo(() => {
@@ -291,32 +290,36 @@ const AdminDashboardPage = () => {
     cardsFilters
   );
 
-  // Use same filters for actions
-  const actionsFilters = cardsFilters;
+  // Simple inline calculations for actions card
   const actionsFilteredTasks = filteredTasksForCards;
   
-  const actionsFiltersForHooks = useMemo(() => ({ monthId: null }), []); // Already filtered above
-  const actionsTasksData = useTotalTasks(actionsFilteredTasks, [], actionsFiltersForHooks);
-  const actionsHoursData = useTotalHours(actionsFilteredTasks, [], actionsFiltersForHooks);
-  const actionsDeliverablesData = useTotalDeliverables(actionsFilteredTasks, [], actionsFiltersForHooks);
+  const actionsTasksData = useMemo(() => ({
+    totalTasks: actionsFilteredTasks.length,
+  }), [actionsFilteredTasks]);
   
-  // Transform deliverables to options format
-  const deliverablesOptions = useMemo(() => {
-    if (!deliverables || deliverables.length === 0) return [];
-    return deliverables.map(deliverable => ({
-      value: deliverable.name,
-      label: deliverable.name,
-      department: deliverable.department,
-      timePerUnit: deliverable.timePerUnit,
-      timeUnit: deliverable.timeUnit,
-      requiresQuantity: deliverable.requiresQuantity,
-      variationsTime: deliverable.variationsTime,
-      variationsTimeUnit: deliverable.variationsTimeUnit || 'min',
-      declinariTime: deliverable.declinariTime,
-      declinariTimeUnit: deliverable.declinariTimeUnit
-    }));
-  }, [deliverables]);
-  const actionsDeliverablesHoursData = useDeliverablesHours(actionsFilteredTasks, [], deliverablesOptions, actionsFilters);
+  const actionsHoursData = useMemo(() => ({
+    totalHours: actionsFilteredTasks.reduce((sum, task) => sum + (parseFloat(task.totalTime) || 0), 0),
+  }), [actionsFilteredTasks]);
+  
+  const actionsDeliverablesData = useMemo(() => {
+    const uniqueDeliverables = new Set();
+    actionsFilteredTasks.forEach(task => {
+      if (task.deliverables && Array.isArray(task.deliverables)) {
+        task.deliverables.forEach(d => uniqueDeliverables.add(d));
+      }
+    });
+    return { totalDeliverables: uniqueDeliverables.size };
+  }, [actionsFilteredTasks]);
+  
+  const actionsDeliverablesHoursData = useMemo(() => {
+    let totalHours = 0;
+    actionsFilteredTasks.forEach(task => {
+      if (task.deliverables && Array.isArray(task.deliverables) && task.deliverables.length > 0) {
+        totalHours += parseFloat(task.totalTime) || 0;
+      }
+    });
+    return { totalDeliverablesWithVariationsHours: totalHours };
+  }, [actionsFilteredTasks]);
 
   // Cache for stable card references (ID badge)
   const cardCacheRef = useRef(new Map());

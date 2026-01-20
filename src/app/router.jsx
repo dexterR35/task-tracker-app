@@ -15,13 +15,9 @@ import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import AdminManagementPage from "@/pages/admin/ManagmentPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
-import AnalyticsPage from "@/pages/admin/AnalyticsPage";
 import TaskDetailPage from "@/pages/TaskDetailPage";
-import LandingPages from "@/pages/LandingPages";
 import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
-import TeamDaysOffPage from "@/pages/TeamDaysOffPage";
 import HowToUsePage from "@/pages/HowToUsePage";
-import ExperienceSystemPage from "@/pages/ExperienceSystemPage";
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
@@ -207,31 +203,11 @@ export const createRouter = () => {
             ),
           },
           {
-            path: "landing-pages",
-            element: (
-              <ErrorBoundary componentName="LandingPages">
-                <PageWrapper key="landing-pages">
-                  <LandingPages />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
             path: "features",
             element: (
               <ErrorBoundary componentName="FeaturesSummaryPage">
                 <PageWrapper key="features">
                   <FeaturesSummaryPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "team-days-off",
-            element: (
-              <ErrorBoundary componentName="TeamDaysOffPage">
-                <PageWrapper key="team-days-off">
-                  <TeamDaysOffPage />
                 </PageWrapper>
               </ErrorBoundary>
             ),
@@ -246,44 +222,10 @@ export const createRouter = () => {
               </ErrorBoundary>
             ),
           },
-          {
-            path: "experience",
-            element: (
-              <ErrorBoundary componentName="ExperienceSystemPage">
-                <PageWrapper key="experience">
-                  <ExperienceSystemPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
           
           // ========================================
           // ADMIN-ONLY ROUTES (Admin role required)
           // ========================================
-          {
-            path: "analytics",
-            element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="AnalyticsPage">
-                  <PageWrapper key="analytics">
-                    <AnalyticsPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
-            ),
-          },
-          {
-            path: "analytics/:cardId",
-            element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="AnalyticsPage">
-                  <PageWrapper key="analytics-detail">
-                    <AnalyticsPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
-            ),
-          },
           {
             path: "users",
             element: (

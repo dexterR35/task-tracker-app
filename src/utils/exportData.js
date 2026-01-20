@@ -707,26 +707,23 @@ const exportTasksToCSV = (data, options = {}) => {
 
 /**
  * Unified CSV Export utility function
- * Handles both table data and analytics data exports
+ * Handles table data exports
  */
 export const exportToCSV = (data, columns, tableType, options = {}) => {
   try {
     const {
       filename = null,
       includeHeaders = true,
-      analyticsMode = false,
       reporters = [],
       users = [],
       deliverables = [],
       hasActiveFilters = false, // New option to detect if filters are active
     } = options;
 
-    // Handle analytics data (array of objects without columns)
-    if (analyticsMode || !columns) {
-      return exportAnalyticsToCSV(data, tableType, {
-        filename,
-        includeHeaders,
-      });
+    // Validate columns are provided
+    if (!columns) {
+      logger.error("No columns provided for CSV export");
+      return false;
     }
 
     // Transform deliverables to the format expected by formatValueForCSV
@@ -1020,104 +1017,3 @@ export const exportToCSV = (data, columns, tableType, options = {}) => {
   }
 };
 
-/**
- * Export analytics data to CSV
- * @param {Array|Object} data - Analytics data to export
- * @param {string} tableType - Type of data being exported
- * @param {Object} options - Export options
- * @returns {boolean} Success status
- */
-export const exportAnalyticsToCSV = (data, tableType, options = {}) => {
-  try {
-    const { filename = null, includeHeaders = true } = options;
-
-    let csvContent = "";
-
-    // Handle different data structures
-    if (Array.isArray(data)) {
-      // Array of objects - create CSV from array
-      if (data.length === 0) {
-        csvContent = "No data available";
-      } else {
-        const headers = Object.keys(data[0]);
-        const rows = data.map((item) =>
-          headers
-            .map((header) => {
-              const value = item[header];
-              if (value === null || value === undefined) return "";
-              if (typeof value === "object") {
-                return JSON.stringify(value);
-              }
-              const stringValue = String(value);
-              const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
-              if (
-                stringValue.includes(delimiter) ||
-                stringValue.includes('"') ||
-                stringValue.includes("\n")
-              ) {
-                return `"${stringValue.replace(/"/g, '""')}"`;
-              }
-              return stringValue;
-            })
-            .join(EXPORT_CONFIG.CSV_DELIMITER)
-        );
-
-        if (includeHeaders) {
-          csvContent = [
-            headers.join(EXPORT_CONFIG.CSV_DELIMITER),
-            ...rows,
-          ].join("\n");
-        } else {
-          csvContent = rows.join("\n");
-        }
-      }
-    } else if (typeof data === "object") {
-      // Object data - create key-value pairs
-      const delimiter = EXPORT_CONFIG.CSV_DELIMITER;
-      const entries = Object.entries(data);
-      const rows = entries.map(([key, value]) => {
-        const stringValue =
-          typeof value === "object" ? JSON.stringify(value) : String(value);
-        const escapedValue =
-          stringValue.includes(delimiter) ||
-          stringValue.includes('"') ||
-          stringValue.includes("\n")
-            ? `"${stringValue.replace(/"/g, '""')}"`
-            : stringValue;
-        return `${key}${delimiter}${escapedValue}`;
-      });
-
-      if (includeHeaders) {
-        csvContent = [`Key${delimiter}Value`, ...rows].join("\n");
-      } else {
-        csvContent = rows.join("\n");
-      }
-    } else {
-      csvContent = "Invalid data format";
-    }
-
-    // Create and download file
-    const blob = new Blob([csvContent], {
-      type: `text/csv;charset=${EXPORT_CONFIG.CSV_ENCODING};`,
-    });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-
-    const exportFilename =
-      filename ||
-      `${tableType}_analytics_${new Date().toISOString().split("T")[0]}.csv`;
-    link.setAttribute("download", exportFilename);
-
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    return true;
-  } catch (error) {
-    logger.error("Error exporting analytics CSV:", error);
-    return false;
-  }
-};

@@ -7,7 +7,6 @@ import createRouter from '@/app/router';
 import { AuthProvider } from '@/context/AuthContext';
 import { DarkModeProvider } from '@/context/DarkModeProvider';
 import { AppDataProvider } from '@/context/AppDataContext';
-import { ExperienceProvider } from '@/features/experience/components/ExperienceProvider';
 import ErrorBoundary from '@/components/layout/ErrorBoundary';
 
 /**
@@ -29,9 +28,8 @@ const App = () => {
       <DarkModeProvider>
         <AuthProvider>
           <AppDataProvider>
-            <ExperienceProvider>
-              <RouterWrapper />
-              <ToastContainer 
+            <RouterWrapper />
+            <ToastContainer 
               position="top-right"
               autoClose={3000}
               hideProgressBar={false}
@@ -44,7 +42,6 @@ const App = () => {
               className="toast-container"
               style={{ zIndex: 9999 }}
             />
-            </ExperienceProvider>
           </AppDataProvider>
         </AuthProvider>
       </DarkModeProvider>

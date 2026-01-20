@@ -1,9 +1,9 @@
 
 export const APP_CONFIG = {
   NAME: 'SYNC', // App name - change this to sync across all titles and meta tags
-  FULL_NAME: 'SYNC Task Management & Analytics', // Full app name for titles
+  FULL_NAME: 'SYNC Task Management', // Full app name for titles
   VERSION: '1.0.0',
-  DESCRIPTION: 'A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.',
+  DESCRIPTION: 'A modern task tracking application with team collaboration and performance monitoring.',
   COMPANY: 'NetBet',
   SUPPORT_EMAIL: 'support@netbet.ro',
   DEFAULT_LOCALE: 'en-US', // US language
@@ -52,7 +52,6 @@ export const AUTH = {
     CREATE_BOARDS: 'create_boards',
     SUBMIT_FORMS: 'submit_forms',
     DELETE_DATA: 'delete_data',
-    VIEW_ANALYTICS: 'view_analytics',
     MANAGE_USERS: 'manage_users',
     MANAGE_REPORTERS: 'manage_reporters',
     MANAGE_DELIVERABLES: 'manage_deliverables',
@@ -207,39 +206,11 @@ export const NAVIGATION_CONFIG = {
       adminOnly: false,
     },
     {
-      name: "Analytics",
-      href: "/analytics",
-      icon: "chart",
-      color: "purple",
-      adminOnly: true,
-    },
-    {
       name: "Management",
       href: "/users",
       icon: "settings",
       color: "green",
       adminOnly: true,
-    },
-    {
-      name: "Landing Pages",
-      href: "/landing-pages",
-      icon: "document",
-      color: "orange",
-      adminOnly: false,
-    },
-    {
-      name: "Team Days Off",
-      href: "/team-days-off",
-      icon: "calendar",
-      color: "blue",
-      adminOnly: false,
-    },
-    {
-      name: "Experience System",
-      href: "/experience",
-      icon: "star",
-      color: "yellow",
-      adminOnly: false,
     },
   ],
   DEPARTMENT: {
@@ -277,24 +248,6 @@ export const CARD_SYSTEM = {
     REPORTER_FILTER: 'reporter-filter',
     USER_PROFILE: 'user-profile',
     ACTIONS: 'actions',
-    // Analytics card types
-    ANALYTICS_TASK_OVERVIEW: 'analytics-task-overview',
-    ANALYTICS_DELIVERABLES: 'analytics-deliverables',
-    ANALYTICS_MARKETING: 'analytics-marketing',
-    ANALYTICS_ACQUISITION: 'analytics-acquisition',
-    ANALYTICS_EFFICIENCY: 'analytics-efficiency',
-    ANALYTICS_PRODUCT: 'analytics-product',
-    ANALYTICS_MISC: 'analytics-misc',
-  },
-  ANALYTICS_CARD_TYPES: {
-    USER_ANALYTICS: 'user-analytics',
-    REPORTER_ANALYTICS: 'reporter-analytics',
-    MARKET_ANALYTICS: 'market-analytics',
-    PRODUCT_ANALYTICS: 'product-analytics',
-    DEPARTMENT_ANALYTICS: 'department-analytics',
-    AI_MODEL_ANALYTICS: 'ai-model-analytics',
-    TIME_ANALYTICS: 'time-analytics',
-    MARKETING_ANALYTICS: 'marketing-analytics',
   },
   // Chart data types for color mapping
   CHART_DATA_TYPE: {
@@ -449,8 +402,6 @@ export const ROUTES = {
 
   // Protected routes
   DASHBOARD: '/dashboard',
-  ANALYTICS: '/analytics',
-  LANDING_PAGES: '/landing-pages',
   USERS: '/users',
   VIEW_MY_DATA: '/view-my-data',
   TASK_DETAIL: '/task/:taskId',
@@ -476,7 +427,6 @@ export const API_CONFIG = {
     DELIVERABLES_PER_QUERY: 50,   // New: Limit deliverables query
     SETTINGS_PER_QUERY: 10,        // New: Limit settings query
     USER_QUERY_LIMIT: 1,
-    ANALYTICS_LIMIT: 200,         // New: Limit for analytics queries
     TOP_3_LIMIT: 10,              // New: Limit for top 3 calculations
   },
 };

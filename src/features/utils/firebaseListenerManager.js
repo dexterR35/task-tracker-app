@@ -112,7 +112,6 @@ class FirebaseListenerManager {
       'auth-state': { priority: 1, preserve: true },
       'tasks': { priority: 2, preserve: true }, // HIGH PRIORITY - real-time updates needed
       'realtime': { priority: 2, preserve: true },
-      'analytics': { priority: 2, preserve: true }, // HIGH PRIORITY - changes frequently
       'table': { priority: 2, preserve: true }, // HIGH PRIORITY - changes frequently
       'form': { priority: 2, preserve: true }, // HIGH PRIORITY - changes frequently
       'months': { priority: 3, preserve: true }, // MEDIUM PRIORITY - cached for 30 days
@@ -521,7 +520,6 @@ class FirebaseListenerManager {
   getListenerCategory(key) {
     if (key.includes('auth')) return 'auth';
     if (key.includes('tasks')) return 'tasks';
-    if (key.includes('analytics')) return 'analytics';
     if (key.includes('table')) return 'table';
     if (key.includes('form')) return 'form';
     if (key.includes('months')) return 'months';
@@ -539,7 +537,6 @@ class FirebaseListenerManager {
       'auth-state': { priority: 1, preserve: true },
       'tasks': { priority: 2, preserve: true },
       'realtime': { priority: 2, preserve: true },
-      'analytics': { priority: 2, preserve: true },
       'table': { priority: 2, preserve: true },
       'form': { priority: 2, preserve: true },
       'months': { priority: 3, preserve: true },

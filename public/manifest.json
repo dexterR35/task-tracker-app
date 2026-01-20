@@ -1,8 +1,8 @@
 {
   "_comment": "NOTE: Update this file manually when changing APP_NAME in src/constants/index.js and index.html. The name should match APP_FULL_NAME and short_name should match APP_NAME.",
-  "name": "SYNC Task Management & Analytics",
+  "name": "SYNC Task Management",
   "short_name": "SYNC",
-  "description": "A modern task tracking application with advanced analytics, team collaboration, and performance monitoring. Track tasks, manage projects, and analyze productivity with our intuitive dashboard.",
+  "description": "A modern task tracking application with team collaboration and performance monitoring. Track tasks, manage projects, and monitor productivity with our intuitive dashboard.",
   "start_url": "/",
   "display": "browser",
   "background_color": "#ffffff",

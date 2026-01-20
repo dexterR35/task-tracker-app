@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppDataContext } from '@/context/AppDataContext';
 import { useCreateTask, useUpdateTask } from '@/features/tasks/tasksApi';
-import { useExperience } from '@/features/experience/components/ExperienceProvider';
 import { createFormSubmissionHandler, handleFormValidation, prepareFormData } from '@/utils/formUtils';
 import { 
   createTaskFormSchema, 
@@ -45,7 +44,6 @@ const TaskForm = ({
   } = useAppDataContext();
   const [createTask] = useCreateTask();
   const [updateTask] = useUpdateTask();
-  const { trackTaskCreation, trackTaskUpdate } = useExperience();
   
   // Use prop monthId if provided, otherwise fall back to hook monthId
   const monthId = propMonthId || hookMonthId;
@@ -348,16 +346,6 @@ const TaskForm = ({
           userData || {}
         );
         
-        // Track experience for task update
-        if (updateResult?.success && trackTaskUpdate) {
-          const updatedTask = {
-            id: initialData.id,
-            monthId: initialData.monthId || initialData.data_task?.monthId || monthId,
-            data_task: processedData
-          };
-          await trackTaskUpdate(updatedTask, initialData);
-        }
-        
         return updateResult;
       } else {
         // Create new task
@@ -371,11 +359,6 @@ const TaskForm = ({
           userData || {},
           reporters
         );
-        
-        // Track experience for task creation
-        if (createResult?.success && createResult?.data && trackTaskCreation) {
-          await trackTaskCreation(createResult.data);
-        }
         
         return createResult;
       }

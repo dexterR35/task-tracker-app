@@ -120,7 +120,7 @@ const AdminManagementPage = () => {
       {/* Management Tabs */}
       {!isLoading && (
         <div className="space-y-6">
-          {/* Traditional Tab Navigation - Same style as Analytics */}
+          {/* Traditional Tab Navigation */}
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex flex-wrap -mb-px space-x-8">
               {tabs.map((tab) => {

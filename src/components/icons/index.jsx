@@ -35,7 +35,7 @@ import {
 } from "react-icons/fi";
 import {FcFlashOn} from "react-icons/fc";
 import {IoLogInSharp,IoAdd,IoAlert,IoFingerPrint,IoCheckmarkSharp,IoClose,IoMoonOutline,IoSunnyOutline,IoPerson} from "react-icons/io5";
-import {MdDashboard, MdPeople, MdAssignment, MdAnalytics, MdSettings, MdAdd, MdEdit, MdDelete, MdVisibility, MdVisibilityOff, MdRefresh, MdClear, MdHome, MdTask, MdBarChart, MdCode, MdDownload, MdSearch, MdFilterList, MdChevronLeft, MdChevronRight} from "react-icons/md";
+import {MdDashboard, MdPeople, MdAssignment, MdSettings, MdAdd, MdEdit, MdDelete, MdVisibility, MdVisibilityOff, MdRefresh, MdClear, MdHome, MdTask, MdBarChart, MdCode, MdDownload, MdSearch, MdFilterList, MdChevronLeft, MdChevronRight} from "react-icons/md";
 const withSize = (IconComponent) => (props) => (
   <IconComponent {...props} className={props?.className || "w-5 h-5"} />
 );
@@ -46,14 +46,12 @@ export const Icons = {
     users: withSize(MdPeople),
     management: withSize(MdSettings),
     tasks: withSize(MdAssignment),
-    analytics: withSize(MdAnalytics),
   },
 
   admin: {
     dashboard: withSize(MdDashboard),
     management: withSize(MdSettings),
     tasks: withSize(MdAssignment),
-    analytics: withSize(MdAnalytics),
     users: withSize(MdPeople),
     reporters: withSize(FiFileText),
   },

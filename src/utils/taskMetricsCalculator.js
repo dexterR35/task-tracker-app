@@ -1,9 +1,8 @@
 /**
  * Shared Task Metrics Calculator
  *
- * Provides common task calculation utilities used by both:
- * - Analytics (admin dashboard, reporting)
- * - Experience (gamification, badges)
+ * Provides common task calculation utilities used for:
+ * - Dashboard metrics and reporting
  *
  * This eliminates duplication while keeping concerns separated.
  */
@@ -128,7 +127,7 @@ export const getTaskDeliverableHours = (task, deliverablesOptions = []) => {
 
 /**
  * Calculate basic task metrics (hours, counts)
- * Used by both analytics and experience systems
+ * Used by dashboard metrics and reporting systems
  * @param {Array} tasks - Array of tasks
  * @param {Array} deliverablesOptions - Optional deliverables options for time calculations
  * @returns {Object} - Basic metrics: { taskCount, taskHours, deliverableCount, deliverableHours, variationHours, aiHours, totalHours }

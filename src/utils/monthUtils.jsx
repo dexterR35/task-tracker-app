@@ -15,7 +15,6 @@ import {
 import { parseMonthId, getCurrentMonthId } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
 import { useAppDataContext } from "@/context/AppDataContext";
-import ChartHeader from "@/components/Cards/ChartHeader";
 import { CARD_SYSTEM } from "@/constants";
 import { useCreateMonthBoard } from "@/features/months/monthsApi";
 import { showSuccess, showError } from "@/utils/toast";
@@ -348,18 +347,33 @@ export const MonthProgressBar = ({
     : CARD_SYSTEM.COLOR_HEX_MAP.pink;
 
   return (
-    <ChartHeader
-      variant="section"
-      title={monthName}
-      subtitle={isCurrentMonth ? "Current Month" : "Past Month"}
-      badges={[
-        `${progressData.progress}%`,
-        `${progressData.daysPassed}/${progressData.totalDays} days`,
-      ]}
-      color={primaryColor}
-      showIcon={true}
-      className="w-full "
-    >
+    <div className="card-small-modern w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {monthName}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {isCurrentMonth ? "Current Month" : "Past Month"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span 
+            className="px-2 py-1 text-xs font-semibold rounded-md"
+            style={{ 
+              backgroundColor: `${primaryColor}20`,
+              color: primaryColor 
+            }}
+          >
+            {progressData.progress}%
+          </span>
+          <span className="px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md">
+            {progressData.daysPassed}/{progressData.totalDays} days
+          </span>
+        </div>
+      </div>
+
       {/* Progress Bar Section */}
       <div className="my-4">
         <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
@@ -374,22 +388,22 @@ export const MonthProgressBar = ({
       </div>
 
       {/* Stats Section */}
-      <div className="flex items-center justify-between  ">
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <div
             className="w-1.5 h-1.5 rounded-full"
             style={{ backgroundColor: primaryColor }}
           ></div>
-          <span className="text-xs">{progressData.daysPassed} days passed</span>
+          <span className="text-xs text-gray-700 dark:text-gray-300">{progressData.daysPassed} days passed</span>
         </div>
         <div className="flex items-center space-x-1">
           <div className="w-1.5 h-1.5 rounded-full bg-red-error"></div>
-          <span className="text-xs">
+          <span className="text-xs text-gray-700 dark:text-gray-300">
             {progressData.daysRemaining} days remaining
           </span>
         </div>
       </div>
-    </ChartHeader>
+    </div>
   );
 };
 

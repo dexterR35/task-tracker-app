@@ -17,7 +17,6 @@ import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { getCurrentYear } from "@/utils/dateUtils";
-import { validateTaskPermissions } from '@/utils/permissionValidation';
 import { getUserUID } from '@/features/utils/authUtils';
 
 
@@ -252,7 +251,7 @@ const normalizeReporterData = (taskData, reporters) => {
     taskData.reporterName = resolveReporterName(reporters, taskData.reporters, taskData.reporterName);
   }
 
-  // Set reporterUID to match reporters ID for analytics consistency
+  // Set reporterUID to match reporters ID for data consistency
   if (taskData.reporters && !taskData.reporterUID) {
     taskData.reporterUID = taskData.reporters;
   }
@@ -462,12 +461,6 @@ const checkForDuplicateTask = async (colRef, task, userUID) => {
 export const useCreateTask = () => {
   const createTask = useCallback(async (task, userData, reporters = []) => {
     try {
-      // Validate user permissions using centralized validation
-      const permissionValidation = validateTaskPermissions(userData, 'create_tasks');
-      if (!permissionValidation.isValid) {
-        throw new Error(permissionValidation.errors.join(', '));
-      }
-
       const monthId = task.monthId;
       if (!monthId) {
         throw new Error("Month ID is required");
@@ -551,12 +544,6 @@ export const useCreateTask = () => {
 export const useUpdateTask = () => {
   const updateTask = useCallback(async (monthId, taskId, updates, reporters = [], userData) => {
     try {
-      // Validate user permissions using centralized validation
-      const permissionValidation = validateTaskPermissions(userData, 'update_tasks');
-      if (!permissionValidation.isValid) {
-        throw new Error(permissionValidation.errors.join(', '));
-      }
-
       // Fetch current task data to check for changes
       const currentTaskRef = getTaskRef(monthId, taskId);
       const currentTaskDoc = await getDoc(currentTaskRef);
@@ -603,12 +590,6 @@ export const useUpdateTask = () => {
 export const useDeleteTask = () => {
   const deleteTask = useCallback(async (monthId, taskId, userData) => {
     try {
-      // Validate user permissions using centralized validation
-      const permissionValidation = validateTaskPermissions(userData, 'delete_tasks');
-      if (!permissionValidation.isValid) {
-        throw new Error(permissionValidation.errors.join(', '));
-      }
-
       const taskRef = getTaskRef(monthId, taskId);
       await deleteDoc(taskRef);
 

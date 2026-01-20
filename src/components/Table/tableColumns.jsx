@@ -8,7 +8,6 @@ import {
 } from "@/features/deliverables/DeliverablesManager";
 import { TABLE_SYSTEM, CARD_SYSTEM } from "@/constants";
 import { differenceInDays } from "date-fns";
-import { calculateLevel } from "@/features/experience/experienceConfig";
 
 const columnHelper = createColumnHelper();
 // Constants
@@ -516,41 +515,9 @@ const createUserColumns = () => [
     cell: createSimpleCell(),
     size: 150,
   }),
-  columnHelper.accessor("experience", {
-    header: "LEVEL",
-    cell: ({ getValue, row }) => {
-      const experience = getValue();
-      if (!experience || !experience.points) {
-        return (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">-</span>
-          </div>
-        );
-      }
-      
-      const level = calculateLevel(experience.points || 0);
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{level.badge}</span>
-          <div className="flex flex-col">
-            <span 
-              className="text-xs font-semibold"
-              style={{ color: level.color }}
-            >
-              Level {level.level}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {level.name}
-            </span>
-          </div>
-        </div>
-      );
-    },
-    size: 150,
-  }),
-  columnHelper.accessor((row) => row.experience?.taskCount || 0, {
-    id: "activity",
-    header: "ACTIVITY",
+  columnHelper.accessor("taskCount", {
+    id: "tasks",
+    header: "TASKS",
     cell: ({ getValue }) => {
       const taskCount = getValue() || 0;
       return (
@@ -565,31 +532,6 @@ const createUserColumns = () => [
       );
     },
     size: 120,
-  }),
-  columnHelper.accessor((row) => row.experience?.unlockedAchievements || [], {
-    id: "achievements",
-    header: "ACHIEVEMENTS",
-    cell: ({ getValue }) => {
-      const achievements = getValue() || [];
-      if (!Array.isArray(achievements) || achievements.length === 0) {
-        return (
-          <span className="text-xs text-gray-400 dark:text-gray-500">
-            No achievements
-          </span>
-        );
-      }
-      
-      return (
-        <div className="flex flex-wrap gap-1">
-          {achievements.map((achievement, index) => (
-            <Badge key={index} variant="yellow" size="xs">
-              {achievement}
-            </Badge>
-          ))}
-        </div>
-      );
-    },
-    size: 250,
   }),
   columnHelper.accessor("createdAt", {
     header: "CREATED",
@@ -665,87 +607,6 @@ const createReporterColumns = () => [
   }),
 ];
 
-// Team Days Off column definitions
-const createTeamDaysOffColumns = () => [
-  columnHelper.accessor('userName', {
-    header: 'USER',
-    cell: ({ getValue }) => (
-      <span className="font-medium text-gray-900 dark:text-white">
-        {getValue() || '-'}
-      </span>
-    ),
-    size: 200,
-  }),
-  columnHelper.accessor('daysTotal', {
-    header: 'DAYS TOTAL',
-    cell: ({ getValue, row }) => {
-      const total = getValue();
-      const baseDays = row.original.baseDays || 0;
-      const monthlyAccrual = row.original.monthlyAccrual || 0;
-      return (
-        <div className="flex flex-col">
-          <Badge variant="blue" size="md">
-            {total.toFixed(2)} days
-          </Badge>
-          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Base: {baseDays} + Monthly: {monthlyAccrual.toFixed(2)}
-          </span>
-        </div>
-      );
-    },
-    size: 150,
-  }),
-  columnHelper.accessor('daysOff', {
-    header: 'DAYS OFF',
-    cell: ({ getValue }) => {
-      const daysOff = getValue() || 0;
-      return (
-        <Badge variant="amber" size="md">
-          {daysOff.toFixed(2)} days
-        </Badge>
-      );
-    },
-    size: 120,
-  }),
-  columnHelper.accessor('daysRemaining', {
-    header: 'DAYS REMAINING',
-    cell: ({ getValue }) => {
-      const remaining = getValue() || 0;
-      const variant = remaining < 5 ? 'red' : remaining < 10 ? 'amber' : 'green';
-      return (
-        <Badge variant={variant} size="md">
-          {remaining.toFixed(2)} days
-        </Badge>
-      );
-    },
-    size: 150,
-  }),
-  columnHelper.accessor('baseDays', {
-    header: 'BASE DAYS',
-    cell: ({ getValue }) => {
-      const baseDays = getValue() || 0;
-      return (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {baseDays.toFixed(2)}
-        </span>
-      );
-    },
-    size: 100,
-  }),
-  columnHelper.accessor('monthlyAccrual', {
-    header: 'MONTHLY ACCRUAL',
-    cell: ({ getValue }) => {
-      const accrual = getValue() || 0;
-      return (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {accrual.toFixed(2)} days
-        </span>
-      );
-    },
-    size: 130,
-  }),
-];
-
 // Unified column factory function for all tables
 export const getColumns = (
   tableType,
@@ -762,8 +623,6 @@ export const getColumns = (
       return createUserColumns();
     case "reporters":
       return createReporterColumns();
-    case "teamDaysOff":
-      return createTeamDaysOffColumns();
     default:
       return [];
   }

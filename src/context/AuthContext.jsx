@@ -235,8 +235,7 @@ export const AuthProvider = ({ children }) => {
                     };
 
                     logger.log("User data updated from Firestore (real-time)", {
-                      userId,
-                      experience: completeUserData.experience
+                      userId
                     });
 
                     if (isMounted) {
