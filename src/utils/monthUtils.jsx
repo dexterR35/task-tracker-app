@@ -8,9 +8,7 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  isWeekend,
   addWeeks,
-  addDays,
 } from "date-fns";
 import { parseMonthId, getCurrentMonthId } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
@@ -34,55 +32,45 @@ export const getWeeksInMonth = (monthId) => {
   const monthEnd = endOfMonth(date);
 
   const weeks = [];
-  // Find the first Monday within the month
-  let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday of the week containing month start
-
-  // If the Monday is before the month starts, find the first Monday of the month
-  if (currentWeekStart < monthStart) {
-    const dayOfWeek = monthStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    if (dayOfWeek === 1) {
-      // Month starts on Monday
-      currentWeekStart = monthStart;
-    } else {
-      // Calculate days to add to get to the first Monday
-      // If dayOfWeek is 0 (Sunday), add 1 day. Otherwise add (8 - dayOfWeek) days
-      const daysToAdd = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-      currentWeekStart = addDays(monthStart, daysToAdd);
-    }
-  }
-
   let weekNumber = 1;
+  
+  // Start from the Monday of the week containing the first day of the month
+  let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // 1 = Monday
 
+  // Continue until we've passed the end of the month
   while (currentWeekStart <= monthEnd) {
-    // Calculate Friday of the week (Monday + 4 days = Friday)
-    const weekEndFriday = addDays(currentWeekStart, 4);
-
-    // Get week days (Monday-Friday only)
-    const weekDays = eachDayOfInterval({
+    // Get the Sunday (end) of this week
+    const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 }); // 1 = Monday, so end is Sunday
+    
+    // Get all days in this week (Monday to Sunday)
+    const allWeekDays = eachDayOfInterval({
       start: currentWeekStart,
-      end: weekEndFriday,
-    }).filter((day) => !isWeekend(day) && day >= monthStart && day <= monthEnd);
+      end: currentWeekEnd,
+    });
+    
+    // Filter to only include days that fall within the current month
+    const daysInMonth = allWeekDays.filter(
+      (day) => day >= monthStart && day <= monthEnd
+    );
 
-    if (weekDays.length > 0) {
-      // Use Friday as endDate, but only if it's within the month
-      const actualWeekEnd =
-        weekEndFriday <= monthEnd
-          ? weekEndFriday
-          : weekDays[weekDays.length - 1];
-
+    // Only add this week if it has at least one day in the current month
+    if (daysInMonth.length > 0) {
       weeks.push({
         weekNumber,
         startDate: currentWeekStart,
-        endDate: actualWeekEnd,
-        days: weekDays,
+        endDate: currentWeekEnd,
+        days: allWeekDays, // All 7 days (Mon-Sun)
+        daysInMonth: daysInMonth, // Only days within this month
         startDateStr: format(currentWeekStart, "yyyy-MM-dd"),
-        endDateStr: format(actualWeekEnd, "yyyy-MM-dd"),
-        label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(actualWeekEnd, "MMM dd")})`,
+        endDateStr: format(currentWeekEnd, "yyyy-MM-dd"),
+        label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(currentWeekEnd, "MMM dd")})`,
       });
+      
+      weekNumber++;
     }
 
+    // Move to the next Monday
     currentWeekStart = addWeeks(currentWeekStart, 1);
-    weekNumber++;
   }
 
   return weeks;
