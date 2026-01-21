@@ -14,8 +14,6 @@ import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
 import { logger } from "@/utils/logger";
 import { filterTasksByUserAndReporter } from "@/utils/taskFilters";
-import { parseMonthId } from "@/utils/dateUtils";
-import { startOfMonth, endOfMonth } from "date-fns";
 import { useTasks } from "@/features/tasks/tasksApi";
 
 const AdminDashboardPage = () => {
