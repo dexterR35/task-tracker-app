@@ -1,15 +1,19 @@
 # 🗄️ Database Schema Documentation
 
-## Task Tracker PostgreSQL Database with Prisma ORM
+## Task Tracker PostgreSQL Database
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                     TASK TRACKER DATABASE SCHEMA                         │
-│                         PostgreSQL + Prisma                              │
+│                         PostgreSQL + Raw SQL                             │
+│                                                                           │
+│  📌 For visual schema guide, see: SCHEMA_VISUAL_GUIDE.md                │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 📊 Complete Entity Relationship Diagram
+
+> **Note:** Some diagrams below may be outdated. Refer to `SCHEMA_VISUAL_GUIDE.md` for the most current schema visualization.
 
 ```
 ┌──────────────────────┐         ┌──────────────────────┐
@@ -82,14 +86,11 @@
 │                                • dueDate               │
 │ AI Tracking:                   • completedAt           │
 │  • hasAiUsed                                          │
-│  • aiUsed (JSON)               Audit:                 │
+│                                Audit:                 │
 │                                • createdById           │
 │ Reporter:                      • createdByName         │
 │  • reporterId                  • createdAt             │
 │  • reporterName                • updatedAt             │
-│                                                         │
-│ Flexible:                                              │
-│  • metadata (JSON)                                     │
 │                                                         │
 │ UK: [userId, gimodear, name] - Prevents duplicates    │
 └──────┬──────────────────────────────────┬───────────────┘
@@ -261,7 +262,6 @@
 | `startDate` | DateTime | NULLABLE | Start date |
 | `dueDate` | DateTime | NULLABLE | Due date |
 | `completedAt` | DateTime | NULLABLE | Completion timestamp |
-| `metadata` | JSON | NULLABLE | Additional metadata |
 | `tags` | String[] | DEFAULT: [] | Tags for categorization |
 | `createdById` | String | NULLABLE | Creator user.id |
 | `createdByName` | String | NULLABLE | Creator name |
@@ -418,47 +418,12 @@
 
 ---
 
-## 8️⃣ ACTIVITY_LOGS Table
-
-**Purpose:** Complete audit trail for all actions
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `id` | UUID | PK | Primary key |
-| `userId` | String | FK → users.id | Actor user.id |
-| `userName` | String | NULLABLE | Actor name |
-| `action` | String | NOT NULL | Action (CREATE, UPDATE, DELETE, LOGIN, etc.) |
-| `entity` | String | NOT NULL | Entity type (TASK, USER, REPORTER, etc.) |
-| `entityId` | String | NULLABLE | Affected entity ID |
-| `taskId` | String | FK → tasks.id | Task reference (if applicable) |
-| `changes` | JSON | NULLABLE | Before/after values |
-| `metadata` | JSON | NULLABLE | Additional context |
-| `ipAddress` | String | NULLABLE | Client IP |
-| `userAgent` | String | NULLABLE | Client user agent |
-| `createdAt` | DateTime | AUTO | Action timestamp |
-
-**Indexes:**
-- `userId` (user lookup)
-- `action` (action filtering)
-- `entity` (entity filtering)
-- `entityId` (entity lookup)
-- `taskId` (task lookup)
-- `createdAt` (sorting, time-based queries)
-
-**Relations:**
-- `user` → Many-to-One with User (SET NULL)
-- `task` → Many-to-One with Task (SET NULL)
-
----
-
 ## 🔗 Relationship Summary
 
 ```
-User (1) ──────── (N) Session         "One user has many sessions"
 User (1) ──────── (N) Task            "One user owns many tasks"
 User (1) ──────── (N) Reporter        "One user creates many reporters"
 User (1) ──────── (N) Board           "One user creates many boards"
-User (1) ──────── (N) ActivityLog     "One user generates many logs"
 
 Board (1) ─────── (N) Task            "One board contains many tasks"
 
@@ -557,14 +522,6 @@ WHERE reporterId = ?
 ORDER BY createdAt DESC;
 ```
 
-### Get user activity log
-```sql
-SELECT * FROM activity_logs 
-WHERE userId = ? 
-ORDER BY createdAt DESC 
-LIMIT 100;
-```
-
 ### Get tasks with specific deliverable
 ```sql
 SELECT t.* FROM tasks t
@@ -580,7 +537,6 @@ WHERE d.name = ?;
 - All IDs use UUID format for global uniqueness
 - Timestamps are stored in UTC
 - Arrays are PostgreSQL native arrays (not JSON)
-- JSON fields use PostgreSQL JSONB for indexing
 - Soft delete uses `deletedAt` timestamp
 - Indexes are created for all frequently queried fields
 
@@ -614,6 +570,6 @@ VACUUM ANALYZE activity_logs;
 
 ---
 
-For schema updates, see `prisma/schema.prisma` file.
+For schema updates, see `database/schema.sql` file.
 
 **Last Updated:** 2026-01-20

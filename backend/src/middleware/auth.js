@@ -4,7 +4,7 @@
  */
 
 import { verifyToken, extractTokenFromHeader } from '../utils/jwt.js';
-import prisma from '../config/database.js';
+import { query } from '../config/database.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -33,54 +33,22 @@ export const authenticate = async (req, res, next) => {
       });
     }
     
-    // Check if session exists and is valid
-    const session = await prisma.session.findUnique({
-      where: { accessToken: token },
-    });
+    // Get user from database (stateless - just verify user exists and is active)
+    const userResult = await query(
+      `SELECT id, email, name, "displayName", role, permissions, 
+              department, "isActive"
+       FROM users WHERE id = $1`,
+      [decoded.userId]
+    );
     
-    if (!session || !session.isValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Session invalid or expired',
-      });
-    }
-    
-    // Check if session is expired
-    if (new Date() > session.expiresAt) {
-      await prisma.session.update({
-        where: { id: session.id },
-        data: { isValid: false },
-      });
-      
-      return res.status(401).json({
-        success: false,
-        message: 'Session expired',
-      });
-    }
-    
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        userUID: true,
-        email: true,
-        name: true,
-        displayName: true,
-        role: true,
-        permissions: true,
-        department: true,
-        isActive: true,
-        isVerified: true,
-      },
-    });
-    
-    if (!user) {
+    if (userResult.rows.length === 0) {
       return res.status(401).json({
         success: false,
         message: 'User not found',
       });
     }
+    
+    const user = userResult.rows[0];
     
     if (!user.isActive) {
       return res.status(403).json({
@@ -89,15 +57,8 @@ export const authenticate = async (req, res, next) => {
       });
     }
     
-    // Update session last activity
-    await prisma.session.update({
-      where: { id: session.id },
-      data: { lastActivityAt: new Date() },
-    });
-    
     // Attach user to request object
     req.user = user;
-    req.session = session;
     
     next();
   } catch (error) {
@@ -176,12 +137,13 @@ export const optionalAuth = async (req, res, next) => {
     
     try {
       const decoded = verifyToken(token);
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-      });
+      const userResult = await query(
+        'SELECT * FROM users WHERE id = $1',
+        [decoded.userId]
+      );
       
-      if (user && user.isActive) {
-        req.user = user;
+      if (userResult.rows.length > 0 && userResult.rows[0].isActive) {
+        req.user = userResult.rows[0];
       }
     } catch (error) {
       // Continue without user if token is invalid

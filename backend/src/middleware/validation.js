@@ -108,7 +108,6 @@ export const createTaskSchema = Joi.object({
   actualTime: Joi.number().positive().optional(),
   startDate: Joi.date().optional(),
   dueDate: Joi.date().optional(),
-  metadata: Joi.any().optional(),
   tags: Joi.array().items(Joi.string()).optional(),
   monthId: Joi.string().pattern(/^\d{4}-\d{2}$/).required().messages({
     'string.pattern.base': 'monthId must be in format YYYY-MM (e.g., 2024-09)',
@@ -127,7 +126,6 @@ export const updateTaskSchema = Joi.object({
   reporterName: Joi.string().max(200).optional().allow(''),
   deliverableNames: Joi.array().items(Joi.string()).optional(),
   hasAiUsed: Joi.boolean().optional(),
-  aiUsed: Joi.any().optional(),
   isVip: Joi.boolean().optional(),
   reworked: Joi.boolean().optional(),
   useShutterstock: Joi.boolean().optional(),
@@ -138,7 +136,6 @@ export const updateTaskSchema = Joi.object({
   startDate: Joi.date().optional().allow(null),
   dueDate: Joi.date().optional().allow(null),
   completedAt: Joi.date().optional().allow(null),
-  metadata: Joi.any().optional(),
   tags: Joi.array().items(Joi.string()).optional(),
 });
 

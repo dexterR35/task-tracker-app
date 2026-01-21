@@ -3,12 +3,13 @@
  * Handles user registration, login, logout, and token refresh
  */
 
-import prisma from '../config/database.js';
+import pool, { query, transaction } from '../config/database.js';
 import config from '../config/env.js';
 import logger from '../utils/logger.js';
 import { hashPassword, comparePassword, validatePasswordStrength } from '../utils/password.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
 import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
+import { SOCKET_EVENTS } from '../constants/index.js';
 
 /**
  * Register new user
@@ -18,11 +19,12 @@ export const register = asyncHandler(async (req, res) => {
   const { email, password, name, displayName, department, role } = req.body;
   
   // Check if user already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  const existingUserResult = await query(
+    'SELECT id FROM users WHERE email = $1',
+    [email.toLowerCase()]
+  );
   
-  if (existingUser) {
+  if (existingUserResult.rows.length > 0) {
     throw new ApiError(409, 'User with this email already exists');
   }
   
@@ -36,42 +38,22 @@ export const register = asyncHandler(async (req, res) => {
   const hashedPassword = await hashPassword(password);
   
   // Create user
-  const user = await prisma.user.create({
-    data: {
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      name,
-      displayName: displayName || name,
-      department,
-      role: role || 'USER',
-      isActive: true,
-      isVerified: false, // Can implement email verification later
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      displayName: true,
-      role: true,
-      department: true,
-      createdAt: true,
-    },
-  });
+  const userResult = await query(
+    `INSERT INTO users (email, password, name, "displayName", department, role, "isActive")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, email, name, "displayName", role, department, "createdAt"`,
+    [email.toLowerCase(), hashedPassword, name, displayName || name, department, role || 'USER', true]
+  );
   
-  // Log activity
-  await prisma.activityLog.create({
-    data: {
-      userId: user.id,
-      userName: user.name,
-      action: 'REGISTER',
-      entity: 'USER',
-      entityId: user.id,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    },
-  });
+  const user = userResult.rows[0];
   
   logger.info(`New user registered: ${user.email}`);
+  
+  // Emit real-time event
+  req.io.emit(SOCKET_EVENTS.USER_CREATED, { 
+    user, 
+    timestamp: new Date()
+  });
   
   res.status(201).json({
     success: true,
@@ -88,19 +70,16 @@ export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   
   // Find user
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  const userResult = await query(
+    'SELECT * FROM users WHERE email = $1',
+    [email.toLowerCase()]
+  );
   
-  if (!user) {
+  if (userResult.rows.length === 0) {
     throw new ApiError(401, 'Invalid email or password');
   }
   
-  // Check if account is locked
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    const minutesLeft = Math.ceil((user.lockedUntil - new Date()) / 60000);
-    throw new ApiError(403, `Account is locked. Try again in ${minutesLeft} minutes.`);
-  }
+  const user = userResult.rows[0];
   
   // Check if account is active
   if (!user.isActive) {
@@ -111,34 +90,16 @@ export const login = asyncHandler(async (req, res) => {
   const isPasswordValid = await comparePassword(password, user.password);
   
   if (!isPasswordValid) {
-    // Increment failed login attempts
-    const failedAttempts = user.failedLoginAttempts + 1;
-    const updateData = { failedLoginAttempts: failedAttempts };
-    
-    // Lock account after max attempts
-    if (failedAttempts >= config.maxLoginAttempts) {
-      updateData.lockedUntil = new Date(Date.now() + config.lockoutDuration);
-    }
-    
-    await prisma.user.update({
-      where: { id: user.id },
-      data: updateData,
-    });
-    
     throw new ApiError(401, 'Invalid email or password');
   }
   
-  // Reset failed login attempts on successful login
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      failedLoginAttempts: 0,
-      lockedUntil: null,
-      lastLoginAt: new Date(),
-    },
-  });
+  // Update last login timestamp
+  await query(
+    'UPDATE users SET "lastLoginAt" = $1 WHERE id = $2',
+    [new Date(), user.id]
+  );
   
-  // Generate tokens
+  // Generate tokens (stateless JWT - no database storage)
   const tokenPayload = {
     userId: user.id,
     email: user.email,
@@ -148,37 +109,16 @@ export const login = asyncHandler(async (req, res) => {
   const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken(tokenPayload);
   
-  // Calculate expiration times
-  const accessTokenExpiresIn = config.jwt.expiresIn;
-  const accessTokenExpiry = new Date(Date.now() + parseTimeToMs(accessTokenExpiresIn));
-  
-  // Create session
-  const session = await prisma.session.create({
-    data: {
-      userId: user.id,
-      accessToken,
-      refreshToken,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      expiresAt: accessTokenExpiry,
-      isValid: true,
-    },
-  });
-  
-  // Log activity
-  await prisma.activityLog.create({
-    data: {
-      userId: user.id,
-      userName: user.name,
-      action: 'LOGIN',
-      entity: 'USER',
-      entityId: user.id,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    },
-  });
-  
   logger.info(`User logged in: ${user.email}`);
+  
+  // Emit real-time event
+  req.io.emit(SOCKET_EVENTS.USER_LOGIN, { 
+    userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
+    role: user.role,
+    timestamp: new Date()
+  });
   
   // Return user data and tokens
   res.status(200).json({
@@ -198,43 +138,34 @@ export const login = asyncHandler(async (req, res) => {
         accessToken,
         refreshToken,
         tokenType: 'Bearer',
-        expiresIn: accessTokenExpiresIn,
+        expiresIn: config.jwt.expiresIn,
       },
     },
   });
 });
 
 /**
- * Logout user
+ * Logout user (Stateless - Client deletes token)
  * POST /api/auth/logout
  */
 export const logout = asyncHandler(async (req, res) => {
-  const { session, user } = req;
-  
-  // Invalidate session
-  await prisma.session.update({
-    where: { id: session.id },
-    data: { isValid: false },
-  });
-  
-  // Log activity
-  await prisma.activityLog.create({
-    data: {
-      userId: user.id,
-      userName: user.name,
-      action: 'LOGOUT',
-      entity: 'USER',
-      entityId: user.id,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    },
-  });
+  const { user } = req;
   
   logger.info(`User logged out: ${user.email}`);
   
+  // Emit real-time event
+  req.io.emit(SOCKET_EVENTS.USER_LOGOUT, { 
+    userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
+    timestamp: new Date()
+  });
+  
+  // Note: With stateless JWT, logout is handled client-side
+  // Client should delete the token from local storage
   res.status(200).json({
     success: true,
-    message: 'Logout successful',
+    message: 'Logout successful. Please delete your token on the client side.',
   });
 });
 
@@ -246,28 +177,15 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   const { user } = req;
   
   // Fetch full user data
-  const userData = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      displayName: true,
-      firstName: true,
-      lastName: true,
-      photoURL: true,
-      phoneNumber: true,
-      role: true,
-      permissions: true,
-      department: true,
-      position: true,
-      isActive: true,
-      isVerified: true,
-      lastLoginAt: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  const userResult = await query(
+    `SELECT id, email, name, "displayName", "firstName", "lastName", "photoURL", 
+            "phoneNumber", role, permissions, department, position, "isActive", 
+            "lastLoginAt", "createdAt", "updatedAt"
+     FROM users WHERE id = $1`,
+    [user.id]
+  );
+  
+  const userData = userResult.rows[0];
   
   res.status(200).json({
     success: true,
@@ -276,7 +194,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 /**
- * Refresh access token
+ * Refresh access token (Stateless)
  * POST /api/auth/refresh
  */
 export const refreshToken = asyncHandler(async (req, res) => {
@@ -286,37 +204,38 @@ export const refreshToken = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Refresh token is required');
   }
   
-  // Find session with refresh token
-  const session = await prisma.session.findUnique({
-    where: { refreshToken: token },
-    include: { user: true },
-  });
+  // Verify and decode refresh token (no database lookup)
+  const { verifyToken } = await import('../utils/jwt.js');
+  let decoded;
   
-  if (!session || !session.isValid) {
-    throw new ApiError(401, 'Invalid refresh token');
+  try {
+    decoded = verifyToken(token, config.jwt.refreshSecret);
+  } catch (error) {
+    throw new ApiError(401, 'Invalid or expired refresh token');
   }
+  
+  // Verify user still exists and is active
+  const userResult = await query(
+    'SELECT id, email, role, "isActive" FROM users WHERE id = $1',
+    [decoded.userId]
+  );
+  
+  if (userResult.rows.length === 0 || !userResult.rows[0].isActive) {
+    throw new ApiError(401, 'User not found or inactive');
+  }
+  
+  const user = userResult.rows[0];
   
   // Generate new access token
   const tokenPayload = {
-    userId: session.user.id,
-    email: session.user.email,
-    role: session.user.role,
+    userId: user.id,
+    email: user.email,
+    role: user.role,
   };
   
   const newAccessToken = generateAccessToken(tokenPayload);
-  const accessTokenExpiry = new Date(Date.now() + parseTimeToMs(config.jwt.expiresIn));
   
-  // Update session with new access token
-  await prisma.session.update({
-    where: { id: session.id },
-    data: {
-      accessToken: newAccessToken,
-      expiresAt: accessTokenExpiry,
-      lastActivityAt: new Date(),
-    },
-  });
-  
-  logger.info(`Access token refreshed for user: ${session.user.email}`);
+  logger.info(`Access token refreshed for user: ${user.email}`);
   
   res.status(200).json({
     success: true,
@@ -329,18 +248,3 @@ export const refreshToken = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Helper: Parse time string to milliseconds
- */
-const parseTimeToMs = (timeString) => {
-  const unit = timeString.slice(-1);
-  const value = parseInt(timeString.slice(0, -1));
-  
-  switch (unit) {
-    case 's': return value * 1000;
-    case 'm': return value * 60 * 1000;
-    case 'h': return value * 60 * 60 * 1000;
-    case 'd': return value * 24 * 60 * 60 * 1000;
-    default: return value;
-  }
-};

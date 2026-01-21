@@ -128,10 +128,25 @@ export const FORM_OPTIONS = {
     { value: 'gr', label: 'gr' },
     { value: 'fr', label: 'fr' },
   ],
+  // Unified departments for users, reporters, and channels
   DEPARTMENTS: [
+    { value: 'acquisition', label: 'Acquisition' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'customer_relationship_management', label: 'CRM' },
+    { value: 'games_team', label: 'Games Team' },
+    { value: 'other', label: 'Other' },
+    { value: 'product', label: 'Product' },
+    { value: 'vip', label: 'VIP' },
+    { value: 'content', label: 'Content' },
+    { value: 'performance_marketing_local', label: 'Performance Marketing Local' },
+    { value: 'miscellaneous', label: 'Miscellaneous' },
+    { value: 'human_resources', label: 'Human Resources' },
     { value: 'video', label: 'Video Production' },
     { value: 'design', label: 'Design' },
     { value: 'developer', label: 'Development' },
+    { value: 'acquisition_social_media', label: 'Acquisition Social Media' },
+    { value: 'brand_management', label: 'Brand Management' },
+    { value: 'search_engine_optimization', label: 'SEO' },
   ],
   AI_MODELS: [
     { value: 'Photoshop', label: 'Photoshop' },
@@ -148,35 +163,7 @@ export const FORM_OPTIONS = {
     { value: 'min', label: 'Minutes' },
     { value: 'hr', label: 'Hours' },
   ],
-  REPORTER_DEPARTMENTS: [
-    { value: 'acq', label: 'acq' },
-    { value: 'crm', label: 'crm' },
-    { value: 'games team', label: 'GAMES TEAM' },
-    { value: 'other', label: 'other' },
-    { value: 'product', label: 'product' },
-    { value: 'vip', label: 'vip' },
-    { value: 'content', label: 'content' },
-    { value: 'pml', label: 'pml' },
-    { value: 'misc', label: 'misc' },
-    { value: 'hr', label: 'hr' }
-  ],
-  REPORTER_CHANNELS: [
-    { value: 'acq', label: 'acq' },
-    { value: 'acq social media', label: 'acq social media' },
-    { value: 'acq social media paid', label: 'acq social media paid' },
-    { value: 'acq social media organic', label: 'acq social media organic' },
-    { value: 'games team', label: 'games team' },
-    { value: 'product', label: 'product' },
-    { value: 'other', label: 'other' },
-    { value: 'brand mgmt', label: 'brand mgmt' },
-    { value: 'pml', label: 'pml' },
-    { value: 'hr', label: 'hr' },
-    { value: 'content', label: 'content' },
-    { value: 'misc', label: 'misc' },
-    { value: 'vip', label: 'vip' },
-    { value: 'seo', label: 'seo' },
-    { value: 'crm', label: 'crm' }
-  ],
+
   REPORTER_COUNTRIES: [
     { value: 'ro', label: 'ro' },
     { value: 'com', label: 'com' },
@@ -191,6 +178,10 @@ export const FORM_OPTIONS = {
     { value: 'fr', label: 'fr' }
   ],
 };
+
+// Backward compatibility aliases (deprecated - use FORM_OPTIONS.DEPARTMENTS instead)
+FORM_OPTIONS.REPORTER_DEPARTMENTS = FORM_OPTIONS.DEPARTMENTS;
+FORM_OPTIONS.REPORTER_CHANNELS = FORM_OPTIONS.DEPARTMENTS;
 
 // ============================================================================
 // NAVIGATION CONFIGURATION

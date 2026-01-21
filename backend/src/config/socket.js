@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import config from './env.js';
 import logger from '../utils/logger.js';
 import { verifyToken } from '../utils/jwt.js';
-import prisma from './database.js';
+import { query } from './database.js';
 
 /**
  * Initialize Socket.IO server
@@ -41,21 +41,16 @@ export const initializeSocket = (httpServer) => {
       const decoded = verifyToken(actualToken);
       
       // Get user from database
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          userUID: true,
-          email: true,
-          name: true,
-          role: true,
-          isActive: true,
-        },
-      });
+      const userResult = await query(
+        'SELECT id, email, name, role, "isActive" FROM users WHERE id = $1',
+        [decoded.userId]
+      );
       
-      if (!user || !user.isActive) {
+      if (userResult.rows.length === 0 || !userResult.rows[0].isActive) {
         return next(new Error('User not found or inactive'));
       }
+      
+      const user = userResult.rows[0];
       
       // Attach user to socket
       socket.user = user;
@@ -72,7 +67,7 @@ export const initializeSocket = (httpServer) => {
     logger.info(`Socket connected: ${socket.id} - User: ${user.email}`);
     
     // Join user-specific room
-    socket.join(`user:${user.userUID}`);
+    socket.join(`user:${user.id}`);
     
     // Join role-specific room
     socket.join(`role:${user.role}`);
@@ -82,7 +77,6 @@ export const initializeSocket = (httpServer) => {
       message: 'Successfully connected to real-time server',
       user: {
         id: user.id,
-        userUID: user.userUID,
         name: user.name,
         role: user.role,
       },
@@ -123,7 +117,7 @@ export const initializeSocket = (httpServer) => {
       try {
         // Broadcast user presence to relevant rooms
         socket.broadcast.emit('user:presence', {
-          user: { id: user.id, userUID: user.userUID, name: user.name },
+          user: { id: user.id, name: user.name },
           status,
           timestamp: new Date(),
         });
@@ -138,7 +132,7 @@ export const initializeSocket = (httpServer) => {
       
       // Broadcast user offline status
       socket.broadcast.emit('user:offline', {
-        user: { id: user.id, userUID: user.userUID, name: user.name },
+        user: { id: user.id, name: user.name },
         timestamp: new Date(),
       });
     });

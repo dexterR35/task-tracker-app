@@ -28,10 +28,10 @@ cp .env.example .env
 createdb task_tracker_db
 
 # Run migrations
-npm run prisma:migrate
+npm run db:setup
 
 # Seed with sample data
-npm run prisma:seed
+npm run db:seed
 ```
 
 #### Option B: Heroku PostgreSQL
@@ -110,7 +110,7 @@ git push heroku main
 
 # 5. Run migrations and seed (automatic via Procfile release command)
 # Or manually:
-heroku run npm run prisma:seed
+heroku run npm run db:seed
 
 # 6. Open app
 heroku open
@@ -119,17 +119,18 @@ heroku open
 ## 📊 Database Management
 
 ```bash
-# View database in browser
-npm run prisma:studio
+# View database with psql
+psql $DATABASE_URL
 
-# Create new migration
-npx prisma migrate dev --name migration_name
+# Run migrations
+npm run db:setup
 
-# Apply migrations in production
-npm run prisma:deploy
+# Seed database
+npm run db:seed
 
 # Reset database (⚠️ deletes all data)
-npx prisma migrate reset
+psql $DATABASE_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+npm run db:setup
 ```
 
 ## 🔐 Default Test Accounts (After Seeding)
@@ -151,20 +152,14 @@ npm run dev
 # Production mode
 npm start
 
-# Generate Prisma Client
-npm run prisma:generate
-
 # Run migrations
-npm run prisma:migrate
-
-# Deploy migrations
-npm run prisma:deploy
-
-# Open Prisma Studio
-npm run prisma:studio
+npm run db:setup
 
 # Seed database
-npm run prisma:seed
+npm run db:seed
+
+# Setup database (migrate + seed)
+npm run db:setup
 ```
 
 ## 🔍 Useful Heroku Commands
@@ -224,12 +219,16 @@ lsof -ti:5000 | xargs kill -9
 pg_isready
 
 # Test connection
-npx prisma db push
+psql $DATABASE_URL -c "SELECT 1"
 ```
 
-**Prisma Client not generated:**
+**Database migration failed:**
 ```bash
-npm run prisma:generate
+# Check database exists
+psql -l | grep task_tracker
+
+# Recreate database
+npm run db:setup
 ```
 
 **Module not found errors:**

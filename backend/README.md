@@ -1,13 +1,13 @@
 # Task Tracker Backend API
 
-A production-ready PERN (PostgreSQL, Express, React, Node.js) stack backend with Prisma ORM, JWT authentication, and Socket.IO for real-time features.
+A production-ready PERN (PostgreSQL, Express, React, Node.js) stack backend with raw SQL, JWT authentication, and Socket.IO for real-time features.
 
 ## 🚀 Features
 
 - **RESTful API** - Complete CRUD operations for all resources
 - **Authentication & Authorization** - JWT-based auth with role-based access control (RBAC)
 - **Real-time Updates** - Socket.IO integration for live data synchronization
-- **Database** - PostgreSQL with Prisma ORM for type-safe database access
+- **Database** - PostgreSQL with raw SQL queries and parameterized statements
 - **Security** - Helmet, CORS, rate limiting, password hashing with bcrypt
 - **Logging** - Winston logger with multiple transports
 - **Validation** - Request validation using Joi schemas
@@ -65,14 +65,11 @@ RATE_LIMIT_MAX_REQUESTS=100
 ### 3. Database Setup
 
 ```bash
-# Generate Prisma Client
-npm run prisma:generate
-
 # Run migrations
-npm run prisma:migrate
+npm run db:setup
 
 # Seed database with initial data (optional)
-npm run prisma:seed
+npm run db:seed
 ```
 
 ### 4. Start Development Server
@@ -87,12 +84,14 @@ The server will start at `http://localhost:5000`
 
 ```
 backend/
-├── prisma/
-│   ├── schema.prisma        # Database schema
+├── database/
+│   └── schema.sql           # PostgreSQL schema
+├── scripts/
+│   ├── setup-db.js          # Database setup script
 │   └── seed.js              # Database seeding script
 ├── src/
 │   ├── config/
-│   │   ├── database.js      # Prisma client setup
+│   │   ├── database.js      # PostgreSQL client setup
 │   │   ├── env.js           # Environment configuration
 │   │   └── socket.js        # Socket.IO setup
 │   ├── controllers/         # Request handlers
@@ -224,13 +223,13 @@ socket.on('connected', (data) => {
 
 ## 📊 Database Schema
 
-Your database uses **PostgreSQL with Prisma ORM** and includes:
+Your database uses **PostgreSQL with raw SQL** and includes:
 
 - **8 tables** - Users, Sessions, Tasks, Reporters, Deliverables, Boards, TaskDeliverables, ActivityLogs
 - **3 enums** - UserRole, TaskStatus, TaskPriority
-- **Single UUID identifiers** - No Firebase compatibility, clean design
+- **Single UUID identifiers** - Clean design
 - **Full audit trail** - Activity logging on all operations
-- **Optimized indexes** - 20 strategic indexes for performance
+- **Optimized indexes** - Strategic indexes for performance
 
 See `DATABASE_SCHEMA.md` for complete schema documentation with diagrams.
 
@@ -286,13 +285,13 @@ git push heroku main
 Migrations will run automatically via the `release` command in `Procfile`. To run manually:
 
 ```bash
-heroku run npx prisma migrate deploy
+heroku run npm run db:setup
 ```
 
 ### 8. Seed Database (Optional)
 
 ```bash
-heroku run npm run prisma:seed
+heroku run npm run db:seed
 ```
 
 ### 9. View Logs
@@ -307,19 +306,19 @@ heroku logs --tail
 # Run tests (if implemented)
 npm test
 
-# Check Prisma schema
-npx prisma validate
+# View database
+psql $DATABASE_URL
 
-# Generate Prisma client
-npm run prisma:generate
+# Run migrations
+npm run db:setup
 
-# View database in Prisma Studio
-npm run prisma:studio
+# Seed database
+npm run db:seed
 ```
 
 ## 📊 Database Schema
 
-The application uses PostgreSQL with Prisma ORM. Key models:
+The application uses PostgreSQL with raw SQL. Key tables:
 
 - **User** - User accounts with authentication
 - **Session** - Active user sessions
@@ -330,7 +329,7 @@ The application uses PostgreSQL with Prisma ORM. Key models:
 - **TaskDeliverable** - Many-to-many relationship
 - **ActivityLog** - Audit trail for all actions
 
-See `prisma/schema.prisma` for complete schema.
+See `database/schema.sql` for complete schema.
 
 ## 🔧 Environment Variables
 
@@ -369,10 +368,11 @@ MIT License
 
 ```bash
 # Test database connection
-npx prisma db push
+psql $DATABASE_URL -c "SELECT 1"
 
 # Reset database (⚠️ deletes all data)
-npx prisma migrate reset
+psql $DATABASE_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+npm run db:setup
 ```
 
 ### Port Already in Use
@@ -385,11 +385,11 @@ lsof -ti:5000 | xargs kill -9
 PORT=5001 npm run dev
 ```
 
-### Prisma Client Issues
+### Database Connection Pool Issues
 
 ```bash
-# Regenerate Prisma Client
-npm run prisma:generate
+# Restart the server
+npm run dev
 
 # Clear node_modules and reinstall
 rm -rf node_modules

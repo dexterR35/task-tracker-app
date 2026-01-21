@@ -12,7 +12,7 @@ import rateLimit from 'express-rate-limit';
 
 // Config imports
 import config from './src/config/env.js';
-import prisma, { testConnection, disconnectDatabase } from './src/config/database.js';
+import pool, { query, testConnection, disconnectDatabase } from './src/config/database.js';
 import { initializeSocket } from './src/config/socket.js';
 import logger from './src/utils/logger.js';
 
@@ -88,7 +88,7 @@ app.use('/api/', limiter);
 // Health check
 app.get('/health', async (req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await query('SELECT 1');
     res.status(200).json({
       success: true,
       message: 'Server is healthy',

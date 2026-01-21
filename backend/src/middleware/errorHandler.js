@@ -43,9 +43,9 @@ export const errorHandler = (err, req, res, next) => {
     user: req.user?.id,
   });
   
-  // Prisma errors
-  if (error.name === 'PrismaClientKnownRequestError') {
-    error = handlePrismaError(error);
+  // PostgreSQL errors
+  if (error.code && error.code.startsWith('23')) {
+    error = handlePostgresError(error);
   }
   
   // Validation errors
@@ -76,26 +76,26 @@ export const errorHandler = (err, req, res, next) => {
 };
 
 /**
- * Handle Prisma-specific errors
+ * Handle PostgreSQL-specific errors
  */
-const handlePrismaError = (error) => {
+const handlePostgresError = (error) => {
   switch (error.code) {
-    case 'P2002':
+    case '23505':
       // Unique constraint violation
-      const field = error.meta?.target?.[0] || 'field';
+      const field = error.constraint || 'field';
       return new ApiError(409, `${field} already exists`);
       
-    case 'P2025':
-      // Record not found
-      return new ApiError(404, 'Record not found');
-      
-    case 'P2003':
+    case '23503':
       // Foreign key constraint violation
       return new ApiError(400, 'Invalid reference to related record');
       
-    case 'P2014':
-      // Required relation violation
-      return new ApiError(400, 'Required relation is missing');
+    case '23502':
+      // Not null constraint violation
+      return new ApiError(400, 'Required field is missing');
+      
+    case '23514':
+      // Check constraint violation
+      return new ApiError(400, 'Invalid data provided');
       
     default:
       return new ApiError(500, 'Database operation failed');
