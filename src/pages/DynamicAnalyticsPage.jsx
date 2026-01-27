@@ -1066,16 +1066,22 @@ const DynamicAnalyticsPage = () => {
       });
       
       const totalDeliverableAndVariation = taskDeliverableHours + taskVariationHours;
-      const difference = taskHours - totalDeliverableAndVariation;
+      
+      // If there are no deliverables, difference should be null (not applicable)
+      // Otherwise calculate the difference
+      const hasDeliverables = deliverablesList && deliverablesList.length > 0;
+      const difference = hasDeliverables 
+        ? taskHours - totalDeliverableAndVariation 
+        : null;
       
       return {
         ...task, // Keep full task object for bulk actions
         jiraName,
         taskHours: parseFloat(taskHours.toFixed(2)),
-        deliverableHours: parseFloat(taskDeliverableHours.toFixed(2)),
-        variationHours: parseFloat(taskVariationHours.toFixed(2)),
-        totalDeliverableAndVariation: parseFloat(totalDeliverableAndVariation.toFixed(2)),
-        difference: parseFloat(difference.toFixed(2)),
+        deliverableHours: hasDeliverables ? parseFloat(taskDeliverableHours.toFixed(2)) : null,
+        variationHours: hasDeliverables ? parseFloat(taskVariationHours.toFixed(2)) : null,
+        totalDeliverableAndVariation: hasDeliverables ? parseFloat(totalDeliverableAndVariation.toFixed(2)) : null,
+        difference: hasDeliverables ? parseFloat(difference.toFixed(2)) : null,
         deliverablesList, // Include deliverables list for display
       };
     });
@@ -1191,7 +1197,6 @@ const DynamicAnalyticsPage = () => {
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white w-12"></th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">User</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Hours</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Deliverables</th>
                   {isUserAdmin && (
@@ -1199,9 +1204,13 @@ const DynamicAnalyticsPage = () => {
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Del. Hours</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Variations</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Var. Hours</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Planned</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Difference</th>
                     </>
+                  )}
+                  {!isUserAdmin && (
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
                   )}
                 </tr>
               </thead>
@@ -1252,9 +1261,6 @@ const DynamicAnalyticsPage = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                          {userStat.totalTaskCount || 0}
-                        </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
                           {userStat.totalTaskHours.toFixed(2)}h
                         </td>
                         <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
@@ -1272,6 +1278,9 @@ const DynamicAnalyticsPage = () => {
                               {userStat.totalVariationHours.toFixed(2)}h
                             </td>
                             <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                              {userStat.totalTaskCount || 0}
+                            </td>
+                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
                               {totalDelVarHours.toFixed(2)}h
                             </td>
                             <td className="py-3 px-4 text-right">
@@ -1283,6 +1292,11 @@ const DynamicAnalyticsPage = () => {
                               </Badge>
                             </td>
                           </>
+                        )}
+                        {!isUserAdmin && (
+                          <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                            {userStat.totalTaskCount || 0}
+                          </td>
                         )}
                       </tr>
                       {isExpanded && (
