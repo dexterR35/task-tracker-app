@@ -177,6 +177,88 @@ const createAnalyticsColumns = (isAdmin = true) => [
     },
     size: 200,
   }),
+  // Time Per Unit column (only for admin)
+  ...(isAdmin ? [
+    columnHelper.accessor((row) => row.deliverablesList, {
+      id: "timePerUnit",
+      header: () => (
+        <ColumnHeaderWithTooltip
+          title="TIME PER UNIT"
+          description="Time per unit from deliverable settings (e.g., 15 min, 1 hr)."
+        />
+      ),
+      cell: ({ getValue }) => {
+        const deliverablesList = getValue();
+        if (!deliverablesList || deliverablesList.length === 0) {
+          return (
+            <span className="text-gray-600 dark:text-gray-400">-</span>
+          );
+        }
+
+        return (
+          <div className="flex flex-col gap-1">
+            {deliverablesList.map((deliverable, index) => {
+              const timePerUnit = deliverable.timePerUnit || 0;
+              const timeUnit = deliverable.timeUnit || 'hr';
+              
+              if (timePerUnit === 0) {
+                return (
+                  <span key={index} className="text-xs text-gray-600 dark:text-gray-400">-</span>
+                );
+              }
+
+              return (
+                <span key={index} className="text-xs text-gray-900 dark:text-white">
+                  {timePerUnit} {timeUnit}
+                </span>
+              );
+            })}
+          </div>
+        );
+      },
+      size: 120,
+    }),
+    // Variations Time column (only for admin)
+    columnHelper.accessor((row) => row.deliverablesList, {
+      id: "variationsTime",
+      header: () => (
+        <ColumnHeaderWithTooltip
+          title="VARIATIONS TIME"
+          description="Time per variation from deliverable settings (e.g., 20 min, 0.5 hr)."
+        />
+      ),
+      cell: ({ getValue }) => {
+        const deliverablesList = getValue();
+        if (!deliverablesList || deliverablesList.length === 0) {
+          return (
+            <span className="text-gray-600 dark:text-gray-400">-</span>
+          );
+        }
+
+        return (
+          <div className="flex flex-col gap-1">
+            {deliverablesList.map((deliverable, index) => {
+              const variationsTime = deliverable.variationsTime || 0;
+              const variationsTimeUnit = deliverable.variationsTimeUnit || 'min';
+              
+              if (variationsTime === 0) {
+                return (
+                  <span key={index} className="text-xs text-gray-600 dark:text-gray-400">-</span>
+                );
+              }
+
+              return (
+                <span key={index} className="text-xs text-gray-900 dark:text-white">
+                  {variationsTime} {variationsTimeUnit}
+                </span>
+              );
+            })}
+          </div>
+        );
+      },
+      size: 140,
+    }),
+  ] : []),
   columnHelper.accessor("taskHours", {
     header: () => (
       <ColumnHeaderWithTooltip
