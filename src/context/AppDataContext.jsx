@@ -183,7 +183,9 @@ export const AppDataProvider = ({ children }) => {
       
       // User data
       user: userIsAdmin ? user : userData,
-      users: userIsAdmin ? allUsers : [],
+      // Allow all users to access users array for name resolution in analytics
+      // User names are not sensitive data and are needed for proper display
+      users: allUsers,
       isAdmin: userIsAdmin,
       
       // Common data - serialize timestamps for consistent API responses

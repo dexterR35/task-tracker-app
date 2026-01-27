@@ -490,8 +490,22 @@ const DynamicAnalyticsPage = () => {
   // Check if user is admin
   const isUserAdmin = user?.role === 'admin';
   
-  // Analytics table columns - hide calculation columns for regular users
-  const analyticsColumns = useMemo(() => createAnalyticsColumns(isUserAdmin), [isUserAdmin]);
+  // Check if current user is viewing their own data
+  // Regular users should see full table with calculations for their own data
+  const currentUserUID = user?.userUID;
+  const currentUserName = user?.name || user?.displayName || user?.email || '';
+  const isViewingOwnData = !isUserAdmin && (
+    !userName || // No user filter means viewing own data for regular users
+    currentUserName.toLowerCase() === userName.toLowerCase() ||
+    currentUserUID === userName ||
+    currentUserName.toLowerCase().includes(userName.toLowerCase())
+  );
+  
+  // Show full columns if admin OR if regular user viewing their own data
+  const showFullColumns = isUserAdmin || isViewingOwnData;
+  
+  // Analytics table columns - show full columns for admin or when viewing own data
+  const analyticsColumns = useMemo(() => createAnalyticsColumns(showFullColumns), [showFullColumns]);
 
   // Bulk actions for analytics table
   const bulkActions = useMemo(() => {
@@ -870,8 +884,9 @@ const DynamicAnalyticsPage = () => {
     // Calculate performance metrics
     const performanceMetrics = calculatePerformanceMetrics(userStat, deliverablesOptions);
     
-    // For regular users, only show basic cards without calculation details
-    if (!isUserAdmin) {
+    // For regular users viewing other users' data, only show basic cards without calculation details
+    // But show full cards when viewing their own data
+    if (!showFullColumns) {
       return [
         {
           id: `total-tasks-${userStat.userId}`,
@@ -1156,7 +1171,7 @@ const DynamicAnalyticsPage = () => {
                   <th className="text-left py-3 px-4 text-sm font-semibold  ">User</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold  ">Tasks</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold  ">Deliverables</th>
-                  {isUserAdmin && (
+                  {showFullColumns && (
                     <>
                       <th className="text-right py-3 px-4 text-sm font-semibold  ">Del. Hours</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold  ">Variations</th>
@@ -1166,7 +1181,7 @@ const DynamicAnalyticsPage = () => {
                       <th className="text-right py-3 px-4 text-sm font-semibold  ">Difference</th>
                     </>
                   )}
-                  {!isUserAdmin && (
+                  {!showFullColumns && (
                     <th className="text-right py-3 px-4 text-sm font-semibold  ">Total Hours</th>
                   )}
                 </tr>
@@ -1223,7 +1238,7 @@ const DynamicAnalyticsPage = () => {
                         <td className="py-3 px-4 text-right text-sm  ">
                           {userStat.totalDeliverableCount || 0}
                         </td>
-                        {isUserAdmin && (
+                        {showFullColumns && (
                           <>
                             <td className="py-3 px-4 text-right text-sm  ">
                               {userStat.totalDeliverableHours.toFixed(2)}h
@@ -1250,7 +1265,7 @@ const DynamicAnalyticsPage = () => {
                             </td>
                           </>
                         )}
-                        {!isUserAdmin && (
+                        {!showFullColumns && (
                           <td className="py-3 px-4 text-right text-sm  ">
                             {userStat.totalTaskHours.toFixed(2)}h
                           </td>
@@ -1258,7 +1273,7 @@ const DynamicAnalyticsPage = () => {
                       </tr>
                       {isExpanded && (
                         <tr>
-                          <td colSpan={isUserAdmin ? 10 : 5} className="p-6 bg-gray-50 dark:bg-gray-900/50">
+                          <td colSpan={showFullColumns ? 10 : 5} className="p-6 bg-gray-50 dark:bg-gray-900/50">
                             <div className="space-y-6">
                               {/* Summary Cards */}
                               <div>
