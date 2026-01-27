@@ -106,6 +106,51 @@ const createAnalyticsColumns = () => [
     },
     size: 120,
   }),
+  columnHelper.accessor((row) => row.deliverablesList, {
+    id: "deliverables",
+    header: () => (
+      <ColumnHeaderWithTooltip
+        title="DELIVERABLES"
+        description="List of deliverables with quantity and variation indicator."
+      />
+    ),
+    cell: ({ getValue }) => {
+      const deliverablesList = getValue();
+      if (!deliverablesList || deliverablesList.length === 0) {
+        return (
+          <span className="text-gray-600 dark:text-gray-400">No deliverables</span>
+        );
+      }
+
+      return (
+        <div className="flex flex-col gap-1">
+          {deliverablesList.map((deliverable, index) => {
+            const quantity = deliverable.quantity || 1;
+            const variationsQuantity = deliverable.variationsQuantity || 0;
+            const hasVariations = variationsQuantity > 0;
+            
+            return (
+              <div key={index} className="text-xs">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {deliverable.name}
+                </span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">
+                  (qty: {quantity}
+                </span>
+                {hasVariations && (
+                  <span className="text-blue-600 dark:text-blue-400 ml-1">
+                    + {variationsQuantity} var
+                  </span>
+                )}
+                <span className="text-gray-600 dark:text-gray-400">)</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    },
+    size: 200,
+  }),
   columnHelper.accessor("taskHours", {
     header: () => (
       <ColumnHeaderWithTooltip
@@ -164,7 +209,7 @@ const createAnalyticsColumns = () => [
     header: () => (
       <ColumnHeaderWithTooltip
         title="TOTAL DEL+VAR HR"
-        description="Sum of Deliverable HR + Variation HR (total estimated time from deliverables)."
+        description="Sum of Deliverable HR + Variation HR (total planned time from deliverables stored in database)."
       />
     ),
     cell: ({ getValue }) => {
@@ -182,7 +227,7 @@ const createAnalyticsColumns = () => [
     header: () => (
       <ColumnHeaderWithTooltip
         title="DIFFERENCE"
-        description="Task HR minus Total Del+Var HR. Green = over estimate, Red = under estimate."
+        description="Task HR minus Total Del+Var HR. Green = took longer than planned, Red = took less than planned."
       />
     ),
     cell: ({ getValue }) => {
@@ -241,7 +286,7 @@ const DynamicAnalyticsPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isDataReady, setIsDataReady] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [expandedUsers, setExpandedUsers] = useState(new Set());
   
   // Extract URL parameters
   const userName = searchParams.get('user');
@@ -540,47 +585,37 @@ const DynamicAnalyticsPage = () => {
     return Object.values(stats).sort((a, b) => a.userName.localeCompare(b.userName));
   }, [filteredTasksForHooks, allUsers, deliverablesOptions]);
 
-  // Summary cards data - MUST be after userStats is initialized
-  const summaryCards = useMemo(() => {
-    if (!selectedUserId) return [];
-    
-    const selectedUserStat = userStats.find(s => s.userId === selectedUserId);
-    if (!selectedUserStat) return [];
-    
-    const totalDeliverableHours = selectedUserStat.totalDeliverableHours || 0;
-    const totalVariationHours = selectedUserStat.totalVariationHours || 0;
+  // Helper function to get summary cards for a user
+  const getUserSummaryCards = (userStat) => {
+    const totalDeliverableHours = userStat.totalDeliverableHours || 0;
+    const totalVariationHours = userStat.totalVariationHours || 0;
     const totalDelVarHours = totalDeliverableHours + totalVariationHours;
-    const avgTaskHours = selectedUserStat.totalTaskCount > 0 
-      ? (selectedUserStat.totalTaskHours / selectedUserStat.totalTaskCount).toFixed(2)
-      : '0.00';
-    const difference = selectedUserStat.totalTaskHours - totalDelVarHours;
+    const difference = userStat.totalTaskHours - totalDelVarHours;
     
     return [
       {
-        id: 'total-tasks',
+        id: `total-tasks-${userStat.userId}`,
         title: 'Total Tasks',
-        subtitle: selectedUserStat.userName,
-        value: selectedUserStat.totalTaskCount || 0,
-        description: `Average ${avgTaskHours}h per task`,
+        subtitle: userStat.userName,
+        value: userStat.totalTaskCount || 0,
         color: 'blue',
         icon: Icons.generic.task,
         badge: {
-          text: `${selectedUserStat.totalTaskHours.toFixed(2)}h`,
+          text: `${userStat.totalTaskHours.toFixed(2)}h`,
           color: 'blue',
         },
         details: [
           {
             label: 'Total Hours',
-            value: `${selectedUserStat.totalTaskHours.toFixed(2)}h`,
+            value: `${userStat.totalTaskHours.toFixed(2)}h`,
           },
         ],
       },
       {
-        id: 'total-deliverables',
+        id: `total-deliverables-${userStat.userId}`,
         title: 'Total Deliverables',
         subtitle: 'Base Deliverables',
-        value: selectedUserStat.totalDeliverableCount || 0,
-        description: `${totalDeliverableHours.toFixed(2)}h from deliverables`,
+        value: userStat.totalDeliverableCount || 0,
         color: 'green',
         icon: Icons.generic.deliverable,
         badge: {
@@ -595,11 +630,10 @@ const DynamicAnalyticsPage = () => {
         ],
       },
       {
-        id: 'total-variations',
+        id: `total-variations-${userStat.userId}`,
         title: 'Total Variations',
         subtitle: 'Variations Added',
-        value: selectedUserStat.totalVariationCount || 0,
-        description: `${totalVariationHours.toFixed(2)}h from variations`,
+        value: userStat.totalVariationCount || 0,
         color: 'pink',
         icon: Icons.generic.star,
         badge: {
@@ -614,11 +648,10 @@ const DynamicAnalyticsPage = () => {
         ],
       },
       {
-        id: 'total-del-var',
+        id: `total-del-var-${userStat.userId}`,
         title: 'Total Del+Var',
-        subtitle: 'Estimated Hours',
+        subtitle: 'Planned Hours',
         value: `${totalDelVarHours.toFixed(2)}h`,
-        description: 'From deliverables & variations',
         color: 'purple',
         icon: Icons.generic.clock,
         details: [
@@ -633,15 +666,10 @@ const DynamicAnalyticsPage = () => {
         ],
       },
       {
-        id: 'difference',
+        id: `difference-${userStat.userId}`,
         title: 'Difference',
-        subtitle: 'Actual vs Estimated',
+        subtitle: 'Actual vs Planned',
         value: `${difference > 0 ? '+' : ''}${difference.toFixed(2)}h`,
-        description: difference > 0 
-          ? 'Over estimated time' 
-          : difference < 0 
-            ? 'Under estimated time'
-            : 'Perfect match',
         color: difference > 0 ? 'amber' : difference < 0 ? 'red' : 'green',
         icon: Icons.generic.chart,
         badge: {
@@ -651,24 +679,19 @@ const DynamicAnalyticsPage = () => {
         details: [
           {
             label: 'Task Hours',
-            value: `${selectedUserStat.totalTaskHours.toFixed(2)}h`,
+            value: `${userStat.totalTaskHours.toFixed(2)}h`,
           },
           {
-            label: 'Estimated Hours',
+            label: 'Planned Hours',
             value: `${totalDelVarHours.toFixed(2)}h`,
           },
         ],
       },
     ];
-  }, [userStats, selectedUserId]);
-  
-  // Calculate task details for selected user with full task objects - MUST be before any conditional returns
-  const selectedUserTaskDetails = useMemo(() => {
-    if (!selectedUserId) return [];
-    
-    const userStat = userStats.find(s => s.userId === selectedUserId);
-    if (!userStat) return [];
-    
+  };
+
+  // Helper function to get task details for a user
+  const getUserTaskDetails = (userStat) => {
     return userStat.tasks.map(task => {
       const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
       const jiraName = task.data_task?.taskName || task.taskName || 'N/A';
@@ -701,9 +724,10 @@ const DynamicAnalyticsPage = () => {
         variationHours: parseFloat(taskVariationHours.toFixed(2)),
         totalDeliverableAndVariation: parseFloat(totalDeliverableAndVariation.toFixed(2)),
         difference: parseFloat(difference.toFixed(2)),
+        deliverablesList, // Include deliverables list for display
       };
     });
-  }, [selectedUserId, userStats, allUsers, deliverablesOptions]);
+  };
   
   // Determine page title
   const pageTitle = (() => {
@@ -806,111 +830,232 @@ const DynamicAnalyticsPage = () => {
           </div>
         </div>
         
-        {/* Users List */}
+        {/* Users Table */}
         <div className="mb-8">
           <h3 className="mb-4">Users</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {userStats.map((userStat, index) => {
-              // Cycle through different colors from constants
-              const availableColors = Object.keys(CARD_SYSTEM.COLOR_HEX_MAP).filter(
-                key => !['gray', 'dark_gray', 'color_default', 'select_badge', 'filter_color', 'indigo', 'soft_purple'].includes(key)
-              );
-              const color = availableColors[index % availableColors.length];
-              
-              return (
-                <SmallCard
-                  key={userStat.userId}
-                  card={{
-                    id: `user-${userStat.userId}`,
-                    title: userStat.userName,
-                    subtitle: 'User Statistics',
-                    value: userStat.totalTaskCount || 0,
-                    description: `${userStat.totalTaskHours.toFixed(2)}h total hours`,
-                    color: color,
-                    icon: Icons.generic.user,
-                    badge: {
-                      text: `${userStat.totalTaskCount} tasks`,
-                      color: color,
-                    },
-                    details: [
-                      {
-                        label: 'Total Hours',
-                        value: `${userStat.totalTaskHours.toFixed(2)}h`,
-                      },
-                      {
-                        label: 'Deliverables',
-                        value: `${userStat.totalDeliverableCount} (${userStat.totalDeliverableHours.toFixed(2)}h)`,
-                      },
-                      {
-                        label: 'Variations',
-                        value: `${userStat.totalVariationCount} (${userStat.totalVariationHours.toFixed(2)}h)`,
-                      },
-                    ],
-                    content: (
-                      <DynamicButton
-                        onClick={() => setSelectedUserId(userStat.userId)}
-                        variant="primary"
-                        size="sm"
-                        className="w-full uppercase"
+          <div className="card overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white w-12"></th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">User</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Hours</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Deliverables</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Del. Hours</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Variations</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Var. Hours</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Planned</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Difference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userStats.map((userStat) => {
+                  const isExpanded = expandedUsers.has(userStat.userId);
+                  const totalDelVarHours = userStat.totalDeliverableHours + userStat.totalVariationHours;
+                  const difference = userStat.totalTaskHours - totalDelVarHours;
+                  
+                  // Get summary cards and task details for this user
+                  const userSummaryCards = getUserSummaryCards(userStat);
+                  const userTaskDetails = getUserTaskDetails(userStat);
+
+                  const toggleExpand = () => {
+                    setExpandedUsers(prev => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(userStat.userId)) {
+                        newSet.delete(userStat.userId);
+                      } else {
+                        newSet.add(userStat.userId);
+                      }
+                      return newSet;
+                    });
+                  };
+                  
+                  return (
+                    <React.Fragment key={userStat.userId}>
+                      <tr 
+                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                        onClick={toggleExpand}
                       >
-                        View Tasks
-                      </DynamicButton>
-                    ),
-                  }}
-                />
-              );
-            })}
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand();
+                            }}
+                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                          >
+                            {isExpanded ? '▼' : '▶'}
+                          </button>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {userStat.userName}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {userStat.totalTaskCount || 0}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {userStat.totalTaskHours.toFixed(2)}h
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {userStat.totalDeliverableCount || 0}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {userStat.totalDeliverableHours.toFixed(2)}h
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {userStat.totalVariationCount || 0}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {userStat.totalVariationHours.toFixed(2)}h
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                          {totalDelVarHours.toFixed(2)}h
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Badge 
+                            variant={difference > 0 ? 'green' : difference < 0 ? 'red' : 'gray'} 
+                            size="sm"
+                          >
+                            {difference > 0 ? '+' : ''}{difference.toFixed(2)}h
+                          </Badge>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan="10" className="p-6 bg-gray-50 dark:bg-gray-900/50">
+                            <div className="space-y-6">
+                              {/* Summary Cards */}
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                  Summary: {userStat.userName}
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                                  {userSummaryCards.map((card) => (
+                                    <SmallCard key={card.id} card={card} />
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Detailed Tasks Table */}
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                  All Tasks
+                                </h4>
+                                <div className="card overflow-visible">
+                                  <div className="overflow-visible">
+                                    <TanStackTable
+                                      data={userTaskDetails}
+                                      columns={analyticsColumns}
+                                      tableType="tasks"
+                                      error={null}
+                                      isLoading={false}
+                                      onSelect={handleSelect}
+                                      onEdit={userCanUpdateTasks ? handleEdit : null}
+                                      onDelete={userCanDeleteTasks ? handleDelete : null}
+                                      enableRowSelection={true}
+                                      showBulkActions={true}
+                                      bulkActions={bulkActions}
+                                      enablePagination={true}
+                                      pageSize={10}
+                                      showFilters={true}
+                                      showColumnToggle={false}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
-        
-        {/* Selected User Details */}
-        {selectedUserId && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3>
-                Task Details: {userStats.find(s => s.userId === selectedUserId)?.userName}
-              </h3>
-              <DynamicButton
-                onClick={() => setSelectedUserId(null)}
-                variant="secondary"
-                size="sm"
-              >
-                Close
-              </DynamicButton>
-            </div>
-            
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-              {summaryCards.map((card) => (
-                <SmallCard key={card.id} card={card} />
-              ))}
-            </div>
-            
-            {/* Detailed Tasks Table - TanStackTable */}
-            <div className="card overflow-visible">
-              <h4 className="mb-4">All Tasks</h4>
-              <div className="overflow-visible">
-                <TanStackTable
-                data={selectedUserTaskDetails}
-                columns={analyticsColumns}
-                tableType="tasks"
-                error={null}
-                isLoading={false}
-                onSelect={handleSelect}
-                onEdit={userCanUpdateTasks ? handleEdit : null}
-                onDelete={userCanDeleteTasks ? handleDelete : null}
-                enableRowSelection={true}
-                showBulkActions={true}
-                bulkActions={bulkActions}
-                enablePagination={true}
-                pageSize={10}
-                showFilters={true}
-                showColumnToggle={false}
-              />
+
+        {/* Calculation Summary */}
+        <div className="mb-8">
+          <div className="card">
+            <div className="p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex-shrink-0 mt-1">
+                  <Icons.generic.help className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    How Calculations Work
+                  </h3>
+                  <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                    <div>
+                      <p className="font-medium mb-2">Task Hours vs Planned Hours:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                        <li><span className="font-medium text-gray-900 dark:text-white">Task Hours</span> = Actual time logged for tasks (sum of timeInHours from all tasks - what was actually spent)</li>
+                        <li><span className="font-medium text-gray-900 dark:text-white">Deliverable Hours</span> = Planned base time from deliverables (timePerUnit × quantity, excluding variations - from Management Settings)</li>
+                        <li><span className="font-medium text-gray-900 dark:text-white">Variation Hours</span> = Planned time from variations only (variationsTime × variationsQuantity - from Management Settings)</li>
+                        <li><span className="font-medium text-gray-900 dark:text-white">Total Planned</span> = Deliverable Hours + Variation Hours (planned time stored in database from deliverable settings)</li>
+                        <li><span className="font-medium text-gray-900 dark:text-white">Difference</span> = Task Hours - Total Planned (positive = took longer than planned, negative = took less than planned)</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
+                      <p className="font-medium mb-2 text-gray-900 dark:text-white">What is "Planned Hours"?</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <strong>Planned Hours</strong> = The time stored in the database from deliverable settings (NOT an estimate). 
+                        Each deliverable has timePerUnit, timeUnit, variationsTime, and declinariTime stored in the database.
+                        Planned time is calculated as: (timePerUnit × quantity) + (variationsTime × variationsQuantity).
+                        This is compared against <strong>Task Hours</strong> which is the actual time logged by users.
+                      </p>
+                      <p className="font-medium mb-2 text-gray-900 dark:text-white mt-3">Calculation Formula:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
+                        <li><span className="font-medium">Deliverable Hours</span> = (timePerUnit × quantity) - variation time (from database)</li>
+                        <li><span className="font-medium">Variation Hours</span> = variationsTime × variationsQuantity (from database, converted to hours)</li>
+                        <li><span className="font-medium">Total Planned</span> = Deliverable Hours + Variation Hours (all from database)</li>
+                        <li><span className="font-medium">Difference</span> = Actual Task Hours - Total Planned Hours</li>
+                      </ul>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                        <strong>Difference meaning:</strong> Positive (+) = took longer than planned, Negative (-) = took less time than planned.
+                        Example: Task Hours 103h - Planned Hours 334h = <strong>-231h</strong> (took 231 hours less than planned).
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="font-medium mb-2">Example:</p>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="space-y-2 text-xs">
+                          <div>
+                            <span className="font-semibold text-gray-900 dark:text-white">Task Hours:</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">32.00h (actual time logged)</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900 dark:text-white">Deliverable Hours:</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">179.00h (base deliverable time)</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900 dark:text-white">Variation Hours:</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">0.67h (variation time)</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900 dark:text-white">Total Planned:</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">179.67h (179.00 + 0.67) - planned time from deliverable settings</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900 dark:text-white">Difference:</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">-147.67h (32.00 - 179.67 = took less time than planned)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
         
       </div>
 
