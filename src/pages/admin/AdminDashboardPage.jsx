@@ -36,6 +36,10 @@ import {
   getPointsToNextLevel,
   getNextLevel 
 } from "@/constants/experienceSystem";
+import { 
+  calculateAchievements,
+  getAllAchievements 
+} from "@/constants/achievementsSystem";
 
 const AdminDashboardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -648,6 +652,22 @@ const AdminDashboardPage = () => {
       };
   }, [allUserTasksForExperience, deliverablesOptions, user?.userUID]);
 
+  // Calculate achievements (frontend only, no database storage)
+  const achievements = useMemo(() => {
+    if (!experienceData) return null;
+    
+    const achievementsData = calculateAchievements({
+      tasksCount: experienceData.tasksCount,
+      deliverablesCount: experienceData.deliverablesCount,
+      totalHours: allTasksTotals.totalHours,
+      shutterstockCount: experienceData.shutterstockCount,
+      aiCount: experienceData.aiCount,
+      variationsCount: experienceData.variationsCount,
+    });
+    
+    return achievementsData?.achievements || null;
+  }, [experienceData, allTasksTotals]);
+
   // Create small cards - optimized memoization to prevent re-renders
   const smallCards = useMemo(() => createCards({
     tasks,
@@ -788,7 +808,7 @@ const AdminDashboardPage = () => {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0.5">
-                    Experience & Performance
+                    Experience & Achievements
                   </h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Level {experienceData.level} • {experienceData.levelName} {experienceData.badgeEmoji}
@@ -796,13 +816,41 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant={experienceData.badge.color} size="md">
-                  {experienceData.badge.name}
-                </Badge>
+                <Tooltip
+                  content={`All Experience Levels:\n\n` +
+                    EXPERIENCE_LEVELS.map(level => {
+                      const isCurrent = level.level === experienceData.level;
+                      const prefix = isCurrent ? '→ ' : '  ';
+                      const range = level.maxPoints === Infinity 
+                        ? `${level.minPoints.toLocaleString()}+ XP`
+                        : `${level.minPoints.toLocaleString()} - ${level.maxPoints.toLocaleString()} XP`;
+                      return `${prefix}${level.badge} Level ${level.level}: ${level.name} (${range})`;
+                    }).join('\n')}
+                >
+                  <div>
+                    <Badge variant={experienceData.badge.color} size="md">
+                      {experienceData.badge.name}
+                    </Badge>
+                  </div>
+                </Tooltip>
                 {experienceData.xpBadge && (
-                  <Badge variant="purple" size="sm">
-                    {experienceData.xpBadge}
-                  </Badge>
+                  <Tooltip
+                    content={`All Experience Levels:\n\n` +
+                      EXPERIENCE_LEVELS.map(level => {
+                        const isCurrent = level.level === experienceData.level;
+                        const prefix = isCurrent ? '→ ' : '  ';
+                        const range = level.maxPoints === Infinity 
+                          ? `${level.minPoints.toLocaleString()}+ XP`
+                          : `${level.minPoints.toLocaleString()} - ${level.maxPoints.toLocaleString()} XP`;
+                        return `${prefix}${level.badge} Level ${level.level}: ${level.name} (${range})`;
+                      }).join('\n')}
+                  >
+                    <div>
+                      <Badge variant="purple" size="sm">
+                        {experienceData.xpBadge}
+                      </Badge>
+                    </div>
+                  </Tooltip>
                 )}
                 <button
                   onClick={() => setIsExperienceCollapsed(!isExperienceCollapsed)}
@@ -824,75 +872,68 @@ const AdminDashboardPage = () => {
                 {/* Main Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* XP Card */}
-                  <Tooltip
-                    content={`XP Breakdown:\n\n` +
-                      `Tasks: ${experienceData.xpBreakdown.fromTasks.toLocaleString()} XP (${experienceData.tasksCount} tasks)\n` +
-                      `Deliverables: ${experienceData.xpBreakdown.fromDeliverables.toLocaleString()} XP (${experienceData.deliverablesCount} items)\n` +
-                      `Variations: ${experienceData.xpBreakdown.fromVariations.toLocaleString()} XP (${experienceData.variationsCount} variations)\n` +
-                      `Shutterstock: ${experienceData.xpBreakdown.fromShutterstock.toLocaleString()} XP (${experienceData.shutterstockCount} uses)\n` +
-                      `AI Usage: ${experienceData.xpBreakdown.fromAI.toLocaleString()} XP (${experienceData.aiCount} uses)\n` +
-                      `Bonuses: ${experienceData.xpBreakdown.fromBonuses.toLocaleString()} XP\n\n` +
-                      `Total: ${experienceData.totalXP.toLocaleString()} XP`}
+                  <div
+                    className="p-4 rounded-lg border relative overflow-hidden"
+                    style={{
+                      background: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple}08`,
+                      borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple}20`,
+                    }}
                   >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{
+                            backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple,
+                          }}
+                        />
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                          Experience Points
+                        </span>
+                      </div>
+                      {experienceData.xpBadge && (
+                        <Tooltip
+                          content={`All Experience Levels:\n\n` +
+                            EXPERIENCE_LEVELS.map(level => {
+                              const isCurrent = level.level === experienceData.level;
+                              const prefix = isCurrent ? '→ ' : '  ';
+                              const range = level.maxPoints === Infinity 
+                                ? `${level.minPoints.toLocaleString()}+ XP`
+                                : `${level.minPoints.toLocaleString()} - ${level.maxPoints.toLocaleString()} XP`;
+                              return `${prefix}${level.badge} Level ${level.level}: ${level.name} (${range})`;
+                            }).join('\n')}
+                        >
+                          <div>
+                            <Badge variant="purple" size="xs">
+                              {experienceData.xpBadge}
+                            </Badge>
+                          </div>
+                        </Tooltip>
+                      )}
+                    </div>
                     <div
-                      className="p-4 rounded-lg border relative overflow-hidden cursor-help"
+                      className="text-3xl font-bold mb-1"
                       style={{
-                        background: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple}08`,
-                        borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple}20`,
+                        color: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple,
                       }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{
-                              backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple,
-                            }}
-                          />
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            Experience Points
-                          </span>
-                        </div>
-                        {experienceData.xpBadge && (
-                          <Badge variant="purple" size="xs">
-                            {experienceData.xpBadge}
-                          </Badge>
-                        )}
-                      </div>
-                      <div
-                        className="text-3xl font-bold mb-1"
-                        style={{
-                          color: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple,
-                        }}
-                      >
-                        {experienceData.totalXP.toLocaleString()} XP
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {experienceData.points.toLocaleString()} Points
-                      </div>
+                      {experienceData.totalXP.toLocaleString()} XP
                     </div>
-                  </Tooltip>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {experienceData.points.toLocaleString()} Points
+                    </div>
+                  </div>
 
                   {/* Level Card */}
-                  <Tooltip
-                    content={experienceData.nextLevelName 
-                      ? `Next Level: ${experienceData.nextLevelEmoji} ${experienceData.nextLevelName}\n` +
-                        `Required: ${experienceData.nextLevelMinPoints?.toLocaleString()} XP\n` +
-                        `Progress: ${experienceData.levelProgress.toFixed(1)}%\n` +
-                        `XP Needed: ${experienceData.xpToNextLevel.toLocaleString()} XP\n\n` +
-                        `Current: ${experienceData.totalXP.toLocaleString()} / ${experienceData.nextLevelMinPoints?.toLocaleString()} XP`
-                      : `Max Level Reached!\n\n` +
-                        `Current: ${experienceData.totalXP.toLocaleString()} XP\n` +
-                        `Level: ${experienceData.level} - ${experienceData.levelName}`}
+                  <div
+                    className="p-4 rounded-lg border relative overflow-hidden"
+                    style={{
+                      background: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue}08`,
+                      borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue}20`,
+                    }}
                   >
-                    <div
-                      className="p-4 rounded-lg border relative overflow-hidden cursor-help"
-                      style={{
-                        background: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue}08`,
-                        borderColor: `${CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue}20`,
-                      }}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
                         <div
                           className="w-1.5 h-1.5 rounded-full"
                           style={{
@@ -903,34 +944,63 @@ const AdminDashboardPage = () => {
                           Current Level
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 mb-1">
+                      <Tooltip
+                        content={`All Experience Levels:\n\n` +
+                          EXPERIENCE_LEVELS.map(level => {
+                            const isCurrent = level.level === experienceData.level;
+                            const prefix = isCurrent ? '→ ' : '  ';
+                            const range = level.maxPoints === Infinity 
+                              ? `${level.minPoints.toLocaleString()}+ XP`
+                              : `${level.minPoints.toLocaleString()} - ${level.maxPoints.toLocaleString()} XP`;
+                            return `${prefix}${level.badge} Level ${level.level}: ${level.name} (${range})`;
+                          }).join('\n')}
+                      >
+                        <div>
+                          <Badge variant={experienceData.badge.color} size="xs">
+                            {experienceData.badgeEmoji} {experienceData.levelName}
+                          </Badge>
+                        </div>
+                      </Tooltip>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Tooltip
+                        content={`All Experience Levels:\n\n` +
+                          EXPERIENCE_LEVELS.map(level => {
+                            const isCurrent = level.level === experienceData.level;
+                            const prefix = isCurrent ? '→ ' : '  ';
+                            const range = level.maxPoints === Infinity 
+                              ? `${level.minPoints.toLocaleString()}+ XP`
+                              : `${level.minPoints.toLocaleString()} - ${level.maxPoints.toLocaleString()} XP`;
+                            return `${prefix}${level.badge} Level ${level.level}: ${level.name} (${range})`;
+                          }).join('\n')}
+                      >
                         <div
-                          className="text-3xl font-bold"
+                          className="text-3xl font-bold cursor-help"
                           style={{
                             color: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue,
                           }}
                         >
                           {experienceData.badgeEmoji}
                         </div>
-                        <div
-                          className="text-2xl font-bold"
-                          style={{
-                            color: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue,
-                          }}
-                        >
-                          {experienceData.levelName}
-                        </div>
+                      </Tooltip>
+                      <div
+                        className="text-2xl font-bold"
+                        style={{
+                          color: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.blue,
+                        }}
+                      >
+                        {experienceData.levelName}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Level {experienceData.level} • {experienceData.levelProgress.toFixed(1)}% progress
-                      </div>
-                      {experienceData.nextLevelName && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Next: {experienceData.nextLevelEmoji} {experienceData.nextLevelName}
-                        </div>
-                      )}
                     </div>
-                  </Tooltip>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Level {experienceData.level} • {experienceData.levelProgress.toFixed(1)}% progress
+                    </div>
+                    {experienceData.nextLevelName && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Next: {experienceData.nextLevelEmoji} {experienceData.nextLevelName}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Quality Metrics Card */}
                   <div
@@ -966,48 +1036,27 @@ const AdminDashboardPage = () => {
                 </div>
 
                 {/* Level Progress Bar */}
-                <Tooltip
-                  content={(() => {
-                    const currentLevelIndex = EXPERIENCE_LEVELS.findIndex(l => l.level === experienceData.level);
-                    const visibleLevels = EXPERIENCE_LEVELS.slice(
-                      Math.max(0, currentLevelIndex - 2),
-                      Math.min(EXPERIENCE_LEVELS.length, currentLevelIndex + 4)
-                    );
-                    return `Level System:\n\n` +
-                      visibleLevels.map(level => {
-                        const isCurrent = level.level === experienceData.level;
-                        const isNext = level.level === (experienceData.level + 1);
-                        const prefix = isCurrent ? '→ ' : isNext ? '↑ ' : '  ';
-                        const range = level.maxPoints === Infinity 
-                          ? `${level.minPoints.toLocaleString()}+ XP`
-                          : `${level.minPoints.toLocaleString()} - ${level.maxPoints.toLocaleString()} XP`;
-                        return `${prefix}${level.badge} Level ${level.level}: ${level.name} (${range})`;
-                      }).join('\n') +
-                      (currentLevelIndex < EXPERIENCE_LEVELS.length - 3 ? '\n\n...' : '');
-                  })()}
-                >
-                  <div className="space-y-2 cursor-help">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Level Progress</span>
-                      <span className="text-gray-600 dark:text-gray-400">{experienceData.levelProgress.toFixed(1)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${experienceData.levelProgress}%`,
-                          backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple,
-                        }}
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {experienceData.xpToNextLevel > 0 
-                        ? `${experienceData.xpToNextLevel.toLocaleString()} XP needed for ${experienceData.nextLevelName || 'next level'}`
-                        : 'Max level reached!'
-                      }
-                    </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Level Progress</span>
+                    <span className="text-gray-600 dark:text-gray-400">{experienceData.levelProgress.toFixed(1)}%</span>
                   </div>
-                </Tooltip>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${experienceData.levelProgress}%`,
+                        backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP[experienceData.badge.color] || CARD_SYSTEM.COLOR_HEX_MAP.purple,
+                      }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {experienceData.xpToNextLevel > 0 
+                      ? `${experienceData.xpToNextLevel.toLocaleString()} XP needed for ${experienceData.nextLevelName || 'next level'}`
+                      : 'Max level reached!'
+                    }
+                  </div>
+                </div>
 
                 {/* Performance Metrics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1232,6 +1281,108 @@ const AdminDashboardPage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Achievements Section */}
+                {achievements && (
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Achievements & Quests</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.values(achievements).map((achievement) => {
+                        const levelInfo = achievement.levelInfo;
+                        if (!levelInfo) return null;
+
+                        const currentLevel = levelInfo.current;
+                        const nextLevel = levelInfo.next;
+                        const isMaxLevel = !nextLevel;
+
+                        return (
+                          <div
+                            key={achievement.id}
+                            className="p-4 rounded-lg border relative overflow-hidden"
+                            style={{
+                              background: `${achievement.color}08`,
+                              borderColor: `${achievement.color}20`,
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl">{achievement.icon}</span>
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {achievement.name}
+                                  </h3>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {achievement.description}
+                                  </p>
+                                </div>
+                              </div>
+                            {currentLevel && (
+                              <Tooltip
+                                content={`All ${achievement.name} Levels:\n\n` +
+                                  achievement.levels.map(level => {
+                                    const isCurrent = level.level === currentLevel.level;
+                                    const prefix = isCurrent ? '→ ' : '  ';
+                                    return `${prefix}${level.badge} Level ${level.level}: ${level.name}\n` +
+                                      `   Target: ${level.target.toLocaleString()}\n` +
+                                      `   Reward: ${level.reward}`;
+                                  }).join('\n\n')}
+                              >
+                                <div>
+                                  <Badge variant="purple" size="xs">
+                                    {currentLevel.badge} Lv.{currentLevel.level}
+                                  </Badge>
+                                </div>
+                              </Tooltip>
+                            )}
+                            </div>
+
+                            {/* Progress Info */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {currentLevel ? `${currentLevel.name}` : 'Not Started'}
+                                </span>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                  {achievement.currentValue.toLocaleString()}
+                                  {nextLevel ? ` / ${nextLevel.target.toLocaleString()}` : ''}
+                                </span>
+                              </div>
+
+                              {/* Progress Bar */}
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${levelInfo.progressPercent}%`,
+                                    backgroundColor: achievement.color,
+                                  }}
+                                />
+                              </div>
+
+                              {/* Next Level Info */}
+                              {nextLevel && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Next: {nextLevel.badge} {nextLevel.name} ({nextLevel.target.toLocaleString()})
+                                  {levelInfo.remaining > 0 && (
+                                    <span className="ml-1 font-medium">
+                                      • {levelInfo.remaining.toLocaleString()} remaining
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {isMaxLevel && currentLevel && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  🎉 Max level reached! {currentLevel.badge}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
