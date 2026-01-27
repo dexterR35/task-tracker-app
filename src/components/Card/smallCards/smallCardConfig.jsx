@@ -1536,7 +1536,6 @@ export const createCards = (data, mode = "main") => {
             ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
             : [SMALL_CARD_TYPES.REPORTER_FILTER]),
           SMALL_CARD_TYPES.USER_PROFILE,
-          SMALL_CARD_TYPES.CONNECTED_APPS,
         ];
         break;
       case "analytics":

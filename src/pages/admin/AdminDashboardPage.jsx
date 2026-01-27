@@ -347,6 +347,7 @@ const AdminDashboardPage = () => {
     
     if (userTasksFiltered.length === 0) {
       const defaultLevel = calculateLevel(0);
+      const nextLevel = getNextLevel(defaultLevel);
       return {
         totalXP: 0,
         points: 0,
@@ -362,12 +363,29 @@ const AdminDashboardPage = () => {
         badgeEmoji: defaultLevel.badge,
         levelProgress: 0,
         xpToNextLevel: 200,
-        nextLevelName: null,
+        nextLevelName: nextLevel ? nextLevel.name : null,
+        nextLevelEmoji: nextLevel ? nextLevel.badge : null,
+        nextLevelMinPoints: nextLevel ? nextLevel.minPoints : null,
         qualityMetrics: 0,
         productivityScore: 0,
         avgTaskCompletion: 0,
         qualityRating: 0,
         onTimeDelivery: 0,
+        // XP Breakdown
+        xpBreakdown: {
+          fromTasks: 0,
+          fromDeliverables: 0,
+          fromVariations: 0,
+          fromShutterstock: 0,
+          fromAI: 0,
+          fromBonuses: 0,
+        },
+        // Counts
+        tasksCount: 0,
+        deliverablesCount: 0,
+        variationsCount: 0,
+        shutterstockCount: 0,
+        aiCount: 0,
       };
     }
     

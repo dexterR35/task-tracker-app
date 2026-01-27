@@ -49,7 +49,7 @@ export const EXPERIENCE_LEVELS = [
   { level: 6, minPoints: 3500, maxPoints: 5500, name: "Copy-Paste Master", color: "#ef4444", badge: "👑" },
   { level: 7, minPoints: 5500, maxPoints: 8000, name: "Ctrl+C Champion", color: "#ec4899", badge: "⚡" },
   { level: 8, minPoints: 8000, maxPoints: 12000, name: "Tab Hoarder", color: "#8b5cf6", badge: "🌟" },
-  { level: 9, minPoints: 12000, maxPoints: 18000, name: "Notification Slave", color: "#06b6d4", badge: "💫" },
+  { level: 9, minPoints: 12000, maxPoints: 18000, name: "Notification Master", color: "#06b6d4", badge: "💫" },
   { level: 10, minPoints: 18000, maxPoints: 25000, name: "Actually Trying", color: "#fbbf24", badge: "✨" },
   { level: 11, minPoints: 25000, maxPoints: 35000, name: "Not Bad", color: "#10b981", badge: "🎯" },
   { level: 12, minPoints: 35000, maxPoints: 50000, name: "Pretty Good", color: "#3b82f6", badge: "🏆" },

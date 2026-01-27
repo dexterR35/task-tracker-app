@@ -182,6 +182,90 @@ const Sidebar = () => {
         })}
       </nav>
 
+      {/* External Services Section */}
+      {!isCollapsed && (
+        <div className="px-3 py-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="space-y-1.5">
+            <a
+              href="https://gmrd.atlassian.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+            >
+              <div className="w-7 h-7 rounded bg-blue-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                J
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                  Jira
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  gmrd.atlassian.net
+                </div>
+              </div>
+              <Icons.generic.globe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            </a>
+            <a
+              href="https://lattice.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+            >
+              <div className="w-7 h-7 rounded bg-purple-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                L
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 truncate">
+                  Lattice
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  lattice.com
+                </div>
+              </div>
+              <Icons.generic.globe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            </a>
+            <a
+              href="https://mail.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+            >
+              <div className="w-7 h-7 rounded bg-red-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                G
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 truncate">
+                  Gmail
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  mail.google.com
+                </div>
+              </div>
+              <Icons.generic.globe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            </a>
+            <a
+              href="https://www.freepik.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+            >
+              <div className="w-7 h-7 rounded bg-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                F
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 truncate">
+                  Freepik
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  freepik.com
+                </div>
+              </div>
+              <Icons.generic.globe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Footer Section */}
       <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
         {!isCollapsed && (
