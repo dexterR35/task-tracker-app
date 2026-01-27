@@ -539,17 +539,33 @@ export const SMALL_CARD_CONFIGS = {
       color: "green",
     }),
     getValue: (data) => {
+      // Use pre-calculated value from hooks if available (respects user/reporter filters)
+      if (data.actionsTotalTasks !== undefined) {
+        return data.actionsTotalTasks.toString();
+      }
+
+      // Fallback calculation if pre-calculated value not available
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
 
       const currentMonthId =
         data.selectedMonth?.monthId || data.currentMonth?.monthId;
 
-      // Show ALL tasks for the selected month (no user/reporter filtering)
-      const filteredTasks = data.tasks.filter((task) => {
-        // Only filter by month, never by user or reporter
+      // Filter tasks by month
+      let filteredTasks = data.tasks.filter((task) => {
         if (currentMonthId && task.monthId !== currentMonthId) return false;
         return true;
       });
+
+      // Apply user and reporter filtering if specified (same logic as getDetails)
+      if (data.selectedUserId || data.selectedReporterId) {
+        filteredTasks = filterTasksByUserAndReporter(filteredTasks, {
+          selectedUserId: data.selectedUserId,
+          selectedReporterId: data.selectedReporterId,
+          currentMonthId: null, // Already filtered by month above
+          isUserAdmin: data.isUserAdmin || data.currentUser?.role === "admin",
+          currentUserUID: data.currentUser?.userUID,
+        });
+      }
 
       return filteredTasks.length.toString();
     },
