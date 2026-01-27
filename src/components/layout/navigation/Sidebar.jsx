@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
-import { CARD_SYSTEM, NAVIGATION_CONFIG } from '@/constants';
+import { CARD_SYSTEM, NAVIGATION_CONFIG, APP_CONFIG } from '@/constants';
 
 const Sidebar = () => {
   const { logout, clearError, canAccess, user } = useAuth();
@@ -10,6 +10,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
+
 
   const handleLogout = async () => {
     try {
@@ -70,8 +71,8 @@ const Sidebar = () => {
       {/* Header Section */}
       <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         
-        {/* Design department */}
-        {!isCollapsed && (
+        {/* Office badge */}
+        {!isCollapsed && user && (
           <div className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg ">
             <div 
               className="p-2 rounded-lg text-white shadow-md"
@@ -81,7 +82,7 @@ const Sidebar = () => {
             </div>
             <div className="ml-2.5 flex-1">
               <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{NAVIGATION_CONFIG.DEPARTMENT.name}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300 font-medium">{NAVIGATION_CONFIG.DEPARTMENT.subtitle}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300 font-medium uppercase">{user.office || 'No Office'}</p>
             </div>
           </div>
         )}
@@ -181,8 +182,16 @@ const Sidebar = () => {
         })}
       </nav>
 
-
-
+      {/* Footer Section */}
+      <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
+        {!isCollapsed && (
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Version {APP_CONFIG.VERSION}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

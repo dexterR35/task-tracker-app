@@ -26,6 +26,7 @@ const SearchableSelectField = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOptions, setFilteredOptions] = useState(field.options || []);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
   
@@ -76,10 +77,36 @@ const SearchableSelectField = ({
     }
   }, [searchTerm, field.options, disabled]);
 
+  // Calculate dropdown position when it opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      const updatePosition = () => {
+        const inputRect = inputRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: inputRect.bottom + 4, // 4px gap, using viewport coordinates for fixed positioning
+          left: inputRect.left,
+          width: inputRect.width,
+        });
+      };
+      
+      updatePosition();
+      
+      // Update position on scroll or resize
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) && 
+          inputRef.current && !inputRef.current.contains(event.target)) {
         setIsOpen(false);
         setSearchTerm('');
       }
@@ -226,7 +253,7 @@ const SearchableSelectField = ({
         </label>
       )}
       
-      <div className="relative z-10" ref={dropdownRef}>
+      <div className="relative z-10">
         <input
           ref={inputRef}
           id={field.name}
@@ -285,7 +312,15 @@ const SearchableSelectField = ({
         )}
 
         {isOpen && (
-          <div className="absolute card p-0 z-[9999] w-full mt-1 max-h-60 overflow-auto shadow-lg">
+          <div 
+            ref={dropdownRef}
+            className="fixed card p-0 z-[9999] max-h-60 overflow-auto shadow-lg"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: `${dropdownPosition.width}px`,
+            }}
+          >
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div

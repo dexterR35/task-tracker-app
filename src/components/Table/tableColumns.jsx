@@ -517,6 +517,11 @@ const createUserColumns = () => [
     cell: createSimpleCell(),
     size: 150,
   }),
+  columnHelper.accessor("office", {
+    header: "OFFICE",
+    cell: createSimpleCell(),
+    size: 150,
+  }),
   columnHelper.accessor("createdAt", {
     header: "CREATED",
     cell: createDateCell(DATE_FORMATS.DATETIME_LONG),

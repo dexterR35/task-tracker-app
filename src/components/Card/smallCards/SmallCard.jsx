@@ -24,24 +24,24 @@ const SmallCard = memo(
 
     return (
       <div 
-        className="card-small-modern group overflow-visible transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 p-3 py-4 rounded-bl-none rounded-tl-none"
+        className="card-small-modern overflow-hidden p-3 py-4 rounded-bl-none rounded-tl-none"
       >
         {/* Subtle left accent line instead of top border */}
         <div
-          className="absolute top-0 left-0 bottom-0 w-0.5 rounded-l-xl transition-all duration-300 group-hover:w-1"
+          className="absolute top-0 left-0 bottom-0 w-0.5 rounded-l-xl"
           style={{
             backgroundColor: cardColorHex,
             opacity: 0.6,
           }}
         />
 
-        <div className="flex flex-col h-full relative z-10 overflow-visible pl-2">
+        <div className="flex flex-col h-full relative z-10 overflow-hidden pl-2">
           {/* Minimalist Header Section */}
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Clean Icon with subtle background */}
               <div
-                className="relative flex-shrink-0 transition-all duration-300 group-hover:scale-110"
+                className="relative flex-shrink-0"
                 style={{
                   background: styles.iconBg,
                   borderRadius: "10px",
@@ -49,7 +49,7 @@ const SmallCard = memo(
                 }}
               >
                 <card.icon 
-                  className="relative w-4 h-4 transition-colors duration-300" 
+                  className="relative w-4 h-4" 
                   style={styles.iconStyle}
                 />
               </div>
@@ -82,7 +82,7 @@ const SmallCard = memo(
           </div>
 
           {/* Main Content Section */}
-          <div className="flex-1 flex flex-col overflow-visible">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Value Display - Clean and prominent */}
             <div className="mb-5">
               <p
@@ -100,7 +100,7 @@ const SmallCard = memo(
 
             {/* Filters/Inputs Content */}
             {card.content && (
-              <div className="leading-relaxed mb-4 text-sm overflow-visible">{card.content}</div>
+              <div className="leading-relaxed mb-4 text-sm overflow-hidden">{card.content}</div>
             )}
 
             {/* Details Section - Minimalist Cards */}
@@ -125,7 +125,7 @@ const SmallCard = memo(
 
                         {/* Markets section - Clean card design */}
                         <div
-                          className="p-3 rounded-lg border transition-all duration-200 hover:border-opacity-40"
+                          className="p-3 rounded-lg border"
                           style={{
                             background: styles.regularDetailBg,
                             borderColor: styles.regularDetailBorder,
@@ -173,7 +173,7 @@ const SmallCard = memo(
                     return (
                       <div
                         key={index}
-                        className="p-2.5 rounded-lg border flex items-center justify-between transition-all duration-200 hover:border-opacity-40"
+                        className="p-2.5 rounded-lg border flex items-center justify-between"
                         style={{
                           background: styles.regularDetailBg,
                           borderColor: styles.regularDetailBorder,

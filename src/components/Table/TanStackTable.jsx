@@ -865,7 +865,7 @@ const TanStackTable = forwardRef(
             />
 
             {/* Table */}
-            <div className=" overflow-hidden p-0 relative rounded-none ">
+            <div className="overflow-x-auto overflow-y-visible p-0 relative rounded-none">
               <table className="min-w-full">
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (

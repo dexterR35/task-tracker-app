@@ -447,7 +447,7 @@ const AnalyticsPage = () => {
           </div>
 
           {/* Month Selectors */}
-          <div className="card-small-modern mb-6 relative z-0">
+          <div className="card-small-modern mb-6 relative">
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Select Months to Compare

@@ -318,6 +318,7 @@ export const fetchUserByUIDFromFirestore = async (userUID) => {
     };
 
     logger.log('fetchUserByUIDFromFirestore: User found:', user.id);
+    logger.log('fetchUserByUIDFromFirestore: User data includes office:', user.office);
     return user;
   } catch (error) {
     logger.error('fetchUserByUIDFromFirestore: Error fetching user:', error);
