@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 
 const DarkModeContext = createContext();
 
@@ -12,17 +12,32 @@ export const useDarkMode = () => {
 
 export const DarkModeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first, then default to dark mode
+    // Check localStorage first, then default to light mode
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
       return JSON.parse(saved);
     }
-    // Default to dark mode instead of system preference
-    return true;
+    // Default to light mode (white mode)
+    return false;
   });
 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const timeoutRef = useRef(null);
+
+  // Helper function to update DOM classes - memoized to prevent unnecessary re-renders
+  const updateDarkModeClasses = useCallback((darkMode) => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+      document.documentElement.style.backgroundColor = '#181826';
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+      document.documentElement.style.backgroundColor = '#ffffff';
+      document.documentElement.style.colorScheme = 'light';
+    }
+  }, []);
 
   const toggleDarkMode = () => {
     // Clear any existing timeout
@@ -32,19 +47,16 @@ export const DarkModeProvider = ({ children }) => {
     
     setIsTransitioning(true);
     
-    // Add transition class to body
+    // Add transition class to body and documentElement
     document.body.classList.add('transition-colors', 'duration-500');
+    document.documentElement.classList.add('transition-colors', 'duration-500');
     
     // Toggle dark mode
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
     
-    // Update body class
-    if (newMode) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
+    // Update both documentElement and body classes in real-time
+    updateDarkModeClasses(newMode);
     
     // Save to localStorage
     localStorage.setItem('darkMode', JSON.stringify(newMode));
@@ -52,15 +64,16 @@ export const DarkModeProvider = ({ children }) => {
     // Remove transition class after animation (500ms to match CSS duration)
     timeoutRef.current = setTimeout(() => {
       document.body.classList.remove('transition-colors', 'duration-500');
+      document.documentElement.classList.remove('transition-colors', 'duration-500');
       setIsTransitioning(false);
       timeoutRef.current = null;
     }, 500);
   };
 
+  // Sync DOM classes with state on mount and when isDarkMode changes
   useEffect(() => {
-    // Dark mode class is now handled by pre-init script in index.html
-    // This effect is kept for any future initialization needs
-  }, []);
+    updateDarkModeClasses(isDarkMode);
+  }, [isDarkMode]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

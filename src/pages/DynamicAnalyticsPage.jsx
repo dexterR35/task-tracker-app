@@ -23,11 +23,6 @@ import { CARD_SYSTEM, TABLE_SYSTEM } from "@/constants";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { Icons } from "@/components/icons";
 
-// Helper function to convert Firestore Timestamp to Date
-const convertToDate = (timestamp) => {
-  return normalizeTimestamp(timestamp);
-};
-
 // Column helper for analytics table
 const columnHelper = createColumnHelper();
 
@@ -35,23 +30,14 @@ const columnHelper = createColumnHelper();
 const DATE_FORMATS = TABLE_SYSTEM.DATE_FORMATS;
 
 // Utility functions (matching dashboard table)
-const formatDateCell = (
-  value,
-  format = DATE_FORMATS.SHORT,
-  showTime = true
-) => {
-  if (!value) return "-";
-  return formatDate(value, format, showTime);
-};
-
 const createDateCell =
   (format = DATE_FORMATS.SHORT) =>
   ({ getValue }) => {
     const value = getValue();
     if (!value) return "-";
     return (
-      <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
-        {formatDateCell(value, format)}
+      <span className="text-xs font-medium">
+        {formatDate(value, format)}
       </span>
     );
   };
@@ -62,7 +48,7 @@ const ColumnHeaderWithTooltip = ({ title, description }) => {
     <div className="flex items-center gap-1">
       <span>{title}</span>
       <Tooltip content={description}>
-        <span className="text-gray-400 dark:text-gray-500 cursor-help text-xs hover:text-gray-600 dark:hover:text-gray-300">
+        <span className="cursor-help text-xs">
           ℹ️
         </span>
       </Tooltip>
@@ -95,6 +81,19 @@ const getDurationDays = (startDate, endDate) => {
   }
 };
 
+// Helper function to extract base deliverable hours and variation hours from a deliverable
+// This eliminates duplicate calculation logic
+const extractDeliverableHours = (deliverable) => {
+  const totalTimeInHours = deliverable.time || 0;
+  const variationTimeInHours = deliverable.totalvariationsTimeInMinutes ? deliverable.totalvariationsTimeInMinutes / 60 : 0;
+  const baseDeliverableHours = totalTimeInHours - variationTimeInHours;
+  
+  return {
+    baseDeliverableHours,
+    variationTimeInHours,
+  };
+};
+
 // Create analytics table columns
 const createAnalyticsColumns = (isAdmin = true) => [
   columnHelper.accessor("jiraName", {
@@ -108,7 +107,7 @@ const createAnalyticsColumns = (isAdmin = true) => [
       const taskName = getValue();
       if (!taskName || taskName === 'N/A') {
         return (
-          <span className="text-gray-600 dark:text-gray-400">No Link</span>
+          <span>No Link</span>
         );
       }
 
@@ -143,7 +142,7 @@ const createAnalyticsColumns = (isAdmin = true) => [
       const deliverablesList = getValue();
       if (!deliverablesList || deliverablesList.length === 0) {
         return (
-          <span className="text-gray-600 dark:text-gray-400">No deliverables</span>
+          <span>No deliverables</span>
         );
       }
 
@@ -155,11 +154,11 @@ const createAnalyticsColumns = (isAdmin = true) => [
             const hasVariations = variationsQuantity > 0;
             
             return (
-              <div key={index} className="text-xs">
-                <span className="font-medium text-gray-900 dark:text-white">
+              <div key={`${deliverable.name}-${index}`} className="text-xs">
+                <span className="font-medium">
                   {deliverable.name}
                 </span>
-                <span className="text-gray-600 dark:text-gray-400 ml-1">
+                <span className="ml-1">
                   (qty: {quantity}
                 </span>
                 {/* Only show variations count for admin users */}
@@ -168,7 +167,7 @@ const createAnalyticsColumns = (isAdmin = true) => [
                     + {variationsQuantity} var
                   </span>
                 )}
-                <span className="text-gray-600 dark:text-gray-400">)</span>
+                <span>)</span>
               </div>
             );
           })}
@@ -203,12 +202,12 @@ const createAnalyticsColumns = (isAdmin = true) => [
               
               if (timePerUnit === 0) {
                 return (
-                  <span key={index} className="text-xs text-gray-600 dark:text-gray-400">-</span>
+                  <span key={`time-per-unit-${deliverable.name || index}`} className="text-xs">-</span>
                 );
               }
 
               return (
-                <span key={index} className="text-xs text-gray-900 dark:text-white">
+                <span key={`time-per-unit-${deliverable.name || index}`} className="text-xs">
                   {timePerUnit} {timeUnit}
                 </span>
               );
@@ -243,12 +242,12 @@ const createAnalyticsColumns = (isAdmin = true) => [
               
               if (variationsTime === 0) {
                 return (
-                  <span key={index} className="text-xs text-gray-600 dark:text-gray-400">-</span>
+                  <span key={`variations-time-${deliverable.name || index}`} className="text-xs">-</span>
                 );
               }
 
               return (
-                <span key={index} className="text-xs text-gray-900 dark:text-white">
+                <span key={`variations-time-${deliverable.name || index}`} className="text-xs">
                   {variationsTime} {variationsTimeUnit}
                 </span>
               );
@@ -290,7 +289,7 @@ const createAnalyticsColumns = (isAdmin = true) => [
         const value = getValue();
         if (!value) return "-";
         return (
-          <span className="text-gray-900 dark:text-gray-200">
+          <span>
             {value}h
           </span>
         );
@@ -308,7 +307,7 @@ const createAnalyticsColumns = (isAdmin = true) => [
         const value = getValue();
         if (!value) return "-";
         return (
-          <span className="text-gray-900 dark:text-gray-200">
+          <span>
             {value}h
           </span>
         );
@@ -326,7 +325,7 @@ const createAnalyticsColumns = (isAdmin = true) => [
         const value = getValue();
         if (!value) return "-";
         return (
-          <span className="text-gray-900 dark:text-gray-200">
+          <span>
             {value}h
           </span>
         );
@@ -737,10 +736,8 @@ const DynamicAnalyticsPage = () => {
           stats[userId].totalDeliverableCount += quantity;
           stats[userId].totalVariationCount += variationsQuantity;
           
-          // Calculate base deliverable hours (total time minus variation time)
-          const totalTimeInHours = deliverable.time || 0;
-          const variationTimeInHours = deliverable.totalvariationsTimeInMinutes ? deliverable.totalvariationsTimeInMinutes / 60 : 0;
-          const baseDeliverableHours = totalTimeInHours - variationTimeInHours;
+          // Calculate base deliverable hours and variation hours using helper function
+          const { baseDeliverableHours, variationTimeInHours } = extractDeliverableHours(deliverable);
           
           stats[userId].totalDeliverableHours += baseDeliverableHours;
           stats[userId].totalVariationHours += variationTimeInHours;
@@ -779,53 +776,15 @@ const DynamicAnalyticsPage = () => {
     return Object.values(stats).sort((a, b) => a.userName.localeCompare(b.userName));
   }, [filteredTasksForHooks, allUsers, deliverablesOptions, user, userName]);
 
-  // Helper function to calculate planned hours for a task (non-hook version)
+  // Helper function to calculate planned hours for a task
+  // Uses the existing useDeliverableCalculation function (which is actually a regular function, not a hook)
   const calculateTaskPlannedHours = (task, deliverablesOptions) => {
     const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
     if (!deliverablesUsed || deliverablesUsed.length === 0) return 0;
     
-    let plannedHours = 0;
-    
-    deliverablesUsed.forEach(deliverable => {
-      const deliverableName = deliverable?.name;
-      const quantity = deliverable?.count || 1;
-      
-      if (!deliverableName || typeof deliverableName !== 'string') return;
-      
-      const deliverableOption = deliverablesOptions?.find(d => 
-        d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
-      );
-      
-      if (deliverableOption) {
-        const timePerUnit = deliverableOption.timePerUnit || 1;
-        const timeUnit = deliverableOption.timeUnit || 'hr';
-        const requiresQuantity = deliverableOption.requiresQuantity || false;
-        
-        // Convert base time to hours
-        let timeInHours = timePerUnit;
-        if (timeUnit === 'min') timeInHours = timePerUnit / 60;
-        else if (timeUnit === 'hr') timeInHours = timePerUnit;
-        else if (timeUnit === 'day') timeInHours = timePerUnit * 8;
-        
-        // Calculate variations time if applicable
-        let variationsTimeInHours = 0;
-        if (requiresQuantity) {
-          const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
-          const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
-          const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
-          
-          if (variationsTime > 0 && variationsQuantity > 0) {
-            let variationsTimeInMinutes = variationsTime;
-            if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
-            variationsTimeInHours = (variationsTimeInMinutes * variationsQuantity) / 60;
-          }
-        }
-        
-        plannedHours += (timeInHours * quantity) + variationsTimeInHours;
-      }
-    });
-    
-    return plannedHours;
+    // Use the existing calculation function instead of duplicating logic
+    const { totalTime } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
+    return totalTime || 0;
   };
 
   // Helper function to calculate performance metrics
@@ -1056,10 +1015,8 @@ const DynamicAnalyticsPage = () => {
       let taskVariationHours = 0;
       
       deliverablesList.forEach(deliverable => {
-        // Calculate base deliverable hours (total time minus variation time)
-        const totalTimeInHours = deliverable.time || 0;
-        const variationTimeInHours = deliverable.totalvariationsTimeInMinutes ? deliverable.totalvariationsTimeInMinutes / 60 : 0;
-        const baseDeliverableHours = totalTimeInHours - variationTimeInHours;
+        // Calculate base deliverable hours and variation hours using helper function
+        const { baseDeliverableHours, variationTimeInHours } = extractDeliverableHours(deliverable);
         
         taskDeliverableHours += baseDeliverableHours;
         taskVariationHours += variationTimeInHours;
@@ -1195,22 +1152,22 @@ const DynamicAnalyticsPage = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white w-12"></th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">User</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Hours</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Deliverables</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold   w-12"></th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold  ">User</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold  ">Tasks</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold  ">Deliverables</th>
                   {isUserAdmin && (
                     <>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Del. Hours</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Variations</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Var. Hours</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Planned</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Difference</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold  ">Del. Hours</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold  ">Variations</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold  ">Var. Hours</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold  ">Total Hours</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold  ">Total Planned</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold  ">Difference</th>
                     </>
                   )}
                   {!isUserAdmin && (
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold  ">Total Hours</th>
                   )}
                 </tr>
               </thead>
@@ -1248,7 +1205,7 @@ const DynamicAnalyticsPage = () => {
                               e.stopPropagation();
                               toggleExpand();
                             }}
-                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                            className="text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:text-gray-100 transition-colors"
                           >
                             <span className="text-[8px] leading-none">
                               {isExpanded ? '🟢' : '🔴'}
@@ -1256,31 +1213,31 @@ const DynamicAnalyticsPage = () => {
                           </button>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="text-sm font-medium  ">
                             {userStat.userName}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                          {userStat.totalTaskHours.toFixed(2)}h
+                        <td className="py-3 px-4 text-right text-sm  ">
+                          {userStat.totalTaskCount || 0}
                         </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                        <td className="py-3 px-4 text-right text-sm  ">
                           {userStat.totalDeliverableCount || 0}
                         </td>
                         {isUserAdmin && (
                           <>
-                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                            <td className="py-3 px-4 text-right text-sm  ">
                               {userStat.totalDeliverableHours.toFixed(2)}h
                             </td>
-                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                            <td className="py-3 px-4 text-right text-sm  ">
                               {userStat.totalVariationCount || 0}
                             </td>
-                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                            <td className="py-3 px-4 text-right text-sm  ">
                               {userStat.totalVariationHours.toFixed(2)}h
                             </td>
-                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                              {userStat.totalTaskCount || 0}
+                            <td className="py-3 px-4 text-right text-sm  ">
+                              {userStat.totalTaskHours.toFixed(2)}h
                             </td>
-                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                            <td className="py-3 px-4 text-right text-sm  ">
                               {totalDelVarHours.toFixed(2)}h
                             </td>
                             <td className="py-3 px-4 text-right">
@@ -1294,8 +1251,8 @@ const DynamicAnalyticsPage = () => {
                           </>
                         )}
                         {!isUserAdmin && (
-                          <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                            {userStat.totalTaskCount || 0}
+                          <td className="py-3 px-4 text-right text-sm  ">
+                            {userStat.totalTaskHours.toFixed(2)}h
                           </td>
                         )}
                       </tr>
@@ -1305,7 +1262,7 @@ const DynamicAnalyticsPage = () => {
                             <div className="space-y-6">
                               {/* Summary Cards */}
                               <div>
-                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                <h4 className="text-sm font-semibold   mb-4">
                                   Summary: {userStat.userName}
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -1317,7 +1274,7 @@ const DynamicAnalyticsPage = () => {
                               
                               {/* Detailed Tasks Table */}
                               <div>
-                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                <h4 className="text-sm font-semibold   mb-4">
                                   All Tasks
                                 </h4>
                                 <div className="card overflow-visible">
@@ -1354,77 +1311,8 @@ const DynamicAnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Calculation Summary - Only show for admin users */}
-        {isUserAdmin && (
-        <div className="mb-8">
-          <div className="card">
-            <div className="p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="flex-shrink-0 mt-1">
-                  <Icons.generic.help className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    How Calculations Work
-                  </h3>
-                  <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
-                    <div>
-                      <p className="font-medium mb-2">Task Hours vs Planned Hours:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
-                        <li><span className="font-medium text-gray-900 dark:text-white">Task Hours</span> = Actual time logged for tasks (sum of timeInHours from all tasks - what was actually spent)</li>
-                        <li><span className="font-medium text-gray-900 dark:text-white">Deliverable Hours</span> = Planned base time from deliverables (timePerUnit × quantity, excluding variations - from Management Settings)</li>
-                        <li><span className="font-medium text-gray-900 dark:text-white">Variation Hours</span> = Planned time from variations only (variationsTime × variationsQuantity - from Management Settings)</li>
-                        <li><span className="font-medium text-gray-900 dark:text-white">Total Planned</span> = Deliverable Hours + Variation Hours (planned time stored in database from deliverable settings)</li>
-                        <li><span className="font-medium text-gray-900 dark:text-white">Difference</span> = Task Hours - Total Planned (positive = took longer than planned, negative = took less than planned)</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
       
-                      <p className="font-medium mb-2 text-gray-900 dark:text-white mt-3">Calculation Formula:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
-                        <li><span className="font-medium">Deliverable Hours</span> = (timePerUnit × quantity) - variation time (from database)</li>
-                        <li><span className="font-medium">Variation Hours</span> = variationsTime × variationsQuantity (from database, converted to hours)</li>
-                        <li><span className="font-medium">Total Planned</span> = Deliverable Hours + Variation Hours (all from database)</li>
-                        <li><span className="font-medium">Difference</span> = Actual Task Hours - Total Planned Hours</li>
-                      </ul>
-                   
-                    </div>
-
-                    <div>
-                      <p className="font-medium mb-2">Example:</p>
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="space-y-2 text-xs">
-                          <div>
-                            <span className="font-semibold text-gray-900 dark:text-white">Task Hours:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">1.00h (actual time logged)</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-900 dark:text-white">Deliverable Hours:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">1.00h (base deliverable time)</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-900 dark:text-white">Variation Hours:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">0.00h (variation time)</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-900 dark:text-white">Total Planned:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">1.00h (1.00 + 0.00) - planned time from deliverable settings</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-900 dark:text-white">Difference:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">0.00h (1.00 - 1.00 = took exactly as planned)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+      
         
       </div>
 
