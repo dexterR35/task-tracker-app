@@ -71,7 +71,7 @@ const getDurationDays = (startDate, endDate) => {
 };
 
 // Create analytics table columns
-const createAnalyticsColumns = () => [
+const createAnalyticsColumns = (isAdmin = true) => [
   columnHelper.accessor("jiraName", {
     header: () => (
       <ColumnHeaderWithTooltip
@@ -111,7 +111,7 @@ const createAnalyticsColumns = () => [
     header: () => (
       <ColumnHeaderWithTooltip
         title="DELIVERABLES"
-        description="List of deliverables with quantity and variation indicator."
+        description={isAdmin ? "List of deliverables with quantity and variation indicator." : "List of deliverables with quantity."}
       />
     ),
     cell: ({ getValue }) => {
@@ -137,7 +137,8 @@ const createAnalyticsColumns = () => [
                 <span className="text-gray-600 dark:text-gray-400 ml-1">
                   (qty: {quantity}
                 </span>
-                {hasVariations && (
+                {/* Only show variations count for admin users */}
+                {isAdmin && hasVariations && (
                   <span className="text-blue-600 dark:text-blue-400 ml-1">
                     + {variationsQuantity} var
                   </span>
@@ -169,61 +170,63 @@ const createAnalyticsColumns = () => [
     },
     size: 100,
   }),
-  columnHelper.accessor("deliverableHours", {
-    header: () => (
-      <ColumnHeaderWithTooltip
-        title="DELIVERABLE HR"
-        description="Base hours from deliverables (without variations). Uses Management Settings rates × quantity."
-      />
-    ),
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return "-";
-      return (
-        <span className="text-gray-900 dark:text-gray-200">
-          {value}h
-        </span>
-      );
-    },
-    size: 120,
-  }),
-  columnHelper.accessor("variationHours", {
-    header: () => (
-      <ColumnHeaderWithTooltip
-        title="VARIATION HR"
-        description="Hours from variations only. Uses Management Settings variation rates × variation quantity."
-      />
-    ),
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return "-";
-      return (
-        <span className="text-gray-900 dark:text-gray-200">
-          {value}h
-        </span>
-      );
-    },
-    size: 120,
-  }),
-  columnHelper.accessor("totalDeliverableAndVariation", {
-    header: () => (
-      <ColumnHeaderWithTooltip
-        title="TOTAL DEL+VAR HR"
-        description="Sum of Deliverable HR + Variation HR (total planned time from deliverables stored in database)."
-      />
-    ),
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return "-";
-      return (
-        <span className="text-gray-900 dark:text-gray-200">
-          {value}h
-        </span>
-      );
-    },
-    size: 150,
-  }),
-  columnHelper.accessor("difference", {
+  // Only show calculation columns for admin users
+  ...(isAdmin ? [
+    columnHelper.accessor("deliverableHours", {
+      header: () => (
+        <ColumnHeaderWithTooltip
+          title="DELIVERABLE HR"
+          description="Base hours from deliverables (without variations). Uses Management Settings rates × quantity."
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (!value) return "-";
+        return (
+          <span className="text-gray-900 dark:text-gray-200">
+            {value}h
+          </span>
+        );
+      },
+      size: 120,
+    }),
+    columnHelper.accessor("variationHours", {
+      header: () => (
+        <ColumnHeaderWithTooltip
+          title="VARIATION HR"
+          description="Hours from variations only. Uses Management Settings variation rates × variation quantity."
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (!value) return "-";
+        return (
+          <span className="text-gray-900 dark:text-gray-200">
+            {value}h
+          </span>
+        );
+      },
+      size: 120,
+    }),
+    columnHelper.accessor("totalDeliverableAndVariation", {
+      header: () => (
+        <ColumnHeaderWithTooltip
+          title="TOTAL DEL+VAR HR"
+          description="Sum of Deliverable HR + Variation HR (total planned time from deliverables stored in database)."
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (!value) return "-";
+        return (
+          <span className="text-gray-900 dark:text-gray-200">
+            {value}h
+          </span>
+        );
+      },
+      size: 150,
+    }),
+    columnHelper.accessor("difference", {
     header: () => (
       <ColumnHeaderWithTooltip
         title="DIFFERENCE"
@@ -279,7 +282,8 @@ const createAnalyticsColumns = () => [
       );
     },
     size: 120,
-  }),
+    }),
+  ] : []),
 ];
 
 const DynamicAnalyticsPage = () => {
@@ -297,7 +301,7 @@ const DynamicAnalyticsPage = () => {
   
   
   // Use real data from context
-  const { tasks, isLoading, error, loadingStates, monthId: contextMonthId, reporters, deliverables, users: allUsers } = useAppDataContext();
+  const { tasks, isLoading, error, isInitialLoading, monthId: contextMonthId, reporters, deliverables, users: allUsers } = useAppDataContext();
   const { user, canDeleteTask, canUpdateTask, canViewTasks } = useAuth();
   const userCanDeleteTasks = canDeleteTask();
   const userCanUpdateTasks = canUpdateTask();
@@ -353,8 +357,11 @@ const DynamicAnalyticsPage = () => {
     },
   });
 
-  // Analytics table columns
-  const analyticsColumns = useMemo(() => createAnalyticsColumns(), []);
+  // Check if user is admin
+  const isUserAdmin = user?.role === 'admin';
+  
+  // Analytics table columns - hide calculation columns for regular users
+  const analyticsColumns = useMemo(() => createAnalyticsColumns(isUserAdmin), [isUserAdmin]);
 
   // Bulk actions for analytics table
   const bulkActions = useMemo(() => {
@@ -447,18 +454,30 @@ const DynamicAnalyticsPage = () => {
   // Transform deliverables to options format using existing hook
   const { deliverablesOptions } = useDeliverablesOptionsFromProps(deliverables);
   
-  // Manage data ready state to prevent flickering
+  // Manage data ready state - show content immediately when data is available
   useEffect(() => {
-    if (!isLoading && !loadingStates?.isInitialLoading && tasks) {
-      // Small delay to ensure data is fully processed
-      const timer = setTimeout(() => {
-        setIsDataReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
+    // Show content immediately if we have essential data available
+    // Firebase snapshots provide data instantly, no need to wait
+    const hasTasksData = Array.isArray(tasks);
+    const hasUsersData = Array.isArray(allUsers);
+    const hasReportersData = Array.isArray(reporters);
+    const hasDeliverablesData = Array.isArray(deliverables);
+    
+    // If we have any essential data, show the page immediately
+    // Empty arrays are valid - they mean "no data" not "loading"
+    const hasAnyData = hasTasksData || hasUsersData || hasReportersData || hasDeliverablesData;
+    
+    // Show content immediately if:
+    // 1. We have data (even if empty arrays) OR
+    // 2. We're not in initial loading state (means we're navigating, not first load)
+    // This prevents showing loading skeleton when navigating between pages
+    if (hasAnyData || !isInitialLoading) {
+      setIsDataReady(true);
     } else {
+      // Only show loading during true initial app load (when monthId hasn't loaded yet)
       setIsDataReady(false);
     }
-  }, [isLoading, loadingStates?.isInitialLoading, tasks]);
+  }, [isInitialLoading, tasks, allUsers, reporters, deliverables]);
   
   // Use actual monthId from context if 'current' is specified, otherwise use the provided monthId or null for all data
   const actualMonthId = monthId === 'current' ? contextMonthId : monthId;
@@ -467,6 +486,10 @@ const DynamicAnalyticsPage = () => {
   const filteredTasksForHooks = useMemo(() => {
     if (!tasks || tasks.length === 0) return [];
     
+    // Get current user info for better matching
+    const currentUserUID = user?.userUID;
+    const currentUserName = user?.name || user?.displayName || user?.email || '';
+    
     return tasks.filter(task => {
       // Filter by month only if explicitly provided
       if (actualMonthId && task.monthId !== actualMonthId) {
@@ -474,8 +497,19 @@ const DynamicAnalyticsPage = () => {
       }
       
       // Filter by user if specified
-      if (userName && !matchesUserName(task, userName)) {
-        return false;
+      if (userName) {
+        // First try standard matching
+        const matchesStandard = matchesUserName(task, userName);
+        
+        // Also check if current user matches the filter and task belongs to current user
+        const isCurrentUserMatch = currentUserUID && 
+          (currentUserName.toLowerCase() === userName.toLowerCase() ||
+           currentUserUID === userName) &&
+          (task.userUID === currentUserUID || task.createbyUID === currentUserUID);
+        
+        if (!matchesStandard && !isCurrentUserMatch) {
+          return false;
+        }
       }
       
       // Filter by reporter if specified
@@ -530,22 +564,76 @@ const DynamicAnalyticsPage = () => {
       
       return true;
     });
-  }, [tasks, userName, reporterName, actualMonthId, weekParam]);
+  }, [tasks, userName, reporterName, actualMonthId, weekParam, user]);
 
   // Calculate user statistics - MUST be before any conditional returns
   const userStats = useMemo(() => {
-    if (!filteredTasksForHooks || filteredTasksForHooks.length === 0) return [];
-    
     const stats = {};
     
-    filteredTasksForHooks.forEach(task => {
-      const userId = getTaskUserUID(task);
-      if (!userId) return;
+    // Process tasks to build user stats
+    if (filteredTasksForHooks && filteredTasksForHooks.length > 0) {
+      filteredTasksForHooks.forEach(task => {
+        const userId = getTaskUserUID(task);
+        if (!userId) return;
+        
+        if (!stats[userId]) {
+          stats[userId] = {
+            userId,
+            userName: getUserName(userId, allUsers),
+            tasks: [],
+            totalTaskCount: 0,
+            totalTaskHours: 0,
+            totalDeliverableCount: 0,
+            totalDeliverableHours: 0,
+            totalVariationCount: 0,
+            totalVariationHours: 0,
+          };
+        }
+        
+        const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+        stats[userId].tasks.push(task);
+        stats[userId].totalTaskCount += 1;
+        stats[userId].totalTaskHours += taskHours;
+        
+        // Calculate deliverable hours and count using existing hook
+        const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        const { deliverablesList } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
+        
+        deliverablesList.forEach(deliverable => {
+          const quantity = deliverable.quantity || 1;
+          const variationsQuantity = deliverable.variationsQuantity || 0;
+          
+          stats[userId].totalDeliverableCount += quantity;
+          stats[userId].totalVariationCount += variationsQuantity;
+          
+          // Calculate base deliverable hours (total time minus variation time)
+          const totalTimeInHours = deliverable.time || 0;
+          const variationTimeInHours = deliverable.totalvariationsTimeInMinutes ? deliverable.totalvariationsTimeInMinutes / 60 : 0;
+          const baseDeliverableHours = totalTimeInHours - variationTimeInHours;
+          
+          stats[userId].totalDeliverableHours += baseDeliverableHours;
+          stats[userId].totalVariationHours += variationTimeInHours;
+        });
+      });
+    }
+    
+    // Ensure current user appears in the table even if they have no tasks
+    // This is important when filtering by user name or when user has no tasks
+    if (user?.userUID) {
+      const currentUserId = user.userUID;
+      const currentUserName = user.name || user.displayName || user.email || '';
       
-      if (!stats[userId]) {
-        stats[userId] = {
-          userId,
-          userName: getUserName(userId, allUsers),
+      // Check if current user matches the filter
+      const matchesFilter = !userName || 
+        currentUserName.toLowerCase() === userName.toLowerCase() ||
+        currentUserId === userName ||
+        currentUserName.toLowerCase().includes(userName.toLowerCase());
+      
+      // If current user matches filter but isn't in stats, add them
+      if (matchesFilter && !stats[currentUserId]) {
+        stats[currentUserId] = {
+          userId: currentUserId,
+          userName: currentUserName,
           tasks: [],
           totalTaskCount: 0,
           totalTaskHours: 0,
@@ -555,35 +643,175 @@ const DynamicAnalyticsPage = () => {
           totalVariationHours: 0,
         };
       }
-      
-      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
-      stats[userId].tasks.push(task);
-      stats[userId].totalTaskCount += 1;
-      stats[userId].totalTaskHours += taskHours;
-      
-      // Calculate deliverable hours and count using existing hook
-      const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
-      const { deliverablesList } = useDeliverableCalculation(deliverablesUsed, deliverablesOptions);
-      
-      deliverablesList.forEach(deliverable => {
-        const quantity = deliverable.quantity || 1;
-        const variationsQuantity = deliverable.variationsQuantity || 0;
-        
-        stats[userId].totalDeliverableCount += quantity;
-        stats[userId].totalVariationCount += variationsQuantity;
-        
-        // Calculate base deliverable hours (total time minus variation time)
-        const totalTimeInHours = deliverable.time || 0;
-        const variationTimeInHours = deliverable.totalvariationsTimeInMinutes ? deliverable.totalvariationsTimeInMinutes / 60 : 0;
-        const baseDeliverableHours = totalTimeInHours - variationTimeInHours;
-        
-        stats[userId].totalDeliverableHours += baseDeliverableHours;
-        stats[userId].totalVariationHours += variationTimeInHours;
-      });
-    });
+    }
     
     return Object.values(stats).sort((a, b) => a.userName.localeCompare(b.userName));
-  }, [filteredTasksForHooks, allUsers, deliverablesOptions]);
+  }, [filteredTasksForHooks, allUsers, deliverablesOptions, user, userName]);
+
+  // Helper function to calculate XP, level, and badges
+  const calculateXPAndLevel = (userStat) => {
+    const tasksCompleted = userStat.totalTaskCount || 0;
+    const hoursWorked = userStat.totalTaskHours || 0;
+    const deliverablesCompleted = userStat.totalDeliverableCount || 0;
+    
+    // Calculate XP: tasks (10 XP each) + hours (1 XP per hour) + deliverables (5 XP each)
+    const xpFromTasks = tasksCompleted * 10;
+    const xpFromHours = Math.floor(hoursWorked);
+    const xpFromDeliverables = deliverablesCompleted * 5;
+    const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+    
+    // Level calculation: exponential growth (level = sqrt(XP / 100))
+    const level = Math.floor(Math.sqrt(totalXP / 100)) + 1;
+    const xpForCurrentLevel = Math.pow(level - 1, 2) * 100;
+    const xpForNextLevel = Math.pow(level, 2) * 100;
+    const xpProgress = totalXP - xpForCurrentLevel;
+    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+    const levelProgress = (xpProgress / xpNeeded) * 100;
+    
+    // Badge based on level
+    const getBadge = (level) => {
+      if (level >= 50) return { name: 'Legend', color: 'purple' };
+      if (level >= 30) return { name: 'Master', color: 'blue' };
+      if (level >= 20) return { name: 'Expert', color: 'green' };
+      if (level >= 10) return { name: 'Advanced', color: 'amber' };
+      if (level >= 5) return { name: 'Intermediate', color: 'blue' };
+      return { name: 'Beginner', color: 'gray' };
+    };
+    
+    const badge = getBadge(level);
+    
+    return {
+      totalXP,
+      level,
+      xpProgress,
+      xpNeeded,
+      levelProgress,
+      badge,
+      points: totalXP, // Points same as XP
+    };
+  };
+
+  // Helper function to calculate planned hours for a task (non-hook version)
+  const calculateTaskPlannedHours = (task, deliverablesOptions) => {
+    const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+    if (!deliverablesUsed || deliverablesUsed.length === 0) return 0;
+    
+    let plannedHours = 0;
+    
+    deliverablesUsed.forEach(deliverable => {
+      const deliverableName = deliverable?.name;
+      const quantity = deliverable?.count || 1;
+      
+      if (!deliverableName || typeof deliverableName !== 'string') return;
+      
+      const deliverableOption = deliverablesOptions?.find(d => 
+        d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+      );
+      
+      if (deliverableOption) {
+        const timePerUnit = deliverableOption.timePerUnit || 1;
+        const timeUnit = deliverableOption.timeUnit || 'hr';
+        const requiresQuantity = deliverableOption.requiresQuantity || false;
+        
+        // Convert base time to hours
+        let timeInHours = timePerUnit;
+        if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+        else if (timeUnit === 'hr') timeInHours = timePerUnit;
+        else if (timeUnit === 'day') timeInHours = timePerUnit * 8;
+        
+        // Calculate variations time if applicable
+        let variationsTimeInHours = 0;
+        if (requiresQuantity) {
+          const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+          const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+          const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+          
+          if (variationsTime > 0 && variationsQuantity > 0) {
+            let variationsTimeInMinutes = variationsTime;
+            if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+            variationsTimeInHours = (variationsTimeInMinutes * variationsQuantity) / 60;
+          }
+        }
+        
+        plannedHours += (timeInHours * quantity) + variationsTimeInHours;
+      }
+    });
+    
+    return plannedHours;
+  };
+
+  // Helper function to calculate performance metrics
+  const calculatePerformanceMetrics = (userStat, deliverablesOptions) => {
+    const tasks = userStat.tasks || [];
+    const totalTasks = tasks.length;
+    
+    if (totalTasks === 0) {
+      return {
+        productivityScore: 0,
+        avgTaskCompletion: 0,
+        qualityRating: 0,
+        onTimeDelivery: 0,
+        qualityMetrics: 0,
+      };
+    }
+    
+    // Calculate average task completion time (in days)
+    let totalCompletionDays = 0;
+    let validTasks = 0;
+    
+    tasks.forEach(task => {
+      const createdAt = task.createdAt;
+      const endDate = task.data_task?.endDate;
+      const days = getDurationDays(createdAt, endDate);
+      if (days !== null && days !== undefined) {
+        totalCompletionDays += days;
+        validTasks++;
+      }
+    });
+    
+    const avgTaskCompletion = validTasks > 0 ? totalCompletionDays / validTasks : 0;
+    
+    // Calculate productivity score (based on efficiency: tasks completed vs planned time)
+    const totalTaskHours = userStat.totalTaskHours || 0;
+    const totalDelVarHours = (userStat.totalDeliverableHours || 0) + (userStat.totalVariationHours || 0);
+    const productivityScore = totalDelVarHours > 0 
+      ? Math.min(100, Math.max(0, (totalDelVarHours / Math.max(totalTaskHours, 1)) * 100))
+      : totalTaskHours > 0 ? 50 : 0;
+    
+    // Calculate quality rating (based on task completion efficiency)
+    // Higher rating if completing tasks faster than planned
+    const qualityRating = totalDelVarHours > 0 && totalTaskHours > 0
+      ? Math.min(5, Math.max(1, 5 - ((totalTaskHours - totalDelVarHours) / totalDelVarHours) * 2))
+      : 3.5;
+    
+    // Calculate on-time delivery (percentage of tasks completed on or before planned time)
+    let onTimeCount = 0;
+    tasks.forEach(task => {
+      const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+      const plannedHours = calculateTaskPlannedHours(task, deliverablesOptions);
+      
+      // Consider on-time if actual hours <= planned hours (or within 10% tolerance)
+      if (plannedHours > 0 && taskHours <= plannedHours * 1.1) {
+        onTimeCount++;
+      } else if (plannedHours === 0 && taskHours > 0) {
+        // If no planned hours, consider it on-time
+        onTimeCount++;
+      }
+    });
+    
+    const onTimeDelivery = totalTasks > 0 ? (onTimeCount / totalTasks) * 100 : 0;
+    
+    // Quality Metrics (average of productivity and on-time delivery)
+    const qualityMetrics = (productivityScore + onTimeDelivery) / 2;
+    
+    return {
+      productivityScore: Math.round(productivityScore),
+      avgTaskCompletion: avgTaskCompletion.toFixed(1),
+      qualityRating: qualityRating.toFixed(1),
+      onTimeDelivery: Math.round(onTimeDelivery),
+      qualityMetrics: Math.round(qualityMetrics),
+    };
+  };
 
   // Helper function to get summary cards for a user
   const getUserSummaryCards = (userStat) => {
@@ -592,7 +820,102 @@ const DynamicAnalyticsPage = () => {
     const totalDelVarHours = totalDeliverableHours + totalVariationHours;
     const difference = userStat.totalTaskHours - totalDelVarHours;
     
+    // Calculate XP and performance metrics
+    const xpData = calculateXPAndLevel(userStat);
+    const performanceMetrics = calculatePerformanceMetrics(userStat, deliverablesOptions);
+    
+    // XP/Progress Card - shown for all users
+    const xpCard = {
+      id: `xp-progress-${userStat.userId}`,
+      title: 'Experience & Performance',
+      subtitle: `Level ${xpData.level} • ${xpData.badge.name}`,
+      value: `${xpData.totalXP.toLocaleString()} XP`,
+      color: xpData.badge.color,
+      icon: Icons.generic.star,
+      badge: {
+        text: xpData.badge.name,
+        color: xpData.badge.color,
+      },
+      description: `${xpData.points.toLocaleString()} Points`,
+      details: [
+        {
+          label: 'Quality Metrics',
+          value: `${performanceMetrics.qualityMetrics}%`,
+          badges: {
+            'In Progress': performanceMetrics.qualityMetrics,
+          },
+        },
+        {
+          label: 'Performance',
+          value: 'Performance',
+        },
+        {
+          label: 'Productivity Score',
+          value: `${performanceMetrics.productivityScore}%`,
+        },
+        {
+          label: 'Avg Task Completion',
+          value: `${performanceMetrics.avgTaskCompletion} days`,
+        },
+        {
+          label: 'Quality Rating',
+          value: `${performanceMetrics.qualityRating}/5`,
+        },
+        {
+          label: 'On-Time Delivery',
+          value: `${performanceMetrics.onTimeDelivery}%`,
+        },
+        {
+          label: 'Experience Levels',
+          value: `Level ${xpData.level}`,
+        },
+        {
+          label: 'Level Progress',
+          value: `${xpData.levelProgress.toFixed(1)}%`,
+        },
+        {
+          label: 'XP to Next Level',
+          value: `${Math.ceil(xpData.xpNeeded - xpData.xpProgress)} XP`,
+        },
+      ],
+    };
+    
+    // For regular users, only show basic cards without calculation details
+    if (!isUserAdmin) {
+      return [
+        xpCard,
+        {
+          id: `total-tasks-${userStat.userId}`,
+          title: 'Total Tasks',
+          subtitle: userStat.userName,
+          value: userStat.totalTaskCount || 0,
+          color: 'blue',
+          icon: Icons.generic.task,
+          badge: {
+            text: `${userStat.totalTaskHours.toFixed(2)}h`,
+            color: 'blue',
+          },
+          details: [
+            {
+              label: 'Total Hours',
+              value: `${userStat.totalTaskHours.toFixed(2)}h`,
+            },
+          ],
+        },
+        {
+          id: `total-deliverables-${userStat.userId}`,
+          title: 'Total Deliverables',
+          subtitle: 'Base Deliverables',
+          value: userStat.totalDeliverableCount || 0,
+          color: 'green',
+          icon: Icons.generic.deliverable,
+        },
+      ];
+    }
+    
+    // For admin users, show all cards with calculation details
     return [
+      xpCard,
       {
         id: `total-tasks-${userStat.userId}`,
         title: 'Total Tasks',
@@ -842,11 +1165,15 @@ const DynamicAnalyticsPage = () => {
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Tasks</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Hours</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Deliverables</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Del. Hours</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Variations</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Var. Hours</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Planned</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Difference</th>
+                  {isUserAdmin && (
+                    <>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Del. Hours</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Variations</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Var. Hours</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Total Planned</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">Difference</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -902,30 +1229,34 @@ const DynamicAnalyticsPage = () => {
                         <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
                           {userStat.totalDeliverableCount || 0}
                         </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                          {userStat.totalDeliverableHours.toFixed(2)}h
-                        </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                          {userStat.totalVariationCount || 0}
-                        </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                          {userStat.totalVariationHours.toFixed(2)}h
-                        </td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
-                          {totalDelVarHours.toFixed(2)}h
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Badge 
-                            variant={difference > 0 ? 'green' : difference < 0 ? 'red' : 'gray'} 
-                            size="sm"
-                          >
-                            {difference > 0 ? '+' : ''}{difference.toFixed(2)}h
-                          </Badge>
-                        </td>
+                        {isUserAdmin && (
+                          <>
+                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                              {userStat.totalDeliverableHours.toFixed(2)}h
+                            </td>
+                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                              {userStat.totalVariationCount || 0}
+                            </td>
+                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                              {userStat.totalVariationHours.toFixed(2)}h
+                            </td>
+                            <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-gray-200">
+                              {totalDelVarHours.toFixed(2)}h
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Badge 
+                                variant={difference > 0 ? 'green' : difference < 0 ? 'red' : 'gray'} 
+                                size="sm"
+                              >
+                                {difference > 0 ? '+' : ''}{difference.toFixed(2)}h
+                              </Badge>
+                            </td>
+                          </>
+                        )}
                       </tr>
                       {isExpanded && (
                         <tr>
-                          <td colSpan="10" className="p-6 bg-gray-50 dark:bg-gray-900/50">
+                          <td colSpan={isUserAdmin ? 10 : 5} className="p-6 bg-gray-50 dark:bg-gray-900/50">
                             <div className="space-y-6">
                               {/* Summary Cards */}
                               <div>
@@ -978,7 +1309,8 @@ const DynamicAnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Calculation Summary */}
+        {/* Calculation Summary - Only show for admin users */}
+        {isUserAdmin && (
         <div className="mb-8">
           <div className="card">
             <div className="p-6">
@@ -1056,6 +1388,7 @@ const DynamicAnalyticsPage = () => {
             </div>
           </div>
         </div>
+        )}
         
       </div>
 

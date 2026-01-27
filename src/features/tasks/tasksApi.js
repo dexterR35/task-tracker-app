@@ -166,18 +166,10 @@ const resolveReporterName = (reporters, reporterId, reporterName) => {
   return reporterName;
 };
 
-// Task cache to store previously fetched tasks
-const taskCache = new Map();
-
 /**
- * Get cache key for tasks
- */
-const getCacheKey = (monthId, role, userUID) => {
-  return `${monthId}_${role}_${userUID || 'all'}`;
-};
-
-/**
- * Tasks Hook (Direct Firestore with Snapshots with Caching)
+ * Tasks Hook (Direct Firestore with Snapshots)
+ * Relies on Firebase's built-in caching and real-time updates
+ * No custom cache needed - Firebase handles everything
  */
 export const useTasks = (monthId, role = 'user', userUID = null) => {
   const [tasks, setTasks] = useState([]);
@@ -192,47 +184,22 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
       return;
     }
 
-    const cacheKey = getCacheKey(monthId, role, userUID);
     const listenerKey = `tasks_${monthId}_${role}_${userUID || 'all'}`;
     
-    // OPTIMIZED: Check cache AND listener first - if both exist, use cache, no fetch needed
-    if (taskCache.has(cacheKey) && listenerManager.hasListener(listenerKey)) {
-      const cachedData = taskCache.get(cacheKey);
-      logger.log('🔍 [useTasks] Using cached data with existing listener (no fetch):', cacheKey);
-      setTasks(cachedData);
-      setIsLoading(false);
-      setError(null);
-      return; // Skip setup entirely - data is cached and listener is active
-    }
-    
-    // Check cache first (but listener doesn't exist yet)
-    if (taskCache.has(cacheKey)) {
-      const cachedData = taskCache.get(cacheKey);
-      logger.log('🔍 [useTasks] Using cached data, setting up listener for updates:', cacheKey);
-      setTasks(cachedData);
-      setIsLoading(false);
-      // Still set up listener to get real-time updates, but data is already loaded
-    } else {
-      setIsLoading(true);
-    }
-
-    logger.log('🔍 [useTasks] Starting tasks fetch', { monthId, role, userUID });
+    logger.log('🔍 [useTasks] Setting up Firebase snapshot listener', { monthId, role, userUID });
     let unsubscribe = null;
+    setIsLoading(true);
 
     const setupListener = async () => {
       try {
         setError(null);
 
-        // Check if listener already exists (double-check after cache check)
+        // Check if listener already exists
+        // If it does, Firebase snapshot will still fire immediately with current data
+        // The listener manager will handle preventing duplicate Firebase listeners
         if (listenerManager.hasListener(listenerKey)) {
-          logger.log('Listener already exists, skipping duplicate setup for:', listenerKey);
-          // Get current data from cache if available
-          const existingData = taskCache.get(cacheKey);
-          if (existingData) {
-            setTasks(existingData);
-          }
-          setIsLoading(false);
-          return;
+          logger.log('🔍 [useTasks] Listener already exists, but Firebase will still provide current data:', listenerKey);
+          // Continue to set up listener - Firebase will provide data immediately via snapshot
         }
 
         // Check if month board exists
@@ -240,9 +207,8 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
         const monthDoc = await getDoc(monthDocRef);
 
         if (!monthDoc.exists()) {
-          logger.warn('Month board does not exist for:', monthId);
+          logger.warn('🔍 [useTasks] Month board does not exist for:', monthId);
           setTasks([]);
-          taskCache.set(cacheKey, []); // Cache empty result
           setIsLoading(false);
           return;
         }
@@ -250,27 +216,22 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
         const tasksRef = getTaskRef(monthId);
         const tasksQuery = buildTaskQuery(tasksRef, role, userUID);
 
+        // Firebase onSnapshot handles:
+        // - Real-time updates
+        // - Built-in caching
+        // - Automatic reconnection
+        // - Offline persistence (if enabled)
+        // No custom cache needed!
         unsubscribe = listenerManager.addListener(
           listenerKey,
           () => onSnapshot(
             tasksQuery,
             (snapshot) => {
+              // Firebase snapshot is the source of truth
+              // Empty snapshot means no data (Firebase handles caching internally)
               if (!snapshot || !snapshot.docs || snapshot.empty) {
-                // Check cache before overwriting with empty data
-                // This prevents losing data when listener is restored after tab becomes visible
-                const cachedData = taskCache.get(cacheKey);
-                if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-                  // Keep cached data if snapshot is empty (might be initial sync after resume)
-                  logger.log('🔍 [useTasks] Snapshot empty but cache has data, keeping cache');
-                  setTasks(cachedData);
-                  setIsLoading(false);
-                  return;
-                }
-                
-                // Only set empty if cache is also empty (truly no data)
-                const emptyTasks = [];
-                setTasks(emptyTasks);
-                taskCache.set(cacheKey, emptyTasks); // Cache empty result
+                logger.log('🔍 [useTasks] No tasks found for:', { monthId, role, userUID });
+                setTasks([]);
                 setIsLoading(false);
                 return;
               }
@@ -289,27 +250,18 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
                 )
                 .filter((task) => task !== null);
 
-              // Update cache
-              taskCache.set(cacheKey, tasksData);
+              logger.log(`🔍 [useTasks] Received ${tasksData.length} tasks from Firebase snapshot`);
               setTasks(tasksData);
               setIsLoading(false);
               setError(null);
             },
             (err) => {
-              logger.error('Tasks real-time error:', err);
-              // On error, try to use cached data if available
-              const cachedData = taskCache.get(cacheKey);
-              if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-                logger.log('🔍 [useTasks] Error occurred but cache has data, using cache');
-                setTasks(cachedData);
-                setIsLoading(false);
-              } else {
-                setError(err);
-                setIsLoading(false);
-              }
+              logger.error('🔍 [useTasks] Firebase snapshot error:', err);
+              setError(err);
+              setIsLoading(false);
             }
           ),
-          true, // preserve setup function for restoration, but will be paused when tab hidden
+          true, // preserve setup function for restoration
           'tasks', // category
           'tasks' // page
         );
@@ -333,6 +285,93 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
   }, [monthId, role, userUID]); // Keep dependencies but optimize the hook
 
   return { tasks, isLoading, error };
+};
+
+/**
+ * Hook to fetch ALL tasks across ALL months for a user (for experience system)
+ * This fetches tasks from all available months and combines them
+ */
+export const useAllTasksForUser = (role = 'user', userUID = null, availableMonths = []) => {
+  const [allTasks, setAllTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!availableMonths || availableMonths.length === 0) {
+      setAllTasks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const fetchAllTasks = async () => {
+      try {
+        const tasksPromises = availableMonths.map(async (month) => {
+          try {
+            const monthId = month.monthId || month.id || month;
+            if (!monthId) return [];
+
+            // Check if month board exists
+            const monthDocRef = getMonthRef(monthId);
+            const monthDoc = await getDoc(monthDocRef);
+
+            if (!monthDoc.exists()) {
+              return [];
+            }
+
+            const tasksRef = getTaskRef(monthId);
+            const tasksQuery = buildTaskQuery(tasksRef, role, userUID);
+            const snapshot = await getDocs(tasksQuery);
+
+            if (!snapshot || !snapshot.docs || snapshot.empty) {
+              return [];
+            }
+
+            const validDocs = snapshot.docs.filter(
+              (doc) => doc && doc.exists() && doc.data() && doc.id
+            );
+
+            return validDocs.map((d) =>
+              serializeTimestampsForContext({
+                id: d.id,
+                monthId: monthId,
+                ...d.data(),
+              })
+            ).filter((task) => task !== null);
+          } catch (err) {
+            logger.warn(`Error fetching tasks for month ${month.monthId || month.id || month}:`, err);
+            return [];
+          }
+        });
+
+        const results = await Promise.all(tasksPromises);
+        const combinedTasks = results.flat();
+        
+        // Deduplicate by task ID
+        const uniqueTasksMap = new Map();
+        combinedTasks.forEach(task => {
+          if (task && task.id) {
+            if (!uniqueTasksMap.has(task.id)) {
+              uniqueTasksMap.set(task.id, task);
+            }
+          }
+        });
+
+        setAllTasks(Array.from(uniqueTasksMap.values()));
+        setIsLoading(false);
+      } catch (err) {
+        logger.error('Error fetching all tasks:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllTasks();
+  }, [availableMonths, role, userUID]);
+
+  return { tasks: allTasks, isLoading, error };
 };
 
 const checkForDuplicateTask = async (colRef, task, userUID) => {

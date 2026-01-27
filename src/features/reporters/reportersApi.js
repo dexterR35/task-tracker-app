@@ -15,7 +15,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-import dataCache from "@/utils/dataCache";
+import listenerManager from "@/features/utils/firebaseListenerManager";
+import { onSnapshot } from "firebase/firestore";
 
 
 const checkReporterEmailExists = async (email) => {
@@ -36,11 +37,9 @@ const checkReporterEmailExists = async (email) => {
   }
 };
 
-// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
-const fetchLocks = new Map();
-
 /**
- * Reporters Hook (One-time fetch - Reporters are static data)
+ * Reporters Hook (Real-time Firebase snapshot)
+ * Uses Firebase's built-in caching - no custom cache needed
  */
 export const useReporters = () => {
   const [reporters, setReporters] = useState([]);
@@ -48,78 +47,48 @@ export const useReporters = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchReporters = async () => {
-      try {
-        const cacheKey = 'reporters_list';
+    const listenerKey = 'reporters_list';
+    
+    logger.log('🔍 [useReporters] Setting up real-time listener for reporters');
+    setIsLoading(true);
+    setError(null);
 
-        // Check cache first
-        const cachedData = dataCache.get(cacheKey);
-        if (cachedData) {
-          logger.log('🔍 [useReporters] Using cached reporters data');
-          setReporters(cachedData);
-          setIsLoading(false);
-          setError(null);
-          return;
-        }
+    // Use Firebase onSnapshot for real-time updates
+    // Firebase handles caching internally
+    const unsubscribe = listenerManager.addListener(
+      listenerKey,
+      () => {
+        const reportersRef = collection(db, 'reporters');
+        const q = query(reportersRef, orderBy('createdAt', 'desc'));
 
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useReporters] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setReporters(result);
-            setIsLoading(false);
-            setError(null);
-            return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        logger.log('🔍 [useReporters] Fetching reporters from Firestore');
-        setIsLoading(true);
-        setError(null);
-
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
-            const reportersRef = collection(db, 'reporters');
-            const q = query(reportersRef, orderBy('createdAt', 'desc'));
-
-            const snapshot = await getDocs(q);
+        return onSnapshot(
+          q,
+          (snapshot) => {
             const reportersData = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             }));
 
-            // Cache the data indefinitely (reporters are manually managed and never change)
-            dataCache.set(cacheKey, reportersData, Infinity);
-            return reportersData;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
+            logger.log(`✅ [useReporters] Reporters updated in real-time: ${reportersData.length}`);
+            setReporters(reportersData);
+            setIsLoading(false);
+            setError(null);
+          },
+          (err) => {
+            logger.error('❌ [useReporters] Real-time error:', err);
+            setError(err);
+            setIsLoading(false);
           }
-        })();
+        );
+      },
+      true, // Preserve listener
+      'reporters',
+      'reporters-list'
+    );
 
-        fetchLocks.set(cacheKey, fetchPromise);
-
-        const reportersData = await fetchPromise;
-        setReporters(reportersData);
-        setIsLoading(false);
-        setError(null);
-        logger.log('✅ [useReporters] Reporters fetched and cached:', reportersData.length);
-      } catch (err) {
-        logger.error('❌ [useReporters] Fetch error:', err);
-        setError(err);
-        setIsLoading(false);
-      }
+    return () => {
+      listenerManager.removeListener(listenerKey);
     };
-
-    fetchReporters();
   }, []);
 
   // Create reporter
@@ -163,9 +132,7 @@ export const useReporters = () => {
         reporterUID: docRef.id
       });
 
-      // Invalidate cache when data changes
-      dataCache.delete('reporters_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Reporter created successfully:', docRef.id);
       return { success: true, id: docRef.id };
     } catch (err) {
@@ -219,9 +186,7 @@ export const useReporters = () => {
 
       await updateDoc(reporterRef, updates);
 
-      // Invalidate cache when data changes
-      dataCache.delete('reporters_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Reporter updated successfully:', reporterId);
       return { success: true };
     } catch (err) {
@@ -244,9 +209,7 @@ export const useReporters = () => {
       const reporterRef = doc(db, 'reporters', reporterId);
       await deleteDoc(reporterRef);
 
-      // Invalidate cache when data changes
-      dataCache.delete('reporters_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Reporter deleted successfully:', reporterId);
       return { success: true };
     } catch (err) {

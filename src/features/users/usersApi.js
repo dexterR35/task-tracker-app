@@ -22,7 +22,6 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-import dataCache from "@/utils/dataCache";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 
 
@@ -38,11 +37,9 @@ const checkUserEmailExists = async (email) => {
   }
 };
 
-// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
-const fetchLocks = new Map();
-
 /**
- * Users Hook (One-time fetch - Users are relatively static data)
+ * Users Hook (Real-time Firebase snapshot)
+ * Uses Firebase's built-in caching - no custom cache needed
  */
 export const useUsers = () => {
   const [users, setUsers] = useState([]);
@@ -50,78 +47,48 @@ export const useUsers = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const cacheKey = 'users_list';
+    const listenerKey = 'users_list';
+    
+    logger.log('🔍 [useUsers] Setting up real-time listener for users');
+    setIsLoading(true);
+    setError(null);
 
-        // Check cache first
-        const cachedData = dataCache.get(cacheKey);
-        if (cachedData) {
-          logger.log('🔍 [useUsers] Using cached users data');
-          setUsers(cachedData);
-          setIsLoading(false);
-          setError(null);
-          return;
-        }
+    // Use Firebase onSnapshot for real-time updates
+    // Firebase handles caching internally
+    const unsubscribe = listenerManager.addListener(
+      listenerKey,
+      () => {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, orderBy('createdAt', 'desc'));
 
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useUsers] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setUsers(result);
-            setIsLoading(false);
-            setError(null);
-            return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        logger.log('🔍 [useUsers] Fetching users from Firestore');
-        setIsLoading(true);
-        setError(null);
-
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, orderBy('createdAt', 'desc'));
-
-            const snapshot = await getDocs(q);
+        return onSnapshot(
+          q,
+          (snapshot) => {
             const usersData = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             }));
 
-            // Cache the data indefinitely (users are manually managed and never change)
-            dataCache.set(cacheKey, usersData, Infinity);
-            return usersData;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
+            logger.log(`✅ [useUsers] Users updated in real-time: ${usersData.length}`);
+            setUsers(usersData);
+            setIsLoading(false);
+            setError(null);
+          },
+          (err) => {
+            logger.error('❌ [useUsers] Real-time error:', err);
+            setError(err);
+            setIsLoading(false);
           }
-        })();
+        );
+      },
+      true, // Preserve listener
+      'users',
+      'users-list'
+    );
 
-        fetchLocks.set(cacheKey, fetchPromise);
-
-        const usersData = await fetchPromise;
-        setUsers(usersData);
-        setIsLoading(false);
-        setError(null);
-        logger.log('✅ [useUsers] Users fetched and cached:', usersData.length);
-      } catch (err) {
-        logger.error('❌ [useUsers] Fetch error:', err);
-        setError(err);
-        setIsLoading(false);
-      }
+    return () => {
+      listenerManager.removeListener(listenerKey);
     };
-
-    fetchUsers();
   }, []);
 
   // Create user
@@ -144,9 +111,7 @@ export const useUsers = () => {
 
       const docRef = await addDoc(usersRef, newUser);
 
-      // Invalidate cache when data changes
-      dataCache.delete('users_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('User created successfully:', docRef.id);
       return { success: true, id: docRef.id };
     } catch (err) {
@@ -176,9 +141,7 @@ export const useUsers = () => {
 
       await updateDoc(userRef, updates);
 
-      // Invalidate cache when data changes
-      dataCache.delete('users_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('User updated successfully:', userId);
       return { success: true };
     } catch (err) {
@@ -193,9 +156,7 @@ export const useUsers = () => {
       const userRef = doc(db, 'users', userId);
       await deleteDoc(userRef);
 
-      // Invalidate cache when data changes
-      dataCache.delete('users_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('User deleted successfully:', userId);
       return { success: true };
     } catch (err) {

@@ -23,7 +23,6 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-import dataCache from "@/utils/dataCache";
 import listenerManager from "@/features/utils/firebaseListenerManager";
 
 
@@ -165,9 +164,7 @@ export const useTeamDaysOff = () => {
         await updateDoc(entryRef, entryData);
       }
 
-      // Invalidate cache
-      dataCache.delete('team_days_off_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log(`Team days off entry ${isNewEntry ? 'created' : 'updated'} successfully:`, entryRef.id);
       return { success: true, id: entryRef.id };
     } catch (err) {
@@ -214,9 +211,7 @@ export const useTeamDaysOff = () => {
 
       await updateDoc(entryRef, updates);
 
-      // Invalidate cache
-      dataCache.delete('team_days_off_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Team days off entry updated successfully:', entryId);
       return { success: true };
     } catch (err) {
@@ -231,9 +226,7 @@ export const useTeamDaysOff = () => {
       const entryRef = doc(db, 'teamDaysOff', entryId);
       await deleteDoc(entryRef);
 
-      // Invalidate cache
-      dataCache.delete('team_days_off_list');
-
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Team days off entry deleted successfully:', entryId);
       return { success: true };
     } catch (err) {
@@ -356,7 +349,7 @@ export const useTeamDaysOff = () => {
         await updateDoc(entryRef, updateData);
       }
 
-      dataCache.delete('team_days_off_list');
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Off days added successfully for user:', userUID);
       return { success: true };
     } catch (err) {
@@ -415,7 +408,7 @@ export const useTeamDaysOff = () => {
         updatedByName: adminUserData?.name
       });
 
-      dataCache.delete('team_days_off_list');
+      // No cache invalidation needed - Firebase snapshot will update automatically
       logger.log('Off days removed successfully for user:', userUID);
       return { success: true };
     } catch (err) {

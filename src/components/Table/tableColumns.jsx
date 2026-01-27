@@ -97,7 +97,8 @@ const DeliverableCalculationCell = ({
               </span>
             )}
           </div>
-          {/* Show calculation details to all users */}
+          {/* Show calculation details only to admin users */}
+          {isUserAdmin && (
           <div className="text-xs text-gray-800 dark:text-gray-300 space-y-1">
             {deliverable.configured ? (
               <div className="text-xs block">
@@ -136,6 +137,7 @@ const DeliverableCalculationCell = ({
               </span>
             )}
           </div>
+          )}
         </div>
       ))}
     </div>

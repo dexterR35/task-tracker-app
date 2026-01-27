@@ -18,7 +18,6 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-import dataCache from "@/utils/dataCache";
 import { serializeTimestampsForContext } from "@/utils/dateUtils";
 import { canCreateBoard } from "@/features/utils/authUtils";
 
@@ -36,9 +35,6 @@ import {
 // ============================================================================
 // FIRESTORE REFERENCE HELPERS
 // ============================================================================
-
-// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
-const fetchLocks = new Map();
 
 
 const getMonthRef = (monthId) => {
@@ -71,86 +67,32 @@ export const useCurrentMonth = (userUID = null, role = 'user', _userData = null)
         setError(null);
 
         const currentMonthInfo = getMonthInfo(); // Default to actual current month
-        const yearId = getCurrentYear();
-        const monthsRef = getMonthsRef(yearId);
-
-        const cacheKey = `months_${yearId}`;
-
-        // Check cache first with extended TTL for months (30 days)
-        const cachedData = dataCache.getMonthData(cacheKey);
-        if (cachedData) {
-          logger.log('🔍 [useCurrentMonth] Using cached months data (30-day cache)');
-          setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
-          setBoardExists(cachedData.boardExists);
-          setCurrentMonthBoard(cachedData.currentMonthBoard);
-          setIsLoading(false);
-          return;
-        }
-
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useCurrentMonth] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
-            setBoardExists(result.boardExists);
-            setCurrentMonthBoard(result.currentMonthBoard);
-            setIsLoading(false);
-            return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
-          }
-        }
-
+        
         logger.log('🔍 [useCurrentMonth] Fetching current month from Firestore');
 
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
-            // OPTIMIZED: Only fetch the current month document, not all months
-            const currentMonthRef = getMonthRef(currentMonthInfo.monthId);
-            const currentMonthDoc = await getDoc(currentMonthRef);
-            logger.log('🔍 [useCurrentMonth] Current month fetched');
+        // Fetch current month document (Firebase handles caching internally)
+        const currentMonthRef = getMonthRef(currentMonthInfo.monthId);
+        const currentMonthDoc = await getDoc(currentMonthRef);
+        logger.log('🔍 [useCurrentMonth] Current month fetched');
 
-            let boardExistsResult = false;
-            let currentMonthBoardResult = null;
+        let boardExistsResult = false;
+        let currentMonthBoardResult = null;
 
-            if (currentMonthDoc.exists()) {
-              logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
-              boardExistsResult = true;
-              currentMonthBoardResult = currentMonthDoc.data();
-            }
+        if (currentMonthDoc.exists()) {
+          logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
+          boardExistsResult = true;
+          currentMonthBoardResult = currentMonthDoc.data();
+        }
 
-            // Cache the result with extended TTL for months (30 days - changes once per month)
-            const cacheData = {
-              boardExists: boardExistsResult,
-              currentMonthBoard: currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null
-            };
-            dataCache.setMonthData(cacheKey, cacheData);
-
-            logger.log('🔍 [useCurrentMonth] Setting current month data:', {
-              monthId: currentMonthInfo.monthId,
-              boardExists: boardExistsResult,
-              hasBoardData: !!currentMonthBoardResult
-            });
-
-            return cacheData;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
-          }
-        })();
-
-        fetchLocks.set(cacheKey, fetchPromise);
-        const result = await fetchPromise;
+        logger.log('🔍 [useCurrentMonth] Setting current month data:', {
+          monthId: currentMonthInfo.monthId,
+          boardExists: boardExistsResult,
+          hasBoardData: !!currentMonthBoardResult
+        });
 
         setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
-        setBoardExists(result.boardExists);
-        setCurrentMonthBoard(result.currentMonthBoard);
+        setBoardExists(boardExistsResult);
+        setCurrentMonthBoard(currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null);
         setIsLoading(false);
 
       } catch (err) {
@@ -183,133 +125,85 @@ export const useAvailableMonths = () => {
   useEffect(() => {
     const setupListener = async () => {
       try {
-        const currentYearId = getCurrentYear();
-        const cacheKey = `available_months_${currentYearId}`;
-
-        // Check cache first
-        const cachedData = dataCache.get(cacheKey);
-        if (cachedData) {
-          logger.log('🔍 [useAvailableMonths] Using cached available months data');
-          setAvailableMonths(cachedData);
-          setIsLoading(false);
-          setError(null);
-          return;
-        }
-
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useAvailableMonths] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setAvailableMonths(result);
-            setIsLoading(false);
-            setError(null);
-            return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        logger.log('🔍 [useAvailableMonths] Fetching months data (one-time)');
+        logger.log('🔍 [useAvailableMonths] Fetching months data');
         setIsLoading(true);
         setError(null);
 
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
+        const currentMonthInfo = getMonthInfo();
+        const currentYearId = getCurrentYear();
+        const previousYearId = (parseInt(currentYearId) - 1).toString();
+        
+        // Fetch months from both current year and previous year
+        logger.log('🔍 [useAvailableMonths] Fetching months from Firestore for years:', { currentYearId, previousYearId });
+        
+        const months = [];
 
-            const currentMonthInfo = getMonthInfo();
-            const currentYearId = getCurrentYear();
-            const previousYearId = (parseInt(currentYearId) - 1).toString();
-            
-            // Fetch months from both current year and previous year
-            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore for years:', { currentYearId, previousYearId });
-            
-            const months = [];
+        // Fetch from current year
+        const currentYearRef = getMonthsRef(currentYearId);
+        const currentYearQuery = query(currentYearRef);
+        const currentYearSnapshot = await getDocs(currentYearQuery);
+        logger.log('🔍 [useAvailableMonths] Current year months fetched, docs:', currentYearSnapshot.docs.length);
 
-            // Fetch from current year
-            const currentYearRef = getMonthsRef(currentYearId);
-            const currentYearQuery = query(currentYearRef);
-            const currentYearSnapshot = await getDocs(currentYearQuery);
-            logger.log('🔍 [useAvailableMonths] Current year months fetched, docs:', currentYearSnapshot.docs.length);
+        if (!currentYearSnapshot.empty) {
+          currentYearSnapshot.docs.forEach((doc) => {
+            const monthData = doc.data();
+            const monthId = doc.id;
 
-            if (!currentYearSnapshot.empty) {
-              currentYearSnapshot.docs.forEach((doc) => {
-                const monthData = doc.data();
-                const monthId = doc.id;
+            // Parse month ID to get readable month name using month utilities
+            const monthDate = parseMonthId(monthId);
+            const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
 
-                // Parse month ID to get readable month name using month utilities
-                const monthDate = parseMonthId(monthId);
-                const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
-
-                months.push({
-                  monthId,
-                  monthName,
-                  boardId: monthData.boardId,
-                  createdAt: monthData.createdAt,
-                  createdBy: monthData.createdBy,
-                  createdByName: monthData.createdByName,
-                  createdByRole: monthData.createdByRole,
-                  isCurrent: monthId === currentMonthInfo.monthId,
-                  boardExists: true // All months in availableMonths have boards (they're in the collection)
-                });
-              });
-            }
-
-            // Fetch from previous year
-            const previousYearRef = getMonthsRef(previousYearId);
-            const previousYearQuery = query(previousYearRef);
-            const previousYearSnapshot = await getDocs(previousYearQuery);
-            logger.log('🔍 [useAvailableMonths] Previous year months fetched, docs:', previousYearSnapshot.docs.length);
-
-            if (!previousYearSnapshot.empty) {
-              previousYearSnapshot.docs.forEach((doc) => {
-                const monthData = doc.data();
-                const monthId = doc.id;
-
-                // Parse month ID to get readable month name using month utilities
-                const monthDate = parseMonthId(monthId);
-                const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
-
-                months.push({
-                  monthId,
-                  monthName,
-                  boardId: monthData.boardId,
-                  createdAt: monthData.createdAt,
-                  createdBy: monthData.createdBy,
-                  createdByName: monthData.createdByName,
-                  createdByRole: monthData.createdByRole,
-                  isCurrent: monthId === currentMonthInfo.monthId,
-                  boardExists: true // All months in availableMonths have boards (they're in the collection)
-                });
-              });
-            }
-
-            // Sort months by monthId descending (most recent first)
-            months.sort((a, b) => {
-              if (a.monthId > b.monthId) return -1;
-              if (a.monthId < b.monthId) return 1;
-              return 0;
+            months.push({
+              monthId,
+              monthName,
+              boardId: monthData.boardId,
+              createdAt: monthData.createdAt,
+              createdBy: monthData.createdBy,
+              createdByName: monthData.createdByName,
+              createdByRole: monthData.createdByRole,
+              isCurrent: monthId === currentMonthInfo.monthId,
+              boardExists: true // All months in availableMonths have boards (they're in the collection)
             });
+          });
+        }
 
-            // Cache the data with extended TTL (30 days - changes once per month)
-            dataCache.set(cacheKey, months, 30 * 24 * 60 * 60 * 1000);
+        // Fetch from previous year
+        const previousYearRef = getMonthsRef(previousYearId);
+        const previousYearQuery = query(previousYearRef);
+        const previousYearSnapshot = await getDocs(previousYearQuery);
+        logger.log('🔍 [useAvailableMonths] Previous year months fetched, docs:', previousYearSnapshot.docs.length);
 
-            logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
-            return months;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
-          }
-        })();
+        if (!previousYearSnapshot.empty) {
+          previousYearSnapshot.docs.forEach((doc) => {
+            const monthData = doc.data();
+            const monthId = doc.id;
 
-        fetchLocks.set(cacheKey, fetchPromise);
-        const months = await fetchPromise;
+            // Parse month ID to get readable month name using month utilities
+            const monthDate = parseMonthId(monthId);
+            const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
 
+            months.push({
+              monthId,
+              monthName,
+              boardId: monthData.boardId,
+              createdAt: monthData.createdAt,
+              createdBy: monthData.createdBy,
+              createdByName: monthData.createdByName,
+              createdByRole: monthData.createdByRole,
+              isCurrent: monthId === currentMonthInfo.monthId,
+              boardExists: true // All months in availableMonths have boards (they're in the collection)
+            });
+          });
+        }
+
+        // Sort months by monthId descending (most recent first)
+        months.sort((a, b) => {
+          if (a.monthId > b.monthId) return -1;
+          if (a.monthId < b.monthId) return 1;
+          return 0;
+        });
+
+        logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
         setAvailableMonths(months);
         setIsLoading(false);
 

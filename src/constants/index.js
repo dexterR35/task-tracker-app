@@ -271,6 +271,7 @@ export const CARD_SYSTEM = {
     REPORTER_FILTER: 'reporter-filter',
     USER_PROFILE: 'user-profile',
     ACTIONS: 'actions',
+    CONNECTED_APPS: 'connected-apps',
     // Analytics card types
     ANALYTICS_TASK_OVERVIEW: 'analytics-task-overview',
     ANALYTICS_DELIVERABLES: 'analytics-deliverables',

@@ -68,63 +68,82 @@ const HowToUsePage = () => {
 
                 {/* All Content Sections in One Card */}
                 <div className="space-y-6">
-                  {content.sections.map((section, sectionIndex) => (
-                    <div
-                      key={sectionIndex}
-                      className={`${
-                        section.isImportant
-                          ? "bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500"
-                          : ""
-                      }`}
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        {section.isImportant && (
-                          <Icons.generic.warning className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        )}
-                        {section.title}
-                      </h3>
-                      <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                        {section.items.map((item, itemIndex) => (
-                          <div key={itemIndex}>
-                            {item.subItems ? (
-                              <div>
-                                <p className="font-semibold mb-2 text-gray-900 dark:text-white">
-                                  {item.text}:
-                                </p>
-                                <ul className="list-disc list-inside space-y-1.5 ml-2 text-gray-600 dark:text-gray-400">
-                                  {item.subItems.map((subItem, subIndex) => (
-                                    <li key={subIndex} className="leading-relaxed">
-                                      <span className="font-medium text-gray-700 dark:text-gray-300">
-                                        {subItem.text}
-                                      </span>
-                                      {subItem.description && (
-                                        <span className="text-gray-600 dark:text-gray-400">
-                                          {" "}- {subItem.description}
+                  {content.sections.map((section, sectionIndex) => {
+                    // Check if section has custom component
+                    const hasCustomComponent = section.items?.some(item => item.type === "custom");
+                    
+                    if (hasCustomComponent) {
+                      return (
+                        <div key={sectionIndex} className="space-y-4">
+                          {section.items.map((item, itemIndex) => {
+                            if (item.type === "custom") {
+                              return <div key={itemIndex}>{item.component}</div>;
+                            }
+                            return null;
+                          })}
+                        </div>
+                      );
+                    }
+                    
+                    // Regular section rendering
+                    return (
+                      <div
+                        key={sectionIndex}
+                        className={`${
+                          section.isImportant
+                            ? "bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500"
+                            : ""
+                        }`}
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          {section.isImportant && (
+                            <Icons.generic.warning className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          )}
+                          {section.title}
+                        </h3>
+                        <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                          {section.items.map((item, itemIndex) => (
+                            <div key={itemIndex}>
+                              {item.subItems ? (
+                                <div>
+                                  <p className="font-semibold mb-2 text-gray-900 dark:text-white">
+                                    {item.text}:
+                                  </p>
+                                  <ul className="list-disc list-inside space-y-1.5 ml-2 text-gray-600 dark:text-gray-400">
+                                    {item.subItems.map((subItem, subIndex) => (
+                                      <li key={subIndex} className="leading-relaxed">
+                                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                                          {subItem.text}
                                         </span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ) : (
-                              <ul className="list-disc list-inside ml-2 text-gray-600 dark:text-gray-400">
-                                <li>
-                                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {item.text}
-                                  </span>
-                                  {item.description && (
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      {" "}- {item.description}
+                                        {subItem.description && (
+                                          <span className="text-gray-600 dark:text-gray-400">
+                                            {" "}- {subItem.description}
+                                          </span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : (
+                                <ul className="list-disc list-inside ml-2 text-gray-600 dark:text-gray-400">
+                                  <li>
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                      {item.text}
                                     </span>
-                                  )}
-                                </li>
-                              </ul>
-                            )}
-                          </div>
-                        ))}
+                                    {item.description && (
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {" "}- {item.description}
+                                      </span>
+                                    )}
+                                  </li>
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

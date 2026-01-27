@@ -5,6 +5,8 @@ import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 import { matchesUser, getTaskReporterId, filterTasksByUserAndReporter } from "@/utils/taskFilters";
+import { differenceInDays } from "date-fns";
+import { normalizeTimestamp } from "@/utils/dateUtils";
 
 export const getCardColor = (cardType, data = {}) => {
   const palette = [
@@ -526,6 +528,100 @@ export const SMALL_CARD_CONFIGS = {
     ),
   },
 
+  [SMALL_CARD_TYPES.CONNECTED_APPS]: {
+    title: "Connected Apps",
+    subtitle: "Quick Links",
+    description: "External Services",
+    icon: Icons.generic.globe,
+    color: "indigo",
+    getValue: (data) => "4",
+    getStatus: (data) => "Connected",
+    getBadge: (data) => ({
+      text: "4 Apps",
+      color: "indigo",
+    }),
+    getContent: (data) => (
+      <div className="space-y-2">
+        <a
+          href="https://gmrd.atlassian.net"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+            J
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+              Jira
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              gmrd.atlassian.net
+            </div>
+          </div>
+          <Icons.generic.globe className="w-4 h-4 text-gray-400" />
+        </a>
+        <a
+          href="https://lattice.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded bg-purple-500 flex items-center justify-center text-white font-bold text-sm">
+            L
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
+              Lattice
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              lattice.com
+            </div>
+          </div>
+          <Icons.generic.globe className="w-4 h-4 text-gray-400" />
+        </a>
+        <a
+          href="https://mail.google.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded bg-red-500 flex items-center justify-center text-white font-bold text-sm">
+            G
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400">
+              Gmail
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              mail.google.com
+            </div>
+          </div>
+          <Icons.generic.globe className="w-4 h-4 text-gray-400" />
+        </a>
+        <a
+          href="https://www.freepik.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded bg-pink-500 flex items-center justify-center text-white font-bold text-sm">
+            F
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400">
+              Freepik
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              freepik.com
+            </div>
+          </div>
+          <Icons.generic.globe className="w-4 h-4 text-gray-400" />
+        </a>
+      </div>
+    ),
+  },
+
   [SMALL_CARD_TYPES.ACTIONS]: {
     title: "Task Statistics",
     subtitle: "View All",
@@ -988,39 +1084,438 @@ export const SMALL_CARD_CONFIGS = {
   },
 
   [SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY]: {
-    title: "Performance",
-    subtitle: "Quality Metrics",
-    description: "Performance",
-    icon: Icons.generic.chart,
-    color: "crimson",
-    getValue: (data) => "In Progress",
-    getStatus: (data) => `${data.efficiency?.productivityScore || 0}%`,
-    getBadge: (data) => ({
-      text: `${data.efficiency?.productivityScore || 0}%`,
-      color: "crimson",
-    }),
-    getDetails: (data) => [
-      {
-        icon: Icons.generic.target,
-        label: "Productivity Score",
-        value: `${data.efficiency?.productivityScore || 0}%`,
-      },
-      {
-        icon: Icons.generic.clock,
-        label: "Avg Task Completion",
-        value: `${data.efficiency?.averageTaskCompletion || 0} days`,
-      },
-      {
-        icon: Icons.generic.star,
-        label: "Quality Rating",
-        value: `${data.efficiency?.qualityRating || 0}/5`,
-      },
-      {
-        icon: Icons.generic.check,
-        label: "On-Time Delivery",
-        value: `${data.efficiency?.onTimeDelivery || 0}%`,
-      },
-    ],
+    title: "Experience & Performance",
+    subtitle: (data) => {
+      // Calculate XP and level
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      const tasksCompleted = userTasksFiltered.length;
+      const hoursWorked = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      const deliverablesCompleted = userTasksFiltered.reduce((sum, task) => {
+        const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        return sum + deliverables.reduce((delSum, del) => delSum + (del.count || 1), 0);
+      }, 0);
+      
+      const xpFromTasks = tasksCompleted * 10;
+      const xpFromHours = Math.floor(hoursWorked);
+      const xpFromDeliverables = deliverablesCompleted * 5;
+      const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+      const level = Math.floor(Math.sqrt(totalXP / 100)) + 1;
+      
+      const getBadgeName = (level) => {
+        if (level >= 50) return 'Legend';
+        if (level >= 30) return 'Master';
+        if (level >= 20) return 'Expert';
+        if (level >= 10) return 'Advanced';
+        if (level >= 5) return 'Intermediate';
+        return 'Beginner';
+      };
+      
+      return `Level ${level} • ${getBadgeName(level)}`;
+    },
+    description: (data) => {
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      const tasksCompleted = userTasksFiltered.length;
+      const hoursWorked = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      const deliverablesCompleted = userTasksFiltered.reduce((sum, task) => {
+        const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        return sum + deliverables.reduce((delSum, del) => delSum + (del.count || 1), 0);
+      }, 0);
+      
+      const xpFromTasks = tasksCompleted * 10;
+      const xpFromHours = Math.floor(hoursWorked);
+      const xpFromDeliverables = deliverablesCompleted * 5;
+      const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+      
+      return `${totalXP.toLocaleString()} Points`;
+    },
+    icon: Icons.generic.star,
+    color: (data) => {
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      const tasksCompleted = userTasksFiltered.length;
+      const hoursWorked = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      const deliverablesCompleted = userTasksFiltered.reduce((sum, task) => {
+        const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        return sum + deliverables.reduce((delSum, del) => delSum + (del.count || 1), 0);
+      }, 0);
+      
+      const xpFromTasks = tasksCompleted * 10;
+      const xpFromHours = Math.floor(hoursWorked);
+      const xpFromDeliverables = deliverablesCompleted * 5;
+      const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+      const level = Math.floor(Math.sqrt(totalXP / 100)) + 1;
+      
+      if (level >= 50) return 'purple';
+      if (level >= 30) return 'blue';
+      if (level >= 20) return 'green';
+      if (level >= 10) return 'amber';
+      if (level >= 5) return 'blue';
+      return 'gray';
+    },
+    getValue: (data) => {
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      const tasksCompleted = userTasksFiltered.length;
+      const hoursWorked = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      const deliverablesCompleted = userTasksFiltered.reduce((sum, task) => {
+        const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        return sum + deliverables.reduce((delSum, del) => delSum + (del.count || 1), 0);
+      }, 0);
+      
+      const xpFromTasks = tasksCompleted * 10;
+      const xpFromHours = Math.floor(hoursWorked);
+      const xpFromDeliverables = deliverablesCompleted * 5;
+      const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+      
+      return `${totalXP.toLocaleString()} XP`;
+    },
+    getStatus: (data) => {
+      // Calculate performance metrics
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      if (userTasksFiltered.length === 0) return "0%";
+      
+      const totalTaskHours = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      // Calculate planned hours from deliverables
+      const deliverablesOptions = data.deliverablesOptions || [];
+      let totalPlannedHours = 0;
+      
+      userTasksFiltered.forEach(task => {
+        const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        deliverablesUsed.forEach(deliverable => {
+          const deliverableName = deliverable?.name;
+          const quantity = deliverable?.count || 1;
+          
+          if (!deliverableName) return;
+          
+          const deliverableOption = deliverablesOptions.find(d => 
+            d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+          );
+          
+          if (deliverableOption) {
+            const timePerUnit = deliverableOption.timePerUnit || 1;
+            const timeUnit = deliverableOption.timeUnit || 'hr';
+            const requiresQuantity = deliverableOption.requiresQuantity || false;
+            
+            let timeInHours = timePerUnit;
+            if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+            else if (timeUnit === 'hr') timeInHours = timePerUnit;
+            else if (timeUnit === 'day') timeInHours = timePerUnit * 8;
+            
+            let variationsTimeInHours = 0;
+            if (requiresQuantity) {
+              const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+              const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+              const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+              
+              if (variationsTime > 0 && variationsQuantity > 0) {
+                let variationsTimeInMinutes = variationsTime;
+                if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+                variationsTimeInHours = (variationsTimeInMinutes * variationsQuantity) / 60;
+              }
+            }
+            
+            totalPlannedHours += (timeInHours * quantity) + variationsTimeInHours;
+          }
+        });
+      });
+      
+      const productivityScore = totalPlannedHours > 0 
+        ? Math.min(100, Math.max(0, (totalPlannedHours / Math.max(totalTaskHours, 1)) * 100))
+        : totalTaskHours > 0 ? 50 : 0;
+      
+      return `${Math.round(productivityScore)}%`;
+    },
+    getBadge: (data) => {
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      const tasksCompleted = userTasksFiltered.length;
+      const hoursWorked = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      const deliverablesCompleted = userTasksFiltered.reduce((sum, task) => {
+        const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        return sum + deliverables.reduce((delSum, del) => delSum + (del.count || 1), 0);
+      }, 0);
+      
+      const xpFromTasks = tasksCompleted * 10;
+      const xpFromHours = Math.floor(hoursWorked);
+      const xpFromDeliverables = deliverablesCompleted * 5;
+      const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+      const level = Math.floor(Math.sqrt(totalXP / 100)) + 1;
+      
+      const getBadgeName = (level) => {
+        if (level >= 50) return 'Legend';
+        if (level >= 30) return 'Master';
+        if (level >= 20) return 'Expert';
+        if (level >= 10) return 'Advanced';
+        if (level >= 5) return 'Intermediate';
+        return 'Beginner';
+      };
+      
+      const getBadgeColor = (level) => {
+        if (level >= 50) return 'purple';
+        if (level >= 30) return 'blue';
+        if (level >= 20) return 'green';
+        if (level >= 10) return 'amber';
+        if (level >= 5) return 'blue';
+        return 'gray';
+      };
+      
+      return {
+        text: getBadgeName(level),
+        color: getBadgeColor(level),
+      };
+    },
+    getDetails: (data) => {
+      const userTasks = data.actionsFilteredTasks || [];
+      const currentUserId = data.currentUser?.userUID;
+      const userTasksFiltered = currentUserId 
+        ? userTasks.filter(task => (task.userUID || task.createbyUID) === currentUserId)
+        : userTasks;
+      
+      const deliverablesOptions = data.deliverablesOptions || [];
+      
+      // Calculate performance metrics
+      const totalTasks = userTasksFiltered.length;
+      if (totalTasks === 0) {
+        return [
+          { label: 'Quality Metrics', value: '0%', badges: { 'In Progress': 0 } },
+          { label: 'Performance', value: 'Performance' },
+          { label: 'Productivity Score', value: '0%' },
+          { label: 'Avg Task Completion', value: '0 days' },
+          { label: 'Quality Rating', value: '0/5' },
+          { label: 'On-Time Delivery', value: '0%' },
+        ];
+      }
+      
+      // Calculate average task completion time
+      const getDurationDays = (startDate, endDate) => {
+        if (!startDate || !endDate) return null;
+        try {
+          const start = normalizeTimestamp(startDate);
+          const end = normalizeTimestamp(endDate);
+          if (!start || !end) return null;
+          const diffDays = differenceInDays(end, start);
+          return diffDays < 0 ? 0 : Math.ceil(diffDays);
+        } catch {
+          return null;
+        }
+      };
+      
+      let totalCompletionDays = 0;
+      let validTasks = 0;
+      userTasksFiltered.forEach(task => {
+        const createdAt = task.createdAt;
+        const endDate = task.data_task?.endDate;
+        const days = getDurationDays(createdAt, endDate);
+        if (days !== null && days !== undefined) {
+          totalCompletionDays += days;
+          validTasks++;
+        }
+      });
+      const avgTaskCompletion = validTasks > 0 ? totalCompletionDays / validTasks : 0;
+      
+      // Calculate productivity score
+      const totalTaskHours = userTasksFiltered.reduce((sum, task) => 
+        sum + (task.data_task?.timeInHours || task.timeInHours || 0), 0);
+      
+      let totalPlannedHours = 0;
+      userTasksFiltered.forEach(task => {
+        const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        deliverablesUsed.forEach(deliverable => {
+          const deliverableName = deliverable?.name;
+          const quantity = deliverable?.count || 1;
+          
+          if (!deliverableName) return;
+          
+          const deliverableOption = deliverablesOptions.find(d => 
+            d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+          );
+          
+          if (deliverableOption) {
+            const timePerUnit = deliverableOption.timePerUnit || 1;
+            const timeUnit = deliverableOption.timeUnit || 'hr';
+            const requiresQuantity = deliverableOption.requiresQuantity || false;
+            
+            let timeInHours = timePerUnit;
+            if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+            else if (timeUnit === 'hr') timeInHours = timePerUnit;
+            else if (timeUnit === 'day') timeInHours = timePerUnit * 8;
+            
+            let variationsTimeInHours = 0;
+            if (requiresQuantity) {
+              const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+              const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+              const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+              
+              if (variationsTime > 0 && variationsQuantity > 0) {
+                let variationsTimeInMinutes = variationsTime;
+                if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+                variationsTimeInHours = (variationsTimeInMinutes * variationsQuantity) / 60;
+              }
+            }
+            
+            totalPlannedHours += (timeInHours * quantity) + variationsTimeInHours;
+          }
+        });
+      });
+      
+      const productivityScore = totalPlannedHours > 0 
+        ? Math.min(100, Math.max(0, (totalPlannedHours / Math.max(totalTaskHours, 1)) * 100))
+        : totalTaskHours > 0 ? 50 : 0;
+      
+      // Calculate quality rating
+      const qualityRating = totalPlannedHours > 0 && totalTaskHours > 0
+        ? Math.min(5, Math.max(1, 5 - ((totalTaskHours - totalPlannedHours) / totalPlannedHours) * 2))
+        : 3.5;
+      
+      // Calculate on-time delivery
+      let onTimeCount = 0;
+      userTasksFiltered.forEach(task => {
+        const taskHours = task.data_task?.timeInHours || task.timeInHours || 0;
+        const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        
+        let plannedHours = 0;
+        deliverablesUsed.forEach(deliverable => {
+          const deliverableName = deliverable?.name;
+          const quantity = deliverable?.count || 1;
+          
+          if (!deliverableName) return;
+          
+          const deliverableOption = deliverablesOptions.find(d => 
+            d.value && d.value.toLowerCase().trim() === deliverableName.toLowerCase().trim()
+          );
+          
+          if (deliverableOption) {
+            const timePerUnit = deliverableOption.timePerUnit || 1;
+            const timeUnit = deliverableOption.timeUnit || 'hr';
+            const requiresQuantity = deliverableOption.requiresQuantity || false;
+            
+            let timeInHours = timePerUnit;
+            if (timeUnit === 'min') timeInHours = timePerUnit / 60;
+            else if (timeUnit === 'hr') timeInHours = timePerUnit;
+            else if (timeUnit === 'day') timeInHours = timePerUnit * 8;
+            
+            let variationsTimeInHours = 0;
+            if (requiresQuantity) {
+              const variationsTime = deliverableOption.variationsTime || deliverableOption.declinariTime || 0;
+              const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
+              const variationsQuantity = deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0;
+              
+              if (variationsTime > 0 && variationsQuantity > 0) {
+                let variationsTimeInMinutes = variationsTime;
+                if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
+                variationsTimeInHours = (variationsTimeInMinutes * variationsQuantity) / 60;
+              }
+            }
+            
+            plannedHours += (timeInHours * quantity) + variationsTimeInHours;
+          }
+        });
+        
+        if (plannedHours > 0 && taskHours <= plannedHours * 1.1) {
+          onTimeCount++;
+        } else if (plannedHours === 0 && taskHours > 0) {
+          onTimeCount++;
+        }
+      });
+      
+      const onTimeDelivery = totalTasks > 0 ? (onTimeCount / totalTasks) * 100 : 0;
+      const qualityMetrics = (productivityScore + onTimeDelivery) / 2;
+      
+      // Calculate XP and level
+      const tasksCompleted = userTasksFiltered.length;
+      const hoursWorked = totalTaskHours;
+      const deliverablesCompleted = userTasksFiltered.reduce((sum, task) => {
+        const deliverables = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
+        return sum + deliverables.reduce((delSum, del) => delSum + (del.count || 1), 0);
+      }, 0);
+      
+      const xpFromTasks = tasksCompleted * 10;
+      const xpFromHours = Math.floor(hoursWorked);
+      const xpFromDeliverables = deliverablesCompleted * 5;
+      const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
+      const level = Math.floor(Math.sqrt(totalXP / 100)) + 1;
+      const xpForCurrentLevel = Math.pow(level - 1, 2) * 100;
+      const xpForNextLevel = Math.pow(level, 2) * 100;
+      const xpProgress = totalXP - xpForCurrentLevel;
+      const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+      const levelProgress = (xpProgress / xpNeeded) * 100;
+      
+      return [
+        {
+          label: 'Quality Metrics',
+          value: `${Math.round(qualityMetrics)}%`,
+          badges: {
+            'In Progress': Math.round(qualityMetrics),
+          },
+        },
+        {
+          label: 'Performance',
+          value: 'Performance',
+        },
+        {
+          label: 'Productivity Score',
+          value: `${Math.round(productivityScore)}%`,
+        },
+        {
+          label: 'Avg Task Completion',
+          value: `${avgTaskCompletion.toFixed(1)} days`,
+        },
+        {
+          label: 'Quality Rating',
+          value: `${qualityRating.toFixed(1)}/5`,
+        },
+        {
+          label: 'On-Time Delivery',
+          value: `${Math.round(onTimeDelivery)}%`,
+        },
+        {
+          label: 'Experience Levels',
+          value: `Level ${level}`,
+        },
+        {
+          label: 'Level Progress',
+          value: `${levelProgress.toFixed(1)}%`,
+        },
+        {
+          label: 'XP to Next Level',
+          value: `${Math.ceil(xpNeeded - xpProgress)} XP`,
+        },
+      ];
+    },
   },
 
 };
@@ -1041,8 +1536,7 @@ export const createCards = (data, mode = "main") => {
             ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
             : [SMALL_CARD_TYPES.REPORTER_FILTER]),
           SMALL_CARD_TYPES.USER_PROFILE,
-          // Performance card only for user role (not admin)
-          ...(data.isUserAdmin ? [] : [SMALL_CARD_TYPES.ANALYTICS_EFFICIENCY]),
+          SMALL_CARD_TYPES.CONNECTED_APPS,
         ];
         break;
       case "analytics":

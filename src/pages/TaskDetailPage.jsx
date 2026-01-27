@@ -246,26 +246,28 @@ const TaskDetailPage = () => {
                 value: `${deliverable.quantity}x`,
               });
 
-              // Show calculation
-              details.push({
-                label: `  Calculation`,
-                value: hasVariations
-                  ? `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} + ${variationsQty} × ${variationsTime}${variationsTimeUnit}`
-                  : `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity}`,
-              });
-
-              // Only show variations if there are any
-              if (hasVariations) {
+              // Show calculation only for admin users
+              if (isUserAdmin) {
                 details.push({
-                  label: `  Variations`,
-                  value: `${variationsQty} × ${variationsTime}${variationsTimeUnit}`,
+                  label: `  Calculation`,
+                  value: hasVariations
+                    ? `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity} + ${variationsQty} × ${variationsTime}${variationsTimeUnit}`
+                    : `${deliverable.timePerUnit}${deliverable.timeUnit} × ${deliverable.quantity}`,
+                });
+
+                // Only show variations if there are any
+                if (hasVariations) {
+                  details.push({
+                    label: `  Variations`,
+                    value: `${variationsQty} × ${variationsTime}${variationsTimeUnit}`,
+                  });
+                }
+
+                details.push({
+                  label: `  Total Time`,
+                  value: `${deliverable.time.toFixed(1)}h (${deliverable.timeInDays.toFixed(2)} days)`,
                 });
               }
-
-              details.push({
-                label: `  Total Time`,
-                value: `${deliverable.time.toFixed(1)}h (${deliverable.timeInDays.toFixed(2)} days)`,
-              });
             });
           } else if (deliverablesUsed.length > 0) {
             // Show basic info if calculation not available
