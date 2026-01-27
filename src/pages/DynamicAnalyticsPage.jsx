@@ -4,7 +4,7 @@ import { useAppDataContext } from "@/context/AppDataContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Badge from "@/components/ui/Badge/Badge";
 import { logger } from "@/utils/logger";
-import { normalizeTimestamp } from "@/utils/dateUtils";
+import { normalizeTimestamp, formatDate } from "@/utils/dateUtils";
 import { useAuth } from "@/context/AuthContext";
 import { differenceInDays } from "date-fns";
 import { matchesUserName, matchesReporterName } from "@/utils/taskFilters";
@@ -19,7 +19,7 @@ import { useDeleteTask } from "@/features/tasks/tasksApi";
 import { showError, showSuccess } from "@/utils/toast";
 import { useDeliverableCalculation, useDeliverablesOptionsFromProps } from "@/features/deliverables/DeliverablesManager";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
-import { CARD_SYSTEM } from "@/constants";
+import { CARD_SYSTEM, TABLE_SYSTEM } from "@/constants";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { Icons } from "@/components/icons";
 
@@ -30,6 +30,31 @@ const convertToDate = (timestamp) => {
 
 // Column helper for analytics table
 const columnHelper = createColumnHelper();
+
+// Constants
+const DATE_FORMATS = TABLE_SYSTEM.DATE_FORMATS;
+
+// Utility functions (matching dashboard table)
+const formatDateCell = (
+  value,
+  format = DATE_FORMATS.SHORT,
+  showTime = true
+) => {
+  if (!value) return "-";
+  return formatDate(value, format, showTime);
+};
+
+const createDateCell =
+  (format = DATE_FORMATS.SHORT) =>
+  ({ getValue }) => {
+    const value = getValue();
+    if (!value) return "-";
+    return (
+      <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
+        {formatDateCell(value, format)}
+      </span>
+    );
+  };
 
 // Header component with tooltip using existing Tooltip component
 const ColumnHeaderWithTooltip = ({ title, description }) => {
@@ -246,20 +271,44 @@ const createAnalyticsColumns = (isAdmin = true) => [
     },
     size: 120,
   }),
-  columnHelper.accessor((row) => row.createdAt, {
+  // TASK START column (matching dashboard table)
+  columnHelper.accessor((row) => row.data_task?.startDate, {
+    id: "startDate",
+    header: () => (
+      <ColumnHeaderWithTooltip
+        title="TASK START"
+        description="Task start date."
+      />
+    ),
+    cell: createDateCell(DATE_FORMATS.LONG),
+    size: 100,
+  }),
+  // TASK END column (matching dashboard table)
+  columnHelper.accessor((row) => row.data_task?.endDate, {
+    id: "endDate",
+    header: () => (
+      <ColumnHeaderWithTooltip
+        title="TASK END"
+        description="Task end/finish date."
+      />
+    ),
+    cell: createDateCell(DATE_FORMATS.LONG),
+    size: 80,
+  }),
+  // DONE BY column (matching dashboard table exactly - startDate to endDate)
+  columnHelper.accessor((row) => row.data_task?.startDate, {
     id: "doneBy",
     header: () => (
       <ColumnHeaderWithTooltip
         title="DONE BY"
-        description="Days between task added and task finished."
+        description="Days between task start date and task end date."
       />
     ),
     cell: ({ getValue, row }) => {
-      // Calculate duration between task added (createdAt) and task finish (endDate)
-      const createdAt = getValue();
+      const startDate = getValue();
       const endDate = row.original?.data_task?.endDate;
 
-      const days = getDurationDays(createdAt, endDate);
+      const days = getDurationDays(startDate, endDate);
 
       if (days === null || days === undefined) {
         return (
@@ -269,19 +318,19 @@ const createAnalyticsColumns = (isAdmin = true) => [
 
       if (days === 0) {
         return (
-          <span className="text-gray-900 dark:text-gray-200">
+          <Badge variant="green" size="md">
             Same day
-          </span>
+          </Badge>
         );
       }
 
       return (
-        <span className="text-gray-900 dark:text-gray-200">
+        <Badge variant="pink" size="md">
           {days} days
-        </span>
+        </Badge>
       );
     },
-    size: 120,
+    size: 80,
     }),
   ] : []),
 ];
@@ -648,49 +697,6 @@ const DynamicAnalyticsPage = () => {
     return Object.values(stats).sort((a, b) => a.userName.localeCompare(b.userName));
   }, [filteredTasksForHooks, allUsers, deliverablesOptions, user, userName]);
 
-  // Helper function to calculate XP, level, and badges
-  const calculateXPAndLevel = (userStat) => {
-    const tasksCompleted = userStat.totalTaskCount || 0;
-    const hoursWorked = userStat.totalTaskHours || 0;
-    const deliverablesCompleted = userStat.totalDeliverableCount || 0;
-    
-    // Calculate XP: tasks (10 XP each) + hours (1 XP per hour) + deliverables (5 XP each)
-    const xpFromTasks = tasksCompleted * 10;
-    const xpFromHours = Math.floor(hoursWorked);
-    const xpFromDeliverables = deliverablesCompleted * 5;
-    const totalXP = xpFromTasks + xpFromHours + xpFromDeliverables;
-    
-    // Level calculation: exponential growth (level = sqrt(XP / 100))
-    const level = Math.floor(Math.sqrt(totalXP / 100)) + 1;
-    const xpForCurrentLevel = Math.pow(level - 1, 2) * 100;
-    const xpForNextLevel = Math.pow(level, 2) * 100;
-    const xpProgress = totalXP - xpForCurrentLevel;
-    const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-    const levelProgress = (xpProgress / xpNeeded) * 100;
-    
-    // Badge based on level
-    const getBadge = (level) => {
-      if (level >= 50) return { name: 'Legend', color: 'purple' };
-      if (level >= 30) return { name: 'Master', color: 'blue' };
-      if (level >= 20) return { name: 'Expert', color: 'green' };
-      if (level >= 10) return { name: 'Advanced', color: 'amber' };
-      if (level >= 5) return { name: 'Intermediate', color: 'blue' };
-      return { name: 'Beginner', color: 'gray' };
-    };
-    
-    const badge = getBadge(level);
-    
-    return {
-      totalXP,
-      level,
-      xpProgress,
-      xpNeeded,
-      levelProgress,
-      badge,
-      points: totalXP, // Points same as XP
-    };
-  };
-
   // Helper function to calculate planned hours for a task (non-hook version)
   const calculateTaskPlannedHours = (task, deliverablesOptions) => {
     const deliverablesUsed = task.data_task?.deliverablesUsed || task.deliverablesUsed || [];
@@ -820,70 +826,12 @@ const DynamicAnalyticsPage = () => {
     const totalDelVarHours = totalDeliverableHours + totalVariationHours;
     const difference = userStat.totalTaskHours - totalDelVarHours;
     
-    // Calculate XP and performance metrics
-    const xpData = calculateXPAndLevel(userStat);
+    // Calculate performance metrics
     const performanceMetrics = calculatePerformanceMetrics(userStat, deliverablesOptions);
-    
-    // XP/Progress Card - shown for all users
-    const xpCard = {
-      id: `xp-progress-${userStat.userId}`,
-      title: 'Experience & Performance',
-      subtitle: `Level ${xpData.level} • ${xpData.badge.name}`,
-      value: `${xpData.totalXP.toLocaleString()} XP`,
-      color: xpData.badge.color,
-      icon: Icons.generic.star,
-      badge: {
-        text: xpData.badge.name,
-        color: xpData.badge.color,
-      },
-      description: `${xpData.points.toLocaleString()} Points`,
-      details: [
-        {
-          label: 'Quality Metrics',
-          value: `${performanceMetrics.qualityMetrics}%`,
-          badges: {
-            'In Progress': performanceMetrics.qualityMetrics,
-          },
-        },
-        {
-          label: 'Performance',
-          value: 'Performance',
-        },
-        {
-          label: 'Productivity Score',
-          value: `${performanceMetrics.productivityScore}%`,
-        },
-        {
-          label: 'Avg Task Completion',
-          value: `${performanceMetrics.avgTaskCompletion} days`,
-        },
-        {
-          label: 'Quality Rating',
-          value: `${performanceMetrics.qualityRating}/5`,
-        },
-        {
-          label: 'On-Time Delivery',
-          value: `${performanceMetrics.onTimeDelivery}%`,
-        },
-        {
-          label: 'Experience Levels',
-          value: `Level ${xpData.level}`,
-        },
-        {
-          label: 'Level Progress',
-          value: `${xpData.levelProgress.toFixed(1)}%`,
-        },
-        {
-          label: 'XP to Next Level',
-          value: `${Math.ceil(xpData.xpNeeded - xpData.xpProgress)} XP`,
-        },
-      ],
-    };
     
     // For regular users, only show basic cards without calculation details
     if (!isUserAdmin) {
       return [
-        xpCard,
         {
           id: `total-tasks-${userStat.userId}`,
           title: 'Total Tasks',
@@ -915,7 +863,6 @@ const DynamicAnalyticsPage = () => {
     
     // For admin users, show all cards with calculation details
     return [
-      xpCard,
       {
         id: `total-tasks-${userStat.userId}`,
         title: 'Total Tasks',
@@ -1212,7 +1159,9 @@ const DynamicAnalyticsPage = () => {
                             }}
                             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                           >
-                            {isExpanded ? '▼' : '▶'}
+                            <span className="text-[8px] leading-none">
+                              {isExpanded ? '🟢' : '🔴'}
+                            </span>
                           </button>
                         </td>
                         <td className="py-3 px-4">
