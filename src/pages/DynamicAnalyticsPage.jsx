@@ -1380,13 +1380,7 @@ const DynamicAnalyticsPage = () => {
                     </div>
                     
                     <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
-                      <p className="font-medium mb-2 text-gray-900 dark:text-white">What is "Planned Hours"?</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        <strong>Planned Hours</strong> = The time stored in the database from deliverable settings (NOT an estimate). 
-                        Each deliverable has timePerUnit, timeUnit, variationsTime, and declinariTime stored in the database.
-                        Planned time is calculated as: (timePerUnit × quantity) + (variationsTime × variationsQuantity).
-                        This is compared against <strong>Task Hours</strong> which is the actual time logged by users.
-                      </p>
+      
                       <p className="font-medium mb-2 text-gray-900 dark:text-white mt-3">Calculation Formula:</p>
                       <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600 dark:text-gray-400">
                         <li><span className="font-medium">Deliverable Hours</span> = (timePerUnit × quantity) - variation time (from database)</li>
@@ -1394,10 +1388,7 @@ const DynamicAnalyticsPage = () => {
                         <li><span className="font-medium">Total Planned</span> = Deliverable Hours + Variation Hours (all from database)</li>
                         <li><span className="font-medium">Difference</span> = Actual Task Hours - Total Planned Hours</li>
                       </ul>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                        <strong>Difference meaning:</strong> Positive (+) = took longer than planned, Negative (-) = took less time than planned.
-                        Example: Task Hours 103h - Planned Hours 334h = <strong>-231h</strong> (took 231 hours less than planned).
-                      </p>
+                   
                     </div>
 
                     <div>
@@ -1406,23 +1397,23 @@ const DynamicAnalyticsPage = () => {
                         <div className="space-y-2 text-xs">
                           <div>
                             <span className="font-semibold text-gray-900 dark:text-white">Task Hours:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">32.00h (actual time logged)</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">1.00h (actual time logged)</span>
                           </div>
                           <div>
                             <span className="font-semibold text-gray-900 dark:text-white">Deliverable Hours:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">179.00h (base deliverable time)</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">1.00h (base deliverable time)</span>
                           </div>
                           <div>
                             <span className="font-semibold text-gray-900 dark:text-white">Variation Hours:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">0.67h (variation time)</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">0.00h (variation time)</span>
                           </div>
                           <div>
                             <span className="font-semibold text-gray-900 dark:text-white">Total Planned:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">179.67h (179.00 + 0.67) - planned time from deliverable settings</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">1.00h (1.00 + 0.00) - planned time from deliverable settings</span>
                           </div>
                           <div>
                             <span className="font-semibold text-gray-900 dark:text-white">Difference:</span>
-                            <span className="text-gray-600 dark:text-gray-400 ml-2">-147.67h (32.00 - 179.67 = took less time than planned)</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-2">0.00h (1.00 - 1.00 = took exactly as planned)</span>
                           </div>
                         </div>
                       </div>
