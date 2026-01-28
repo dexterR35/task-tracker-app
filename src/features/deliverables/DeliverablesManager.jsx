@@ -122,16 +122,28 @@ export const useDeliverableCalculation = (deliverablesUsed, deliverablesOptions)
       const variationsTime = (requiresQuantity && deliverableOption.variationsTime) || deliverableOption.declinariTime || 0;
       const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
       
-  // Convert to minutes (base unit)
-  let timeInMinutes = timePerUnit;
-  if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
+      // Convert to minutes (base unit)
+      // Handle min, hr, and days units properly
+      let timeInMinutes = timePerUnit;
+      if (timeUnit === 'hr') {
+        timeInMinutes = timePerUnit * 60;
+      } else if (timeUnit === 'days') {
+        timeInMinutes = timePerUnit * 480; // 8 hours = 480 minutes per day
+      }
+      // If timeUnit is 'min', timeInMinutes already equals timePerUnit
       
       // Add variations time if present and requiresQuantity is true
       let variationsTimeInMinutes = 0;
       if (requiresQuantity && variationsTime > 0) {
-        if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
-        else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
-        else variationsTimeInMinutes = variationsTime; // Default to minutes
+        if (variationsTimeUnit === 'min') {
+          variationsTimeInMinutes = variationsTime;
+        } else if (variationsTimeUnit === 'hr') {
+          variationsTimeInMinutes = variationsTime * 60;
+        } else if (variationsTimeUnit === 'days') {
+          variationsTimeInMinutes = variationsTime * 480; // 8 hours = 480 minutes per day
+        } else {
+          variationsTimeInMinutes = variationsTime; // Default to minutes
+        }
       }
       
       // Get variations quantity for this deliverable (if available in the data)
@@ -209,15 +221,27 @@ export const calculateSingleDeliverable = (deliverableOption, quantity = 1, vari
   const variationsTimeUnit = deliverableOption.variationsTimeUnit || deliverableOption.declinariTimeUnit || 'min';
   
   // Convert to minutes (base unit)
+  // Handle min, hr, and days units properly
   let timeInMinutes = timePerUnit;
-  if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
+  if (timeUnit === 'hr') {
+    timeInMinutes = timePerUnit * 60;
+  } else if (timeUnit === 'days') {
+    timeInMinutes = timePerUnit * 480; // 8 hours = 480 minutes per day
+  }
+  // If timeUnit is 'min', timeInMinutes already equals timePerUnit
   
   // Add variations time if present and requiresQuantity is true
   let variationsTimeInMinutes = 0;
   if (requiresQuantity && variationsTime > 0) {
-    if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
-    else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
-    else variationsTimeInMinutes = variationsTime; // Default to minutes
+    if (variationsTimeUnit === 'min') {
+      variationsTimeInMinutes = variationsTime;
+    } else if (variationsTimeUnit === 'hr') {
+      variationsTimeInMinutes = variationsTime * 60;
+    } else if (variationsTimeUnit === 'days') {
+      variationsTimeInMinutes = variationsTime * 480; // 8 hours = 480 minutes per day
+    } else {
+      variationsTimeInMinutes = variationsTime; // Default to minutes
+    }
   }
   
   // Only use variations quantity if requiresQuantity is true

@@ -397,15 +397,27 @@ const calculateDeliverablesInfo = (deliverablesUsed, deliverablesOptions = []) =
         const variationsQuantity = (requiresQuantity && (deliverable?.variationsCount || deliverable?.variationsQuantity || deliverable?.declinariQuantity || 0)) || 0;
 
         // Convert to minutes (base unit)
+        // Handle min, hr, and days units properly
         let timeInMinutes = timePerUnit;
-        if (timeUnit === 'hr') timeInMinutes = timePerUnit * 60;
+        if (timeUnit === 'hr') {
+          timeInMinutes = timePerUnit * 60;
+        } else if (timeUnit === 'days') {
+          timeInMinutes = timePerUnit * 480; // 8 hours = 480 minutes per day
+        }
+        // If timeUnit is 'min', timeInMinutes already equals timePerUnit
 
         // Add variations time if present and requiresQuantity is true
         let variationsTimeInMinutes = 0;
         if (requiresQuantity && variationsTime > 0) {
-          if (variationsTimeUnit === 'min') variationsTimeInMinutes = variationsTime;
-          else if (variationsTimeUnit === 'hr') variationsTimeInMinutes = variationsTime * 60;
-          else variationsTimeInMinutes = variationsTime;
+          if (variationsTimeUnit === 'min') {
+            variationsTimeInMinutes = variationsTime;
+          } else if (variationsTimeUnit === 'hr') {
+            variationsTimeInMinutes = variationsTime * 60;
+          } else if (variationsTimeUnit === 'days') {
+            variationsTimeInMinutes = variationsTime * 480; // 8 hours = 480 minutes per day
+          } else {
+            variationsTimeInMinutes = variationsTime; // Default to minutes
+          }
         }
 
         const totalvariationsTimeInMinutes = variationsQuantity * variationsTimeInMinutes;
