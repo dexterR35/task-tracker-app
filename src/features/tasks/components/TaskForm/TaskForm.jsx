@@ -488,21 +488,6 @@ const TaskForm = ({
               {renderFieldsByName(['jiraLink'])}
             </div>
 
-            {/* Image Name - Full Width (Visual Only, Disabled) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Image Name
-              </label>
-              <input
-                type="text"
-                disabled
-                readOnly
-                value=""
-                placeholder="Image name will appear here"
-                className="form-input w-full opacity-60 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-              />
-            </div>
-
             {/* Department + Product - 2 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {renderFieldsByName(['departments', 'products'])}

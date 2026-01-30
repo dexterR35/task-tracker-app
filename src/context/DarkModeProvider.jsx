@@ -12,13 +12,13 @@ export const useDarkMode = () => {
 
 export const DarkModeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first, then default to light mode
+    // Check localStorage first, then default to dark mode
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
       return JSON.parse(saved);
     }
-    // Default to light mode (white mode)
-    return false;
+    // Default to dark mode
+    return true;
   });
 
   const [isTransitioning, setIsTransitioning] = useState(false);
