@@ -288,7 +288,7 @@ export const useTasks = (monthId, role = 'user', userUID = null) => {
 };
 
 /**
- * Hook to fetch ALL tasks across ALL months for a user (for experience system)
+ * Hook to fetch ALL tasks across ALL months for a user
  * This fetches tasks from all available months and combines them
  */
 export const useAllTasksForUser = (role = 'user', userUID = null, availableMonths = []) => {

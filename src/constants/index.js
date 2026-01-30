@@ -277,7 +277,6 @@ export const CARD_SYSTEM = {
     ANALYTICS_DELIVERABLES: 'analytics-deliverables',
     ANALYTICS_MARKETING: 'analytics-marketing',
     ANALYTICS_ACQUISITION: 'analytics-acquisition',
-    ANALYTICS_EFFICIENCY: 'analytics-efficiency',
     ANALYTICS_PRODUCT: 'analytics-product',
     ANALYTICS_MISC: 'analytics-misc',
   },
