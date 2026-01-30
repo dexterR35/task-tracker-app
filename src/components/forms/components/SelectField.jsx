@@ -28,7 +28,7 @@ const SelectField = ({ field, register, errors, formValues, watch, setValue }) =
         name={field.name}
         className={`form-input ${fieldError ? 'error' : ''}`}
       >
-        <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
+        <option value="">{field.placeholder || `Select ${(field.label || '').toLowerCase()}`}</option>
         {field.options?.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

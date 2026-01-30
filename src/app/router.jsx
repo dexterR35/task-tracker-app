@@ -8,16 +8,15 @@ import {
 } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import AuthLayout from "@/components/layout/AuthLayout";
+import AppLayout from "@/components/layout/AppLayout";
 import Loader from "@/components/ui/Loader/Loader";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
-import AdminManagementPage from "@/pages/admin/ManagmentPage";
+import UsersPage from "@/pages/admin/UsersPage";
+import ReportersPage from "@/pages/admin/ReportersPage";
+import DeliverablesPage from "@/pages/admin/DeliverablesPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
-import TaskDetailPage from "@/pages/TaskDetailPage";
-import FeaturesSummaryPage from "@/pages/FeaturesSummaryPage";
-import HowToUsePage from "@/pages/HowToUsePage";
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
@@ -163,8 +162,8 @@ export const createRouter = () => {
       {
         element: (
           <ProtectedRoute>
-            <ErrorBoundary componentName="AuthLayout">
-              <AuthLayout />
+            <ErrorBoundary componentName="AppLayout">
+              <AppLayout />
             </ErrorBoundary>
           </ProtectedRoute>
         ),
@@ -183,16 +182,6 @@ export const createRouter = () => {
             ),
           },
           {
-            path: "task/:taskId",
-            element: (
-              <ErrorBoundary componentName="TaskDetailPage">
-                <PageWrapper>
-                  <TaskDetailPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
             path: "profile",
             element: (
               <ErrorBoundary componentName="ComingSoonPage">
@@ -202,27 +191,6 @@ export const createRouter = () => {
               </ErrorBoundary>
             ),
           },
-          {
-            path: "features",
-            element: (
-              <ErrorBoundary componentName="FeaturesSummaryPage">
-                <PageWrapper key="features">
-                  <FeaturesSummaryPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "how-to-use",
-            element: (
-              <ErrorBoundary componentName="HowToUsePage">
-                <PageWrapper key="how-to-use">
-                  <HowToUsePage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          
           // ========================================
           // ADMIN-ONLY ROUTES (Admin role required)
           // ========================================
@@ -230,18 +198,69 @@ export const createRouter = () => {
             path: "users",
             element: (
               <AdminRoute>
-                <ErrorBoundary componentName="AdminManagementPage">
+                <ErrorBoundary componentName="UsersPage">
                   <PageWrapper>
-                    <AdminManagementPage />
+                    <UsersPage />
                   </PageWrapper>
                 </ErrorBoundary>
               </AdminRoute>
             ),
           },
-          
+          {
+            path: "reporters",
+            element: (
+              <AdminRoute>
+                <ErrorBoundary componentName="ReportersPage">
+                  <PageWrapper>
+                    <ReportersPage />
+                  </PageWrapper>
+                </ErrorBoundary>
+              </AdminRoute>
+            ),
+          },
           // ========================================
           // UTILITY ROUTES (Coming soon pages)
           // ========================================
+          {
+            path: "time-tracking",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "deliverables",
+            element: (
+              <AdminRoute>
+                <ErrorBoundary componentName="DeliverablesPage">
+                  <PageWrapper>
+                    <DeliverablesPage />
+                  </PageWrapper>
+                </ErrorBoundary>
+              </AdminRoute>
+            ),
+          },
+          {
+            path: "projects",
+            element: <Navigate to="/deliverables" replace />,
+          },
+          {
+            path: "analytics",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "settings",
+            element: <Navigate to="/users" replace />,
+          },
           {
             path: "preview/:monthId",
             element: <ComingSoonPage />,

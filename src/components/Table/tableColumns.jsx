@@ -161,38 +161,6 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
     },
     size: 120,
   }),
-  columnHelper.accessor((row) => row.data_task?.departments, {
-    id: "departments",
-    header: "DEPARTMENT",
-    cell: ({ getValue, row }) => {
-      // 1. Handle the 'No data_task' case specifically
-      if (!row.original?.data_task) {
-        return (
-          <span
-            className="text-xs"
-            style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}
-          >
-            ❌ No data_task
-          </span>
-        );
-      }
-
-      const value = getValue();
-
-      // 2. Return the value if it exists (is truthy), or '❌ Missing' if it's falsy (null, undefined, or empty string)
-      return (
-        value || (
-          <span
-            className="text-xs"
-            style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}
-          >
-            ❌ Missing
-          </span>
-        )
-      );
-    },
-    size: 100,
-  }),
   columnHelper.accessor((row) => row.data_task?.products, {
     id: "products",
     header: "PRODUCT",

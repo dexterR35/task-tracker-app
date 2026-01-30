@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError, showAuthError } from '@/utils/toast';
 import { logger } from '@/utils/logger';
 
@@ -8,7 +7,6 @@ import { logger } from '@/utils/logger';
  * Eliminates redundant code across table components
  */
 export const useTableActions = (tableType, options = {}) => {
-  const navigate = useNavigate();
   const {
     onEditSuccess = null,
     onDeleteSuccess = null,
@@ -39,14 +37,6 @@ export const useTableActions = (tableType, options = {}) => {
   const handleSelect = (item) => {
     if (onSelectSuccess) {
       onSelectSuccess(item);
-    } else if (tableType === 'task') {
-      // For tasks, navigate to task detail page
-      // eslint-disable-next-line no-undef
-      const params = new URLSearchParams();
-      if (item.monthId) params.set('monthId', item.monthId);
-      if (item.createdByName) params.set('user', item.createdByName);
-
-      navigate(`/task/${item.id}?${params.toString()}`);
     } else {
       const displayName = getItemDisplayName(item);
       showSuccess(`Selected ${tableType}: ${displayName}`);

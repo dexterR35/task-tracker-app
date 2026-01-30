@@ -14,7 +14,6 @@ import {
 } from "firebase/auth";
 import { auth, db } from "@/app/firebase";
 import { logger } from "@/utils/logger";
-import listenerManager from "@/features/utils/firebaseListenerManager";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { AUTH } from '@/constants';
 import {

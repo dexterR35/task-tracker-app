@@ -15,34 +15,16 @@ import ConfirmationModal from "@/components/ui/Modal/ConfirmationModal";
 import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
 import { useDeleteTask, useTasks } from "@/features/tasks/tasksApi";
 import { showError, showAuthError, showSuccess } from "@/utils/toast";
-import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import DepartmentFilter from "@/components/filters/DepartmentFilter";
 import { TABLE_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
-import { updateURLParam, updateURLParams, getURLParam } from "@/utils/urlParams";
-import { matchesUser, getTaskReporterId, getTaskData, filterTasksByUserAndReporter } from "@/utils/taskFilters";
 import { parseMonthId } from "@/utils/dateUtils";
 import { startOfMonth, endOfMonth } from "date-fns";
-
-// Available filter options
-const FILTER_OPTIONS = [
-  { value: "aiUsed", label: "AI Used" },
-  { value: "marketing", label: "Marketing" },
-  { value: "acquisition", label: "Acquisition" },
-  { value: "product", label: "Product" },
-  { value: "vip", label: "VIP" },
-  { value: "reworked", label: "Reworked" },
-  { value: "shutterstock", label: "Shutterstock" },
-];
 
 // import './TaskTable.css';
 
 const TaskTable = ({
   className = "",
-  selectedUserId = "",
-  selectedReporterId = "",
   selectedMonthId = null,
-  selectedWeek = null,
   error: tasksError = null,
   isLoading: initialLoading = false,
   onCountChange = null,
@@ -53,22 +35,8 @@ const TaskTable = ({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Read filter values from URL parameters using shared utility
-  const urlFilter = getURLParam(searchParams, "filter");
-  const urlDepartment = getURLParam(searchParams, "department");
-  const urlDeliverable = getURLParam(searchParams, "deliverable");
-  const urlSearch = getURLParam(searchParams, "search");
-
-  // Filter state - single selection only - initialize from URL
-  const [selectedFilter, setSelectedFilter] = useState(urlFilter || null);
-  // Department filter state - initialize from URL
-  const [selectedDepartmentFilter, setSelectedDepartmentFilter] =
-    useState(urlDepartment || null);
-  // Deliverable filter state - initialize from URL
-  const [selectedDeliverableFilter, setSelectedDeliverableFilter] =
-    useState(urlDeliverable || null);
   // Global search filter state - initialize from URL
-  const [globalSearchFilter, setGlobalSearchFilter] = useState(urlSearch || "");
+  const [globalSearchFilter, setGlobalSearchFilter] = useState(searchParams.get("search") || "");
 
   // Modal states - using table actions system instead
 
@@ -94,78 +62,9 @@ const TaskTable = ({
     users,
   } = useAppDataContext();
 
-  // Calculate date ranges for week/month filters
-  const weekStart = useMemo(() => {
-    if (!selectedWeek) return null;
-    if (selectedWeek.startDate) {
-      const date = new Date(selectedWeek.startDate);
-      date.setHours(0, 0, 0, 0);
-      return date;
-    }
-    if (selectedWeek.days && selectedWeek.days.length > 0) {
-      const sortedDays = [...selectedWeek.days]
-        .map(day => day instanceof Date ? day : new Date(day))
-        .filter(day => !isNaN(day.getTime()))
-        .sort((a, b) => a - b);
-      if (sortedDays.length > 0) {
-        const date = new Date(sortedDays[0]);
-        date.setHours(0, 0, 0, 0);
-        return date;
-      }
-    }
-    return null;
-  }, [selectedWeek]);
-
-  const weekEnd = useMemo(() => {
-    if (!selectedWeek) return null;
-    if (selectedWeek.endDate) {
-      const date = new Date(selectedWeek.endDate);
-      date.setHours(23, 59, 59, 999);
-      return date;
-    }
-    if (selectedWeek.days && selectedWeek.days.length > 0) {
-      const sortedDays = [...selectedWeek.days]
-        .map(day => day instanceof Date ? day : new Date(day))
-        .filter(day => !isNaN(day.getTime()))
-        .sort((a, b) => a - b);
-      if (sortedDays.length > 0) {
-        const date = new Date(sortedDays[sortedDays.length - 1]);
-        date.setHours(23, 59, 59, 999);
-        return date;
-      }
-    }
-    return null;
-  }, [selectedWeek]);
-
-  // Note: monthStart/monthEnd are not needed for database filtering
-  // Month filtering is already done via monthId in the query path
-  // Only week filtering uses createdAt date range
-  const monthStart = null;
-  const monthEnd = null;
-
   // Build filters object for database-level filtering
   const userUID = user?.userUID || null;
-  const tasksFilters = useMemo(() => {
-    return {
-      selectedUserId: isUserAdmin && selectedUserId ? selectedUserId : null,
-      selectedReporterId: selectedReporterId || null,
-      selectedDepartment: selectedDepartmentFilter || null,
-      selectedDeliverable: selectedDeliverableFilter || null, // Will be filtered client-side (needs schema change)
-      selectedFilter: selectedFilter || null,
-      weekStart,
-      weekEnd,
-      // monthStart/monthEnd not needed - month filtering done via monthId in query path
-    };
-  }, [
-    isUserAdmin,
-    selectedUserId,
-    selectedReporterId,
-    selectedDepartmentFilter,
-    selectedDeliverableFilter,
-    selectedFilter,
-    weekStart,
-    weekEnd,
-  ]);
+  const tasksFilters = useMemo(() => ({}), []);
 
   // Get tasks with database-level filtering
   const {
@@ -404,153 +303,18 @@ const TaskTable = ({
     }
   }, [filteredTasks?.length, onCountChange]);
 
-  // Sync filter states with URL parameters when URL changes (but not when we're updating URL from state)
-  const isUpdatingURLRef = useRef(false);
-  
-  useEffect(() => {
-    // Skip if we're in the middle of updating URL
-    if (isUpdatingURLRef.current) {
-      isUpdatingURLRef.current = false;
-      return;
-    }
-
-    const urlFilter = searchParams.get("filter") || "";
-    const urlDepartment = searchParams.get("department") || "";
-    const urlDeliverable = searchParams.get("deliverable") || "";
-    const urlSearch = searchParams.get("search") || "";
-
-    // Only update state if URL params differ from current state
-    if (urlFilter !== (selectedFilter || "")) {
-      setSelectedFilter(urlFilter || null);
-    }
-    if (urlDepartment !== (selectedDepartmentFilter || "")) {
-      setSelectedDepartmentFilter(urlDepartment || null);
-    }
-    if (urlDeliverable !== (selectedDeliverableFilter || "")) {
-      setSelectedDeliverableFilter(urlDeliverable || null);
-    }
-    if (urlSearch !== globalSearchFilter) {
-      setGlobalSearchFilter(urlSearch);
-    }
-  }, [searchParams]);
-
   // Sync global search filter with URL
   useEffect(() => {
-    const urlSearch = getURLParam(searchParams, "search");
-    // Only update URL if the filter value differs from URL
+    const urlSearch = searchParams.get("search") || "";
     if (globalSearchFilter !== urlSearch) {
-      isUpdatingURLRef.current = true;
-      updateURLParam(setSearchParams, "search", globalSearchFilter || "");
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (globalSearchFilter) next.set("search", globalSearchFilter);
+        else next.delete("search");
+        return next;
+      }, { replace: true });
     }
   }, [globalSearchFilter, searchParams, setSearchParams]);
-
-
-  // Handle filter value change from SearchableSelectField
-  const handleFilterValueChange = useCallback(
-    (fieldName, value) => {
-      if (fieldName === "taskFilter") {
-        // If clicking the same filter or clearing, deselect it
-        const newValue = (selectedFilter === value || !value) ? null : value;
-        setSelectedFilter(newValue);
-        updateURLParam(setSearchParams, "filter", newValue || "");
-      } else if (fieldName === "departmentFilter") {
-        // If clicking the same department filter or clearing, deselect it
-        const newValue = (selectedDepartmentFilter === value || !value) ? null : value;
-        setSelectedDepartmentFilter(newValue);
-        updateURLParam(setSearchParams, "department", newValue || "");
-      } else if (fieldName === "deliverableFilter") {
-        // If clicking the same deliverable filter or clearing, deselect it
-        const newValue = (selectedDeliverableFilter === value || !value) ? null : value;
-        setSelectedDeliverableFilter(newValue);
-        updateURLParam(setSearchParams, "deliverable", newValue || "");
-      }
-    },
-    [selectedFilter, selectedDepartmentFilter, selectedDeliverableFilter, setSearchParams]
-  );
-
-  // Create deliverables options for filter
-  const deliverableFilterOptions = useMemo(() => {
-    if (
-      !deliverables ||
-      !Array.isArray(deliverables) ||
-      deliverables.length === 0
-    ) {
-      return [];
-    }
-    return deliverables.map((deliverable) => ({
-      value: deliverable.name,
-      label: deliverable.name,
-    }));
-  }, [deliverables]);
-
-  // Get user's department for filtering (user role only sees their own department)
-  const userDepartmentOptions = useMemo(() => {
-    if (isUserAdmin) {
-      // Admin sees all departments
-      return null; // null means use default FORM_OPTIONS.DEPARTMENTS
-    }
-    
-    // For user role, only show their own department
-    const userDepartment = userData?.department;
-    if (!userDepartment) {
-      return null; // If no department, don't show filter
-    }
-    
-    // Return array with only user's department
-    return [{ value: userDepartment, label: userDepartment }];
-  }, [isUserAdmin, userData?.department]);
-
-  // Department filter component (to show after search)
-  // Show for admins (userDepartmentOptions === null means use default) or for users with department
-  const departmentFilterComponent = (
-    <DepartmentFilter
-      selectedDepartmentFilter={selectedDepartmentFilter}
-      onFilterChange={handleFilterValueChange}
-      departmentOptions={userDepartmentOptions}
-    />
-  );
-
-  // Create filter component for inline display (task filters and deliverables only, department is separate)
-  const taskFilterComponent = (
-    <div className="flex items-center space-x-4">
-      <SearchableSelectField
-        field={{
-          name: "taskFilter",
-          type: "select",
-          label: "Task Filters",
-          required: false,
-          options: FILTER_OPTIONS,
-          placeholder: "Search filters ",
-        }}
-        register={() => {}}
-        errors={{}}
-        setValue={handleFilterValueChange}
-        watch={() => selectedFilter || ""}
-        trigger={() => {}}
-        clearErrors={() => {}}
-        formValues={{}}
-        noOptionsMessage="No filters found"
-      />
-      <SearchableSelectField
-        field={{
-          name: "deliverableFilter",
-          type: "select",
-          label: "Deliverable",
-          required: false,
-          options: deliverableFilterOptions,
-          placeholder: "Search deliverable ",
-        }}
-        register={() => {}}
-        errors={{}}
-        setValue={handleFilterValueChange}
-        watch={() => selectedDeliverableFilter || ""}
-        trigger={() => {}}
-        clearErrors={() => {}}
-        formValues={{}}
-        noOptionsMessage="No deliverables found"
-      />
-    </div>
-  );
 
   return (
     <div className={`task-table  ${className}`}>
@@ -577,22 +341,11 @@ const TaskTable = ({
         enablePagination={enablePagination}
         showPagination={enablePagination}
         pageSize={pageSizeState}
-        // Custom filter component
-        customFilter={taskFilterComponent}
-        // Department filter (shown after search)
-        departmentFilter={departmentFilterComponent}
         // Global filter props for URL sync
         initialGlobalFilter={globalSearchFilter}
         onGlobalFilterChange={setGlobalSearchFilter}
         // Pass filter state for dynamic export
-        customFilters={{
-          selectedFilter,
-          selectedDepartmentFilter,
-          selectedDeliverableFilter,
-          selectedUserId,
-          selectedReporterId,
-          selectedWeek,
-        }}
+        customFilters={{}}
       />
 
       {/* Edit Task Modal - managed by useTableActions */}

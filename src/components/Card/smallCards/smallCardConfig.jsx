@@ -1,10 +1,7 @@
 import { Icons } from "@/components/icons";
 import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
-import { getWeeksInMonth } from "@/utils/monthUtils";
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
-import { filterTasksByUserAndReporter } from "@/utils/taskFilters";
-
 
 // Small Card Types
 export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
@@ -23,34 +20,7 @@ export const SMALL_CARD_CONFIGS = {
       text: data.isCurrentMonth ? "Current" : "History",
       color: "soft_purple",
     }),
-    getContent: (data) => (
-      <div>
-        <SearchableSelectField
-          field={{
-            name: "selectedMonth",
-            type: "select",
-            label: "Select Month",
-            required: false,
-            options:
-              data.availableMonths?.map((month) => ({
-                value: month.monthId,
-                label: `${month.monthName}${month.isCurrent ? " (Current)" : ""}`,
-              })) || [],
-            placeholder: "Select months...",
-          }}
-          setValue={(fieldName, value) => {
-            if (fieldName === "selectedMonth" && data.selectMonth) {
-              data.selectMonth(value);
-            }
-          }}
-          watch={() =>
-            data.selectedMonth?.monthId || data.currentMonth?.monthId || ""
-          }
-          noOptionsMessage="No months available"
-          variant="soft_purple"
-        />
-      </div>
-    ),
+    getContent: () => null,
     getDetails: (data) => [
       {
         icon: Icons.generic.clock,
@@ -92,32 +62,7 @@ export const SMALL_CARD_CONFIGS = {
       text: data.selectedUserId ? "Filtered" : "All Users",
       color: "soft_purple",
     }),
-    getContent: (data) => (
-      <div className=" space-y-3">
-        <SearchableSelectField
-          field={{
-            name: "selectedUser",
-            type: "select",
-            label: "Select User",
-            required: false,
-            options:
-              data.users?.map((user) => ({
-                value: user.userUID,
-                label: user.name,
-              })) || [],
-            placeholder: "Select users...",
-          }}
-          setValue={(fieldName, value) => {
-            if (fieldName === "selectedUser" && data.handleUserSelect) {
-              data.handleUserSelect(value);
-            }
-          }}
-          watch={() => data.selectedUserId || ""}
-          noOptionsMessage="No users found"
-          variant="soft_purple"
-        />
-      </div>
-    ),
+    getContent: () => null,
     getDetails: (data) => {
       // Only if available
       const totalTasks = data.userFilterTotalTasks ?? 0;
@@ -167,32 +112,7 @@ export const SMALL_CARD_CONFIGS = {
         : "All Reporters",
       color: "soft_purple",
     }),
-    getContent: (data) => (
-      <div className="space-y-1">
-        <SearchableSelectField
-          field={{
-            name: "selectedReporter",
-            type: "select",
-            label: "Select Reporter",
-            required: false,
-            options:
-              data.reporters?.map((reporter) => ({
-                value: reporter.reporterUID,
-                label: reporter.name,
-              })) || [],
-            placeholder: "Search Reporters...",
-          }}
-          setValue={(fieldName, value) => {
-            if (fieldName === "selectedReporter" && data.handleReporterSelect) {
-              data.handleReporterSelect(value);
-            }
-          }}
-          watch={() => data.selectedReporterId || ""}
-          noOptionsMessage="No reporters found"
-          variant="soft_purple"
-        />
-      </div>
-    ),
+    getContent: () => null,
     getDetails: (data) => {
       // Only if available
       const totalReporterTasks = data.reporterFilterTotalTasks ?? 0;
@@ -230,83 +150,15 @@ export const SMALL_CARD_CONFIGS = {
     }),
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
-      const selectedUserId = data.selectedUserId;
-      const selectedReporterId = data.selectedReporterId;
-      const currentMonthId =
-        data.selectedMonth?.monthId || data.currentMonth?.monthId;
-      const isUserAdmin =
-        data.isUserAdmin || data.currentUser?.role === "admin";
-      const currentUserId = data.currentUser?.userUID;
-
-      // Determine target user: selected user or current user (never show all tasks)
-      const targetUserId = selectedUserId || currentUserId;
-
-      // Filter by reporter only (user and month filtering done at database level)
-      const filteredTasks = filterTasksByUserAndReporter(data.tasks, {
-        selectedReporterId,
-      });
-      return filteredTasks.length.toString();
+      return data.tasks.length.toString();
     },
     getStatus: (data) => (data.currentUser?.role || "user").toLowerCase(),
     getDetails: (data) => {
       const details = [];
-      // Show selected user info if user is selected
-      if (data.selectedUserId) {
-        const selectedUser = data.users?.find(
-          (u) => (u.userUID || u.id) === data.selectedUserId
-        );
-        details.push({
-          label: "Selected User",
-          value: selectedUser?.name || selectedUser?.email || "Unknown User",
-        });
-      }
-      // Show selected reporter info if reporter is selected
-      if (data.selectedReporterId) {
-        const selectedReporter = data.reporters?.find(
-          (r) => r.reporterUID === data.selectedReporterId
-        );
-        details.push({
-          label: "Selected Reporter",
-          value:
-            selectedReporter?.name ||
-            selectedReporter?.reporterName ||
-            "Unknown Reporter",
-        });
-      }
       details.push({
         label: "Current User",
         value: data.currentUser?.name || data.currentUser?.email || "N/A",
       });
-
-      // Add selected week section (without "All Weeks")
-      const monthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
-      if (monthId) {
-        try {
-          // Show selected week
-          const selectedWeek = data.selectedWeek;
-          details.push({
-            label: "Selected Week",
-            value: selectedWeek
-              ? `Week ${selectedWeek.weekNumber}`
-              : "All Weeks",
-            icon: Icons.generic.calendar,
-          });
-        } catch (error) {
-          logger.warn("Error getting weeks for USER_PROFILE card:", error);
-          details.push({
-            label: "Selected Week",
-            value: "All Weeks",
-            icon: Icons.generic.calendar,
-          });
-        }
-      } else {
-        // No month selected, show default
-        details.push({
-          label: "Selected Week",
-          value: "All Weeks",
-          icon: Icons.generic.calendar,
-        });
-      }
 
       return details;
     },
@@ -318,12 +170,7 @@ export const SMALL_CARD_CONFIGS = {
     description: "Total Tasks",
     icon: Icons.buttons.add,
     color: "soft_purple",
-    getBadge: (data) => ({
-      text: data.selectedWeek
-        ? `Week ${data.selectedWeek.weekNumber}`
-        : "All Weeks",
-      color: "soft_purple",
-    }),
+    getBadge: (data) => null,
     getValue: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return "0";
 
@@ -340,66 +187,7 @@ export const SMALL_CARD_CONFIGS = {
       return filteredTasks.length.toString();
     },
     getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),
-    getContent: (data) => {
-      // Get weeks for the current month
-      const monthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
-      let weekOptions = [];
-
-      if (monthId) {
-        try {
-          const weeks = getWeeksInMonth(monthId);
-          // "All Weeks" option at the beginning
-          weekOptions = [
-            { value: "", label: "All Weeks" },
-            ...weeks.map((week) => ({
-              value: week.weekNumber.toString(),
-              label: `Week ${week.weekNumber}`,
-            })),
-          ];
-        } catch (error) {
-          logger.warn("Error getting weeks for month:", error);
-        }
-      }
-
-      return (
- 
-          <SearchableSelectField
-            field={{
-              name: "selectedWeek",
-              type: "select",
-              label: "Filter by Week",
-              required: false,
-              options: weekOptions,
-              placeholder: "Select weeks...",
-            }}
-            setValue={(fieldName, value) => {
-              if (fieldName === "selectedWeek" && data.handleWeekChange) {
-                if (!value || value === "") {
-                  // Clear week selection - show all weeks
-                  data.handleWeekChange(null);
-                } else {
-                  // Select specific week
-                  const weekNumber = parseInt(value);
-                  const weeks = getWeeksInMonth(monthId);
-                  const week = weeks.find((w) => w.weekNumber === weekNumber);
-                  if (week) {
-                    data.handleWeekChange(week);
-                  }
-                }
-              }
-            }}
-            watch={() => {
-              if (data.selectedWeek) {
-                return data.selectedWeek.weekNumber.toString();
-              }
-              return ""; // Return empty string to match "All Weeks" option when no week is selected
-            }}
-            noOptionsMessage="No weeks available"
-            variant="soft_purple"
-          />
-    
-      );
-    },
+    getContent: () => null,
     getDetails: (data) => {
       if (!data.tasks || !Array.isArray(data.tasks)) return [];
 
@@ -411,56 +199,6 @@ export const SMALL_CARD_CONFIGS = {
         if (currentMonthId && task.monthId !== currentMonthId) return false;
         return true;
       });
-
-      // If a week is selected, filter by week; otherwise show all tasks for the month
-      if (data.selectedWeek && data.selectedWeek.days) {
-        const weekTasks = [];
-        data.selectedWeek.days.forEach((day) => {
-          try {
-            const dayDate = day instanceof Date ? day : new Date(day);
-            if (isNaN(dayDate.getTime())) return;
-
-            const dayStr = dayDate.toISOString().split("T")[0];
-            const dayTasks = filteredTasks.filter((task) => {
-              if (!task.createdAt) return false;
-
-              // Handle Firestore Timestamp
-              let taskDate;
-              if (
-                task.createdAt &&
-                typeof task.createdAt === "object" &&
-                task.createdAt.seconds
-              ) {
-                taskDate = new Date(task.createdAt.seconds * 1000);
-              } else if (
-                task.createdAt &&
-                typeof task.createdAt === "object" &&
-                task.createdAt.toDate
-              ) {
-                taskDate = task.createdAt.toDate();
-              } else {
-                taskDate = new Date(task.createdAt);
-              }
-
-              if (isNaN(taskDate.getTime())) return false;
-              const taskDateStr = taskDate.toISOString().split("T")[0];
-              return taskDateStr === dayStr;
-            });
-            weekTasks.push(...dayTasks);
-          } catch (error) {
-            logger.warn("Error processing day:", error, day);
-          }
-        });
-        filteredTasks = weekTasks;
-      }
-
-      // Apply user and reporter filtering if specified using shared utility
-      if (data.selectedUserId || data.selectedReporterId) {
-        // Filter by reporter only (user and month filtering done at database level)
-        filteredTasks = filterTasksByUserAndReporter(filteredTasks, {
-          selectedReporterId: data.selectedReporterId,
-        });
-      }
 
       // Only if available
       const totalTasks = data.actionsTotalTasks ?? filteredTasks.length;
@@ -501,9 +239,6 @@ export const createCards = (data, mode = "main") => {
         cardTypes = [
           SMALL_CARD_TYPES.MONTH_SELECTION,
           SMALL_CARD_TYPES.ACTIONS,
-          ...(data.isUserAdmin
-            ? [SMALL_CARD_TYPES.USER_FILTER, SMALL_CARD_TYPES.REPORTER_FILTER]
-            : [SMALL_CARD_TYPES.REPORTER_FILTER]),
           SMALL_CARD_TYPES.USER_PROFILE,
         ];
         break;

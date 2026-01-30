@@ -18,56 +18,14 @@ const Skeleton = ({
   );
 };
 
-// Predefined skeleton components for common use cases
+// Predefined skeleton – credit-card style dashboard card
 export const SkeletonCard = ({ className = '' }) => (
-  <div className={`card-small-modern relative ${className}`}>
-    {/* Accent line on top */}
-    <div className="absolute top-0 left-0 right-0 h-1 bg-gray-300 dark:bg-gray-600 z-10 rounded-t-xl" />
-    <div className="h-auto relative z-10">
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Skeleton height="2.5rem" width="2.5rem" rounded="lg" />
-            <div className="leading-2">
-              <Skeleton height="0.875rem" width="4rem" className="mb-1" />
-              <Skeleton height="0.75rem" width="3rem" />
-            </div>
-          </div>
-          <Skeleton height="1.25rem" width="2rem" rounded="md" />
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Main Value */}
-          <div className="mb-6">
-            <Skeleton height="2rem" width="3rem" className="mb-2" />
-            <Skeleton height="0.875rem" width="5rem" />
-          </div>
-
-          {/* Details */}
-          <div className="space-y-2">
-            <div className="p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Skeleton height="0.5rem" width="0.5rem" rounded="full" />
-                  <Skeleton height="0.75rem" width="3rem" />
-                </div>
-                <Skeleton height="0.75rem" width="2rem" rounded="md" />
-              </div>
-            </div>
-            <div className="p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Skeleton height="0.5rem" width="0.5rem" rounded="full" />
-                  <Skeleton height="0.75rem" width="4rem" />
-                </div>
-                <Skeleton height="0.75rem" width="2rem" rounded="md" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div className={`card-credit relative ${className}`}>
+    <div className="card-credit-strip card-credit-strip-left bg-gray-200 dark:bg-gray-600" />
+    <div className="card-credit-inner">
+      <Skeleton height="0.6875rem" width="5rem" rounded="md" className="mb-1" />
+      <Skeleton height="1.5rem" width="3rem" rounded="md" className="mb-4" />
+      <Skeleton height="2.25rem" width="2.25rem" rounded="xl" className="absolute right-4 bottom-4" />
     </div>
   </div>
 );
@@ -87,33 +45,28 @@ export const SkeletonButton = ({ className = '' }) => (
 );
 
 export const SkeletonTable = ({ rows = 5, className = '' }) => (
-  <div className={`card-small-modern overflow-hidden p-0 relative ${className}`}>
-    {/* Accent line on top */}
-    <div className="absolute top-0 left-0 right-0 h-1 bg-gray-300 dark:bg-gray-600 z-10 rounded-t-xl" />
-    <div className="overflow-x-auto pt-1">
+  <div className={`table-card overflow-hidden relative ${className}`}>
+    <div className="table-card-inner overflow-x-auto">
       <div className="space-y-0">
-        {/* Table Header */}
-        <div className="grid grid-cols-6 gap-4 px-5 py-4 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200/50 dark:border-gray-700/50">
-          <Skeleton height="0.875rem" width="80%" className="bg-gray-300 dark:bg-gray-600" />
-          <Skeleton height="0.875rem" width="60%" className="bg-gray-300 dark:bg-gray-600" />
-          <Skeleton height="0.875rem" width="70%" className="bg-gray-300 dark:bg-gray-600" />
-          <Skeleton height="0.875rem" width="50%" className="bg-gray-300 dark:bg-gray-600" />
-          <Skeleton height="0.875rem" width="60%" className="bg-gray-300 dark:bg-gray-600" />
-          <Skeleton height="0.875rem" width="40%" className="bg-gray-300 dark:bg-gray-600" />
+        <div className="grid grid-cols-6 gap-4 px-4 py-3 border-b border-gray-100 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/30">
+          <Skeleton height="0.6875rem" width="80%" className="bg-gray-200 dark:bg-gray-600" />
+          <Skeleton height="0.6875rem" width="60%" className="bg-gray-200 dark:bg-gray-600" />
+          <Skeleton height="0.6875rem" width="70%" className="bg-gray-200 dark:bg-gray-600" />
+          <Skeleton height="0.6875rem" width="50%" className="bg-gray-200 dark:bg-gray-600" />
+          <Skeleton height="0.6875rem" width="60%" className="bg-gray-200 dark:bg-gray-600" />
+          <Skeleton height="0.6875rem" width="40%" className="bg-gray-200 dark:bg-gray-600" />
         </div>
-        
-        {/* Table Rows */}
         {Array.from({ length: rows }).map((_, index) => (
-          <div 
-            key={index} 
-            className="grid grid-cols-6 gap-4 px-5 py-4 border-b border-gray-200/50 dark:border-gray-700/30 bg-white dark:bg-smallCard"
+          <div
+            key={index}
+            className="grid grid-cols-6 gap-4 px-4 py-3 border-b border-gray-100 dark:border-gray-700/40"
           >
-            <Skeleton height="0.875rem" width="90%" />
-            <Skeleton height="0.875rem" width="70%" />
-            <Skeleton height="0.875rem" width="80%" />
-            <Skeleton height="0.875rem" width="60%" />
-            <Skeleton height="0.875rem" width="50%" />
-            <Skeleton height="0.875rem" width="30%" />
+            <Skeleton height="0.8125rem" width="90%" className="bg-gray-100 dark:bg-gray-700/50" />
+            <Skeleton height="0.8125rem" width="70%" className="bg-gray-100 dark:bg-gray-700/50" />
+            <Skeleton height="0.8125rem" width="80%" className="bg-gray-100 dark:bg-gray-700/50" />
+            <Skeleton height="0.8125rem" width="60%" className="bg-gray-100 dark:bg-gray-700/50" />
+            <Skeleton height="0.8125rem" width="50%" className="bg-gray-100 dark:bg-gray-700/50" />
+            <Skeleton height="0.8125rem" width="30%" className="bg-gray-100 dark:bg-gray-700/50" />
           </div>
         ))}
       </div>

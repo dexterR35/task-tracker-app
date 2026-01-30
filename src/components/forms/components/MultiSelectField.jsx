@@ -70,7 +70,7 @@ const MultiSelectField = ({
           onChange={(e) => handleAddValue(e.target.value)}
         >
           <option value="">
-            {field.placeholder || `Select ${field.label.toLowerCase()}`}
+            {field.placeholder || `Select ${(field.label || '').toLowerCase()}`}
           </option>
           {availableOptions.map((option) => (
             <option key={option.value} value={option.value}>

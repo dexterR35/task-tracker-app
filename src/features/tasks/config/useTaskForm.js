@@ -36,10 +36,17 @@ export const isConditionallyRequired = (field, formValues) => {
 };
 
 // ===== TASK FORM OPTIONS =====
+// Task form department field: only Design, Video, Development
+const TASK_FORM_DEPARTMENTS = [
+  { value: 'design', label: 'Design' },
+  { value: 'video', label: 'Video' },
+  { value: 'developer', label: 'Development' },
+];
+
 export const TASK_FORM_OPTIONS = {
   products: FORM_OPTIONS.PRODUCTS,
   markets: FORM_OPTIONS.MARKETS,
-  departments: FORM_OPTIONS.DEPARTMENTS,
+  departments: TASK_FORM_DEPARTMENTS,
   // deliverables will be loaded dynamically from database
   aiModels: FORM_OPTIONS.AI_MODELS,
 };
@@ -49,51 +56,50 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
   {
     name: 'jiraLink',
     type: 'url',
-    label: 'Jira Link',
     required: true,
     placeholder: 'https://gmrd.atlassian.net/browse/GIMODEAR-124124'
   },
   {
     name: 'products',
     type: 'select',
-    label: 'Products',
     required: true,
+    placeholder: 'Select products...',
     options: TASK_FORM_OPTIONS.products
   },
   {
     name: 'departments',
     type: 'select',
-    label: 'Department',
     required: true,
+    placeholder: 'Select department...',
     options: TASK_FORM_OPTIONS.departments
   },
   {
     name: 'markets',
     type: 'multiSelect',
-    label: 'Markets',
     required: true,
+    placeholder: 'Select markets...',
     options: TASK_FORM_OPTIONS.markets
   },
   // Date range fields for task duration
   {
     name: 'startDate',
     type: 'date',
-    label: 'Start Date',
     required: true,
+    placeholder: 'Start Date',
     conditional: false
   },
   {
     name: 'endDate',
     type: 'date',
-    label: 'End Date',
     required: true,
+    placeholder: 'End Date',
     conditional: false
   },
   {
     name: 'timeInHours',
     type: 'number',
-    label: 'Total Time (Hours)',
     required: true,
+    placeholder: 'Total time (hrs)',
     step: 0.5,
     defaultValue: 0,
     min: 0
@@ -188,8 +194,8 @@ export const createTaskFormFields = (deliverablesOptions = []) => [
   {
     name: 'reporters',
     type: 'select',
-    label: 'Reporter',
     required: true,
+    placeholder: 'Select reporter...',
     options: [] // Will be populated dynamically
   },
   {

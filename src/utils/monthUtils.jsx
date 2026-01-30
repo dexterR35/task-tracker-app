@@ -5,12 +5,6 @@ import {
   startOfMonth,
   endOfMonth,
   isValid,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isWeekend,
-  addWeeks,
-  addDays,
 } from "date-fns";
 import { parseMonthId, getCurrentMonthId } from "@/utils/dateUtils";
 import { Icons } from "@/components/icons";
@@ -21,127 +15,6 @@ import { showSuccess, showError } from "@/utils/toast";
 import { logger } from "@/utils/logger";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import { canCreateBoard } from "@/features/utils/authUtils";
-
-export const getWeeksInMonth = (monthId) => {
-  const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
-  if (!isValid(date)) {
-    logger.error("Invalid date provided to getWeeksInMonth");
-    return [];
-  }
-
-  const monthStart = startOfMonth(date);
-  const monthEnd = endOfMonth(date);
-
-  const weeks = [];
-  // Find the first Monday within the month
-  let currentWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday of the week containing month start
-
-  // If the Monday is before the month starts, find the first Monday of the month
-  if (currentWeekStart < monthStart) {
-    const dayOfWeek = monthStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    if (dayOfWeek === 1) {
-      // Month starts on Monday
-      currentWeekStart = monthStart;
-    } else {
-      // Calculate days to add to get to the first Monday
-      // If dayOfWeek is 0 (Sunday), add 1 day. Otherwise add (8 - dayOfWeek) days
-      const daysToAdd = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-      currentWeekStart = addDays(monthStart, daysToAdd);
-    }
-  }
-
-  let weekNumber = 1;
-
-  while (currentWeekStart <= monthEnd && weeks.length < 4) {
-    // Calculate Friday of the week (Monday + 4 days = Friday)
-    const weekEndFriday = addDays(currentWeekStart, 4);
-
-    // Get week days (Monday-Friday only)
-    const weekDays = eachDayOfInterval({
-      start: currentWeekStart,
-      end: weekEndFriday,
-    }).filter((day) => !isWeekend(day) && day >= monthStart && day <= monthEnd);
-
-    // Only include weeks with at least 3 workdays to avoid very short partial weeks
-    if (weekDays.length >= 3) {
-      // Use Friday as endDate, but only if it's within the month
-      const actualWeekEnd =
-        weekEndFriday <= monthEnd
-          ? weekEndFriday
-          : weekDays[weekDays.length - 1];
-
-      weeks.push({
-        weekNumber,
-        startDate: currentWeekStart,
-        endDate: actualWeekEnd,
-        days: weekDays,
-        startDateStr: format(currentWeekStart, "yyyy-MM-dd"),
-        endDateStr: format(actualWeekEnd, "yyyy-MM-dd"),
-        label: `Week ${weekNumber} (${format(currentWeekStart, "MMM dd")} - ${format(actualWeekEnd, "MMM dd")})`,
-      });
-      
-      weekNumber++;
-    }
-
-    currentWeekStart = addWeeks(currentWeekStart, 1);
-  }
-
-  return weeks;
-};
-
-export const getTasksForWeek = (tasks, week) => {
-  if (!tasks || !Array.isArray(tasks) || !week) {
-    return {};
-  }
-
-  const weekTasks = {};
-
-  // Initialize each day with empty array
-  week.days.forEach((day) => {
-    const dayStr = format(day, "yyyy-MM-dd");
-    weekTasks[dayStr] = [];
-  });
-
-  // Filter and group tasks by day
-  tasks.forEach((task) => {
-    if (!task.data_task?.startDate) return;
-
-    const taskStartDate = new Date(task.data_task.startDate);
-    const taskEndDate = task.data_task.endDate
-      ? new Date(task.data_task.endDate)
-      : taskStartDate;
-
-    // Check if task falls within this week
-    if (taskStartDate >= week.startDate && taskStartDate <= week.endDate) {
-      const dayStr = format(taskStartDate, "yyyy-MM-dd");
-      if (weekTasks[dayStr]) {
-        weekTasks[dayStr].push(task);
-      }
-    }
-  });
-
-  return weekTasks;
-};
-
-export const getCurrentWeekNumber = (monthId) => {
-  const date = typeof monthId === "string" ? parseMonthId(monthId) : monthId;
-  if (!isValid(date)) return 1;
-
-  const today = new Date();
-  const monthStart = startOfMonth(date);
-
-  // If today is not in this month, return first week
-  if (today < monthStart || today > endOfMonth(date)) {
-    return 1;
-  }
-
-  const weeks = getWeeksInMonth(monthId);
-  const currentWeek = weeks.find(
-    (week) => today >= week.startDate && today <= week.endDate
-  );
-
-  return currentWeek ? currentWeek.weekNumber : 1;
-};
 
 // ============================================================================
 // VALIDATION UTILITIES
@@ -347,60 +220,32 @@ export const MonthProgressBar = ({
     : CARD_SYSTEM.COLOR_HEX_MAP.pink;
 
   return (
-    <div className="card-small-modern w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {monthName}
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {isCurrentMonth ? "Current Month" : "Past Month"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span 
-            className="px-2 py-1 text-xs font-semibold rounded-md"
-            style={{ 
-              backgroundColor: `${primaryColor}20`,
-              color: primaryColor 
-            }}
-          >
+    <div className="month-progress-bar">
+      <div className="month-progress-bar-inner">
+        <div className="month-progress-bar-header">
+          <span className="month-progress-bar-title">{monthName}</span>
+          <span className="month-progress-bar-badge" style={{ color: primaryColor }}>
             {progressData.progress}%
           </span>
-          <span className="px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md">
-            {progressData.daysPassed}/{progressData.totalDays} days
-          </span>
         </div>
-      </div>
-
-      {/* Progress Bar Section */}
-      <div className="my-4">
-        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+        <div className="month-progress-bar-track">
           <div
-            className="h-full rounded-full transition-all duration-500 ease-out"
+            className="month-progress-bar-fill"
             style={{
               width: `${progressData.progress}%`,
               backgroundColor: primaryColor,
             }}
           />
         </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-1">
-          <div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: primaryColor }}
-          ></div>
-          <span className="text-xs text-gray-700 dark:text-gray-300">{progressData.daysPassed} days passed</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-error"></div>
-          <span className="text-xs text-gray-700 dark:text-gray-300">
-            {progressData.daysRemaining} days remaining
+        <div className="month-progress-bar-footer">
+          <span className="month-progress-bar-stat">
+            {progressData.daysPassed}/{progressData.totalDays} days
           </span>
+          {isCurrentMonth && progressData.daysRemaining > 0 && (
+            <span className="month-progress-bar-stat">
+              {progressData.daysRemaining} left
+            </span>
+          )}
         </div>
       </div>
     </div>

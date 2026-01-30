@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import Badge from '@/components/ui/Badge/Badge';
+import { Icons } from '@/components/icons';
 
 const SearchableSelectField = ({ 
   field, 
@@ -135,11 +136,6 @@ const SearchableSelectField = ({
       return searchTerm;
     }
     
-    // Special case for empty value - show "All Weeks" for week field
-    if (!currentValue && field.name === "selectedWeek") {
-      return "All Weeks";
-    }
-    
     // First try to use selectedOption if it exists
     if (selectedOption) {
       return selectedOption.name || selectedOption.label || '';
@@ -184,7 +180,7 @@ const SearchableSelectField = ({
         </label>
       )}
       
-      <div className="relative z-10" ref={dropdownRef}>
+      <div className="relative z-10 searchable-select-wrap" ref={dropdownRef}>
         <input
           ref={inputRef}
           id={field.name}
@@ -194,12 +190,15 @@ const SearchableSelectField = ({
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           onKeyDown={handleInputKeyDown}
-          placeholder={field.placeholder || `Search ${field.label.toLowerCase()}...`}
+          placeholder={field.placeholder || `Search ${field.label?.toLowerCase() || '...'}...`}
           disabled={disabled}
           readOnly={disabled}
-          className={`form-input w-full pr-10 ${fieldError ? 'error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}`}
+          className={`form-input w-full pr-9 ${fieldError ? 'error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}`}
           autoComplete="off"
         />
+        <span className="searchable-select-arrow" aria-hidden>
+          <Icons.buttons.chevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </span>
         
         {/* Hidden input for form registration - only needed for React Hook Form */}
         {register && typeof register === 'function' && (
@@ -210,9 +209,9 @@ const SearchableSelectField = ({
           />
         )}
 
-        {/* Badge display for selected value */}
-        {displayValue && (
-          <div className="mt-1">
+        {/* Badge only when a value is selected and dropdown is closed (hidden while selecting) */}
+        <div className="mt-1 min-h-[2rem] flex items-center">
+          {displayValue && !isOpen && (
             <Badge
               variant={variant}
               size="sm"
@@ -229,8 +228,8 @@ const SearchableSelectField = ({
                 ×
               </button>
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
 
         {isOpen && (
           <div className="absolute card p-0 z-[9999] w-full mt-1 max-h-60 overflow-auto shadow-lg">

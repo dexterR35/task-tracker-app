@@ -1,189 +1,195 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
-import { CARD_SYSTEM, NAVIGATION_CONFIG } from '@/constants';
+import Avatar from "@/components/ui/Avatar/Avatar";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
+import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
+import { APP_CONFIG, CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
+import logo from "@/assets/Logo4.webp";
+
+const SIDEBAR_ICON_SIZE = "w-3.5 h-3.5";
+const SIDEBAR_ICON_WRAPPER = "p-1.5 rounded-md";
+const LINK_BASE =
+  "group flex items-center gap-2.5 rounded-lg transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50";
+const LINK_ACTIVE = "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-700 dark:text-indigo-200";
+const LINK_INACTIVE =
+  "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200";
+const ACTIVE_ICON_STYLE = {
+  backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
+  color: "white",
+};
+
+function NavIcon({ icon: Icon, active }) {
+  return (
+    <div
+      className={`${SIDEBAR_ICON_WRAPPER} shrink-0`}
+      style={active ? ACTIVE_ICON_STYLE : undefined}
+    >
+      <Icon className={SIDEBAR_ICON_SIZE} />
+    </div>
+  );
+}
 
 const Sidebar = () => {
   const { logout, clearError, canAccess, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
 
   const handleLogout = async () => {
     try {
       await logout();
-      // Navigate to home page after logout
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     } catch (error) {
       clearError();
     }
   };
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  const toggleExpanded = (itemName) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [itemName]: !prev[itemName],
-    }));
-  };
-
-  const isItemExpanded = (itemName) => {
-    return expandedItems[itemName] ?? false;
-  };
-
-  const isSubItemActive = (item) => {
-    if (!item.subItems) return false;
-    return item.subItems.some((subItem) => isActive(subItem.href));
-  };
-
-  const navigationItems = NAVIGATION_CONFIG.ITEMS;
-
-  // Auto-expand items when their sub-items are active
-  useEffect(() => {
-    navigationItems.forEach((item) => {
-      if (item.subItems) {
-        const hasActiveSubItem = item.subItems.some((subItem) => isActive(subItem.href));
-        if (hasActiveSubItem) {
-          setExpandedItems((prev) => ({
-            ...prev,
-            [item.name]: true,
-          }));
-        }
-      }
-    });
-  }, [location.pathname, navigationItems]);
-
-  const getColorClasses = (color, isActive) => {
-    // Use color_default for active icons, gray for inactive
-    return isActive 
-      ? "shadow-lg shadow-gray-600/25" 
-      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-gray-600";
-  };
+  const isActive = (path) => location.pathname === path;
+  const toggleExpanded = (name) =>
+    setExpandedItems((prev) => ({ ...prev, [name]: !prev[name] }));
+  const items = NAVIGATION_CONFIG.ITEMS;
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-smallCard  transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
-      {/* Header Section */}
-      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
-        
-        {/* Design department */}
-        {!isCollapsed && (
-          <div className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg ">
-            <div 
-              className="p-2 rounded-lg text-white shadow-md"
-              style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP[NAVIGATION_CONFIG.DEPARTMENT.color] }}
-            >
-              {React.createElement(Icons.generic[NAVIGATION_CONFIG.DEPARTMENT.icon], { className: "w-4 h-4" })}
-            </div>
-            <div className="ml-2.5 flex-1">
-              <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{NAVIGATION_CONFIG.DEPARTMENT.name}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300 font-medium">{NAVIGATION_CONFIG.DEPARTMENT.subtitle}</p>
-            </div>
+    <nav className="flex h-full w-full flex-col bg-white dark:bg-primary" aria-label="Main navigation">
+      {/* Top: Logo + app name + office */}
+      <div className="shrink-0 px-1.5 py-2 pt-4">
+        <Link
+          to="/dashboard"
+          className="flex items-center gap-2.5 rounded-lg py-1.5 -mx-1 px-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/50 transition-colors"
+        >
+          <img
+            src={logo}
+            alt=""
+            className="h-7 w-7 shrink-0 object-contain rounded"
+          />
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold tracking-tight text-app">
+              {APP_CONFIG.NAME}
+            </span>
+            <span className="block truncate text-[10px] font-medium uppercase tracking-wider text-app-muted mt-0.5">
+              Office: R.E.I
+            </span>
           </div>
-        )}
+        </Link>
       </div>
 
+      {/* Main Menu + Links */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="px-2.5 pt-6 pb-1.5">
+          <h5 className="text-app-subtle">
+            Main Menu
+          </h5>
+        </div>
+        <div className="flex-1 overflow-y-auto px-1.5 py-1.5 space-y-0.5">
+          {items.map((item) => {
+            if (item.adminOnly && !canAccess("admin")) return null;
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navigationItems.map((item) => {
-          if (item.adminOnly && !canAccess("admin")) return null;
+            const Icon = Icons.generic[item.icon];
+            const subItems = item.subItems ?? [];
+            const hasSubItems = subItems.length > 0;
+            const active = isActive(item.href) || subItems.some((s) => isActive(s.href));
+            const linkClass = `${LINK_BASE} px-2 py-1.5 w-full text-left ${active ? LINK_ACTIVE : LINK_INACTIVE}`;
 
-          const Icon = Icons.generic[item.icon];
-          const active = isActive(item.href) || isSubItemActive(item);
-          const hasSubItems = item.subItems && item.subItems.length > 0;
-          const isExpanded = isItemExpanded(item.name);
-          const ChevronIcon = isExpanded ? Icons.buttons.chevronUp : Icons.buttons.chevronDown;
-          
-          return (
-            <div key={item.name} className="space-y-1">
-              {hasSubItems ? (
-                <>
+            if (hasSubItems) {
+              const isExpanded =
+                expandedItems[item.name] ?? subItems.some((s) => isActive(s.href));
+              const ChevronIcon = isExpanded
+                ? Icons.buttons.chevronUp
+                : Icons.buttons.chevronDown;
+              return (
+                <div key={item.name} className="space-y-0.5">
                   <button
-                    onClick={() => !isCollapsed && toggleExpanded(item.name)}
-                    className={`group w-full flex items-center px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] ${
-                      active
-                        ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                    }`}
+                    type="button"
+                    onClick={() => toggleExpanded(item.name)}
+                    className={linkClass}
                   >
-                    <div
-                      className={`p-2 rounded-lg transition-all duration-200 ${getColorClasses(item.color, active)}`}
-                      style={active ? {
-                        backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                        color: 'white'
-                      } : {}}
-                    >
-                      {React.createElement(Icon, { className: "w-4 h-4" })}
-                    </div>
-                    {!isCollapsed && (
-                      <>
-                        <div className="ml-2.5 flex-1 text-left">
-                          <p className="font-medium text-sm">{item.name}</p>
-                        </div>
-                        <ChevronIcon className="w-4 h-4 ml-1" />
-                      </>
-                    )}
+                    <NavIcon icon={Icon} active={active} />
+                    <span className="flex-1 text-sm font-medium truncate ">
+                      {item.name}
+                    </span>
+                    <ChevronIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
                   </button>
-                  {!isCollapsed && isExpanded && hasSubItems && (
-                    <div className="ml-4 space-y-1  pl-3">
-                      {item.subItems.map((subItem) => {
+                  {isExpanded && (
+                    <div className="ml-3 pl-1.5 border-l border-gray-200 dark:border-gray-600 space-y-0.5">
+                      {subItems.map((subItem) => {
                         const subActive = isActive(subItem.href);
                         return (
-                          <Link
-                            key={subItem.name}
-                            to={subItem.href}
-                            className={`group flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] ${
-                              subActive
-                                ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
-                                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        <Link
+                          key={subItem.name}
+                          to={subItem.href}
+                          className={`${LINK_BASE} px-2 py-1.5 ${subActive ? LINK_ACTIVE : LINK_INACTIVE}`}
+                        >
+                          <span
+                            className={`w-1 h-1 rounded-full shrink-0 ${
+                              subActive ? "bg-indigo-500" : "bg-gray-400 dark:bg-gray-500"
                             }`}
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 mr-2" />
-                            <p className="font-medium text-sm">{subItem.name}</p>
-                          </Link>
+                          />
+                          <span className="text-[12px] font-medium truncate">
+                            {subItem.name}
+                          </span>
+                        </Link>
                         );
                       })}
                     </div>
                   )}
-                </>
-              ) : (
-                <Link
-                  to={item.href}
-                  className={`group flex items-center px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] ${
-                    active
-                      ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  }`}
-                >
-                  <div
-                    className={`p-2 rounded-lg transition-all duration-200 ${getColorClasses(item.color, active)}`}
-                    style={active ? {
-                      backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-                      color: 'white'
-                    } : {}}
-                  >
-                    {React.createElement(Icon, { className: "w-4 h-4" })}
-                  </div>
-                  {!isCollapsed && (
-                    <div className="ml-2.5 flex-1">
-                      <p className="font-medium text-sm">{item.name}</p>
-                    </div>
-                  )}
-                </Link>
-              )}
+                </div>
+              );
+            }
+
+            return (
+              <Link key={item.name} to={item.href} className={linkClass}>
+                <NavIcon icon={Icon} active={active} />
+                <span className="flex-1 text-sm font-medium truncate">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom: Profile + actions */}
+      <div className="shrink-0 space-y-1.5 p-2 pb-4">
+        <div className="flex-center justify-start mb-3">
+          <h5 className="text-app-subtle">
+            Account
+          </h5>
+          {/* <DarkModeToggle /> */}
+        </div>
+        {user ? (
+          <div className="flex items-center gap-2 rounded-lg bg-gray-50 dark:bg-gray-800/20 px-1.5 py-2">
+            <Avatar
+              user={user}
+              size="xs"
+              showName={false}
+              showEmail={false}
+              className="shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-semibold text-app truncate">
+                {user.name || "User"}
+              </p>
+              <p className="text-[10px] text-app-muted truncate">
+                {user.email || ""}
+              </p>
             </div>
-          );
-        })}
-      </nav>
-
-
-
-    </div>
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-0.5 px-0.5">
+          <DynamicButton
+            variant="secondary"
+            size="xs"
+            icon={Icons.buttons.logout}
+            iconPosition="left"
+            onClick={handleLogout}
+            className="bg-gray-50 dark:!bg-gray-800/20 !py-1.5"
+            
+          >
+            Sign out
+          </DynamicButton>
+        </div>
+      </div>
+    </nav>
   );
 };
 

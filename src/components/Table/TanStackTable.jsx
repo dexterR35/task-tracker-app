@@ -36,7 +36,7 @@ const getSelectedRows = (table, rowSelection) => {
 
 const getSelectedCount = (rowSelection) => Object.keys(rowSelection).length;
 
-// Bulk actions bar component
+// Bulk actions bar component – minimal, matches card
 const BulkActionsBar = ({
   selectedCount,
   onClearSelection,
@@ -47,38 +47,21 @@ const BulkActionsBar = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="card-small-modern">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
-            <div
-              className="w-3 h-3 rounded-full shadow-sm"
-              style={{
-                backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.select_badge,
-              }}
-            ></div>
-            <div className="flex flex-col">
-              <span
-                className="text-sm font-semibold"
-                style={{ color: CARD_SYSTEM.COLOR_HEX_MAP.pink }}
-              >
-                {selectedCount} row selected
-              </span>
-              <span className="text-xs text-gray-400">
-                (Single selection mode)
-              </span>
-            </div>
-          </div>
-          <DynamicButton
+    <div className="table-card mb-4">
+      <div className="table-card-inner flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            {selectedCount} selected
+          </span>
+          <button
+            type="button"
             onClick={onClearSelection}
-            variant="outline"
-            size="xs"
-            className="!border-0 !bg-transparent"
+            className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
           >
-            Clear selection
-          </DynamicButton>
+            Clear
+          </button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           {bulkActions.map((action, index) => (
             <DynamicButton
               key={index}
@@ -110,8 +93,7 @@ const TableControls = ({
   setGlobalFilter,
   onPageSizeChange,
   customFilter,
-  title,
-  departmentFilter
+  departmentFilter,
 }) => {
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const columnMenuRef = useRef(null);
@@ -137,166 +119,89 @@ const TableControls = ({
   }, [isColumnMenuOpen]);
 
   return (
-    <>
-      <div className="card-small-modern overflow-visible p-2 px-0 relative rounded-none">
-        {/* Accent line on top - matching table design */}
-        <div
-          className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl"
-          style={{
-            background: CARD_SYSTEM.COLOR_HEX_MAP.blue,
-          }}
-        />
+    <div className="table-card-controls">
+      {/* Left - Filters */}
+      <div className="flex items-center gap-4 flex-1 flex-wrap min-w-0">
+        {showFilters && (
+          <div className="min-w-[180px] max-w-xs">
+            <TextField
+              field={{
+                name: `${tableType}-search`,
+                required: false,
+                placeholder: `Search ${tableType}...`,
+              }}
+              register={() => ({})}
+              errors={{}}
+              setValue={(name, value) => setGlobalFilter(value)}
+              trigger={() => {}}
+              clearErrors={() => {}}
+              formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
+            />
+          </div>
+        )}
+        {departmentFilter && <div className="w-52 shrink-0">{departmentFilter}</div>}
+        {customFilter && <div className="flex-1 min-w-0">{customFilter}</div>}
+      </div>
 
-        {/* Main Content Section */}
-        <div className="px-5 py-4 bg-white dark:bg-smallCard overflow-visible rounded-none">
-          {/* Title Row */}
-          {title && (
-            <div className="flex justify-between items-center gap-4 py-2">
-              <h3 className="text-base">
-                {title}
-              </h3>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center gap-4 flex-wrap overflow-visible">
-            {/* Left - Filters */}
-            <div className="flex items-center gap-4 flex-1 flex-wrap overflow-visible">
-              {/* Global Filter */}
-              {showFilters && (
-                <div className="min-w-[200px] max-w-sm">
-                  <TextField
-                    field={{
-                      name: `${tableType}-search`,
-                      label: `Search ${tableType}...`,
-                      required: false,
-                      placeholder: `Search ${tableType}...`,
-                    }}
-                    register={() => ({})}
-                    errors={{}}
-                    setValue={(name, value) => setGlobalFilter(value)}
-                    trigger={() => {}}
-                    clearErrors={() => {}}
-                    formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
-                  />
-                </div>
-              )}
-              {/* Department Filter */}
-              {departmentFilter && (
-                <div className="w-64">{departmentFilter}</div>
-              )}
-
-              {/* Custom Filter */}
-              {customFilter && (
-                <div className="flex-1 min-w-0">{customFilter}</div>
-              )}
-            </div>
-
-            {/* Right - Actions (Rows, Columns, Export) */}
-            <div className="flex items-center gap-3">
-              {/* Rows per page selector */}
-              {showPagination && enablePagination && (
-                <div className="flex items-center gap-2">
+      {/* Right - Rows, Columns */}
+      <div className="flex items-center gap-3 shrink-0">
+        {showPagination && enablePagination && (
+          <div className="flex items-center gap-2">
+            <span className="table-card-header">Rows</span>
+            <select
+              id="page-size-select"
+              value={table.getState().pagination.pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="h-8 w-14 pl-2 pr-1 text-[12px] font-medium bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-0 focus:border-blue-500 dark:focus:border-blue-400 rounded-none cursor-pointer"
+            >
+              {PAGE_SIZE_OPTIONS.map((ps) => (
+                <option key={ps} value={ps}>{ps}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {showColumnToggle && (
+          <div className="relative" ref={columnMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsColumnMenuOpen(!isColumnMenuOpen)}
+              className="table-card-header hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            >
+              Columns
+            </button>
+            <div
+              className={`absolute right-0 mt-2 w-56 bg-white dark:bg-smallCard border border-gray-200/80 dark:border-gray-700/60 rounded-xl shadow-lg z-50 overflow-hidden ${
+                isColumnMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+              }`}
+            >
+              <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700/50">
+                <span className="table-card-header">Show / hide</span>
+              </div>
+              <div className="py-1 max-h-72 overflow-y-auto">
+                {table.getAllLeafColumns().filter((col) => col.getCanHide()).map((column) => (
                   <label
-                    htmlFor="page-size-select"
-                    className="text-sm font-medium text-gray-800 dark:text-gray-300 m-0"
+                    key={column.id}
+                    className="flex items-center gap-3 px-4 py-2 text-[12px] text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
-                    Rows
+                    <input
+                      type="checkbox"
+                      checked={column.getIsVisible()}
+                      onChange={column.getToggleVisibilityHandler()}
+                      className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-0"
+                    />
+                    <span className="truncate">{column.columnDef.header || column.id}</span>
                   </label>
-                  <select
-                    id="page-size-select"
-                    value={table.getState().pagination.pageSize}
-                    onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                    className="h-8 w-16 px-3 py-1.5 text-sm font-normal border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 transition-colors shadow-sm"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((pageSize) => (
-                      <option key={pageSize} value={pageSize}>
-                        {pageSize}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Column Toggle */}
-              {showColumnToggle && (
-                <div className="relative" ref={columnMenuRef}>
-                  <DynamicButton
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsColumnMenuOpen(!isColumnMenuOpen)}
-                    className="!hover:bg-transparent"
-                  >
-                    Columns
-                  </DynamicButton>
-                  <div
-                    className={`absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 transition-all duration-200 ${
-                      isColumnMenuOpen
-                        ? "opacity-100 visible"
-                        : "opacity-0 invisible"
-                    }`}
-                  >
-                    <div className="py-2 max-h-96 overflow-y-auto">
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                          Show/Hide Columns
-                        </h4>
-                      </div>
-                      <div className="py-1">
-                        {table
-                          .getAllLeafColumns()
-                          .filter((column) => column.getCanHide())
-                          .map((column) => (
-                            <label
-                              key={column.id}
-                              className="flex items-center px-4 py-2.5 text-sm font-normal text-gray-700 dark:text-gray-300 cursor-pointer transition-colors"
-                            >
-                              <input
-                                name={`column-${column.id}`}
-                                id={`column-${column.id}`}
-                                type="checkbox"
-                                checked={column.getIsVisible()}
-                                onChange={column.getToggleVisibilityHandler()}
-                                className="mr-3 w-4 h-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
-                              />
-                              <span className="flex-1">
-                                {column.columnDef.header || column.id}
-                              </span>
-                              {column.getIsVisible() ? (
-                                <span
-                                  className="text-xs font-medium"
-                                  style={{
-                                    color: CARD_SYSTEM.COLOR_HEX_MAP.blue,
-                                  }}
-                                >
-                                  Visible
-                                </span>
-                              ) : (
-                                <span
-                                  className="text-xs font-medium"
-                                  style={{
-                                    color: CARD_SYSTEM.COLOR_HEX_MAP.pink,
-                                  }}
-                                >
-                                  Invisible
-                                </span>
-                              )}
-                            </label>
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
- 
-    </>
+    </div>
   );
 };
 
-// Pagination component - TanStack pagination
+// Pagination – minimal, matches card typography
 const Pagination = ({
   showPagination,
   enablePagination,
@@ -307,38 +212,36 @@ const Pagination = ({
 }) => {
   if (!showPagination || !enablePagination) return null;
 
+  const pageIndex = table.getState().pagination.pageIndex + 1;
+  const pageCount = table.getPageCount();
+
   return (
-    <div className="card-small-modern">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 text-sm font-medium text-gray-600 dark:text-gray-400">
-          {selectedCount} of {totalRows} row(s) selected.
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2 bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-lg">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() =>
-                onPageChange(table.getState().pagination.pageIndex - 1)
-              }
-              disabled={!table.getCanPreviousPage()}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              ←
-            </button>
-            <button
-              onClick={() =>
-                onPageChange(table.getState().pagination.pageIndex + 1)
-              }
-              disabled={!table.getCanNextPage()}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              →
-            </button>
-          </div>
-        </div>
+    <div className="table-card-pagination">
+      <span className="table-card-header">
+        {totalRows} row{totalRows !== 1 ? "s" : ""}
+      </span>
+      <div className="flex items-center gap-2">
+        <span className="table-card-header">
+          {pageIndex} / {pageCount || 1}
+        </span>
+        <button
+          type="button"
+          onClick={() => onPageChange(pageIndex - 2)}
+          disabled={!table.getCanPreviousPage()}
+          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Previous page"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(pageIndex)}
+          disabled={!table.getCanNextPage()}
+          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Next page"
+        >
+          →
+        </button>
       </div>
     </div>
   );
@@ -630,14 +533,8 @@ const TanStackTable = forwardRef(
         Boolean(globalFilter) || (columnFilters && columnFilters.length > 0);
       const hasCustomFilters =
         customFilters &&
-        (Boolean(customFilters.selectedFilter) ||
-          Boolean(customFilters.selectedDepartmentFilter) ||
-          Boolean(customFilters.selectedDeliverableFilter) ||
-          Boolean(customFilters.selectedUserId) ||
-          Boolean(customFilters.selectedReporterId) ||
-          Boolean(customFilters.selectedWeek) ||
-          Boolean(customFilters.weekStart) ||
-          Boolean(customFilters.weekEnd));
+        (Boolean(customFilters.selectedUserId) ||
+          Boolean(customFilters.selectedReporterId));
       return hasTanStackFilters || hasCustomFilters;
     }, [globalFilter, table.getState().columnFilters, customFilters]);
 
@@ -646,135 +543,127 @@ const TanStackTable = forwardRef(
         {shouldShowSkeleton ? (
           <SkeletonTable rows={3} />
         ) : (
-          <>
-            {/* Table Controls */}
-            <TableControls
-              showFilters={showFilters}
-              showPagination={showPagination}
-              enablePagination={enablePagination}
-              showColumnToggle={showColumnToggle}
-              table={table}
-              tableType={tableType}
-              globalFilter={globalFilter}
-              setGlobalFilter={handleGlobalFilterChange}
-              columns={columns}
-              onPageSizeChange={handlePageSizeChange}
-              customFilter={customFilter}
-              title={additionalProps?.title}
-              departmentFilter={departmentFilter}
-            />
+          <div className="table-card">
+            <div className="table-card-inner">
+              {/* Controls */}
+              <TableControls
+                showFilters={showFilters}
+                showPagination={showPagination}
+                enablePagination={enablePagination}
+                showColumnToggle={showColumnToggle}
+                table={table}
+                tableType={tableType}
+                globalFilter={globalFilter}
+                setGlobalFilter={handleGlobalFilterChange}
+                onPageSizeChange={handlePageSizeChange}
+                customFilter={customFilter}
+                departmentFilter={departmentFilter}
+              />
 
-            {/* Bulk Actions Bar */}
-            <BulkActionsBar
-              selectedCount={selectedCount}
-              onClearSelection={handleClearSelection}
-              bulkActions={bulkActions}
-              onBulkAction={handleBulkAction}
-              table={table}
-            />
+              <BulkActionsBar
+                selectedCount={selectedCount}
+                onClearSelection={handleClearSelection}
+                bulkActions={bulkActions}
+                onBulkAction={handleBulkAction}
+                table={table}
+              />
 
-            {/* Table */}
-            <div className=" overflow-hidden p-0 relative rounded-none ">
-              <table className="min-w-full">
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className={`p-4 text-start font-semibold text-[12px] text-gray-700 dark:text-gray-200 tracking-tight bg-smallCard border-b border-gray-200/50 dark:border-gray-700/90 ${
-                            header.column.getCanSort()
-                              ? "cursor-pointer select-nonebg-secondary"
-                              : ""
-                          }`}
-                          onClick={header.column.getToggleSortingHandler()}
-                          style={{ width: header.getSize() }}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <span>
-                              {flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                            </span>
-                            {header.column.getCanSort() && (
-                              <span className="text-gray-500 dark:text-gray-300 ml-1">
-                                {SORT_ICONS[header.column.getIsSorted()] ??
-                                  SORT_ICONS.false}
+              {/* Table */}
+              <div className="overflow-x-auto -mx-1">
+                <table className="min-w-full">
+                  <thead>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id} className="table-card-row">
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className={`table-card-header-cell ${
+                              header.column.getCanSort()
+                                ? "cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                                : ""
+                            }`}
+                            onClick={header.column.getToggleSortingHandler()}
+                            style={{ width: header.getSize() }}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span>
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
                               </span>
-                            )}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody className="bg-white dark:bg-smallCard divide-y divide-gray-200/50 dark:divide-gray-700/30">
-                  {hasRows ? (
-                    table.getRowModel().rows.map((row, index) => {
-                      const rowKey = row.original?.id || row.id;
-                      const isSelected = rowSelection[row.id];
-                      const isBoldRow =
-                        row.original?.bold || row.original?.highlight;
-                      // Determine font weight: bold for rows marked as bold/highlight
-                      const fontWeight = isBoldRow ? "font-bold" : "font-normal";
-
-                      return (
-                        <tr
-                          key={rowKey}
-                          className={`cursor-pointer transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30 ${
-                            isSelected
-                              ? "bg-blue-50/50 dark:bg-blue-900/20 border-l-2 border-blue-500"
-                              : ""
-                          }`}
-                          onClick={() => handleRowClick(row)}
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <td
-                              key={`${row.original?.id || row.id}-${cell.column.id}`}
-                              className={`px-5 py-4 text-[13px] ${fontWeight} text-gray-700 dark:text-gray-300`}
-                              style={{ width: cell.column.getSize() }}
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
+                              {header.column.getCanSort() && (
+                                <span className="text-gray-400 dark:text-gray-500 text-[10px]">
+                                  {SORT_ICONS[header.column.getIsSorted()] ??
+                                    SORT_ICONS.false}
+                                </span>
                               )}
-                            </td>
-                          ))}
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={table.getAllColumns().length}
-                        className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
-                      >
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="text-2xl mb-2">📊</div>
-                          <div className="text-sm font-medium">
-                            {hasActiveFilters
-                              ? "No tasks found matching the current filters."
-                              : "No tasks found in database."}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody className="bg-white dark:bg-smallCard">
+                    {hasRows ? (
+                      table.getRowModel().rows.map((row) => {
+                        const rowKey = row.original?.id || row.id;
+                        const isSelected = rowSelection[row.id];
+                        const isBoldRow =
+                          row.original?.bold || row.original?.highlight;
+                        const fontWeight = isBoldRow ? "font-semibold" : "font-normal";
 
-            {/* Pagination - TanStack pagination */}
-            <Pagination
-              showPagination={showPagination}
-              enablePagination={enablePagination}
-              table={table}
-              selectedCount={selectedCount}
-              totalRows={totalRows}
-              onPageChange={handlePageChange}
-            />
-          </>
+                        return (
+                          <tr
+                            key={rowKey}
+                            className={`table-card-row cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-50/60 dark:bg-blue-900/20 border-l-2 border-l-blue-500"
+                                : ""
+                            }`}
+                            onClick={() => handleRowClick(row)}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <td
+                                key={`${row.original?.id || row.id}-${cell.column.id}`}
+                                className={`table-card-cell ${fontWeight}`}
+                                style={{ width: cell.column.getSize() }}
+                              >
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={table.getAllColumns().length}
+                          className="table-card-empty"
+                        >
+                          {hasActiveFilters
+                            ? "No results for the current filters."
+                            : "No data yet."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                showPagination={showPagination}
+                enablePagination={enablePagination}
+                table={table}
+                selectedCount={selectedCount}
+                totalRows={totalRows}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </div>
         )}
       </div>
     );

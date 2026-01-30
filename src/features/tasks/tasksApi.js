@@ -41,38 +41,21 @@ const getMonthRef = (monthId) => {
 
 const buildTaskQuery = (tasksRef, role, userUID, filters = {}) => {
   const {
-    selectedUserId = null,
-    selectedReporterId = null,
     selectedDepartment = null,
     selectedDeliverable = null,
     selectedFilter = null,
-    weekStart = null,
-    weekEnd = null,
   } = filters;
 
-  // Use selectedUserId if provided (for admin filtering), otherwise use userUID
-  const targetUserId = selectedUserId || userUID;
-  
   // Start building query constraints
   const constraints = [];
 
-  // 1. User filter (always applied)
+  // 1. User filter: regular users see only their tasks; admins see all (no user/reporter filter)
   if (role === "user") {
-    // Regular users: fetch only their own tasks
     constraints.push(where("userUID", "==", userUID));
-  } else if (role === "admin" && targetUserId) {
-    // Admin users: specific user's tasks when a user is selected
-    constraints.push(where("userUID", "==", targetUserId));
   }
-  // If admin and no targetUserId, don't filter by user (show all)
+  // Admin: no user filter (show all tasks for the month)
 
-  // 2. Reporter filter
-  if (selectedReporterId) {
-    // Try reporterUID first, fallback to reporters field
-    constraints.push(where("data_task.reporterUID", "==", selectedReporterId));
-  }
-
-  // 3. Department filter
+  // 2. Department filter
   if (selectedDepartment) {
     constraints.push(where("data_task.departments", "array-contains", selectedDepartment));
   }
@@ -109,16 +92,6 @@ const buildTaskQuery = (tasksRef, role, userUID, filters = {}) => {
         break;
     }
   }
-
-  // 6. Date range filter (createdAt - when task was added)
-  // Note: Month filtering is already done via monthId in the query path (getTaskRef)
-  // Filter by createdAt to show tasks that were added within the week
-  // Firestore only allows one range query per field
-  if (weekStart && weekEnd) {
-    constraints.push(where("createdAt", ">=", weekStart));
-    constraints.push(where("createdAt", "<=", weekEnd));
-  }
-  // Don't apply monthStart/monthEnd filters - monthId in query path already filters by month
 
   // Build and return query
   if (constraints.length === 0) {

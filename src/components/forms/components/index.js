@@ -10,4 +10,3 @@ export { default as SimpleDateField } from './SimpleDateField';
 export { default as TextareaField } from './TextareaField';
 export { default as TextField } from './TextField';
 export { default as UrlField } from './UrlField';
-export { default as WeekSelectField } from './WeekSelectField';

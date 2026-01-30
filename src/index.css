@@ -16,10 +16,7 @@
   font-display: swap;
   src: url("@fontsource/inter/files/inter-latin-400-normal.woff2")
     format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
-    U+FFFD;
+
 }
 
 @font-face {
@@ -29,10 +26,7 @@
   font-display: swap;
   src: url("@fontsource/inter/files/inter-latin-500-normal.woff2")
     format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
-    U+FFFD;
+ 
 }
 
 @font-face {
@@ -42,10 +36,7 @@
   font-display: swap;
   src: url("@fontsource/inter/files/inter-latin-600-normal.woff2")
     format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
-    U+FFFD;
+ 
 }
 
 @font-face {
@@ -55,52 +46,29 @@
   font-display: swap;
   src: url("@fontsource/inter/files/inter-latin-700-normal.woff2")
     format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
-    U+FFFD;
+
 }
 
 @theme {
 
   --color-primary: #0a0a13;
   --color-primary-80: #0a2470;
-  --color-secondary: #1e2031;
+  --color-secondary: #0a0a13;
   --color-secondary-dark: #4949492b;
   --color-hover: #c10f29;
   --color-focus: #aebfff;
+  --text-xs:10px;
+  --text-sm:12px;
   --color-soft: #3d48c9;
-  --color-smallCard: #131424;
+  --color-smallCard: #0e111b;
   --color-smallCard-white: #e8edff;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
-  --color-gray-dark: #252a3c;
   --color-red-error: #FF204E;
-  --color-red-500: #c10f29;
   --color-green-success: #2fd181;
-  --color-green-400: #0a9952;
   --color-warning: #eb2743;
   --color-blue-default: #2a9df4;
   --color-blue-dark: #1d2a4b;
-  --color-btn-primary: #3d48c9;
-  --color-btn-secondary: #c10f29;
-  --color-btn-danger: #c10f29;
-  --color-btn-success: #11a75c;
-  --color-btn-warning: #a99952;
-  --color-btn-info: #538cff;
-  --color-btn-light: #dce6f0;
-  --color-btn-dark: #0a1225;
   --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
-  --color-text-white: #ffffff;
-  --color-text-dark: #1f2937;
+  --color-text-white: #ffffff; 
 }
 
 @layer base {
@@ -111,7 +79,9 @@
   button {
     @apply cursor-pointer;
   }
-
+h5 {
+  @apply text-xs uppercase tracking-wide truncate;
+}
   form select option {
     @apply uppercase;
   }
@@ -125,7 +95,10 @@
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full px-4 py-3 bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-default focus:border-blue-default;
+    @apply w-full pl-0 pr-4 py-2.5 bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-0 focus:border-blue-default dark:focus:border-blue-default rounded-none transition-colors;
+  }
+  select {
+    @apply pr-8;
   }
   input.error,
   select.error,
@@ -142,7 +115,19 @@
     @apply border-red-error dark:border-red-error;
   }
   select {
-    @apply cursor-pointer;
+    @apply cursor-pointer appearance-none bg-no-repeat bg-right pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-size: 1.25rem;
+  }
+  select:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232a9df4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  }
+
+  .searchable-select-wrap {
+    @apply relative;
+  }
+  .searchable-select-arrow {
+    @apply absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center;
   }
   input[type="date"] {
     @apply cursor-pointer;
@@ -217,6 +202,18 @@
   span:not(th span) {
     @apply text-text-primary dark:text-gray-300 ;
   }
+
+  /* App text utilities – use these instead of repeating light/dark text classes */
+  .text-app {
+    @apply text-gray-800 dark:text-gray-100;
+  }
+  .text-app-muted {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+  .text-app-subtle {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+
   /* Modern Card System */
   .bg-primary {
     @apply !bg-white dark:!bg-primary;
@@ -237,7 +234,6 @@
   .card-small-modern {
     @apply relative bg-white/98 dark:bg-smallCard border border-gray-200/40 dark:border-gray-700/40 p-3 py-4 shadow-sm rounded-2xl overflow-hidden rounded-bl-none rounded-tl-none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* backdrop-filter: blur(8px); */
   }
 
   .card-small-modern::before {
@@ -267,75 +263,147 @@
     opacity: 1;
   }
 
-  /* Enhanced Typography with Better Font Sizes */
-  .card-title {
-    @apply text-lg font-semibold text-gray-900 dark:text-white tracking-tight;
+  /* Credit-card style dashboard cards – professional, no shadow/hover */
+  .card-credit {
+    @apply relative bg-white dark:bg-smallCard overflow-hidden rounded-xl border border-gray-200/80 dark:border-gray-700/60;
+    min-height: 8.5rem;
   }
 
-  .card-subtitle {
-    @apply text-xs font-medium text-gray-600 dark:text-gray-400 tracking-wide;
+  .card-credit-strip {
+    height: 4px;
+    width: 100%;
   }
 
-  .card-value {
-    @apply text-2xl font-bold text-gray-900 dark:text-white tracking-tight;
+  .card-credit-strip-left {
+    @apply absolute left-0 top-0 bottom-0;
+    width: 3px;
+    height: auto;
+    border-radius: 3px 0 0 3px;
   }
 
-  .card-description {
-    @apply text-xs text-gray-600 dark:text-gray-400 leading-relaxed;
+  .card-credit-inner {
+    @apply flex flex-col pl-5 pr-5 pt-4 pb-4 relative;
+    min-height: 8.5rem;
   }
 
-  .card-metric {
-    @apply text-lg font-semibold text-gray-800 dark:text-gray-200 tracking-tight;
+  .card-credit-label {
+    @apply text-[11px] font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase mb-1;
+    letter-spacing: 0.06em;
   }
 
-  .card-label {
-    @apply text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wider;
+  .card-credit-value {
+    @apply text-2xl font-semibold tracking-tight text-gray-900 dark:text-white;
+    letter-spacing: -0.02em;
   }
+
+  .card-credit-info {
+    @apply mt-3 space-y-1;
+  }
+
+  .card-credit-info-row {
+    @apply flex items-baseline justify-between gap-2 text-[11px];
+  }
+
+  .card-credit-info-label {
+    @apply text-gray-500 dark:text-gray-400 font-medium;
+  }
+
+  .card-credit-info-value {
+    @apply text-gray-800 dark:text-gray-200 font-medium truncate;
+  }
+
+  .card-credit-icon {
+    @apply absolute right-3 top-3 flex items-center justify-center w-7 h-7 rounded-lg;
+  }
+
+  /* Table – matches card design: minimal, clean typography */
+  .table-card {
+    @apply relative bg-white dark:bg-smallCard overflow-hidden rounded-xl border border-gray-200/80 dark:border-gray-700/60;
+  }
+
+  .table-card-inner {
+    @apply pl-5 pr-5 pt-4 pb-4;
+  }
+
+  .table-card-controls {
+    @apply flex flex-wrap items-center justify-between gap-4 mb-4;
+  }
+
+  .table-card-header {
+    @apply text-[11px] font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .table-card-header-cell {
+    @apply px-4 py-3 text-left font-medium text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+    letter-spacing: 0.05em;
+  }
+
+  .table-card-row {
+    @apply border-b border-gray-100 dark:border-gray-700/40 transition-colors;
+  }
+
+  .table-card-row:hover {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+
+  .table-card-cell {
+    @apply px-4 py-3 text-[13px] text-gray-800 dark:text-gray-200;
+  }
+
+  .table-card-pagination {
+    @apply flex items-center justify-between gap-4 pt-4 mt-4 border-t border-gray-100 dark:border-gray-700/40;
+  }
+
+  .table-card-empty {
+    @apply py-12 text-center text-[13px] text-gray-500 dark:text-gray-400;
+  }
+
+  /* Month Progress Bar */
+  .month-progress-bar {
+    @apply relative bg-white dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/60 overflow-hidden rounded-2xl w-full;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .month-progress-bar {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+
+  .month-progress-bar-inner {
+    @apply px-4 pt-3 pb-3;
+  }
+
+  .month-progress-bar-header {
+    @apply flex items-center justify-between gap-2 mb-2;
+  }
+
+  .month-progress-bar-title {
+    @apply text-sm font-semibold text-gray-800 dark:text-gray-200 truncate;
+  }
+
+  .month-progress-bar-badge {
+    @apply text-sm font-bold tabular-nums shrink-0;
+  }
+
+  .month-progress-bar-track {
+    @apply w-full bg-gray-100 dark:bg-gray-700/80 rounded-full h-2 overflow-hidden;
+  }
+
+  .month-progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-500 ease-out;
+  }
+
+  .month-progress-bar-footer {
+    @apply flex items-center justify-between gap-3 mt-1.5;
+  }
+
+  .month-progress-bar-stat {
+    @apply text-[11px] font-medium text-gray-500 dark:text-gray-400;
+  }
+
   .icon-bg {
     @apply p-2 bg-gray-700 text-white rounded-lg;
   }
-  /* Dashboard Typography Scale */
-  .text-dashboard-xs {
-    @apply text-xs font-medium text-gray-600 dark:text-gray-400;
-  }
-
-  .text-dashboard-sm {
-    @apply text-sm font-semibold text-gray-700 dark:text-gray-300;
-  }
-
-  .text-dashboard-base {
-    @apply text-base font-semibold text-gray-800 dark:text-gray-200;
-  }
-
-  .text-dashboard-lg {
-    @apply text-lg font-bold text-gray-900 dark:text-white;
-  }
-
-  .text-dashboard-xl {
-    @apply text-xl font-bold text-gray-900 dark:text-white;
-  }
-
-  .text-dashboard-2xl {
-    @apply text-2xl font-bold text-gray-900 dark:text-white;
-  }
-
-  /* Small Card Typography */
-  .card-small .card-title {
-    @apply text-base font-semibold;
-  }
-
-  .card-small .card-subtitle {
-    @apply text-xs font-medium;
-  }
-
-  .card-small .card-value {
-    @apply text-xl font-bold;
-  }
-
-  .card-small .card-description {
-    @apply text-xs;
-  }
-
   .text-exsmall {
     @apply text-text-primary dark:text-gray-300 text-sm;
   }
@@ -430,50 +498,6 @@
 
   .toast-container .Toastify__toast-icon {
     @apply text-gray-900 dark:text-white;
-  }
-
-  /* Achievement Modal Animations */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes scaleIn {
-    from {
-      transform: scale(0.9);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  @keyframes confetti {
-    0% {
-      transform: translateY(0) rotate(0deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(-100vh) rotate(360deg);
-      opacity: 0;
-    }
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .animate-scaleIn {
-    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .animate-confetti {
-    animation: confetti 3s ease-out forwards;
   }
 }
 

@@ -58,7 +58,7 @@ const SimpleDateField = ({
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'Select a date';
+    if (!dateStr) return field.placeholder || 'Select a date';
     
     // Parse date string (YYYY-MM-DD) to avoid timezone issues
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -156,7 +156,7 @@ const SimpleDateField = ({
         >
           <div className="flex items-center justify-between">
             <span className={`text-sm ${selectedDate ? 'text-gray-200 font-medium' : 'text-gray-300'}`}>
-              {selectedDate ? formatDate(selectedDate) : 'Select a date'}
+              {selectedDate ? formatDate(selectedDate) : (field.placeholder || 'Select a date')}
             </span>
             <Icons.generic.calendar className="w-5 h-5 text-gray-400 transition-transform duration-200" />
           </div>

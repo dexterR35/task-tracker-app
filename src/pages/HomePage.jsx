@@ -1,6 +1,5 @@
 import React from "react";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
-import netbetLogo from "@/assets/netbet-logo.png";
 import logo from "@/assets/logo.webp";
 import { APP_CONFIG } from "@/constants";
 
@@ -38,15 +37,6 @@ const HomePage = () => {
               Get Started
             </DynamicButton>
           </div>
-        </div>
-        {/* Footer */}
-        <div className="flex-center space-x-2 mt-20 mb-10">
-          <p className="font-base italic text-xs text-gray-500">Powered by</p>
-          <img
-            src={netbetLogo}
-            alt="NetBet Logo"
-            className="h-auto w-20 object-contain opacity-80"
-          />
         </div>
       </div>
     </div>

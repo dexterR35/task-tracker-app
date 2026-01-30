@@ -4,25 +4,13 @@ export const APP_CONFIG = {
   FULL_NAME: 'SYNC Task Management', // Full app name for titles
   VERSION: '1.0.0',
   DESCRIPTION: 'A modern task tracking application with team collaboration and performance monitoring.',
-  COMPANY: 'NetBet',
-  SUPPORT_EMAIL: 'support@netbet.ro',
+  COMPANY: 'REI',
+  SUPPORT_EMAIL: 'support@REI.ro',
   DEFAULT_LOCALE: 'en-US', // US language
   DEFAULT_TIMEZONE: 'Europe/Bucharest', // Romanian timezone
   CALENDAR_WEEK_START: 1, // Monday (Romanian calendar behavior)
 };
 
-// ============================================================================
-// RESEND CONFIGURATION
-// ============================================================================
-
-export const RESEND_CONFIG = {
-  // Get API key from https://resend.com/api-keys
-  API_KEY: import.meta.env.VITE_RESEND_API_KEY || 'YOUR_RESEND_API_KEY',
-  // From email address (must be verified in Resend dashboard)
-  FROM_EMAIL: import.meta.env.VITE_RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-  // HR email address
-  HR_EMAIL: import.meta.env.VITE_HR_EMAIL || 'hr@company.com',
-};
 
 // ============================================================================
 // FIREBASE CONFIGURATION
@@ -57,6 +45,8 @@ export const AUTH = {
     MANAGE_DELIVERABLES: 'manage_deliverables',
   },
   EMAIL_DOMAIN: 'netbet.ro',
+  EMAIL_DOMAIN2: 'rei.com',
+  EMAIL_DOMAIN3: 'gimo.co.uk',
 };
 
 // ============================================================================
@@ -101,10 +91,10 @@ export const VALIDATION = {
 
 export const FORM_OPTIONS = {
   PRODUCTS: [
-    { value: 'marketing casino', label: 'marketing casino' },
-    { value: 'marketing sport', label: 'marketing sport' },
-    { value: 'marketing poker', label: 'marketing poker' },
-    { value: 'marketing lotto', label: 'marketing lotto' },
+    { value: 'crm casino', label: 'crm casino' },
+    { value: 'crm sport', label: 'crm sport' },
+    { value: 'crm poker', label: 'crm poker' },
+    { value: 'crm lotto', label: 'crm lotto' },
     { value: 'acquisition casino', label: 'acquisition casino' },
     { value: 'acquisition sport', label: 'acquisition sport' },
     { value: 'acquisition poker', label: 'acquisition poker' },
@@ -123,12 +113,11 @@ export const FORM_OPTIONS = {
     { value: 'fi', label: 'fi' },
     { value: 'dk', label: 'dk' },
     { value: 'de', label: 'de' },
-    { value: 'at', label: 'at' },
-    { value: 'it', label: 'it' },
-    { value: 'gr', label: 'gr' },
-    { value: 'fr', label: 'fr' },
+    { value: 'it', label: 'italy' },
+    { value: 'gr', label: 'grece' },
+    { value: 'fr', label: 'france' },
+    { value: 'ca', label: 'canada' },
   ],
-  // Unified departments for users, reporters, and channels
   DEPARTMENTS: [
     { value: 'acquisition', label: 'Acquisition' },
     { value: 'marketing', label: 'Marketing' },
@@ -150,11 +139,8 @@ export const FORM_OPTIONS = {
   ],
   AI_MODELS: [
     { value: 'Photoshop', label: 'Photoshop' },
-    { value: 'FireFly', label: 'FireFly' },
     { value: 'ChatGpt', label: 'ChatGpt' },
     { value: 'ShutterStock', label: 'ShutterStock' },
-    { value: 'Midjourney', label: 'Midjourney' },
-    { value: 'NightCafe', label: 'NightCafe' },
     { value: 'FreePick', label: 'FreePick' },
     { value: 'Cursor', label: 'Cursor' },
     { value: 'run diffusion', label: 'run diffusion' },
@@ -164,19 +150,6 @@ export const FORM_OPTIONS = {
     { value: 'hr', label: 'Hours' },
   ],
 
-  REPORTER_COUNTRIES: [
-    { value: 'ro', label: 'ro' },
-    { value: 'com', label: 'com' },
-    { value: 'uk', label: 'uk' },
-    { value: 'ie', label: 'ie' },
-    { value: 'fi', label: 'fi' },
-    { value: 'dk', label: 'dk' },
-    { value: 'de', label: 'de' },
-    { value: 'at', label: 'at' },
-    { value: 'it', label: 'it' },
-    { value: 'gr', label: 'gr' },
-    { value: 'fr', label: 'fr' }
-  ],
 };
 
 // Backward compatibility aliases (deprecated - use FORM_OPTIONS.DEPARTMENTS instead)
@@ -194,14 +167,19 @@ export const NAVIGATION_CONFIG = {
       href: "/dashboard",
       icon: "home",
       color: "blue",
-      adminOnly: false,
+      adminOnly: true,
     },
     {
-      name: "Management",
-      href: "/users",
+      name: "Settings",
+      href: "/settings",
       icon: "settings",
-      color: "green",
+      color: "gray",
       adminOnly: true,
+      subItems: [
+        { name: "Users", href: "/users" },
+        { name: "Reporters", href: "/reporters" },
+        { name: "Deliverables", href: "/deliverables" },
+      ],
     },
   ],
   DEPARTMENT: {
@@ -226,8 +204,8 @@ export const CARD_SYSTEM = {
     yellow: '#d3c300',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
     orange: '#F25912',
-    soft_purple:"#9694FF",    // Orange-500 - Product, warning, energy
-    color_default: '#1b46ad',
+    soft_purple:"#ff9e08",    // Orange-500 - Product, warning, energy
+    color_default: '#ff9e08',
     select_badge: '#00d8de', // C2E2FA- Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
     dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
@@ -394,7 +372,6 @@ export const ROUTES = {
   // Protected routes
   DASHBOARD: '/dashboard',
   USERS: '/users',
-  TASK_DETAIL: '/task/:taskId',
   PREVIEW_MONTH: '/preview/:monthId',
   PROFILE: '/profile',
 };
