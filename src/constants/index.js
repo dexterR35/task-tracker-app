@@ -161,6 +161,7 @@ FORM_OPTIONS.REPORTER_CHANNELS = FORM_OPTIONS.DEPARTMENTS;
 // ============================================================================
 
 export const NAVIGATION_CONFIG = {
+  /** Main menu: Dashboard + Analytics (collapsible with pages) */
   ITEMS: [
     {
       name: "Dashboard",
@@ -168,6 +169,21 @@ export const NAVIGATION_CONFIG = {
       icon: "home",
       color: "blue",
       adminOnly: true,
+      subItems: [
+        { name: "Overview", href: "/dashboard" },
+      ],
+    },
+    {
+      name: "Analytics",
+      href: "/analytics",
+      icon: "chart",
+      color: "blue",
+      subItems: [
+        { name: "Marketing", href: "/analytics/marketing" },
+        { name: "Acquisition", href: "/analytics/acquisition" },
+        { name: "Product", href: "/analytics/product" },
+        { name: "Analytics by users", href: "/analytics/by-users" },
+      ],
     },
     {
       name: "Settings",
@@ -182,6 +198,8 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
+  /** Bottom account section (e.g. Account settings collapsible) - empty; admin pages are under Dashboard */
+  ACCOUNT_ITEMS: [],
   DEPARTMENT: {
     name: "Design",
     subtitle: "Department",
@@ -217,6 +235,8 @@ export const CARD_SYSTEM = {
     REPORTER_FILTER: 'reporter-filter',
     USER_PROFILE: 'user-profile',
     ACTIONS: 'actions',
+    PERFORMANCE: 'performance',
+    EFFICIENCY: 'efficiency',
   },
   // Chart data types for color mapping
   CHART_DATA_TYPE: {

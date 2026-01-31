@@ -258,6 +258,46 @@ export const createRouter = () => {
             ),
           },
           {
+            path: "analytics/marketing",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "analytics/acquisition",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "analytics/product",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "analytics/by-users",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
             path: "settings",
             element: <Navigate to="/users" replace />,
           },

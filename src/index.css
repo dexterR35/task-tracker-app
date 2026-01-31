@@ -330,13 +330,9 @@ h5 {
   }
 
   .table-card-header {
-    @apply text-[11px] font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase;
+    font-size: 0.6875rem; /* 11px – same as header cell */
+    @apply font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase;
     letter-spacing: 0.06em;
-  }
-
-  .table-card-header-cell {
-    @apply px-4 py-3 text-left font-medium text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wide;
-    letter-spacing: 0.05em;
   }
 
   .table-card-row {
@@ -347,16 +343,86 @@ h5 {
     @apply bg-gray-50/50 dark:bg-gray-800/30;
   }
 
-  .table-card-cell {
-    @apply px-4 py-3 text-[13px] text-gray-800 dark:text-gray-200;
-  }
-
   .table-card-pagination {
     @apply flex items-center justify-between gap-4 pt-4 mt-4 border-t border-gray-100 dark:border-gray-700/40;
   }
 
   .table-card-empty {
-    @apply py-12 text-center text-[13px] text-gray-500 dark:text-gray-400;
+    @apply py-12 text-center text-gray-500 dark:text-gray-400;
+  }
+
+  /* Table – single source for sizes/labels (change here = all tables) */
+  .table-cell-text {
+    font-size: 0.8125rem; /* 13px – row/cell text */
+    @apply text-gray-800 dark:text-gray-200;
+  }
+
+  .table-card-cell {
+    @apply px-4 py-3;
+    font-size: 0.8125rem; /* 13px – change here for all table row text */
+    @apply text-gray-800 dark:text-gray-200;
+  }
+
+  .table-card-cell .table-cell-text {
+    font-size: inherit;
+    @apply text-gray-800 dark:text-gray-200;
+  }
+
+  .table-card-header-cell {
+    @apply px-4 py-3 text-left font-medium uppercase tracking-wide;
+    font-size: 0.6875rem; /* 11px – header/label */
+    letter-spacing: 0.05em;
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  .table-bulk-label {
+    font-size: 0.6875rem;
+    @apply font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+  }
+
+  .table-bulk-clear {
+    font-size: 0.6875rem;
+    @apply font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors;
+  }
+
+  .table-sort-icon {
+    font-size: 0.625rem; /* 10px */
+    @apply text-gray-400 dark:text-gray-500;
+  }
+
+  .table-header-cell-sortable {
+    @apply cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200;
+  }
+
+  .table-row-selected {
+    @apply bg-blue-50/60 dark:bg-blue-900/20 border-l-2 border-l-blue-500;
+  }
+
+  .table-wrapper {
+    @apply overflow-x-auto -mx-1;
+  }
+
+  .table-body {
+    @apply bg-white dark:bg-smallCard;
+  }
+
+  .table-card-empty {
+    font-size: 0.8125rem;
+  }
+
+  .table-controls-search {
+    min-width: 180px;
+    max-width: 20rem;
+  }
+
+  .table-page-size-select {
+    font-size: 0.75rem; /* 12px – controls label/small UI */
+    @apply h-8 w-14 pl-2 pr-1 font-medium bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-0 focus:border-blue-500 dark:focus:border-blue-400 rounded-none cursor-pointer;
+  }
+
+  .table-column-menu-item {
+    font-size: 0.75rem;
+    @apply flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50;
   }
 
   /* Month Progress Bar */

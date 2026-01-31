@@ -55,7 +55,7 @@ const createDateCell =
     const value = getValue();
     if (!value) return "-";
     return (
-      <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
+      <span className="table-cell-text">
         {formatDateCell(value, format)}
       </span>
     );
@@ -76,15 +76,15 @@ const DeliverableCalculationCell = ({
 
   if (!deliverablesList?.length) {
     return (
-      <span className="text-gray-500 dark:text-gray-400">No deliverables</span>
+      <span className="table-cell-text opacity-80">No deliverables</span>
     );
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 table-cell-text">
       {deliverablesList.map((deliverable, index) => (
-        <div key={index} className="text-xs">
-          <div className="font-medium text-gray-800 dark:text-gray-200 ">
+        <div key={index}>
+          <div className="font-medium">
             {deliverable.quantity}x{deliverable.name}
             {(deliverable.variationsQuantity || deliverable.declinariQuantity) >
               0 && (
@@ -98,9 +98,9 @@ const DeliverableCalculationCell = ({
             )}
           </div>
           {/* Show calculation details to all users */}
-          <div className="text-xs text-gray-800 dark:text-gray-300 space-y-1">
+          <div className="space-y-1">
             {deliverable.configured ? (
-              <div className="text-xs block">
+              <div className="block">
                 <div className="block">
                   {deliverable.timePerUnit}
                   {deliverable.timeUnit} × {deliverable.quantity}
@@ -131,7 +131,7 @@ const DeliverableCalculationCell = ({
                 ⚠️ Not configured in settings - Add to Settings → Deliverables
               </span>
             ) : (
-              <span className="text-gray-800 dark:text-gray-400">
+              <span className="table-cell-text opacity-80">
                 No time configuration
               </span>
             )}
@@ -150,7 +150,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
       const taskName = getValue() || row.original?.data_task?.taskName;
       if (!taskName)
         return (
-          <span className="text-gray-800 dark:text-gray-400">No Link</span>
+          <span className="table-cell-text opacity-80">No Link</span>
         );
 
       return (
@@ -205,7 +205,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
             ))}
           </div>
           {aiTime > 0 && (
-            <div className="text-xs text-gray-800 dark:text-gray-400">
+            <div className="table-cell-text">
               Total hr: {aiTime}h
             </div>
           )}
@@ -303,7 +303,7 @@ const createTaskColumns = (isUserAdmin, stableReporters, deliverables = []) => [
         value.length > 50 ? `${value.substring(0, 50)}...` : value;
 
       return (
-        <span title={value} className="block truncate">
+        <span title={value} className="table-cell-text block truncate">
           {truncated}
         </span>
       );

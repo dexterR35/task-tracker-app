@@ -3,7 +3,7 @@ import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import TaskTable from "@/features/tasks/components/TaskTable/TaskTable";
-import TaskFormModal from "@/features/tasks/components/TaskForm/TaskFormModal";
+import TaskFormPanel from "@/features/tasks/components/TaskForm/TaskFormPanel";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
@@ -70,6 +70,10 @@ const AdminDashboardPage = () => {
     }
     setShowCreateModal(true);
   }, [canCreateTasks, canCreateTask, isCurrentMonth, currentMonth?.boardExists, selectedMonthHasBoard]);
+
+  const handleExport = useCallback(() => {
+    showError("Export coming soon");
+  }, []);
 
   // Hardcoded efficiency data for performance card
   const efficiencyData = {
@@ -197,47 +201,64 @@ const AdminDashboardPage = () => {
       </div>
     );
   }
+
   return (
     <div>
-      {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight pb-4 border-b border-gray-200/80 dark:border-gray-700/60">
-          Dashboard
-        </h1>
-
-        {/* Month Progress Bar */}
-        <div className="mb-6">
-          <MonthProgressBar
-            monthId={selectedMonth?.monthId || currentMonth?.monthId}
-            monthName={selectedMonth?.monthName || currentMonth?.monthName}
-            isCurrentMonth={isCurrentMonth}
-            startDate={selectedMonth?.startDate || currentMonth?.startDate}
-            endDate={selectedMonth?.endDate || currentMonth?.endDate}
-            daysInMonth={
-              selectedMonth?.daysInMonth || currentMonth?.daysInMonth
-            }
-          />
+      {/* Page Header: Title + subtitle left, Export + Add right */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Overview of tasks and progress
+          </p>
         </div>
-      </div>
-
-      {/* CRM Kanban-style overview cards */}
-      <section className="mb-6" aria-label="Dashboard overview">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 shrink-0">
-            Overview
-          </span>
-          <span className="h-px flex-1 max-w-[2rem] bg-gray-200 dark:bg-gray-600 rounded-full shrink-0" />
-          <span className="flex-1" aria-hidden />
+        <div className="flex items-center gap-2 shrink-0">
+          <DynamicButton
+            onClick={handleExport}
+            variant="secondary"
+            size="sm"
+            iconName="download"
+            iconPosition="left"
+            className="!text-xs !px-3 !py-1.5"
+          >
+            Export
+          </DynamicButton>
           <DynamicButton
             onClick={handleCreateTask}
             variant="primary"
             size="sm"
             iconName="add"
             iconPosition="left"
-            className="shrink-0 !text-xs !px-3 !py-1.5"
+            className="!text-xs !px-3 !py-1.5"
           >
-            ADD TASK
+            Add
           </DynamicButton>
+        </div>
+      </div>
+
+      {/* Month Progress Bar */}
+      <div className="mb-6">
+        <MonthProgressBar
+          monthId={selectedMonth?.monthId || currentMonth?.monthId}
+          monthName={selectedMonth?.monthName || currentMonth?.monthName}
+          isCurrentMonth={isCurrentMonth}
+          startDate={selectedMonth?.startDate || currentMonth?.startDate}
+          endDate={selectedMonth?.endDate || currentMonth?.endDate}
+          daysInMonth={
+            selectedMonth?.daysInMonth || currentMonth?.daysInMonth
+          }
+        />
+      </div>
+
+      {/* Overview cards */}
+      <section className="mb-6" aria-label="Dashboard overview">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            Overview
+          </span>
+          <span className="h-px flex-1 max-w-[2rem] bg-gray-200 dark:bg-gray-600 rounded-full shrink-0" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {isInitialLoading
@@ -246,17 +267,8 @@ const AdminDashboardPage = () => {
               ))
             : smallCards.map((card) => <SmallCard key={card.id} card={card} />)}
         </div>
-      </section>
-
-      {/* Filters section – month and week */}
-      <section className="mb-6" aria-label="Dashboard filters">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Filters
-          </span>
-          <span className="h-px flex-1 max-w-[2rem] bg-gray-200 dark:bg-gray-600 rounded-full" />
-        </div>
-        <div className="flex flex-wrap items-end gap-4">
+        {/* Month filter below cards */}
+        <div className="flex flex-wrap items-end gap-4 mt-4">
           <div className="min-w-[180px] max-w-[220px]">
             <SearchableSelectField
               field={{
@@ -281,10 +293,7 @@ const AdminDashboardPage = () => {
         </div>
       </section>
 
-      {/* Delimiter */}
-      <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-6" />
-
-      {/* table task section */}
+      {/* Table */}
       <div>
         {/* Table Content */}
         <div>
@@ -296,8 +305,8 @@ const AdminDashboardPage = () => {
         </div>
       </div>
 
-      {/* Create Task Modal */}
-      <TaskFormModal
+      {/* Create Task – right-side panel (aside) */}
+      <TaskFormPanel
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         mode="create"

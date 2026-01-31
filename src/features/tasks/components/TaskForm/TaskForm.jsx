@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppDataContext } from '@/context/AppDataContext';
@@ -24,6 +24,7 @@ import {
 } from '@/components/forms/components';
 
 import DynamicButton from '@/components/ui/Button/DynamicButton';
+import { Icons } from '@/components/icons';
 import { logger } from '@/utils/logger';
 
 
@@ -44,6 +45,7 @@ const TaskForm = ({
   } = useAppDataContext();
   const [createTask] = useCreateTask();
   const [updateTask] = useUpdateTask();
+  const [additionalNotesExpanded, setAdditionalNotesExpanded] = useState(false);
   
   // Use prop monthId if provided, otherwise fall back to hook monthId
   const monthId = propMonthId || hookMonthId;
@@ -484,7 +486,7 @@ const TaskForm = ({
     <div className={`p-5 w-full ${className}`}>
       <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-4">
         {/* Basic Information Section */}
-        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+        <div className="bg-gray-50/80 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Basic Information</h3>
           <div className="space-y-3">
             {/* Jira Link - Full Width */}
@@ -505,7 +507,7 @@ const TaskForm = ({
         </div>
 
         {/* Timeline Section */}
-        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+        <div className="bg-gray-50/80 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Timeline & Duration</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {renderFieldsByName(['startDate', 'endDate', 'timeInHours'])}
@@ -513,7 +515,7 @@ const TaskForm = ({
         </div>
 
         {/* Task Properties Section */}
-        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+        <div className="bg-gray-50/80 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Task Properties</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {renderFieldsByName(['isVip', 'reworked', 'useShutterstock'])}
@@ -521,7 +523,7 @@ const TaskForm = ({
         </div>
 
         {/* AI Configuration Section */}
-        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+        <div className="bg-gray-50/80 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">AI Configuration</h3>
           <div className="space-y-3">
             {/* AI Used - Full Width */}
@@ -539,7 +541,7 @@ const TaskForm = ({
         </div>
 
         {/* Deliverables Section */}
-        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
+        <div className="bg-gray-50/80 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
           <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Deliverables</h3>
           <div className="space-y-3">
             {/* Has Deliverables - Full Width */}
@@ -572,12 +574,26 @@ const TaskForm = ({
           </div>
         </div>
 
-        {/* Additional Notes Section */}
-        <div className="bg-gray-50/80 dark:bg-gray-dark/30 rounded-lg p-4 border border-gray-200/60 dark:border-gray-700/50">
-          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Additional Notes</h3>
-          <div>
-            {renderFieldsByName(['observations'])}
-          </div>
+        {/* Additional Notes Section – collapsible */}
+        <div className="bg-gray-50/80 dark:bg-gray-800/30 rounded-lg border border-gray-200/60 dark:border-gray-700/50 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setAdditionalNotesExpanded((prev) => !prev)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-100/50 dark:hover:bg-gray-700/30 transition-colors"
+            aria-expanded={additionalNotesExpanded}
+          >
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Additional Notes</h3>
+            {additionalNotesExpanded ? (
+              <Icons.buttons.chevronUp className="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400" />
+            ) : (
+              <Icons.buttons.chevronDown className="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400" />
+            )}
+          </button>
+          {additionalNotesExpanded && (
+            <div className="px-4 pb-4 pt-0">
+              {renderFieldsByName(['observations'])}
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}

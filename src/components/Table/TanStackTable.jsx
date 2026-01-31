@@ -50,13 +50,13 @@ const BulkActionsBar = ({
     <div className="table-card mb-4">
       <div className="table-card-inner flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          <span className="table-bulk-label">
             {selectedCount} selected
           </span>
           <button
             type="button"
             onClick={onClearSelection}
-            className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            className="table-bulk-clear"
           >
             Clear
           </button>
@@ -123,7 +123,7 @@ const TableControls = ({
       {/* Left - Filters */}
       <div className="flex items-center gap-4 flex-1 flex-wrap min-w-0">
         {showFilters && (
-          <div className="min-w-[180px] max-w-xs">
+          <div className="table-controls-search">
             <TextField
               field={{
                 name: `${tableType}-search`,
@@ -152,7 +152,7 @@ const TableControls = ({
               id="page-size-select"
               value={table.getState().pagination.pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="h-8 w-14 pl-2 pr-1 text-[12px] font-medium bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-0 focus:border-blue-500 dark:focus:border-blue-400 rounded-none cursor-pointer"
+              className="table-page-size-select"
             >
               {PAGE_SIZE_OPTIONS.map((ps) => (
                 <option key={ps} value={ps}>{ps}</option>
@@ -174,14 +174,14 @@ const TableControls = ({
                 isColumnMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
               }`}
             >
-              <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700/50">
+              <div className="px-4 py-2 ">
                 <span className="table-card-header">Show / hide</span>
               </div>
               <div className="py-1 max-h-72 overflow-y-auto">
                 {table.getAllLeafColumns().filter((col) => col.getCanHide()).map((column) => (
                   <label
                     key={column.id}
-                    className="flex items-center gap-3 px-4 py-2 text-[12px] text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    className="table-column-menu-item"
                   >
                     <input
                       type="checkbox"
@@ -569,7 +569,7 @@ const TanStackTable = forwardRef(
               />
 
               {/* Table */}
-              <div className="overflow-x-auto -mx-1">
+              <div className="table-wrapper">
                 <table className="min-w-full">
                   <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -579,7 +579,7 @@ const TanStackTable = forwardRef(
                             key={header.id}
                             className={`table-card-header-cell ${
                               header.column.getCanSort()
-                                ? "cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                                ? "table-header-cell-sortable"
                                 : ""
                             }`}
                             onClick={header.column.getToggleSortingHandler()}
@@ -593,7 +593,7 @@ const TanStackTable = forwardRef(
                                 )}
                               </span>
                               {header.column.getCanSort() && (
-                                <span className="text-gray-400 dark:text-gray-500 text-[10px]">
+                                <span className="table-sort-icon">
                                   {SORT_ICONS[header.column.getIsSorted()] ??
                                     SORT_ICONS.false}
                                 </span>
@@ -604,7 +604,7 @@ const TanStackTable = forwardRef(
                       </tr>
                     ))}
                   </thead>
-                  <tbody className="bg-white dark:bg-smallCard">
+                  <tbody className="table-body">
                     {hasRows ? (
                       table.getRowModel().rows.map((row) => {
                         const rowKey = row.original?.id || row.id;
@@ -617,16 +617,14 @@ const TanStackTable = forwardRef(
                           <tr
                             key={rowKey}
                             className={`table-card-row cursor-pointer ${
-                              isSelected
-                                ? "bg-blue-50/60 dark:bg-blue-900/20 border-l-2 border-l-blue-500"
-                                : ""
+                              isSelected ? "table-row-selected" : ""
                             }`}
                             onClick={() => handleRowClick(row)}
                           >
                             {row.getVisibleCells().map((cell) => (
                               <td
                                 key={`${row.original?.id || row.id}-${cell.column.id}`}
-                                className={`table-card-cell ${fontWeight}`}
+                                className={`table-card-cell table-cell-text ${fontWeight}`}
                                 style={{ width: cell.column.getSize() }}
                               >
                                 {flexRender(

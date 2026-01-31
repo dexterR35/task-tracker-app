@@ -226,7 +226,38 @@ export const SMALL_CARD_CONFIGS = {
       ];
     },
   },
- 
+
+  [SMALL_CARD_TYPES.PERFORMANCE]: {
+    title: "Performance",
+    subtitle: "This period",
+    description: "Dummy data",
+    icon: Icons.generic.chart,
+    color: "green",
+    getBadge: () => ({ text: "On track", color: "green" }),
+    getValue: () => "87%",
+    getStatus: () => "Above target",
+    getDetails: () => [
+      { icon: Icons.generic.target, label: "Target", value: "80%" },
+      { icon: Icons.generic.star, label: "Score", value: "4.2/5" },
+      { icon: Icons.generic.clock, label: "Avg completion", value: "2.3 days" },
+    ],
+  },
+
+  [SMALL_CARD_TYPES.EFFICIENCY]: {
+    title: "Efficiency",
+    subtitle: "This period",
+    description: "Dummy data",
+    icon: Icons.generic.zap,
+    color: "amber",
+    getBadge: () => ({ text: "Good", color: "amber" }),
+    getValue: () => "94%",
+    getStatus: () => "On-time delivery",
+    getDetails: () => [
+      { icon: Icons.generic.clock, label: "On-time", value: "94%" },
+      { icon: Icons.generic.check, label: "Quality", value: "4.6/5" },
+      { icon: Icons.generic.users, label: "Satisfaction", value: "4.6/5" },
+    ],
+  },
 };
 
 export const createCards = (data, mode = "main") => {
@@ -240,6 +271,8 @@ export const createCards = (data, mode = "main") => {
           SMALL_CARD_TYPES.MONTH_SELECTION,
           SMALL_CARD_TYPES.ACTIONS,
           SMALL_CARD_TYPES.USER_PROFILE,
+          SMALL_CARD_TYPES.PERFORMANCE,
+          SMALL_CARD_TYPES.EFFICIENCY,
         ];
         break;
       default:
