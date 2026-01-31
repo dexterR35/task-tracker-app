@@ -1,316 +1,66 @@
 /**
- * Months API (Direct Firestore with Snapshots)
- *
- * @fileoverview Direct Firestore hooks for month board management and month data operations
- * @author Senior Developer
- * @version 3.0.0
+ * Months API (PERN stub – replace with backend endpoints when ready)
  */
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  serverTimestamp,
-  query
-} from "firebase/firestore";
-import { db } from "@/app/firebase";
-import { logger } from "@/utils/logger";
-import { serializeTimestampsForContext } from "@/utils/dateUtils";
-import { canCreateBoard } from "@/features/utils/authUtils";
+import { useState, useEffect, useCallback } from 'react';
+import { getMonthInfo } from '@/utils/monthUtils.jsx';
+import { formatMonth } from '@/utils/dateUtils';
+import { logger } from '@/utils/logger';
 
-// Date and month utilities
-import {
-  formatMonth,
-  getCurrentYear,
-  parseMonthId,
-} from "@/utils/dateUtils";
-import {
-  getMonthInfo,
-} from "@/utils/monthUtils.jsx";
-
-
-// ============================================================================
-// FIRESTORE REFERENCE HELPERS
-// ============================================================================
-
-// Global fetch lock to prevent concurrent fetches (handles StrictMode double renders)
-const fetchLocks = new Map();
-
-
-const getMonthRef = (monthId) => {
-  const yearId = monthId.split('-')[0]; // Extract year from monthId (e.g., "2025" from "2025-09")
-  return doc(db, "departments", "design", yearId, monthId); // Month document
-};
-
-
-const getMonthsRef = (yearId = null) => {
-  const targetYear = yearId || getCurrentYear();
-  return collection(db, "departments", "design", targetYear);
-};
-
-
-/**
- * Current Month Hook (Direct Firestore)
- */
-export const useCurrentMonth = (userUID = null, role = 'user', _userData = null) => {
+export const useCurrentMonth = (_userUID = null, _role = 'user', _userData = null) => {
   const [currentMonth, setCurrentMonth] = useState(null);
   const [boardExists, setBoardExists] = useState(false);
   const [currentMonthBoard, setCurrentMonthBoard] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const setupListener = async () => {
-      try {
-        logger.log('🔍 [useCurrentMonth] Fetching months data', { userUID, role });
-        setIsLoading(true);
-        setError(null);
-
-        const currentMonthInfo = getMonthInfo(); // Default to actual current month
-        const yearId = getCurrentYear();
-        const monthsRef = getMonthsRef(yearId);
-
-        logger.log('🔍 [useCurrentMonth] Fetching current month from Firestore');
-
-        // OPTIMIZED: Only fetch the current month document, not all months
-        const currentMonthRef = getMonthRef(currentMonthInfo.monthId);
-        const currentMonthDoc = await getDoc(currentMonthRef);
-        logger.log('🔍 [useCurrentMonth] Current month fetched');
-
-        let boardExistsResult = false;
-        let currentMonthBoardResult = null;
-
-        if (currentMonthDoc.exists()) {
-          logger.log('🔍 [useCurrentMonth] Current month board found:', currentMonthInfo.monthId);
-          boardExistsResult = true;
-          currentMonthBoardResult = currentMonthDoc.data();
-        }
-
-        logger.log('🔍 [useCurrentMonth] Setting current month data:', {
-          monthId: currentMonthInfo.monthId,
-          boardExists: boardExistsResult,
-          hasBoardData: !!currentMonthBoardResult
-        });
-
-        const result = {
-          boardExists: boardExistsResult,
-          currentMonthBoard: currentMonthBoardResult ? serializeTimestampsForContext(currentMonthBoardResult) : null
-        };
-
-        setCurrentMonth(serializeTimestampsForContext(currentMonthInfo));
-        setBoardExists(result.boardExists);
-        setCurrentMonthBoard(result.currentMonthBoard);
-        setIsLoading(false);
-
-      } catch (err) {
-        logger.error("[useCurrentMonth] Setup error:", err);
-        setError(err);
-        setIsLoading(false);
-      }
-    };
-
-    setupListener();
-  }, []); // Remove userUID and role from dependencies to prevent unnecessary re-renders
+    const info = getMonthInfo();
+    setCurrentMonth(info);
+    setBoardExists(false);
+    setCurrentMonthBoard(null);
+    setIsLoading(false);
+    setError(null);
+  }, []);
 
   return {
     currentMonth,
     boardExists,
     currentMonthBoard,
     isLoading,
-    error
+    error,
   };
 };
 
-/**
- * Available Months Hook (Direct Firestore - One-time fetch)
- * 
- * IMPORTANT: This hook ONLY fetches month METADATA (monthId, monthName, etc.) from all years.
- * It does NOT fetch tasks. Tasks are only fetched when a specific month is selected via useTasks().
- * 
- * This allows the month selector to show all available months from previous years,
- * but tasks are only loaded on-demand when a user selects a specific month.
- */
 export const useAvailableMonths = () => {
   const [availableMonths, setAvailableMonths] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const setupListener = async () => {
-      try {
-        const cacheKey = 'available_months';
-
-        // Check if fetch is already in progress (prevents duplicate fetches in StrictMode)
-        if (fetchLocks.has(cacheKey)) {
-          logger.log('🔍 [useAvailableMonths] Fetch already in progress, waiting...');
-          // Wait for the existing fetch to complete
-          const existingPromise = fetchLocks.get(cacheKey);
-          try {
-            const result = await existingPromise;
-            setAvailableMonths(result);
-            setIsLoading(false);
-            setError(null);
-            return;
-          } catch (err) {
-            setError(err);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        logger.log('🔍 [useAvailableMonths] Fetching months data (one-time)');
-        setIsLoading(true);
-        setError(null);
-
-        // Create fetch promise and lock
-        const fetchPromise = (async () => {
-          try {
-
-            const currentMonthInfo = getMonthInfo();
-            
-            // Get current year and query range (2020 to current year + 1)
-            const currentYear = new Date().getFullYear();
-            const startYear = 2020;
-            const endYear = currentYear + 1;
-            const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
-
-            // Fetch months data from all years (one-time fetch instead of real-time listener)
-            logger.log('🔍 [useAvailableMonths] Fetching months from Firestore for all years');
-            
-            // Query all years in parallel to get all months
-            const yearPromises = years.map(async (yearId) => {
-              try {
-                const monthsRef = getMonthsRef(yearId.toString());
-                const monthsQuery = query(monthsRef);
-                const snapshot = await getDocs(monthsQuery);
-                
-                return snapshot.docs.map((doc) => ({
-                  yearId: yearId.toString(),
-                  monthData: doc.data(),
-                  monthId: doc.id
-                }));
-              } catch (err) {
-                // Ignore errors for years that don't exist
-                logger.log(`🔍 [useAvailableMonths] No months found for year ${yearId}`);
-                return [];
-              }
-            });
-
-            const yearMonths = await Promise.all(yearPromises);
-            const allMonthDocs = yearMonths.flat();
-            
-            logger.log('🔍 [useAvailableMonths] Months fetched, docs:', allMonthDocs.length);
-
-            const months = [];
-
-            allMonthDocs.forEach(({ monthData, monthId }) => {
-              // Parse month ID to get readable month name using month utilities
-              const monthDate = parseMonthId(monthId);
-              const monthName = monthDate ? formatMonth(monthId) : `${monthId} (Invalid)`;
-
-              months.push({
-                monthId,
-                monthName,
-                boardId: monthData.boardId,
-                createdAt: monthData.createdAt,
-                createdBy: monthData.createdBy,
-                createdByName: monthData.createdByName,
-                createdByRole: monthData.createdByRole,
-                isCurrent: monthId === currentMonthInfo.monthId,
-                boardExists: true // All months in availableMonths have boards (they're in the collection)
-              });
-            });
-
-            // Sort months by monthId (newest first) - monthId format is YYYY-MM, so string sort works
-            months.sort((a, b) => {
-              if (a.monthId > b.monthId) return -1;
-              if (a.monthId < b.monthId) return 1;
-              return 0;
-            });
-
-            logger.log('🔍 [useAvailableMonths] Setting available months:', months.length);
-            return months;
-          } finally {
-            // Remove lock when done
-            fetchLocks.delete(cacheKey);
-          }
-        })();
-
-        fetchLocks.set(cacheKey, fetchPromise);
-        const months = await fetchPromise;
-
-        setAvailableMonths(months);
-        setIsLoading(false);
-
-      } catch (err) {
-        logger.error("[useAvailableMonths] Setup error:", err);
-        setError(err);
-        setIsLoading(false);
-      }
-    };
-
-    setupListener();
-  }, []); // Empty dependency array - this should only run once
+    const currentMonthInfo = getMonthInfo();
+    const monthId = currentMonthInfo.monthId;
+    const monthName = formatMonth(monthId);
+    setAvailableMonths([
+      {
+        monthId,
+        monthName,
+        boardId: null,
+        isCurrent: true,
+        boardExists: false,
+      },
+    ]);
+    setIsLoading(false);
+    setError(null);
+  }, []);
 
   return { availableMonths, isLoading, error };
 };
 
-/**
- * Create Month Board Hook
- */
 export const useCreateMonthBoard = () => {
   const createMonthBoard = useCallback(async (monthId, userData) => {
-    try {
-      // Validate user permissions - only users with explicit 'create_boards' permission can create boards
-      if (!canCreateBoard(userData)) {
-        throw new Error('Contact administrator for creating board');
-      }
-
-      const monthRef = getMonthRef(monthId);
-      const monthDoc = await getDoc(monthRef);
-
-      if (monthDoc.exists()) {
-        throw new Error("Month board already exists");
-      }
-
-      // Convert monthId string to Date object for getMonthInfo
-      const monthDate = parseMonthId(monthId);
-      if (!monthDate) {
-        throw new Error(`Invalid monthId format: ${monthId}`);
-      }
-      const monthInfo = getMonthInfo(monthDate);
-      const boardId = `board_${monthId}_${Date.now()}`;
-      const currentUserUID = userData.userUID;
-      const currentUserName = userData.name;
-      const currentUserRole = userData.role || 'user';
-
-      const monthBoardData = {
-        monthId: monthId,
-        monthName: monthInfo.monthName,
-        year: monthInfo.year,
-        month: monthInfo.month,
-        daysInMonth: monthInfo.daysInMonth,
-        startDate: monthInfo.startDate,
-        endDate: monthInfo.endDate,
-        boardId: boardId,
-        createdAt: serverTimestamp(),
-        createdBy: currentUserUID,
-        createdByName: currentUserName,
-        createdByRole: currentUserRole,
-        status: 'active'
-      };
-
-      await setDoc(monthRef, monthBoardData);
-
-      logger.log('Month board created successfully:', monthId);
-      return { success: true, data: { monthId, boardId } };
-    } catch (err) {
-      logger.error('Error creating month board:', err);
-      throw err;
-    }
+    logger.warn('[monthsApi] createMonthBoard: backend not implemented');
+    throw new Error('Month boards API not yet connected. Backend coming soon.');
   }, []);
 
   return [createMonthBoard];

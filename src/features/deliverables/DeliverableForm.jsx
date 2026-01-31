@@ -117,16 +117,15 @@ const DeliverableForm = ({
   const { createDeliverable, updateDeliverable } = useDeliverablesApi();
   const [saving, setSaving] = React.useState(false);
   
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors, isSubmitting }, 
-    reset, 
-    watch, 
-    setValue, 
-    trigger, 
-    clearErrors, 
-    setError 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    watch,
+    setValue,
+    clearErrors,
+    setError
   } = useForm({
     resolver: yupResolver(deliverableFormSchema),
     defaultValues: {
@@ -141,7 +140,6 @@ const DeliverableForm = ({
     reValidateMode: 'onChange'
   });
 
-  const formValues = watch();
   const requiresQuantity = watch('requiresQuantity');
 
   // Watch for requiresQuantity changes and clear variationsTime if unchecked
@@ -193,22 +191,18 @@ const DeliverableForm = ({
     <div className={`deliverable-form ${className} card`}>
       <form onSubmit={handleSubmit(handleFormSubmit, handleFormError)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextField field={CONFIG.FORM_FIELDS[0]} register={register} errors={errors} formValues={formValues} />
-          <SelectField field={CONFIG.FORM_FIELDS[1]} register={register} errors={errors} formValues={formValues} />
-          <NumberField field={CONFIG.FORM_FIELDS[2]} register={register} errors={errors} setValue={setValue} trigger={trigger} formValues={formValues} />
-          <SelectField field={CONFIG.FORM_FIELDS[3]} register={register} errors={errors} formValues={formValues} />
-          <NumberField 
-            field={{
-              ...CONFIG.FORM_FIELDS[4],
-              disabled: !requiresQuantity
-            }} 
-            register={register} 
-            errors={errors} 
-            setValue={setValue} 
-            trigger={trigger} 
-            formValues={formValues} 
+          <TextField field={CONFIG.FORM_FIELDS[0]} register={register} errors={errors} watch={watch} setValue={setValue} />
+          <SelectField field={CONFIG.FORM_FIELDS[1]} register={register} errors={errors} watch={watch} setValue={setValue} />
+          <NumberField field={CONFIG.FORM_FIELDS[2]} register={register} errors={errors} setValue={setValue} watch={watch} />
+          <SelectField field={CONFIG.FORM_FIELDS[3]} register={register} errors={errors} watch={watch} setValue={setValue} />
+          <NumberField
+            field={{ ...CONFIG.FORM_FIELDS[4], disabled: !requiresQuantity }}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            watch={watch}
           />
-          <CheckboxField field={CONFIG.FORM_FIELDS[5]} register={register} errors={errors} setValue={setValue} trigger={trigger} formValues={formValues} />
+          <CheckboxField field={CONFIG.FORM_FIELDS[5]} register={register} errors={errors} setValue={setValue} />
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">

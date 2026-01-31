@@ -8,8 +8,6 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "db:migrate": "node db/migrate.js",
-    "db:migrate:users": "node db/migrate-users-fields.js",
-    "db:drop-user-uid": "node db/drop-user-uid.js",
     "db:seed": "node db/seed.js"
   },
   "dependencies": {

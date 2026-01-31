@@ -13,13 +13,27 @@ export const APP_CONFIG = {
 
 
 // ============================================================================
-// FIREBASE CONFIGURATION
+// API CONFIGURATION (PERN backend + request limits)
 // ============================================================================
 
-export const FIREBASE_CONFIG = {
-  REQUIRED_FIELDS: ['apiKey', 'authDomain', 'projectId'],
-  PERSISTENCE_RETRIES: 3,
-  PERSISTENCE_RETRY_DELAY: 1000, // milliseconds
+export const API_CONFIG = {
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  AUTH_PREFIX: '/api/auth',
+  TIMEOUT: 30000,
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000,
+  BATCH_SIZE: 100,
+  MAX_CONCURRENT_REQUESTS: 5,
+  REQUEST_LIMITS: {
+    TASKS_PER_MONTH: 100,
+    TASKS_PER_QUERY: 50,
+    USERS_PER_QUERY: 20,
+    REPORTERS_PER_QUERY: 30,
+    DELIVERABLES_PER_QUERY: 50,
+    SETTINGS_PER_QUERY: 10,
+    USER_QUERY_LIMIT: 1,
+    TOP_3_LIMIT: 10,
+  },
 };
 
 // ============================================================================
@@ -223,7 +237,7 @@ export const CARD_SYSTEM = {
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
     orange: '#F25912',
     soft_purple:"#ff9e08",    // Orange-500 - Product, warning, energy
-    color_default: '#ff9e08',
+    color_default: '#E50046',
     select_badge: '#00d8de', // C2E2FA- Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
     dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
@@ -397,28 +411,6 @@ export const ROUTES = {
 };
 
 // ============================================================================
-// API CONFIGURATION
-// ============================================================================
-
-export const API_CONFIG = {
-  TIMEOUT: 30000, // 30 seconds
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000, // 1 second
-  BATCH_SIZE: 100,
-  MAX_CONCURRENT_REQUESTS: 5,
-  REQUEST_LIMITS: {
-    TASKS_PER_MONTH: 100,        // Reduced from 500 to 100
-    TASKS_PER_QUERY: 50,          // New: Limit per query
-    USERS_PER_QUERY: 20,          // New: Limit users query
-    REPORTERS_PER_QUERY: 30,      // New: Limit reporters query
-    DELIVERABLES_PER_QUERY: 50,   // New: Limit deliverables query
-    SETTINGS_PER_QUERY: 10,        // New: Limit settings query
-    USER_QUERY_LIMIT: 1,
-    TOP_3_LIMIT: 10,              // New: Limit for top 3 calculations
-  },
-};
-
-// ============================================================================
 // UI/UX CONSTANTS
 // ============================================================================
 
@@ -528,7 +520,6 @@ export const DEV_CONFIG = {
 
 export default {
   APP_CONFIG,
-  FIREBASE_CONFIG,
   AUTH,
   VALIDATION,
   FORM_OPTIONS,

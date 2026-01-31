@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useDeliverablesApi } from './useDeliverablesApi';
 import { isUserAdmin } from '@/features/utils/authUtils';
 import { showError, showSuccess } from '@/utils/toast';
@@ -10,7 +10,6 @@ import { useTableActions } from '@/hooks/useTableActions';
 import ConfirmationModal from '@/components/ui/Modal/ConfirmationModal';
 import Badge from '@/components/ui/Badge/Badge';
 import { TABLE_SYSTEM, CARD_SYSTEM } from '@/constants';
-import DepartmentFilter from '@/components/filters/DepartmentFilter';
 
 // ===== CONFIGURATION =====
 const CONFIG = {
@@ -31,28 +30,14 @@ const DeliverableTable = ({
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDeliverable, setEditingDeliverable] = useState(null);
-  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState(null);
   const canManageDeliverables = isUserAdmin(user);
   const { deliverables: globalDeliverables, isLoading: loadingSettings, deleteDeliverable } = useDeliverablesApi();
   
   // Table ref for clearing selection
   const tableRef = useRef(null);
-  
 
-  // Real-time listener is handled by useDeliverablesApi hook
-
-  // Use data directly from Firebase (already sorted in real-time listener)
-  const allDeliverablesData = propDeliverables || globalDeliverables || [];
-
-  // Filter deliverables by selected department
-  const deliverablesData = useMemo(() => {
-    if (!selectedDepartmentFilter) {
-      return allDeliverablesData;
-    }
-    return allDeliverablesData.filter(deliverable => 
-      deliverable.department === selectedDepartmentFilter
-    );
-  }, [allDeliverablesData, selectedDepartmentFilter]);
+  // Use data from API / context (already sorted when provided)
+  const deliverablesData = propDeliverables || globalDeliverables || [];
 
   useEffect(() => {
     if (onCountChange) onCountChange(deliverablesData?.length || 0);
@@ -189,27 +174,6 @@ const DeliverableTable = ({
     },
   ], []);
 
-  // Handle department filter change
-  const handleDepartmentFilterChange = useCallback((fieldName, value) => {
-    if (fieldName === 'departmentFilter') {
-      // If clicking the same department filter or clearing, deselect it
-      if (selectedDepartmentFilter === value || !value) {
-        setSelectedDepartmentFilter(null);
-      } else {
-        // Select the new department filter
-        setSelectedDepartmentFilter(value);
-      }
-    }
-  }, [selectedDepartmentFilter]);
-
-  // Create department filter component using shared component
-  const departmentFilterComponent = useMemo(() => (
-    <DepartmentFilter
-      selectedDepartmentFilter={selectedDepartmentFilter}
-      onFilterChange={handleDepartmentFilterChange}
-    />
-  ), [selectedDepartmentFilter, handleDepartmentFilterChange]);
-
   // Memoized bulk actions
   const bulkActions = useMemo(() => [
     {
@@ -269,7 +233,6 @@ const DeliverableTable = ({
         enablePagination={true}
         enableFiltering={true}
         pageSize={TABLE_SYSTEM.DEFAULT_PAGE_SIZE}
-        customFilter={departmentFilterComponent}
       />
 
       {/* Edit Deliverable Modal */}

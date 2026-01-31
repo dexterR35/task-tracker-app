@@ -4,7 +4,6 @@ import { useAuth } from "@/context/AuthContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import DeliverableFormModal from "@/features/deliverables/DeliverableFormModal";
 import { DeliverableTable } from "@/features/deliverables/DeliverablesManager";
-import CalculationFormula from "@/components/ui/CalculationFormula/CalculationFormula";
 
 const DeliverablesPage = () => {
   const { deliverables, error, isLoading, canManageDeliverables } = useAppDataContext();
@@ -69,7 +68,6 @@ const DeliverablesPage = () => {
           className="rounded-lg"
           deliverables={deliverables}
         />
-        <CalculationFormula />
       </div>
       <DeliverableFormModal
         isOpen={showCreateModal}

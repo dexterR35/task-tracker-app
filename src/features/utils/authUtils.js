@@ -10,7 +10,7 @@ const isAdmin = (user) => {
 
 export const getUserUID = (user) => {
   if (!user) return null;
-  return user.userUID || user.id || null;
+  return user?.id ?? null;
 };
 
 
@@ -25,7 +25,7 @@ export const validateUserStructure = (user, options = {}) => {
   const requiredFields = ['uid', 'email', 'name', 'role'];
 
   if (strict) {
-    requiredFields.push('permissions', 'isActive');
+    requiredFields.push('isActive');
   }
 
   requiredFields.forEach(field => {
@@ -43,7 +43,7 @@ export const validateUserStructure = (user, options = {}) => {
 
 export const isUserComplete = (user) => {
   if (!user) return false;
-  return !!user.userUID && !!user.email && !!user.name && !!user.role;
+  return !!user?.id && !!user.email && !!user.name && !!user.role;
 };
 
 
@@ -114,31 +114,12 @@ export const isUserActive = (user) => {
 };
 
 
+/** Pure RBAC: permissions derived from role only. Admin has all; user has task-related. */
 export const hasPermission = (userData, permission) => {
-
-  if (!isUserActive(userData)) {
-    return false;
-  }
-
-  if (userData?.permissions && Array.isArray(userData.permissions)) {
-    return userData.permissions.includes(permission);
-  }
-
-  if (userData?.role === 'admin') {
-    return true;
-  }
-
-
-  if (userData?.permissions?.includes('has_permission')) {
-    return true;
-  }
-
-  const taskPermissions = ['create_tasks', 'update_tasks', 'delete_tasks', 'view_tasks'];
-  if (taskPermissions.includes(permission)) {
-    return true;
-  }
-
-  return false;
+  if (!isUserActive(userData)) return false;
+  if (userData?.role === 'admin') return true;
+  const userPermissions = ['create_tasks', 'update_tasks', 'delete_tasks', 'view_tasks', 'submit_forms'];
+  return userPermissions.includes(permission);
 };
 
 
@@ -166,20 +147,10 @@ export const canViewTasks = (user) => {
 };
 
 
+/** Pure RBAC: admin can create boards; user cannot. */
 export const canCreateBoard = (user) => {
   if (!user) return false;
-  // Board creation requires explicit 'create_board' permission - no admin bypass, no has_permission bypass
-  if (!isUserActive(user)) {
-    return false;
-  }
-  
-  // Check for explicit 'create_board' permission in permissions array
-  if (user.permissions && Array.isArray(user.permissions)) {
-    return user.permissions.includes('create_board');
-  }
-  
-  // No default permission for board creation - must be explicitly granted
-  return false;
+  return isUserActive(user) && user.role === 'admin';
 };
 
 
@@ -212,7 +183,6 @@ export const getUserPermissionSummary = (user) => {
     return {
       isActive: false,
       role: 'none',
-      permissions: [],
       canCreateTask: false,
       canUpdateTask: false,
       canDeleteTask: false,
@@ -228,7 +198,6 @@ export const getUserPermissionSummary = (user) => {
   return {
     isActive: isUserActive(user),
     role: user.role || 'user',
-    permissions: user.permissions || [],
     canCreateTask: canCreateTask(user),
     canUpdateTask: canUpdateTask(user),
     canDeleteTask: canDeleteTask(user),
@@ -267,21 +236,16 @@ export const validateUserPermissions = (userData, requiredPermissions, options =
     return { isValid: false, errors: [error] };
   }
 
-  // Check permissions for ALL users (no admin bypass)
   const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
-
-  const hasRequiredPermission = permissions.some(permission => {
-    return hasPermission(userData, permission);
-  });
+  const hasRequiredPermission = permissions.some(permission => hasPermission(userData, permission));
 
   if (!hasRequiredPermission) {
     const error = `User lacks required permissions for ${operation}`;
     if (logWarnings) {
       logger.warn(`[validateUserPermissions] ${error}:`, {
-        userUID: userData.userUID,
+        id: userData.id,
         email: userData.email,
         role: userData.role,
-        userPermissions: userData.permissions || [],
         requiredPermissions: permissions
       });
     }
@@ -308,7 +272,7 @@ export const getAuthStatus = (authState) => {
     user: authState.user,
     error: authState.error,
     isAdmin: isUserAdmin(authState.user),
-    userUID: getUserUID(authState.user),
+    userId: getUserUID(authState.user),
     displayName: getUserDisplayName(authState.user),
     role: getUserRole(authState.user)
   };

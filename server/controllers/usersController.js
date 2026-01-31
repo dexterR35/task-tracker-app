@@ -5,7 +5,7 @@
 import { query } from '../config/db.js';
 
 const userColumns =
-  'id, email, name, role, is_active, color_set, created_by, occupation, office, manager_id, email_verified_at, created_at, updated_at';
+  'id, email, name, username, role, is_active, color_set, created_by, occupation, office, phone, avatar_url, manager_id, email_verified_at, created_at, updated_at';
 
 function toUser(row) {
   if (!row) return null;
@@ -13,15 +13,17 @@ function toUser(row) {
     id: row.id,
     email: row.email,
     name: row.name,
+    username: row.username,
     role: row.role,
     isActive: row.is_active,
     colorSet: row.color_set,
     createdBy: row.created_by,
     occupation: row.occupation,
     office: row.office,
+    phone: row.phone,
+    avatarUrl: row.avatar_url,
     managerId: row.manager_id,
     emailVerifiedAt: row.email_verified_at,
-    userUID: row.id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -68,8 +70,11 @@ export async function update(req, res, next) {
 
     const allowed = [
       'name',
+      'username',
       'occupation',
       'office',
+      'phone',
+      'avatar_url',
       'color_set',
       'is_active',
       'role',
@@ -92,6 +97,10 @@ export async function update(req, res, next) {
       updates.push(`name = $${pos++}`);
       values.push(body.name);
     }
+    if (body.username !== undefined) {
+      updates.push(`username = $${pos++}`);
+      values.push(body.username ?? null);
+    }
     if (body.occupation !== undefined) {
       updates.push(`occupation = $${pos++}`);
       values.push(body.occupation);
@@ -99,6 +108,14 @@ export async function update(req, res, next) {
     if (body.office !== undefined) {
       updates.push(`office = $${pos++}`);
       values.push(body.office);
+    }
+    if (body.phone !== undefined) {
+      updates.push(`phone = $${pos++}`);
+      values.push(body.phone ?? null);
+    }
+    if (body.avatarUrl !== undefined) {
+      updates.push(`avatar_url = $${pos++}`);
+      values.push(body.avatarUrl ?? null);
     }
     if (body.colorSet !== undefined) {
       updates.push(`color_set = $${pos++}`);

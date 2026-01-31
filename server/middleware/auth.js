@@ -19,7 +19,7 @@ export const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const result = await query(
-      'SELECT id, email, name, role, is_active, color_set, created_by, occupation, office, manager_id, email_verified_at, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, email, name, role, is_active, office, occupation, manager_id FROM users WHERE id = $1',
       [decoded.userId]
     );
 
@@ -33,16 +33,10 @@ export const authenticate = async (req, res, next) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      userUID: user.id,
       isActive: user.is_active,
-      colorSet: user.color_set,
-      createdBy: user.created_by,
-      occupation: user.occupation,
       office: user.office,
+      occupation: user.occupation,
       managerId: user.manager_id,
-      emailVerifiedAt: user.email_verified_at,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
     };
     next();
   } catch (err) {

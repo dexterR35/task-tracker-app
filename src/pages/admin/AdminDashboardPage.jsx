@@ -8,7 +8,7 @@ import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError, showAuthError } from "@/utils/toast";
 import { MonthProgressBar } from "@/utils/monthUtils.jsx";
-import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
+import { SearchableSelectField } from "@/components/forms/components";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
 import { logger } from "@/utils/logger";
@@ -93,7 +93,7 @@ const AdminDashboardPage = () => {
   } = useTasks(
     currentMonthId || null,
     isUserAdmin ? 'admin' : 'user',
-    user?.userUID || null,
+    user?.id ?? null,
     cardsFilters
   );
 

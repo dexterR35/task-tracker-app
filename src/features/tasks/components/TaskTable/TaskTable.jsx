@@ -63,7 +63,7 @@ const TaskTable = ({
   } = useAppDataContext();
 
   // Build filters object for database-level filtering
-  const userUID = user?.userUID || null;
+  const userId = user?.id ?? null;
   const tasksFilters = useMemo(() => ({}), []);
 
   // Get tasks with database-level filtering
@@ -74,7 +74,7 @@ const TaskTable = ({
   } = useTasks(
     selectedMonthId || null,
     isUserAdmin ? 'admin' : 'user',
-    userUID,
+    userId,
     tasksFilters
   );
 
@@ -144,13 +144,7 @@ const TaskTable = ({
 
   // Edit handling is now managed by useTableActions hook
 
-  // Get task columns for the table
-  const taskColumns = useTaskColumns(
-    selectedMonthId,
-    reporters,
-    user,
-    deliverables
-  );
+  const taskColumns = useTaskColumns(reporters, user, deliverables);
 
   // Page size change handler for TanStack pagination
   const handlePageSizeChange = useCallback((newPageSize) => {
@@ -167,11 +161,11 @@ const TaskTable = ({
 
     // Sort by createdAt in descending order (newest first)
     return tasks.sort((a, b) => {
-      // Handle Firebase Timestamps and different date formats
+      // Handle various timestamp formats (seconds, toDate(), or ISO string)
       let dateA, dateB;
 
       if (a.createdAt) {
-        // Handle Firebase Timestamp objects
+        // Timestamp object (seconds) or Date-like
         if (a.createdAt.seconds) {
           dateA = new Date(a.createdAt.seconds * 1000);
         } else if (a.createdAt.toDate) {
@@ -184,7 +178,7 @@ const TaskTable = ({
       }
 
       if (b.createdAt) {
-        // Handle Firebase Timestamp objects
+        // Timestamp object (seconds) or Date-like
         if (b.createdAt.seconds) {
           dateB = new Date(b.createdAt.seconds * 1000);
         } else if (b.createdAt.toDate) {
@@ -291,7 +285,7 @@ const TaskTable = ({
   // Reset to default when user changes
   useEffect(() => {
     setColumnVisibility(defaultColumnVisibility);
-  }, [userUID]);
+  }, [userId]);
 
   // Use columnVisibility state as initialColumnVisibility for TanStackTable
   const initialColumnVisibility = columnVisibility;

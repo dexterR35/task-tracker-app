@@ -17,7 +17,6 @@ import {
   MultiSelectField, 
   NumberField, 
   CheckboxField,
-  SearchableDeliverablesField,
   SearchableSelectField,
   SimpleDateField,
   UrlField
@@ -65,7 +64,6 @@ const TaskForm = ({
     reset,
     watch,
     setValue,
-    trigger,
     clearErrors,
     setError
   } = useForm({
@@ -179,12 +177,12 @@ const TaskForm = ({
           return new Date(dateValue).toISOString().split('T')[0];
         }
         
-        // If it's a Firestore Timestamp object
+        // If it's a timestamp object with toDate()
         if (dateValue.toDate && typeof dateValue.toDate === 'function') {
           return dateValue.toDate().toISOString().split('T')[0];
         }
         
-        // If it's a Firestore Timestamp-like object with seconds
+        // If it's a timestamp-like object with seconds
         if (dateValue.seconds) {
           return new Date(dateValue.seconds * 1000).toISOString().split('T')[0];
         }
@@ -389,22 +387,18 @@ const TaskForm = ({
   const formTitle = mode === 'edit' ? 'Edit Task' : 'Create New Task';
   const submitButtonText = mode === 'edit' ? 'Update Task' : 'Save Task';
 
-  // Helper function to create field props
   const createFieldProps = (field) => ({
     field,
     register,
     errors,
     setValue,
     watch,
-    trigger,
-    clearErrors,
-    formValues: watchedValues
   });
 
   // Helper function to render fields based on type
   const renderField = (field, fieldProps) => {
     if (field.name === 'deliverables') {
-      return <SearchableDeliverablesField key={field.name} {...fieldProps} hideTimeInfo={true} />;
+      return <SearchableSelectField key={field.name} {...fieldProps} />;
     }
     if (field.name === 'reporters') {
       return <SearchableSelectField key={field.name} {...fieldProps} />;
@@ -552,7 +546,7 @@ const TaskForm = ({
             {/* Deliverables - Full Width (conditional) */}
             {watchedValues._hasDeliverables && (
               <div className="pt-1">
-                <SearchableDeliverablesField
+                <SearchableSelectField
                   field={{
                     name: 'deliverables',
                     type: 'select',
@@ -564,10 +558,6 @@ const TaskForm = ({
                   errors={errors}
                   setValue={setValue}
                   watch={watch}
-                  trigger={trigger}
-                  clearErrors={clearErrors}
-                  formValues={watchedValues}
-                  hideTimeInfo={true}
                 />
               </div>
             )}

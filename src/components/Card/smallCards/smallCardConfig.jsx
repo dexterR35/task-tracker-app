@@ -1,5 +1,5 @@
 import { Icons } from "@/components/icons";
-import SearchableSelectField from "@/components/forms/components/SearchableSelectField";
+import { SearchableSelectField } from "@/components/forms/components";
 import { CARD_SYSTEM } from "@/constants";
 import { logger } from "@/utils/logger";
 

@@ -50,57 +50,33 @@ export const createErrorResponse = (type, message, details = null, severity = ER
 };
 
 
-export const parseFirebaseError = (error) => {
+/**
+ * Parse API/HTTP errors (PERN backend)
+ */
+export const parseApiError = (error) => {
   if (!error) {
     return createErrorResponse(ERROR_TYPES.UNKNOWN, 'An unknown error occurred');
   }
 
+  const status = error.status;
+  const errorMessage = error.data?.error || error.message || error.error?.message || 'An error occurred';
   const errorCode = error.code || error.error?.code;
-  const errorMessage = error.message || error.error?.message || 'An error occurred';
 
-  // Firebase Auth errors
-  if (errorCode?.startsWith('auth/')) {
-    switch (errorCode) {
-      case 'auth/user-not-found':
-        return createErrorResponse(ERROR_TYPES.AUTHENTICATION, 'No account found with this email address.', null, ERROR_SEVERITY.MEDIUM);
-      case 'auth/wrong-password':
-        return createErrorResponse(ERROR_TYPES.AUTHENTICATION, 'Incorrect password. Please try again.', null, ERROR_SEVERITY.MEDIUM);
-      case 'auth/too-many-requests':
-        return createErrorResponse(ERROR_TYPES.AUTHENTICATION, 'Too many failed attempts. Please try again later.', null, ERROR_SEVERITY.HIGH);
-      case 'auth/user-disabled':
-        return createErrorResponse(ERROR_TYPES.AUTHENTICATION, 'This account has been disabled.', null, ERROR_SEVERITY.HIGH);
-      case 'auth/invalid-email':
-        return createErrorResponse(ERROR_TYPES.VALIDATION, 'Invalid email address format.', null, ERROR_SEVERITY.LOW);
-      case 'auth/weak-password':
-        return createErrorResponse(ERROR_TYPES.VALIDATION, 'Password is too weak. Please choose a stronger password.', null, ERROR_SEVERITY.LOW);
-      default:
-        return createErrorResponse(ERROR_TYPES.AUTHENTICATION, errorMessage, { code: errorCode }, ERROR_SEVERITY.MEDIUM);
-    }
+  // PERN backend / HTTP errors
+  if (status === 401) {
+    return createErrorResponse(ERROR_TYPES.AUTHENTICATION, errorMessage || 'Invalid or expired session. Please sign in again.', null, ERROR_SEVERITY.MEDIUM);
   }
-
-  // Firestore errors
-  if (errorCode?.startsWith('firestore/')) {
-    switch (errorCode) {
-      case 'firestore/permission-denied':
-        return createErrorResponse(ERROR_TYPES.AUTHORIZATION, 'You do not have permission to perform this action.', null, ERROR_SEVERITY.HIGH);
-      case 'firestore/unavailable':
-        return createErrorResponse(ERROR_TYPES.NETWORK, 'Service temporarily unavailable. Please try again later.', null, ERROR_SEVERITY.HIGH);
-      case 'firestore/not-found':
-        return createErrorResponse(ERROR_TYPES.NOT_FOUND, 'The requested resource was not found.', null, ERROR_SEVERITY.MEDIUM);
-      case 'firestore/already-exists':
-        return createErrorResponse(ERROR_TYPES.VALIDATION, 'This resource already exists.', null, ERROR_SEVERITY.MEDIUM);
-      case 'firestore/failed-precondition':
-        return createErrorResponse(ERROR_TYPES.VALIDATION, 'Operation failed due to a precondition.', null, ERROR_SEVERITY.MEDIUM);
-      default:
-        return createErrorResponse(ERROR_TYPES.SERVER, errorMessage, { code: errorCode }, ERROR_SEVERITY.MEDIUM);
-    }
+  if (status === 403) {
+    return createErrorResponse(ERROR_TYPES.AUTHORIZATION, errorMessage || 'You do not have permission.', null, ERROR_SEVERITY.HIGH);
   }
-
-  // Handle generic permission errors (including "Missing or insufficient permissions")
-  if (errorMessage?.includes('Missing or insufficient permissions') ||
-      errorMessage?.includes('permission') ||
-      errorCode === 'permission-denied') {
-    return createErrorResponse(ERROR_TYPES.AUTHORIZATION, 'You do not have permission to perform this action.', { code: errorCode }, ERROR_SEVERITY.HIGH);
+  if (status === 404) {
+    return createErrorResponse(ERROR_TYPES.NOT_FOUND, errorMessage || 'Resource not found.', null, ERROR_SEVERITY.MEDIUM);
+  }
+  if (status >= 500) {
+    return createErrorResponse(ERROR_TYPES.SERVER, errorMessage || 'Server error. Please try again later.', null, ERROR_SEVERITY.HIGH);
+  }
+  if (status >= 400) {
+    return createErrorResponse(ERROR_TYPES.VALIDATION, errorMessage, null, ERROR_SEVERITY.MEDIUM);
   }
 
   // Network errors
@@ -117,11 +93,10 @@ export const parseFirebaseError = (error) => {
   return createErrorResponse(ERROR_TYPES.UNKNOWN, errorMessage, { originalError: error }, ERROR_SEVERITY.MEDIUM);
 };
 
-
 export const handleApiError = (error, operation = 'API operation', options = {}) => {
   const { showToast = true, logError = true } = options;
 
-  const errorResponse = parseFirebaseError(error);
+  const errorResponse = parseApiError(error);
 
   if (logError) {
     logger.error(`[${operation}] Error:`, {
@@ -212,7 +187,7 @@ export const withMutationErrorHandling = (mutationFn, options = {}) => {
 
 
 export const getErrorBoundaryInfo = (error, componentName = 'Component') => {
-  const errorResponse = parseFirebaseError(error);
+  const errorResponse = parseApiError(error);
 
   logger.error(`[${componentName}] Error boundary caught error:`, {
     error: errorResponse,

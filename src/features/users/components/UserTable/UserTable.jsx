@@ -4,8 +4,8 @@ import TanStackTable from "@/components/Table/TanStackTable";
 import { useAllTasks } from "@/features/tasks/tasksApi";
 
 // Helper function to get task user UID
-const getTaskUserUID = (task) => {
-  return task?.userUID || task?.user?.userUID || task?.user?.id || null;
+const getTaskUserId = (task) => {
+  return task?.userUID ?? task?.user?.id ?? null;
 };
 
 /**
@@ -25,9 +25,9 @@ const UserTable = ({
     const counts = {};
     if (allTasks && Array.isArray(allTasks)) {
       allTasks.forEach(task => {
-        const userUID = getTaskUserUID(task);
-        if (userUID) {
-          counts[userUID] = (counts[userUID] || 0) + 1;
+        const userId = getTaskUserId(task);
+        if (userId) {
+          counts[userId] = (counts[userId] || 0) + 1;
         }
       });
     }
@@ -37,9 +37,8 @@ const UserTable = ({
   // Enrich users with calculated task counts (overall)
   const enrichedUsers = useMemo(() => {
     return users.map(user => {
-      const userUID = user.userUID || user.id;
-      // Use calculated count from all tasks (overall)
-      const taskCount = taskCountsByUser[userUID] || 0;
+      const userId = user.id;
+      const taskCount = taskCountsByUser[userId] || 0;
 
       return {
         ...user,

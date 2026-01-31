@@ -106,7 +106,7 @@ const Tooltip = ({ children, content, users = [] }) => {
           {users.length > 0 && (
             <div className="space-y-1.5">
               {users.map((user, index) => (
-                <div key={user.userUID || user.userName ? `${user.userUID || user.userName}-${user.color || index}` : `user-${index}`} className="flex items-center gap-2">
+                <div key={user.id || user.userName ? `${user.id || user.userName}-${user.color || index}` : `user-${index}`} className="flex items-center gap-2">
                   <div
                     className="w-3 h-3 rounded border border-gray-600 flex-shrink-0"
                     style={{ backgroundColor: user.color }}

@@ -4,13 +4,13 @@
  */
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { useUsers, useUserByUID } from "@/features/users/usersApi";
+import { useUsers, useUserById } from "@/features/users/usersApi";
 import { useReporters } from "@/features/reporters/reportersApi";
 import { useDeliverablesApi } from '@/features/deliverables/useDeliverablesApi';
 import { useTasks } from "@/features/tasks/tasksApi";
 import { useCurrentMonth, useAvailableMonths } from "@/features/months/monthsApi";
 import { useAuth } from "@/context/AuthContext";
-import { getUserUID, isUserAdmin, hasPermission, isUserActive } from "@/features/utils/authUtils";
+import { isUserAdmin, hasPermission, isUserActive } from "@/features/utils/authUtils";
 import { normalizeTimestamp, serializeTimestamps } from "@/utils/dateUtils";
 import { logger } from '@/utils/logger';
 import { AUTH } from '@/constants';
@@ -69,7 +69,7 @@ export const AppDataProvider = ({ children }) => {
   
   // Get auth data
   const { user, isLoading: authLoading } = useAuth();
-  const userUID = getUserUID(user);
+  const userId = user?.id ?? null;
   const userIsAdmin = isUserAdmin(user);
   
   // Initialize the provider once auth is ready
@@ -86,12 +86,12 @@ export const AppDataProvider = ({ children }) => {
     error: usersError 
   } = useUsers();
   
-  // Get current user (only if not admin - more efficient than fetching all users)
+  // Get current user profile (only if not admin)
   const { 
     user: userData = null,
     isLoading: userLoading,
     error: userError
-  } = useUserByUID(userIsAdmin ? null : userUID);
+  } = useUserById(userIsAdmin ? null : userId);
   
   // Get month data
   const { 
@@ -101,7 +101,7 @@ export const AppDataProvider = ({ children }) => {
     isLoading: currentMonthLoading, 
     error: currentMonthError
   } = useCurrentMonth(
-    userIsAdmin ? undefined : userUID,
+    userIsAdmin ? undefined : userId,
     userIsAdmin ? 'admin' : 'user',
     user
   );
@@ -125,10 +125,9 @@ export const AppDataProvider = ({ children }) => {
   const { monthId, monthName, daysInMonth, startDate, endDate } = currentMonthFromData;
   const targetMonthId = selectedMonthId || monthId;
   
-  // Determine target user ID: use selectedUserId if admin and selected, otherwise use userUID
-  const targetUserId = userIsAdmin && globalSelectedUserId ? globalSelectedUserId : (userIsAdmin ? null : userUID);
+  // Determine target user ID: use selectedUserId if admin and selected, otherwise current user
+  const targetUserId = userIsAdmin && globalSelectedUserId ? globalSelectedUserId : (userIsAdmin ? null : userId);
   
-  // Build filters object for useTasks
   const tasksFilters = {
     selectedUserId: userIsAdmin ? globalSelectedUserId : null,
   };
@@ -140,7 +139,7 @@ export const AppDataProvider = ({ children }) => {
   } = useTasks(
     targetMonthId,
     userIsAdmin ? 'admin' : 'user',
-    userIsAdmin ? null : userUID,
+    userIsAdmin ? null : userId,
     tasksFilters
   );
   
@@ -184,36 +183,15 @@ export const AppDataProvider = ({ children }) => {
   
   const isCurrentMonth = !selectedMonthId || selectedMonthId === monthId;
   
-  // Permission checking functions - Role-based instead of explicit permissions
-  const canManageReporters = (userData) => {
-    // If user has explicit permissions array, use it
-    if (userData?.permissions && Array.isArray(userData.permissions)) {
-      // Check for has_permission (universal admin permission) or admin role
-      return userData.permissions.includes('has_permission') || userData.role === 'admin';
-    }
-    // Otherwise, use role-based permissions (admin can manage everything)
-    return userData?.role === 'admin' && isUserActive(userData);
-  };
-  
-  const canManageDeliverables = (userData) => {
-    // If user has explicit permissions array, use it
-    if (userData?.permissions && Array.isArray(userData.permissions)) {
-      // Check for has_permission (universal admin permission) or admin role
-      return userData.permissions.includes('has_permission') || userData.role === 'admin';
-    }
-    // Otherwise, use role-based permissions (admin can manage everything)
-    return userData?.role === 'admin' && isUserActive(userData);
-  };
-  
-  const canManageUsers = (userData) => {
-    // If user has explicit permissions array, use it
-    if (userData?.permissions && Array.isArray(userData.permissions)) {
-      // Check for has_permission (universal admin permission) or admin role
-      return userData.permissions.includes('has_permission') || userData.role === 'admin';
-    }
-    // Otherwise, use role-based permissions (admin can manage everything)
-    return userData?.role === 'admin' && isUserActive(userData);
-  };
+  // Pure RBAC: admin can manage reporters, deliverables, users
+  const canManageReporters = (userData) =>
+    userData?.role === 'admin' && isUserActive(userData);
+
+  const canManageDeliverables = (userData) =>
+    userData?.role === 'admin' && isUserActive(userData);
+
+  const canManageUsers = (userData) =>
+    userData?.role === 'admin' && isUserActive(userData);
   
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => {

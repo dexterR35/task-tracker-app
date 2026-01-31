@@ -8,8 +8,7 @@ import { CARD_SYSTEM } from '@/constants';
 import { handleValidationError } from '@/features/utils/errorHandling';
 import { prepareFormData, createFormSubmissionHandler, handleFormValidation } from '@/utils/formUtils';
 import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
-import TextField from '@/components/forms/components/TextField';
-import PasswordField from '@/components/forms/components/PasswordField';
+import { TextField, PasswordField } from '@/components/forms/components';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 
 const LoginIcon = Icons.buttons.login;

@@ -9,8 +9,8 @@ import { query } from '../config/db.js';
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
-const userSelect =
-  'id, email, name, role, is_active, color_set, created_by, occupation, office, manager_id, email_verified_at, created_at, updated_at';
+/** Auth user fields: identity, role, office, occupation, manager. password_hash in DB only, never returned. */
+const authUserSelect = 'id, email, name, role, is_active, office, occupation, manager_id';
 
 function toAuthUser(row) {
   if (!row) return null;
@@ -19,16 +19,10 @@ function toAuthUser(row) {
     email: row.email,
     name: row.name,
     role: row.role,
-    userUID: row.id,
     isActive: row.is_active,
-    colorSet: row.color_set,
-    createdBy: row.created_by,
-    occupation: row.occupation,
     office: row.office,
+    occupation: row.occupation,
     managerId: row.manager_id,
-    emailVerifiedAt: row.email_verified_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
   };
 }
 
@@ -61,7 +55,7 @@ export async function register(req, res, next) {
       [inserted.id]
     );
     const userResult = await query(
-      `SELECT ${userSelect} FROM users WHERE id = $1`,
+      `SELECT ${authUserSelect} FROM users WHERE id = $1`,
       [inserted.id]
     );
     const user = userResult.rows[0];
@@ -97,7 +91,7 @@ export async function login(req, res, next) {
     }
 
     const result = await query(
-      `SELECT ${userSelect}, password_hash FROM users WHERE email = $1`,
+      `SELECT ${authUserSelect}, password_hash FROM users WHERE email = $1`,
       [email.toLowerCase().trim()]
     );
 

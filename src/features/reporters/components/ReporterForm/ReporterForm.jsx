@@ -26,6 +26,8 @@ const ReporterForm = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
+    setValue,
     setError,
     clearErrors
   } = useForm({
@@ -102,7 +104,8 @@ const ReporterForm = ({
               field={field}
               register={register}
               errors={errors}
-              formValues={{}}
+              watch={watch}
+              setValue={setValue}
             />
           );
         })}

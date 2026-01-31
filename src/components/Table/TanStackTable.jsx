@@ -93,7 +93,6 @@ const TableControls = ({
   setGlobalFilter,
   onPageSizeChange,
   customFilter,
-  departmentFilter,
 }) => {
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const columnMenuRef = useRef(null);
@@ -133,13 +132,10 @@ const TableControls = ({
               register={() => ({})}
               errors={{}}
               setValue={(name, value) => setGlobalFilter(value)}
-              trigger={() => {}}
-              clearErrors={() => {}}
-              formValues={{ [`${tableType}-search`]: globalFilter ?? "" }}
+              watch={(name) => (name === `${tableType}-search` ? globalFilter ?? '' : '')}
             />
           </div>
         )}
-        {departmentFilter && <div className="w-52 shrink-0">{departmentFilter}</div>}
         {customFilter && <div className="flex-1 min-w-0">{customFilter}</div>}
       </div>
 
@@ -289,7 +285,6 @@ const TanStackTable = forwardRef(
 
       // Custom filter component
       customFilter = null,
-      departmentFilter = null, // Department filter to show after search
 
       // Custom filters state (for dynamic export detection)
       customFilters = {},
@@ -557,7 +552,6 @@ const TanStackTable = forwardRef(
                 setGlobalFilter={handleGlobalFilterChange}
                 onPageSizeChange={handlePageSizeChange}
                 customFilter={customFilter}
-                departmentFilter={departmentFilter}
               />
 
               <BulkActionsBar
