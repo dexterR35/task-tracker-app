@@ -1,9 +1,10 @@
 /**
- * Single dashboard page for all departments. Same layout: overview cards + board section.
+ * Single dashboard page for all departments. Same layout: overview cards + board (tabs + table).
  * Variant "design" = task board + task cards; variant "food" = order board + order cards.
  */
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { createColumnHelper } from "@tanstack/react-table";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
@@ -17,13 +18,29 @@ import {
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
-import BoardSection from "@/components/BoardSection";
 import Loader from "@/components/ui/Loader/Loader";
 import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
 import SectionHeader from "@/components/ui/SectionHeader";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
+import TanStackTable from "@/components/Table/TanStackTable";
 import DynamicDepartmentForm, { getDepartmentFormConfig } from "@/components/forms/DynamicDepartmentForm";
 import { DEPARTMENT_FORM_DEPARTMENT } from "@/components/forms/configs/formConstants";
 import { showError, showSuccess } from "@/utils/toast";
+
+const columnHelper = createColumnHelper();
+const BOARD_TAB_ACTIVE =
+  "px-3 py-1.5 rounded-md text-sm font-medium bg-indigo-600 text-white";
+const BOARD_TAB_INACTIVE =
+  "px-3 py-1.5 rounded-md text-sm font-medium bg-gray-100 dark:bg-gray-700 text-app hover:bg-gray-200 dark:hover:bg-gray-600";
+
+function toTanStackColumns(columns) {
+  return columns.map((col) =>
+    columnHelper.accessor(col.key, {
+      header: col.header,
+      cell: ({ row }) => col.render(row.original),
+    })
+  );
+}
 
 const TASK_COLUMNS = [
   { key: "title", header: "Title", render: (t) => t.title ?? "–" },
@@ -51,6 +68,29 @@ const ORDER_COLUMNS = [
       </span>
     ),
   },
+];
+
+/** Hardcoded board for current month when API returns none. */
+function getHardcodedBoardForMonth(year, month) {
+  return {
+    id: `demo-${year}-${String(month).padStart(2, "0")}`,
+    year,
+    month,
+    name: "Demo",
+  };
+}
+
+/** Hardcoded tasks for demo board (this month). */
+const HARDCODED_TASKS = [
+  { id: "demo-task-1", title: "Review design mockups", status: "in-progress", dueDate: new Date().toISOString().slice(0, 10) },
+  { id: "demo-task-2", title: "Update component library", status: "todo", dueDate: null },
+  { id: "demo-task-3", title: "Fix responsive layout", status: "done", dueDate: new Date(Date.now() - 86400000).toISOString().slice(0, 10) },
+];
+
+/** Hardcoded orders for demo board (this month). */
+const HARDCODED_ORDERS = [
+  { id: "demo-order-1", orderDate: new Date().toISOString().slice(0, 10), summary: "Team lunch – 4 people", status: "pending" },
+  { id: "demo-order-2", orderDate: new Date().toISOString().slice(0, 10), summary: "Coffee & pastries", status: "delivered" },
 ];
 
 const DASHBOARD_CONFIG = {
@@ -125,12 +165,21 @@ export default function DashboardPage({ variant = "design" }) {
       .then((data) => {
         if (cancelled) return;
         const list = data.boards ?? [];
-        setBoards(list);
-        setSelectedBoardId(list[0]?.id ?? null);
+        if (list.length === 0) {
+          const demoBoard = getHardcodedBoardForMonth(year, month);
+          setBoards([demoBoard]);
+          setSelectedBoardId(demoBoard.id);
+        } else {
+          setBoards(list);
+          setSelectedBoardId(list[0]?.id ?? null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setBoards([]);
-        if (!cancelled) setSelectedBoardId(null);
+        if (!cancelled) {
+          const demoBoard = getHardcodedBoardForMonth(year, month);
+          setBoards([demoBoard]);
+          setSelectedBoardId(demoBoard.id);
+        }
       })
       .finally(() => {
         if (!cancelled) setBoardsLoading(false);
@@ -138,10 +187,18 @@ export default function DashboardPage({ variant = "design" }) {
     return () => { cancelled = true; };
   }, [year, month, user?.departmentId, variant]);
 
-  // Fetch items for selected board
+  // Fetch items for selected board (or use hardcoded items for demo board)
+  const demoBoardId = getHardcodedBoardForMonth(year, month).id;
+  const isDemoBoard = selectedBoardId === demoBoardId;
+
   useEffect(() => {
     if (!selectedBoardId) {
       setItems([]);
+      return;
+    }
+    if (isDemoBoard) {
+      setItemsLoading(false);
+      setItems(variant === "food" ? HARDCODED_ORDERS : HARDCODED_TASKS);
       return;
     }
     let cancelled = false;
@@ -158,7 +215,7 @@ export default function DashboardPage({ variant = "design" }) {
         if (!cancelled) setItemsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [selectedBoardId, variant]);
+  }, [selectedBoardId, variant, isDemoBoard]);
 
   // Real-time: refetch items on socket event
   useEffect(() => {
@@ -231,6 +288,8 @@ export default function DashboardPage({ variant = "design" }) {
     });
   }, [variant, user, boards, items, users, isUserAdmin]);
 
+  const tableColumns = useMemo(() => toTanStackColumns(config.columns), [config.columns]);
+
   // Design needs AppData initialized
   if (variant === "design") {
     if (!appData || !appData.isInitialized) {
@@ -274,23 +333,80 @@ export default function DashboardPage({ variant = "design" }) {
         </div>
       </section>
 
-      <BoardSection
-        title={config.boardTitle}
-        boards={boards}
-        selectedBoardId={selectedBoardId}
-        onSelectBoard={setSelectedBoardId}
-        items={items}
-        itemsLoading={itemsLoading}
-        columns={config.columns}
-        emptyBoardsMessage={config.emptyBoardsMessage}
-        emptyItemsMessage={config.emptyItemsMessage}
-        loadingMessage={config.loadingMessage}
-        boardsLoading={boardsLoading}
-        addButtonLabel={config.addButtonLabel}
-        onAdd={() => setAddPanelOpen(true)}
-        exportButtonLabel="Export"
-        onExport={() => showError("Export coming soon")}
-      />
+      {/* Board – title, tabs, table */}
+      <section className="mb-6" aria-label={config.boardTitle}>
+        {boardsLoading && boards.length === 0 ? (
+          <>
+            <SectionHeader label={config.boardTitle} />
+            <div className="flex items-center justify-center min-h-[200px]">
+              <Loader size="md" text={config.loadingMessage} variant="spinner" />
+            </div>
+          </>
+        ) : (
+          <>
+            <SectionHeader label={config.boardTitle}>
+              <DynamicButton
+                onClick={() => setAddPanelOpen(true)}
+                variant="primary"
+                size="sm"
+                iconName="add"
+                iconPosition="left"
+                iconCategory="buttons"
+                className="!text-xs !px-3 !py-1.5"
+              >
+                {config.addButtonLabel}
+              </DynamicButton>
+              <DynamicButton
+                onClick={() => showError("Export coming soon")}
+                variant="secondary"
+                size="sm"
+                iconName="download"
+                iconPosition="left"
+                iconCategory="buttons"
+                className="!text-xs !px-3 !py-1.5"
+              >
+                Export
+              </DynamicButton>
+            </SectionHeader>
+
+            {boards.length === 0 ? (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-smallCard p-6 text-center text-app-subtle">
+                {config.emptyBoardsMessage}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-smallCard overflow-hidden">
+                <div className="flex gap-2 flex-wrap p-4 pb-0">
+                  {boards.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setSelectedBoardId(b.id)}
+                      className={
+                        selectedBoardId === b.id ? BOARD_TAB_ACTIVE : BOARD_TAB_INACTIVE
+                      }
+                    >
+                      {b.year}-{String(b.month).padStart(2, "0")}
+                      {b.name ? ` – ${b.name}` : ""}
+                    </button>
+                  ))}
+                </div>
+                <div className="p-4 pt-4">
+                  <TanStackTable
+                    data={items}
+                    columns={tableColumns}
+                    isLoading={itemsLoading}
+                    emptyMessage={config.emptyItemsMessage}
+                    showFilters={true}
+                    showColumnToggle={true}
+                    showPagination={true}
+                    pageSize={10}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
       <SlidePanel
         isOpen={addPanelOpen}

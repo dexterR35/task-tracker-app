@@ -176,6 +176,7 @@ const TanStackTable = ({
   enablePagination = true,
   enableColumnResizing = true,
   initialColumnVisibility = {},
+  emptyMessage = "No data yet.",
 }) => {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -291,7 +292,7 @@ const TanStackTable = ({
                 ) : (
                   <tr>
                     <td colSpan={table.getAllColumns().length} className="table-card-empty">
-                      {hasActiveFilters ? "No results for the current filters." : "No data yet."}
+                      {hasActiveFilters ? "No results for the current filters." : emptyMessage}
                     </td>
                   </tr>
                 )}

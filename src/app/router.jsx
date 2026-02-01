@@ -8,13 +8,13 @@ import { designRoutes } from "@/app/routes/designRoutes";
 import { foodRoutes } from "@/app/routes/foodRoutes";
 import Loader from "@/components/ui/Loader/Loader";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
-import HomePage from "@/pages/HomePage";
+import HomePage from "@/pages/user/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import UIShowcasePage from "@/pages/admin/UIShowcasePage";
-import DepartmentsPage from "@/pages/admin/DepartmentsPage";
-import NotFoundPage from "@/pages/errorPages/NotFoundPage";
-import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
+import DepartmentsPage from "@/pages/department/DepartmentsPage";
+import NotFoundPage from "@/pages/statusPages/NotFoundPage";
+import UnauthorizedPage from "@/pages/statusPages/UnauthorizedPage";
 
 
 const SimpleLoader = () => (

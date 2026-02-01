@@ -3,10 +3,10 @@
  */
 import React from "react";
 import { Navigate } from "react-router-dom";
-import DashboardPage from "@/pages/DashboardPage";
-import ProfilePage from "@/pages/ProfilePage";
-import ComingSoonPage from "@/pages/ComingSoonPage";
-import NotFoundPage from "@/pages/errorPages/NotFoundPage";
+import DashboardPage from "@/pages/user/DashboardPage";
+import ProfilePage from "@/pages/user/ProfilePage";
+import ComingSoonPage from "@/pages/statusPages/ComingSoonPage";
+import NotFoundPage from "@/pages/statusPages/NotFoundPage";
 
 export const designRoutes = [
   { path: "dashboard", element: <DashboardPage variant="design" /> },
