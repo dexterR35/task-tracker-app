@@ -17,6 +17,7 @@ import UsersPage from "@/pages/admin/UsersPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import UIShowcasePage from "@/pages/admin/UIShowcasePage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
+import ProfilePage from "@/pages/ProfilePage";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 
@@ -183,9 +184,9 @@ export const createRouter = () => {
           {
             path: "profile",
             element: (
-              <ErrorBoundary componentName="ComingSoonPage">
+              <ErrorBoundary componentName="ProfilePage">
                 <PageWrapper>
-                  <ComingSoonPage />
+                  <ProfilePage />
                 </PageWrapper>
               </ErrorBoundary>
             ),

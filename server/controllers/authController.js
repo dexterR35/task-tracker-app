@@ -14,6 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '10m';
 const REFRESH_TOKEN_EXPIRES_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS, 10) || 7;
 const REFRESH_TOKEN_COOKIE = process.env.REFRESH_TOKEN_COOKIE || 'refresh_token';
+const REFRESH_TOKEN_MAX_DEVICES = parseInt(process.env.REFRESH_TOKEN_MAX_DEVICES, 10) || 5;
 const isProduction = process.env.NODE_ENV === 'production';
 
 function addDays(date, days) {
@@ -48,8 +49,35 @@ const clearCookieOptions = () => ({
   maxAge: 0,
 });
 
-/** Create a refresh token; store hash in DB with session metadata. Returns raw token for cookie. */
+/** Delete expired refresh tokens (run when creating new tokens). */
+async function deleteExpiredRefreshTokens() {
+  await query('DELETE FROM refresh_tokens WHERE expires_at < NOW()');
+}
+
+/** Create a refresh token; store hash in DB with session metadata. Max REFRESH_TOKEN_MAX_DEVICES per user (oldest revoked). Returns raw token for cookie. */
 async function createRefreshToken(userId, req) {
+  await deleteExpiredRefreshTokens();
+
+  const countResult = await query(
+    'SELECT COUNT(*) AS c FROM refresh_tokens WHERE user_id = $1 AND expires_at > NOW()',
+    [userId]
+  );
+  const count = parseInt(countResult.rows[0]?.c ?? 0, 10);
+  if (count >= REFRESH_TOKEN_MAX_DEVICES) {
+    const toRemove = count - REFRESH_TOKEN_MAX_DEVICES + 1;
+    await query(
+      `DELETE FROM refresh_tokens WHERE id IN (
+        SELECT id FROM (
+          SELECT id FROM refresh_tokens
+          WHERE user_id = $1 AND expires_at > NOW()
+          ORDER BY COALESCE(last_used_at, created_at) ASC
+          LIMIT $2
+        ) old
+      )`,
+      [userId, toRemove]
+    );
+  }
+
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = hashRefreshToken(token);
   const expiresAt = addDays(new Date(), REFRESH_TOKEN_EXPIRES_DAYS);
@@ -188,14 +216,15 @@ export async function me(req, res, next) {
   }
 }
 
-/** POST /api/auth/refresh - HTTP-only cookie sent; validates against sessions (refresh_tokens) table; returns new access token */
+/** POST /api/auth/refresh - HTTP-only cookie sent; validates against sessions (refresh_tokens) table; returns new access token.
+ *  When no valid cookie/session: 200 with token/user null (avoids 401 noise on initial session check when not logged in). */
 export async function refresh(req, res, next) {
   try {
     const token = req.cookies?.[REFRESH_TOKEN_COOKIE];
     const userRow = await validateRefreshToken(token, req);
     if (!userRow) {
       authLogger.refreshFail(req, 'invalid_or_expired', 'REFRESH_INVALID');
-      return res.status(401).json({ error: 'Invalid or expired refresh token.', code: 'REFRESH_INVALID' });
+      return res.status(200).json({ token: null, user: null });
     }
     await revokeRefreshToken(token);
     const accessToken = jwt.sign(

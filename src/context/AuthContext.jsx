@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         if (userData && data?.token) {
           setToken(data.token);
           setUser(userData);
-          logger.log('Session restored from refresh token', { userId: userData.id });
+          logger.debug('Session restored from refresh token', { userId: userData.id });
         } else {
           setUser(null);
         }

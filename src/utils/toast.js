@@ -4,7 +4,7 @@ import CustomToastCard from '@/components/ui/Toast/CustomToastCard';
 
 // Toast options (react-hot-toast uses duration, position; see https://react-hot-toast.com/docs)
 const defaultOptions = {
-  position: 'top-right',
+  position: 'top-center',
   duration: 3000,
 };
 

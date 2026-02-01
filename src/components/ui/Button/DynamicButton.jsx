@@ -31,6 +31,7 @@ const DynamicButton = memo(function DynamicButton({
   onClick,
   disabled = false,
   loading = false,
+  isLoading: isLoadingProp, // alias for loading; do not pass to DOM
   icon: Icon,
   iconPosition = DEF.ICON_POSITION,
   iconName,
@@ -44,7 +45,7 @@ const DynamicButton = memo(function DynamicButton({
   ...props
 }) {
   const [localLoading, setLocalLoading] = useState(false);
-  const isLoading = loading || localLoading;
+  const isLoading = loading || isLoadingProp || localLoading;
   const isDisabled = disabled || isLoading;
 
   const getStyle = useCallback(() => {

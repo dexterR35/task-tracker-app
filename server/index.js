@@ -9,7 +9,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import pool from './config/db.js';
@@ -70,7 +70,8 @@ const authLimiter = rateLimit({
     if (email && typeof email === 'string') {
       return `email:${email.toLowerCase().trim()}`;
     }
-    return req.ip || req.socket?.remoteAddress || 'unknown';
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return ipKeyGenerator(ip);
   },
 });
 

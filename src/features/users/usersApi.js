@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { usersApi as api } from '@/app/api';
+import { usersApi as api, getSocket } from '@/app/api';
 import { useAuth } from '@/context/AuthContext';
 import { isAdmin } from '@/features/utils/authUtils';
 import { logger } from '@/utils/logger';
@@ -42,6 +42,23 @@ export const useUsers = () => {
       });
     return () => { cancelled = true; };
   }, [authLoading, user, userIsAdmin]);
+
+  // Real-time: merge server-emitted user:updated into list so Users table updates without refetch
+  useEffect(() => {
+    if (!userIsAdmin) return;
+    const socket = getSocket();
+    if (!socket) return;
+    const onUserUpdated = (updatedUser) => {
+      if (!updatedUser?.id) return;
+      setUsers((prev) =>
+        prev.some((u) => u.id === updatedUser.id)
+          ? prev.map((u) => (u.id === updatedUser.id ? { ...updatedUser } : u))
+          : prev
+      );
+    };
+    socket.on('user:updated', onUserUpdated);
+    return () => socket.off('user:updated', onUserUpdated);
+  }, [userIsAdmin]);
 
   return { users, isLoading: authLoading || isLoading, error };
 };

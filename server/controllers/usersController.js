@@ -136,7 +136,10 @@ export async function update(req, res, next) {
       );
       const user = result.rows[0];
       if (!user) return res.status(404).json({ error: 'User not found.' });
-      return res.json({ user: toUser(user) });
+      const payload = toUser(user);
+      const io = req.app.get('io');
+      if (io) io.emit('user:updated', payload);
+      return res.json({ user: payload });
     }
 
     if (userUpdates.length > 0) {
@@ -163,7 +166,10 @@ export async function update(req, res, next) {
     );
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'User not found.' });
-    res.json({ user: toUser(user) });
+    const payload = toUser(user);
+    const io = req.app.get('io');
+    if (io) io.emit('user:updated', payload);
+    res.json({ user: payload });
   } catch (err) {
     next(err);
   }
