@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
-import { APP_CONFIG, CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
+import { CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
 import logo from "@/assets/Logo4.webp";
 
 const SIDEBAR_ICON_SIZE = "w-3.5 h-3.5";
@@ -40,8 +40,8 @@ const Sidebar = () => {
   const items = NAVIGATION_CONFIG.ITEMS;
 
   return (
-    <nav className="flex h-full w-full flex-col bg-white dark:bg-primary" aria-label="Main navigation">
-      {/* Top: Logo + app name + office */}
+    <nav className="flex h-full w-full flex-col bg-white dark:bg-smallCard" aria-label="Main navigation">
+      {/* Top: Logo + app name */}
       <div className="shrink-0 px-1.5 py-2 pt-4">
         <Link
           to="/dashboard"
@@ -52,12 +52,12 @@ const Sidebar = () => {
             alt=""
             className="h-7 w-7 shrink-0 object-contain rounded"
           />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex flex-col">
             <span className="block truncate text-sm font-semibold tracking-tight text-app">
-              {APP_CONFIG.NAME}
+              XYNC
             </span>
-            <span className="block truncate text-[10px] font-medium uppercase tracking-wider text-app-muted mt-0.5">
-              Office: R.E.I
+            <span className="block truncate text-[10px] font-medium text-gray-500 dark:text-gray-400 tracking-tight">
+              Office R.E.I
             </span>
           </div>
         </Link>

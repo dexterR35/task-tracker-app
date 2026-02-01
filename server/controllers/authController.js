@@ -9,8 +9,17 @@ import { query } from '../config/db.js';
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
-/** Auth user fields: identity, role, office, occupation, manager. password_hash in DB only, never returned. */
-const authUserSelect = 'id, email, name, role, is_active, office, occupation, manager_id';
+/** Allowed email domains for login/auth (REI office only). */
+const ALLOWED_LOGIN_DOMAINS = ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'];
+
+function isAllowedEmailDomain(email) {
+  if (!email || typeof email !== 'string') return false;
+  const domain = email.toLowerCase().trim().split('@')[1];
+  return domain && ALLOWED_LOGIN_DOMAINS.includes(domain);
+}
+
+/** Auth user fields: identity, role, office, occupation, manager, gender. password_hash in DB only, never returned. */
+const authUserSelect = 'id, email, name, role, is_active, office, occupation, manager_id, gender';
 
 function toAuthUser(row) {
   if (!row) return null;
@@ -23,6 +32,7 @@ function toAuthUser(row) {
     office: row.office,
     occupation: row.occupation,
     managerId: row.manager_id,
+    gender: row.gender,
   };
 }
 
@@ -34,6 +44,12 @@ export async function register(req, res, next) {
     if (!email || !password || !name) {
       return res.status(400).json({
         error: 'Missing required fields: email, password, name',
+      });
+    }
+
+    if (!isAllowedEmailDomain(email)) {
+      return res.status(403).json({
+        error: 'Only office emails are allowed: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
       });
     }
 
@@ -87,6 +103,12 @@ export async function login(req, res, next) {
     if (!email || !password) {
       return res.status(400).json({
         error: 'Email and password are required',
+      });
+    }
+
+    if (!isAllowedEmailDomain(email)) {
+      return res.status(403).json({
+        error: 'Only office emails are allowed: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
       });
     }
 

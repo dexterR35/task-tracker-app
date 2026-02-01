@@ -13,8 +13,16 @@ export const useUsers = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const isAdmin = isUserAdmin(user);
 
   useEffect(() => {
+    if (authLoading || !user || !isAdmin) {
+      setUsers([]);
+      setError(null);
+      setIsLoading(authLoading);
+      return;
+    }
     let cancelled = false;
     setError(null);
     api
@@ -33,9 +41,9 @@ export const useUsers = () => {
         if (!cancelled) setIsLoading(false);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [authLoading, user, isAdmin]);
 
-  return { users, isLoading, error };
+  return { users, isLoading: authLoading || isLoading, error };
 };
 
 export const useUserById = (userId) => {

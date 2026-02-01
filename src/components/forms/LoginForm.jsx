@@ -53,9 +53,9 @@ const LoginForm = ({ onSuccess, className = "" }) => {
     showValidationError(errors);
   };
 
-  // Use blue color for login (professional, trust, primary)
+  // Top bar uses color_default from COLOR_HEX_MAP
   const cardColorHex = useMemo(
-    () => CARD_SYSTEM.COLOR_HEX_MAP.blue || "#467dfd",
+    () => CARD_SYSTEM.COLOR_HEX_MAP.color_default,
     []
   );
 

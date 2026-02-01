@@ -1,9 +1,9 @@
 
 export const APP_CONFIG = {
-  NAME: 'SYNC', // App name - change this to sync across all titles and meta tags
-  FULL_NAME: 'SYNC Task Management', // Full app name for titles
+  NAME: 'Xync', // App name – task tracker CRM dashboard
+  FULL_NAME: 'Xync – Task Tracker CRM ', // Full app name for titles
   VERSION: '1.0.0',
-  DESCRIPTION: 'A modern task tracking application with team collaboration and performance monitoring.',
+  DESCRIPTION: 'Task tracker CRM dashboard for reporting and analytics. Stay in sync.',
   COMPANY: 'REI',
   SUPPORT_EMAIL: 'support@REI.ro',
   DEFAULT_LOCALE: 'en-US', // US language
@@ -58,8 +58,10 @@ export const AUTH = {
     MANAGE_REPORTERS: 'manage_reporters',
     MANAGE_DELIVERABLES: 'manage_deliverables',
   },
-  EMAIL_DOMAIN: 'netbet.ro',
-  EMAIL_DOMAIN2: 'rei.com',
+  /** Allowed email domains for login (REI office only) */
+  ALLOWED_LOGIN_DOMAINS: ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'],
+  EMAIL_DOMAIN: 'netbet.com',
+  EMAIL_DOMAIN2: 'rei-d-services.com',
   EMAIL_DOMAIN3: 'gimo.co.uk',
 };
 
@@ -70,14 +72,17 @@ export const AUTH = {
 export const VALIDATION = {
   PATTERNS: {
     ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
-    NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(netbet\.[a-zA-Z0-9.-]+|gimo\.co\.uk)$/,
+    /** REI office login only: @rei-d-services.com, @netbet.com, @netbet.ro, @gimo.co.uk */
+    OFFICE_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
+    NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
     JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
     URL: /^https?:\/\/.+/,
     PHONE: /^\+?[\d\s\-()]+$/,
   },
   MESSAGES: {
     REQUIRED: 'This field is required',
-    NETBET_EMAIL: 'Please enter a valid email address (@netbet.* or @gimo.co.uk)',
+    OFFICE_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
+    NETBET_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
     JIRA_URL_FORMAT: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}',
     MIN_LENGTH: (min) => `Must be at least ${min} characters`,
     MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
@@ -210,19 +215,13 @@ export const NAVIGATION_CONFIG = {
       color: "gray",
       adminOnly: true,
       subItems: [
-        { name: "Users", href: "/users" },
-        { name: "UI Showcase", href: "/ui-showcase" },
+        { name: "Users", href: "/settings/users" },
+        { name: "UI Showcase", href: "/settings/ui-showcase" },
       ],
     },
   ],
   /** Bottom account section (e.g. Account settings collapsible) - empty; admin pages are under Dashboard */
   ACCOUNT_ITEMS: [],
-  DEPARTMENT: {
-    name: "Design",
-    subtitle: "Department",
-    icon: "settings",
-    color: "color_default",
-  },
 };
 
 // ============================================================================
@@ -239,14 +238,14 @@ export const CARD_SYSTEM = {
     blue: '#1177ff',      // Blue-600 - Professional, trust, primary
     purple: '#0fc9ce',    // Violet-600 - Royal, premium, creative
     crimson: '#DC143C',   // Red-600 - Authority, admin, critical
-    amber: '#ff9e08',     // Amber-500 - Warning, attention, caution
+    amber: '#f68700',     // Amber-500 - Warning, attention, caution
     pink: '#E50046',      // Pink-600 - AI models, feminine, creative
     red: '#EF4444',       // Red-500 - Error, danger, delete
     yellow: '#d3c300',    // Yellow-400 - Bright, optimistic, highlight
     gray: '#64748B',      // Slate-500 - Neutral, disabled, subtle
     orange: '#F25912',
     soft_purple:"#ff9e08",    // Orange-500 - Product, warning, energy
-    color_default: '#E50046',
+    color_default: '#312e81',
     select_badge: '#00d8de', // C2E2FA- Selected badges in cards and forms
     filter_color: '#00418d', // Blue-600 - Primary blue - Default color for UI elements
     dark_gray: '#252a3c', // Slate-600 - Darker gray for better contrast
@@ -414,7 +413,8 @@ export const ROUTES = {
 
   // Protected routes
   DASHBOARD: '/dashboard',
-  USERS: '/users',
+  USERS: '/settings/users',
+  UI_SHOWCASE: '/settings/ui-showcase',
   PREVIEW_MONTH: '/preview/:monthId',
   PROFILE: '/profile',
 };

@@ -14,7 +14,7 @@ export const LOGIN_FORM_FIELDS = [
     type: "email",
     label: "Email Address",
     required: true,
-    placeholder: "Enter your email (@netbet.* or @gimo.co.uk)",
+    placeholder: "Enter your email",
     autoComplete: "email"
   },
   {
@@ -33,8 +33,8 @@ export const LOGIN_FORM_FIELDS = [
 
 export const loginSchema = Yup.object().shape({
   email: emailFieldWithPattern(
-    VALIDATION.PATTERNS.NETBET_EMAIL,
-    VALIDATION.MESSAGES.NETBET_EMAIL
+    VALIDATION.PATTERNS.OFFICE_EMAIL,
+    VALIDATION.MESSAGES.OFFICE_EMAIL
   ),
   password: passwordField(6)
 });

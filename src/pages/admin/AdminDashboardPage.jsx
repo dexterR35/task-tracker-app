@@ -22,6 +22,10 @@ const AdminDashboardPage = () => {
     isInitialized,
   } = appData || {};
 
+  const handleAddTask = () => {
+    showError("Add task coming soon");
+  };
+
   const handleExport = () => {
     showError("Export coming soon");
   };
@@ -99,11 +103,23 @@ const AdminDashboardPage = () => {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <DynamicButton
+            onClick={handleAddTask}
+            variant="primary"
+            size="sm"
+            iconName="add"
+            iconPosition="left"
+            iconCategory="buttons"
+            className="!text-xs !px-3 !py-1.5"
+          >
+            Add Task
+          </DynamicButton>
+          <DynamicButton
             onClick={handleExport}
             variant="secondary"
             size="sm"
             iconName="download"
             iconPosition="left"
+            iconCategory="buttons"
             className="!text-xs !px-3 !py-1.5"
           >
             Export

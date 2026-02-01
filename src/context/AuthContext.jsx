@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setIsLoading(false);
 
-      return { success: true };
+      return { success: true, user: userData };
     } catch (err) {
       logger.error('Login error:', err);
       setError(err.message || 'Login failed');

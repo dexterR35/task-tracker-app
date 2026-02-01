@@ -43,6 +43,7 @@ The server uses the `pg` pool in `server/config/db.js`, which reads `DATABASE_UR
 │ avatar_url        VARCHAR(500)  nullable (URL to image, e.g. cloud storage)
 │ manager_id        UUID          nullable, REFERENCES users(id)
 │ email_verified_at TIMESTAMPTZ   nullable
+│ gender            VARCHAR(10)   nullable, CHECK (male | female)
 │ created_at        TIMESTAMPTZ   DEFAULT NOW()
 │ updated_at        TIMESTAMPTZ   DEFAULT NOW()
 ├─────────────────────────────────────────────────────────────────┤

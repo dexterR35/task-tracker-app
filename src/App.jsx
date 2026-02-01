@@ -1,10 +1,7 @@
-
 import { useMemo } from 'react';
 import { RouterProvider } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from 'react-hot-toast';
 import createRouter from '@/app/router';
-import { AuthProvider } from '@/context/AuthContext';
 import { DarkModeProvider } from '@/context/DarkModeProvider';
 import { AppDataProvider } from '@/context/AppDataContext';
 import ErrorBoundary from '@/components/layout/ErrorBoundary';
@@ -26,24 +23,14 @@ const App = () => {
   return (
     <ErrorBoundary>
       <DarkModeProvider>
-        <AuthProvider>
-          <AppDataProvider>
-            <RouterWrapper />
-            <ToastContainer 
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              className="toast-container"
-              style={{ zIndex: 9999 }}
-            />
+        <AppDataProvider>
+          <RouterWrapper />
+          <Toaster
+            position="top-right"
+            toastOptions={{ duration: 3000 }}
+            containerStyle={{ zIndex: 9999 }}
+          />
           </AppDataProvider>
-        </AuthProvider>
       </DarkModeProvider>
     </ErrorBoundary>
   );

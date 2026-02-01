@@ -6,7 +6,7 @@ import TopNavbar from "@/components/layout/navigation/TopNavbar";
 const AppLayout = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-primary">
-      <aside className="z-40 flex h-full w-44 shrink-0 flex-col overflow-hidden bg-white dark:bg-smallCard">
+      <aside className="z-40 flex h-full w-52 shrink-0 flex-col overflow-hidden bg-white dark:bg-smallCard">
         <Sidebar />
       </aside>
 

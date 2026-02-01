@@ -194,7 +194,7 @@ export const createRouter = () => {
           // ADMIN-ONLY ROUTES (Admin role required)
           // ========================================
           {
-            path: "users",
+            path: "settings/users",
             element: (
               <AdminRoute>
                 <ErrorBoundary componentName="UsersPage">
@@ -322,10 +322,10 @@ export const createRouter = () => {
           },
           {
             path: "settings",
-            element: <Navigate to="/users" replace />,
+            element: <Navigate to="/settings/users" replace />,
           },
           {
-            path: "ui-showcase",
+            path: "settings/ui-showcase",
             element: (
               <AdminRoute>
                 <ErrorBoundary componentName="UIShowcasePage">

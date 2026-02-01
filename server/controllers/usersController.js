@@ -5,7 +5,7 @@
 import { query } from '../config/db.js';
 
 const userColumns =
-  'id, email, name, username, role, is_active, color_set, created_by, occupation, office, phone, avatar_url, manager_id, email_verified_at, created_at, updated_at';
+  'id, email, name, username, role, is_active, color_set, created_by, occupation, office, phone, avatar_url, manager_id, email_verified_at, gender, created_at, updated_at';
 
 function toUser(row) {
   if (!row) return null;
@@ -24,6 +24,7 @@ function toUser(row) {
     avatarUrl: row.avatar_url,
     managerId: row.manager_id,
     emailVerifiedAt: row.email_verified_at,
+    gender: row.gender,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -80,6 +81,7 @@ export async function update(req, res, next) {
       'role',
       'manager_id',
       'email_verified_at',
+      'gender',
     ];
     if (!isAdmin) {
       allowed.splice(allowed.indexOf('is_active'), 1);
@@ -139,6 +141,13 @@ export async function update(req, res, next) {
       }
       updates.push(`role = $${pos++}`);
       values.push(body.role);
+    }
+    if (body.gender !== undefined) {
+      if (body.gender !== null && body.gender !== '' && !['male', 'female'].includes(body.gender)) {
+        return res.status(400).json({ error: 'Invalid gender. Use male or female.' });
+      }
+      updates.push(`gender = $${pos++}`);
+      values.push(body.gender === '' ? null : body.gender);
     }
 
     if (updates.length === 0) {

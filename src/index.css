@@ -98,10 +98,10 @@
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full pl-0 pr-4 py-2.5 bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-0 focus:border-blue-default dark:focus:border-blue-default rounded-none transition-colors;
+    @apply w-full pl-3 pr-4 py-2.5 bg-transparent border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-0 focus:border-blue-default dark:focus:border-blue-default rounded-md transition-colors;
   }
   select {
-    @apply pr-8 cursor-pointer appearance-none bg-no-repeat bg-right pr-8;
+    @apply pr-8 cursor-pointer appearance-none bg-no-repeat bg-right;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
     background-size: 1.25rem;
   }
@@ -563,6 +563,109 @@
   .toast-container .Toastify__toast-icon {
     @apply text-gray-900 dark:text-white;
   }
+
+  /* Umbrella Corporation logo (Resident Evil) – pure CSS */
+  .umbrella-corp-logo {
+    --umbrella-size: 120px;
+    --umbrella-red: #c41e3a;
+    --umbrella-white: #ffffff;
+    width: var(--umbrella-size);
+    height: calc(var(--umbrella-size) * 1.5);
+    position: relative;
+    display: inline-block;
+  }
+
+  .umbrella-corp-canopy {
+    width: var(--umbrella-size);
+    height: var(--umbrella-size);
+    border-radius: 50%;
+    background: conic-gradient(
+      from -90deg at 50% 50%,
+      var(--umbrella-red) 0deg 50deg,
+      var(--umbrella-white) 50deg 60deg,
+      var(--umbrella-red) 60deg 110deg,
+      var(--umbrella-white) 110deg 120deg,
+      var(--umbrella-red) 120deg 170deg,
+      var(--umbrella-white) 170deg 180deg,
+      var(--umbrella-red) 180deg 230deg,
+      var(--umbrella-white) 230deg 240deg,
+      var(--umbrella-red) 240deg 290deg,
+      var(--umbrella-white) 290deg 300deg,
+      var(--umbrella-red) 300deg 350deg,
+      var(--umbrella-white) 350deg 360deg
+    );
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .umbrella-corp-center {
+    width: calc(var(--umbrella-size) * 0.18);
+    height: calc(var(--umbrella-size) * 0.18);
+    border-radius: 50%;
+    background: var(--umbrella-white);
+    position: absolute;
+    top: calc(var(--umbrella-size) * 0.41);
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: inset 0 0 0 2px var(--umbrella-red);
+  }
+
+  .umbrella-corp-stem {
+    position: absolute;
+    top: calc(var(--umbrella-size) * 0.98);
+    left: 50%;
+    width: calc(var(--umbrella-size) * 0.06);
+    height: calc(var(--umbrella-size) * 0.12);
+    background: var(--umbrella-red);
+    transform: translateX(-50%);
+  }
+
+  .umbrella-corp-handle {
+    position: absolute;
+    top: calc(var(--umbrella-size) * 1.08);
+    left: 50%;
+    width: calc(var(--umbrella-size) * 0.35);
+    height: calc(var(--umbrella-size) * 0.38);
+    border-left: calc(var(--umbrella-size) * 0.055) solid var(--umbrella-red);
+    border-bottom: calc(var(--umbrella-size) * 0.055) solid var(--umbrella-red);
+    border-radius: 0 0 0 100%;
+    transform: translateX(-18%);
+    box-sizing: border-box;
+  }
+}
+
+/* Custom toast card enter/leave (react-hot-toast) */
+@keyframes custom-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes custom-toast-leave {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.animate-custom-enter {
+  animation: custom-toast-enter 0.2s ease-out forwards;
+}
+
+.animate-custom-leave {
+  animation: custom-toast-leave 0.15s ease-in forwards;
 }
 
 

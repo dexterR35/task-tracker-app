@@ -1,10 +1,16 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "@/components/forms/LoginForm";
+import { showCustomToast } from "@/utils/toast";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const onSuccess = () => {
+  const onSuccess = (result) => {
+    const name = result?.user?.name || result?.user?.email || "User";
+    showCustomToast({
+      name,
+      message: "Welcome! Greetings.",
+    });
     navigate("/dashboard", { replace: true });
   };
 

@@ -1,53 +1,49 @@
-import { toast } from 'react-toastify';
+import React from 'react';
+import toast from 'react-hot-toast';
+import CustomToastCard from '@/components/ui/Toast/CustomToastCard';
 
-// Toast configuration
-export const toastConfig = {
-  position: "top-right",
-  autoClose: 3000,
-  hideProgressBar: false,
-  closeOnClick: true,
-  pauseOnHover: false, // Don't pause on hover
-  draggable: true,
-  progress: undefined,
-  theme: "light",
+// Toast options (react-hot-toast uses duration, position; see https://react-hot-toast.com/docs)
+const defaultOptions = {
+  position: 'top-right',
+  duration: 3000,
 };
 
-// Generic toast function that accepts an object with type, title, message, and duration
+// Generic toast by type
 export const showToast = ({ type = 'info', title, message, duration = 3000, ...options } = {}) => {
   const toastMessage = title ? `${title}: ${message}` : message;
+  const opts = { ...defaultOptions, duration, ...options };
 
   switch (type.toLowerCase()) {
     case 'success':
-      return toast.success(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+      return toast.success(toastMessage, opts);
     case 'error':
-      return toast.error(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+      return toast.error(toastMessage, opts);
     case 'warning':
-      return toast.warning(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+      return toast(toastMessage, { ...opts, icon: '⚠️' });
     case 'info':
     default:
-      return toast.info(toastMessage, { ...toastConfig, autoClose: duration, ...options });
+      return toast(toastMessage, opts);
   }
 };
 
-// Toast types
 export const showSuccess = (message, options = {}) => {
-  return toast.success(message, { ...toastConfig, ...options });
+  return toast.success(message, { ...defaultOptions, ...options });
 };
 
 export const showError = (message, options = {}) => {
-  return toast.error(message, { ...toastConfig, ...options });
+  return toast.error(message, { ...defaultOptions, ...options });
 };
 
 export const showWarning = (message, options = {}) => {
-  return toast.warning(message, { ...toastConfig, ...options });
+  return toast(message, { ...defaultOptions, icon: '⚠️', ...options });
 };
 
 export const showInfo = (message, options = {}) => {
-  return toast.info(message, { ...toastConfig, ...options });
+  return toast(message, { ...defaultOptions, ...options });
 };
 
 export const showLoading = (message, options = {}) => {
-  return toast.loading(message, { ...toastConfig, ...options });
+  return toast.loading(message, { ...defaultOptions, ...options });
 };
 
 export const dismissToast = (toastId) => {
@@ -58,50 +54,47 @@ export const dismissAll = () => {
   toast.dismiss();
 };
 
-// Auth-specific toast helpers
+// Auth-specific
 export const showAuthSuccess = (message) => {
-  return showSuccess(message, { autoClose: 3000 });
+  return showSuccess(message, { duration: 3000 });
 };
 
 export const showAuthError = (message) => {
-  return showError(message, { autoClose: 5000 });
+  return showError(message, { duration: 5000 });
 };
 
 export const showWelcomeMessage = (userName) => {
-  const message = `Welcome, ${userName}! 👋`;
-
-  return showSuccess(message, {
-    autoClose: 3000, // Longer duration for welcome message
-    position: "top-center",
-    pauseOnHover: false // Ensure it doesn't pause
+  return showSuccess(`Welcome, ${userName}! 👋`, {
+    duration: 3000,
+    position: 'top-center',
   });
 };
 
 export const showLogoutSuccess = () => {
-  return showSuccess("Successfully logged out", { autoClose: 2000 });
+  return showSuccess('Successfully logged out', { duration: 2000 });
 };
 
 export const showReauthSuccess = () => {
-  return showSuccess("Reauthentication successful", { autoClose: 3000 });
+  return showSuccess('Reauthentication successful', { duration: 3000 });
 };
 
 export const showReauthError = (message) => {
-  return showError(message || "Reauthentication failed", { autoClose: 5000 });
+  return showError(message || 'Reauthentication failed', { duration: 5000 });
 };
 
-// Standardized toast patterns for common operations
+// Operation helpers
 export const showOperationSuccess = (operation, resource = 'item') => {
-  return showSuccess(`${operation} ${resource} successfully!`, { autoClose: 3000 });
+  return showSuccess(`${operation} ${resource} successfully!`, { duration: 3000 });
 };
 
 export const showOperationError = (operation, resource = 'item', error = '') => {
   const message = error || `Failed to ${operation} ${resource}. Please try again.`;
-  return showError(message, { autoClose: 5000 });
+  return showError(message, { duration: 5000 });
 };
 
 export const showValidationError = (errors) => {
   const message = `Validation failed: ${Object.keys(errors).join(', ')}`;
-  return showError(message, { autoClose: 4000 });
+  return showError(message, { duration: 4000 });
 };
 
 export const showPermissionError = (action, resource = 'resource') => {
@@ -109,11 +102,33 @@ export const showPermissionError = (action, resource = 'resource') => {
 };
 
 export const showNetworkError = () => {
-  return showError("Network error: Please check your connection and try again", {
-    autoClose: 6000
+  return showError('Network error: Please check your connection and try again', {
+    duration: 6000,
   });
 };
 
-export const showLoadingToast = (message = "Loading...") => {
-  return showLoading(message, { autoClose: false });
+export const showLoadingToast = (message = 'Loading...') => {
+  return showLoading(message, { duration: Infinity });
 };
+
+// Custom card toast (avatar + name + message + Close button). Auto-closes after 5s; user can close earlier.
+export const showCustomToast = (
+  { name = 'Notification', message = '', avatarSrc, closeLabel, accentClass } = {},
+  options = {}
+) => {
+  return toast.custom(
+    (t) =>
+      React.createElement(CustomToastCard, {
+        t,
+        name,
+        message,
+        avatarSrc,
+        closeLabel,
+        accentClass,
+      }),
+    { duration: 3500, ...options }
+  );
+};
+
+// Export for components that need Toaster default options (optional)
+export const toastConfig = defaultOptions;

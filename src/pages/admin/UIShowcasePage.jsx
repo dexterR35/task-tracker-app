@@ -30,6 +30,7 @@ import {
   SimpleDateField,
 } from "@/components/forms/components";
 import { Icons } from "@/components/icons";
+import UmbrellaLogo from "@/components/ui/UmbrellaLogo";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { CARD_SYSTEM, FORM_OPTIONS } from "@/constants";
 
@@ -61,6 +62,7 @@ import {
   showError,
   showWarning,
   showInfo,
+  showCustomToast,
 } from "@/utils/toast";
 
 // Mock data for table
@@ -177,6 +179,7 @@ const SECTION_IDS = {
   TOASTS: "toasts",
   TYPOGRAPHY: "typography",
   GAMIFICATION: "gamification",
+  UMBRELLA_LOGO: "umbrellalogo",
 };
 
 // Gamification: levels with funny names, XP calculation
@@ -221,6 +224,7 @@ const SECTION_META = [
   [SECTION_IDS.TOASTS, "Toasts", "Success error warning info notifications"],
   [SECTION_IDS.TYPOGRAPHY, "Typography", "Headings paragraph labels"],
   [SECTION_IDS.GAMIFICATION, "Gamification", "Achievement badge XP level progress bar popup"],
+  [SECTION_IDS.UMBRELLA_LOGO, "Umbrella Logo", "Resident Evil Umbrella Corporation CSS logo"],
 ];
 
 export default function UIShowcasePage() {
@@ -587,7 +591,7 @@ export default function UIShowcasePage() {
           <div className="flex flex-wrap gap-4">
             <Tooltip content="This is a simple tooltip">
               <DynamicButton variant="outline" size="sm">
-                Hover me
+                Tooltip
               </DynamicButton>
             </Tooltip>
             <Tooltip
@@ -608,7 +612,7 @@ export default function UIShowcasePage() {
           id={SECTION_IDS.TOASTS}
           fillHeight
           title="Toasts"
-          description="Notifications (react-toastify) — click to trigger"
+          description="Notifications (react-hot-toast) — click to trigger"
         >
           <div className="flex flex-wrap gap-2">
             <DynamicButton variant="success" size="sm" onClick={() => showSuccess("Action completed successfully!")}>
@@ -622,6 +626,18 @@ export default function UIShowcasePage() {
             </DynamicButton>
             <DynamicButton variant="primary" size="sm" onClick={() => showInfo("Here is some information.")}>
               Info
+            </DynamicButton>
+            <DynamicButton
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                showCustomToast({
+                  name: "Emilia Gates",
+                  message: "Sure! 8:30pm works great!",
+                })
+              }
+            >
+              Custom card
             </DynamicButton>
           </div>
         </ShowcaseSection>
@@ -779,6 +795,20 @@ export default function UIShowcasePage() {
         </ShowcaseSection>
         )}
       </div>
+      )}
+
+      {visibleSectionIds.has(SECTION_IDS.UMBRELLA_LOGO) && (
+        <ShowcaseSection
+          id={SECTION_IDS.UMBRELLA_LOGO}
+          title="Umbrella Corporation logo"
+          description="Resident Evil — pure CSS (canopy, center cap, handle)"
+        >
+          <div className="flex flex-wrap items-end gap-8 p-6 bg-gray-100 dark:bg-gray-800/50 rounded-lg">
+            <UmbrellaLogo size={80} />
+            <UmbrellaLogo size={120} />
+            <UmbrellaLogo size={160} />
+          </div>
+        </ShowcaseSection>
       )}
 
       {(visibleSectionIds.has(SECTION_IDS.TYPOGRAPHY) || visibleSectionIds.has(SECTION_IDS.ICONS)) && (

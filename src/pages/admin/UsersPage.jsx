@@ -2,6 +2,9 @@ import React, { useMemo } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { getUserColumns } from "@/components/Table/tableColumns.jsx";
 import TanStackTable from "@/components/Table/TanStackTable";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { showInfo } from "@/utils/toast";
+
 const UsersPage = () => {
   const { users, error, isLoading, canManageUsers, user } = useAppDataContext();
 
@@ -45,12 +48,27 @@ const UsersPage = () => {
     );
   }
 
+  const handleAddUser = () => {
+    showInfo("Users can be manually added. Contact admin.");
+  };
+
   return (
     <div>
-      <div className="mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Manage user accounts and permissions
         </p>
+        <DynamicButton
+          variant="primary"
+          size="sm"
+          iconName="add"
+          iconPosition="left"
+          iconCategory="buttons"
+          onClick={handleAddUser}
+          className="!text-xs !px-3 !py-1.5 shrink-0"
+        >
+          Add User
+        </DynamicButton>
       </div>
       <TanStackTable
         data={enrichedUsers}
