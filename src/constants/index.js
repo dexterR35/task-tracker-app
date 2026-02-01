@@ -207,6 +207,7 @@ export const NAVIGATION_CONFIG = {
       adminOnly: true,
       subItems: [
         { name: "Users", href: "/users" },
+        { name: "UI Showcase", href: "/ui-showcase" },
       ],
     },
   ],

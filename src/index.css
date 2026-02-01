@@ -68,7 +68,12 @@
   --color-blue-default: #2a9df4;
   --color-blue-dark: #1d2a4b;
   --color-text-primary: #111827;
-  --color-text-white: #ffffff; 
+  --color-text-white: #ffffff;
+  /* Button/Avatar – used by BUTTON_SYSTEM and Avatar gradient */
+  --color-btn-primary: #E50046;
+  --color-btn-secondary: #c10f29;
+  --color-btn-warning: #eb2743;
+  --color-btn-info: #2a9df4;
 }
 
 @layer base {
@@ -79,9 +84,6 @@
   button {
     @apply cursor-pointer;
   }
-h5 {
-  @apply text-xs uppercase tracking-wide truncate;
-}
   form select option {
     @apply uppercase;
   }
@@ -98,7 +100,12 @@ h5 {
     @apply w-full pl-0 pr-4 py-2.5 bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-0 focus:border-blue-default dark:focus:border-blue-default rounded-none transition-colors;
   }
   select {
-    @apply pr-8;
+    @apply pr-8 cursor-pointer appearance-none bg-no-repeat bg-right pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-size: 1.25rem;
+  }
+  select:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232a9df4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
   }
   input.error,
   select.error,
@@ -113,14 +120,6 @@ h5 {
   [class*="error"] select,
   [class*="error"] textarea {
     @apply border-red-error dark:border-red-error;
-  }
-  select {
-    @apply cursor-pointer appearance-none bg-no-repeat bg-right pr-8;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-    background-size: 1.25rem;
-  }
-  select:focus {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232a9df4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
   }
 
   .searchable-select-wrap {
@@ -158,8 +157,9 @@ h5 {
   ::placeholder {
     @apply text-gray-500;
   }
-  td a,td  {
-    @apply dark:!text-gray-50
+  td a,
+  td {
+    @apply dark:!text-gray-50;
   }
 
   input[type="checkbox"] {
@@ -179,7 +179,7 @@ h5 {
     @apply font-semibold text-gray-900 dark:text-gray-200 mb-0 text-sm;
   }
   h5 {
-    @apply font-semibold text-gray-800 dark:text-gray-400 mb-0 text-xs;
+    @apply text-xs font-semibold uppercase tracking-wide truncate text-gray-800 dark:text-gray-400 mb-0;
   }
 
   .error-message {
@@ -347,10 +347,6 @@ h5 {
     @apply flex items-center justify-between gap-4 pt-4 mt-4 border-t border-gray-100 dark:border-gray-700/40;
   }
 
-  .table-card-empty {
-    @apply py-12 text-center text-gray-500 dark:text-gray-400;
-  }
-
   /* Table – single source for sizes/labels (change here = all tables) */
   .table-cell-text {
     font-size: 0.8125rem; /* 13px – row/cell text */
@@ -408,6 +404,7 @@ h5 {
 
   .table-card-empty {
     font-size: 0.8125rem;
+    @apply py-12 text-center text-gray-500 dark:text-gray-400;
   }
 
   .table-controls-search {

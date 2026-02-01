@@ -15,6 +15,7 @@ import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import UIShowcasePage from "@/pages/admin/UIShowcasePage";
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
@@ -282,6 +283,18 @@ export const createRouter = () => {
           {
             path: "settings",
             element: <Navigate to="/users" replace />,
+          },
+          {
+            path: "ui-showcase",
+            element: (
+              <AdminRoute>
+                <ErrorBoundary componentName="UIShowcasePage">
+                  <PageWrapper>
+                    <UIShowcasePage />
+                  </PageWrapper>
+                </ErrorBoundary>
+              </AdminRoute>
+            ),
           },
           {
             path: "preview/:monthId",
