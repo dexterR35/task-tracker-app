@@ -4,50 +4,13 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@import "@fontsource/inter/300.css";
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
 @import "@fontsource/inter/700.css";
-
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("@fontsource/inter/files/inter-latin-400-normal.woff2")
-    format("woff2");
-
-}
-
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("@fontsource/inter/files/inter-latin-500-normal.woff2")
-    format("woff2");
- 
-}
-
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("@fontsource/inter/files/inter-latin-600-normal.woff2")
-    format("woff2");
- 
-}
-
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("@fontsource/inter/files/inter-latin-700-normal.woff2")
-    format("woff2");
-
-}
+@import "@fontsource/inter/800.css";
+@import "@fontsource/inter/900.css";
 
 @theme {
 
@@ -79,7 +42,8 @@
 
 @layer base {
   body {
-    @apply [font-family:'Inter',sans-serif] bg-white dark:bg-primary transition-colors duration-300;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    @apply bg-white dark:bg-primary transition-colors duration-300;
   }
 
   button {
@@ -264,57 +228,208 @@
     opacity: 1;
   }
 
-  /* Credit-card style dashboard cards – professional, no shadow/hover */
+  /* Dashboard cards – modern, detailed typography, no hover */
   .card-credit {
-    @apply relative bg-white dark:bg-smallCard overflow-hidden rounded-xl border border-gray-200/80 dark:border-gray-700/60;
-    min-height: 8.5rem;
-  }
-
-  .card-credit-strip {
-    height: 4px;
-    width: 100%;
+    @apply relative bg-white dark:bg-smallCard overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700;
+    min-height: 10rem;
   }
 
   .card-credit-strip-left {
-    @apply absolute left-0 top-0 bottom-0;
-    width: 3px;
-    height: auto;
-    border-radius: 3px 0 0 3px;
+    @apply absolute left-0 top-0 bottom-0 w-1 rounded-l-lg;
   }
 
   .card-credit-inner {
-    @apply flex flex-col pl-5 pr-5 pt-4 pb-4 relative;
-    min-height: 8.5rem;
+    @apply flex flex-col px-4 py-4 relative;
+    min-height: 10rem;
+  }
+
+  .card-credit-header {
+    @apply flex items-stretch justify-between gap-3 m-0;
   }
 
   .card-credit-label {
-    @apply text-[11px] font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase mb-1;
-    letter-spacing: 0.06em;
+    @apply text-sm font-medium text-gray-600 dark:text-gray-400 truncate;
+    line-height: 1.3;
   }
 
   .card-credit-value {
-    @apply text-2xl font-semibold tracking-tight text-gray-900 dark:text-white;
-    letter-spacing: -0.02em;
+    font-size: 2rem;
+    font-weight: 700;
+    @apply text-gray-900 dark:text-white tracking-tight;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+
+  .card-credit-divider {
+    @apply mt-3 mb-2 h-px bg-gray-100 dark:bg-gray-700/80;
   }
 
   .card-credit-info {
-    @apply mt-3 space-y-1;
+    @apply space-y-1.5;
   }
 
   .card-credit-info-row {
-    @apply flex items-baseline justify-between gap-2 text-[11px];
+    @apply flex items-baseline justify-between gap-3 text-sm font-medium;
+    line-height: 1.4;
   }
 
   .card-credit-info-label {
-    @apply text-gray-500 dark:text-gray-400 font-medium;
+    @apply text-sm font-medium text-gray-600 dark:text-gray-400 shrink-0 truncate;
   }
 
   .card-credit-info-value {
-    @apply text-gray-800 dark:text-gray-200 font-medium truncate;
+    @apply text-sm font-medium text-gray-900 dark:text-gray-100 truncate text-right;
   }
 
   .card-credit-icon {
-    @apply absolute right-3 top-3 flex items-center justify-center w-7 h-7 rounded-lg;
+    @apply flex items-center justify-center w-9 h-9 rounded-lg shrink-0;
+  }
+
+  .card-credit-badge {
+    @apply inline-flex items-center rounded px-2 py-0.5 text-sm font-medium truncate max-w-full;
+  }
+
+  /* Button – best-in-class: a11y, touch targets, typography, states */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold border border-transparent cursor-pointer select-none transition-[transform,filter,background-color,border-color,color,box-shadow] duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98];
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dark .btn {
+    @apply focus-visible:ring-offset-gray-900;
+  }
+
+  .btn--xs {
+    @apply px-2.5 py-1 rounded-md min-h-[1.5rem];
+    font-size: 0.6875rem;
+  }
+
+  .btn--sm {
+    @apply px-3 py-1.5 rounded-lg min-h-[2rem];
+    font-size: 0.8125rem;
+  }
+
+  .btn--md {
+    @apply px-4 py-2 rounded-xl min-h-[2.5rem];
+    font-size: 0.875rem;
+  }
+
+  .btn--lg {
+    @apply px-5 py-2.5 rounded-xl min-h-[2.75rem];
+    font-size: 0.9375rem;
+  }
+
+  /* Touch-friendly minimum 44px for primary actions */
+  .btn--xl {
+    @apply px-6 py-3 rounded-xl min-h-[2.75rem] min-w-[2.75rem];
+    font-size: 1rem;
+  }
+
+  @media (pointer: fine) {
+    .btn--xl {
+      min-height: 3rem;
+    }
+  }
+
+  .btn--primary {
+    background-color: var(--color-btn-primary);
+    @apply text-white focus-visible:ring-[var(--color-btn-primary)];
+  }
+
+  .btn--primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  .btn--primary:active:not(:disabled) {
+    filter: brightness(0.92);
+  }
+
+  .btn--secondary {
+    @apply bg-gray-200 text-gray-900 dark:bg-gray-600 dark:text-white focus-visible:ring-gray-400;
+  }
+
+  .btn--secondary:hover:not(:disabled) {
+    @apply bg-gray-300 dark:bg-gray-500;
+  }
+
+  .btn--secondary:active:not(:disabled) {
+    @apply bg-gray-400 dark:bg-gray-600;
+  }
+
+  .btn--success {
+    @apply bg-green-600 text-white focus-visible:ring-green-500;
+  }
+
+  .btn--success:hover:not(:disabled) {
+    @apply bg-green-700;
+  }
+
+  .btn--danger {
+    @apply bg-red-600 text-white focus-visible:ring-red-500;
+  }
+
+  .btn--danger:hover:not(:disabled) {
+    @apply bg-red-700;
+  }
+
+  .btn--warning {
+    @apply bg-amber-500 text-gray-900 focus-visible:ring-amber-500;
+  }
+
+  .btn--warning:hover:not(:disabled) {
+    @apply bg-amber-600;
+  }
+
+  .btn--outline {
+    @apply bg-transparent border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 focus-visible:ring-gray-400;
+  }
+
+  .btn--outline:hover:not(:disabled) {
+    @apply border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-700/60;
+  }
+
+  .btn--ghost {
+    @apply bg-transparent border-transparent text-gray-700 dark:text-gray-200 focus-visible:ring-gray-400;
+  }
+
+  .btn--ghost:hover:not(:disabled) {
+    @apply bg-gray-100 dark:bg-gray-700/50;
+  }
+
+  .btn__icon {
+    @apply shrink-0 inline-block;
+  }
+
+  .btn--xs .btn__icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    min-width: 0.875rem;
+    min-height: 0.875rem;
+  }
+
+  .btn--sm .btn__icon {
+    width: 1rem;
+    height: 1rem;
+    min-width: 1rem;
+    min-height: 1rem;
+  }
+
+  .btn--md .btn__icon,
+  .btn--lg .btn__icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    min-width: 1.125rem;
+    min-height: 1.125rem;
+  }
+
+  .btn--xl .btn__icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    min-width: 1.25rem;
+    min-height: 1.25rem;
   }
 
   /* Table – matches card design: minimal, clean typography */

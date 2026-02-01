@@ -5,23 +5,19 @@ import { showSuccess, showError } from "@/utils/toast";
 import { CARD_SYSTEM } from "@/constants";
 
 // -----------------------------------------------------------------------------
-// Config – base classes, sizes, icon layout, defaults (single source in component)
+// Config – sizes, icon layout, defaults (styles from index.css .btn)
 // -----------------------------------------------------------------------------
 
-const BASE_CLASSES =
-  "px-3 py-2 inline-flex rounded-md font-medium shadow-sm !focus:outline-none transition-all duration-200";
-
-const SIZE_CLASSES = {
-  xs: "px-2 py-1 text-xs",
-  sm: "px-2.5 py-1 text-xs",
-  md: "px-3 py-1.5 text-sm",
-  lg: "px-2 py-3 text-lg",
-  xl: "px-6 py-3 text-2xl",
-};
-
-const ICON_CLASSES = "w-4 h-4";
-const LOADING_SPINNER_CLASSES =
-  "w-4 h-4 rounded-full border-2 border-transparent border-t-white animate-spin";
+const SIZE_MAP = { xs: "xs", sm: "sm", md: "md", lg: "lg", xl: "xl" };
+const CSS_VARIANTS = new Set([
+  "primary",
+  "secondary",
+  "success",
+  "danger",
+  "warning",
+  "outline",
+  "ghost",
+]);
 
 const CONTENT_LAYOUT = {
   left: "flex items-center justify-center gap-2 w-full",
@@ -38,7 +34,7 @@ const DEFAULTS = {
   loadingText: "Loading...",
 };
 
-// Variant → background color (from CARD_SYSTEM); outline handled via inline style
+// Fallback for non-CSS variants (amber, blue, pink, etc.) – inline style
 const COLORS = CARD_SYSTEM.COLOR_HEX_MAP;
 const VARIANT_BG = {
   primary: COLORS.color_default,
@@ -89,30 +85,25 @@ const DynamicButton = memo(function DynamicButton({
   successMessage,
   errorMessage,
   to,
+  "aria-label": ariaLabel,
   ...props
 }) {
   const [localLoading, setLocalLoading] = useState(false);
   const isLoading = loading || localLoading;
   const isDisabled = disabled || isLoading;
 
+  const useCssVariant = CSS_VARIANTS.has(variant) || variant === "edit";
+  const cssVariant = variant === "edit" ? "primary" : variant;
   const getStyle = useCallback(() => {
+    if (useCssVariant) return {};
     const cursor = isDisabled ? "not-allowed" : isLoading ? "wait" : "pointer";
-    const opacity = isDisabled ? 0.5 : 1;
-    if (variant === "outline") {
-      return {
-        backgroundColor: "transparent",
-        color: "var(--color-text-primary)",
-        border: "1px solid var(--color-gray-200)",
-        opacity,
-        cursor,
-      };
-    }
+    const opacity = isDisabled ? 0.6 : 1;
     const backgroundColor = VARIANT_BG[variant] ?? VARIANT_BG.primary;
     const color = DARK_TEXT_VARIANTS.has(variant)
       ? "var(--color-text-primary)"
       : "var(--color-text-white)";
     return { backgroundColor, color, border: "none", opacity, cursor };
-  }, [variant, isDisabled, isLoading]);
+  }, [variant, isDisabled, isLoading, useCssVariant]);
 
   const handleClick = useCallback(
     async (e) => {
@@ -132,12 +123,16 @@ const DynamicButton = memo(function DynamicButton({
   );
 
   const ResolvedIcon = iconName && Icons?.[iconCategory]?.[iconName];
+  const iconWrapperClass = "btn__icon";
   const iconEl = isLoading ? (
-    <div className={LOADING_SPINNER_CLASSES} aria-hidden />
+    <span
+      className={`${iconWrapperClass} rounded-full border-2 border-current border-t-transparent animate-spin`}
+      aria-hidden
+    />
   ) : Icon ? (
-    <Icon className={ICON_CLASSES} aria-hidden />
+    <Icon className={iconWrapperClass} aria-hidden />
   ) : ResolvedIcon ? (
-    <ResolvedIcon className={ICON_CLASSES} aria-hidden />
+    <ResolvedIcon className={iconWrapperClass} aria-hidden />
   ) : null;
 
   const text = isLoading ? loadingText : children;
@@ -159,15 +154,23 @@ const DynamicButton = memo(function DynamicButton({
     </span>
   );
 
-  const sizeClasses = SIZE_CLASSES[size] ?? SIZE_CLASSES[DEFAULTS.size];
-  const buttonClassName = `${BASE_CLASSES} ${sizeClasses} ${className}`.trim();
+  const sizeKey = SIZE_MAP[size] ?? SIZE_MAP[DEFAULTS.size];
+  const btnClasses = [
+    "btn",
+    `btn--${sizeKey}`,
+    useCssVariant ? `btn--${cssVariant}` : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const common = {
     id,
-    className: buttonClassName,
+    className: btnClasses,
     style: getStyle(),
     "aria-disabled": isDisabled,
     "aria-busy": isLoading,
+    "aria-label": ariaLabel ?? (isLoading ? loadingText : undefined),
     ...props,
   };
 

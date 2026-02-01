@@ -107,7 +107,7 @@ const Sidebar = ({ basePath = null }) => {
                         subActive ? "bg-indigo-500" : "bg-gray-400 dark:bg-gray-500"
                       }`}
                     />
-                    <span className="text-[12px] font-medium truncate">
+                    <span className="text-sm font-medium truncate">
                       {subItem.name}
                     </span>
                   </Link>
@@ -148,7 +148,7 @@ const Sidebar = ({ basePath = null }) => {
             <span className="block truncate text-sm font-semibold tracking-tight text-app">
               XYNC
             </span>
-            <span className="block truncate text-[10px] font-medium text-gray-500 dark:text-gray-400 tracking-tight">
+            <span className="block truncate text-sm font-medium text-gray-500 dark:text-gray-400 tracking-tight">
               Office R.E.I
             </span>
           </div>
@@ -159,7 +159,7 @@ const Sidebar = ({ basePath = null }) => {
       {viewingDepartment?.name && (
         <div className="shrink-0 px-2.5 pt-4 pb-2">
           <div className="rounded-lg border-2 border-indigo-200 dark:border-indigo-700/60 bg-indigo-50/50 dark:bg-indigo-900/20 px-3 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Department
             </p>
             <p className="mt-0.5 text-sm font-semibold text-indigo-900 dark:text-indigo-100 truncate">
@@ -172,7 +172,7 @@ const Sidebar = ({ basePath = null }) => {
       {/* Main Menu (Dashboard, Analytics, etc. – data scoped by department) */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="px-2.5 pt-6 pb-1.5">
-          <h5 className="text-app-subtle">Main Menu</h5>
+          <h5 className="text-sm text-app-subtle">Main Menu</h5>
         </div>
         <div className="overflow-y-auto px-1.5 py-1.5 space-y-0.5">
           {mainMenuItems.map((item) => renderItem(item))}
@@ -182,7 +182,7 @@ const Sidebar = ({ basePath = null }) => {
         {showDepartments && (
           <>
             <div className="px-2.5 pt-4 pb-1.5">
-              <h5 className="text-app-subtle">Departments</h5>
+              <h5 className="text-sm text-app-subtle">Departments</h5>
             </div>
             <div className="px-1.5 py-1.5 space-y-0.5">
               {renderItem(departmentsItem)}
@@ -192,7 +192,7 @@ const Sidebar = ({ basePath = null }) => {
 
         {/* Settings (for all departments) */}
         <div className="px-2.5 pt-4 pb-1.5">
-          <h5 className="text-app-subtle">Settings</h5>
+          <h5 className="text-sm text-app-subtle">Settings</h5>
         </div>
         <div className="flex-1 overflow-y-auto px-1.5 py-1.5 space-y-0.5">
           {settingsItems.map((item) => renderItem(item))}

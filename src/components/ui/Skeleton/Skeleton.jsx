@@ -18,14 +18,18 @@ const Skeleton = ({
   );
 };
 
-// Predefined skeleton – credit-card style dashboard card
+// Predefined skeleton – matches card-credit layout (no hover)
 export const SkeletonCard = ({ className = '' }) => (
   <div className={`card-credit relative ${className}`}>
-    <div className="card-credit-strip card-credit-strip-left bg-gray-200 dark:bg-gray-600" />
+    <div className="card-credit-strip-left bg-gray-200 dark:bg-gray-600" />
     <div className="card-credit-inner">
-      <Skeleton height="0.6875rem" width="5rem" rounded="md" className="mb-1" />
-      <Skeleton height="1.5rem" width="3rem" rounded="md" className="mb-4" />
-      <Skeleton height="2.25rem" width="2.25rem" rounded="xl" className="absolute right-4 bottom-4" />
+      <div className="card-credit-header">
+        <div className="flex flex-col gap-2 min-w-0 flex-1">
+          <Skeleton height="0.6875rem" width="5rem" rounded="md" />
+          <Skeleton height="1.5rem" width="4rem" rounded="md" />
+        </div>
+        <Skeleton height="2.25rem" width="2.25rem" rounded="xl" className="shrink-0" />
+      </div>
     </div>
   </div>
 );
