@@ -39,19 +39,47 @@ function decodeJwtPayload(token) {
   }
 }
 
+/** Single in-flight refresh promise so concurrent callers (e.g. Strict Mode double-invoke) share one request and avoid 429. */
+let pendingRefreshPromise = null;
+
+/**
+ * Internal: POST /auth/refresh (cookie sent). Dedupes concurrent calls. Returns { token, user } or throws.
+ */
+async function internalRefresh() {
+  if (pendingRefreshPromise) return pendingRefreshPromise;
+  pendingRefreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_PREFIX}/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || data.message || res.statusText);
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      if (data.token) setToken(data.token);
+      return data;
+    } finally {
+      pendingRefreshPromise = null;
+    }
+  })();
+  return pendingRefreshPromise;
+}
+
 /**
  * Call POST /auth/refresh (cookie sent automatically). Returns new access token or null.
  */
 export async function refreshAccessToken() {
-  const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_PREFIX}/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) return null;
-  if (data.token) setToken(data.token);
-  return data.token;
+  try {
+    const data = await internalRefresh();
+    return data?.token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 const SILENT_REFRESH_BEFORE_MS = 60 * 1000;
@@ -120,12 +148,8 @@ export const authApi = {
 
   me: () => apiRequest(`${API_CONFIG.AUTH_PREFIX}/me`),
 
-  /** POST /auth/refresh – no body; cookie sent automatically */
-  refresh: () =>
-    apiRequest(`${API_CONFIG.AUTH_PREFIX}/refresh`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-    }),
+  /** POST /auth/refresh – no body; cookie sent automatically. Uses deduped internalRefresh to avoid 429 on mount. */
+  refresh: () => internalRefresh(),
 
   /** POST /auth/logout – no body; cookie sent; server clears cookie and deletes session */
   logout: () =>
@@ -151,4 +175,9 @@ export const usersApi = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+};
+
+/** Departments API */
+export const departmentsApi = {
+  list: () => apiRequest('/api/departments'),
 };

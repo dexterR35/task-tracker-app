@@ -45,12 +45,15 @@ export function getUserColumns() {
       size: 56,
     }),
     columnHelper.accessor("email", { header: "EMAIL", cell: simpleCell(), size: 200 }),
+    columnHelper.accessor("departmentName", { header: "DEPARTMENT", cell: simpleCell(), size: 140 }),
     columnHelper.accessor("phone", { header: "PHONE", cell: simpleCell(), size: 120 }),
     columnHelper.accessor("role", {
       header: "ROLE",
       cell: ({ getValue }) => {
         const role = getValue() ?? "user";
-        return <Badge variant={role === "admin" ? "pink" : "blue"} size="xs">{role}</Badge>;
+        const variant = role === "super_admin" ? "crimson" : role === "admin" ? "pink" : "blue";
+        const label = role === "super_admin" ? "Super Admin" : role;
+        return <Badge variant={variant} size="xs">{label}</Badge>;
       },
       size: 100,
     }),

@@ -10,7 +10,10 @@ import { CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
 
 /** Breadcrumb segments with label and href for clickable routing. */
 function getBreadcrumbSegments(pathname) {
-  const items = NAVIGATION_CONFIG.ITEMS ?? [];
+  const main = NAVIGATION_CONFIG.MAIN_MENU_ITEMS ?? [];
+  const dept = NAVIGATION_CONFIG.DEPARTMENTS_ITEM ? [NAVIGATION_CONFIG.DEPARTMENTS_ITEM] : [];
+  const settings = NAVIGATION_CONFIG.SETTINGS_ITEMS ?? [];
+  const items = [...main, ...dept, ...settings];
   for (const item of items) {
     if (item.href === pathname) {
       return [{ label: item.name, href: item.href, current: true }];

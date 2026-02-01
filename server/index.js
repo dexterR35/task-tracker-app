@@ -17,6 +17,7 @@ import { getUserFromToken } from './middleware/auth.js';
 import { authLogger } from './utils/authLogger.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
+import departmentsRoutes from './routes/departments.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -89,6 +90,7 @@ app.get('/health/db', async (_, res) => {
 
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/departments', departmentsRoutes);
 
 app.use('/api', (_, res) => res.status(404).json({ error: 'Not found.', code: 'NOT_FOUND' }));
 app.use((err, _req, res, _next) => {
@@ -139,9 +141,9 @@ io.use(async (socket, next) => {
 
 /** Allowed Socket.IO events and required roles (identity from JWT, not socket.id) */
 const SOCKET_EVENT_ROLES = {
-  'task:subscribe': ['user', 'admin'],
-  'task:unsubscribe': ['user', 'admin'],
-  'admin:broadcast': ['admin'],
+  'task:subscribe': ['user', 'admin', 'super_admin'],
+  'task:unsubscribe': ['user', 'admin', 'super_admin'],
+  'admin:broadcast': ['admin', 'super_admin'],
 };
 
 function requireSocketEventRole(socket, eventName) {

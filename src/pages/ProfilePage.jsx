@@ -148,6 +148,9 @@ const ProfilePage = () => {
             </div>
             <p className="mt-3 text-sm font-medium text-text-primary dark:text-text-white truncate w-full text-center md:text-left">{profile?.name || '—'}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full text-center md:text-left" title={email}>{email}</p>
+            {profile?.departmentName && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full text-center md:text-left mt-1" title="Department (read-only; change via DB/psql)">Department: {profile.departmentName}</p>
+            )}
           </div>
 
           {/* Form */}

@@ -87,6 +87,8 @@
     <!-- Performance optimizations -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="theme-color" content="#131b30">
+    <!-- CSP: allow unsafe-eval for Vite HMR and dependencies that use eval; tighten for production if possible -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss: https://www.googleapis.com http://localhost:5000 http://127.0.0.1:5000; img-src 'self' data: https:;">
     
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json" id="structured-data">

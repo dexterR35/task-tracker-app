@@ -41,8 +41,9 @@ export const API_CONFIG = {
 // ============================================================================
 
 export const AUTH = {
-  VALID_ROLES: ['admin', 'user'],
+  VALID_ROLES: ['super_admin', 'admin', 'user'],
   ROLES: {
+    SUPER_ADMIN: 'super_admin',
     ADMIN: 'admin',
     USER: 'user',
   },
@@ -178,10 +179,14 @@ FORM_OPTIONS.REPORTER_CHANNELS = FORM_OPTIONS.DEPARTMENTS;
 // ============================================================================
 // NAVIGATION CONFIGURATION
 // ============================================================================
+// Same sidebar for everyone. Data inside differs by role/department:
+// - Main Menu (Dashboard, Analytics, Tasks, Kanban): data is department-scoped when user has a department (e.g. Design user sees Design tasks/analytics).
+// - Departments: table of departments; super_admin only.
+// - Settings: global for all departments → Users (global list), UI Showcase.
 
 export const NAVIGATION_CONFIG = {
-  /** Main menu: Dashboard + Analytics (collapsible with pages) */
-  ITEMS: [
+  /** Main menu: same sidebar; data inside (dashboard, analytics, tasks, kanban) is department-scoped by user's department */
+  MAIN_MENU_ITEMS: [
     {
       name: "Dashboard",
       href: "/dashboard",
@@ -208,6 +213,17 @@ export const NAVIGATION_CONFIG = {
         { name: "Misc", href: "/analytics/misc" },
       ],
     },
+  ],
+  /** Departments: table of departments (super_admin only); department = scope for tasks, kanban, analytics data */
+  DEPARTMENTS_ITEM: {
+    name: "Departments",
+    href: "/settings/departments",
+    icon: "chart",
+    color: "gray",
+    superAdminOnly: true,
+  },
+  /** Settings: global (not department-scoped). Users = global list; UI Showcase = settings. */
+  SETTINGS_ITEMS: [
     {
       name: "Settings",
       href: "/settings",
@@ -220,8 +236,14 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
-  /** Bottom account section (e.g. Account settings collapsible) - empty; admin pages are under Dashboard */
-  ACCOUNT_ITEMS: [],
+};
+
+/** Data scope: what is department-scoped vs global. Use when fetching dashboard, analytics, tasks, kanban. */
+export const DATA_SCOPE = {
+  /** Main menu content (dashboard, analytics, tasks, kanban): filter by user's department when user has departmentId */
+  DEPARTMENT_SCOPED: ['dashboard', 'analytics', 'tasks', 'kanban'],
+  /** Settings: Users list and UI Showcase are global (all departments) */
+  GLOBAL: ['users', 'ui-showcase'],
 };
 
 // ============================================================================
@@ -533,6 +555,7 @@ export default {
   VALIDATION,
   FORM_OPTIONS,
   NAVIGATION_CONFIG,
+  DATA_SCOPE,
   CARD_SYSTEM,
   BUTTON_SYSTEM,
   TABLE_SYSTEM,

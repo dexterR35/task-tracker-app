@@ -35,9 +35,12 @@ export function verifyToken(token, options = {}) {
   }
 }
 
-const USER_QUERY = `SELECT u.id, u.email, u.role, u.is_active, p.name, p.office, p.job_position, p.gender
+const USER_QUERY = `SELECT u.id, u.email, u.role, u.is_active, u.department_id,
+  p.name, p.office, p.job_position, p.gender,
+  d.name AS department_name, d.slug AS department_slug
   FROM users u
   LEFT JOIN profiles p ON p.user_id = u.id
+  LEFT JOIN departments d ON d.id = u.department_id
   WHERE u.id = $1`;
 
 const USER_MINIMAL_QUERY = `SELECT u.id, u.email, u.role, u.is_active FROM users u WHERE u.id = $1`;
@@ -53,6 +56,9 @@ function toUser(row) {
     office: row.office,
     jobPosition: row.job_position,
     gender: row.gender,
+    departmentId: row.department_id ?? null,
+    departmentName: row.department_name ?? null,
+    departmentSlug: row.department_slug ?? null,
   };
 }
 
@@ -74,6 +80,10 @@ export async function getUserFromToken(token, opts = {}) {
   }
   if (minimal) {
     return { id: row.id, email: row.email, role: row.role, isActive: row.is_active };
+  }
+  /* Department mandatory for auth (also NOT NULL in users table; enforced on login and refresh). */
+  if (row.department_id == null) {
+    throw new Error('User must have a department.');
   }
   return toUser(row);
 }
@@ -104,6 +114,10 @@ export const authenticate = async (req, res, next) => {
     if (err.message === 'User not found or inactive.') {
       authLogger.authenticateFail(req, 'USER_INACTIVE', err.message);
       return res.status(401).json({ error: 'User not found or inactive.', code: 'USER_INACTIVE' });
+    }
+    if (err.message === 'User must have a department.') {
+      authLogger.authenticateFail(req, 'NO_DEPARTMENT', err.message);
+      return res.status(403).json({ error: 'Account must be assigned to a department. Contact admin.', code: 'NO_DEPARTMENT' });
     }
     next(err);
   }

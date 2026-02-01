@@ -7,7 +7,25 @@
   Example: `postgresql://USER:PASSWORD@localhost:5432/task_tracker`
 - **Setup:** Run with psql (no Node). Users are added manually (e.g. seed script or admin); no public registration.
 
-**Split:** Auth in `users` (login only). Profile in `profiles` (name, job, office, etc.). Sessions in `refresh_tokens` (hashed refresh token + metadata).
+**Split:** Auth + department in `users` (login; set `users.department_id` when creating a user). Profile in `profiles` (name, job, office, etc.; no department). **Sessions** in `refresh_tokens` (cookie + DB). **Departments** is a table (`departments`); users are assigned to a department on creation via `users.department_id`; department is mandatory for login. Data (dashboard, analytics, tasks, kanban) is scoped by user’s department.
+
+### Auth & sessions (cookie + DB)
+
+- **Access token:** Short-lived JWT (e.g. 10m), in memory only; sent as `Authorization: Bearer` on API calls. Not stored in DB.
+- **Refresh token:** Long-lived (e.g. 7 days), stored in httpOnly cookie (`refresh_token`, path `/api`). **DB stores only the SHA-256 hash** in `refresh_tokens`; raw token is never stored. One row per session (per device).
+- **Refresh flow:** Client sends cookie to `POST /api/auth/refresh` → server validates hash in DB → returns new JWT + user; optionally issues new refresh token (rotation). Logout = delete row + clear cookie (session dead immediately). Max sessions per user (e.g. 5) enforced by revoking oldest when exceeded.
+
+### Used in auth (users table only)
+
+| Used in auth | Where | Purpose |
+|--------------|-------|--------|
+| **email** | users | Look up user and send login response |
+| **password** (password_hash) | users | Check password with bcrypt |
+| **department_id** | users | Must be set; login fails if missing |
+| **is_active** | users | Must be true; login fails if false |
+| **role** | users | Not used to allow/deny login; used after login for authorization (e.g. admin vs user) |
+
+**Not used in auth:** `name` lives in `profiles` only; used for display, not for login or session checks.
 
 ---
 
@@ -23,73 +41,55 @@ psql -d task_tracker -f server/db/schema.sql
 # Or with DATABASE_URL
 psql "$DATABASE_URL" -f server/db/schema.sql
 
-# Optional: add default admin user (requires pgcrypto)
+# Optional: add 3 dev users (requires pgcrypto)
 psql -d task_tracker -f server/db/seed-user.sql
+# → admin@netbet.ro / admin123 (role: admin, department: Design)
+# → admin2@netbet.ro / admin123 (role: admin, department: Customer Support)
+# → superadmin@netbet.ro / super123 (role: super_admin, department: Other; sees all departments in app)
 ```
 
 ---
 
-## Tables
+## Tables (summary)
 
 | Table            | Purpose |
 |------------------|--------|
-| `users`          | **Auth only** – email, password_hash, role, is_active. No profile fields. |
-| `profiles`       | **Profile only** – one row per user (name, username, office, job_position, phone, avatar_url, gender, etc.). |
-| `refresh_tokens` | **Sessions** – SHA-256 hash of refresh token, user_id, expires_at, user_agent, ip, last_used_at. Token stored as hash only; metadata for audit. |
+| `departments`    | **Departments** – id, name, slug. Seeded: Design, Customer Support, QA, Development, Marketing, Product, Other. Users are assigned to one department via `users.department_id`; data is scoped by department. |
+| `users`          | **Auth only** – id, email, password_hash, role, **department_id** NOT NULL, is_active. Login uses: email + password; then requires department_id and is_active. Name is not in users (profile-only). |
+| `profiles`       | **Profile only (not used in auth)** – one row per user. user_id → users(id), name, username, office, job_position, phone, avatar_url, gender, etc. Name is for display only; login does not use it. |
+| `refresh_tokens` | **Sessions (cookie + DB)** – id, user_id → users(id), token (SHA-256 hash, 64 chars), expires_at, user_agent, ip, last_used_at, created_at. One row per device; max per user configurable (e.g. 5). Raw token only in httpOnly cookie; DB stores hash only. |
+| `task_boards`    | **Task boards** – one per department per month. id, department_id → departments(id), year, month, name. UNIQUE (department_id, year, month). |
+| `tasks`          | **Tasks** – id, board_id → task_boards(id), assignee_id → users(id), title, description, status, due_date, position, created_at, updated_at. |
 
-**Relationships:** `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user).
+**Relationships:** `users.department_id` → `departments.id` (required for login). `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user). `task_boards.department_id` → `departments.id`. `tasks.board_id` → `task_boards.id`. `tasks.assignee_id` → `users.id`.
 
 ---
 
 ## Table diagram
 
-```
-┌──────────────────────────────────────────┐
-│ users (auth only)                        │
-├──────────────────────────────────────────┤
-│ id                UUID    PK, gen_random_uuid()
-│ email             VARCHAR(255) UNIQUE NOT NULL
-│ password_hash     VARCHAR(255) NOT NULL
-│ role              VARCHAR(50)  NOT NULL, CHECK (admin|user)
-│ is_active         BOOLEAN      DEFAULT true
-│ created_at        TIMESTAMPTZ  DEFAULT NOW()
-│ updated_at        TIMESTAMPTZ  DEFAULT NOW()
-└──────────────────────────────────────────┘
-         │ 1
-         │
-         │ 1
-┌──────────────────────────────────────────┐
-│ profiles (profile only)                  │
-├──────────────────────────────────────────┤
-│ id                UUID    PK
-│ user_id           UUID    UNIQUE NOT NULL, REFERENCES users(id) ON DELETE CASCADE
-│ name              VARCHAR(255) NOT NULL
-│ username          VARCHAR(100) UNIQUE, nullable
-│ office            VARCHAR(100) nullable
-│ job_position      VARCHAR(100) nullable
-│ phone             VARCHAR(50) nullable
-│ avatar_url        VARCHAR(500) nullable
-│ gender            VARCHAR(10) nullable, CHECK (male|female)
-│ color_set         VARCHAR(20) nullable
-│ created_by        VARCHAR(100) nullable
-│ email_verified_at TIMESTAMPTZ nullable
-│ created_at        TIMESTAMPTZ DEFAULT NOW()
-│ updated_at        TIMESTAMPTZ DEFAULT NOW()
-└──────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  departments[(departments)]
+  users[(users)]
+  profiles[(profiles)]
+  refresh_tokens[(refresh_tokens)]
+  task_boards[(task_boards)]
+  tasks[(tasks)]
 
-┌──────────────────────────────────────────┐
-│ refresh_tokens (sessions)                 │
-├──────────────────────────────────────────┤
-│ id              UUID    PK
-│ user_id         UUID    NOT NULL, REFERENCES users(id) ON DELETE CASCADE
-│ token           VARCHAR(64) NOT NULL   (SHA-256 hex hash of token)
-│ expires_at      TIMESTAMPTZ NOT NULL
-│ user_agent      VARCHAR(500) nullable
-│ ip              VARCHAR(45) nullable
-│ last_used_at    TIMESTAMPTZ nullable
-│ created_at      TIMESTAMPTZ DEFAULT NOW()
-└──────────────────────────────────────────┘
+  departments -->|department_id| users
+  users -->|user_id 1:1| profiles
+  users -->|user_id| refresh_tokens
+  departments -->|department_id| task_boards
+  task_boards -->|board_id| tasks
+  users -.->|assignee_id| tasks
 ```
+
+### Session lifecycle (refresh token + cookie)
+
+1. **Login** – Validate password → create refresh token (random 32 bytes, hash stored in `refresh_tokens`) → set httpOnly cookie (`path=/api`) → return JWT + user.
+2. **Refresh** – Client sends cookie to `POST /api/auth/refresh` → server looks up hash in `refresh_tokens` → if valid, return new JWT + user and optionally rotate refresh token (new cookie + new row, old row deleted).
+3. **Logout** – Revoke token in DB (delete row), clear cookie (path `/api` and legacy path `/`).
+4. **Logout all** – Delete all `refresh_tokens` for user, clear cookie; Socket.IO emits `forceLogout` to all that user’s clients.
 
 ---
 
@@ -97,18 +97,27 @@ psql -d task_tracker -f server/db/seed-user.sql
 
 | Table            | Index                         | Purpose |
 |------------------|-------------------------------|--------|
+| departments      | idx_departments_slug          | Lookup by slug |
 | users            | idx_users_email               | Lookup by email (login) |
 | users            | idx_users_role                | Filter by role |
+| users            | idx_users_department_id       | Join / filter by department |
 | users            | idx_users_is_active           | Filter active users |
 | profiles         | idx_profiles_user_id          | Join / lookup by user |
 | profiles         | idx_profiles_username         | Lookup by username |
 | refresh_tokens   | idx_refresh_tokens_user_id    | Revoke all for user |
 | refresh_tokens   | idx_refresh_tokens_expires_at | Cleanup expired |
 | refresh_tokens   | idx_refresh_tokens_token      | UNIQUE; lookup by hash (validate/revoke) |
+| task_boards      | idx_task_boards_department_id | Filter by department |
+| task_boards      | idx_task_boards_year_month    | Filter by year/month |
+| tasks            | idx_tasks_board_id            | List tasks for a board |
+| tasks            | idx_tasks_assignee_id         | Filter by assignee |
+| tasks            | idx_tasks_status              | Filter by status |
 
 ---
 
 ## Notes
 
-- **Refresh tokens:** The app stores only the SHA-256 hash (hex, 64 chars) in `refresh_tokens.token`. Raw token is sent to the client in an httpOnly cookie and never stored.
-- **Roles:** `admin` and `user` only. Enforced in app and Socket.IO by role checks.
+- **Refresh tokens (sessions):** Raw token exists only in the httpOnly cookie; the app stores only the SHA-256 hash (hex, 64 chars) in `refresh_tokens.token`. Cookie: `refresh_token`, path `/api`, SameSite=None, Secure. Expiry and max devices: `REFRESH_TOKEN_EXPIRES_DAYS` (default 7), `REFRESH_TOKEN_MAX_DEVICES` (default 5). Logout = delete row + clear cookie.
+- **Access token:** JWT, not stored in DB; lifetime `JWT_EXPIRES_IN` (e.g. 10m). Used for API and Socket.IO; refreshed via `POST /api/auth/refresh` (cookie sent automatically).
+- **Roles:** `super_admin` (see all departments), `admin`, and `user`. Enforced in app and Socket.IO by role checks.
+- **Departments:** Departments is a **table** (`departments`). Users are **assigned to a department when created** (set `users.department_id`); department is **mandatory for login** (no department ⇒ cannot log in). After login, users **see their data** (dashboard, analytics, tasks, kanban) **scoped to their department**. Same sidebar for everyone; Main Menu data is department-scoped. **Users** list and **UI Showcase** (Settings) are **global** (all departments).

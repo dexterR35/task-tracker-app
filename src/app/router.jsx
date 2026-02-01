@@ -16,6 +16,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import UIShowcasePage from "@/pages/admin/UIShowcasePage";
+import DepartmentsPage from "@/pages/admin/DepartmentsPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
 import ProfilePage from "@/pages/ProfilePage";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
@@ -114,6 +115,17 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const SuperAdminRoute = ({ children }) => {
+  const authState = useAuth();
+  const { canAccess } = authState;
+
+  if (!canAccess("super_admin")) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return children;
+};
+
 ProtectedRoute.displayName = "ProtectedRoute";
 
 
@@ -192,6 +204,20 @@ export const createRouter = () => {
             ),
           },
           // ========================================
+          // SUPER-ADMIN ROUTES (Super admin only – see all departments)
+          // ========================================
+          {
+            path: "settings/departments",
+            element: (
+              <SuperAdminRoute>
+                <ErrorBoundary componentName="DepartmentsPage">
+                  <PageWrapper>
+                    <DepartmentsPage />
+                  </PageWrapper>
+                </ErrorBoundary>
+              </SuperAdminRoute>
+            ),
+          },
           // ADMIN-ONLY ROUTES (Admin role required)
           // ========================================
           {

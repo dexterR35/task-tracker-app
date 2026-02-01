@@ -20,11 +20,11 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const logout = useCallback(async () => {
+    clearSilentRefreshTimer();
+    disconnectSocket(); // disconnect before API call so we don't receive server's forceLogout and show toast twice
     try {
       await authApi.logout();
     } catch (_) { /* ignore */ }
-    clearSilentRefreshTimer();
-    disconnectSocket();
     clearAuth();
     setUser(null);
     setError(null);
@@ -33,11 +33,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logoutAll = useCallback(async () => {
+    clearSilentRefreshTimer();
+    disconnectSocket(); // disconnect before API call so we don't receive server's forceLogout and show toast twice
     try {
       await authApi.logoutAll();
     } catch (_) { /* ignore */ }
-    clearSilentRefreshTimer();
-    disconnectSocket();
     clearAuth();
     setUser(null);
     setError(null);

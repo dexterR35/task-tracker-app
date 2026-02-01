@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import createRouter from '@/app/router';
 import { DarkModeProvider } from '@/context/DarkModeProvider';
 import { AppDataProvider } from '@/context/AppDataContext';
+import { SelectedDepartmentProvider } from '@/context/SelectedDepartmentContext';
 import ErrorBoundary from '@/components/layout/ErrorBoundary';
 
 /**
@@ -24,13 +25,15 @@ const App = () => {
     <ErrorBoundary>
       <DarkModeProvider>
         <AppDataProvider>
-          <RouterWrapper />
-          <Toaster
-            position="top-center"
-            toastOptions={{ duration: 3000 }}
-            containerStyle={{ zIndex: 9999 }}
-          />
-          </AppDataProvider>
+          <SelectedDepartmentProvider>
+            <RouterWrapper />
+            <Toaster
+              position="top-center"
+              toastOptions={{ duration: 3000 }}
+              containerStyle={{ zIndex: 9999 }}
+            />
+          </SelectedDepartmentProvider>
+        </AppDataProvider>
       </DarkModeProvider>
     </ErrorBoundary>
   );

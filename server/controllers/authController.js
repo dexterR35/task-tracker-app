@@ -33,20 +33,27 @@ function getSessionMeta(req) {
   return { userAgent, ip };
 }
 
+/** SameSite=None so cookie is sent on cross-origin requests (e.g. frontend :5173 → API :5000). Secure=true required for None; browsers allow Secure on localhost. */
 const cookieOptions = (maxAgeDays = REFRESH_TOKEN_EXPIRES_DAYS) => ({
   httpOnly: true,
-  secure: isProduction,
-  sameSite: 'strict',
+  secure: true,
+  sameSite: 'none',
   path: '/api',
   maxAge: maxAgeDays * 24 * 60 * 60 * 1000,
 });
 
 const clearCookieOptions = () => ({
   httpOnly: true,
-  secure: isProduction,
-  sameSite: 'strict',
+  secure: true,
+  sameSite: 'none',
   path: '/api',
   maxAge: 0,
+});
+
+/** Clear refresh cookie at path '/' (legacy default); use so we remove any old cookie and only one remains after login. */
+const clearCookieOptionsLegacyPath = () => ({
+  ...clearCookieOptions(),
+  path: '/',
 });
 
 /** Delete expired refresh tokens (run when creating new tokens). */
@@ -90,16 +97,19 @@ async function createRefreshToken(userId, req) {
   return { token, expiresAt: expiresAt.toISOString() };
 }
 
-/** Validate refresh token (by hash); update last_used_at. Return user row or null. */
+/** Validate refresh token (by hash); update last_used_at. Return user row or null. Department mandatory (same as login). */
 async function validateRefreshToken(token, _req) {
   if (!token || typeof token !== 'string') return null;
   const tokenHash = hashRefreshToken(token);
   const r = await query(
-    `SELECT rt.user_id, u.id, u.email, u.role, u.is_active, p.name, p.office, p.job_position, p.gender
+    `SELECT rt.user_id, u.id, u.email, u.role, u.is_active, u.department_id,
+      p.name, p.office, p.job_position, p.gender,
+      d.name AS department_name, d.slug AS department_slug
      FROM refresh_tokens rt
      JOIN users u ON u.id = rt.user_id
      LEFT JOIN profiles p ON p.user_id = u.id
-     WHERE rt.token = $1 AND rt.expires_at > NOW() AND u.is_active = true`,
+     LEFT JOIN departments d ON d.id = u.department_id
+     WHERE rt.token = $1 AND rt.expires_at > NOW() AND u.is_active = true AND u.department_id IS NOT NULL`,
     [tokenHash]
   );
   const row = r.rows[0];
@@ -133,8 +143,14 @@ function isAllowedEmailDomain(email) {
   return domain && ALLOWED_LOGIN_DOMAINS.includes(domain);
 }
 
-/** Auth + profile: users (auth) JOIN profiles. password_hash never returned. */
-const authUserSelect = 'u.id, u.email, u.role, u.is_active, p.name, p.office, p.job_position, p.gender';
+/** Auth uses only users: email, password_hash, department_id, is_active (role for authorization). Name is profile-only, not used in login. */
+const authUserSelect = `u.id, u.email, u.role, u.is_active, u.department_id,
+  p.name, p.office, p.job_position, p.gender,
+  d.name AS department_name, d.slug AS department_slug`;
+
+const authUserFrom = `users u
+  LEFT JOIN profiles p ON p.user_id = u.id
+  LEFT JOIN departments d ON d.id = u.department_id`;
 
 function toAuthUser(row) {
   if (!row) return null;
@@ -147,6 +163,9 @@ function toAuthUser(row) {
     office: row.office,
     jobPosition: row.job_position,
     gender: row.gender,
+    departmentId: row.department_id ?? null,
+    departmentName: row.department_name ?? null,
+    departmentSlug: row.department_slug ?? null,
   };
 }
 
@@ -168,10 +187,7 @@ export async function login(req, res, next) {
     }
 
     const result = await query(
-      `SELECT ${authUserSelect}, u.password_hash
-       FROM users u
-       LEFT JOIN profiles p ON p.user_id = u.id
-       WHERE u.email = $1`,
+      `SELECT ${authUserSelect}, u.password_hash FROM ${authUserFrom} WHERE u.email = $1`,
       [email.toLowerCase().trim()]
     );
 
@@ -179,6 +195,15 @@ export async function login(req, res, next) {
     if (!user || !user.is_active) {
       authLogger.loginFail(req, 'user_not_found_or_inactive', 'USER_NOT_FOUND_OR_INACTIVE');
       return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    /* Department mandatory for login (also NOT NULL in users table and enforced on refresh). */
+    if (!user.department_id) {
+      authLogger.loginFail(req, 'no_department', 'NO_DEPARTMENT');
+      return res.status(403).json({
+        error: 'Account must be assigned to a department. Contact admin.',
+        code: 'NO_DEPARTMENT',
+      });
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
@@ -264,6 +289,7 @@ export async function logout(req, res, next) {
       await revokeRefreshTokensForUser(req.user.id);
     }
     res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptions());
+    res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptionsLegacyPath());
     const io = req.app.get?.('io');
     if (io && userId) {
       io.to(`user:${userId}`).emit('forceLogout');
@@ -288,6 +314,7 @@ export async function logoutAll(req, res, next) {
     }
     await revokeRefreshTokensForUser(userId);
     res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptions());
+    res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptionsLegacyPath());
     const io = req.app.get?.('io');
     if (io) {
       io.to(`user:${userId}`).emit('forceLogout');

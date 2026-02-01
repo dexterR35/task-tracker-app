@@ -5,8 +5,13 @@
 
 import { query } from '../config/db.js';
 
-const userColumns = `u.id, u.email, u.role, u.is_active, u.created_at AS u_created_at, u.updated_at AS u_updated_at,
-  p.name, p.username, p.office, p.phone, p.avatar_url, p.job_position, p.email_verified_at, p.gender, p.color_set, p.created_by, p.created_at AS p_created_at, p.updated_at AS p_updated_at`;
+const userColumns = `u.id, u.email, u.role, u.is_active, u.department_id, u.created_at AS u_created_at, u.updated_at AS u_updated_at,
+  p.name, p.username, p.office, p.phone, p.avatar_url, p.job_position, p.email_verified_at, p.gender, p.color_set, p.created_by, p.created_at AS p_created_at, p.updated_at AS p_updated_at,
+  d.id AS department_id, d.name AS department_name, d.slug AS department_slug`;
+
+const userFrom = `users u
+  LEFT JOIN profiles p ON p.user_id = u.id
+  LEFT JOIN departments d ON d.id = u.department_id`;
 
 function toUser(row) {
   if (!row) return null;
@@ -23,6 +28,9 @@ function toUser(row) {
     phone: row.phone,
     avatarUrl: row.avatar_url,
     jobPosition: row.job_position,
+    departmentId: row.department_id ?? null,
+    departmentName: row.department_name ?? null,
+    departmentSlug: row.department_slug ?? null,
     emailVerifiedAt: row.email_verified_at,
     gender: row.gender,
     createdAt: row.p_created_at ?? row.u_created_at,
@@ -34,7 +42,7 @@ function toUser(row) {
 export async function list(req, res, next) {
   try {
     const result = await query(
-      `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id ORDER BY u.created_at DESC`
+      `SELECT ${userColumns} FROM ${userFrom} ORDER BY u.created_at DESC`
     );
     res.json({ users: result.rows.map(toUser) });
   } catch (err) {
@@ -47,7 +55,7 @@ export async function getOne(req, res, next) {
   try {
     const { id } = req.params;
     const result = await query(
-      `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = $1`,
+      `SELECT ${userColumns} FROM ${userFrom} WHERE u.id = $1`,
       [id]
     );
     const user = result.rows[0];
@@ -63,7 +71,7 @@ export async function update(req, res, next) {
   try {
     const { id } = req.params;
     const currentUser = req.user;
-    const isAdmin = currentUser.role === 'admin';
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
     const isSelf = currentUser.id === id;
     if (!isAdmin && !isSelf) {
       return res.status(403).json({ error: 'Forbidden.' });
@@ -122,16 +130,20 @@ export async function update(req, res, next) {
       userValues.push(!!body.isActive);
     }
     if (isAdmin && body.role !== undefined) {
-      if (!['admin', 'user'].includes(body.role)) {
+      if (!['super_admin', 'admin', 'user'].includes(body.role)) {
         return res.status(400).json({ error: 'Invalid role.' });
       }
       userUpdates.push(`role = $${userPos++}`);
       userValues.push(body.role);
     }
+    /* Department is not editable via API; change only via DB (e.g. psql). */
+    if (body.departmentId !== undefined) {
+      return res.status(400).json({ error: 'Department cannot be updated via API. Change via DB (e.g. psql).', code: 'DEPARTMENT_READONLY' });
+    }
 
     if (profileUpdates.length === 0 && userUpdates.length === 0) {
       const result = await query(
-        `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = $1`,
+        `SELECT ${userColumns} FROM ${userFrom} WHERE u.id = $1`,
         [id]
       );
       const user = result.rows[0];
@@ -161,7 +173,7 @@ export async function update(req, res, next) {
     }
 
     const result = await query(
-      `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = $1`,
+      `SELECT ${userColumns} FROM ${userFrom} WHERE u.id = $1`,
       [id]
     );
     const user = result.rows[0];

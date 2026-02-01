@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
@@ -10,16 +11,26 @@ import Loader from "@/components/ui/Loader/Loader";
 
 const AdminDashboardPage = () => {
   const { canAccess, user } = useAuth();
+  const { viewingDepartmentId } = useSelectedDepartment();
   const isUserAdmin = canAccess("admin");
 
   const appData = useAppDataContext();
   const {
-    users,
+    users: allUsers = [],
     isLoading,
     isInitialLoading,
     error,
     isInitialized,
   } = appData || {};
+
+  // Main Menu data: scope by selected department (super_admin dropdown) or user's department
+  const users = useMemo(
+    () =>
+      viewingDepartmentId
+        ? allUsers.filter((u) => u.departmentId === viewingDepartmentId)
+        : allUsers,
+    [allUsers, viewingDepartmentId]
+  );
 
   const handleAddTask = () => {
     showError("Add task coming soon");
