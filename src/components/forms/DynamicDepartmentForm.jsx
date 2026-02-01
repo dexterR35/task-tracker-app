@@ -118,14 +118,13 @@ const DynamicDepartmentForm = ({
             ? { ...field, ...FORM_FIELD_LIMITS[field.limitsKey] }
             : field;
           const commonProps = {
-            key: field.name,
             field: resolvedField,
             register,
             errors,
             setValue,
             watch,
           };
-          return <FieldComponent {...commonProps} />;
+          return <FieldComponent key={field.name} {...commonProps} />;
         })}
 
         <div className="pt-2">

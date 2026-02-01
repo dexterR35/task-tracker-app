@@ -48,17 +48,26 @@ export async function list(req, res, next) {
       FROM task_boards WHERE department_id = $1`;
     const params = [departmentId];
     if (year != null && year !== '') {
-      params.push(parseInt(year, 10));
+      const y = parseInt(year, 10);
+      if (Number.isNaN(y)) {
+        return res.status(400).json({ error: 'Invalid year.', code: 'INVALID_INPUT' });
+      }
+      params.push(y);
       sql += ` AND year = $${params.length}`;
     }
     if (month != null && month !== '') {
-      params.push(parseInt(month, 10));
+      const m = parseInt(month, 10);
+      if (Number.isNaN(m) || m < 1 || m > 12) {
+        return res.status(400).json({ error: 'Invalid month (1–12).', code: 'INVALID_INPUT' });
+      }
+      params.push(m);
       sql += ` AND month = $${params.length}`;
     }
     sql += ` ORDER BY year DESC, month DESC`;
     const result = await query(sql, params);
     res.json({ boards: result.rows.map(toBoard) });
   } catch (err) {
+    console.error('[task-boards list]', err?.message || err, { code: err?.code, detail: err?.detail });
     next(err);
   }
 }

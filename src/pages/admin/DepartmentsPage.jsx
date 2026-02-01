@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { departmentsApi } from '@/app/api';
 import Loader from '@/components/ui/Loader/Loader';
+import SectionHeader from '@/components/ui/SectionHeader';
 
 /**
  * Departments page – list all departments (admin only).
@@ -49,12 +50,7 @@ const DepartmentsPage = () => {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Departments
-        </span>
-        <span className="h-px flex-1 max-w-[2rem] bg-gray-200 dark:bg-gray-600 rounded-full shrink-0" />
-      </div>
+      <SectionHeader label="Departments" className="mb-4" />
 
       <div className="bg-white dark:bg-smallCard rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">

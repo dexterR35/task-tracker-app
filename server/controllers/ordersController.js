@@ -108,7 +108,10 @@ export async function create(req, res, next) {
         status ?? 'pending',
       ]
     );
-    res.status(201).json(toOrder(result.rows[0]));
+    const order = toOrder(result.rows[0]);
+    const io = req.app.get?.('io');
+    if (io) io.emit('order:updated', { boardId });
+    res.status(201).json(order);
   } catch (err) {
     next(err);
   }
@@ -165,6 +168,8 @@ export async function update(req, res, next) {
     if (!row) {
       return res.status(404).json({ error: 'Order not found.', code: 'NOT_FOUND' });
     }
+    const io = req.app.get?.('io');
+    if (io) io.emit('order:updated', { boardId: row.board_id });
     res.json(toOrder(row));
   } catch (err) {
     next(err);
@@ -181,12 +186,15 @@ export async function remove(req, res, next) {
     const result = await query(
       `DELETE FROM orders o USING order_boards b
        WHERE b.id = o.board_id AND o.id = $1 AND b.department_id = $2
-       RETURNING o.id`,
+       RETURNING o.board_id`,
       [req.params.id, departmentId]
     );
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Order not found.', code: 'NOT_FOUND' });
     }
+    const boardId = result.rows[0]?.board_id;
+    const io = req.app.get?.('io');
+    if (io && boardId) io.emit('order:updated', { boardId });
     res.status(204).send();
   } catch (err) {
     next(err);

@@ -104,7 +104,10 @@ export async function create(req, res, next) {
         position != null ? parseInt(position, 10) : 0,
       ]
     );
-    res.status(201).json(toTask(result.rows[0]));
+    const task = toTask(result.rows[0]);
+    const io = req.app.get?.('io');
+    if (io) io.emit('task:updated', { boardId });
+    res.status(201).json(task);
   } catch (err) {
     next(err);
   }
@@ -169,6 +172,8 @@ export async function update(req, res, next) {
     if (!row) {
       return res.status(404).json({ error: 'Task not found.', code: 'NOT_FOUND' });
     }
+    const io = req.app.get?.('io');
+    if (io) io.emit('task:updated', { boardId: row.board_id });
     res.json(toTask(row));
   } catch (err) {
     next(err);
@@ -185,12 +190,15 @@ export async function remove(req, res, next) {
     const result = await query(
       `DELETE FROM tasks t USING task_boards b
        WHERE b.id = t.board_id AND t.id = $1 AND b.department_id = $2
-       RETURNING t.id`,
+       RETURNING t.board_id`,
       [req.params.id, departmentId]
     );
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Task not found.', code: 'NOT_FOUND' });
     }
+    const boardId = result.rows[0]?.board_id;
+    const io = req.app.get?.('io');
+    if (io && boardId) io.emit('task:updated', { boardId });
     res.status(204).send();
   } catch (err) {
     next(err);

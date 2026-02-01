@@ -1,14 +1,13 @@
 /**
- * Shared department sidebar – same nav structure for Design and Food.
- * Driven by navConfig: mainMenuItems (with optional subItems), settingsItems, optional departmentsItem.
- * Same layout: logo, department box, Main Menu, optional Departments (admin), Settings.
+ * Single dynamic sidebar for all departments (Design, Food, future).
+ * Main menu comes from navConfig (per department); Settings and Departments come from constants (shared).
  */
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
 import { Icons } from "@/components/icons";
-import { CARD_SYSTEM } from "@/constants";
+import { CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
 import logo from "@/assets/Logo4.webp";
 
 const SIDEBAR_ICON_SIZE = "w-3.5 h-3.5";
@@ -23,6 +22,10 @@ const ACTIVE_ICON_STYLE = {
   color: "white",
 };
 
+/** Shared for all departments – from constants */
+const SETTINGS_ITEMS = NAVIGATION_CONFIG.SETTINGS_ITEMS ?? [];
+const DEPARTMENTS_ITEM = NAVIGATION_CONFIG.DEPARTMENTS_ITEM ?? null;
+
 function NavIcon({ icon: Icon, active }) {
   return (
     <div className={`${SIDEBAR_ICON_WRAPPER} shrink-0`} style={active ? ACTIVE_ICON_STYLE : undefined}>
@@ -31,8 +34,18 @@ function NavIcon({ icon: Icon, active }) {
   );
 }
 
-/** Single sidebar used by both Design and Food; structure and layout are identical. */
-const DepartmentSidebar = ({ navConfig }) => {
+/**
+ * @param {{
+ *   navConfig: {
+ *     basePath: string;
+ *     slug?: string;
+ *     logoHref: string;
+ *     logoSubtitle: string;
+ *     mainMenuItems: Array<{ name: string; href: string; icon: string; adminOnly?: boolean; subItems?: Array<{ name: string; href: string }> }>;
+ *   };
+ * }} props
+ */
+const AppSidebar = ({ navConfig }) => {
   const { canAccess } = useAuth();
   const { viewingDepartment } = useSelectedDepartment();
   const location = useLocation();
@@ -43,13 +56,13 @@ const DepartmentSidebar = ({ navConfig }) => {
     basePath,
     logoHref,
     mainMenuItems = [],
-    settingsItems = [],
-    departmentsItem = null,
     logoSubtitle = "Office R.E.I",
   } = navConfig || {};
 
   const isActive = (path) => location.pathname === path;
   const toggleExpanded = (name) => setExpandedItems((prev) => ({ ...prev, [name]: !prev[name] }));
+  const showDepartments = DEPARTMENTS_ITEM && canAccess("admin");
+  const departmentName = viewingDepartment?.name ?? null;
 
   const renderItem = (item) => {
     if (item.adminOnly && !canAccess("admin")) return null;
@@ -114,13 +127,10 @@ const DepartmentSidebar = ({ navConfig }) => {
     );
   };
 
-  const showDepartments = departmentsItem && canAccess("admin");
-  const departmentName = viewingDepartment?.name ?? navConfig?.departmentNameFallback;
-
   return (
     <nav
       className="flex h-full w-full flex-col bg-white dark:bg-smallCard"
-      aria-label={basePath === "/food" ? "Food app navigation" : "Design app navigation"}
+      aria-label={basePath ? `${basePath.slice(1)} app navigation` : "App navigation"}
     >
       <div className="shrink-0 px-1.5 py-2 pt-4">
         <Link
@@ -166,18 +176,18 @@ const DepartmentSidebar = ({ navConfig }) => {
             <div className="px-2.5 pt-4 pb-1.5">
               <h5 className="text-app-subtle">Departments</h5>
             </div>
-            <div className="px-1.5 py-1.5 space-y-0.5">{renderItem(departmentsItem)}</div>
+            <div className="px-1.5 py-1.5 space-y-0.5">{renderItem(DEPARTMENTS_ITEM)}</div>
           </>
         )}
         <div className="px-2.5 pt-4 pb-1.5">
           <h5 className="text-app-subtle">Settings</h5>
         </div>
         <div className="flex-1 overflow-y-auto px-1.5 py-1.5 space-y-0.5">
-          {settingsItems.map((item) => renderItem(item))}
+          {SETTINGS_ITEMS.map((item) => renderItem(item))}
         </div>
       </div>
     </nav>
   );
 };
 
-export default DepartmentSidebar;
+export default AppSidebar;

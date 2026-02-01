@@ -238,12 +238,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO users (email, password_hash, role, department_id)
 VALUES
-  ('admin-design@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE slug = 'design')),
-  ('user-design@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE slug = 'design')),
-  ('admin-customer-support@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE slug = 'customer-support')),
-  ('user-customer-support@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE slug = 'customer-support')),
-  ('admin-food@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE slug = 'food')),
-  ('user-food@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE slug = 'food'));
+  ('admin-design@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Design')),
+  ('user-design@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Design')),
+  ('admin-customer-support@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Customer Support')),
+  ('user-customer-support@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Customer Support')),
+  ('admin-food@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Food')),
+  ('user-food@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Food'));
 
 INSERT INTO profiles (user_id, name)
 SELECT u.id, v.display_name

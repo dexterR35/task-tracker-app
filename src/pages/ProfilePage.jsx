@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usersApi } from '@/app/api';
 import { TextField, SelectField } from '@/components/forms/components/FormFields';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
+import SectionHeader from '@/components/ui/SectionHeader';
 import Loader from '@/components/ui/Loader/Loader';
 import SlidePanel from '@/components/ui/SlidePanel/SlidePanel';
 import { showSuccess, showError } from '@/utils/toast';
@@ -144,13 +145,7 @@ const ProfilePage = () => {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Profile
-          </span>
-          <span className="h-px flex-1 max-w-[2rem] bg-gray-200 dark:bg-gray-600 rounded-full shrink-0" />
-        </div>
+      <SectionHeader label="Profile" className="mb-4">
         <DynamicButton
           variant="primary"
           size="sm"
@@ -161,7 +156,7 @@ const ProfilePage = () => {
         >
           Edit
         </DynamicButton>
-      </div>
+      </SectionHeader>
 
       {/* Profile dashboard – read-only info */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-smallCard overflow-hidden">

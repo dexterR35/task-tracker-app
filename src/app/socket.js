@@ -1,6 +1,7 @@
 /**
  * Socket.IO client – JWT auth only (no refresh token).
- * Listens for forceLogout, auth:expired (server says token expired; client can refresh and reconnect), and auth:error.
+ * Listens for: forceLogout, auth:expired, auth:error (auth).
+ * Server also emits task:updated / order:updated { boardId } on create/update/delete; dashboards refetch when boardId matches.
  */
 
 import { io } from 'socket.io-client';

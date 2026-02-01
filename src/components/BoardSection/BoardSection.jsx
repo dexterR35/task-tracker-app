@@ -5,6 +5,7 @@
 import React from "react";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
 import Loader from "@/components/ui/Loader/Loader";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 const BOARD_TAB_ACTIVE =
   "px-3 py-1.5 rounded-md text-sm font-medium bg-indigo-600 text-white";
@@ -49,12 +50,7 @@ const BoardSection = ({
   if (boardsLoading && boards.length === 0) {
     return (
       <section className="mb-6" aria-label={title}>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            {title}
-          </span>
-          <span className="h-px max-w-[2rem] w-8 bg-gray-200 dark:bg-gray-600 rounded-full shrink-0" />
-        </div>
+        <SectionHeader label={title} />
         <div className="flex items-center justify-center min-h-[200px]">
           <Loader size="md" text={loadingMessage} variant="spinner" />
         </div>
@@ -64,15 +60,9 @@ const BoardSection = ({
 
   return (
     <section className="mb-6" aria-label={title}>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            {title}
-          </span>
-          <span className="h-px max-w-[2rem] w-8 bg-gray-200 dark:bg-gray-600 rounded-full shrink-0" />
-        </div>
+      <SectionHeader label={title}>
         {(addButtonLabel || exportButtonLabel) && (onAdd || onExport) && (
-          <div className="flex items-center gap-2 shrink-0">
+          <>
             {addButtonLabel && onAdd && (
               <DynamicButton
                 onClick={onAdd}
@@ -99,9 +89,9 @@ const BoardSection = ({
                 {exportButtonLabel}
               </DynamicButton>
             )}
-          </div>
+          </>
         )}
-      </div>
+      </SectionHeader>
 
       {boards.length === 0 ? (
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-smallCard p-6 text-center text-app-subtle">

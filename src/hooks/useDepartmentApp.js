@@ -1,12 +1,12 @@
 /**
  * Department app hook – 2-apps-in-1: Design (tasks) vs Food (orders).
  * Centralizes app type from user.departmentSlug. Use for redirect, layout, and nav.
- * Resolves basePath and loginRedirectPath from src/app/departments so adding a new department folder is enough.
+ * Resolves basePath and loginRedirectPath from src/components/layout/departments.
  */
 import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { DEPARTMENT_APP } from '@/constants';
-import { departmentsBySlug } from '@/app/departments';
+import { departmentsBySlug } from '@/components/layout/departments';
 
 export function useDepartmentApp() {
   const { user } = useAuth();

@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import CardWithStrip from "@/components/ui/CardWithStrip";
 
 const Skeleton = ({ 
   className = '', 
@@ -18,20 +19,17 @@ const Skeleton = ({
   );
 };
 
-// Predefined skeleton – matches card-credit layout (no hover)
-export const SkeletonCard = ({ className = '' }) => (
-  <div className={`card-credit relative ${className}`}>
-    <div className="card-credit-strip-left bg-gray-200 dark:bg-gray-600" />
-    <div className="card-credit-inner">
-      <div className="card-credit-header">
-        <div className="flex flex-col gap-2 min-w-0 flex-1">
-          <Skeleton height="0.6875rem" width="5rem" rounded="md" />
-          <Skeleton height="1.5rem" width="4rem" rounded="md" />
-        </div>
-        <Skeleton height="2.25rem" width="2.25rem" rounded="xl" className="shrink-0" />
+/** Skeleton that matches CardWithStrip layout (same as SmallCard). */
+export const SkeletonCard = ({ className = "" }) => (
+  <CardWithStrip className={`relative h-full ${className}`.trim()}>
+    <div className="flex items-stretch justify-between gap-3 m-0">
+      <div className="flex flex-col gap-2 min-w-0 flex-1">
+        <Skeleton height="0.6875rem" width="5rem" rounded="md" />
+        <Skeleton height="1.5rem" width="4rem" rounded="md" />
       </div>
+      <Skeleton height="2.25rem" width="2.25rem" rounded="xl" className="shrink-0" />
     </div>
-  </div>
+  </CardWithStrip>
 );
 
 export const SkeletonSelect = ({ className = '' }) => (

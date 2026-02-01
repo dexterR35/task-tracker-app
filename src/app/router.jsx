@@ -1,19 +1,11 @@
 
 import React from "react";
-import {
-  createBrowserRouter,
-  Navigate,
-  useLocation,
-  Outlet,
-} from "react-router-dom";
-import { motion } from "framer-motion";
+import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useDepartmentApp } from "@/hooks/useDepartmentApp";
-import design from "@/app/departments/design";
-import food from "@/app/departments/food";
-import SettingsLayout from "@/components/layout/SettingsLayout";
-import DepartmentGuard from "@/components/layout/DepartmentGuard";
-import RedirectToAppHome from "@/components/layout/RedirectToAppHome";
+import DepartmentLayout from "@/components/layout/DepartmentLayout";
+import { designRoutes } from "@/app/routes/designRoutes";
+import { foodRoutes } from "@/app/routes/foodRoutes";
 import Loader from "@/components/ui/Loader/Loader";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
@@ -21,7 +13,6 @@ import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import UIShowcasePage from "@/pages/admin/UIShowcasePage";
 import DepartmentsPage from "@/pages/admin/DepartmentsPage";
-import ProfilePage from "@/pages/ProfilePage";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 
@@ -31,24 +22,6 @@ const SimpleLoader = () => (
     <Loader size="lg" text="Initializing application..." variant="spinner" />
   </div>
 );
-
-
-const PageWrapper = ({ children }) => {
-  const location = useLocation();
-  
-  return (
-    <motion.div
-      key={location.pathname}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
 
 
 const PublicRoute = ({ children }) => {
@@ -119,6 +92,11 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const ProtectedIndexRedirect = () => {
+  const { loginRedirectPath } = useDepartmentApp();
+  return <Navigate to={loginRedirectPath} replace />;
+};
+
 ProtectedRoute.displayName = "ProtectedRoute";
 
 
@@ -167,52 +145,47 @@ export const createRouter = () => {
       {
         element: (
           <ProtectedRoute>
-            <ErrorBoundary componentName="DepartmentGuard">
-              <DepartmentGuard />
+            <ErrorBoundary componentName="ProtectedApp">
+              <Outlet />
             </ErrorBoundary>
           </ProtectedRoute>
         ),
         children: [
-          { index: true, element: <RedirectToAppHome /> },
-          // ========================================
-          // DESIGN (task tracker) – from src/app/departments/design
-          // ========================================
+          {
+            index: true,
+            element: <ProtectedIndexRedirect />,
+          },
           {
             path: "design",
             element: (
               <ErrorBoundary componentName="DesignLayout">
-                <design.Layout />
+                <DepartmentLayout />
               </ErrorBoundary>
             ),
-            children: design.routes,
+            children: designRoutes,
           },
-          // ========================================
-          // FOOD (office food orders) – from src/app/departments/food
-          // ========================================
           {
             path: "food",
             element: (
               <ErrorBoundary componentName="FoodLayout">
-                <food.Layout />
+                <DepartmentLayout />
               </ErrorBoundary>
             ),
-            children: food.routes,
+            children: foodRoutes,
           },
-          // ========================================
-          // SHARED SETTINGS (no department in path)
-          // ========================================
           {
             path: "settings",
             element: (
-              <ErrorBoundary componentName="SettingsLayout">
-                <SettingsLayout />
+              <ErrorBoundary componentName="SettingsRoutes">
+                <DepartmentLayout />
               </ErrorBoundary>
             ),
             children: [
               { index: true, element: <Navigate to="/settings/users" replace /> },
-              { path: "users", element: <AdminRoute><PageWrapper><UsersPage /></PageWrapper></AdminRoute> },
-              { path: "departments", element: <AdminRoute><PageWrapper><DepartmentsPage /></PageWrapper></AdminRoute> },
-              { path: "ui-showcase", element: <AdminRoute><PageWrapper><UIShowcasePage /></PageWrapper></AdminRoute> },
+              { path: "users", element: <AdminRoute><UsersPage /></AdminRoute> },
+              { path: "departments", element: <AdminRoute><DepartmentsPage /></AdminRoute> },
+              { path: "ui-showcase", element: <AdminRoute><UIShowcasePage /></AdminRoute> },
+              { path: "*", element: <NotFoundPage /> },
             ],
           },
         ],

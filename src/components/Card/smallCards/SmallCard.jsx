@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
+import CardWithStrip from "@/components/ui/CardWithStrip";
 import { CARD_SYSTEM } from "@/constants";
-import { Icons } from "@/components/icons";
 
+/** Dashboard overview card – title, value, badge, icon, optional details. Uses CardWithStrip. */
 const SmallCard = ({ card }) => {
-  const [detailsExpanded, setDetailsExpanded] = useState(true);
-
   if (!card || !card.color) return null;
 
   const cardColorHex = useMemo(
@@ -19,7 +18,6 @@ const SmallCard = ({ card }) => {
   );
   const styles = useMemo(
     () => ({
-      stripBg: cardColorHex,
       valueColor: cardColorHex,
       iconBg: `${cardColorHex}18`,
       iconColor: cardColorHex,
@@ -32,69 +30,61 @@ const SmallCard = ({ card }) => {
   const badgeText = card.badge?.text ?? card.subtitle ?? "—";
 
   return (
-    <div className="card-credit">
-      <div
-        className="card-credit-strip-left"
-        style={{ backgroundColor: styles.stripBg }}
-      />
-      <div className="card-credit-inner">
-        <div className="card-credit-header">
-          <div className="flex flex-col gap-1 min-w-0 flex-1">
-            <p className="card-credit-label">{card.title}</p>
-            <p className="card-credit-value" style={{ color: styles.valueColor }}>
-              {card.value}
-            </p>
-            <span
-              className="card-credit-badge"
-              style={{
-                backgroundColor: `${badgeColorHex}22`,
-                color: badgeColorHex,
-              }}
-            >
-              {badgeText}
-            </span>
-          </div>
-          <div className="flex justify-between flex-col items-center gap-2 shrink-0 min-w-0">
-            <div
-              className="card-credit-icon"
-              style={{ backgroundColor: styles.iconBg, color: styles.iconColor }}
-            >
-              <Icon className="w-4 h-4" />
-            </div>
-            {hasDetails ? (
-              <button
-                type="button"
-                onClick={() => setDetailsExpanded((e) => !e)}
-                className="flex items-center justify-center rounded-md p-0.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-app dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200"
-                aria-expanded={detailsExpanded}
-                aria-label={detailsExpanded ? "Collapse details" : "Expand details"}
-              >
-                {detailsExpanded ? (
-                  <Icons.buttons.chevronDown className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                ) : (
-                  <Icons.buttons.chevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                )}
-              </button>
-            ) : (
-              <div className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            )}
+    <CardWithStrip stripColor={cardColorHex} className="h-full">
+      <div className="flex items-stretch justify-between gap-3 m-0">
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate leading-[1.3]">
+            {card.title}
+          </p>
+          <p
+            className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight [letter-spacing:-0.03em]"
+            style={{ color: styles.valueColor }}
+          >
+            {card.value}
+          </p>
+          <span
+            className="inline-flex items-center rounded px-2 py-0.5 text-sm font-medium truncate max-w-full"
+            style={{
+              backgroundColor: `${badgeColorHex}22`,
+              color: badgeColorHex,
+            }}
+          >
+            {badgeText}
+          </span>
+        </div>
+        <div className="flex justify-between flex-col items-center gap-2 shrink-0 min-w-0">
+          <div
+            className="flex items-center justify-center w-9 h-9 rounded-lg shrink-0"
+            style={{ backgroundColor: styles.iconBg, color: styles.iconColor }}
+          >
+            <Icon className="w-4 h-4" />
           </div>
         </div>
-        {hasDetails && detailsExpanded && (
-          <>
-            <div className="card-credit-divider" aria-hidden />
-            <div className="card-credit-info">
-              {card.details.map((detail, index) => (
-                <div key={index} className="card-credit-info-row">
-                  <span className="card-credit-info-label">{detail.label}</span>
-                  <span className="card-credit-info-value">{detail.value}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
       </div>
-    </div>
+      {hasDetails && (
+        <>
+          <div
+            className="mt-3 mb-2 h-px bg-gray-100 dark:bg-gray-700/80"
+            aria-hidden
+          />
+          <div className="space-y-1.5">
+            {card.details.map((detail, index) => (
+              <div
+                key={index}
+                className="flex items-baseline justify-between gap-3 text-sm font-medium leading-[1.4]"
+              >
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 shrink-0 truncate">
+                  {detail.label}
+                </span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate text-right">
+                  {detail.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </CardWithStrip>
   );
 };
 

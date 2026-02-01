@@ -27,6 +27,12 @@ Express + PostgreSQL backend with JWT auth API.
    Seed users (Node – same DB as app, bcryptjs): from `server/` run `npm run db:seed`.  
    Creates one admin + one user per department (design, customer-support, food). Emails: admin-{dept}@netbet.ro (admin123), user-{dept}@netbet.ro (user123).
 
+   **If you get "column created_by does not exist" (500 on `/api/task-boards`):** your DB was created with an older schema. From project root run:
+   ```bash
+   cd server && psql "$DATABASE_URL" -f db/migrations/001_add_task_order_board_columns.sql
+   ```
+   (Use your actual connection string if `DATABASE_URL` is not in the shell, e.g. `psql postgresql://user:pass@localhost:5432/task_tracker -f db/migrations/001_add_task_order_board_columns.sql`.)
+
 4. **Start server**
 
    ```bash

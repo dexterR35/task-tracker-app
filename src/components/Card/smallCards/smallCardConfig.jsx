@@ -1,7 +1,5 @@
 import { Icons } from "@/components/icons";
-import { SearchableSelectField } from "@/components/forms/components/FormFields";
 import { CARD_SYSTEM, ROUTES } from "@/constants";
-import { logger } from "@/utils/logger";
 
 // Small Card Types
 export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
@@ -164,68 +162,51 @@ export const SMALL_CARD_CONFIGS = {
     },
   },
 
-  [SMALL_CARD_TYPES.ACTIONS]: {
-    title: "Task Statistics",
-    subtitle: "View All",
-    description: "Total Tasks",
-    icon: Icons.buttons.add,
-    color: "soft_purple",
-    getBadge: (data) => null,
-    getValue: (data) => {
-      if (!data.tasks || !Array.isArray(data.tasks)) return "0";
-
-      const currentMonthId =
-        data.selectedMonth?.monthId || data.currentMonth?.monthId;
-
-      // Show ALL tasks for the selected month (no user/reporter filtering)
-      const filteredTasks = data.tasks.filter((task) => {
-        // Only filter by month, never by user or reporter
-        if (currentMonthId && task.monthId !== currentMonthId) return false;
-        return true;
-      });
-
-      return filteredTasks.length.toString();
-    },
-    getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),
-    getContent: () => null,
-    getDetails: (data) => {
-      if (!data.tasks || !Array.isArray(data.tasks)) return [];
-
-      const currentMonthId =
-        data.selectedMonth?.monthId || data.currentMonth?.monthId;
-
-      // Filter tasks by month first
-      let filteredTasks = data.tasks.filter((task) => {
-        if (currentMonthId && task.monthId !== currentMonthId) return false;
-        return true;
-      });
-
-      // Only if available
-      const totalTasks = data.actionsTotalTasks ?? filteredTasks.length;
-      const totalHours = data.actionsTotalHours ?? 0;
-      const totalDeliverables = data.actionsTotalDeliverables ?? 0;
-      const totalDeliverablesWithVariationsHours =
-        data.actionsTotalDeliverablesWithVariationsHours ?? 0;
-
-      return [
-        {
-          icon: Icons.generic.clock,
-          label: "Total Hours Task",
-          value: `${totalHours.toFixed(1)}h`,
-        },
-        {
-          icon: Icons.generic.deliverable,
-          label: "Total Deliverables",
-          value: totalDeliverables.toString(),
-        },
-        {
-          icon: Icons.generic.timer,
-          label: "Total Hrs Deliverable + Variation",
-          value: `${totalDeliverablesWithVariationsHours.toFixed(1)}h`,
-        },
-      ];
-    },
-  },
+  [SMALL_CARD_TYPES.ACTIONS]: (() => {
+    const filterTasksBySelectedMonth = (tasks, data) => {
+      if (!tasks || !Array.isArray(tasks)) return [];
+      const monthId = data.selectedMonth?.monthId || data.currentMonth?.monthId;
+      return monthId ? tasks.filter((t) => t.monthId === monthId) : tasks;
+    };
+    return {
+      title: "Task Statistics",
+      subtitle: "View All",
+      description: "Total Tasks",
+      icon: Icons.buttons.add,
+      color: "soft_purple",
+      getBadge: () => null,
+      getValue: (data) => {
+        const filtered = filterTasksBySelectedMonth(data.tasks, data);
+        return filtered.length.toString();
+      },
+      getStatus: (data) => (data.canCreateTasks ? "Active" : "Disabled"),
+      getContent: () => null,
+      getDetails: (data) => {
+        const filteredTasks = filterTasksBySelectedMonth(data.tasks, data);
+        const totalHours = data.actionsTotalHours ?? 0;
+        const totalDeliverables = data.actionsTotalDeliverables ?? 0;
+        const totalDeliverablesWithVariationsHours =
+          data.actionsTotalDeliverablesWithVariationsHours ?? 0;
+        return [
+          {
+            icon: Icons.generic.clock,
+            label: "Total Hours Task",
+            value: `${totalHours.toFixed(1)}h`,
+          },
+          {
+            icon: Icons.generic.deliverable,
+            label: "Total Deliverables",
+            value: totalDeliverables.toString(),
+          },
+          {
+            icon: Icons.generic.timer,
+            label: "Total Hrs Deliverable + Variation",
+            value: `${totalDeliverablesWithVariationsHours.toFixed(1)}h`,
+          },
+        ];
+      },
+    };
+  })(),
 
   [SMALL_CARD_TYPES.PERFORMANCE]: {
     title: "Performance",
@@ -298,6 +279,12 @@ export const SMALL_CARD_CONFIGS = {
   },
 };
 
+/** Resolve config field: function(data) or static value. */
+const getConfigValue = (config, key, data) => {
+  const value = config[key];
+  return typeof value === "function" ? value(data) : value;
+};
+
 /**
  * One SmallCard component; different data per department.
  * createCards(data, mode): mode "main" = Design (tasks, users, efficiency), mode "food" = Food (orders, boards, history).
@@ -333,29 +320,15 @@ export const createCards = (data, mode = "main") => {
   return cardTypes
     .map((cardType) => {
       const config = SMALL_CARD_CONFIGS[cardType];
-      if (!config) {
-        return null;
-      }
+      if (!config) return null;
       try {
-        const card = {
+        return {
           id: `${cardType}-card`,
-          title:
-            typeof config.title === "function"
-              ? config.title(data)
-              : config.title,
-          subtitle:
-            typeof config.subtitle === "function"
-              ? config.subtitle(data)
-              : config.subtitle,
-          description:
-            typeof config.description === "function"
-              ? config.description(data)
-              : config.description,
+          title: getConfigValue(config, "title", data),
+          subtitle: getConfigValue(config, "subtitle", data),
+          description: getConfigValue(config, "description", data),
           icon: config.icon,
-          color:
-            typeof config.color === "function"
-              ? config.color(data)
-              : config.color,
+          color: getConfigValue(config, "color", data),
           value: config.getValue(data),
           status: config.getStatus(data),
           badge: config.getBadge ? config.getBadge(data) : null,
@@ -363,9 +336,7 @@ export const createCards = (data, mode = "main") => {
           details: config.getDetails ? config.getDetails(data) : [],
           href: config.getHref ? config.getHref(data) : null,
         };
-
-        return card;
-      } catch (error) {
+      } catch {
         return null;
       }
     })
