@@ -34,7 +34,7 @@ import { Icons } from "@/components/icons";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { CARD_SYSTEM, FORM_OPTIONS } from "@/constants";
 
-// CSS theme colors from index.css @theme — keep in sync with index.css
+// JS mirror of CSS @theme (index.css) for displaying swatches on this page only. Keep in sync with index.css.
 const THEME_COLORS = {
   primary: "#0a0a13",
   "primary-80": "#0a2470",

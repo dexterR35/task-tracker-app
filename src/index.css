@@ -74,6 +74,7 @@
   --color-btn-secondary: #c10f29;
   --color-btn-warning: #eb2743;
   --color-btn-info: #2a9df4;
+  --color-gray-200: #e5e7eb;
 }
 
 @layer base {

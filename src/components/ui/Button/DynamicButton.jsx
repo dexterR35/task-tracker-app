@@ -51,10 +51,16 @@ const DynamicButton = memo(function DynamicButton({
     const cursor = isDisabled ? "not-allowed" : isLoading ? "wait" : "pointer";
     const opacity = isDisabled ? 0.5 : 1;
     if (variant === "outline") {
-      return { backgroundColor: "transparent", color: "#111827", border: "1px solid #e5e7eb", opacity, cursor };
+      return {
+        backgroundColor: "transparent",
+        color: "var(--color-text-primary)",
+        border: "1px solid var(--color-gray-200)",
+        opacity,
+        cursor,
+      };
     }
     const backgroundColor = variantBg[variant] ?? variantBg.primary;
-    const color = darkTextVariants.has(variant) ? "#333" : "#ffffff";
+    const color = darkTextVariants.has(variant) ? "var(--color-text-primary)" : "var(--color-text-white)";
     return { backgroundColor, color, border: "none", opacity, cursor };
   }, [variant, isDisabled, isLoading]);
 

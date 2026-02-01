@@ -222,6 +222,12 @@ export const NAVIGATION_CONFIG = {
 };
 
 // ============================================================================
+// CARD SYSTEM – badges, charts, inline styles (JS-only color usage)
+// ============================================================================
+// COLOR_HEX_MAP: Use only when the app needs the actual color value in code
+// (e.g. charts, inline style={{ }}, SVG, canvas). For all other styling,
+// use CSS theme variables in index.css @theme and Tailwind classes.
+// Keep this map in sync with the CSS theme where the same tokens exist.
 // 70% → B3, 73% → BA, 75% → BF, 80% → CC, 85% → D9
 export const CARD_SYSTEM = {
   COLOR_HEX_MAP: {
