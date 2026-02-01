@@ -13,7 +13,7 @@ const AppLayout = () => {
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar />
         <main className="flex-1 overflow-y-auto bg-primary">
-          <div className="px-4 py-6 md:px-6 md:py-6">
+          <div className="layout-content-padding">
             <Outlet />
           </div>
         </main>

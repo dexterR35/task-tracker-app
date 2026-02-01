@@ -179,6 +179,11 @@
     @apply text-gray-400 dark:text-gray-500;
   }
 
+  /* Layout – top nav and main content aligned */
+  .layout-content-padding {
+    @apply px-4 py-6 md:px-6 md:py-8;
+  }
+
   /* Modern Card System */
   .bg-primary {
     @apply !bg-white dark:!bg-primary;
