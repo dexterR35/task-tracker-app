@@ -48,8 +48,7 @@ const UsersPage = () => {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-xl font-bold">Users</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Manage user accounts and permissions
         </p>
       </div>

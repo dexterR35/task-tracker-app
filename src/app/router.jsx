@@ -16,7 +16,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import UIShowcasePage from "@/pages/admin/UIShowcasePage";
-import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
+import ComingSoonPage from "@/pages/ComingSoonPage";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
 
@@ -271,7 +271,47 @@ export const createRouter = () => {
             ),
           },
           {
+            path: "analytics/ai-usage",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "analytics/reporter-overview",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
             path: "analytics/by-users",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "analytics/misc",
+            element: (
+              <ErrorBoundary componentName="ComingSoonPage">
+                <PageWrapper>
+                  <ComingSoonPage />
+                </PageWrapper>
+              </ErrorBoundary>
+            ),
+          },
+          {
+            path: "analytics/month-comparison",
             element: (
               <ErrorBoundary componentName="ComingSoonPage">
                 <PageWrapper>

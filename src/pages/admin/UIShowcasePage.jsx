@@ -17,7 +17,6 @@ import Skeleton, {
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
-import ComingSoon from "@/components/ui/ComingSoon/ComingSoon";
 import {
   TextField,
   PasswordField,
@@ -289,10 +288,7 @@ export default function UIShowcasePage() {
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-            UI Showcase
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Design system &amp; component library — same styles as the app
           </p>
         </div>
@@ -561,15 +557,15 @@ export default function UIShowcasePage() {
       <ShowcaseSection
         id={SECTION_IDS.SKELETON}
         title="Skeleton"
-        description="Loading placeholders: card, table, button"
+        description="Loading placeholders: same as Dashboard (5 cards) and Table (rows=3)"
       >
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap items-center">
             <SkeletonButton className="max-w-[120px]" />
             <Skeleton height="2rem" width="6rem" rounded="lg" />
             <Skeleton height="1rem" width="100%" rounded="md" />
@@ -771,11 +767,14 @@ export default function UIShowcasePage() {
           description="Placeholder block used for under-development pages"
         >
           <div className="flex flex-1 min-h-0 items-center justify-center">
-            <ComingSoon
-              title="Feature in progress"
-              description="This block is used across the app for coming-soon pages."
-              showHomeLink={false}
-            />
+            <div className="card text-center p-6 max-w-sm">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl">🚧</span>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Placeholder for under-development pages.
+              </p>
+            </div>
           </div>
         </ShowcaseSection>
         )}

@@ -193,10 +193,14 @@ export const NAVIGATION_CONFIG = {
       icon: "chart",
       color: "blue",
       subItems: [
-        { name: "Marketing", href: "/analytics/marketing" },
+        { name: "Overview", href: "/analytics" },
         { name: "Acquisition", href: "/analytics/acquisition" },
+        { name: "Marketing", href: "/analytics/marketing" },
         { name: "Product", href: "/analytics/product" },
-        { name: "Analytics by users", href: "/analytics/by-users" },
+        { name: "User overview", href: "/analytics/by-users" },
+        { name: "Reporter overview", href: "/analytics/reporter-overview" },
+        { name: "Month comparison", href: "/analytics/month-comparison" },
+        { name: "Misc", href: "/analytics/misc" },
       ],
     },
     {
