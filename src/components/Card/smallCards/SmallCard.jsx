@@ -1,8 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { CARD_SYSTEM } from "@/constants";
 import { Icons } from "@/components/icons";
 
 const SmallCard = ({ card }) => {
+  const [detailsExpanded, setDetailsExpanded] = useState(true);
+
   if (!card || !card.color) return null;
 
   const cardColorHex = useMemo(
@@ -59,15 +61,26 @@ const SmallCard = ({ card }) => {
             >
               <Icon className="w-4 h-4" />
             </div>
-           
-            <div className=" gap-1 min-w-0 w-fit">
-              <Icons.buttons.chevronRight className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" aria-hidden />
-     
-            </div>
-           
+            {hasDetails ? (
+              <button
+                type="button"
+                onClick={() => setDetailsExpanded((e) => !e)}
+                className="flex items-center justify-center rounded-md p-0.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-app dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200"
+                aria-expanded={detailsExpanded}
+                aria-label={detailsExpanded ? "Collapse details" : "Expand details"}
+              >
+                {detailsExpanded ? (
+                  <Icons.buttons.chevronDown className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                ) : (
+                  <Icons.buttons.chevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                )}
+              </button>
+            ) : (
+              <div className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            )}
           </div>
         </div>
-        {hasDetails && (
+        {hasDetails && detailsExpanded && (
           <>
             <div className="card-credit-divider" aria-hidden />
             <div className="card-credit-info">

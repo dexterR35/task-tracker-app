@@ -236,7 +236,6 @@
   /* Dashboard cards – modern, detailed typography, no hover */
   .card-credit {
     @apply relative bg-white dark:bg-smallCard overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700;
-    min-height: 10rem;
   }
 
   .card-credit-strip-left {
@@ -245,7 +244,6 @@
 
   .card-credit-inner {
     @apply flex flex-col px-4 py-4 relative;
-    min-height: 10rem;
   }
 
   .card-credit-header {
