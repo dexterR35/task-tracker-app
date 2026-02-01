@@ -95,12 +95,11 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
-  /** Food app only: Dashboard, Orders, History, Profile (used when user.departmentSlug === 'food') */
+  /** Food app only: Dashboard, Orders, History (used when user.departmentSlug === 'food') */
   FOOD_MENU_ITEMS: [
     { name: "Dashboard", href: "/food/dashboard", icon: "home", color: "blue" },
     { name: "Orders", href: "/food/orders", icon: "chart", color: "blue" },
     { name: "History", href: "/food/history", icon: "chart", color: "gray" },
-    { name: "Profile", href: "/food/profile", icon: "user", color: "gray" },
   ],
 };
 

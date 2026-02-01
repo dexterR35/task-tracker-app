@@ -12,7 +12,6 @@ import NotFoundPage from "@/pages/statusPages/NotFoundPage";
 export const foodRoutes = [
   { index: true, element: <Navigate to="/food/dashboard" replace /> },
   { path: "dashboard", element: <DashboardPage variant="food" /> },
-  { path: "order-board", element: <Navigate to="/food/dashboard" replace /> },
   { path: "orders", element: <FoodOrdersPage /> },
   { path: "history", element: <FoodHistoryPage /> },
   { path: "profile", element: <ProfilePage /> },
