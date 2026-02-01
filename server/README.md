@@ -21,20 +21,19 @@ Express + PostgreSQL backend with JWT auth API.
    PORT=5000
    ```
 
-3. **Run migrations**
+3. **Database (psql only – no Node)**
+
+   From project root, or from `server/` with `$DATABASE_URL`:
 
    ```bash
-   npm run db:migrate
+   psql -d task_tracker -f server/db/schema.sql
+   psql -d task_tracker -f server/db/seed-user.sql
    ```
 
-4. **Optional: seed admin user**
+   Or from `server/`: `psql "$DATABASE_URL" -f db/schema.sql` then `psql "$DATABASE_URL" -f db/seed-user.sql`.  
+   Schema creates tables; seed-user creates `admin@netbet.ro` / `admin123` (change password in the SQL file for production).
 
-   ```bash
-   npm run db:seed
-   # Default: admin@example.com / admin123 (dev only)
-   ```
-
-5. **Start server**
+4. **Start server**
 
    ```bash
    npm run dev
@@ -44,13 +43,37 @@ Express + PostgreSQL backend with JWT auth API.
 
 | Method | Endpoint            | Auth | Description        |
 |--------|---------------------|------|--------------------|
-| POST   | `/api/auth/register` | No   | Register user       |
-| POST   | `/api/auth/login`    | No   | Login, returns JWT |
-| GET    | `/api/auth/me`       | Yes  | Current user       |
+| POST   | `/api/auth/login`   | No   | Login; returns JWT + sets httpOnly refresh cookie |
+| GET    | `/api/auth/me`      | Yes  | Current user       |
+| POST   | `/api/auth/refresh` | No   | Cookie sent; validates against sessions table; returns new JWT |
+| POST   | `/api/auth/logout`     | No   | Cookie sent; deletes session, clears cookie; emits Socket.IO `forceLogout` |
+| POST   | `/api/auth/logout-all` | Yes  | Revokes all sessions for user; emits `forceLogout` to all devices           |
 
-**Register body:** `{ "email", "password", "name", "role" }` (role: `admin` or `user`).  
-**Login body:** `{ "email", "password" }`.  
-**Protected routes:** `Authorization: Bearer <token>`.
+**Access token:** JWT, 5–10 min (high security) or 10–15 min default; stored in memory on client.  
+**Refresh token:** Opaque, httpOnly secure cookie; stored as **SHA-256 hash** in `refresh_tokens`; validated against DB.  
+**Session metadata:** `user_agent`, `ip`, `last_used_at` stored per session for monitoring.  
+**Protected routes:** `Authorization: Bearer <JWT>`.
+
+**Key rotation:** Set `JWT_SECRET_PREVIOUS` to the old secret when rotating; server verifies with current then previous.
+
+## Socket.IO
+
+- Connect with JWT only: `io(API_URL, { auth: { token: <JWT> } })`.
+- Server verifies JWT on handshake (supports key rotation); loads `role` from DB; attaches `userId`, `role` to socket (identity from JWT, not `socket.id`).
+- **Event validation:** Only events in `SOCKET_EVENT_ROLES` are accepted; each event requires the socket’s role to be in the allowed list.
+- Optional event: `forceLogout` → client clears token and redirects to login.
+
+### Common mistakes (avoid)
+
+- ❌ Using refresh token in socket auth – use JWT only.
+- ❌ Long-lived JWTs just for sockets – use same short-lived access token.
+- ❌ Skipping auth on reconnect – server verifies JWT on every connection.
+- ❌ Trusting `socket.id` as identity – use `socket.userId` from verified JWT.
+
+## Logging & monitoring
+
+- **Auth events** (login, logout, refresh, logout-all, register) are logged as JSON lines to stdout: `event`, `userId`, `ip`, `userAgent`, `success`/`reason`.
+- Pipe to a log aggregator or file for monitoring and audit.
 
 ## Health
 

@@ -9,12 +9,11 @@ import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import Loader from "@/components/ui/Loader/Loader";
 
 const AdminDashboardPage = () => {
-  const { canAccess } = useAuth();
+  const { canAccess, user } = useAuth();
   const isUserAdmin = canAccess("admin");
 
   const appData = useAppDataContext();
   const {
-    user,
     users,
     isLoading,
     isInitialLoading,

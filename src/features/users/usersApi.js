@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { usersApi as api } from '@/app/api';
 import { useAuth } from '@/context/AuthContext';
-import { isUserAdmin } from '@/features/utils/authUtils';
+import { isAdmin } from '@/features/utils/authUtils';
 import { logger } from '@/utils/logger';
 
 export const useUsers = () => {
@@ -14,10 +14,10 @@ export const useUsers = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user, isLoading: authLoading } = useAuth();
-  const isAdmin = isUserAdmin(user);
+  const userIsAdmin = isAdmin(user);
 
   useEffect(() => {
-    if (authLoading || !user || !isAdmin) {
+    if (authLoading || !user || !userIsAdmin) {
       setUsers([]);
       setError(null);
       setIsLoading(authLoading);
@@ -41,7 +41,7 @@ export const useUsers = () => {
         if (!cancelled) setIsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [authLoading, user, isAdmin]);
+  }, [authLoading, user, userIsAdmin]);
 
   return { users, isLoading: authLoading || isLoading, error };
 };
@@ -87,17 +87,17 @@ export const useUserById = (userId) => {
  */
 export const useCurrentUser = () => {
   const { user: authUser, isLoading: authLoading } = useAuth();
-  const isAdmin = isUserAdmin(authUser);
+  const userIsAdmin = isAdmin(authUser);
   const userId = authUser?.id ?? null;
 
   const { user: profileUser, isLoading: profileLoading, error: profileError } = useUserById(
-    isAdmin ? null : userId
+    userIsAdmin ? null : userId
   );
 
   if (!authUser) {
     return { user: null, isLoading: authLoading, error: null };
   }
-  if (isAdmin) {
+  if (userIsAdmin) {
     return { user: authUser, isLoading: false, error: null };
   }
   return {

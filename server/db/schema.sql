@@ -1,51 +1,63 @@
--- Users table for auth (PERN)
+-- =============================================================================
+-- Task Tracker DB – PostgreSQL
+-- Run: psql -d task_tracker -f server/db/schema.sql  (or psql "$DATABASE_URL" -f server/db/schema.sql)
+-- Then optionally: psql -d task_tracker -f server/db/seed-user.sql
+-- =============================================================================
+
+-- =============================================================================
+-- AUTH: users (login only – no profile data)
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  username VARCHAR(100) UNIQUE,
   role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
   is_active BOOLEAN DEFAULT true,
-  color_set VARCHAR(20),
-  created_by VARCHAR(100),
-  occupation VARCHAR(100),
-  office VARCHAR(100),
-  phone VARCHAR(50),
-  avatar_url VARCHAR(500),
-  manager_id UUID REFERENCES users(id),
-  email_verified_at TIMESTAMPTZ,
-  gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add columns to existing DBs first (so indexes below succeed; CREATE TABLE does not add columns to existing tables)
-ALTER TABLE users ADD COLUMN IF NOT EXISTS office VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS occupation VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS manager_id UUID REFERENCES users(id);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100) UNIQUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(10);
-ALTER TABLE users DROP CONSTRAINT IF EXISTS users_gender_check;
-ALTER TABLE users ADD CONSTRAINT users_gender_check CHECK (gender IS NULL OR gender IN ('male', 'female'));
-
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
-CREATE INDEX IF NOT EXISTS idx_users_manager_id ON users(manager_id);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 
--- Optional: refresh token table for future use
+-- =============================================================================
+-- PROFILE: one row per user (name, job, office, etc.)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  username VARCHAR(100) UNIQUE,
+  office VARCHAR(100),
+  job_position VARCHAR(100),
+  phone VARCHAR(50),
+  avatar_url VARCHAR(500),
+  gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
+  color_set VARCHAR(20),
+  created_by VARCHAR(100),
+  email_verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
+
+-- =============================================================================
+-- SESSIONS: refresh tokens (SHA-256 hash stored; metadata for audit)
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token VARCHAR(500) NOT NULL,
+  token VARCHAR(64) NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
+  user_agent VARCHAR(500),
+  ip VARCHAR(45),
+  last_used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);

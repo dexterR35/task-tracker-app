@@ -1,11 +1,12 @@
 /**
  * Users API - list, get one, update (PERN)
+ * Auth in users; profile in profiles. JOIN for read; update each table as needed.
  */
 
 import { query } from '../config/db.js';
 
-const userColumns =
-  'id, email, name, username, role, is_active, color_set, created_by, occupation, office, phone, avatar_url, manager_id, email_verified_at, gender, created_at, updated_at';
+const userColumns = `u.id, u.email, u.role, u.is_active, u.created_at AS u_created_at, u.updated_at AS u_updated_at,
+  p.name, p.username, p.office, p.phone, p.avatar_url, p.job_position, p.email_verified_at, p.gender, p.color_set, p.created_by, p.created_at AS p_created_at, p.updated_at AS p_updated_at`;
 
 function toUser(row) {
   if (!row) return null;
@@ -18,15 +19,14 @@ function toUser(row) {
     isActive: row.is_active,
     colorSet: row.color_set,
     createdBy: row.created_by,
-    occupation: row.occupation,
     office: row.office,
     phone: row.phone,
     avatarUrl: row.avatar_url,
-    managerId: row.manager_id,
+    jobPosition: row.job_position,
     emailVerifiedAt: row.email_verified_at,
     gender: row.gender,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.p_created_at ?? row.u_created_at,
+    updatedAt: row.p_updated_at ?? row.u_updated_at,
   };
 }
 
@@ -34,7 +34,7 @@ function toUser(row) {
 export async function list(req, res, next) {
   try {
     const result = await query(
-      `SELECT ${userColumns} FROM users ORDER BY created_at DESC`
+      `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id ORDER BY u.created_at DESC`
     );
     res.json({ users: result.rows.map(toUser) });
   } catch (err) {
@@ -47,7 +47,7 @@ export async function getOne(req, res, next) {
   try {
     const { id } = req.params;
     const result = await query(
-      `SELECT ${userColumns} FROM users WHERE id = $1`,
+      `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = $1`,
       [id]
     );
     const user = result.rows[0];
@@ -69,90 +69,69 @@ export async function update(req, res, next) {
       return res.status(403).json({ error: 'Forbidden.' });
     }
 
-    const allowed = [
-      'name',
-      'username',
-      'occupation',
-      'office',
-      'phone',
-      'avatar_url',
-      'color_set',
-      'is_active',
-      'role',
-      'manager_id',
-      'email_verified_at',
-      'gender',
-    ];
-    if (!isAdmin) {
-      allowed.splice(allowed.indexOf('is_active'), 1);
-      allowed.splice(allowed.indexOf('role'), 1);
-      allowed.splice(allowed.indexOf('manager_id'), 1);
-      allowed.splice(allowed.indexOf('email_verified_at'), 1);
-    }
-
     const body = req.body;
-    const updates = [];
-    const values = [];
-    let pos = 1;
+    const profileUpdates = [];
+    const profileValues = [];
+    let profilePos = 1;
+    const userUpdates = [];
+    const userValues = [];
+    let userPos = 1;
 
     if (body.name !== undefined) {
-      updates.push(`name = $${pos++}`);
-      values.push(body.name);
+      profileUpdates.push(`name = $${profilePos++}`);
+      profileValues.push(body.name);
     }
     if (body.username !== undefined) {
-      updates.push(`username = $${pos++}`);
-      values.push(body.username ?? null);
-    }
-    if (body.occupation !== undefined) {
-      updates.push(`occupation = $${pos++}`);
-      values.push(body.occupation);
+      profileUpdates.push(`username = $${profilePos++}`);
+      profileValues.push(body.username ?? null);
     }
     if (body.office !== undefined) {
-      updates.push(`office = $${pos++}`);
-      values.push(body.office);
+      profileUpdates.push(`office = $${profilePos++}`);
+      profileValues.push(body.office);
     }
     if (body.phone !== undefined) {
-      updates.push(`phone = $${pos++}`);
-      values.push(body.phone ?? null);
+      profileUpdates.push(`phone = $${profilePos++}`);
+      profileValues.push(body.phone ?? null);
     }
     if (body.avatarUrl !== undefined) {
-      updates.push(`avatar_url = $${pos++}`);
-      values.push(body.avatarUrl ?? null);
+      profileUpdates.push(`avatar_url = $${profilePos++}`);
+      profileValues.push(body.avatarUrl ?? null);
     }
     if (body.colorSet !== undefined) {
-      updates.push(`color_set = $${pos++}`);
-      values.push(body.colorSet);
+      profileUpdates.push(`color_set = $${profilePos++}`);
+      profileValues.push(body.colorSet);
     }
-    if (isAdmin && body.managerId !== undefined) {
-      updates.push(`manager_id = $${pos++}`);
-      values.push(body.managerId || null);
+    if (body.jobPosition !== undefined) {
+      profileUpdates.push(`job_position = $${profilePos++}`);
+      profileValues.push(body.jobPosition ?? null);
     }
     if (isAdmin && body.emailVerifiedAt !== undefined) {
-      updates.push(`email_verified_at = $${pos++}`);
-      values.push(body.emailVerifiedAt ? new Date(body.emailVerifiedAt) : null);
-    }
-    if (isAdmin && body.isActive !== undefined) {
-      updates.push(`is_active = $${pos++}`);
-      values.push(!!body.isActive);
-    }
-    if (isAdmin && body.role !== undefined) {
-      if (!['admin', 'user'].includes(body.role)) {
-        return res.status(400).json({ error: 'Invalid role.' });
-      }
-      updates.push(`role = $${pos++}`);
-      values.push(body.role);
+      profileUpdates.push(`email_verified_at = $${profilePos++}`);
+      profileValues.push(body.emailVerifiedAt ? new Date(body.emailVerifiedAt) : null);
     }
     if (body.gender !== undefined) {
       if (body.gender !== null && body.gender !== '' && !['male', 'female'].includes(body.gender)) {
         return res.status(400).json({ error: 'Invalid gender. Use male or female.' });
       }
-      updates.push(`gender = $${pos++}`);
-      values.push(body.gender === '' ? null : body.gender);
+      profileUpdates.push(`gender = $${profilePos++}`);
+      profileValues.push(body.gender === '' ? null : body.gender);
     }
 
-    if (updates.length === 0) {
+    if (isAdmin && body.isActive !== undefined) {
+      userUpdates.push(`is_active = $${userPos++}`);
+      userValues.push(!!body.isActive);
+    }
+    if (isAdmin && body.role !== undefined) {
+      if (!['admin', 'user'].includes(body.role)) {
+        return res.status(400).json({ error: 'Invalid role.' });
+      }
+      userUpdates.push(`role = $${userPos++}`);
+      userValues.push(body.role);
+    }
+
+    if (profileUpdates.length === 0 && userUpdates.length === 0) {
       const result = await query(
-        `SELECT ${userColumns} FROM users WHERE id = $1`,
+        `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = $1`,
         [id]
       );
       const user = result.rows[0];
@@ -160,11 +139,27 @@ export async function update(req, res, next) {
       return res.json({ user: toUser(user) });
     }
 
-    updates.push(`updated_at = NOW()`);
-    values.push(id);
+    if (userUpdates.length > 0) {
+      userUpdates.push(`updated_at = NOW()`);
+      userValues.push(id);
+      await query(
+        `UPDATE users SET ${userUpdates.join(', ')} WHERE id = $${userPos}`,
+        userValues
+      );
+    }
+
+    if (profileUpdates.length > 0) {
+      profileUpdates.push(`updated_at = NOW()`);
+      profileValues.push(id);
+      await query(
+        `UPDATE profiles SET ${profileUpdates.join(', ')} WHERE user_id = $${profilePos}`,
+        profileValues
+      );
+    }
+
     const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${pos} RETURNING ${userColumns}`,
-      values
+      `SELECT ${userColumns} FROM users u LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = $1`,
+      [id]
     );
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'User not found.' });

@@ -5,64 +5,110 @@
 - **Database:** PostgreSQL
 - **Connection:** `DATABASE_URL` in `server/.env`  
   Example: `postgresql://USER:PASSWORD@localhost:5432/task_tracker`
-- **Migration:** Single source of truth is `schema.sql`. Run once: `npm run db:migrate` (from `server/`).
+- **Setup:** Run with psql (no Node). Users are added manually (e.g. seed script or admin); no public registration.
 
-The server uses the `pg` pool in `server/config/db.js`, which reads `DATABASE_URL` from the environment.
+**Split:** Auth in `users` (login only). Profile in `profiles` (name, job, office, etc.). Sessions in `refresh_tokens` (hashed refresh token + metadata).
+
+---
+
+## Setup
+
+```bash
+# Create DB (if needed)
+createdb task_tracker
+
+# Run schema (creates tables, indexes, migration for existing DBs)
+psql -d task_tracker -f server/db/schema.sql
+
+# Or with DATABASE_URL
+psql "$DATABASE_URL" -f server/db/schema.sql
+
+# Optional: add default admin user (requires pgcrypto)
+psql -d task_tracker -f server/db/seed-user.sql
+```
 
 ---
 
 ## Tables
 
-| Table            | Purpose                                      |
-|-----------------|-----------------------------------------------|
-| `users`         | Auth and profile (email, password_hash, role) |
-| `refresh_tokens`| Optional; for future refresh-token support   |
+| Table            | Purpose |
+|------------------|--------|
+| `users`          | **Auth only** – email, password_hash, role, is_active. No profile fields. |
+| `profiles`       | **Profile only** – one row per user (name, username, office, job_position, phone, avatar_url, gender, etc.). |
+| `refresh_tokens` | **Sessions** – SHA-256 hash of refresh token, user_id, expires_at, user_agent, ip, last_used_at. Token stored as hash only; metadata for audit. |
 
-**Relationships:** `refresh_tokens.user_id` → `users.id`. `users.manager_id` → `users.id` (self-reference).
+**Relationships:** `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user).
 
 ---
 
 ## Table diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ users                                                            │
-├─────────────────────────────────────────────────────────────────┤
-│ id                UUID          PRIMARY KEY, DEFAULT gen_random_uuid()
-│ email             VARCHAR(255)   UNIQUE NOT NULL
-│ password_hash     VARCHAR(255)   NOT NULL
-│ name              VARCHAR(255)   NOT NULL
-│ username          VARCHAR(100)  UNIQUE, nullable (not in auth)
-│ role              VARCHAR(50)   NOT NULL, DEFAULT 'user', CHECK (admin|user)
-│ is_active         BOOLEAN       DEFAULT true
-│ color_set         VARCHAR(20)   nullable
-│ created_by        VARCHAR(100)  nullable
-│ occupation        VARCHAR(100)  nullable
-│ office            VARCHAR(100)  nullable
-│ phone             VARCHAR(50)   nullable
-│ avatar_url        VARCHAR(500)  nullable (URL to image, e.g. cloud storage)
-│ manager_id        UUID          nullable, REFERENCES users(id)
-│ email_verified_at TIMESTAMPTZ   nullable
-│ gender            VARCHAR(10)   nullable, CHECK (male | female)
-│ created_at        TIMESTAMPTZ   DEFAULT NOW()
-│ updated_at        TIMESTAMPTZ   DEFAULT NOW()
-├─────────────────────────────────────────────────────────────────┤
-│ INDEX: idx_users_email, idx_users_username, idx_users_role,     │
-│        idx_users_is_active, idx_users_manager_id                 │
-└─────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ 1
-                                    │
-                                    │ N
-┌─────────────────────────────────────────────────────────────────┐
-│ refresh_tokens (optional – future refresh-token support)         │
-├─────────────────────────────────────────────────────────────────┤
-│ id              UUID          PRIMARY KEY, DEFAULT gen_random_uuid()
-│ user_id         UUID          NOT NULL, REFERENCES users(id) ON DELETE CASCADE
-│ token           VARCHAR(500)   NOT NULL
-│ expires_at      TIMESTAMPTZ   NOT NULL
-│ created_at      TIMESTAMPTZ   DEFAULT NOW()
-├─────────────────────────────────────────────────────────────────┤
-│ INDEX: idx_refresh_tokens_user_id, idx_refresh_tokens_expires_at  │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ users (auth only)                        │
+├──────────────────────────────────────────┤
+│ id                UUID    PK, gen_random_uuid()
+│ email             VARCHAR(255) UNIQUE NOT NULL
+│ password_hash     VARCHAR(255) NOT NULL
+│ role              VARCHAR(50)  NOT NULL, CHECK (admin|user)
+│ is_active         BOOLEAN      DEFAULT true
+│ created_at        TIMESTAMPTZ  DEFAULT NOW()
+│ updated_at        TIMESTAMPTZ  DEFAULT NOW()
+└──────────────────────────────────────────┘
+         │ 1
+         │
+         │ 1
+┌──────────────────────────────────────────┐
+│ profiles (profile only)                  │
+├──────────────────────────────────────────┤
+│ id                UUID    PK
+│ user_id           UUID    UNIQUE NOT NULL, REFERENCES users(id) ON DELETE CASCADE
+│ name              VARCHAR(255) NOT NULL
+│ username          VARCHAR(100) UNIQUE, nullable
+│ office            VARCHAR(100) nullable
+│ job_position      VARCHAR(100) nullable
+│ phone             VARCHAR(50) nullable
+│ avatar_url        VARCHAR(500) nullable
+│ gender            VARCHAR(10) nullable, CHECK (male|female)
+│ color_set         VARCHAR(20) nullable
+│ created_by        VARCHAR(100) nullable
+│ email_verified_at TIMESTAMPTZ nullable
+│ created_at        TIMESTAMPTZ DEFAULT NOW()
+│ updated_at        TIMESTAMPTZ DEFAULT NOW()
+└──────────────────────────────────────────┘
+
+┌──────────────────────────────────────────┐
+│ refresh_tokens (sessions)                 │
+├──────────────────────────────────────────┤
+│ id              UUID    PK
+│ user_id         UUID    NOT NULL, REFERENCES users(id) ON DELETE CASCADE
+│ token           VARCHAR(64) NOT NULL   (SHA-256 hex hash of token)
+│ expires_at      TIMESTAMPTZ NOT NULL
+│ user_agent      VARCHAR(500) nullable
+│ ip              VARCHAR(45) nullable
+│ last_used_at    TIMESTAMPTZ nullable
+│ created_at      TIMESTAMPTZ DEFAULT NOW()
+└──────────────────────────────────────────┘
 ```
+
+---
+
+## Indexes
+
+| Table            | Index                         | Purpose |
+|------------------|-------------------------------|--------|
+| users            | idx_users_email               | Lookup by email (login) |
+| users            | idx_users_role                | Filter by role |
+| users            | idx_users_is_active           | Filter active users |
+| profiles         | idx_profiles_user_id          | Join / lookup by user |
+| profiles         | idx_profiles_username         | Lookup by username |
+| refresh_tokens   | idx_refresh_tokens_user_id    | Revoke all for user |
+| refresh_tokens   | idx_refresh_tokens_expires_at | Cleanup expired |
+| refresh_tokens   | idx_refresh_tokens_token      | UNIQUE; lookup by hash (validate/revoke) |
+
+---
+
+## Notes
+
+- **Refresh tokens:** The app stores only the SHA-256 hash (hex, 64 chars) in `refresh_tokens.token`. Raw token is sent to the client in an httpOnly cookie and never stored.
+- **Roles:** `admin` and `user` only. Enforced in app and Socket.IO by role checks.

@@ -54,7 +54,6 @@ export function getUserColumns() {
       },
       size: 100,
     }),
-    columnHelper.accessor("occupation", { header: "DEPARTMENT", cell: simpleCell(), size: 150 }),
     columnHelper.accessor("taskCount", {
       id: "tasks",
       header: "TASKS",

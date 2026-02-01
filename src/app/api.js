@@ -1,23 +1,90 @@
 /**
  * API client for PERN backend
- * Handles auth token and base URL for fetch requests.
+ * Access token: in memory only (JWT, 5–10 min high security).
+ * Refresh token: httpOnly secure cookie; sent automatically with credentials: 'include'.
+ * Silent refresh: scheduled 1 min before access token expiry.
  */
 
 import { API_CONFIG } from '@/constants';
 
-const TOKEN_KEY = 'task_tracker_token';
+let accessToken = null;
+let silentRefreshTimerId = null;
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const getToken = () => accessToken;
 export const setToken = (token) => {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  accessToken = token || null;
+  if (token) scheduleSilentRefresh();
+  else clearSilentRefreshTimer();
 };
-export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+export const clearToken = () => {
+  accessToken = null;
+  clearSilentRefreshTimer();
+};
+
+/** Clear auth state (in-memory access token only; cookie cleared by server on logout) */
+export const clearAuth = () => {
+  clearToken();
+};
+
+export { connectSocket, disconnectSocket, getSocket, reconnectSocket } from './socket.js';
+
+/** Decode JWT payload without verify (client-side; exp only for scheduling). */
+function decodeJwtPayload(token) {
+  try {
+    const base64 = token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/');
+    if (!base64) return null;
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Fetch with base URL and optional Bearer token
+ * Call POST /auth/refresh (cookie sent automatically). Returns new access token or null.
  */
-export async function apiRequest(path, options = {}) {
+export async function refreshAccessToken() {
+  const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_PREFIX}/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return null;
+  if (data.token) setToken(data.token);
+  return data.token;
+}
+
+const SILENT_REFRESH_BEFORE_MS = 60 * 1000;
+
+/** Schedule a silent refresh 1 min before access token expires; reschedule on new token. */
+export function scheduleSilentRefresh() {
+  clearSilentRefreshTimer();
+  const token = getToken();
+  if (!token) return;
+  const payload = decodeJwtPayload(token);
+  const exp = payload?.exp;
+  if (!exp) return;
+  const expiresAtMs = exp * 1000;
+  const now = Date.now();
+  const delay = Math.max(0, expiresAtMs - now - SILENT_REFRESH_BEFORE_MS);
+  silentRefreshTimerId = setTimeout(() => {
+    silentRefreshTimerId = null;
+    refreshAccessToken();
+  }, delay);
+}
+
+export function clearSilentRefreshTimer() {
+  if (silentRefreshTimerId) {
+    clearTimeout(silentRefreshTimerId);
+    silentRefreshTimerId = null;
+  }
+}
+
+/**
+ * Fetch with base URL and Bearer token (from memory). credentials: 'include' for cookies.
+ * On 401 TOKEN_EXPIRED, retries once after refresh.
+ */
+export async function apiRequest(path, options = {}, retried = false) {
   const url = path.startsWith('http') ? path : `${API_CONFIG.BASE_URL}${path}`;
   const headers = {
     'Content-Type': 'application/json',
@@ -26,8 +93,13 @@ export async function apiRequest(path, options = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers, credentials: 'include' });
   const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && data?.code === 'TOKEN_EXPIRED' && !retried) {
+    const newToken = await refreshAccessToken();
+    if (newToken) return apiRequest(path, options, true);
+  }
 
   if (!res.ok) {
     const err = new Error(data.error || data.message || res.statusText);
@@ -46,13 +118,28 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     }),
 
-  register: (body) =>
-    apiRequest(`${API_CONFIG.AUTH_PREFIX}/register`, {
+  me: () => apiRequest(`${API_CONFIG.AUTH_PREFIX}/me`),
+
+  /** POST /auth/refresh – no body; cookie sent automatically */
+  refresh: () =>
+    apiRequest(`${API_CONFIG.AUTH_PREFIX}/refresh`, {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({}),
     }),
 
-  me: () => apiRequest(`${API_CONFIG.AUTH_PREFIX}/me`),
+  /** POST /auth/logout – no body; cookie sent; server clears cookie and deletes session */
+  logout: () =>
+    apiRequest(`${API_CONFIG.AUTH_PREFIX}/logout`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  /** POST /auth/logout-all – Bearer required; revokes all sessions, forceLogout to all devices */
+  logoutAll: () =>
+    apiRequest(`${API_CONFIG.AUTH_PREFIX}/logout-all`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
 };
 
 /** Users API */

@@ -1,13 +1,15 @@
 /**
  * Authentication Context (PERN backend)
- * Uses JWT and /api/auth login, me, and client-side logout.
+ * React state and side effects only: who's logged in, login/logout, refresh, Socket.IO.
+ * Access token: in memory (JWT). Refresh: httpOnly cookie. Session restore via POST /auth/refresh.
+ * RBAC: use authUtils (isAdmin, canAccess, canManageUsers) with user from useAuth().
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authApi, getToken, setToken, clearToken } from '@/app/api';
+import { authApi, setToken, clearAuth, connectSocket, disconnectSocket, reconnectSocket, clearSilentRefreshTimer, refreshAccessToken } from '@/app/api';
 import { logger } from '@/utils/logger';
-import { canAccessRole } from '@/features/utils/authUtils';
 import { showLogoutSuccess, showAuthError } from '@/utils/toast';
+import { canAccess as canAccessUser } from '@/features/utils/authUtils';
 
 const AuthContext = createContext();
 
@@ -17,7 +19,33 @@ export const AuthProvider = ({ children }) => {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [error, setError] = useState(null);
 
-  // On mount: restore session from JWT via /me
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch (_) { /* ignore */ }
+    clearSilentRefreshTimer();
+    disconnectSocket();
+    clearAuth();
+    setUser(null);
+    setError(null);
+    if (window._loggedUser) delete window._loggedUser;
+    showLogoutSuccess();
+  }, []);
+
+  const logoutAll = useCallback(async () => {
+    try {
+      await authApi.logoutAll();
+    } catch (_) { /* ignore */ }
+    clearSilentRefreshTimer();
+    disconnectSocket();
+    clearAuth();
+    setUser(null);
+    setError(null);
+    if (window._loggedUser) delete window._loggedUser;
+    showLogoutSuccess();
+  }, []);
+
+  // On mount: restore session via POST /auth/refresh (cookie sent automatically)
   useEffect(() => {
     let isMounted = true;
 
@@ -27,25 +55,21 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(true);
         setError(null);
 
-        if (!getToken()) {
-          if (isMounted) setUser(null);
-          return;
-        }
-
-        const data = await authApi.me();
+        const data = await authApi.refresh();
         const userData = data?.user;
 
         if (!isMounted) return;
 
-        if (userData) {
+        if (userData && data?.token) {
+          setToken(data.token);
           setUser(userData);
-          logger.log('Session restored from token', { userId: userData.id });
+          logger.log('Session restored from refresh token', { userId: userData.id });
         } else {
           setUser(null);
         }
       } catch (err) {
         if (!isMounted) return;
-        clearToken();
+        clearAuth();
         setUser(null);
         setError(null);
         logger.log('No valid session');
@@ -60,6 +84,26 @@ export const AuthProvider = ({ children }) => {
     checkSession();
     return () => { isMounted = false; };
   }, []);
+
+  // Socket.IO: connect with JWT when user is set; listen for forceLogout and auth:expired (refresh + reconnect)
+  const handleAuthExpired = useCallback(async () => {
+    try {
+      const token = await refreshAccessToken();
+      if (token) reconnectSocket({ onForceLogout: logout, onAuthExpired: handleAuthExpired });
+      else logout();
+    } catch {
+      logout();
+    }
+  }, [logout]);
+
+  useEffect(() => {
+    if (!user) {
+      disconnectSocket();
+      return;
+    }
+    connectSocket({ onForceLogout: logout, onAuthExpired: handleAuthExpired });
+    return () => disconnectSocket();
+  }, [user, logout, handleAuthExpired]);
 
   const login = useCallback(async (credentials) => {
     try {
@@ -92,20 +136,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    clearToken();
-    setUser(null);
-    setError(null);
-    if (window._loggedUser) delete window._loggedUser;
-    showLogoutSuccess();
-  }, []);
-
   const clearError = useCallback(() => setError(null), []);
 
-  const canAccess = useCallback((requiredRole) => {
-    if (requiredRole === 'authenticated') return !!user;
-    return canAccessRole(user, requiredRole);
-  }, [user]);
+  const canAccess = useCallback((requiredRole) => canAccessUser(user, requiredRole), [user]);
 
   const isReady = useCallback(() => !isAuthChecking && !isLoading, [isAuthChecking, isLoading]);
 
@@ -117,6 +150,7 @@ export const AuthProvider = ({ children }) => {
     canAccess,
     login,
     logout,
+    logoutAll,
     clearError,
     isReady,
   };
