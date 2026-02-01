@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useDepartmentApp } from '@/hooks/useDepartmentApp';
 import { Icons } from '@/components/icons';
 
 const UnauthorizedPage = () => {
   const { canAccess } = useAuth();
-  
-  // Check if user is admin for better messaging
+  const { loginRedirectPath } = useDepartmentApp();
   const isAdmin = canAccess('admin');
 
   return (
@@ -34,11 +34,11 @@ const UnauthorizedPage = () => {
           {/* Action Buttons */}
           <div className="space-y-3">
             <Link
-              to="/dashboard"
+              to={loginRedirectPath}
               className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
               <Icons.cards.home className="h-4 w-4 mr-2" />
-              Go to Dashboard
+              Go to app home
             </Link>
             
             <Link

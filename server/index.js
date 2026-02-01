@@ -3,7 +3,12 @@
  * Security: Helmet for headers; HTTPS in production (reverse proxy or REDIRECT_HTTP_TO_HTTPS).
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '.env') });
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
@@ -20,6 +25,8 @@ import usersRoutes from './routes/users.js';
 import departmentsRoutes from './routes/departments.js';
 import taskBoardsRoutes from './routes/taskBoards.js';
 import tasksRoutes from './routes/tasks.js';
+import orderBoardsRoutes from './routes/orderBoards.js';
+import ordersRoutes from './routes/orders.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -95,6 +102,8 @@ app.use('/api/users', usersRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/task-boards', taskBoardsRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/order-boards', orderBoardsRoutes);
+app.use('/api/orders', ordersRoutes);
 
 app.use('/api', (_, res) => res.status(404).json({ error: 'Not found.', code: 'NOT_FOUND' }));
 app.use((err, _req, res, _next) => {
@@ -145,9 +154,9 @@ io.use(async (socket, next) => {
 
 /** Allowed Socket.IO events and required roles (identity from JWT, not socket.id) */
 const SOCKET_EVENT_ROLES = {
-  'task:subscribe': ['user', 'admin', 'super_admin'],
-  'task:unsubscribe': ['user', 'admin', 'super_admin'],
-  'admin:broadcast': ['admin', 'super_admin'],
+  'task:subscribe': ['user', 'admin'],
+  'task:unsubscribe': ['user', 'admin'],
+  'admin:broadcast': ['admin'],
 };
 
 function requireSocketEventRole(socket, eventName) {

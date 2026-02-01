@@ -1,19 +1,23 @@
 -- =============================================================================
 -- Task Tracker DB – PostgreSQL
 -- Run: psql -d task_tracker -f server/db/schema.sql  (or psql "$DATABASE_URL" -f server/db/schema.sql)
--- Then optionally: psql -d task_tracker -f server/db/seed-user.sql
+-- Then optionally (from server/): npm run db:seed
 -- WARNING: Drops all tables and recreates them (start over). All data is lost.
 --
 -- Tables (order matters for DROP):
---   departments  – Departments (Design, QA, etc.); users belong to one via users.department_id
+--   departments  – Departments (Design, Food, QA, etc.); users belong to one via users.department_id
 --   users        – Auth + department (email, password_hash, role, department_id, is_active)
 --   profiles     – One per user (name, office, job_position, etc.); no department (lives in users)
 --   refresh_tokens – Sessions: SHA-256 hash of refresh token, user_id, expires_at, user_agent, ip
---   task_boards  – One per department per month (year/month)
+--   task_boards  – One per department per month (year/month) – Design and other non-Food departments
 --   tasks        – Tasks on a board; optional assignee
+--   order_boards – One per department per month (year/month) – Food department only
+--   orders       – Orders on an order_board (office food ordering)
 -- =============================================================================
 
 -- Drop existing tables (reverse dependency order)
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS order_boards;
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS task_boards;
 DROP TABLE IF EXISTS refresh_tokens;
@@ -34,15 +38,11 @@ CREATE TABLE departments (
 
 CREATE INDEX IF NOT EXISTS idx_departments_slug ON departments(slug);
 
--- Seed core departments (run after schema)
+-- Seed core departments: Design, Customer Support, Food only (rest can be added later)
 INSERT INTO departments (name, slug) VALUES
   ('Design', 'design'),
-  ('Customer Support', 'customer-support'),
-  ('QA', 'qa'),
-  ('Development', 'development'),
-  ('Marketing', 'marketing'),
-  ('Product', 'product'),
-  ('Other', 'other');
+  ('Food', 'food'),
+  ('Customer Support', 'customer-support');
 
 -- =============================================================================
 -- AUTH: users (login + department; set department when creating user)
@@ -51,7 +51,7 @@ CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('super_admin', 'admin', 'user')),
+  role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
   department_id UUID NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -140,3 +140,40 @@ CREATE TABLE tasks (
 CREATE INDEX IF NOT EXISTS idx_tasks_board_id ON tasks(board_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+
+-- =============================================================================
+-- ORDER BOARDS: one per department per month (year/month) – Food department
+-- =============================================================================
+CREATE TABLE order_boards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+  year SMALLINT NOT NULL,
+  month SMALLINT NOT NULL,
+  name VARCHAR(100),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (department_id, year, month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_boards_department_id ON order_boards(department_id);
+CREATE INDEX IF NOT EXISTS idx_order_boards_year_month ON order_boards(year, month);
+
+-- =============================================================================
+-- ORDERS: belong to an order_board (Food department); who ordered, summary, status
+-- =============================================================================
+CREATE TABLE orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  board_id UUID NOT NULL REFERENCES order_boards(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  order_date DATE DEFAULT CURRENT_DATE,
+  summary VARCHAR(500),
+  items JSONB DEFAULT '[]',
+  status VARCHAR(50) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_board_id ON orders(board_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_order_date ON orders(order_date);

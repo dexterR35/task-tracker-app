@@ -41,9 +41,8 @@ export const API_CONFIG = {
 // ============================================================================
 
 export const AUTH = {
-  VALID_ROLES: ['super_admin', 'admin', 'user'],
+  VALID_ROLES: ['admin', 'user'],
   ROLES: {
-    SUPER_ADMIN: 'super_admin',
     ADMIN: 'admin',
     USER: 'user',
   },
@@ -181,7 +180,7 @@ FORM_OPTIONS.REPORTER_CHANNELS = FORM_OPTIONS.DEPARTMENTS;
 // ============================================================================
 // Same sidebar for everyone. Data inside differs by role/department:
 // - Main Menu (Dashboard, Analytics, Tasks, Kanban): data is department-scoped when user has a department (e.g. Design user sees Design tasks/analytics).
-// - Departments: table of departments; super_admin only.
+// - Departments: table of departments; admin only.
 // - Settings: global for all departments → Users (global list), UI Showcase.
 
 export const NAVIGATION_CONFIG = {
@@ -214,13 +213,13 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
-  /** Departments: table of departments (super_admin only); department = scope for tasks, kanban, analytics data */
+  /** Departments: table of departments (admin only) */
   DEPARTMENTS_ITEM: {
     name: "Departments",
     href: "/settings/departments",
     icon: "chart",
     color: "gray",
-    superAdminOnly: true,
+    adminOnly: true,
   },
   /** Settings: global (not department-scoped). Users = global list; UI Showcase = settings. */
   SETTINGS_ITEMS: [
@@ -236,6 +235,13 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
+  /** Food app only: Order board, Orders, History, Profile (used when user.departmentSlug === 'food') */
+  FOOD_MENU_ITEMS: [
+    { name: "Order board", href: "/food/order-board", icon: "home", color: "blue" },
+    { name: "Orders", href: "/food/orders", icon: "chart", color: "blue" },
+    { name: "History", href: "/food/history", icon: "chart", color: "gray" },
+    { name: "Profile", href: "/food/profile", icon: "user", color: "gray" },
+  ],
 };
 
 /** Data scope: what is department-scoped vs global. Use when fetching dashboard, analytics, tasks, kanban. */
@@ -244,6 +250,19 @@ export const DATA_SCOPE = {
   DEPARTMENT_SCOPED: ['dashboard', 'analytics', 'tasks', 'kanban'],
   /** Settings: Users list and UI Showcase are global (all departments) */
   GLOBAL: ['users', 'ui-showcase'],
+};
+
+// ============================================================================
+// DEPARTMENT APP – single department table; each department = different dashboard + menu
+// Same auth, same user data; only users.department_id (set when user created) differs.
+// ============================================================================
+/** Slugs that map to which dashboard/menu. Food = orders app; others = Design (tasks) app. */
+export const DEPARTMENT_APP = {
+  FOOD_SLUG: 'food',
+  DESIGN_SLUG: 'design',
+  DESIGN_BASE: '/design',
+  FOOD_BASE: '/food',
+  SETTINGS_BASE: '/settings',
 };
 
 // ============================================================================
@@ -281,6 +300,9 @@ export const CARD_SYSTEM = {
     ACTIONS: 'actions',
     PERFORMANCE: 'performance',
     EFFICIENCY: 'efficiency',
+    FOOD_ORDER_BOARD: 'food-order-board',
+    FOOD_ORDERS: 'food-orders',
+    FOOD_HISTORY: 'food-history',
   },
   // Chart data types for color mapping
   CHART_DATA_TYPE: {
@@ -433,10 +455,17 @@ export const ROUTES = {
   LOGIN: '/login',
   UNAUTHORIZED: '/unauthorized',
 
-  // Protected routes
-  DASHBOARD: '/dashboard',
+  // Department-prefixed (2-apps-in-1) – same path /dashboard and /profile, different content for dashboard
+  DESIGN_DASHBOARD: '/design/dashboard',
+  FOOD_DASHBOARD: '/food/dashboard',
+  FOOD_ORDER_BOARD: '/food/order-board',
+  FOOD_ORDERS: '/food/orders',
+  FOOD_HISTORY: '/food/history',
+
+  // Shared (no department prefix)
   USERS: '/settings/users',
   UI_SHOWCASE: '/settings/ui-showcase',
+  DEPARTMENTS: '/settings/departments',
   PREVIEW_MONTH: '/preview/:monthId',
   PROFILE: '/profile',
 };

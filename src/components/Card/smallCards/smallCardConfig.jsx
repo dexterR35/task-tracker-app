@@ -1,6 +1,6 @@
 import { Icons } from "@/components/icons";
 import { SearchableSelectField } from "@/components/forms/components";
-import { CARD_SYSTEM } from "@/constants";
+import { CARD_SYSTEM, ROUTES } from "@/constants";
 import { logger } from "@/utils/logger";
 
 // Small Card Types
@@ -258,6 +258,44 @@ export const SMALL_CARD_CONFIGS = {
       { icon: Icons.generic.users, label: "Satisfaction", value: "4.6/5" },
     ],
   },
+
+  [SMALL_CARD_TYPES.FOOD_ORDER_BOARD]: {
+    title: "Order board",
+    subtitle: "View",
+    description: "Dashboard = order board (month selector)",
+    icon: Icons.generic.calendar,
+    color: "blue",
+    getValue: (data) => (data.boards?.length ?? 0).toString(),
+    getStatus: () => "Open",
+    getDetails: (data) => [
+      { label: "Boards", value: `${data.boards?.length ?? 0} available` },
+    ],
+    getHref: () => ROUTES.FOOD_DASHBOARD,
+  },
+
+  [SMALL_CARD_TYPES.FOOD_ORDERS]: {
+    title: "Orders",
+    subtitle: "View",
+    description: "View and manage orders",
+    icon: Icons.buttons.add,
+    color: "green",
+    getValue: (data) => (data.ordersCount ?? data.orders?.length ?? 0).toString(),
+    getStatus: () => "Manage",
+    getDetails: () => [{ label: "Section", value: "Orders" }],
+    getHref: () => ROUTES.FOOD_ORDERS,
+  },
+
+  [SMALL_CARD_TYPES.FOOD_HISTORY]: {
+    title: "History",
+    subtitle: "View",
+    description: "Past orders by period",
+    icon: Icons.generic.clock,
+    color: "soft_purple",
+    getValue: () => "Open",
+    getStatus: () => "Past orders",
+    getDetails: () => [{ label: "Section", value: "History" }],
+    getHref: () => ROUTES.FOOD_HISTORY,
+  },
 };
 
 export const createCards = (data, mode = "main") => {
@@ -271,6 +309,14 @@ export const createCards = (data, mode = "main") => {
           SMALL_CARD_TYPES.USER_PROFILE,
           SMALL_CARD_TYPES.PERFORMANCE,
           SMALL_CARD_TYPES.EFFICIENCY,
+        ];
+        break;
+      case "food":
+        cardTypes = [
+          SMALL_CARD_TYPES.USER_PROFILE,
+          SMALL_CARD_TYPES.FOOD_ORDER_BOARD,
+          SMALL_CARD_TYPES.FOOD_ORDERS,
+          SMALL_CARD_TYPES.FOOD_HISTORY,
         ];
         break;
       default:
@@ -308,6 +354,7 @@ export const createCards = (data, mode = "main") => {
           badge: config.getBadge ? config.getBadge(data) : null,
           content: config.getContent ? config.getContent(data) : null,
           details: config.getDetails ? config.getDetails(data) : [],
+          href: config.getHref ? config.getHref(data) : null,
         };
 
         return card;

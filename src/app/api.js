@@ -181,3 +181,45 @@ export const usersApi = {
 export const departmentsApi = {
   list: () => apiRequest('/api/departments'),
 };
+
+/** Task boards API – Design and other non-Food departments */
+export const taskBoardsApi = {
+  list: (params) => {
+    const q = new URLSearchParams(params ?? {}).toString();
+    return apiRequest(`/api/task-boards${q ? `?${q}` : ''}`);
+  },
+  getById: (id) => apiRequest(`/api/task-boards/${id}`),
+  getOrCreate: (body) =>
+    apiRequest('/api/task-boards', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+/** Tasks API – Design and other non-Food departments */
+export const tasksApi = {
+  list: (boardId) => apiRequest(`/api/tasks?boardId=${encodeURIComponent(boardId)}`),
+  getById: (id) => apiRequest(`/api/tasks/${id}`),
+  create: (body) => apiRequest('/api/tasks', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id, body) =>
+    apiRequest(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  remove: (id) => apiRequest(`/api/tasks/${id}`, { method: 'DELETE' }),
+};
+
+/** Order boards API – Food department only (monthly boards, same pattern as task-boards) */
+export const orderBoardsApi = {
+  list: (params) => {
+    const q = new URLSearchParams(params).toString();
+    return apiRequest(`/api/order-boards${q ? `?${q}` : ''}`);
+  },
+  getById: (id) => apiRequest(`/api/order-boards/${id}`),
+  getOrCreate: (body) =>
+    apiRequest('/api/order-boards', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+/** Orders API – Food department only */
+export const ordersApi = {
+  list: (boardId) => apiRequest(`/api/orders?boardId=${encodeURIComponent(boardId)}`),
+  getById: (id) => apiRequest(`/api/orders/${id}`),
+  create: (body) => apiRequest('/api/orders', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id, body) =>
+    apiRequest(`/api/orders/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  remove: (id) => apiRequest(`/api/orders/${id}`, { method: 'DELETE' }),
+};

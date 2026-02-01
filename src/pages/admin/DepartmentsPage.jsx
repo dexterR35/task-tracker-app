@@ -3,7 +3,7 @@ import { departmentsApi } from '@/app/api';
 import Loader from '@/components/ui/Loader/Loader';
 
 /**
- * Departments page – list all departments (super_admin only).
+ * Departments page – list all departments (admin only).
  * Users are assigned to a department; future: dashboard/tasks per department.
  */
 const DepartmentsPage = () => {

@@ -1,17 +1,18 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useDepartmentApp } from "@/hooks/useDepartmentApp";
 import { Icons } from "@/components/icons";
 
 const NotFoundPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { loginRedirectPath } = useDepartmentApp();
 
-  // Smart navigation based on auth status
   const goToHome = () => {
     if (user) {
-      navigate('/dashboard');
+      navigate(loginRedirectPath, { replace: true });
     } else {
-      navigate('/home');
+      navigate("/", { replace: true });
     }
   };
 
@@ -36,7 +37,7 @@ const NotFoundPage = () => {
             onClick={goToHome}
             className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
           >
-            {user ? 'Go to Dashboard' : 'Go to Homepage'}
+            {user ? "Go to app home" : "Go to Homepage"}
           </button>
           
           <button

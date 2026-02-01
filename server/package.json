@@ -8,7 +8,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "db:schema": "psql -d task_tracker -f db/schema.sql",
-    "db:seed": "psql -d task_tracker -f db/seed-user.sql",
+    "db:seed": "node scripts/seed.js",
     "db:reset": "npm run db:schema && npm run db:seed"
   },
   "dependencies": {

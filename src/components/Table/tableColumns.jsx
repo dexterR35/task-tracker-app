@@ -51,8 +51,8 @@ export function getUserColumns() {
       header: "ROLE",
       cell: ({ getValue }) => {
         const role = getValue() ?? "user";
-        const variant = role === "super_admin" ? "crimson" : role === "admin" ? "pink" : "blue";
-        const label = role === "super_admin" ? "Super Admin" : role;
+        const variant = role === "admin" ? "pink" : "blue";
+        const label = role;
         return <Badge variant={variant} size="xs">{label}</Badge>;
       },
       size: 100,

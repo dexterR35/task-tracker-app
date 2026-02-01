@@ -173,3 +173,43 @@ export const requireRole = (...roles) => (req, res, next) => {
   }
   next();
 };
+
+/**
+ * Department slug guards for 2-apps-in-1: Design (tasks) vs Food (orders).
+ * Use after authenticate. req.user.departmentSlug must be set.
+ */
+
+/** Allow only users whose department slug matches. E.g. requireDepartmentSlug('food') for orders API. */
+export const requireDepartmentSlug = (slug) => (req, res, next) => {
+  if (!req.user) {
+    authLogger.authorizeFail(req, 'UNAUTHORIZED', null, null);
+    return res.status(401).json({ error: 'Unauthorized.', code: 'UNAUTHORIZED' });
+  }
+  const userSlug = req.user.departmentSlug ?? '';
+  if (userSlug !== slug) {
+    authLogger.authorizeFail(req, 'WRONG_DEPARTMENT', req.user.id, req.user.role);
+    return res.status(403).json({
+      error: 'Access allowed only for this department.',
+      code: 'WRONG_DEPARTMENT',
+    });
+  }
+  next();
+};
+
+/** Reject users whose department slug matches. E.g. rejectDepartmentSlug('food') for task-boards/tasks API. */
+export const rejectDepartmentSlug = (slug) => (req, res, next) => {
+  if (!req.user) {
+    authLogger.authorizeFail(req, 'UNAUTHORIZED', null, null);
+    return res.status(401).json({ error: 'Unauthorized.', code: 'UNAUTHORIZED' });
+  }
+  const userSlug = req.user.departmentSlug ?? '';
+  if (userSlug === slug) {
+    authLogger.authorizeFail(req, 'WRONG_DEPARTMENT', req.user.id, req.user.role);
+    return res.status(403).json({
+      error: 'This department uses a different app (orders).',
+      code: 'WRONG_DEPARTMENT',
+    });
+  }
+  next();
+};
+

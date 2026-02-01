@@ -1,6 +1,6 @@
 /**
  * Departments API - list (PERN)
- * Super admin sees all; used for dropdowns and Departments page.
+ * Used for Departments page and dropdowns.
  */
 
 import { query } from '../config/db.js';

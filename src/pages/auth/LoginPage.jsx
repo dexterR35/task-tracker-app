@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "@/components/forms/LoginForm";
 import { showCustomToast } from "@/utils/toast";
+import { DEPARTMENT_APP } from "@/constants";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -11,7 +12,12 @@ const LoginPage = () => {
       name,
       message: "Welcome! Greetings.",
     });
-    navigate("/dashboard", { replace: true });
+    // 2-apps-in-1: same route /dashboard for both departments (different content); profile is shared
+    const slug = result?.user?.departmentSlug;
+    const path = slug === DEPARTMENT_APP.FOOD_SLUG
+      ? DEPARTMENT_APP.FOOD_BASE + "/dashboard"
+      : DEPARTMENT_APP.DESIGN_BASE + "/dashboard";
+    navigate(path, { replace: true });
   };
 
   return (

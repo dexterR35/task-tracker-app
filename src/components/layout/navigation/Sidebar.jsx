@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
-import { departmentsApi } from "@/app/api";
 import { Icons } from "@/components/icons";
-import { CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
+import { CARD_SYSTEM, NAVIGATION_CONFIG, DEPARTMENT_APP } from "@/constants";
 import logo from "@/assets/Logo4.webp";
 
 const SIDEBAR_ICON_SIZE = "w-3.5 h-3.5";
@@ -30,38 +29,36 @@ function NavIcon({ icon: Icon, active }) {
   );
 }
 
-const Sidebar = () => {
+/** Prefix href with basePath if basePath is set and href is not already a full settings path. */
+function prefixHref(href, basePath) {
+  if (!basePath || !href) return href;
+  if (href.startsWith("/settings")) return href;
+  const path = href.startsWith("/") ? href.slice(1) : href;
+  return `${basePath}/${path}`;
+}
+
+const Sidebar = ({ basePath = null }) => {
   const { canAccess, user } = useAuth();
-  const {
-    viewingDepartment,
-    setViewingDepartment,
-    isSuperAdmin,
-  } = useSelectedDepartment();
+  const { viewingDepartment } = useSelectedDepartment();
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState({});
-  const [departments, setDepartments] = useState([]);
 
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    let cancelled = false;
-    departmentsApi
-      .list()
-      .then((data) => {
-        if (!cancelled) setDepartments(data.departments || []);
-      })
-      .catch(() => {
-        if (!cancelled) setDepartments([]);
-      });
-    return () => { cancelled = true; };
-  }, [isSuperAdmin]);
+  const mainMenuItems = useMemo(() => {
+    const items = NAVIGATION_CONFIG.MAIN_MENU_ITEMS ?? [];
+    if (!basePath) return items;
+    return items.map((item) => ({
+      ...item,
+      href: prefixHref(item.href, basePath),
+      subItems: (item.subItems ?? []).map((s) => ({ ...s, href: prefixHref(s.href, basePath) })),
+    }));
+  }, [basePath]);
 
   const isActive = (path) => location.pathname === path;
   const toggleExpanded = (name) =>
     setExpandedItems((prev) => ({ ...prev, [name]: !prev[name] }));
 
   const renderItem = (item) => {
-    if (item.superAdminOnly && !canAccess("super_admin")) return null;
     if (item.adminOnly && !canAccess("admin")) return null;
 
     const Icon = Icons.generic[item.icon];
@@ -130,17 +127,16 @@ const Sidebar = () => {
     );
   };
 
-  const mainMenuItems = NAVIGATION_CONFIG.MAIN_MENU_ITEMS ?? [];
-  const departmentsItem = NAVIGATION_CONFIG.DEPARTMENTS_ITEM;
+  const departmentsItem = NAVIGATION_CONFIG.DEPARTMENTS_ITEM; // href stays /settings/departments (shared)
   const settingsItems = NAVIGATION_CONFIG.SETTINGS_ITEMS ?? [];
-  const showDepartments = departmentsItem && canAccess("super_admin");
+  const showDepartments = departmentsItem && canAccess("admin");
 
   return (
     <nav className="flex h-full w-full flex-col bg-white dark:bg-smallCard" aria-label="Main navigation">
       {/* Top: Logo + office */}
       <div className="shrink-0 px-1.5 py-2 pt-4">
         <Link
-          to="/dashboard"
+          to={basePath ? `${basePath}/dashboard` : "/dashboard"}
           className="flex items-center gap-2.5 rounded-lg py-1.5 -mx-1 px-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/50 transition-colors"
         >
           <img
@@ -159,40 +155,21 @@ const Sidebar = () => {
         </Link>
       </div>
 
-      {/* Department: super_admin = dropdown to scope Main Menu data; others = read-only label */}
-      {(user?.departmentName || (isSuperAdmin && departments.length > 0)) && (
+      {/* Department: read-only label (user's department) */}
+      {viewingDepartment?.name && (
         <div className="shrink-0 px-2.5 pt-4 pb-2">
           <div className="rounded-lg border-2 border-indigo-200 dark:border-indigo-700/60 bg-indigo-50/50 dark:bg-indigo-900/20 px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Department
             </p>
-            {isSuperAdmin ? (
-              <select
-                value={viewingDepartment?.id ?? ""}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  const dept = departments.find((d) => d.id === id);
-                  if (dept) setViewingDepartment({ id: dept.id, name: dept.name, slug: dept.slug });
-                }}
-                className="mt-1 w-full rounded border border-indigo-200 dark:border-indigo-600 bg-white dark:bg-indigo-900/30 text-sm font-semibold text-indigo-900 dark:text-indigo-100 py-1.5 px-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400"
-                aria-label="Select department to view Main Menu data"
-              >
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="mt-0.5 text-sm font-semibold text-indigo-900 dark:text-indigo-100 truncate">
-                {user.departmentName}
-              </p>
-            )}
+            <p className="mt-0.5 text-sm font-semibold text-indigo-900 dark:text-indigo-100 truncate">
+              {viewingDepartment.name}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Main Menu (Dashboard, Analytics, etc. – data scoped by department when added) */}
+      {/* Main Menu (Dashboard, Analytics, etc. – data scoped by department) */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <div className="px-2.5 pt-6 pb-1.5">
           <h5 className="text-app-subtle">Main Menu</h5>
@@ -201,7 +178,7 @@ const Sidebar = () => {
           {mainMenuItems.map((item) => renderItem(item))}
         </div>
 
-        {/* Departments (after Main Menu; super_admin only) */}
+        {/* Departments (admin only) */}
         {showDepartments && (
           <>
             <div className="px-2.5 pt-4 pb-1.5">

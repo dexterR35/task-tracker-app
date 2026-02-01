@@ -4,6 +4,7 @@ import { FiChevronDown, FiChevronLeft, FiChevronRight, FiHelpCircle, FiLogOut, F
 import { IoMoonOutline, IoSunnyOutline } from "react-icons/io5";
 import { useAuth } from "@/context/AuthContext";
 import { useDarkMode } from "@/context/DarkModeProvider";
+import { useDepartmentApp } from "@/hooks/useDepartmentApp";
 import Avatar from "@/components/ui/Avatar/Avatar";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import { CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
@@ -52,10 +53,13 @@ const menuItemClass =
 const TopNavbar = () => {
   const { logout, clearError, user } = useAuth();
   const { isDarkMode, isTransitioning, toggleDarkMode } = useDarkMode();
+  const { basePath } = useDepartmentApp();
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
   const breadcrumbSegments = getBreadcrumbSegments(pathname);
+  const profileHref = basePath ? `${basePath}/profile` : "/profile";
+  const homeHref = basePath ? `${basePath}/dashboard` : "/";
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -92,7 +96,7 @@ const TopNavbar = () => {
         ) : (
           <>
             <Link
-              to="/"
+              to={homeHref}
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-app hover:underline truncate"
             >
               Home
@@ -207,7 +211,7 @@ const TopNavbar = () => {
                   </div>
                 </div>
                 <Link
-                  to="/profile"
+                  to={profileHref}
                   className={menuItemClass}
                   role="menuitem"
                   onClick={() => setDropdownOpen(false)}

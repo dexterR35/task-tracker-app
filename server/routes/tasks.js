@@ -4,10 +4,11 @@
 
 import { Router } from 'express';
 import * as tasksController from '../controllers/tasksController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, rejectDepartmentSlug } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(rejectDepartmentSlug('food')); // Food department uses orders, not tasks
 
 router.get('/', tasksController.list);
 router.get('/:id', tasksController.getOne);

@@ -1,6 +1,6 @@
 /**
  * Tasks API – tasks belong to a task_board (department + year/month).
- * All operations verify the board belongs to the user's department (or requested department for super_admin).
+ * All operations verify the board belongs to the user's department.
  */
 
 import { query } from '../config/db.js';

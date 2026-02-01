@@ -21,17 +21,11 @@ Express + PostgreSQL backend with JWT auth API.
    PORT=5000
    ```
 
-3. **Database (psql only – no Node)**
+3. **Database**
 
-   From project root, or from `server/` with `$DATABASE_URL`:
-
-   ```bash
-   psql -d task_tracker -f server/db/schema.sql
-   psql -d task_tracker -f server/db/seed-user.sql
-   ```
-
-   Or from `server/`: `psql "$DATABASE_URL" -f db/schema.sql` then `psql "$DATABASE_URL" -f db/seed-user.sql`.  
-   Schema creates tables; seed-user creates `admin@netbet.ro` / `admin123` (change password in the SQL file for production).
+   Schema (psql): `psql -d task_tracker -f db/schema.sql` (or use `$DATABASE_URL`).  
+   Seed users (Node – same DB as app, bcryptjs): from `server/` run `npm run db:seed`.  
+   Creates one admin + one user per department (design, customer-support, food). Emails: admin-{dept}@netbet.ro (admin123), user-{dept}@netbet.ro (user123).
 
 4. **Start server**
 

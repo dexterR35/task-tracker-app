@@ -1,14 +1,11 @@
 /**
  * Task boards API – one board per department per month (year/month).
- * Scoped by user's department; super_admin may pass departmentId to view another department.
+ * Scoped by user's department.
  */
 
 import { query } from '../config/db.js';
 
 export function resolveDepartmentId(req) {
-  const isSuperAdmin = req.user?.role === 'super_admin';
-  const param = req.query?.departmentId ?? req.body?.departmentId;
-  if (isSuperAdmin && param) return param;
   return req.user?.departmentId ?? null;
 }
 

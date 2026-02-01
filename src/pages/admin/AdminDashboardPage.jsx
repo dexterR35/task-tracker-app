@@ -1,13 +1,32 @@
-import React, { useMemo, useRef } from "react";
+/**
+ * Design department – Dashboard = Overview cards + Task board (shared BoardSection).
+ * Same layout/buttons as Food order board; different data (tasks) and column config.
+ */
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { taskBoardsApi, tasksApi } from "@/app/api";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { showError } from "@/utils/toast";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
+import BoardSection from "@/components/BoardSection";
 import Loader from "@/components/ui/Loader/Loader";
+
+const TASK_COLUMNS = [
+  { key: "title", header: "Title", render: (t) => t.title ?? "–" },
+  {
+    key: "status",
+    header: "Status",
+    render: (t) => (
+      <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-app">
+        {t.status ?? "todo"}
+      </span>
+    ),
+  },
+  { key: "dueDate", header: "Due date", render: (t) => (t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "–") },
+];
 
 const AdminDashboardPage = () => {
   const { canAccess, user } = useAuth();
@@ -17,13 +36,11 @@ const AdminDashboardPage = () => {
   const appData = useAppDataContext();
   const {
     users: allUsers = [],
-    isLoading,
     isInitialLoading,
     error,
     isInitialized,
   } = appData || {};
 
-  // Main Menu data: scope by selected department (super_admin dropdown) or user's department
   const users = useMemo(
     () =>
       viewingDepartmentId
@@ -32,13 +49,63 @@ const AdminDashboardPage = () => {
     [allUsers, viewingDepartmentId]
   );
 
-  const handleAddTask = () => {
-    showError("Add task coming soon");
-  };
+  const [boards, setBoards] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [boardsLoading, setBoardsLoading] = useState(true);
+  const [selectedBoardId, setSelectedBoardId] = useState(null);
+  const [tasksLoading, setTasksLoading] = useState(false);
 
-  const handleExport = () => {
-    showError("Export coming soon");
-  };
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  useEffect(() => {
+    if (!user?.departmentId) {
+      setBoardsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setBoardsLoading(true);
+    taskBoardsApi
+      .list({ year, month })
+      .then((data) => {
+        if (cancelled) return;
+        const list = data.boards ?? [];
+        setBoards(list);
+        const first = list[0];
+        if (first) setSelectedBoardId(first.id);
+        else setSelectedBoardId(null);
+      })
+      .catch(() => {
+        if (!cancelled) setBoards([]);
+        if (!cancelled) setSelectedBoardId(null);
+      })
+      .finally(() => {
+        if (!cancelled) setBoardsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [year, month, user?.departmentId]);
+
+  useEffect(() => {
+    if (!selectedBoardId) {
+      setTasks([]);
+      return;
+    }
+    let cancelled = false;
+    setTasksLoading(true);
+    tasksApi
+      .list(selectedBoardId)
+      .then((data) => {
+        if (!cancelled) setTasks(data.tasks ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTasks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTasksLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [selectedBoardId]);
 
   const efficiencyData = {
     averageTaskCompletion: 2.3,
@@ -52,14 +119,14 @@ const AdminDashboardPage = () => {
 
   const smallCards = useMemo(() => {
     const newCards = createCards({
-      tasks: [],
+      tasks,
       users,
       periodName: "Dashboard",
       periodId: "dashboard",
       isUserAdmin,
       currentUser: user,
       efficiency: efficiencyData,
-      actionsTotalTasks: 0,
+      actionsTotalTasks: tasks.length,
       actionsTotalHours: 0,
       actionsTotalDeliverables: 0,
       actionsTotalDeliverablesWithVariationsHours: 0,
@@ -85,7 +152,7 @@ const AdminDashboardPage = () => {
       cardCacheRef.current.set(cacheKey, newCard);
       return newCard;
     });
-  }, [users, isUserAdmin, user]);
+  }, [users, isUserAdmin, user, tasks]);
 
   if (!appData || !isInitialized) {
     return (
@@ -106,35 +173,9 @@ const AdminDashboardPage = () => {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Overview and progress
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <DynamicButton
-            onClick={handleAddTask}
-            variant="primary"
-            size="sm"
-            iconName="add"
-            iconPosition="left"
-            iconCategory="buttons"
-            className="!text-xs !px-3 !py-1.5"
-          >
-            Add Task
-          </DynamicButton>
-          <DynamicButton
-            onClick={handleExport}
-            variant="secondary"
-            size="sm"
-            iconName="download"
-            iconPosition="left"
-            iconCategory="buttons"
-            className="!text-xs !px-3 !py-1.5"
-          >
-            Export
-          </DynamicButton>
-        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Overview and progress
+        </p>
       </div>
 
       <section className="mb-6" aria-label="Dashboard overview">
@@ -152,6 +193,24 @@ const AdminDashboardPage = () => {
             : smallCards.map((card) => <SmallCard key={card.id} card={card} />)}
         </div>
       </section>
+
+      <BoardSection
+        title="Task board"
+        boards={boards}
+        selectedBoardId={selectedBoardId}
+        onSelectBoard={setSelectedBoardId}
+        items={tasks}
+        itemsLoading={tasksLoading}
+        columns={TASK_COLUMNS}
+        emptyBoardsMessage="No task board for this month. Create one via API or add a Get or create board action."
+        emptyItemsMessage="No tasks yet for this board."
+        loadingMessage="Loading tasks…"
+        boardsLoading={boardsLoading}
+        addButtonLabel="Add a task"
+        onAdd={() => showError("Add a task coming soon")}
+        exportButtonLabel="Export"
+        onExport={() => showError("Export coming soon")}
+      />
     </div>
   );
 };

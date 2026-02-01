@@ -7,7 +7,7 @@
   Example: `postgresql://USER:PASSWORD@localhost:5432/task_tracker`
 - **Setup:** Run with psql (no Node). Users are added manually (e.g. seed script or admin); no public registration.
 
-**Split:** Auth + department in `users` (login; set `users.department_id` when creating a user). Profile in `profiles` (name, job, office, etc.; no department). **Sessions** in `refresh_tokens` (cookie + DB). **Departments** is a table (`departments`); users are assigned to a department on creation via `users.department_id`; department is mandatory for login. Data (dashboard, analytics, tasks, kanban) is scoped by user’s department.
+**Single department table; same auth, same user data.** One `departments` table; one login; one `users` table. The only difference per user is **department** – set when the user is created manually (`users.department_id`). Each department has a different dashboard and menu in the app. **Split:** Auth + department in `users` (login; set `users.department_id` when creating a user). Profile in `profiles` (name, job, office, etc.; no department). **Sessions** in `refresh_tokens` (cookie + DB). **Departments** is a table (`departments`); users are assigned to a department on creation via `users.department_id`; department is mandatory for login. Data (dashboard, analytics, tasks, kanban) is scoped by user’s department.
 
 ### Auth & sessions (cookie + DB)
 
@@ -41,11 +41,9 @@ psql -d task_tracker -f server/db/schema.sql
 # Or with DATABASE_URL
 psql "$DATABASE_URL" -f server/db/schema.sql
 
-# Optional: add 3 dev users (requires pgcrypto)
-psql -d task_tracker -f server/db/seed-user.sql
-# → admin@netbet.ro / admin123 (role: admin, department: Design)
-# → admin2@netbet.ro / admin123 (role: admin, department: Customer Support)
-# → superadmin@netbet.ro / super123 (role: super_admin, department: Other; sees all departments in app)
+# Optional: add dev users (from server/: npm run db:seed – uses DATABASE_URL + bcryptjs)
+# One admin + one user per department: admin-{dept}@netbet.ro (admin123), user-{dept}@netbet.ro (user123)
+# e.g. admin-design@netbet.ro, user-design@netbet.ro, admin-food@netbet.ro, user-food@netbet.ro
 ```
 
 ---
@@ -54,14 +52,16 @@ psql -d task_tracker -f server/db/seed-user.sql
 
 | Table            | Purpose |
 |------------------|--------|
-| `departments`    | **Departments** – id, name, slug. Seeded: Design, Customer Support, QA, Development, Marketing, Product, Other. Users are assigned to one department via `users.department_id`; data is scoped by department. |
+| `departments`    | **Departments** – id, name, slug. Seeded: Design, **Food**, Customer Support, QA, Development, Marketing, Product, Other. Users are assigned to one department via `users.department_id`; data is scoped by department. **2-apps-in-1:** Design (and other non-Food) → task tracker; Food → office food orders. |
 | `users`          | **Auth only** – id, email, password_hash, role, **department_id** NOT NULL, is_active. Login uses: email + password; then requires department_id and is_active. Name is not in users (profile-only). |
 | `profiles`       | **Profile only (not used in auth)** – one row per user. user_id → users(id), name, username, office, job_position, phone, avatar_url, gender, etc. Name is for display only; login does not use it. |
 | `refresh_tokens` | **Sessions (cookie + DB)** – id, user_id → users(id), token (SHA-256 hash, 64 chars), expires_at, user_agent, ip, last_used_at, created_at. One row per device; max per user configurable (e.g. 5). Raw token only in httpOnly cookie; DB stores hash only. |
-| `task_boards`    | **Task boards** – one per department per month. id, department_id → departments(id), year, month, name. UNIQUE (department_id, year, month). |
-| `tasks`          | **Tasks** – id, board_id → task_boards(id), assignee_id → users(id), title, description, status, due_date, position, created_at, updated_at. |
+| `task_boards`    | **Task boards** – one per department per month (Design and other non-Food). id, department_id → departments(id), year, month, name. UNIQUE (department_id, year, month). **API:** reject DepartmentSlug `food` (Food users get 403). |
+| `tasks`          | **Tasks** – id, board_id → task_boards(id), assignee_id → users(id), title, description, status, due_date, position, created_at, updated_at. **API:** reject DepartmentSlug `food`. |
+| `order_boards`   | **Order boards** – one per department per month (Food department). id, department_id → departments(id), year, month, name. UNIQUE (department_id, year, month). **API:** require DepartmentSlug `food`. |
+| `orders`         | **Orders** – id, board_id → order_boards(id), user_id → users(id), order_date, summary, items (JSONB), status, created_at, updated_at. **API:** require DepartmentSlug `food`. |
 
-**Relationships:** `users.department_id` → `departments.id` (required for login). `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user). `task_boards.department_id` → `departments.id`. `tasks.board_id` → `task_boards.id`. `tasks.assignee_id` → `users.id`.
+**Relationships:** `users.department_id` → `departments.id` (required for login). `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user). `task_boards.department_id` → `departments.id`. `tasks.board_id` → `task_boards.id`. `tasks.assignee_id` → `users.id`. `order_boards.department_id` → `departments.id`. `orders.board_id` → `order_boards.id`. `orders.user_id` → `users.id`.
 
 ---
 
@@ -121,5 +121,5 @@ flowchart LR
 
 - **Refresh tokens (sessions):** Raw token exists only in the httpOnly cookie; the app stores only the SHA-256 hash (hex, 64 chars) in `refresh_tokens.token`. Cookie: `refresh_token`, path `/api`, SameSite=None, Secure. Expiry and max devices: `REFRESH_TOKEN_EXPIRES_DAYS` (default 7), `REFRESH_TOKEN_MAX_DEVICES` (default 5). Logout = delete row + clear cookie.
 - **Access token:** JWT, not stored in DB; lifetime `JWT_EXPIRES_IN` (e.g. 10m). Used for API and Socket.IO; refreshed via `POST /api/auth/refresh` (cookie sent automatically).
-- **Roles:** `super_admin` (see all departments), `admin`, and `user`. Enforced in app and Socket.IO by role checks.
+- **Roles:** `admin` and `user`. Enforced in app and Socket.IO by role checks.
 - **Departments:** Departments is a **table** (`departments`). Users are **assigned to a department when created** (set `users.department_id`); department is **mandatory for login** (no department ⇒ cannot log in). After login, users **see their data** (dashboard, analytics, tasks, kanban) **scoped to their department**. Same sidebar for everyone; Main Menu data is department-scoped. **Users** list and **UI Showcase** (Settings) are **global** (all departments).

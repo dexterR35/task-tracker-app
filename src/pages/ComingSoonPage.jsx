@@ -1,9 +1,11 @@
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { useDepartmentApp } from "@/hooks/useDepartmentApp";
 
 /**
  * Coming Soon page for routes that are under development.
  */
 const ComingSoonPage = () => {
+  const { loginRedirectPath } = useDepartmentApp();
   return (
     <div className="min-h-screen flex-center relative">
       <div className="card relative">
@@ -19,7 +21,7 @@ const ComingSoonPage = () => {
         </div>
         <div className="space-y-3">
           <DynamicButton
-            to="/dashboard"
+            to={loginRedirectPath}
             className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
             variant="primary"
             size="lg"

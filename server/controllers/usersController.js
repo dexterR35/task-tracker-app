@@ -71,7 +71,7 @@ export async function update(req, res, next) {
   try {
     const { id } = req.params;
     const currentUser = req.user;
-    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
+    const isAdmin = currentUser.role === 'admin';
     const isSelf = currentUser.id === id;
     if (!isAdmin && !isSelf) {
       return res.status(403).json({ error: 'Forbidden.' });
@@ -130,7 +130,7 @@ export async function update(req, res, next) {
       userValues.push(!!body.isActive);
     }
     if (isAdmin && body.role !== undefined) {
-      if (!['super_admin', 'admin', 'user'].includes(body.role)) {
+      if (!['admin', 'user'].includes(body.role)) {
         return res.status(400).json({ error: 'Invalid role.' });
       }
       userUpdates.push(`role = $${userPos++}`);

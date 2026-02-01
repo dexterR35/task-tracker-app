@@ -8,16 +8,19 @@ import {
 } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import AppLayout from "@/components/layout/AppLayout";
+import { useDepartmentApp } from "@/hooks/useDepartmentApp";
+import design from "@/app/departments/design";
+import food from "@/app/departments/food";
+import SettingsLayout from "@/components/layout/SettingsLayout";
+import DepartmentGuard from "@/components/layout/DepartmentGuard";
+import RedirectToAppHome from "@/components/layout/RedirectToAppHome";
 import Loader from "@/components/ui/Loader/Loader";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
-import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import UIShowcasePage from "@/pages/admin/UIShowcasePage";
 import DepartmentsPage from "@/pages/admin/DepartmentsPage";
-import ComingSoonPage from "@/pages/ComingSoonPage";
 import ProfilePage from "@/pages/ProfilePage";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/errorPages/UnauthorizedPage";
@@ -50,15 +53,16 @@ const PageWrapper = ({ children }) => {
 
 const PublicRoute = ({ children }) => {
   const authState = useAuth();
+  const { loginRedirectPath } = useDepartmentApp();
 
   // Show loading during initial auth check to prevent flash
   if (authState.isLoading || authState.isAuthChecking) {
     return <SimpleLoader />;
   }
 
-  // If user is authenticated, redirect to dashboard
+  // If user is authenticated, redirect to their app home (Design → /design/dashboard, Food → /food/dashboard)
   if (authState.user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={loginRedirectPath} replace />;
   }
 
   // If user is not authenticated, show the public page
@@ -115,17 +119,6 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
-const SuperAdminRoute = ({ children }) => {
-  const authState = useAuth();
-  const { canAccess } = authState;
-
-  if (!canAccess("super_admin")) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return children;
-};
-
 ProtectedRoute.displayName = "ProtectedRoute";
 
 
@@ -169,207 +162,58 @@ export const createRouter = () => {
         ),
       },
       // ========================================
-      // PROTECTED ROUTES (Authentication required)
+      // PROTECTED ROUTES (2-apps-in-1: /design/* and /food/*, shared /settings/*)
       // ========================================
       {
         element: (
           <ProtectedRoute>
-            <ErrorBoundary componentName="AppLayout">
-              <AppLayout />
+            <ErrorBoundary componentName="DepartmentGuard">
+              <DepartmentGuard />
             </ErrorBoundary>
           </ProtectedRoute>
         ),
         children: [
+          { index: true, element: <RedirectToAppHome /> },
           // ========================================
-          // USER ROUTES (All authenticated users)
-          // ========================================
-          {
-            path: "dashboard",
-            element: (
-              <ErrorBoundary componentName="AdminDashboardPage">
-                <PageWrapper key="dashboard">
-                  <AdminDashboardPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "profile",
-            element: (
-              <ErrorBoundary componentName="ProfilePage">
-                <PageWrapper>
-                  <ProfilePage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          // ========================================
-          // SUPER-ADMIN ROUTES (Super admin only – see all departments)
+          // DESIGN (task tracker) – from src/app/departments/design
           // ========================================
           {
-            path: "settings/departments",
+            path: "design",
             element: (
-              <SuperAdminRoute>
-                <ErrorBoundary componentName="DepartmentsPage">
-                  <PageWrapper>
-                    <DepartmentsPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </SuperAdminRoute>
+              <ErrorBoundary componentName="DesignLayout">
+                <design.Layout />
+              </ErrorBoundary>
             ),
-          },
-          // ADMIN-ONLY ROUTES (Admin role required)
-          // ========================================
-          {
-            path: "settings/users",
-            element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="UsersPage">
-                  <PageWrapper>
-                    <UsersPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
-            ),
-          },
-          {
-            path: "reporters",
-            element: <Navigate to="/dashboard" replace />,
+            children: design.routes,
           },
           // ========================================
-          // UTILITY ROUTES (Coming soon pages)
+          // FOOD (office food orders) – from src/app/departments/food
           // ========================================
           {
-            path: "time-tracking",
+            path: "food",
             element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
+              <ErrorBoundary componentName="FoodLayout">
+                <food.Layout />
               </ErrorBoundary>
             ),
+            children: food.routes,
           },
-          {
-            path: "deliverables",
-            element: <Navigate to="/dashboard" replace />,
-          },
-          {
-            path: "projects",
-            element: <Navigate to="/dashboard" replace />,
-          },
-          {
-            path: "analytics",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/marketing",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/acquisition",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/product",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/ai-usage",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/reporter-overview",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/by-users",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/misc",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
-          {
-            path: "analytics/month-comparison",
-            element: (
-              <ErrorBoundary componentName="ComingSoonPage">
-                <PageWrapper>
-                  <ComingSoonPage />
-                </PageWrapper>
-              </ErrorBoundary>
-            ),
-          },
+          // ========================================
+          // SHARED SETTINGS (no department in path)
+          // ========================================
           {
             path: "settings",
-            element: <Navigate to="/settings/users" replace />,
-          },
-          {
-            path: "settings/ui-showcase",
             element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="UIShowcasePage">
-                  <PageWrapper>
-                    <UIShowcasePage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
+              <ErrorBoundary componentName="SettingsLayout">
+                <SettingsLayout />
+              </ErrorBoundary>
             ),
-          },
-          {
-            path: "preview/:monthId",
-            element: <ComingSoonPage />,
-          },
-          {
-            path: "coming-soon",
-            element: <ComingSoonPage />,
+            children: [
+              { index: true, element: <Navigate to="/settings/users" replace /> },
+              { path: "users", element: <AdminRoute><PageWrapper><UsersPage /></PageWrapper></AdminRoute> },
+              { path: "departments", element: <AdminRoute><PageWrapper><DepartmentsPage /></PageWrapper></AdminRoute> },
+              { path: "ui-showcase", element: <AdminRoute><PageWrapper><UIShowcasePage /></PageWrapper></AdminRoute> },
+            ],
           },
         ],
       },
