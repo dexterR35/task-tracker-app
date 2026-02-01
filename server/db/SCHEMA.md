@@ -67,21 +67,23 @@ psql -d task_tracker -f server/db/seed-user.sql
 
 ## Table diagram
 
+Tables in order: **users** + **refresh_tokens** (auth & sessions) → **profiles** → **departments** (users belong to) → **task_boards** → **tasks**.
+
 ```mermaid
-flowchart TB
-  departments[(departments)]
+flowchart LR
   users[(users)]
-  profiles[(profiles)]
   refresh_tokens[(refresh_tokens)]
-  task_boards[(task_boards)]
+  profiles[(profiles)]
+  departments[(departments)]
+  task_boards[("task_boards<br/>year, month — one per month")]
   tasks[(tasks)]
 
-  departments -->|department_id| users
-  users -->|user_id 1:1| profiles
-  users -->|user_id| refresh_tokens
-  departments -->|department_id| task_boards
-  task_boards -->|board_id| tasks
-  users -.->|assignee_id| tasks
+  users -- user_id 1:1 --> profiles
+  users -- user_id --> refresh_tokens
+  users -- department_id --> departments
+  departments -- department_id --> task_boards
+  task_boards -- board_id --> tasks
+  users -. assignee_id .-> tasks
 ```
 
 ### Session lifecycle (refresh token + cookie)

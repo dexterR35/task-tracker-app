@@ -18,6 +18,8 @@ import { authLogger } from './utils/authLogger.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import departmentsRoutes from './routes/departments.js';
+import taskBoardsRoutes from './routes/taskBoards.js';
+import tasksRoutes from './routes/tasks.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -91,6 +93,8 @@ app.get('/health/db', async (_, res) => {
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/departments', departmentsRoutes);
+app.use('/api/task-boards', taskBoardsRoutes);
+app.use('/api/tasks', tasksRoutes);
 
 app.use('/api', (_, res) => res.status(404).json({ error: 'Not found.', code: 'NOT_FOUND' }));
 app.use((err, _req, res, _next) => {
