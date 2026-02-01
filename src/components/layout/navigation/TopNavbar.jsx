@@ -8,26 +8,39 @@ import Avatar from "@/components/ui/Avatar/Avatar";
 import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import { CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
 
-/** Path using menu names from nav config, e.g. "Dashboard" or "Settings / Users". */
-function getBreadcrumbPath(pathname) {
+/** Breadcrumb segments with label and href for clickable routing. */
+function getBreadcrumbSegments(pathname) {
   const items = NAVIGATION_CONFIG.ITEMS ?? [];
   for (const item of items) {
-    if (item.href === pathname) return item.name;
+    if (item.href === pathname) {
+      return [{ label: item.name, href: item.href, current: true }];
+    }
     const subItems = item.subItems ?? [];
     for (const sub of subItems) {
-      if (sub.href === pathname) return item.name + " / " + sub.name;
+      if (sub.href === pathname) {
+        return [
+          { label: item.name, href: item.href, current: false },
+          { label: sub.name, href: sub.href, current: true },
+        ];
+      }
     }
   }
   // Fallbacks
   const fallbacks = { "/profile": "Profile", "/coming-soon": "Coming Soon", "/preview": "Preview" };
   for (const [path, title] of Object.entries(fallbacks)) {
-    if (pathname === path || pathname.startsWith(path + "/")) return title;
+    if (pathname === path || pathname.startsWith(path + "/")) {
+      return [{ label: title, href: pathname, current: true }];
+    }
   }
-  // Last resort: capitalize URL segments
-  const segments = pathname.replace(/^\//, "").split("/").filter(Boolean);
-  if (segments.length === 0) return "";
-  const labels = segments.map((s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, " "));
-  return labels.join(" / ");
+  // Last resort: build from URL segments with cumulative hrefs
+  const parts = pathname.replace(/^\//, "").split("/").filter(Boolean);
+  if (parts.length === 0) return [];
+  let href = "";
+  return parts.map((segment, i) => {
+    href += (href ? "/" : "/") + segment;
+    const label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+    return { label, href, current: i === parts.length - 1 };
+  });
 }
 
 const menuItemClass =
@@ -39,7 +52,7 @@ const TopNavbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
-  const breadcrumbPath = getBreadcrumbPath(pathname);
+  const breadcrumbSegments = getBreadcrumbSegments(pathname);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -65,18 +78,48 @@ const TopNavbar = () => {
 
   return (
     <header
-      className="flex h-24 shrink-0 items-center justify-between px-4 md:px-6 bg-transparent mb-8"
+      className="flex h-24 shrink-0 items-center justify-between px-4 md:px-6 bg-transparent mb-0"
       aria-label="Top navigation"
     >
-      <div className="flex items-center gap-2 min-w-0 flex-wrap">
-        <span className="text-sm text-gray-500 dark:text-gray-400 truncate" aria-label="Current path">
-          {breadcrumbPath}
-        </span>
+      <nav className="flex items-center gap-2 min-w-0 flex-wrap" aria-label="Breadcrumb">
+        {breadcrumbSegments.length === 0 ? (
+          <span className="text-sm text-gray-500 dark:text-gray-400 truncate" aria-label="Current path">
+            Home
+          </span>
+        ) : (
+          <>
+            <Link
+              to="/"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-app hover:underline truncate"
+            >
+              Home
+            </Link>
+            {breadcrumbSegments.map((seg, i) => (
+              <span key={seg.href + i} className="flex items-center gap-1.5 shrink-0">
+                <span className="text-gray-400 dark:text-gray-500" aria-hidden>
+                  /
+                </span>
+                {seg.current ? (
+                  <span className="text-sm text-app font-medium truncate" aria-current="page">
+                    {seg.label}
+                  </span>
+                ) : (
+                  <Link
+                    to={seg.href}
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-app hover:underline truncate"
+                  >
+                    {seg.label}
+                  </Link>
+                )}
+              </span>
+            ))}
+          </>
+        )}
         <span className="flex items-center gap-0.5 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden>
           <FiChevronLeft className="w-4 h-4" />
           <FiChevronRight className="w-4 h-4" />
         </span>
-      </div>
+      </nav>
 
       <div className="flex items-center gap-2">
         {!user && <DarkModeToggle />}

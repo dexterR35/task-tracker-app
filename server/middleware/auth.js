@@ -8,6 +8,9 @@ import { query } from '../config/db.js';
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export const authenticate = async (req, res, next) => {
+  if (!JWT_SECRET) {
+    return res.status(503).json({ error: 'Authentication not configured.' });
+  }
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
