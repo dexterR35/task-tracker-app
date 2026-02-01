@@ -1,46 +1,16 @@
 /**
- * Form constants – validation patterns/messages/limits and dropdown options.
- * Single source for forms config (department forms, login, validation schemas).
+ * Form constants – department form config names, dropdown options.
  * Import from: @/components/forms/configs/formConstants
  */
 
 // ============================================================================
-// VALIDATION PATTERNS & MESSAGES
+// DEPARTMENT FORM CONFIG NAMES (used by DynamicDepartmentForm)
 // ============================================================================
 
-export const VALIDATION = {
-  PATTERNS: {
-    ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
-    /** Office login only: @rei-d-services.com, @netbet.com, @netbet.ro, @gimo.co.uk */
-    OFFICE_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
-    NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
-    JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
-    URL: /^https?:\/\/.+/,
-    PHONE: /^\+?[\d\s\-()]+$/,
-  },
-  MESSAGES: {
-    REQUIRED: 'This field is required',
-    OFFICE_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
-    NETBET_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
-    JIRA_URL_FORMAT: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}',
-    MIN_LENGTH: (min) => `Must be at least ${min} characters`,
-    MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
-    MIN_VALUE: (min) => `Must be at least ${min}`,
-    MAX_VALUE: (max) => `Must be no more than ${max}`,
-    SELECT_ONE: 'Please select at least one option',
-    INVALID_EMAIL: 'Please enter a valid email address',
-    INVALID_URL: 'Please enter a valid URL',
-    INVALID_PHONE: 'Please enter a valid phone number',
-  },
-  LIMITS: {
-    NAME_MIN: 2,
-    NAME_MAX: 50,
-    DESCRIPTION_MAX: 500,
-    TIME_MIN: 0.1,
-    TIME_MAX: 999,
-    QUANTITY_MIN: 1,
-    QUANTITY_MAX: 999,
-  },
+/** Department keys – must match keys in DynamicDepartmentForm's DEPARTMENT_FORM_CONFIG. */
+export const DEPARTMENT_FORM_DEPARTMENT = {
+  DESIGN: 'design',
+  FOOD: 'food',
 };
 
 // ============================================================================
@@ -87,5 +57,13 @@ export const FORM_OPTIONS = {
   TIME_UNITS: [
     { value: 'min', label: 'Minutes' },
     { value: 'hr', label: 'Hours' },
+  ],
+  /** Food order form – dish category options. */
+  FOOD_DISH_CATEGORIES: [
+    { value: 'breakfast', label: 'Breakfast' },
+    { value: 'lunch', label: 'Lunch' },
+    { value: 'snack', label: 'Snack' },
+    { value: 'drink', label: 'Drink' },
+    { value: 'other', label: 'Other' },
   ],
 };

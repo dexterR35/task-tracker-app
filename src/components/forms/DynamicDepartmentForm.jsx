@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { getDepartmentFormConfig } from '@/components/forms/configs/departmentFormConfig';
-import { buildSchemaFromFields } from '@/utils/validationSchemas';
-import { FORM_FIELD_TYPE_MAP } from '@/components/forms/components/FormFields';
+import { buildSchemaFromFields, FORM_FIELD_LIMITS } from '@/components/forms/configs/validationSchemas';
+import { FORM_FIELD_TYPE_MAP, getDepartmentFormConfig } from '@/components/forms/components/FormFields';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { handleValidationError } from '@/features/utils/errorHandling';
 import { showValidationError } from '@/utils/toast';
+
+export { getDepartmentFormConfig };
 
 function getDefaultValueForField(field) {
   switch (field.type) {
@@ -32,20 +33,6 @@ function buildDefaultValues(fields) {
   }, {});
 }
 
-/**
- * Dynamic form driven by department form config.
- * Renders title, optional category, fields by type, and submit button.
- *
- * @param {string} departmentKey – e.g. 'design' | 'food'
- * @param {string} formKey – e.g. 'addTask' | 'addOrder'
- * @param {function} onSubmit – (data) => Promise|void
- * @param {object} [options]
- * @param {object} [options.defaultValues] – override default values
- * @param {object} [options.schema] – Yup schema; if omitted, built from config fields
- * @param {object} [options.submitButtonProps] – props for submit DynamicButton (variant, size, iconName, etc.)
- * @param {string} [options.className] – wrapper class
- * @param {boolean} [options.hideTitle] – when true, do not render title/category (e.g. when used inside SlidePanel)
- */
 const DynamicDepartmentForm = ({
   departmentKey,
   formKey,
@@ -127,9 +114,12 @@ const DynamicDepartmentForm = ({
         {fields.map((field) => {
           const FieldComponent = FORM_FIELD_TYPE_MAP[field.type];
           if (!FieldComponent) return null;
+          const resolvedField = field.limitsKey && FORM_FIELD_LIMITS[field.limitsKey]
+            ? { ...field, ...FORM_FIELD_LIMITS[field.limitsKey] }
+            : field;
           const commonProps = {
             key: field.name,
-            field,
+            field: resolvedField,
             register,
             errors,
             setValue,

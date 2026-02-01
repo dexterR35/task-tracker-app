@@ -3,7 +3,10 @@
  *
  * Exports (public): TextField, PasswordField, UrlField, TextareaField, NumberField,
  * CheckboxField, SelectField, MultiSelectField, SearchableSelectField, SimpleDateField,
- * FORM_FIELD_TYPE_MAP (type string → component for DynamicDepartmentForm).
+ * FORM_FIELD_TYPE_MAP (type string → component for DynamicDepartmentForm),
+ * DEPARTMENT_FIELD_TYPES (allowed type keys for department forms),
+ * textField, selectField, textareaField, numberField, urlField, dateField, etc. – field config from here (same place as TextField, SelectField),
+ * getDepartmentFormConfig (department + form key → form config with title, fields, etc.).
  *
  * Import from: @/components/forms/components/FormFields
  */
@@ -12,6 +15,7 @@ import { format, startOfMonth, endOfMonth, addDays, startOfWeek } from 'date-fns
 import Badge from '@/components/ui/Badge/Badge';
 import { Icons } from '@/components/icons';
 import { showSuccess } from '@/utils/toast';
+import { FORM_OPTIONS, DEPARTMENT_FORM_DEPARTMENT } from '@/components/forms/configs/formConstants';
 
 // Internal: shared layout (wrapper, label, control slot, error). Not exported.
 function FieldLayout({ field, error, children, skipLabel = false }) {
@@ -545,7 +549,7 @@ export function SimpleDateField({ field, errors, setValue, watch }) {
   );
 }
 
-/** Map config field type → component. Used by DynamicDepartmentForm and departmentFormConfig (field.type must match a key). */
+/** Map config field type → component. Used by DynamicDepartmentForm (field.type must match a key). */
 export const FORM_FIELD_TYPE_MAP = {
   text: TextField,
   email: TextField,
@@ -558,3 +562,72 @@ export const FORM_FIELD_TYPE_MAP = {
   checkbox: CheckboxField,
   date: SimpleDateField,
 };
+
+/** Allowed field types for department forms – use these in form config so every department uses the same fields (TextField, SelectField, etc.). */
+export const DEPARTMENT_FIELD_TYPES = Object.keys(FORM_FIELD_TYPE_MAP);
+
+/**
+ * Create a field config that triggers a FormFields component. type must be a key in FORM_FIELD_TYPE_MAP.
+ */
+function field(name, type, descriptor = {}) {
+  if (!FORM_FIELD_TYPE_MAP[type]) {
+    throw new Error(`FormFields: unknown field type "${type}". Use one of: ${DEPARTMENT_FIELD_TYPES.join(', ')}`);
+  }
+  return { name, type, ...descriptor };
+}
+
+/** Field config builders from here – same place as TextField, SelectField, etc. Use these in fields[]. */
+export const textField = (name, descriptor) => field(name, 'text', descriptor);
+export const emailField = (name, descriptor) => field(name, 'email', descriptor);
+export const numberField = (name, descriptor) => field(name, 'number', descriptor);
+export const textareaField = (name, descriptor) => field(name, 'textarea', descriptor);
+export const urlField = (name, descriptor) => field(name, 'url', descriptor);
+export const selectField = (name, descriptor) => field(name, 'select', descriptor);
+export const multiSelectField = (name, descriptor) => field(name, 'multiSelect', descriptor);
+export const searchableSelectField = (name, descriptor) => field(name, 'searchableSelect', descriptor);
+export const checkboxField = (name, descriptor) => field(name, 'checkbox', descriptor);
+export const dateField = (name, descriptor) => field(name, 'date', descriptor);
+
+// ============================================================================
+// Department form config – fields[] built from here (textField, selectField, etc.)
+// ============================================================================
+
+const DESIGN_ADD_TASK_FORM = {
+  name: 'addTask',
+  title: 'Add a task',
+  submitLabel: 'Create task',
+  category: 'Design',
+  fields: [
+    textField('title', { label: 'Task title', placeholder: 'Short title for the task', required: true }),
+    urlField('jiraLink', { label: 'Jira link', placeholder: 'https://gmrd.atlassian.net/browse/PROJ-123', required: false }),
+    selectField('product', { label: 'Product', placeholder: 'Select product', required: true, options: FORM_OPTIONS.PRODUCTS }),
+    selectField('market', { label: 'Market', placeholder: 'Select market', required: false, options: FORM_OPTIONS.MARKETS }),
+    textareaField('description', { label: 'Description', placeholder: 'Describe the task', required: false, limitsKey: 'DESCRIPTION' }),
+    numberField('estimatedTime', { label: 'Estimated time', placeholder: '0', required: false, limitsKey: 'ESTIMATED_TIME' }),
+    selectField('timeUnit', { label: 'Time unit', placeholder: 'Select unit', required: false, options: FORM_OPTIONS.TIME_UNITS }),
+  ],
+};
+
+const FOOD_ADD_ORDER_FORM = {
+  name: 'addOrder',
+  title: 'Send food order',
+  submitLabel: 'Send order',
+  category: 'Food',
+  fields: [
+    textField('dishName', { label: 'Dish / item', placeholder: 'e.g. Sandwich, Coffee', required: true }),
+    selectField('category', { label: 'Category', placeholder: 'Select category', required: false, options: FORM_OPTIONS.FOOD_DISH_CATEGORIES }),
+    numberField('quantity', { label: 'Quantity', placeholder: '1', required: true, limitsKey: 'QUANTITY' }),
+    dateField('orderDate', { label: 'Delivery date', placeholder: 'Select date', required: true }),
+    textareaField('notes', { label: 'Notes', placeholder: 'Allergies, preferences…', required: false, limitsKey: 'NOTES' }),
+  ],
+};
+
+const DEPARTMENT_FORM_CONFIG = {
+  [DEPARTMENT_FORM_DEPARTMENT.DESIGN]: { [DESIGN_ADD_TASK_FORM.name]: DESIGN_ADD_TASK_FORM },
+  [DEPARTMENT_FORM_DEPARTMENT.FOOD]: { [FOOD_ADD_ORDER_FORM.name]: FOOD_ADD_ORDER_FORM },
+};
+
+/** Get form config for a department and form key. Form config (which fields, labels, options) comes from here – single form system. */
+export function getDepartmentFormConfig(departmentKey, formKey) {
+  return DEPARTMENT_FORM_CONFIG[departmentKey]?.[formKey];
+}

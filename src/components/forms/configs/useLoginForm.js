@@ -1,40 +1,25 @@
+/**
+ * Login form field config. Validation (loginSchema) is in validationSchemas.js.
+ * Import from: @/components/forms/configs/useLoginForm
+ */
 
-
-import * as Yup from "yup";
-import { VALIDATION } from '@/components/forms/configs/formConstants';
-import { emailFieldWithPattern, passwordField } from '@/utils/validationSchemas';
-
-// ============================================================================
-// LOGIN FORM FIELD CONFIGURATION
-// ============================================================================
+export { loginSchema } from '@/components/forms/configs/validationSchemas';
 
 export const LOGIN_FORM_FIELDS = [
   {
-    name: "email",
-    type: "email",
-    label: "Email Address",
+    name: 'email',
+    type: 'email',
+    label: 'Email Address',
     required: true,
-    placeholder: "Enter your email",
-    autoComplete: "email"
+    placeholder: 'Enter your email',
+    autoComplete: 'email',
   },
   {
-    name: "password",
-    type: "password",
-    label: "Password",
+    name: 'password',
+    type: 'password',
+    label: 'Password',
     required: true,
-    placeholder: "Enter your password",
-    autoComplete: "current-password"
-  }
+    placeholder: 'Enter your password',
+    autoComplete: 'current-password',
+  },
 ];
-
-// ============================================================================
-// LOGIN FORM VALIDATION SCHEMA
-// ============================================================================
-
-export const loginSchema = Yup.object().shape({
-  email: emailFieldWithPattern(
-    VALIDATION.PATTERNS.OFFICE_EMAIL,
-    VALIDATION.MESSAGES.OFFICE_EMAIL
-  ),
-  password: passwordField(6)
-});

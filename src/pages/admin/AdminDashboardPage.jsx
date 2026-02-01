@@ -14,7 +14,8 @@ import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import BoardSection from "@/components/BoardSection";
 import Loader from "@/components/ui/Loader/Loader";
 import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
-import DynamicDepartmentForm from "@/components/forms/DynamicDepartmentForm";
+import DynamicDepartmentForm, { getDepartmentFormConfig } from "@/components/forms/DynamicDepartmentForm";
+import { DEPARTMENT_FORM_DEPARTMENT } from "@/components/forms/configs/formConstants";
 
 const TASK_COLUMNS = [
   { key: "title", header: "Title", render: (t) => t.title ?? "–" },
@@ -218,12 +219,12 @@ const AdminDashboardPage = () => {
       <SlidePanel
         isOpen={addTaskPanelOpen}
         onClose={() => setAddTaskPanelOpen(false)}
-        title="Add a task"
+        title={getDepartmentFormConfig(DEPARTMENT_FORM_DEPARTMENT.DESIGN, 'addTask')?.title}
         width="max-w-lg"
         closeOnBackdropClick={false}
       >
         <DynamicDepartmentForm
-          departmentKey="design"
+          departmentKey={DEPARTMENT_FORM_DEPARTMENT.DESIGN}
           formKey="addTask"
           hideTitle
           onSubmit={async (data) => {

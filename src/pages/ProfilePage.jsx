@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
 import { useAuth } from '@/context/AuthContext';
 import { usersApi } from '@/app/api';
 import { TextField, SelectField } from '@/components/forms/components/FormFields';
@@ -9,17 +8,7 @@ import DynamicButton from '@/components/ui/Button/DynamicButton';
 import Loader from '@/components/ui/Loader/Loader';
 import { showSuccess, showError } from '@/utils/toast';
 import { handleValidationError } from '@/features/utils/errorHandling';
-
-const profileSchema = yup.object().shape({
-  name: yup.string().trim().required('Name is required'),
-  username: yup.string().trim().nullable().max(100),
-  office: yup.string().trim().nullable().max(100),
-  jobPosition: yup.string().trim().nullable().max(100),
-  phone: yup.string().trim().nullable().max(50),
-  avatarUrl: yup.string().trim().url('Valid URL required').nullable().max(500),
-  gender: yup.string().trim().nullable().oneOf(['male', 'female', null]),
-  colorSet: yup.string().trim().nullable().max(20),
-});
+import { profileSchema } from '@/components/forms/configs/validationSchemas';
 
 const ProfilePage = () => {
   const { user: authUser, logout } = useAuth();

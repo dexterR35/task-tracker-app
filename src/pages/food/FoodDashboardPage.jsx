@@ -12,7 +12,8 @@ import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import BoardSection from "@/components/BoardSection";
 import { showError, showSuccess } from "@/utils/toast";
 import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
-import DynamicDepartmentForm from "@/components/forms/DynamicDepartmentForm";
+import DynamicDepartmentForm, { getDepartmentFormConfig } from "@/components/forms/DynamicDepartmentForm";
+import { DEPARTMENT_FORM_DEPARTMENT } from "@/components/forms/configs/formConstants";
 
 const ORDER_COLUMNS = [
   { key: "orderDate", header: "Date", render: (o) => o.orderDate ?? "–" },
@@ -155,12 +156,12 @@ const FoodDashboardPage = () => {
       <SlidePanel
         isOpen={sendFoodPanelOpen}
         onClose={() => setSendFoodPanelOpen(false)}
-        title="Send food order"
+        title={getDepartmentFormConfig(DEPARTMENT_FORM_DEPARTMENT.FOOD, 'addOrder')?.title}
         width="max-w-lg"
         closeOnBackdropClick={false}
       >
         <DynamicDepartmentForm
-          departmentKey="food"
+          departmentKey={DEPARTMENT_FORM_DEPARTMENT.FOOD}
           formKey="addOrder"
           hideTitle
           onSubmit={async (data) => {
