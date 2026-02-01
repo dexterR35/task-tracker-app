@@ -10,7 +10,9 @@ import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import BoardSection from "@/components/BoardSection";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
+import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
+import DynamicDepartmentForm from "@/components/forms/DynamicDepartmentForm";
 
 const ORDER_COLUMNS = [
   { key: "orderDate", header: "Date", render: (o) => o.orderDate ?? "–" },
@@ -33,6 +35,7 @@ const FoodDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [sendFoodPanelOpen, setSendFoodPanelOpen] = useState(false);
 
   const now = new Date();
   const year = now.getFullYear();
@@ -144,10 +147,29 @@ const FoodDashboardPage = () => {
         loadingMessage="Loading orders…"
         boardsLoading={loading}
         addButtonLabel="Send food"
-        onAdd={() => showError("Send food coming soon")}
+        onAdd={() => setSendFoodPanelOpen(true)}
         exportButtonLabel="Export"
         onExport={() => showError("Export coming soon")}
       />
+
+      <SlidePanel
+        isOpen={sendFoodPanelOpen}
+        onClose={() => setSendFoodPanelOpen(false)}
+        title="Send food order"
+        width="max-w-lg"
+        closeOnBackdropClick={false}
+      >
+        <DynamicDepartmentForm
+          departmentKey="food"
+          formKey="addOrder"
+          hideTitle
+          onSubmit={async (data) => {
+            // TODO: call ordersApi.create(selectedBoardId, data) when API is ready
+            showSuccess("Order form submitted. API integration coming soon.");
+            setSendFoodPanelOpen(false);
+          }}
+        />
+      </SlidePanel>
     </div>
   );
 };

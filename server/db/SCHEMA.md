@@ -35,7 +35,7 @@
 # Create DB (if needed)
 createdb task_tracker
 
-# Run schema (creates tables, indexes, migration for existing DBs)
+# Run schema (creates tables, indexes, seeds – start fresh; all data is replaced)
 psql -d task_tracker -f server/db/schema.sql
 
 # Or with DATABASE_URL
@@ -56,12 +56,12 @@ psql "$DATABASE_URL" -f server/db/schema.sql
 | `users`          | **Auth only** – id, email, password_hash, role, **department_id** NOT NULL, is_active. Login uses: email + password; then requires department_id and is_active. Name is not in users (profile-only). |
 | `profiles`       | **Profile only (not used in auth)** – one row per user. user_id → users(id), name, username, office, job_position, phone, avatar_url, gender, etc. Name is for display only; login does not use it. |
 | `refresh_tokens` | **Sessions (cookie + DB)** – id, user_id → users(id), token (SHA-256 hash, 64 chars), expires_at, user_agent, ip, last_used_at, created_at. One row per device; max per user configurable (e.g. 5). Raw token only in httpOnly cookie; DB stores hash only. |
-| `task_boards`    | **Task boards** – one per department per month (Design and other non-Food). id, department_id → departments(id), year, month, name. UNIQUE (department_id, year, month). **API:** reject DepartmentSlug `food` (Food users get 403). |
-| `tasks`          | **Tasks** – id, board_id → task_boards(id), assignee_id → users(id), title, description, status, due_date, position, created_at, updated_at. **API:** reject DepartmentSlug `food`. |
-| `order_boards`   | **Order boards** – one per department per month (Food department). id, department_id → departments(id), year, month, name. UNIQUE (department_id, year, month). **API:** require DepartmentSlug `food`. |
-| `orders`         | **Orders** – id, board_id → order_boards(id), user_id → users(id), order_date, summary, items (JSONB), status, created_at, updated_at. **API:** require DepartmentSlug `food`. |
+| `task_boards`    | **Monthly Board (parent)** – one “bucket” per department per month (Design and other non-Food). id, department_id, year, month, **month_name** (e.g. "March 2026"), created_at, updated_at. UNIQUE (department_id, year, month). **API:** reject DepartmentSlug `food`. |
+| `tasks`          | **Tasks (child)** – work item tied to a board. id, **board_id** → task_boards(id), title, status, assignee_id, description, due_date, position, created_at, updated_at. **API:** reject DepartmentSlug `food`. |
+| `order_boards`   | **Monthly Board (parent)** – one “bucket” per department per month (Food). id, department_id, year, month, **month_name** (e.g. "March 2026"), created_at, updated_at. UNIQUE (department_id, year, month). **API:** require DepartmentSlug `food`. |
+| `orders`         | **Orders (child)** – order tied to a board. id, **board_id** → order_boards(id), user_id, order_date, summary, items (JSONB), status, created_at, updated_at. **API:** require DepartmentSlug `food`. |
 
-**Relationships:** `users.department_id` → `departments.id` (required for login). `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user). `task_boards.department_id` → `departments.id`. `tasks.board_id` → `task_boards.id`. `tasks.assignee_id` → `users.id`. `order_boards.department_id` → `departments.id`. `orders.board_id` → `order_boards.id`. `orders.user_id` → `users.id`.
+**Relationships:** `users.department_id` → `departments.id` (required for login). `profiles.user_id` → `users.id` (1:1). `refresh_tokens.user_id` → `users.id` (many per user). `task_boards.department_id` → `departments.id`. **Monthly Board:** `task_boards` = parent (bucket); `tasks.board_id` → `task_boards.id` = child. Same for `order_boards` (parent) and `orders.board_id` → `order_boards.id` (child). `tasks.assignee_id` → `users.id`. `orders.user_id` → `users.id`.
 
 ---
 
@@ -75,8 +75,8 @@ flowchart LR
   refresh_tokens[(refresh_tokens)]
   profiles[(profiles)]
   departments[(departments)]
-  task_boards[("task_boards<br/>year, month — one per month")]
-  tasks[(tasks)]
+  task_boards[("task_boards<br/>month_name, year, month — bucket")]
+  tasks[("tasks<br/>board_id, title, status")]
 
   users -- user_id 1:1 --> profiles
   users -- user_id --> refresh_tokens

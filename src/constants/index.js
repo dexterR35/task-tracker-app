@@ -11,7 +11,6 @@ export const APP_CONFIG = {
   CALENDAR_WEEK_START: 1, // Monday (Romanian calendar behavior)
 };
 
-
 // ============================================================================
 // API CONFIGURATION (PERN backend + request limits)
 // ============================================================================
@@ -40,140 +39,7 @@ export const API_CONFIG = {
 // AUTHENTICATION & AUTHORIZATION
 // ============================================================================
 
-export const AUTH = {
-  VALID_ROLES: ['admin', 'user'],
-  ROLES: {
-    ADMIN: 'admin',
-    USER: 'user',
-  },
-  PERMISSIONS: {
-    CREATE_TASKS: 'create_tasks',
-    UPDATE_TASKS: 'update_tasks',
-    DELETE_TASKS: 'delete_tasks',
-    VIEW_TASKS: 'view_tasks',
-    CREATE_BOARDS: 'create_boards',
-    SUBMIT_FORMS: 'submit_forms',
-    DELETE_DATA: 'delete_data',
-    MANAGE_USERS: 'manage_users',
-    MANAGE_REPORTERS: 'manage_reporters',
-    MANAGE_DELIVERABLES: 'manage_deliverables',
-  },
-  /** Allowed email domains for login (REI office only) */
-  ALLOWED_LOGIN_DOMAINS: ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'],
-  EMAIL_DOMAIN: 'netbet.com',
-  EMAIL_DOMAIN2: 'rei-d-services.com',
-  EMAIL_DOMAIN3: 'gimo.co.uk',
-};
 
-// ============================================================================
-// VALIDATION PATTERNS & MESSAGES
-// ============================================================================
-
-export const VALIDATION = {
-  PATTERNS: {
-    ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
-    /** REI office login only: @rei-d-services.com, @netbet.com, @netbet.ro, @gimo.co.uk */
-    OFFICE_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
-    NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
-    JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
-    URL: /^https?:\/\/.+/,
-    PHONE: /^\+?[\d\s\-()]+$/,
-  },
-  MESSAGES: {
-    REQUIRED: 'This field is required',
-    OFFICE_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
-    NETBET_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
-    JIRA_URL_FORMAT: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}',
-    MIN_LENGTH: (min) => `Must be at least ${min} characters`,
-    MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
-    MIN_VALUE: (min) => `Must be at least ${min}`,
-    MAX_VALUE: (max) => `Must be no more than ${max}`,
-    SELECT_ONE: 'Please select at least one option',
-    INVALID_EMAIL: 'Please enter a valid email address',
-    INVALID_URL: 'Please enter a valid URL',
-    INVALID_PHONE: 'Please enter a valid phone number',
-  },
-  LIMITS: {
-    NAME_MIN: 2,
-    NAME_MAX: 50,
-    DESCRIPTION_MAX: 500,
-    TIME_MIN: 0.1,
-    TIME_MAX: 999,
-    QUANTITY_MIN: 1,
-    QUANTITY_MAX: 999,
-  },
-};
-
-// ============================================================================
-// FORM OPTIONS & DROPDOWN DATA
-// ============================================================================
-
-export const FORM_OPTIONS = {
-  PRODUCTS: [
-    { value: 'crm casino', label: 'crm casino' },
-    { value: 'crm sport', label: 'crm sport' },
-    { value: 'crm poker', label: 'crm poker' },
-    { value: 'crm lotto', label: 'crm lotto' },
-    { value: 'acquisition casino', label: 'acquisition casino' },
-    { value: 'acquisition sport', label: 'acquisition sport' },
-    { value: 'acquisition poker', label: 'acquisition poker' },
-    { value: 'acquisition lotto', label: 'acquisition lotto' },
-    { value: 'product casino', label: 'product casino' },
-    { value: 'product sport', label: 'product sport' },
-    { value: 'product poker', label: 'product poker' },
-    { value: 'product lotto', label: 'product lotto' },
-    { value: 'misc', label: 'misc' },
-  ],
-  MARKETS: [
-    { value: 'ro', label: 'ro' },
-    { value: 'com', label: 'com' },
-    { value: 'uk', label: 'uk' },
-    { value: 'ie', label: 'ie' },
-    { value: 'fi', label: 'fi' },
-    { value: 'dk', label: 'dk' },
-    { value: 'de', label: 'de' },
-    { value: 'it', label: 'italy' },
-    { value: 'gr', label: 'grece' },
-    { value: 'fr', label: 'france' },
-    { value: 'ca', label: 'canada' },
-  ],
-  DEPARTMENTS: [
-    { value: 'acquisition', label: 'Acquisition' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'customer_relationship_management', label: 'CRM' },
-    { value: 'games_team', label: 'Games Team' },
-    { value: 'other', label: 'Other' },
-    { value: 'product', label: 'Product' },
-    { value: 'vip', label: 'VIP' },
-    { value: 'content', label: 'Content' },
-    { value: 'performance_marketing_local', label: 'Performance Marketing Local' },
-    { value: 'miscellaneous', label: 'Miscellaneous' },
-    { value: 'human_resources', label: 'Human Resources' },
-    { value: 'video', label: 'Video Production' },
-    { value: 'design', label: 'Design' },
-    { value: 'developer', label: 'Development' },
-    { value: 'acquisition_social_media', label: 'Acquisition Social Media' },
-    { value: 'brand_management', label: 'Brand Management' },
-    { value: 'search_engine_optimization', label: 'SEO' },
-  ],
-  AI_MODELS: [
-    { value: 'Photoshop', label: 'Photoshop' },
-    { value: 'ChatGpt', label: 'ChatGpt' },
-    { value: 'ShutterStock', label: 'ShutterStock' },
-    { value: 'FreePick', label: 'FreePick' },
-    { value: 'Cursor', label: 'Cursor' },
-    { value: 'run diffusion', label: 'run diffusion' },
-  ],
-  TIME_UNITS: [
-    { value: 'min', label: 'Minutes' },
-    { value: 'hr', label: 'Hours' },
-  ],
-
-};
-
-// Backward compatibility aliases (deprecated - use FORM_OPTIONS.DEPARTMENTS instead)
-FORM_OPTIONS.REPORTER_DEPARTMENTS = FORM_OPTIONS.DEPARTMENTS;
-FORM_OPTIONS.REPORTER_CHANNELS = FORM_OPTIONS.DEPARTMENTS;
 
 // ============================================================================
 // NAVIGATION CONFIGURATION
@@ -312,70 +178,6 @@ export const CARD_SYSTEM = {
     DEPARTMENT: 'department',
     USER: 'user',
     REPORTER: 'reporter',
-  },
-};
-
-// ============================================================================
-// BUTTON SYSTEM CONSTANTS
-// ============================================================================
-
-export const BUTTON_SYSTEM = {
-  BASE_CLASSES: 'px-3 py-2 inline-flex rounded-md font-medium shadow-sm !focus:outline-none transition-all duration-200',
-  VARIANTS: {
-    PRIMARY: 'bg-btn-primary text-gray-200 hover:bg-btn-secondary',
-    SECONDARY: 'bg-secondary text-white hover:bg-btn-primary',
-    SUCCESS: 'bg-green-success text-white hover:bg-green-400',
-    DANGER: 'bg-red-error text-white hover:bg-red-500',
-    WARNING: 'bg-warning text-white hover:bg-btn-warning',
-    OUTLINE: 'border border-gray-200 text-gray-800 dark:text-white bg-white dark:bg-primary',
-    EDIT: 'bg-blue-default text-white shadow-sm hover:bg-btn-info',
-  },
-  SIZES: {
-    XS: 'px-2 py-1 text-xs',
-    SM: 'px-2.5 py-1 text-xs',
-    MD: 'px-3 py-1.5 text-sm',
-    LG: 'px-2 py-3 text-lg',
-    XL: 'px-6 py-3 text-2xl',
-  },
-  STATES: {
-    DISABLED: 'opacity-50 cursor-not-allowed',
-    LOADING: 'cursor-wait',
-  },
-  ICON_CLASSES: 'w-4 h-4',
-  LOADING_SPINNER_CLASSES: 'w-4 h-4 rounded-full border-2 border-transparent border-t-white animate-spin',
-  CONTENT_CLASSES: {
-    HORIZONTAL: 'flex items-center justify-center gap-2 w-full',
-    VERTICAL: 'flex flex-col items-center justify-center w-full',
-  },
-  DEFAULTS: {
-    VARIANT: 'primary',
-    SIZE: 'sm',
-    ICON_POSITION: 'left',
-    ICON_CATEGORY: 'buttons',
-    TYPE: 'button',
-    LOADING_TEXT: 'Loading...',
-  },
-  // Additional mappings for backward compatibility
-  VARIANT_MAP: {
-    primary: 'bg-btn-primary text-gray-200 hover:bg-btn-secondary',
-    secondary: 'bg-secondary text-white hover:bg-btn-primary',
-    success: 'bg-green-success text-white hover:bg-green-400',
-    danger: 'bg-red-error text-white hover:bg-red-500',
-    warning: 'bg-warning text-white hover:bg-btn-warning',
-    outline: 'border border-gray-200 text-gray-800 dark:text-white bg-white dark:bg-primary',
-    edit: 'bg-blue-default text-white shadow-sm hover:bg-btn-info',
-  },
-  SIZE_MAP: {
-    xs: 'px-2 py-1 text-xs',
-    sm: 'px-2.5 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
-    lg: 'px-2 py-3 text-lg',
-    xl: 'px-6 py-3 text-2xl',
-  },
-  ICON_POSITION_MAP: {
-    left: 'flex items-center justify-center gap-2 w-full',
-    right: 'flex items-center justify-center gap-2 w-full',
-    center: 'flex flex-col items-center justify-center w-full',
   },
 };
 
@@ -580,13 +382,9 @@ export const DEV_CONFIG = {
 
 export default {
   APP_CONFIG,
-  AUTH,
-  VALIDATION,
-  FORM_OPTIONS,
   NAVIGATION_CONFIG,
   DATA_SCOPE,
   CARD_SYSTEM,
-  BUTTON_SYSTEM,
   TABLE_SYSTEM,
   ERROR_SYSTEM,
   ROUTES,

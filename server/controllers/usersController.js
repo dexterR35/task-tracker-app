@@ -7,11 +7,16 @@ import { query } from '../config/db.js';
 
 const userColumns = `u.id, u.email, u.role, u.is_active, u.department_id, u.created_at AS u_created_at, u.updated_at AS u_updated_at,
   p.name, p.username, p.office, p.phone, p.avatar_url, p.job_position, p.email_verified_at, p.gender, p.color_set, p.created_by, p.created_at AS p_created_at, p.updated_at AS p_updated_at,
-  d.id AS department_id, d.name AS department_name, d.slug AS department_slug`;
+  d.id AS department_id, d.name AS department_name`;
 
 const userFrom = `users u
   LEFT JOIN profiles p ON p.user_id = u.id
   LEFT JOIN departments d ON d.id = u.department_id`;
+
+function slugFromDepartmentName(name) {
+  if (!name || typeof name !== 'string') return null;
+  return name.toLowerCase().trim().replace(/\s+/g, '-');
+}
 
 function toUser(row) {
   if (!row) return null;
@@ -30,7 +35,7 @@ function toUser(row) {
     jobPosition: row.job_position,
     departmentId: row.department_id ?? null,
     departmentName: row.department_name ?? null,
-    departmentSlug: row.department_slug ?? null,
+    departmentSlug: slugFromDepartmentName(row.department_name),
     emailVerifiedAt: row.email_verified_at,
     gender: row.gender,
     createdAt: row.p_created_at ?? row.u_created_at,

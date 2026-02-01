@@ -1,5 +1,5 @@
 import { Icons } from "@/components/icons";
-import { SearchableSelectField } from "@/components/forms/components";
+import { SearchableSelectField } from "@/components/forms/components/FormFields";
 import { CARD_SYSTEM, ROUTES } from "@/constants";
 import { logger } from "@/utils/logger";
 
@@ -298,6 +298,10 @@ export const SMALL_CARD_CONFIGS = {
   },
 };
 
+/**
+ * One SmallCard component; different data per department.
+ * createCards(data, mode): mode "main" = Design (tasks, users, efficiency), mode "food" = Food (orders, boards, history).
+ */
 export const createCards = (data, mode = "main") => {
   let cardTypes = [];
   if (Array.isArray(mode)) {
@@ -307,6 +311,8 @@ export const createCards = (data, mode = "main") => {
       case "main":
         cardTypes = [
           SMALL_CARD_TYPES.USER_PROFILE,
+          SMALL_CARD_TYPES.ACTIONS,
+          SMALL_CARD_TYPES.USER_FILTER,
           SMALL_CARD_TYPES.PERFORMANCE,
           SMALL_CARD_TYPES.EFFICIENCY,
         ];
@@ -317,6 +323,7 @@ export const createCards = (data, mode = "main") => {
           SMALL_CARD_TYPES.FOOD_ORDER_BOARD,
           SMALL_CARD_TYPES.FOOD_ORDERS,
           SMALL_CARD_TYPES.FOOD_HISTORY,
+          SMALL_CARD_TYPES.PERFORMANCE,
         ];
         break;
       default:

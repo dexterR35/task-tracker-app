@@ -1,10 +1,19 @@
+/**
+ * FormFields – single source for all form field components and type map.
+ *
+ * Exports (public): TextField, PasswordField, UrlField, TextareaField, NumberField,
+ * CheckboxField, SelectField, MultiSelectField, SearchableSelectField, SimpleDateField,
+ * FORM_FIELD_TYPE_MAP (type string → component for DynamicDepartmentForm).
+ *
+ * Import from: @/components/forms/components/FormFields
+ */
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { format, startOfMonth, endOfMonth, addDays, startOfWeek } from 'date-fns';
 import Badge from '@/components/ui/Badge/Badge';
 import { Icons } from '@/components/icons';
 import { showSuccess } from '@/utils/toast';
 
-// Shared layout: wrapper, optional label, control slot, error
+// Internal: shared layout (wrapper, label, control slot, error). Not exported.
 function FieldLayout({ field, error, children, skipLabel = false }) {
   const id = field.name;
   const labelEl = !skipLabel && field.label ? (
@@ -535,3 +544,17 @@ export function SimpleDateField({ field, errors, setValue, watch }) {
     </FieldLayout>
   );
 }
+
+/** Map config field type → component. Used by DynamicDepartmentForm and departmentFormConfig (field.type must match a key). */
+export const FORM_FIELD_TYPE_MAP = {
+  text: TextField,
+  email: TextField,
+  number: NumberField,
+  textarea: TextareaField,
+  url: UrlField,
+  select: SelectField,
+  multiSelect: MultiSelectField,
+  searchableSelect: SearchableSelectField,
+  checkbox: CheckboxField,
+  date: SimpleDateField,
+};

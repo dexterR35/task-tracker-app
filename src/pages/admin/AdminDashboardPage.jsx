@@ -9,10 +9,12 @@ import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
 import { taskBoardsApi, tasksApi } from "@/app/api";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
 import BoardSection from "@/components/BoardSection";
 import Loader from "@/components/ui/Loader/Loader";
+import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
+import DynamicDepartmentForm from "@/components/forms/DynamicDepartmentForm";
 
 const TASK_COLUMNS = [
   { key: "title", header: "Title", render: (t) => t.title ?? "–" },
@@ -54,6 +56,7 @@ const AdminDashboardPage = () => {
   const [boardsLoading, setBoardsLoading] = useState(true);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [addTaskPanelOpen, setAddTaskPanelOpen] = useState(false);
 
   const now = new Date();
   const year = now.getFullYear();
@@ -207,10 +210,29 @@ const AdminDashboardPage = () => {
         loadingMessage="Loading tasks…"
         boardsLoading={boardsLoading}
         addButtonLabel="Add a task"
-        onAdd={() => showError("Add a task coming soon")}
+        onAdd={() => setAddTaskPanelOpen(true)}
         exportButtonLabel="Export"
         onExport={() => showError("Export coming soon")}
       />
+
+      <SlidePanel
+        isOpen={addTaskPanelOpen}
+        onClose={() => setAddTaskPanelOpen(false)}
+        title="Add a task"
+        width="max-w-lg"
+        closeOnBackdropClick={false}
+      >
+        <DynamicDepartmentForm
+          departmentKey="design"
+          formKey="addTask"
+          hideTitle
+          onSubmit={async (data) => {
+            // TODO: call tasksApi.create(selectedBoardId, data) when API is ready
+            showSuccess("Task form submitted. API integration coming soon.");
+            setAddTaskPanelOpen(false);
+          }}
+        />
+      </SlidePanel>
     </div>
   );
 };

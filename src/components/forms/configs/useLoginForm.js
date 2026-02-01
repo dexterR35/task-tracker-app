@@ -1,7 +1,7 @@
 
 
 import * as Yup from "yup";
-import { VALIDATION } from '@/constants';
+import { VALIDATION } from '@/components/forms/configs/formConstants';
 import { emailFieldWithPattern, passwordField } from '@/utils/validationSchemas';
 
 // ============================================================================

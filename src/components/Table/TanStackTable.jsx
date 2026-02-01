@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-table";
 import { TABLE_SYSTEM } from "@/constants";
 import { SkeletonTable } from "@/components/ui/Skeleton/Skeleton";
-import { TextField } from "@/components/forms/components";
+import { TextField } from "@/components/forms/components/FormFields";
 
 const PAGE_SIZE_OPTIONS = TABLE_SYSTEM.PAGE_SIZE_OPTIONS;
 const DEFAULT_PAGE_SIZE = TABLE_SYSTEM.DEFAULT_PAGE_SIZE;

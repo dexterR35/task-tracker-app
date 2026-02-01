@@ -54,27 +54,29 @@ async function run() {
       [LEGACY_EMAILS]
     );
 
-    // Keep only Design, Customer Support, Food in DB (remove others: QA, Development, etc.)
+    // Keep only Design, Customer Support, Food in DB (remove others)
+    const KEEP_NAMES = ['Design', 'Food', 'Customer Support'];
     await pool.query(
-      `DELETE FROM users WHERE department_id IN (SELECT id FROM departments WHERE slug NOT IN ('design', 'customer-support', 'food'))`
+      `DELETE FROM users WHERE department_id IN (SELECT id FROM departments WHERE name NOT IN ($1, $2, $3))`,
+      KEEP_NAMES
     );
     await pool.query(
-      "DELETE FROM departments WHERE slug NOT IN ('design', 'customer-support', 'food')"
+      "DELETE FROM departments WHERE name NOT IN ($1, $2, $3)",
+      KEEP_NAMES
     );
 
-    // Ensure required departments exist (e.g. Food may be missing if DB was created before it was in schema)
+    // Ensure required departments exist (departments table has name only, no slug)
     await pool.query(
-      `INSERT INTO departments (name, slug) VALUES
-       ('Design', 'design'),
-       ('Food', 'food'),
-       ('Customer Support', 'customer-support')
-       ON CONFLICT (slug) DO NOTHING`
+      `INSERT INTO departments (name) VALUES ($1), ($2), ($3) ON CONFLICT (name) DO NOTHING`,
+      KEEP_NAMES
     );
 
     const deptRes = await pool.query(
-      "SELECT id, slug FROM departments WHERE slug IN ('design', 'customer-support', 'food')"
+      "SELECT id, name FROM departments WHERE name = ANY($1::text[])",
+      [KEEP_NAMES]
     );
-    const deptBySlug = Object.fromEntries(deptRes.rows.map((r) => [r.slug, r.id]));
+    const slugFromName = (n) => (n || '').toLowerCase().trim().replace(/\s+/g, '-');
+    const deptBySlug = Object.fromEntries(deptRes.rows.map((r) => [slugFromName(r.name), r.id]));
 
     for (const u of USERS) {
       const departmentId = deptBySlug[u.deptSlug];

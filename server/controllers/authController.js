@@ -104,7 +104,7 @@ async function validateRefreshToken(token, _req) {
   const r = await query(
     `SELECT rt.user_id, u.id, u.email, u.role, u.is_active, u.department_id,
       p.name, p.office, p.job_position, p.gender,
-      d.name AS department_name, d.slug AS department_slug
+      d.name AS department_name
      FROM refresh_tokens rt
      JOIN users u ON u.id = rt.user_id
      LEFT JOIN profiles p ON p.user_id = u.id
@@ -134,23 +134,33 @@ async function revokeRefreshTokensForUser(userId) {
   await query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
 }
 
-/** Allowed email domains for login/auth (REI office only). */
-const ALLOWED_LOGIN_DOMAINS = ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'];
+/** Allowed email domains for login – must match src/constants/index.js AUTH.ALLOWED_LOGIN_DOMAINS */
+const AUTH_LOGIN_DOMAINS = {
+  ALLOWED_LOGIN_DOMAINS: ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'],
+  EMAIL_DOMAIN: 'netbet.com',
+  EMAIL_DOMAIN2: 'rei-d-services.com',
+  EMAIL_DOMAIN3: 'gimo.co.uk',
+};
 
 function isAllowedEmailDomain(email) {
   if (!email || typeof email !== 'string') return false;
   const domain = email.toLowerCase().trim().split('@')[1];
-  return domain && ALLOWED_LOGIN_DOMAINS.includes(domain);
+  return domain && AUTH_LOGIN_DOMAINS.ALLOWED_LOGIN_DOMAINS.includes(domain);
 }
 
 /** Auth uses only users: email, password_hash, department_id, is_active (role for authorization). Name is profile-only, not used in login. */
 const authUserSelect = `u.id, u.email, u.role, u.is_active, u.department_id,
   p.name, p.office, p.job_position, p.gender,
-  d.name AS department_name, d.slug AS department_slug`;
+  d.name AS department_name`;
 
 const authUserFrom = `users u
   LEFT JOIN profiles p ON p.user_id = u.id
   LEFT JOIN departments d ON d.id = u.department_id`;
+
+function slugFromDepartmentName(name) {
+  if (!name || typeof name !== 'string') return null;
+  return name.toLowerCase().trim().replace(/\s+/g, '-');
+}
 
 function toAuthUser(row) {
   if (!row) return null;
@@ -165,7 +175,7 @@ function toAuthUser(row) {
     gender: row.gender,
     departmentId: row.department_id ?? null,
     departmentName: row.department_name ?? null,
-    departmentSlug: row.department_slug ?? null,
+    departmentSlug: slugFromDepartmentName(row.department_name),
   };
 }
 
@@ -181,8 +191,10 @@ export async function login(req, res, next) {
     }
 
     if (!isAllowedEmailDomain(email)) {
+      const domains = AUTH_LOGIN_DOMAINS.ALLOWED_LOGIN_DOMAINS.map((d) => `@${d}`).join(', ');
       return res.status(403).json({
-        error: 'Only office emails are allowed: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
+        error: `Only office emails are allowed: ${domains}`,
+        code: 'DOMAIN_NOT_ALLOWED',
       });
     }
 

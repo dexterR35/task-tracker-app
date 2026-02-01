@@ -151,12 +151,16 @@ const DepartmentSidebar = ({ navConfig }) => {
       )}
 
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div className="px-2.5 pt-6 pb-1.5">
-          <h5 className="text-app-subtle">Main Menu</h5>
-        </div>
-        <div className="overflow-y-auto px-1.5 py-1.5 space-y-0.5">
-          {mainMenuItems.map((item) => renderItem(item))}
-        </div>
+        {mainMenuItems.length > 0 && (
+          <>
+            <div className="px-2.5 pt-6 pb-1.5">
+              <h5 className="text-app-subtle">Main Menu</h5>
+            </div>
+            <div className="overflow-y-auto px-1.5 py-1.5 space-y-0.5">
+              {mainMenuItems.map((item) => renderItem(item))}
+            </div>
+          </>
+        )}
         {showDepartments && (
           <>
             <div className="px-2.5 pt-4 pb-1.5">

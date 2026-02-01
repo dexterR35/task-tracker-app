@@ -35,6 +35,8 @@ Express + PostgreSQL backend with JWT auth API.
 
 ## API
 
+**Full API logic, flow, IDs and DB relations:** see [docs/API-DIAGRAM.md](docs/API-DIAGRAM.md) (endpoints, middleware, ER diagram, auth flow, department access).
+
 | Method | Endpoint            | Auth | Description        |
 |--------|---------------------|------|--------------------|
 | POST   | `/api/auth/login`   | No   | Login; returns JWT + sets httpOnly refresh cookie |

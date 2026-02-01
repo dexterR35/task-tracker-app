@@ -37,13 +37,19 @@ export function verifyToken(token, options = {}) {
 
 const USER_QUERY = `SELECT u.id, u.email, u.role, u.is_active, u.department_id,
   p.name, p.office, p.job_position, p.gender,
-  d.name AS department_name, d.slug AS department_slug
+  d.name AS department_name
   FROM users u
   LEFT JOIN profiles p ON p.user_id = u.id
   LEFT JOIN departments d ON d.id = u.department_id
   WHERE u.id = $1`;
 
 const USER_MINIMAL_QUERY = `SELECT u.id, u.email, u.role, u.is_active FROM users u WHERE u.id = $1`;
+
+/** Derive slug from department name for app routing (e.g. Design -> design, Customer Support -> customer-support). */
+function slugFromDepartmentName(name) {
+  if (!name || typeof name !== 'string') return null;
+  return name.toLowerCase().trim().replace(/\s+/g, '-');
+}
 
 function toUser(row) {
   if (!row) return null;
@@ -58,7 +64,7 @@ function toUser(row) {
     gender: row.gender,
     departmentId: row.department_id ?? null,
     departmentName: row.department_name ?? null,
-    departmentSlug: row.department_slug ?? null,
+    departmentSlug: slugFromDepartmentName(row.department_name),
   };
 }
 

@@ -4,7 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '@/context/AuthContext';
 import { usersApi } from '@/app/api';
-import { TextField } from '@/components/forms/components/FormFields';
+import { TextField, SelectField } from '@/components/forms/components/FormFields';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import Loader from '@/components/ui/Loader/Loader';
 import { showSuccess, showError } from '@/utils/toast';
@@ -28,7 +28,7 @@ const ProfilePage = () => {
   const [error, setError] = useState(null);
   const [avatarImgError, setAvatarImgError] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, reset, watch } = useForm({
+  const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, reset, watch, setValue } = useForm({
     resolver: yupResolver(profileSchema),
     defaultValues: useMemo(() => ({
       name: '', username: '', office: '', jobPosition: '', phone: '',
@@ -158,13 +158,14 @@ const ProfilePage = () => {
             {editFields.map((field) => {
               if (field.type === 'select') {
                 return (
-                  <div key={field.name} className="field-wrapper sm:col-span-2">
-                    <label htmlFor={field.name} className="field-label">{field.label}</label>
-                    <select {...register(field.name)} id={field.name} className="form-input" aria-invalid={!!errors[field.name]}>
-                      {field.options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                    {errors[field.name] && <div className="error-message" role="alert">{errors[field.name].message}</div>}
-                  </div>
+                  <SelectField
+                    key={field.name}
+                    field={field}
+                    register={register}
+                    errors={errors}
+                    watch={watch}
+                    setValue={setValue}
+                  />
                 );
               }
               return (

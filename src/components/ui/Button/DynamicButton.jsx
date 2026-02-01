@@ -2,10 +2,45 @@ import { useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
 import Icons from "@/components/icons";
 import { showSuccess, showError } from "@/utils/toast";
-import { BUTTON_SYSTEM, CARD_SYSTEM } from "@/constants";
+import { CARD_SYSTEM } from "@/constants";
 
+// -----------------------------------------------------------------------------
+// Config – base classes, sizes, icon layout, defaults (single source in component)
+// -----------------------------------------------------------------------------
+
+const BASE_CLASSES =
+  "px-3 py-2 inline-flex rounded-md font-medium shadow-sm !focus:outline-none transition-all duration-200";
+
+const SIZE_CLASSES = {
+  xs: "px-2 py-1 text-xs",
+  sm: "px-2.5 py-1 text-xs",
+  md: "px-3 py-1.5 text-sm",
+  lg: "px-2 py-3 text-lg",
+  xl: "px-6 py-3 text-2xl",
+};
+
+const ICON_CLASSES = "w-4 h-4";
+const LOADING_SPINNER_CLASSES =
+  "w-4 h-4 rounded-full border-2 border-transparent border-t-white animate-spin";
+
+const CONTENT_LAYOUT = {
+  left: "flex items-center justify-center gap-2 w-full",
+  right: "flex items-center justify-center gap-2 w-full",
+  center: "flex flex-col items-center justify-center w-full",
+};
+
+const DEFAULTS = {
+  variant: "primary",
+  size: "sm",
+  iconPosition: "left",
+  iconCategory: "buttons",
+  type: "button",
+  loadingText: "Loading...",
+};
+
+// Variant → background color (from CARD_SYSTEM); outline handled via inline style
 const COLORS = CARD_SYSTEM.COLOR_HEX_MAP;
-const variantBg = {
+const VARIANT_BG = {
   primary: COLORS.color_default,
   secondary: COLORS.dark_gray,
   success: COLORS.green,
@@ -19,33 +54,45 @@ const variantBg = {
   crimson: COLORS.crimson,
   edit: COLORS.blue,
 };
-const darkTextVariants = new Set(["success", "warning", "orange", "amber"]);
-const POSITION_MAP = BUTTON_SYSTEM.ICON_POSITION_MAP;
-const DEF = BUTTON_SYSTEM.DEFAULTS;
+const DARK_TEXT_VARIANTS = new Set(["success", "warning", "orange", "amber"]);
 
+// -----------------------------------------------------------------------------
+// Component
+// -----------------------------------------------------------------------------
+
+/**
+ * DynamicButton – for forms, login, and simple action buttons.
+ *
+ * 1. Form submit: type="submit", loading={isSubmitting}, loadingText="Sending…". Form onSubmit runs;
+ *    button shows spinner and label from props.
+ * 2. Login / submit with icon: same as above + iconName, iconPosition (e.g. iconName="login").
+ * 3. Simple button: type="button" (default), onClick, optional iconName/icon, optional to (renders Link).
+ *
+ * Props: variant, size, type ("button" | "submit"), children, onClick, disabled, loading, loadingText,
+ * icon, iconName, iconPosition, iconCategory, successMessage, errorMessage, to, className, + rest.
+ */
 const DynamicButton = memo(function DynamicButton({
   id,
-  variant = DEF.VARIANT,
-  size = DEF.SIZE,
+  variant = DEFAULTS.variant,
+  size = DEFAULTS.size,
   children,
   onClick,
   disabled = false,
   loading = false,
-  isLoading: isLoadingProp, // alias for loading; do not pass to DOM
   icon: Icon,
-  iconPosition = DEF.ICON_POSITION,
+  iconPosition = DEFAULTS.iconPosition,
   iconName,
-  iconCategory = DEF.ICON_CATEGORY,
-  type = DEF.TYPE,
+  iconCategory = DEFAULTS.iconCategory,
+  type = DEFAULTS.type,
   className = "",
-  loadingText = DEF.LOADING_TEXT,
+  loadingText = DEFAULTS.loadingText,
   successMessage,
   errorMessage,
   to,
   ...props
 }) {
   const [localLoading, setLocalLoading] = useState(false);
-  const isLoading = loading || isLoadingProp || localLoading;
+  const isLoading = loading || localLoading;
   const isDisabled = disabled || isLoading;
 
   const getStyle = useCallback(() => {
@@ -60,13 +107,16 @@ const DynamicButton = memo(function DynamicButton({
         cursor,
       };
     }
-    const backgroundColor = variantBg[variant] ?? variantBg.primary;
-    const color = darkTextVariants.has(variant) ? "var(--color-text-primary)" : "var(--color-text-white)";
+    const backgroundColor = VARIANT_BG[variant] ?? VARIANT_BG.primary;
+    const color = DARK_TEXT_VARIANTS.has(variant)
+      ? "var(--color-text-primary)"
+      : "var(--color-text-white)";
     return { backgroundColor, color, border: "none", opacity, cursor };
   }, [variant, isDisabled, isLoading]);
 
   const handleClick = useCallback(
     async (e) => {
+      // type="submit" → let form onSubmit run; we only handle async onClick for type="button"
       if (type === "submit" || isLoading || isDisabled || !onClick) return;
       try {
         setLocalLoading(true);
@@ -83,27 +133,38 @@ const DynamicButton = memo(function DynamicButton({
 
   const ResolvedIcon = iconName && Icons?.[iconCategory]?.[iconName];
   const iconEl = isLoading ? (
-    <div className={BUTTON_SYSTEM.LOADING_SPINNER_CLASSES} />
+    <div className={LOADING_SPINNER_CLASSES} aria-hidden />
   ) : Icon ? (
-    <Icon className={BUTTON_SYSTEM.ICON_CLASSES} />
+    <Icon className={ICON_CLASSES} aria-hidden />
   ) : ResolvedIcon ? (
-    <ResolvedIcon className={BUTTON_SYSTEM.ICON_CLASSES} />
+    <ResolvedIcon className={ICON_CLASSES} aria-hidden />
   ) : null;
 
   const text = isLoading ? loadingText : children;
-  const contentClasses = POSITION_MAP[iconPosition] ?? POSITION_MAP.left;
+  const contentLayout = CONTENT_LAYOUT[iconPosition] ?? CONTENT_LAYOUT.left;
   const isRight = iconPosition === "right";
   const content = (
-    <div className={contentClasses}>
-      {isRight ? <><span>{text}</span>{iconEl}</> : <>{iconEl}<span>{text}</span></>}
-    </div>
+    <span className={contentLayout}>
+      {isRight ? (
+        <>
+          <span>{text}</span>
+          {iconEl}
+        </>
+      ) : (
+        <>
+          {iconEl}
+          <span>{text}</span>
+        </>
+      )}
+    </span>
   );
 
-  const buttonClasses = `${BUTTON_SYSTEM.BASE_CLASSES} ${BUTTON_SYSTEM.SIZE_MAP[size] ?? BUTTON_SYSTEM.SIZE_MAP[DEF.SIZE]} ${className}`.trim();
+  const sizeClasses = SIZE_CLASSES[size] ?? SIZE_CLASSES[DEFAULTS.size];
+  const buttonClassName = `${BASE_CLASSES} ${sizeClasses} ${className}`.trim();
 
   const common = {
     id,
-    className: buttonClasses,
+    className: buttonClassName,
     style: getStyle(),
     "aria-disabled": isDisabled,
     "aria-busy": isLoading,

@@ -28,11 +28,11 @@ import {
   UrlField,
   MultiSelectField,
   SimpleDateField,
-} from "@/components/forms/components";
+} from "@/components/forms/components/FormFields";
 import { Icons } from "@/components/icons";
 import UmbrellaLogo from "@/components/ui/UmbrellaLogo";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
-import { CARD_SYSTEM, FORM_OPTIONS } from "@/constants";
+import { CARD_SYSTEM } from "@/constants";
 
 // JS mirror of CSS @theme (index.css) for displaying swatches on this page only. Keep in sync with index.css.
 const THEME_COLORS = {
@@ -732,7 +732,14 @@ export default function UIShowcasePage() {
               field={{
                 name: "demoSearchable",
                 label: "Searchable select",
-                options: FORM_OPTIONS.DEPARTMENTS.slice(0, 12),
+                options: [
+                  { value: "design", label: "Design" },
+                  { value: "food", label: "Food" },
+                  { value: "marketing", label: "Marketing" },
+                  { value: "product", label: "Product" },
+                  { value: "content", label: "Content" },
+                  { value: "video", label: "Video" },
+                ],
               }}
               {...formFieldsConfig}
             />
