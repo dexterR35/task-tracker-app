@@ -9,8 +9,8 @@ import { CARD_SYSTEM } from "@/constants";
 // -----------------------------------------------------------------------------
 
 const SIZE_MAP = { xs: "xs", sm: "sm", md: "md", lg: "lg", xl: "xl" };
+// Primary uses inline style with color_default; others use CSS classes
 const CSS_VARIANTS = new Set([
-  "primary",
   "secondary",
   "success",
   "danger",

@@ -9,7 +9,7 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import Loader from '@/components/ui/Loader/Loader';
 import SlidePanel from '@/components/ui/SlidePanel/SlidePanel';
 import { showSuccess, showError } from '@/utils/toast';
-import { handleValidationError } from '@/features/utils/errorHandling';
+import { handleValidationError } from '@/utils/errorHandling';
 import { profileSchema } from '@/components/forms/configs/validationSchemas';
 
 const editFields = [

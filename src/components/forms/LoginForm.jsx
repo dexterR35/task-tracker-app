@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Icons } from '@/components/icons';
 import { CARD_SYSTEM } from '@/constants';
 
-import { handleValidationError } from '@/features/utils/errorHandling';
+import { handleValidationError } from '@/utils/errorHandling';
 import { showValidationError } from '@/utils/toast';
 import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
 import { TextField, PasswordField } from '@/components/forms/components/FormFields';

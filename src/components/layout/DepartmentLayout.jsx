@@ -1,13 +1,13 @@
 /**
  * Department layout + guard (component only). Wrong app → /unauthorized.
- * Otherwise: sidebar + TopNavbar + main content. Nav from departments/navConfig.
+ * Otherwise: sidebar + TopNavbar + main content. Nav from config/navConfig.
  */
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import AppSidebar from "@/components/layout/navigation/AppSidebar";
 import TopNavbar from "@/components/layout/navigation/TopNavbar";
 import { useDepartmentApp } from "@/hooks/useDepartmentApp";
-import { designNavConfig, NAV_CONFIG_BY_PATH } from "@/components/layout/departments/navConfig";
+import { designNavConfig, NAV_CONFIG_BY_PATH } from "@/config/navConfig";
 
 const DepartmentLayout = () => {
   const location = useLocation();

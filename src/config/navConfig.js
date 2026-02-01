@@ -1,6 +1,6 @@
 /**
- * Department nav config (data only). Used by DepartmentLayout and departments/index.
- * Add a new department: add nav config here and register in departments/index.js.
+ * Department nav config (data only). Used by DepartmentLayout and config/departments.
+ * Add a new department: add nav config here and register in config/departments.js.
  */
 import { NAVIGATION_CONFIG } from "@/constants";
 

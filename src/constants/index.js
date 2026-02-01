@@ -39,8 +39,6 @@ export const API_CONFIG = {
 // AUTHENTICATION & AUTHORIZATION
 // ============================================================================
 
-
-
 // ============================================================================
 // NAVIGATION CONFIGURATION
 // ============================================================================
@@ -57,10 +55,6 @@ export const NAVIGATION_CONFIG = {
       href: "/dashboard",
       icon: "home",
       color: "blue",
-      adminOnly: true,
-      subItems: [
-        { name: "Overview", href: "/dashboard" },
-      ],
     },
     {
       name: "Analytics",
@@ -101,9 +95,9 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
-  /** Food app only: Order board, Orders, History, Profile (used when user.departmentSlug === 'food') */
+  /** Food app only: Dashboard, Orders, History, Profile (used when user.departmentSlug === 'food') */
   FOOD_MENU_ITEMS: [
-    { name: "Order board", href: "/food/order-board", icon: "home", color: "blue" },
+    { name: "Dashboard", href: "/food/dashboard", icon: "home", color: "blue" },
     { name: "Orders", href: "/food/orders", icon: "chart", color: "blue" },
     { name: "History", href: "/food/history", icon: "chart", color: "gray" },
     { name: "Profile", href: "/food/profile", icon: "user", color: "gray" },

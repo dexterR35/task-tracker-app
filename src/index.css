@@ -32,8 +32,8 @@
   --color-blue-dark: #1d2a4b;
   --color-text-primary: #111827;
   --color-text-white: #ffffff;
-  /* Button/Avatar – used by BUTTON_SYSTEM and Avatar gradient */
-  --color-btn-primary: #E50046;
+  /* Button/Avatar – primary uses color_default (indigo #312e81) */
+  --color-btn-primary: #312e81;
   --color-btn-secondary: #c10f29;
   --color-btn-warning: #eb2743;
   --color-btn-info: #2a9df4;

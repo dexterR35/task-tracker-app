@@ -9,7 +9,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { authApi, setToken, clearAuth, connectSocket, disconnectSocket, reconnectSocket, clearSilentRefreshTimer, refreshAccessToken } from '@/app/api';
 import { logger } from '@/utils/logger';
 import { showLogoutSuccess, showAuthError } from '@/utils/toast';
-import { canAccess as canAccessUser } from '@/features/utils/authUtils';
+import { canAccess as canAccessUser } from '@/utils/authUtils';
 
 const AuthContext = createContext();
 

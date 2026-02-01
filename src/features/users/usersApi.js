@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { usersApi as api, getSocket } from '@/app/api';
 import { useAuth } from '@/context/AuthContext';
-import { isAdmin } from '@/features/utils/authUtils';
+import { isAdmin } from '@/utils/authUtils';
 import { logger } from '@/utils/logger';
 
 export const useUsers = () => {

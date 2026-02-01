@@ -7,7 +7,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useUsers } from '@/features/users/usersApi';
 import { useAuth } from '@/context/AuthContext';
-import { isAdmin } from '@/features/utils/authUtils';
+import { isAdmin } from '@/utils/authUtils';
 
 const defaultContextValue = {
   isInitialized: false,

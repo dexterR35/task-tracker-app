@@ -4,7 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { buildSchemaFromFields, FORM_FIELD_LIMITS } from '@/components/forms/configs/validationSchemas';
 import { FORM_FIELD_TYPE_MAP, getDepartmentFormConfig } from '@/components/forms/components/FormFields';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
-import { handleValidationError } from '@/features/utils/errorHandling';
+import { handleValidationError } from '@/utils/errorHandling';
 import { showValidationError } from '@/utils/toast';
 
 export { getDepartmentFormConfig };

@@ -17,8 +17,9 @@ const LINK_BASE =
 const LINK_ACTIVE = "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-700 dark:text-indigo-200";
 const LINK_INACTIVE =
   "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200";
+const COLOR_DEFAULT = CARD_SYSTEM?.COLOR_HEX_MAP?.color_default ?? "#312e81";
 const ACTIVE_ICON_STYLE = {
-  backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default,
+  backgroundColor: COLOR_DEFAULT,
   color: "white",
 };
 
@@ -59,7 +60,11 @@ const AppSidebar = ({ navConfig }) => {
     logoSubtitle = "Office R.E.I",
   } = navConfig || {};
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (!path) return false;
+    const current = location.pathname;
+    return current === path || current === path.replace(/\/$/, "") || path === current.replace(/\/$/, "");
+  };
   const toggleExpanded = (name) => setExpandedItems((prev) => ({ ...prev, [name]: !prev[name] }));
   const showDepartments = DEPARTMENTS_ITEM && canAccess("admin");
   const departmentName = viewingDepartment?.name ?? null;

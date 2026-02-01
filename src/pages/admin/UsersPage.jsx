@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
-import { canManageUsers } from "@/features/utils/authUtils";
+import { canManageUsers } from "@/utils/authUtils";
 import { getUserColumns } from "@/components/Table/tableColumns.jsx";
 import TanStackTable from "@/components/Table/TanStackTable";
 import DynamicButton from "@/components/ui/Button/DynamicButton";

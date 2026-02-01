@@ -1,6 +1,6 @@
 /**
  * Department configs for 2-apps-in-1 (Design, Food). Same auth; layout and redirect by slug.
- * Config: departments/navConfig.js; component: DepartmentLayout.jsx.
+ * Config: config/navConfig.js; component: DepartmentLayout.
  */
 import DepartmentLayout from "@/components/layout/DepartmentLayout";
 import { designNavConfig, foodNavConfig } from "./navConfig";

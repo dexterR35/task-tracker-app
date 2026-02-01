@@ -1,6 +1,6 @@
 import React from 'react';
 import { logger } from '@/utils/logger';
-import { getErrorBoundaryInfo } from '@/features/utils/errorHandling';
+import { getErrorBoundaryInfo } from '@/utils/errorHandling';
 import StatusPage from '@/components/ui/StatusPage';
 
 class ErrorBoundary extends React.Component {
