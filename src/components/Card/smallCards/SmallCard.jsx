@@ -1,9 +1,7 @@
 import React, { useMemo } from "react";
 import { CARD_SYSTEM } from "@/constants";
 
-/**
- * Dashboard card – credit-card style: clean layout, label + value + icon, no badges.
- */
+
 const SmallCard = ({ card }) => {
   if (!card || !card.color) return null;
 

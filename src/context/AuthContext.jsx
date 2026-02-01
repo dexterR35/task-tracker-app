@@ -6,21 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi, getToken, setToken, clearToken } from '@/app/api';
 import { logger } from '@/utils/logger';
-import {
-  canAccessRole,
-  canAccessTasks,
-  canAccessCharts,
-  hasPermission,
-  canCreateTask,
-  canUpdateTask,
-  canDeleteTask,
-  canViewTasks,
-  canCreateBoard,
-  canSubmitForms,
-  canPerformTaskCRUD,
-  hasAdminPermissions,
-  getUserPermissionSummary,
-} from '@/features/utils/authUtils';
+import { canAccessRole } from '@/features/utils/authUtils';
 import { showLogoutSuccess, showAuthError } from '@/utils/toast';
 
 const AuthContext = createContext();
@@ -93,6 +79,7 @@ export const AuthProvider = ({ children }) => {
       if (!userData) throw new Error('Login failed - no user returned');
 
       setUser(userData);
+      setIsLoading(false);
 
       return { success: true };
     } catch (err) {
@@ -115,33 +102,19 @@ export const AuthProvider = ({ children }) => {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const permissionFunctions = {
-    canAccess: (requiredRole) => {
-      if (requiredRole === 'authenticated') return !!user;
-      return canAccessRole(user, requiredRole);
-    },
-    hasPermission: (permission) => hasPermission(user, permission),
-    canGenerate: () => canAccessCharts(user),
-    canAccessTasks: () => canAccessTasks(user),
-    canCreateTask: () => canCreateTask(user),
-    canUpdateTask: () => canUpdateTask(user),
-    canDeleteTask: () => canDeleteTask(user),
-    canViewTasks: () => canViewTasks(user),
-    canCreateBoard: () => canCreateBoard(user),
-    canSubmitForms: () => canSubmitForms(user),
-    canPerformTaskCRUD: () => canPerformTaskCRUD(user),
-    hasAdminPermissions: () => hasAdminPermissions(user),
-    getUserPermissionSummary: () => getUserPermissionSummary(user),
-  };
+  const canAccess = useCallback((requiredRole) => {
+    if (requiredRole === 'authenticated') return !!user;
+    return canAccessRole(user, requiredRole);
+  }, [user]);
 
-  const isReady = () => !isAuthChecking && !isLoading;
+  const isReady = useCallback(() => !isAuthChecking && !isLoading, [isAuthChecking, isLoading]);
 
   const value = {
     user,
     isLoading,
     isAuthChecking,
     error,
-    ...permissionFunctions,
+    canAccess,
     login,
     logout,
     clearError,

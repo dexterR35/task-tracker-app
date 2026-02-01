@@ -1,9 +1,12 @@
 /**
  * Users API (PERN backend)
+ * Fetch logic lives here. Only AppDataContext uses these hooks so data stays global.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { usersApi as api } from '@/app/api';
+import { useAuth } from '@/context/AuthContext';
+import { isUserAdmin } from '@/features/utils/authUtils';
 import { logger } from '@/utils/logger';
 
 export const useUsers = () => {
@@ -13,14 +16,11 @@ export const useUsers = () => {
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
     setError(null);
     api
       .list()
       .then((data) => {
-        if (!cancelled) {
-          setUsers(data.users || []);
-        }
+        if (!cancelled) setUsers(data.users || []);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -51,7 +51,6 @@ export const useUserById = (userId) => {
       return;
     }
     let cancelled = false;
-    setIsLoading(true);
     setError(null);
     api
       .getById(userId)
@@ -72,4 +71,30 @@ export const useUserById = (userId) => {
   }, [userId]);
 
   return { user, isLoading, error };
+};
+
+/**
+ * Single hook for the current logged-in user.
+ * Admins: auth user (no extra fetch). Non-admins: profile from /api/users/:id, fallback to auth user.
+ */
+export const useCurrentUser = () => {
+  const { user: authUser, isLoading: authLoading } = useAuth();
+  const isAdmin = isUserAdmin(authUser);
+  const userId = authUser?.id ?? null;
+
+  const { user: profileUser, isLoading: profileLoading, error: profileError } = useUserById(
+    isAdmin ? null : userId
+  );
+
+  if (!authUser) {
+    return { user: null, isLoading: authLoading, error: null };
+  }
+  if (isAdmin) {
+    return { user: authUser, isLoading: false, error: null };
+  }
+  return {
+    user: profileUser ?? authUser,
+    isLoading: profileLoading,
+    error: profileError,
+  };
 };

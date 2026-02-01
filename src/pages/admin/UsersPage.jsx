@@ -1,13 +1,20 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useAppDataContext } from "@/context/AppDataContext";
-import { useAuth } from "@/context/AuthContext";
-import UserTable from "@/features/users/components/UserTable/UserTable";
-
+import { getUserColumns } from "@/components/Table/tableColumns.jsx";
+import TanStackTable from "@/components/Table/TanStackTable";
 const UsersPage = () => {
-  const { users, error, isLoading, canManageUsers } = useAppDataContext();
-  const { user } = useAuth();
+  const { users, error, isLoading, canManageUsers, user } = useAppDataContext();
 
-  if (error) {
+  const enrichedUsers = useMemo(
+    () => (users || []).map((u) => ({ ...u, taskCount: 0 })),
+    [users]
+  );
+
+  const userColumns = getUserColumns();
+  const tableLoading = isLoading;
+  const tableError = error;
+
+  if (tableError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[200px]">
         <div className="text-center py-8 max-w-md mx-auto">
@@ -15,7 +22,7 @@ const UsersPage = () => {
             <div className="text-red-400 text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-bold text-red-400 mb-2">Error Loading Data</h2>
             <p className="text-gray-300 text-sm">
-              {error?.message || "Failed to load users. Please try refreshing the page."}
+              {tableError?.message || "Failed to load users. Please try refreshing the page."}
             </p>
           </div>
         </div>
@@ -46,11 +53,14 @@ const UsersPage = () => {
           Manage user accounts and permissions
         </p>
       </div>
-      <UserTable
-        users={users}
-        error={error}
-        isLoading={isLoading}
+      <TanStackTable
+        data={enrichedUsers}
+        columns={userColumns}
+        error={tableError}
         className="rounded-lg"
+        isLoading={tableLoading}
+        showFilters={true}
+        initialColumnVisibility={{ createdAt: false }}
       />
     </div>
   );

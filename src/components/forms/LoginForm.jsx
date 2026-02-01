@@ -6,7 +6,7 @@ import { Icons } from '@/components/icons';
 import { CARD_SYSTEM } from '@/constants';
 
 import { handleValidationError } from '@/features/utils/errorHandling';
-import { prepareFormData, createFormSubmissionHandler, handleFormValidation } from '@/utils/formUtils';
+import { showValidationError } from '@/utils/toast';
 import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
 import { TextField, PasswordField } from '@/components/forms/components';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
@@ -33,35 +33,24 @@ const LoginForm = ({ onSuccess, className = "" }) => {
     reValidateMode: 'onChange'
   });
 
-  // Create standardized form submission handler
-  const handleFormSubmit = createFormSubmissionHandler(
-    async (data) => {
-      // Prepare login data with lowercase enforcement for email
-      const preparedData = prepareFormData(data, {
-        fieldsToLowercase: ['email'],
-        fieldsToKeepUppercase: [] // No uppercase exceptions for login
-      });
-      
-      return await login(preparedData);
-    },
-    {
-      operation: 'login',
-      resource: 'user',
-      onSuccess: (result) => {
-        // Don't show success toast here - AuthContext already shows welcome toast
-        onSuccess?.(result);
-      },
-      showSuccessToast: false, // Success toast is handled in AuthContext (welcome message)
-      showErrorToast: false // Error toast is handled in AuthContext (showAuthError)
-    }
-  );
-
   const onSubmit = async (data) => {
-    await handleFormSubmit(data, { reset, setError: () => {}, clearErrors: () => {} });
+    const preparedData = {
+      email: data.email?.trim().toLowerCase() ?? '',
+      password: data.password ?? '',
+    };
+    try {
+      const result = await login(preparedData);
+      reset?.();
+      onSuccess?.(result);
+    } catch (_err) {
+      // AuthContext handles error toast
+      throw _err;
+    }
   };
 
   const handleFormError = (errors) => {
-    handleFormValidation(errors, 'Login Form');
+    handleValidationError(errors, 'Login Form');
+    showValidationError(errors);
   };
 
   // Use blue color for login (professional, trust, primary)

@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Icons } from "@/components/icons";
-import Avatar from "@/components/ui/Avatar/Avatar";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
-import DarkModeToggle from "@/components/ui/DarkMode/DarkModeButtons";
 import { APP_CONFIG, CARD_SYSTEM, NAVIGATION_CONFIG } from "@/constants";
 import logo from "@/assets/Logo4.webp";
 
@@ -32,25 +29,15 @@ function NavIcon({ icon: Icon, active }) {
 }
 
 const Sidebar = () => {
-  const { logout, clearError, canAccess, user } = useAuth();
+  const { canAccess, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState({});
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/", { replace: true });
-    } catch (error) {
-      clearError();
-    }
-  };
 
   const isActive = (path) => location.pathname === path;
   const toggleExpanded = (name) =>
     setExpandedItems((prev) => ({ ...prev, [name]: !prev[name] }));
   const items = NAVIGATION_CONFIG.ITEMS;
-  const accountItems = NAVIGATION_CONFIG.ACCOUNT_ITEMS ?? [];
 
   return (
     <nav className="flex h-full w-full flex-col bg-white dark:bg-primary" aria-label="Main navigation">
@@ -152,110 +139,6 @@ const Sidebar = () => {
               </Link>
             );
           })}
-        </div>
-      </div>
-
-      {/* Bottom: Account + avatar + Account settings + Sign out */}
-      <div className="shrink-0 border-t border-gray-200/80 dark:border-gray-700/60 space-y-1.5 p-2 pt-3 pb-4">
-        <h5 className="text-app-subtle px-2.5">
-          Account
-        </h5>
-        {user ? (
-          <Link
-            to="/profile"
-            className={`flex items-center gap-2 rounded-lg bg-gray-50 dark:bg-gray-800/20 px-1.5 py-2 w-full transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-700/40 ${isActive("/profile") ? "ring-1 ring-indigo-500/30 dark:ring-indigo-400/30" : ""}`}
-            title="Account settings"
-          >
-            <Avatar
-              user={user}
-              size="xs"
-              showName={false}
-              showEmail={false}
-              className="shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold text-app truncate">
-                {user.name || "User"}
-              </p>
-              <p className="text-[10px] text-app-muted truncate">
-                {user.email || ""}
-              </p>
-            </div>
-            <Icons.buttons.chevronRight className="w-4 h-4 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden />
-          </Link>
-        ) : null}
-        {accountItems.map((item) => {
-          if (item.adminOnly && !canAccess("admin")) return null;
-          const Icon = Icons.generic[item.icon];
-          const subItems = item.subItems ?? [];
-          const hasSubItems = subItems.length > 0;
-          const active = isActive(item.href) || subItems.some((s) => isActive(s.href));
-          const linkClass = `${LINK_BASE} px-2 py-1.5 w-full text-left ${active ? LINK_ACTIVE : LINK_INACTIVE}`;
-
-          if (hasSubItems) {
-            const isExpanded =
-              expandedItems[item.name] ?? subItems.some((s) => isActive(s.href));
-            const ChevronIcon = isExpanded
-              ? Icons.buttons.chevronUp
-              : Icons.buttons.chevronDown;
-            return (
-              <div key={item.name} className="space-y-0.5">
-                <button
-                  type="button"
-                  onClick={() => toggleExpanded(item.name)}
-                  className={linkClass}
-                  aria-expanded={isExpanded}
-                >
-                  <NavIcon icon={Icon} active={active} />
-                  <span className="flex-1 text-sm font-medium truncate">
-                    {item.name}
-                  </span>
-                  <ChevronIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                </button>
-                {isExpanded && (
-                  <div className="ml-3 pl-1.5 border-l border-gray-200 dark:border-gray-600 space-y-0.5">
-                    {subItems.map((subItem) => {
-                      const subActive = isActive(subItem.href);
-                      return (
-                        <Link
-                          key={subItem.name}
-                          to={subItem.href}
-                          className={`${LINK_BASE} px-2 py-1.5 ${subActive ? LINK_ACTIVE : LINK_INACTIVE}`}
-                        >
-                          <span
-                            className={`w-1 h-1 rounded-full shrink-0 ${
-                              subActive ? "bg-indigo-500" : "bg-gray-400 dark:bg-gray-500"
-                            }`}
-                          />
-                          <span className="text-[12px] font-medium truncate">
-                            {subItem.name}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          }
-          return (
-            <Link key={item.name} to={item.href} className={linkClass}>
-              <NavIcon icon={Icon} active={active} />
-              <span className="flex-1 text-sm font-medium truncate">{item.name}</span>
-            </Link>
-          );
-        })}
-        <div className="flex flex-col gap-0.5 px-0.5 pt-0.5">
-          <DynamicButton
-            variant="secondary"
-            size="xs"
-            icon={Icons.buttons.logout}
-            iconPosition="left"
-            onClick={handleLogout}
-            className="w-full justify-start !bg-gray-50 dark:!bg-gray-800/20 !py-1.5 hover:!bg-gray-100 dark:hover:!bg-gray-700/40"
-          >
-            Sign out
-          </DynamicButton>
         </div>
       </div>
     </nav>

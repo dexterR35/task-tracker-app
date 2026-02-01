@@ -207,8 +207,6 @@ export const NAVIGATION_CONFIG = {
       adminOnly: true,
       subItems: [
         { name: "Users", href: "/users" },
-        { name: "Reporters", href: "/reporters" },
-        { name: "Deliverables", href: "/deliverables" },
       ],
     },
   ],

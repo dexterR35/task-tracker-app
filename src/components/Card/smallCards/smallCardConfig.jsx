@@ -268,8 +268,6 @@ export const createCards = (data, mode = "main") => {
     switch (mode) {
       case "main":
         cardTypes = [
-          SMALL_CARD_TYPES.MONTH_SELECTION,
-          SMALL_CARD_TYPES.ACTIONS,
           SMALL_CARD_TYPES.USER_PROFILE,
           SMALL_CARD_TYPES.PERFORMANCE,
           SMALL_CARD_TYPES.EFFICIENCY,

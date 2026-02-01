@@ -14,8 +14,6 @@ import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import UsersPage from "@/pages/admin/UsersPage";
-import ReportersPage from "@/pages/admin/ReportersPage";
-import DeliverablesPage from "@/pages/admin/DeliverablesPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import ComingSoonPage from "@/components/ui/ComingSoon/ComingSoon";
 import NotFoundPage from "@/pages/errorPages/NotFoundPage";
@@ -208,15 +206,7 @@ export const createRouter = () => {
           },
           {
             path: "reporters",
-            element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="ReportersPage">
-                  <PageWrapper>
-                    <ReportersPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
-            ),
+            element: <Navigate to="/dashboard" replace />,
           },
           // ========================================
           // UTILITY ROUTES (Coming soon pages)
@@ -233,19 +223,11 @@ export const createRouter = () => {
           },
           {
             path: "deliverables",
-            element: (
-              <AdminRoute>
-                <ErrorBoundary componentName="DeliverablesPage">
-                  <PageWrapper>
-                    <DeliverablesPage />
-                  </PageWrapper>
-                </ErrorBoundary>
-              </AdminRoute>
-            ),
+            element: <Navigate to="/dashboard" replace />,
           },
           {
             path: "projects",
-            element: <Navigate to="/deliverables" replace />,
+            element: <Navigate to="/dashboard" replace />,
           },
           {
             path: "analytics",
