@@ -10,8 +10,8 @@ const HomePage = () => {
         <div className="mb-5 flex-center flex-col">
           <div className="flex justify-center items-stretch gap-6 mb-6">
             <div className="flex flex-col items-center">
-              <p className="text-gray-900 dark:text-white text-4xl self-end font-bold ">
-                safe for work{" "}
+              <p className="text-gray-900 dark:text-white text-4xl self-start font-bold ">
+                Safe for work{" "}
               </p>
               <h1 className="text-7xl md:text-[120px] text-center my-0 !font-bold space-x-3 bg-gray-900 h-100% flex-center p-2 rounded-md">
                 <p className="text-gray-100">{APP_CONFIG.NAME} </p>
@@ -25,7 +25,7 @@ const HomePage = () => {
             </div>
             {/* <UmbrellaLogo size={100} className="flex-shrink-0 self-center" /> */}
 
-            <p>safe for work!</p>
+            {/* <p>safe for work!</p> */}
           </div>
           <p className="md:text-xl max-w-xl  text-center my-6">
             The task management designed for teams that prioritize <br></br>
