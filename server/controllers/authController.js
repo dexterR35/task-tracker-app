@@ -9,6 +9,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 import { authLogger } from '../utils/authLogger.js';
+import { ALLOWED_LOGIN_DOMAINS, isAllowedEmailDomain } from '../config/auth.js';
+import { toAuthUser } from '../utils/userMappers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '10m';
@@ -134,20 +136,6 @@ async function revokeRefreshTokensForUser(userId) {
   await query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
 }
 
-/** Allowed email domains for login – must match src/constants/index.js AUTH.ALLOWED_LOGIN_DOMAINS */
-const AUTH_LOGIN_DOMAINS = {
-  ALLOWED_LOGIN_DOMAINS: ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'],
-  EMAIL_DOMAIN: 'netbet.com',
-  EMAIL_DOMAIN2: 'rei-d-services.com',
-  EMAIL_DOMAIN3: 'gimo.co.uk',
-};
-
-function isAllowedEmailDomain(email) {
-  if (!email || typeof email !== 'string') return false;
-  const domain = email.toLowerCase().trim().split('@')[1];
-  return domain && AUTH_LOGIN_DOMAINS.ALLOWED_LOGIN_DOMAINS.includes(domain);
-}
-
 /** Auth uses only users: email, password_hash, department_id, is_active (role for authorization). Name is profile-only, not used in login. */
 const authUserSelect = `u.id, u.email, u.role, u.is_active, u.department_id,
   p.name, p.office, p.job_position, p.gender,
@@ -156,28 +144,6 @@ const authUserSelect = `u.id, u.email, u.role, u.is_active, u.department_id,
 const authUserFrom = `users u
   LEFT JOIN profiles p ON p.user_id = u.id
   LEFT JOIN departments d ON d.id = u.department_id`;
-
-function slugFromDepartmentName(name) {
-  if (!name || typeof name !== 'string') return null;
-  return name.toLowerCase().trim().replace(/\s+/g, '-');
-}
-
-function toAuthUser(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    role: row.role,
-    isActive: row.is_active,
-    office: row.office,
-    jobPosition: row.job_position,
-    gender: row.gender,
-    departmentId: row.department_id ?? null,
-    departmentName: row.department_name ?? null,
-    departmentSlug: slugFromDepartmentName(row.department_name),
-  };
-}
 
 /** POST /api/auth/login */
 export async function login(req, res, next) {
@@ -191,7 +157,7 @@ export async function login(req, res, next) {
     }
 
     if (!isAllowedEmailDomain(email)) {
-      const domains = AUTH_LOGIN_DOMAINS.ALLOWED_LOGIN_DOMAINS.map((d) => `@${d}`).join(', ');
+      const domains = ALLOWED_LOGIN_DOMAINS.map((d) => `@${d}`).join(', ');
       return res.status(403).json({
         error: `Only office emails are allowed: ${domains}`,
         code: 'DOMAIN_NOT_ALLOWED',
@@ -297,9 +263,7 @@ export async function logout(req, res, next) {
       }
       await revokeRefreshToken(token);
     }
-    if (req.user?.id) {
-      await revokeRefreshTokensForUser(req.user.id);
-    }
+    /* Only revoke current session (cookie). Use POST /auth/logout-all to revoke all devices. */
     res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptions());
     res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptionsLegacyPath());
     const io = req.app.get?.('io');

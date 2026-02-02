@@ -2,6 +2,7 @@
  * Selected Department Context
  * Viewing department is always the user's own department (no switcher).
  * Used for Main Menu data scope (Dashboard, Analytics).
+ * Read-only: viewingDepartment is derived from useAuth().user; setViewingDepartment is a no-op for API compatibility.
  */
 
 import React, { createContext, useContext, useMemo } from 'react';
@@ -9,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const defaultValue = {
   viewingDepartment: null,
+  /** No-op; viewing department is read-only (derived from user). Kept for API compatibility. */
   setViewingDepartment: () => {},
   viewingDepartmentId: null,
   viewingDepartmentName: null,

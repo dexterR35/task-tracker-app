@@ -85,10 +85,12 @@ const AdminRoute = ({ children }) => {
   const authState = useAuth();
   const { canAccess } = authState;
 
+  if (authState.isLoading || authState.isAuthChecking) {
+    return <SimpleLoader />;
+  }
   if (!canAccess("admin")) {
     return <Navigate to="/unauthorized" replace />;
   }
-
   return children;
 };
 
@@ -141,6 +143,7 @@ export const createRouter = () => {
       },
       // ========================================
       // PROTECTED ROUTES (2-apps-in-1: /design/* and /food/*, shared /settings/*)
+      // Index → loginRedirectPath (design/dashboard or food/dashboard). Admin-only: settings/users, settings/departments, settings/ui-showcase.
       // ========================================
       {
         element: (

@@ -26,7 +26,8 @@ const SmallCard = ({ card }) => {
   );
 
   const Icon = card.icon;
-  const hasDetails = card.details?.length > 0;
+  const detailsList = Array.isArray(card.details) ? card.details : [];
+  const hasDetails = detailsList.length > 0;
   const badgeText = card.badge?.text ?? card.subtitle ?? "-";
 
   return (
@@ -63,9 +64,9 @@ const SmallCard = ({ card }) => {
         <>
           <div className="divider" aria-hidden />
           <div className="space-y-1.5">
-            {card.details.map((detail, index) => (
+            {detailsList.map((detail, index) => (
               <div
-                key={index}
+                key={detail.label != null ? String(detail.label) : `detail-${index}`}
                 className="flex items-baseline justify-between gap-3 text-sm font-medium leading-[1.4]"
               >
                 <span className="text-sm text-app-muted font-medium shrink-0 truncate">

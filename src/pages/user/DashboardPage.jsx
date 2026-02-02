@@ -126,8 +126,13 @@ const DASHBOARD_CONFIG = {
   },
 };
 
+const CARD_CACHE_MAX_SIZE = 50;
+
 export default function DashboardPage({ variant = "design" }) {
-  const config = DASHBOARD_CONFIG[variant] ?? DASHBOARD_CONFIG.design;
+  const config = useMemo(
+    () => DASHBOARD_CONFIG[variant] ?? DASHBOARD_CONFIG.design,
+    [variant]
+  );
   const { canAccess, user } = useAuth();
   const { viewingDepartmentId } = useSelectedDepartment();
   const isUserAdmin = canAccess("admin");
@@ -185,7 +190,7 @@ export default function DashboardPage({ variant = "design" }) {
         if (!cancelled) setBoardsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [year, month, user?.departmentId, variant]);
+  }, [config, year, month, user?.departmentId]);
 
   // Fetch items for selected board (or use hardcoded items for demo board)
   const demoBoardId = getHardcodedBoardForMonth(year, month).id;
@@ -215,7 +220,7 @@ export default function DashboardPage({ variant = "design" }) {
         if (!cancelled) setItemsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [selectedBoardId, variant, isDemoBoard]);
+  }, [config, selectedBoardId, variant, isDemoBoard]);
 
   // Real-time: refetch items on socket event
   useEffect(() => {
@@ -227,7 +232,7 @@ export default function DashboardPage({ variant = "design" }) {
     };
     socket.on(config.socketEvent, handler);
     return () => socket.off(config.socketEvent, handler);
-  }, [selectedBoardId, variant]);
+  }, [config, selectedBoardId]);
 
   const efficiencyData = {
     averageTaskCompletion: 2.3,
@@ -237,7 +242,7 @@ export default function DashboardPage({ variant = "design" }) {
     clientSatisfaction: 4.6,
   };
 
-  const cardCacheRef = useRef(new Map());
+  const cardCacheRef = useRef({ map: new Map(), order: [] });
 
   const smallCards = useMemo(() => {
     if (variant === "food") {
@@ -268,9 +273,10 @@ export default function DashboardPage({ variant = "design" }) {
       },
       "main"
     );
+    const cache = cardCacheRef.current;
     return newCards.map((newCard) => {
       const cacheKey = `${newCard.id}-${newCard.color}-${newCard.value}-${newCard.title}-${newCard.subtitle}-${JSON.stringify(newCard.details)}-${JSON.stringify(newCard.badge)}`;
-      const cached = cardCacheRef.current.get(cacheKey);
+      const cached = cache.map.get(cacheKey);
       if (
         cached &&
         cached.id === newCard.id &&
@@ -283,7 +289,14 @@ export default function DashboardPage({ variant = "design" }) {
       ) {
         return cached;
       }
-      cardCacheRef.current.set(cacheKey, newCard);
+      if (cache.map.size >= CARD_CACHE_MAX_SIZE && !cache.map.has(cacheKey)) {
+        const oldest = cache.order.shift();
+        if (oldest != null) cache.map.delete(oldest);
+      }
+      cache.map.set(cacheKey, newCard);
+      if (!cache.order.includes(cacheKey)) {
+        cache.order.push(cacheKey);
+      }
       return newCard;
     });
   }, [variant, user, boards, items, users, isUserAdmin]);

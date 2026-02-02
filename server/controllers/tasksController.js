@@ -4,7 +4,7 @@
  */
 
 import { query } from '../config/db.js';
-import { resolveDepartmentId } from './taskBoardsController.js';
+import { resolveDepartmentId, getBoardIfAllowed } from '../utils/boardUtils.js';
 
 function toTask(row) {
   if (!row) return null;
@@ -22,17 +22,6 @@ function toTask(row) {
   };
 }
 
-/** Ensure board exists and belongs to resolved department; returns board row or throws 404. */
-async function getBoardIfAllowed(req, boardId) {
-  const departmentId = resolveDepartmentId(req);
-  if (!departmentId) return null;
-  const result = await query(
-    `SELECT id FROM task_boards WHERE id = $1 AND department_id = $2`,
-    [boardId, departmentId]
-  );
-  return result.rows[0] ?? null;
-}
-
 /** GET /api/tasks?boardId= – list tasks for a board */
 export async function list(req, res, next) {
   try {
@@ -40,7 +29,7 @@ export async function list(req, res, next) {
     if (!boardId) {
       return res.status(400).json({ error: 'boardId query required.', code: 'INVALID_INPUT' });
     }
-    const board = await getBoardIfAllowed(req, boardId);
+    const board = await getBoardIfAllowed(req, boardId, 'task_boards');
     if (!board) {
       return res.status(404).json({ error: 'Board not found.', code: 'NOT_FOUND' });
     }
@@ -86,7 +75,15 @@ export async function create(req, res, next) {
     if (!boardId || !title?.trim()) {
       return res.status(400).json({ error: 'boardId and title required.', code: 'INVALID_INPUT' });
     }
-    const board = await getBoardIfAllowed(req, boardId);
+    let positionVal = 0;
+    if (position != null) {
+      const p = parseInt(position, 10);
+      if (Number.isNaN(p) || p < 0) {
+        return res.status(400).json({ error: 'Invalid position (non-negative integer).', code: 'INVALID_INPUT' });
+      }
+      positionVal = p;
+    }
+    const board = await getBoardIfAllowed(req, boardId, 'task_boards');
     if (!board) {
       return res.status(404).json({ error: 'Board not found.', code: 'NOT_FOUND' });
     }
@@ -101,7 +98,7 @@ export async function create(req, res, next) {
         description?.trim() ?? null,
         status ?? 'todo',
         dueDate ?? null,
-        position != null ? parseInt(position, 10) : 0,
+        positionVal,
       ]
     );
     const task = toTask(result.rows[0]);
@@ -141,8 +138,12 @@ export async function update(req, res, next) {
       values.push(dueDate ?? null);
     }
     if (position !== undefined) {
+      const p = parseInt(position, 10);
+      if (Number.isNaN(p) || p < 0) {
+        return res.status(400).json({ error: 'Invalid position (non-negative integer).', code: 'INVALID_INPUT' });
+      }
       updates.push(`position = $${idx++}`);
-      values.push(parseInt(position, 10));
+      values.push(p);
     }
     if (assigneeId !== undefined) {
       updates.push(`assignee_id = $${idx++}`);

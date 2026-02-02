@@ -68,6 +68,15 @@ if (isProduction && process.env.REDIRECT_HTTP_TO_HTTPS === 'true') {
   });
 }
 
+/** General API rate limiter – protects all /api routes from abuse */
+const generalApiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 100,
+  message: { error: 'Too many requests. Try again later.', code: 'RATE_LIMIT' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /** Rate limiter for auth (login): per-email when body has email, else per-IP (limits brute force and targeted attacks) */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -85,9 +94,17 @@ const authLimiter = rateLimit({
   },
 });
 
-/** Health: extensible for DB, Redis (when adapter used), etc. */
-app.get('/health', (_, res) => res.json({ status: 'ok', db: 'pending' }));
+/** Health: liveness. For readiness (DB up), use GET /health/db or call it from your load balancer. */
+app.get('/health', async (_, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return res.json({ status: 'ok', db: 'connected' });
+  } catch (err) {
+    return res.status(503).json({ status: 'error', db: err.message });
+  }
+});
 
+/** Dedicated DB health for probes that only need DB (optional). */
 app.get('/health/db', async (_, res) => {
   try {
     await pool.query('SELECT 1');
@@ -97,6 +114,7 @@ app.get('/health/db', async (_, res) => {
   }
 });
 
+app.use('/api', generalApiLimiter);
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/departments', departmentsRoutes);
@@ -107,10 +125,14 @@ app.use('/api/orders', ordersRoutes);
 
 app.use('/api', (_, res) => res.status(404).json({ error: 'Not found.', code: 'NOT_FOUND' }));
 app.use((err, _req, res, _next) => {
-  console.error(err);
   const status = err.status || 500;
   const payload = { error: err.message || 'Internal server error' };
   if (err.code) payload.code = err.code;
+  if (isProduction) {
+    console.error('[server]', payload.error, payload.code ? `(${payload.code})` : '');
+  } else {
+    console.error(err);
+  }
   res.status(status).json(payload);
 });
 

@@ -1,9 +1,14 @@
 import * as Yup from 'yup';
+import { AUTH } from '@/constants';
 
 /**
  * Form validation – patterns, messages, schema builders, login schema.
  * Single file for all form validation. Import from: @/components/forms/configs/validationSchemas
  */
+
+// Build regex from AUTH.ALLOWED_LOGIN_DOMAINS (escaped for regex)
+const escapedDomains = AUTH.ALLOWED_LOGIN_DOMAINS.map((d) => d.replace(/\./g, '\\.')).join('|');
+const OFFICE_EMAIL_PATTERN = new RegExp('^[a-zA-Z0-9.!#$%&\'*+/=?^_`{|}~-]+@(' + escapedDomains + ')$');
 
 // -----------------------------------------------------------------------------
 // Patterns & messages (used by schema builders below)
@@ -11,12 +16,12 @@ import * as Yup from 'yup';
 
 export const VALIDATION = {
   PATTERNS: {
-    /** Office login: @rei-d-services.com, @netbet.com, @netbet.ro, @gimo.co.uk */
-    OFFICE_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(rei-d-services\.com|netbet\.com|netbet\.ro|gimo\.co\.uk)$/,
+    /** Office login: domains from AUTH.ALLOWED_LOGIN_DOMAINS */
+    OFFICE_EMAIL: OFFICE_EMAIL_PATTERN,
   },
   MESSAGES: {
     REQUIRED: 'This field is required',
-    OFFICE_EMAIL: 'Use an office email: @rei-d-services.com, @netbet.com, @netbet.ro or @gimo.co.uk',
+    OFFICE_EMAIL: `Use an office email: ${AUTH.ALLOWED_LOGIN_DOMAINS.map((d) => `@${d}`).join(', ')}`,
     MIN_LENGTH: (min) => `Must be at least ${min} characters`,
     MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
     MIN_VALUE: (min) => `Must be at least ${min}`,

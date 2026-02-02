@@ -12,12 +12,26 @@ export const APP_CONFIG = {
 };
 
 // ============================================================================
+// AUTH – allowed login domains. Must match server ALLOWED_LOGIN_DOMAINS exactly.
+// Set VITE_ALLOWED_LOGIN_DOMAINS (same comma-separated list as server) to override defaults.
+// ============================================================================
+
+const DEFAULT_LOGIN_DOMAINS = ['rei-d-services.com', 'netbet.com', 'netbet.ro', 'gimo.co.uk'];
+
+export const AUTH = {
+  ALLOWED_LOGIN_DOMAINS: import.meta.env.VITE_ALLOWED_LOGIN_DOMAINS
+    ? import.meta.env.VITE_ALLOWED_LOGIN_DOMAINS.split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
+    : DEFAULT_LOGIN_DOMAINS,
+};
+
+// ============================================================================
 // API CONFIGURATION (PERN backend + request limits)
 // ============================================================================
 
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:5000",
   AUTH_PREFIX: "/api/auth",
+  // TIMEOUT, RETRY_ATTEMPTS, RETRY_DELAY reserved for future fetch wrapper
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
@@ -117,7 +131,8 @@ export const CARD_SYSTEM = {
     yellow: "#d3c300", // Yellow-400 - Bright, optimistic, highlight
     gray: "#64748B", // Slate-500 - Neutral, disabled, subtle
     orange: "#F25912",
-    soft_purple: "#ff9e08", // Orange-500 - Product, warning, energy
+    soft_purple: "#a78bfa", // Violet-400 - Soft purple accent
+    soft_orange: "#ff9e08", // Orange-500 - Product, warning, energy
     color_default: "#f68700",
     select_badge: "#00d8de", // C2E2FA- Selected badges in cards and forms
     filter_color: "#00418d", // Blue-600 - Primary blue - Default color for UI elements

@@ -11,12 +11,12 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Months",
     icon: Icons.generic.clock,
-    color: "soft_purple",
+    color: "soft_orange",
     getValue: (data) => data.availableMonths?.length || 0,
     getStatus: (data) => (data.isCurrentMonth ? "Current" : "History"),
     getBadge: (data) => ({
       text: data.isCurrentMonth ? "Current" : "History",
-      color: "soft_purple",
+      color: "soft_orange",
     }),
     getContent: () => null,
     getDetails: (data) => [
@@ -46,7 +46,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Users",
     icon: Icons.generic.user,
-    color: "soft_purple",
+    color: "soft_orange",
     getValue: (data) => {
       return (data.users?.length || 0).toString();
     },
@@ -58,7 +58,7 @@ export const SMALL_CARD_CONFIGS = {
     },
     getBadge: (data) => ({
       text: data.selectedUserId ? "Filtered" : "All Users",
-      color: "soft_purple",
+      color: "soft_orange",
     }),
     getContent: () => null,
     getDetails: (data) => {
@@ -94,7 +94,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View All",
     description: "Reporters",
     icon: Icons.admin.reporters,
-    color: "soft_purple",
+    color: "soft_orange",
     getValue: (data) => {
       return (data.reporters?.length || 0).toString();
     },
@@ -108,7 +108,7 @@ export const SMALL_CARD_CONFIGS = {
       text: data.selectedReporterId
         ? `${data.selectedReporterName}`
         : "All Reporters",
-      color: "soft_purple",
+      color: "soft_orange",
     }),
     getContent: () => null,
     getDetails: (data) => {
@@ -173,7 +173,7 @@ export const SMALL_CARD_CONFIGS = {
       subtitle: "View All",
       description: "Total Tasks",
       icon: Icons.buttons.add,
-      color: "soft_purple",
+      color: "soft_orange",
       getBadge: () => null,
       getValue: (data) => {
         const filtered = filterTasksBySelectedMonth(data.tasks, data);
@@ -271,7 +271,7 @@ export const SMALL_CARD_CONFIGS = {
     subtitle: "View",
     description: "Past orders by period",
     icon: Icons.generic.clock,
-    color: "soft_purple",
+    color: "soft_orange",
     getValue: () => "Open",
     getStatus: () => "Past orders",
     getDetails: () => [{ label: "Section", value: "History" }],
@@ -317,6 +317,8 @@ export const createCards = (data, mode = "main") => {
         cardTypes = [];
     }
   }
+  const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
+
   return cardTypes
     .map((cardType) => {
       const config = SMALL_CARD_CONFIGS[cardType];
@@ -329,14 +331,17 @@ export const createCards = (data, mode = "main") => {
           description: getConfigValue(config, "description", data),
           icon: config.icon,
           color: getConfigValue(config, "color", data),
-          value: config.getValue(data),
-          status: config.getStatus(data),
+          value: config.getValue ? config.getValue(data) : "",
+          status: config.getStatus ? config.getStatus(data) : "",
           badge: config.getBadge ? config.getBadge(data) : null,
           content: config.getContent ? config.getContent(data) : null,
           details: config.getDetails ? config.getDetails(data) : [],
           href: config.getHref ? config.getHref(data) : null,
         };
-      } catch {
+      } catch (err) {
+        if (isDev && typeof console !== "undefined" && console.warn) {
+          console.warn("[createCards] Failed to build card:", cardType, err);
+        }
         return null;
       }
     })

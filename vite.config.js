@@ -6,9 +6,16 @@ import path from 'path';
 export default defineConfig({
   base: "/",
   plugins: [
-    react(), 
+    react(),
     tailwindcss()
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    include: ['src/**/*.test.{js,jsx}', 'server/utils/**/*.test.js'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

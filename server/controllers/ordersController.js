@@ -5,7 +5,7 @@
  */
 
 import { query } from '../config/db.js';
-import { resolveDepartmentId } from './orderBoardsController.js';
+import { resolveDepartmentId, getBoardIfAllowed } from '../utils/boardUtils.js';
 
 function toOrder(row) {
   if (!row) return null;
@@ -22,17 +22,6 @@ function toOrder(row) {
   };
 }
 
-/** Ensure board exists and belongs to resolved department; returns board row or null. */
-async function getBoardIfAllowed(req, boardId) {
-  const departmentId = resolveDepartmentId(req);
-  if (!departmentId) return null;
-  const result = await query(
-    `SELECT id FROM order_boards WHERE id = $1 AND department_id = $2`,
-    [boardId, departmentId]
-  );
-  return result.rows[0] ?? null;
-}
-
 /** GET /api/orders?boardId= – list orders for a board */
 export async function list(req, res, next) {
   try {
@@ -40,7 +29,7 @@ export async function list(req, res, next) {
     if (!boardId) {
       return res.status(400).json({ error: 'boardId query required.', code: 'INVALID_INPUT' });
     }
-    const board = await getBoardIfAllowed(req, boardId);
+    const board = await getBoardIfAllowed(req, boardId, 'order_boards');
     if (!board) {
       return res.status(404).json({ error: 'Board not found.', code: 'NOT_FOUND' });
     }
@@ -90,7 +79,7 @@ export async function create(req, res, next) {
     if (!boardId) {
       return res.status(400).json({ error: 'boardId required.', code: 'INVALID_INPUT' });
     }
-    const board = await getBoardIfAllowed(req, boardId);
+    const board = await getBoardIfAllowed(req, boardId, 'order_boards');
     if (!board) {
       return res.status(404).json({ error: 'Board not found.', code: 'NOT_FOUND' });
     }

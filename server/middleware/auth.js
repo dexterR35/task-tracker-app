@@ -7,6 +7,7 @@
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 import { authLogger } from '../utils/authLogger.js';
+import { toAuthUser } from '../utils/userMappers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_SECRET_PREVIOUS = process.env.JWT_SECRET_PREVIOUS;
@@ -45,29 +46,6 @@ const USER_QUERY = `SELECT u.id, u.email, u.role, u.is_active, u.department_id,
 
 const USER_MINIMAL_QUERY = `SELECT u.id, u.email, u.role, u.is_active FROM users u WHERE u.id = $1`;
 
-/** Derive slug from department name for app routing (e.g. Design -> design, Customer Support -> customer-support). */
-function slugFromDepartmentName(name) {
-  if (!name || typeof name !== 'string') return null;
-  return name.toLowerCase().trim().replace(/\s+/g, '-');
-}
-
-function toUser(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    role: row.role,
-    isActive: row.is_active,
-    office: row.office,
-    jobPosition: row.job_position,
-    gender: row.gender,
-    departmentId: row.department_id ?? null,
-    departmentName: row.department_name ?? null,
-    departmentSlug: slugFromDepartmentName(row.department_name),
-  };
-}
-
 /**
  * Resolve user from JWT. Used by HTTP middleware and Socket.IO. Throws on invalid token or inactive user.
  * @param {object} [opts] - { minimal: true } for Socket (id, email, role, isActive only) to reduce payload.
@@ -91,7 +69,7 @@ export async function getUserFromToken(token, opts = {}) {
   if (row.department_id == null) {
     throw new Error('User must have a department.');
   }
-  return toUser(row);
+  return toAuthUser(row);
 }
 
 export const authenticate = async (req, res, next) => {
@@ -160,7 +138,7 @@ export const optionalAuthenticate = async (req, res, next) => {
         exp: new Date(decoded.exp * 1000).toISOString(),
       });
     }
-    req.user = toUser(row);
+    req.user = toAuthUser(row);
     next();
   } catch {
     next();

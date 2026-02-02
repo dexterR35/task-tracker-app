@@ -1,8 +1,7 @@
-import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useAuth } from "@/context/AuthContext";
-import { CARD_SYSTEM } from "@/constants";
+import { CARD_SYSTEM, APP_CONFIG } from "@/constants";
 import { handleValidationError } from "@/utils/errorHandling";
 import { showValidationError } from "@/utils/toast";
 import {
@@ -90,17 +89,15 @@ const LoginForm = ({ onSuccess, className = "" }) => {
           </div>
         </form>
       </div>
-{/* <div className="divider"></div> */}
-  <p className="text-xs text-app-muted text-center pt-4">
-    Issues with your account?{" "}
-    <a 
-      href="mailto:admin@yourcompany.com" 
-      className="font-medium underline"
-    >
-      Contact Admin
-    </a>
-  </p>
-
+      <p className="text-xs text-app-muted text-center pt-4">
+        Issues with your account?{" "}
+        <a
+          href={`mailto:${APP_CONFIG.SUPPORT_EMAIL}`}
+          className="font-medium underline"
+        >
+          Contact Admin
+        </a>
+      </p>
     </div>
   );
 };

@@ -5,7 +5,7 @@
  * RBAC: use authUtils (isAdmin, canAccess, canManageUsers) with user from useAuth().
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { authApi, setToken, clearAuth, connectSocket, disconnectSocket, reconnectSocket, clearSilentRefreshTimer, refreshAccessToken } from '@/app/api';
 import { logger } from '@/utils/logger';
 import { showLogoutSuccess, showAuthError } from '@/utils/toast';
@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }) => {
     clearAuth();
     setUser(null);
     setError(null);
-    if (window._loggedUser) delete window._loggedUser;
     showLogoutSuccess();
   }, []);
 
@@ -41,7 +40,6 @@ export const AuthProvider = ({ children }) => {
     clearAuth();
     setUser(null);
     setError(null);
-    if (window._loggedUser) delete window._loggedUser;
     showLogoutSuccess();
   }, []);
 
@@ -86,24 +84,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Socket.IO: connect with JWT when user is set; listen for forceLogout and auth:expired (refresh + reconnect)
-  const handleAuthExpired = useCallback(async () => {
+  // useRef avoids circular dependency (handleAuthExpired passing itself to reconnectSocket)
+  const onAuthExpiredRef = useRef(null);
+  onAuthExpiredRef.current = async () => {
     try {
       const token = await refreshAccessToken();
-      if (token) reconnectSocket({ onForceLogout: logout, onAuthExpired: handleAuthExpired });
+      if (token) reconnectSocket({ onForceLogout: logout, onAuthExpired: () => onAuthExpiredRef.current?.() });
       else logout();
     } catch {
       logout();
     }
-  }, [logout]);
+  };
 
   useEffect(() => {
     if (!user) {
       disconnectSocket();
       return;
     }
-    connectSocket({ onForceLogout: logout, onAuthExpired: handleAuthExpired });
+    connectSocket({ onForceLogout: logout, onAuthExpired: () => onAuthExpiredRef.current?.() });
     return () => disconnectSocket();
-  }, [user, logout, handleAuthExpired]);
+  }, [user, logout]);
 
   const login = useCallback(async (credentials) => {
     try {

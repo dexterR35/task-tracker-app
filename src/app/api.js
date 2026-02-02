@@ -110,7 +110,7 @@ export function clearSilentRefreshTimer() {
 
 /**
  * Fetch with base URL and Bearer token (from memory). credentials: 'include' for cookies.
- * On 401 TOKEN_EXPIRED, retries once after refresh.
+ * On 401, retries once after refresh; if refresh succeeds, re-issues the request with new token.
  */
 export async function apiRequest(path, options = {}, retried = false) {
   const url = path.startsWith('http') ? path : `${API_CONFIG.BASE_URL}${path}`;
@@ -124,7 +124,7 @@ export async function apiRequest(path, options = {}, retried = false) {
   const res = await fetch(url, { ...options, headers, credentials: 'include' });
   const data = await res.json().catch(() => ({}));
 
-  if (res.status === 401 && data?.code === 'TOKEN_EXPIRED' && !retried) {
+  if (res.status === 401 && !retried) {
     const newToken = await refreshAccessToken();
     if (newToken) return apiRequest(path, options, true);
   }
@@ -206,7 +206,7 @@ export const tasksApi = {
 /** Order boards API – Food department only (monthly boards, same pattern as task-boards) */
 export const orderBoardsApi = {
   list: (params) => {
-    const q = new URLSearchParams(params).toString();
+    const q = new URLSearchParams(params ?? {}).toString();
     return apiRequest(`/api/order-boards${q ? `?${q}` : ''}`);
   },
   getById: (id) => apiRequest(`/api/order-boards/${id}`),

@@ -4,6 +4,7 @@
  */
 
 import { query } from '../config/db.js';
+import { slugFromDepartmentName } from '../utils/slug.js';
 
 const userColumns = `u.id, u.email, u.role, u.is_active, u.department_id, u.created_at AS u_created_at, u.updated_at AS u_updated_at,
   p.name, p.username, p.office, p.phone, p.avatar_url, p.job_position, p.email_verified_at, p.gender, p.color_set, p.created_by, p.created_at AS p_created_at, p.updated_at AS p_updated_at,
@@ -12,11 +13,6 @@ const userColumns = `u.id, u.email, u.role, u.is_active, u.department_id, u.crea
 const userFrom = `users u
   LEFT JOIN profiles p ON p.user_id = u.id
   LEFT JOIN departments d ON d.id = u.department_id`;
-
-function slugFromDepartmentName(name) {
-  if (!name || typeof name !== 'string') return null;
-  return name.toLowerCase().trim().replace(/\s+/g, '-');
-}
 
 function toUser(row) {
   if (!row) return null;
@@ -55,10 +51,15 @@ export async function list(req, res, next) {
   }
 }
 
-/** GET /api/users/:id - get one user by id */
+/** GET /api/users/:id - get one user by id (admin: any user; non-admin: self only) */
 export async function getOne(req, res, next) {
   try {
     const { id } = req.params;
+    const currentUser = req.user;
+    const isAdmin = currentUser.role === 'admin';
+    if (!isAdmin && currentUser.id !== id) {
+      return res.status(403).json({ error: 'Forbidden. You can only view your own profile.', code: 'FORBIDDEN' });
+    }
     const result = await query(
       `SELECT ${userColumns} FROM ${userFrom} WHERE u.id = $1`,
       [id]
@@ -154,7 +155,7 @@ export async function update(req, res, next) {
       const user = result.rows[0];
       if (!user) return res.status(404).json({ error: 'User not found.' });
       const payload = toUser(user);
-      const io = req.app.get('io');
+      const io = req.app.get?.('io');
       if (io) io.emit('user:updated', payload);
       return res.json({ user: payload });
     }
@@ -184,7 +185,7 @@ export async function update(req, res, next) {
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'User not found.' });
     const payload = toUser(user);
-    const io = req.app.get('io');
+    const io = req.app.get?.('io');
     if (io) io.emit('user:updated', payload);
     res.json({ user: payload });
   } catch (err) {
