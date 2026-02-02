@@ -1,11 +1,12 @@
 /**
  * API client for PERN backend
- * Access token: in memory only (JWT, 5–10 min high security).
+ * Access token: in memory only (JWT, 5–10 min). No localStorage for token.
  * Refresh token: httpOnly secure cookie; sent automatically with credentials: 'include'.
  * Silent refresh: scheduled 1 min before access token expiry.
  */
 
 import { API_CONFIG } from '@/constants';
+import { sanitizeErrorData } from '@/utils/sanitizeErrorData';
 
 let accessToken = null;
 let silentRefreshTimerId = null;
@@ -28,7 +29,11 @@ export const clearAuth = () => {
 
 export { connectSocket, disconnectSocket, getSocket, reconnectSocket } from './socket.js';
 
-/** Decode JWT payload without verify (client-side; exp only for scheduling). */
+/**
+ * Decode JWT payload client-side without verification. Use ONLY for:
+ * - exp (scheduling silent refresh) and optional UI (e.g. "session expires in X").
+ * Never use for authorization; server validates tokens on every request.
+ */
 function decodeJwtPayload(token) {
   try {
     const base64 = token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/');
@@ -58,7 +63,7 @@ async function internalRefresh() {
       if (!res.ok) {
         const err = new Error(data.error || data.message || res.statusText);
         err.status = res.status;
-        err.data = data;
+        err.data = sanitizeErrorData(data);
         throw err;
       }
       if (data.token) setToken(data.token);
@@ -111,6 +116,7 @@ export function clearSilentRefreshTimer() {
 /**
  * Fetch with base URL and Bearer token (from memory). credentials: 'include' for cookies.
  * On 401, retries once after refresh; if refresh succeeds, re-issues the request with new token.
+ * Enforces API_CONFIG.TIMEOUT via AbortController. Pass options.signal (AbortSignal) for cancellation (e.g. on unmount).
  */
 export async function apiRequest(path, options = {}, retried = false) {
   const url = path.startsWith('http') ? path : `${API_CONFIG.BASE_URL}${path}`;
@@ -121,21 +127,38 @@ export async function apiRequest(path, options = {}, retried = false) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(url, { ...options, headers, credentials: 'include' });
-  const data = await res.json().catch(() => ({}));
+  const timeoutMs = options.timeout ?? API_CONFIG.TIMEOUT;
+  const controller = options.signal ? null : new AbortController();
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  const signal = options.signal ?? controller?.signal ?? undefined;
 
-  if (res.status === 401 && !retried) {
-    const newToken = await refreshAccessToken();
-    if (newToken) return apiRequest(path, options, true);
-  }
+  try {
+    const res = await fetch(url, { ...options, headers, credentials: 'include', signal });
+    if (timeoutId) clearTimeout(timeoutId);
+    const data = await res.json().catch(() => ({}));
 
-  if (!res.ok) {
-    const err = new Error(data.error || data.message || res.statusText);
-    err.status = res.status;
-    err.data = data;
+    if (res.status === 401 && !retried) {
+      const newToken = await refreshAccessToken();
+      if (newToken) return apiRequest(path, options, true);
+    }
+
+    if (!res.ok) {
+      const err = new Error(data.error || data.message || res.statusText);
+      err.status = res.status;
+      err.data = sanitizeErrorData(data);
+      throw err;
+    }
+    return data;
+  } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      const timeoutErr = new Error('Request timeout');
+      timeoutErr.status = 408;
+      timeoutErr.name = 'AbortError';
+      throw timeoutErr;
+    }
     throw err;
   }
-  return data;
 }
 
 /** Auth API */

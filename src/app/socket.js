@@ -7,6 +7,7 @@
 import { io } from 'socket.io-client';
 import { API_CONFIG } from '@/constants';
 import { getToken } from './api';
+import { logger } from '@/utils/logger';
 
 let socketInstance = null;
 
@@ -39,9 +40,7 @@ export function connectSocket({ onForceLogout, onAuthExpired } = {}) {
   });
 
   socketInstance.on('auth:error', ({ event, error, code } = {}) => {
-    if (typeof console !== 'undefined' && console.warn) {
-      console.warn('[Socket Auth Error]', event, error, code);
-    }
+    logger.warn('[Socket Auth Error]', event, error, code);
     if (code === 'TOKEN_EXPIRED') {
       onForceLogout?.();
     }

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { logger } from '@/utils/logger';
 
 /**
  * Custom Tooltip Component
@@ -53,7 +54,7 @@ const Tooltip = ({ children, content, users = [] }) => {
           }
         } catch (error) {
           // Silently handle DOM access errors (node might have been removed)
-          console.warn('Tooltip positioning error:', error);
+          logger.warn('Tooltip positioning error:', error);
         }
       });
     }

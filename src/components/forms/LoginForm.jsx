@@ -13,6 +13,7 @@ import {
   PasswordField,
 } from "@/components/forms/components/FormFields";
 import DynamicButton from "@/components/ui/Button/DynamicButton";
+import { logger } from "@/utils/logger";
 
 const LoginForm = ({ onSuccess, className = "" }) => {
   const { login } = useAuth();
@@ -37,11 +38,11 @@ const LoginForm = ({ onSuccess, className = "" }) => {
         password: data.password,
       };
       const result = await login(preparedData);
-      reset(); // Standard reset
+      reset(); // Clear form immediately; token is in-memory only (no localStorage)
       onSuccess?.(result);
     } catch (error) {
-      // Logic for server-side errors (e.g., 401 Unauthorized) 
-      console.error("Login failed:", error);
+      // Logic for server-side errors (e.g., 401 Unauthorized)
+      logger.error("Login failed:", error);
     }
   };
 

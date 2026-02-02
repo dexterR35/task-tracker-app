@@ -80,7 +80,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkSession();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      clearSilentRefreshTimer();
+    };
   }, []);
 
   // Socket.IO: connect with JWT when user is set; listen for forceLogout and auth:expired (refresh + reconnect)
@@ -140,7 +143,7 @@ export const AuthProvider = ({ children }) => {
 
   const canAccess = useCallback((requiredRole) => canAccessUser(user, requiredRole), [user]);
 
-  const isReady = useCallback(() => !isAuthChecking && !isLoading, [isAuthChecking, isLoading]);
+  const isReady = !isAuthChecking && !isLoading;
 
   const value = {
     user,

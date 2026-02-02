@@ -6,6 +6,7 @@ import { useDepartmentApp } from "@/hooks/useDepartmentApp";
 import DepartmentLayout from "@/components/layout/DepartmentLayout";
 import { designRoutes } from "@/app/routes/designRoutes";
 import { foodRoutes } from "@/app/routes/foodRoutes";
+import AppLoader from "@/components/ui/AppLoader";
 import Loader from "@/components/ui/Loader/Loader";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import HomePage from "@/pages/user/HomePage";
@@ -16,12 +17,7 @@ import DepartmentsPage from "@/pages/department/DepartmentsPage";
 import NotFoundPage from "@/pages/statusPages/NotFoundPage";
 import UnauthorizedPage from "@/pages/statusPages/UnauthorizedPage";
 
-
-const SimpleLoader = () => (
-  <div className="min-h-screen flex-center bg-primary">
-    <Loader size="lg" text="Initializing application..." variant="spinner" />
-  </div>
-);
+const SimpleLoader = () => <AppLoader text="Initializing application..." />;
 
 
 const PublicRoute = ({ children }) => {
@@ -87,6 +83,9 @@ const AdminRoute = ({ children }) => {
 
   if (authState.isLoading || authState.isAuthChecking) {
     return <SimpleLoader />;
+  }
+  if (!authState.user) {
+    return <Navigate to="/login" replace />;
   }
   if (!canAccess("admin")) {
     return <Navigate to="/unauthorized" replace />;
@@ -195,10 +194,7 @@ export const createRouter = () => {
       },
     ],
   },
-
-    // ========================================
-    // ERROR ROUTES (Catch-all for 404s)
-    // ========================================
+    // Second element of createBrowserRouter array: catch-all 404 (not a child of "/")
     {
       path: "*",
       element: <NotFoundPage />,

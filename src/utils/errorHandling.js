@@ -1,5 +1,6 @@
 import { logger } from "@/utils/logger";
 import { showError, showSuccess } from "@/utils/toast";
+import { sanitizeErrorData } from "@/utils/sanitizeErrorData";
 import { ERROR_SYSTEM } from '@/constants';
 
 
@@ -84,13 +85,17 @@ export const parseApiError = (error) => {
     return createErrorResponse(ERROR_TYPES.NETWORK, 'Network error. Please check your connection and try again.', null, ERROR_SEVERITY.HIGH);
   }
 
-  // RTK Query errors
+  // Errors with response data (e.g. apiRequest sets error.data from JSON body)
   if (error?.data) {
-    return createErrorResponse(ERROR_TYPES.SERVER, error.data.message || errorMessage, error.data, ERROR_SEVERITY.MEDIUM);
+    const safeDetails = sanitizeErrorData(error.data);
+    return createErrorResponse(ERROR_TYPES.SERVER, error.data.message || error.data.error || errorMessage, safeDetails, ERROR_SEVERITY.MEDIUM);
   }
 
-  // Generic errors
-  return createErrorResponse(ERROR_TYPES.UNKNOWN, errorMessage, { originalError: error }, ERROR_SEVERITY.MEDIUM);
+  // Generic errors (avoid attaching raw error to details; use status/message only)
+  const safeGeneric = error && typeof error === 'object'
+    ? { status: error.status, message: error.message }
+    : null;
+  return createErrorResponse(ERROR_TYPES.UNKNOWN, errorMessage, safeGeneric, ERROR_SEVERITY.MEDIUM);
 };
 
 export const handleApiError = (error, operation = 'API operation', options = {}) => {
@@ -101,8 +106,8 @@ export const handleApiError = (error, operation = 'API operation', options = {})
   if (logError) {
     logger.error(`[${operation}] Error:`, {
       error: errorResponse,
-      originalError: error,
-      operation
+      operation,
+      ...(error && typeof error === 'object' && { status: error.status, message: error.message })
     });
   }
 
@@ -166,20 +171,21 @@ export const withErrorHandling = (operation, options = {}) => {
   };
 };
 
-
-export const withMutationErrorHandling = (mutationFn, options = {}) => {
-  return async (arg) => {
+/**
+ * Wrapper for async API calls (fetch / apiRequest). Use for PERN backend calls.
+ * Catches errors, optionally shows toast and logs, and rethrows parsed error.
+ */
+export const withApiErrorHandling = (asyncFn, options = {}) => {
+  return async (...args) => {
     try {
-      const result = await mutationFn(arg).unwrap();
-      const { successMessage, operationName = 'mutation' } = options;
-
+      const result = await asyncFn(...args);
+      const { successMessage, operationName = 'API call' } = options;
       if (successMessage) {
         handleSuccess(successMessage, result, operationName);
       }
-
       return result;
     } catch (error) {
-      const { operationName = 'mutation', showToast = true, logError = true } = options;
+      const { operationName = 'API call', showToast = true, logError = true } = options;
       throw handleApiError(error, operationName, { showToast, logError });
     }
   };

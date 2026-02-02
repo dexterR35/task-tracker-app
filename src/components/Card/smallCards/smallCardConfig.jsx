@@ -1,5 +1,6 @@
 import { Icons } from "@/components/icons";
 import { CARD_SYSTEM, ROUTES } from "@/constants";
+import { logger } from "@/utils/logger";
 
 // Small Card Types
 export const SMALL_CARD_TYPES = CARD_SYSTEM.SMALL_CARD_TYPES;
@@ -339,8 +340,8 @@ export const createCards = (data, mode = "main") => {
           href: config.getHref ? config.getHref(data) : null,
         };
       } catch (err) {
-        if (isDev && typeof console !== "undefined" && console.warn) {
-          console.warn("[createCards] Failed to build card:", cardType, err);
+        if (isDev) {
+          logger.warn("[createCards] Failed to build card:", cardType, err);
         }
         return null;
       }

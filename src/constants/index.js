@@ -369,11 +369,14 @@ export const THEME = {
 // DEVELOPMENT CONSTANTS
 // ============================================================================
 
+// Vite: use import.meta.env (process.env.NODE_ENV may be undefined in some builds)
+const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV === true;
+
 export const DEV_CONFIG = {
-  ENABLE_LOGGING: process.env.NODE_ENV === "development",
-  ENABLE_DEVTOOLS: process.env.NODE_ENV === "development",
+  ENABLE_LOGGING: isDev,
+  ENABLE_DEVTOOLS: isDev,
   MOCK_API_DELAY: 1000, // milliseconds
-  DEBUG_MODE: process.env.NODE_ENV === "development",
+  DEBUG_MODE: isDev,
 };
 
 // ============================================================================

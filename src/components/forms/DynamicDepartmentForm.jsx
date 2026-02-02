@@ -9,6 +9,7 @@ import { FORM_FIELD_TYPE_MAP, getDepartmentFormConfig } from '@/components/forms
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import { handleValidationError } from '@/utils/errorHandling';
 import { showValidationError } from '@/utils/toast';
+import { logger } from '@/utils/logger';
 
 export { getDepartmentFormConfig };
 
@@ -133,7 +134,7 @@ const DynamicDepartmentForm = ({
           const FieldComponent = FORM_FIELD_TYPE_MAP[field.type];
           
           if (!FieldComponent) {
-            console.warn(`No component found for type: ${field.type}`);
+            logger.warn(`No component found for type: ${field.type}`);
             return null;
           }
 

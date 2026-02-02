@@ -18,6 +18,7 @@ import {
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
+import AppLoader from "@/components/ui/AppLoader";
 import Loader from "@/components/ui/Loader/Loader";
 import SlidePanel from "@/components/ui/SlidePanel/SlidePanel";
 import SectionHeader from "@/components/ui/SectionHeader";
@@ -275,18 +276,19 @@ export default function DashboardPage({ variant = "design" }) {
     );
     const cache = cardCacheRef.current;
     return newCards.map((newCard) => {
-      const cacheKey = `${newCard.id}-${newCard.color}-${newCard.value}-${newCard.title}-${newCard.subtitle}-${JSON.stringify(newCard.details)}-${JSON.stringify(newCard.badge)}`;
+      const detailsLen = Array.isArray(newCard.details) ? newCard.details.length : 0;
+      const badgeText = newCard.badge?.text ?? '';
+      const cacheKey = `${newCard.id}-${newCard.color}-${String(newCard.value)}-${String(newCard.title)}-${String(newCard.subtitle)}-${detailsLen}-${badgeText}`;
       const cached = cache.map.get(cacheKey);
-      if (
-        cached &&
-        cached.id === newCard.id &&
-        cached.color === newCard.color &&
-        cached.value === newCard.value &&
-        cached.title === newCard.title &&
-        cached.subtitle === newCard.subtitle &&
-        JSON.stringify(cached.details) === JSON.stringify(newCard.details) &&
-        JSON.stringify(cached.badge) === JSON.stringify(newCard.badge)
-      ) {
+      const hasDetails = (arr) => Array.isArray(arr) && arr.length > 0;
+      const detailsMatch = hasDetails(cached?.details) && hasDetails(newCard.details)
+        ? cached.details.length === newCard.details.length &&
+          cached.details.every((d, i) => d?.label === newCard.details[i]?.label && d?.value === newCard.details[i]?.value)
+        : !hasDetails(cached?.details) && !hasDetails(newCard.details);
+      const badgeMatch = (cached?.badge?.text ?? '') === (newCard.badge?.text ?? '') &&
+        (cached?.badge?.color ?? '') === (newCard.badge?.color ?? '');
+      if (cached && cached.id === newCard.id && cached.color === newCard.color && cached.value === newCard.value &&
+          cached.title === newCard.title && cached.subtitle === newCard.subtitle && detailsMatch && badgeMatch) {
         return cached;
       }
       if (cache.map.size >= CARD_CACHE_MAX_SIZE && !cache.map.has(cacheKey)) {
@@ -306,11 +308,7 @@ export default function DashboardPage({ variant = "design" }) {
   // Design needs AppData initialized
   if (variant === "design") {
     if (!appData || !appData.isInitialized) {
-      return (
-        <div className="min-h-screen flex-center">
-          <Loader size="lg" text="Initializing application data..." variant="spinner" />
-        </div>
-      );
+      return <AppLoader text="Initializing application data..." />;
     }
     if (appData.error) {
       return (
