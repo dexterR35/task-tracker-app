@@ -1,23 +1,12 @@
-/**
- * FormFields – single source for all form field components and type map.
- *
- * Exports (public): TextField, PasswordField, UrlField, TextareaField, NumberField,
- * CheckboxField, SelectField, MultiSelectField, SearchableSelectField, SimpleDateField,
- * FORM_FIELD_TYPE_MAP (type string → component for DynamicDepartmentForm),
- * DEPARTMENT_FIELD_TYPES (allowed type keys for department forms),
- * textField, selectField, textareaField, numberField, urlField, dateField, etc. – field config from here (same place as TextField, SelectField),
- * getDepartmentFormConfig (department + form key → form config with title, fields, etc.).
- *
- * Import from: @/components/forms/components/FormFields
- */
-import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { format, startOfMonth, endOfMonth, addDays, startOfWeek } from 'date-fns';
 import Badge from '@/components/ui/Badge/Badge';
 import { Icons } from '@/components/icons';
 import { showSuccess } from '@/utils/toast';
 import { FORM_OPTIONS, DEPARTMENT_FORM_DEPARTMENT } from '@/components/forms/configs/formConstants';
 
-// Internal: shared layout (wrapper, label, control slot, error). Not exported.
+
 function FieldLayout({ field, error, children, skipLabel = false }) {
   const id = field.name;
   const labelEl = !skipLabel && field.label ? (
@@ -588,9 +577,6 @@ export const searchableSelectField = (name, descriptor) => field(name, 'searchab
 export const checkboxField = (name, descriptor) => field(name, 'checkbox', descriptor);
 export const dateField = (name, descriptor) => field(name, 'date', descriptor);
 
-// ============================================================================
-// Department form config – fields[] built from here (textField, selectField, etc.)
-// ============================================================================
 
 const DESIGN_ADD_TASK_FORM = {
   name: 'addTask',

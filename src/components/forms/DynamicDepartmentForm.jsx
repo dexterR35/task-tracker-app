@@ -1,4 +1,7 @@
-import React, { useMemo } from 'react';
+
+
+
+import React, { useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { buildSchemaFromFields, FORM_FIELD_LIMITS } from '@/components/forms/configs/validationSchemas';
@@ -12,7 +15,9 @@ export { getDepartmentFormConfig };
 function getDefaultValueForField(field) {
   switch (field.type) {
     case 'number':
-      return field.defaultValue ?? '';
+      // Return null or undefined allows yup .nullable() to work, 
+      // whereas '' triggers a type error on number validation.
+      return field.defaultValue ?? ''; 
     case 'checkbox':
       return field.defaultValue ?? false;
     case 'multiSelect':
@@ -22,9 +27,6 @@ function getDefaultValueForField(field) {
   }
 }
 
-/**
- * Build defaultValues object from form config fields.
- */
 function buildDefaultValues(fields) {
   if (!Array.isArray(fields)) return {};
   return fields.reduce((acc, f) => {
@@ -43,44 +45,60 @@ const DynamicDepartmentForm = ({
   className = '',
   hideTitle = false,
 }) => {
+  // 1. Memoize Config
   const config = useMemo(
     () => getDepartmentFormConfig(departmentKey, formKey),
     [departmentKey, formKey]
   );
 
   const fields = config?.fields ?? [];
+
+  // 2. Memoize Default Values
   const defaultValues = useMemo(() => {
     const base = buildDefaultValues(fields);
     return defaultValuesOverride != null ? { ...base, ...defaultValuesOverride } : base;
   }, [fields, defaultValuesOverride]);
 
+  // 3. Memoize Schema
   const schema = useMemo(() => {
     if (schemaOverride) return schemaOverride;
     return buildSchemaFromFields(fields);
   }, [fields, schemaOverride]);
 
+  // 4. Initialize Hook Form
   const {
     register,
     handleSubmit,
+    reset, // Destructure reset
     formState: { errors, isSubmitting },
     setValue,
     watch,
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues,
-    mode: 'onChange',
-    reValidateMode: 'onChange',
+    // CHANGED: 'onBlur' is much more performant than 'onChange'
+    mode: 'onBlur', 
   });
 
+  // 5. CRITICAL FIX: Reset form when configuration/defaults change
+  // Without this, switching between departments won't update the inputs
+  useEffect(() => {
+    if (config) {
+        reset(defaultValues);
+    }
+  }, [reset, defaultValues, config]);
+
   const handleFormSubmit = async (data) => {
-    try {
-      await onSubmit?.(data);
-    } catch (_err) {
-      throw _err;
+    // No need for try/catch if you are just rethrowing.
+    // RHF handles the isSubmitting state based on the promise returned here.
+    if (onSubmit) {
+      await onSubmit(data);
     }
   };
 
   const handleFormError = (errs) => {
+    // Ensure we don't duplicate logic. 
+    // If handleValidationError does logging and showValidationError does UI, keep both.
     handleValidationError(errs, config?.title ?? 'Form');
     showValidationError(errs);
   };
@@ -113,18 +131,27 @@ const DynamicDepartmentForm = ({
       <form onSubmit={handleSubmit(handleFormSubmit, handleFormError)} className="space-y-5">
         {fields.map((field) => {
           const FieldComponent = FORM_FIELD_TYPE_MAP[field.type];
-          if (!FieldComponent) return null;
+          
+          if (!FieldComponent) {
+            console.warn(`No component found for type: ${field.type}`);
+            return null;
+          }
+
+          // Merge limits if applicable
           const resolvedField = field.limitsKey && FORM_FIELD_LIMITS[field.limitsKey]
             ? { ...field, ...FORM_FIELD_LIMITS[field.limitsKey] }
             : field;
-          const commonProps = {
-            field: resolvedField,
-            register,
-            errors,
-            setValue,
-            watch,
-          };
-          return <FieldComponent key={field.name} {...commonProps} />;
+            
+          return (
+            <FieldComponent 
+                key={field.name} 
+                field={resolvedField}
+                register={register}
+                errors={errors}
+                setValue={setValue}
+                watch={watch}
+            />
+          );
         })}
 
         <div className="pt-2">

@@ -1,109 +1,80 @@
-import React, { useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useAuth } from '@/context/AuthContext';
-import { Icons } from '@/components/icons';
-import { CARD_SYSTEM } from '@/constants';
-
-import { handleValidationError } from '@/utils/errorHandling';
-import { showValidationError } from '@/utils/toast';
-import { loginSchema, LOGIN_FORM_FIELDS } from '@/components/forms/configs/useLoginForm';
-import { TextField, PasswordField } from '@/components/forms/components/FormFields';
-import DynamicButton from '@/components/ui/Button/DynamicButton';
-
-const LoginIcon = Icons.buttons.login;
-
-
+import { useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useAuth } from "@/context/AuthContext";
+import { CARD_SYSTEM } from "@/constants";
+import { handleValidationError } from "@/utils/errorHandling";
+import { showValidationError } from "@/utils/toast";
+import {
+  loginSchema,
+  LOGIN_FORM_FIELDS,
+} from "@/components/forms/configs/useLoginForm";
+import {
+  TextField,
+  PasswordField,
+} from "@/components/forms/components/FormFields";
+import DynamicButton from "@/components/ui/Button/DynamicButton";
 
 const LoginForm = ({ onSuccess, className = "" }) => {
   const { login } = useAuth();
-  
+  const emailField = LOGIN_FORM_FIELDS.find(f => f.name === "email");
+  const passwordField = LOGIN_FORM_FIELDS.find(f => f.name === "password");
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    reset
+    reset,
   } = useForm({
     resolver: yupResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: ''
-    },
-    mode: 'onSubmit',
-    reValidateMode: 'onChange'
+    defaultValues: { email: "", password: "" },
+    mode: "onSubmit",
   });
 
   const onSubmit = async (data) => {
-    const preparedData = {
-      email: data.email?.trim().toLowerCase() ?? '',
-      password: data.password ?? '',
-    };
     try {
+      const preparedData = {
+        email: data.email?.trim().toLowerCase(),
+        password: data.password,
+      };
       const result = await login(preparedData);
-      reset?.();
+      reset(); // Standard reset
       onSuccess?.(result);
-    } catch (_err) {
-      // AuthContext handles error toast
-      throw _err;
+    } catch (error) {
+      // Logic for server-side errors (e.g., 401 Unauthorized) 
+      console.error("Login failed:", error);
     }
   };
 
-  const handleFormError = (errors) => {
-    handleValidationError(errors, 'Login Form');
+  const onInvalid = (errors) => {
+    handleValidationError(errors, "Login Form");
     showValidationError(errors);
   };
 
-  // Top bar uses color_default from COLOR_HEX_MAP
-  const cardColorHex = useMemo(
-    () => CARD_SYSTEM.COLOR_HEX_MAP.color_default,
-    []
-  );
-
   return (
-    <div className={`${className} relative bg-white dark:bg-smallCard border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl overflow-hidden w-full max-w-md`}>
-      {/* Accent border on top - clean solid color */}
+    <div className={`relative card-small shadow-xl rounded-2xl !p-8 overflow-hidden w-full max-w-md ${className}`}>
       <div
         className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-        style={{
-          backgroundColor: cardColorHex,
-        }}
+        style={{ backgroundColor: CARD_SYSTEM.COLOR_HEX_MAP.color_default }}
       />
 
-      <div className="flex flex-col p-8 relative z-10">
-        {/* Modern Header Section */}
-        <div className="flex items-center gap-4 mb-8">
-          {/* Clean Icon with solid background */}
-       
+      <div className="flex flex-col relative z-10">
+        <header className="mb-8">
+          <h2 className="text-2xl font-semibold">Welcome</h2>
+          <p className="text-sm font-medium text-app-muted">Sign in to your account</p>
+        </header>
 
-          {/* Title & Subtitle */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
-              Welcome
-            </h2>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Sign in to your account
-            </p>
-          </div>
-        </div>
-
-        {/* Form Section - Clean modern design */}
-        <form onSubmit={handleSubmit(onSubmit, handleFormError)} className="space-y-5">
-          <div className="space-y-2">
-            <TextField
-              field={LOGIN_FORM_FIELDS[0]}
-              register={register}
-              errors={errors}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <PasswordField
-              field={LOGIN_FORM_FIELDS[1]}
-              register={register}
-              errors={errors}
-            />
-          </div>
-
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-5">
+          <TextField
+            field={emailField}
+            register={register}
+            errors={errors}
+          />
+          <PasswordField
+            field={passwordField}
+            register={register}
+            errors={errors}
+          />
           <div className="pt-2">
             <DynamicButton
               type="submit"
@@ -112,19 +83,26 @@ const LoginForm = ({ onSuccess, className = "" }) => {
               disabled={isSubmitting}
               loading={isSubmitting}
               iconName="login"
-              iconPosition="left"
-              loadingText="Logging in..."
-              className="w-full h-12 font-semibold "
-           
+              className="w-full"
             >
-              UNLOCk
+              UNLOCK
             </DynamicButton>
           </div>
         </form>
       </div>
+{/* <div className="divider"></div> */}
+  <p className="text-xs text-app-muted text-center pt-4">
+    Issues with your account?{" "}
+    <a 
+      href="mailto:admin@yourcompany.com" 
+      className="font-medium underline"
+    >
+      Contact Admin
+    </a>
+  </p>
+
     </div>
   );
 };
 
 export default LoginForm;
-
