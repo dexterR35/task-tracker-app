@@ -69,7 +69,7 @@ const DynamicButton = memo(
         textColor = "#333"; // text-gray-800 for yellow/amber backgrounds
       } else if (variant === "amber") {
         textColor = "#333"; // text-gray-800 for amber background
-      }
+      } 
 
       return {
         backgroundColor,
