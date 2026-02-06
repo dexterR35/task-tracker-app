@@ -23,7 +23,7 @@
   --text-xs:10px;
   --text-sm:12px;
   --color-soft: #3d48c9;
-  --color-smallCard: #0e111b;
+  --color-smallCard: #0d0d0d;
   --color-smallCard-white: #e8edff;
   --color-red-error: #FF204E;
   --color-green-success: #2fd181;
@@ -200,6 +200,9 @@
     @apply bg-white/90 dark:bg-smallCard border border-gray-200/60 dark:border-gray-700/80 shadow-md rounded-md p-2;
   }
 
+  .card-ui-small {
+    @apply  relative flex items-center justify-between p-5 bg-[#0d0d0d] border border-white/5 hover:border-[#52c45d]/40 transition-all duration-500 cursor-pointer;
+  }
  
 
   /* Button – best-in-class: a11y, touch targets, typography, states */
