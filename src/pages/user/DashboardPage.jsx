@@ -27,6 +27,7 @@ import TanStackTable from "@/components/Table/TanStackTable";
 import DynamicDepartmentForm, { getDepartmentFormConfig } from "@/components/forms/DynamicDepartmentForm";
 import { DEPARTMENT_FORM_DEPARTMENT } from "@/components/forms/configs/formConstants";
 import { showError, showSuccess } from "@/utils/toast";
+import MonthProgressBanner from "@/components/ui/MonthProgressBanner";
 
 const columnHelper = createColumnHelper();
 const BOARD_TAB_ACTIVE =
@@ -43,33 +44,114 @@ function toTanStackColumns(columns) {
   );
 }
 
-const TASK_COLUMNS = [
-  { key: "title", header: "Title", render: (t) => t.title ?? "–" },
-  {
-    key: "status",
-    header: "Status",
-    render: (t) => (
-      <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-app">
-        {t.status ?? "todo"}
-      </span>
-    ),
-  },
-  { key: "dueDate", header: "Due date", render: (t) => (t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "–") },
-];
+// Helper function to create task columns with user lookup
+const createTaskColumns = (users = []) => {
+  const getUserName = (userId) => {
+    if (!userId) return "–";
+    const user = users.find((u) => u.id === userId);
+    return user?.name || user?.username || user?.email || "–";
+  };
 
-const ORDER_COLUMNS = [
-  { key: "orderDate", header: "Date", render: (o) => o.orderDate ?? "–" },
-  { key: "summary", header: "Summary", render: (o) => o.summary ?? "–" },
-  {
-    key: "status",
-    header: "Status",
-    render: (o) => (
-      <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-app">
-        {o.status}
-      </span>
-    ),
-  },
-];
+  return [
+    { key: "title", header: "Title", render: (t) => t.title ?? "–" },
+    {
+      key: "status",
+      header: "Status",
+      render: (t) => (
+        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-app">
+          {t.status ?? "todo"}
+        </span>
+      ),
+    },
+    {
+      key: "assignee",
+      header: "Assignee",
+      render: (t) => getUserName(t.assigneeId || t.assignee_id),
+    },
+    {
+      key: "dueDate",
+      header: "Due Date",
+      render: (t) => {
+        const date = t.dueDate || t.due_date;
+        return date ? new Date(date).toLocaleDateString() : "–";
+      },
+    },
+    {
+      key: "reporters",
+      header: "Reporters",
+      render: (t) => {
+        // Placeholder - reporters would come from task_reporters junction table
+        // For now, return placeholder or count if available
+        const count = t.reporters?.length || t.reporterCount || 0;
+        return count > 0 ? `${count} reporter${count !== 1 ? "s" : ""}` : "–";
+      },
+    },
+    {
+      key: "deliverables",
+      header: "Deliverables",
+      render: (t) => {
+        // Placeholder - deliverables would come from task_deliverables junction table
+        const count = t.deliverables?.length || t.deliverableCount || 0;
+        return count > 0 ? `${count} deliverable${count !== 1 ? "s" : ""}` : "–";
+      },
+    },
+  ];
+};
+
+// Helper function to create order columns
+const createOrderColumns = (users = []) => {
+  const getUserName = (userId) => {
+    if (!userId) return "–";
+    const user = users.find((u) => u.id === userId);
+    return user?.name || user?.username || user?.email || "–";
+  };
+
+  return [
+    {
+      key: "orderDate",
+      header: "Date",
+      render: (o) => {
+        const date = o.orderDate || o.order_date;
+        return date ? new Date(date).toLocaleDateString() : "–";
+      },
+    },
+    { key: "summary", header: "Summary", render: (o) => o.summary ?? "–" },
+    {
+      key: "items",
+      header: "Items",
+      render: (o) => {
+        const items = o.items;
+        if (!items) return "–";
+        if (Array.isArray(items)) {
+          return items.length > 0 ? `${items.length} item${items.length !== 1 ? "s" : ""}` : "–";
+        }
+        if (typeof items === "string") {
+          try {
+            const parsed = JSON.parse(items);
+            return Array.isArray(parsed) ? `${parsed.length} item${parsed.length !== 1 ? "s" : ""}` : "–";
+          } catch {
+            return items;
+          }
+        }
+        return "–";
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (o) => (
+        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-app">
+          {o.status ?? "pending"}
+        </span>
+      ),
+    },
+    {
+      key: "user",
+      header: "User",
+      render: (o) => getUserName(o.userId || o.user_id),
+    },
+  ];
+};
 
 /** Hardcoded board for current month when API returns none. */
 function getHardcodedBoardForMonth(year, month) {
@@ -98,7 +180,7 @@ const DASHBOARD_CONFIG = {
   design: {
     boardsApi: taskBoardsApi,
     itemsApi: tasksApi,
-    columns: TASK_COLUMNS,
+    createColumns: createTaskColumns, // Function to create columns with user context
     boardTitle: "Task board",
     emptyBoardsMessage: "No task board for this month. Create one via API or add a Get or create board action.",
     emptyItemsMessage: "No tasks yet for this board.",
@@ -113,7 +195,7 @@ const DASHBOARD_CONFIG = {
   food: {
     boardsApi: orderBoardsApi,
     itemsApi: ordersApi,
-    columns: ORDER_COLUMNS,
+    createColumns: createOrderColumns, // Function to create columns with user context
     boardTitle: "Order board",
     emptyBoardsMessage: "No order board for this month. Create one via API or add a Get or create board action.",
     emptyItemsMessage: "No orders yet for this board.",
@@ -303,7 +385,11 @@ export default function DashboardPage({ variant = "design" }) {
     });
   }, [variant, user, boards, items, users, isUserAdmin]);
 
-  const tableColumns = useMemo(() => toTanStackColumns(config.columns), [config.columns]);
+  // Create table columns with user context
+  const tableColumns = useMemo(() => {
+    const columns = config.createColumns ? config.createColumns(users) : config.columns || [];
+    return toTanStackColumns(columns);
+  }, [config, users]);
 
   // Design needs AppData initialized
   if (variant === "design") {
@@ -326,6 +412,9 @@ export default function DashboardPage({ variant = "design" }) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <p className="text-sm text-gray-500 dark:text-gray-400">Overview and progress</p>
       </div>
+
+      {/* Month Progress Banner */}
+      <MonthProgressBanner variant={variant} />
 
       <section className="mb-6" aria-label="Dashboard overview">
         <SectionHeader label="Overview" />

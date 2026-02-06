@@ -73,6 +73,12 @@ export const NAVIGATION_CONFIG = {
         { name: "Misc", href: "/analytics/misc" },
       ],
     },
+    {
+      name: "Profile",
+      href: "/profile",
+      icon: "user",
+      color: "gray",
+    },
   ],
   DEPARTMENTS_ITEM: {
     name: "Departments",
@@ -94,11 +100,12 @@ export const NAVIGATION_CONFIG = {
       ],
     },
   ],
-  /** Food app only: Dashboard, Orders, History (used when user.departmentSlug === 'food') */
+  /** Food app only: Dashboard, Orders, History, Profile (used when user.departmentSlug === 'food') */
   FOOD_MENU_ITEMS: [
     { name: "Dashboard", href: "/food/dashboard", icon: "home", color: "blue" },
     { name: "Orders", href: "/food/orders", icon: "chart", color: "blue" },
     { name: "History", href: "/food/history", icon: "chart", color: "gray" },
+    { name: "Profile", href: "/food/profile", icon: "user", color: "gray" },
   ],
 };
 
@@ -150,6 +157,22 @@ export const CARD_SYSTEM = {
     FOOD_ORDER_BOARD: "food-order-board",
     FOOD_ORDERS: "food-orders",
     FOOD_HISTORY: "food-history",
+    // Design/Customer Support cards
+    TOTAL_TASKS: "total-tasks",
+    COMPLETED_TASKS: "completed-tasks",
+    PENDING_TASKS: "pending-tasks",
+    ACTIVE_REPORTERS: "active-reporters",
+    DELIVERABLES: "deliverables",
+    // Food cards
+    TOTAL_ORDERS: "total-orders",
+    PENDING_ORDERS: "pending-orders",
+    COMPLETED_ORDERS: "completed-orders",
+    MY_ORDERS: "my-orders",
+    // Customer Support specific
+    OPEN_TICKETS: "open-tickets",
+    RESOLVED: "resolved",
+    IN_PROGRESS: "in-progress",
+    ASSIGNED_TO_ME: "assigned-to-me",
   },
   // Chart data types for color mapping
   CHART_DATA_TYPE: {

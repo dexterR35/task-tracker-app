@@ -35,22 +35,41 @@ function getSessionMeta(req) {
   return { userAgent, ip };
 }
 
-/** SameSite=None so cookie is sent on cross-origin requests (e.g. frontend :5173 → API :5000). Secure=true required for None; browsers allow Secure on localhost. */
-const cookieOptions = (maxAgeDays = REFRESH_TOKEN_EXPIRES_DAYS) => ({
-  httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  path: '/api',
-  maxAge: maxAgeDays * 24 * 60 * 60 * 1000,
-});
+/**
+ * Production-ready cookie options
+ * - httpOnly: Prevents XSS attacks (JavaScript cannot access cookie)
+ * - secure: Only sent over HTTPS in production
+ * - sameSite: 'none' for cross-origin (required with secure), 'lax' for same-origin
+ * - path: Restricts cookie to /api routes
+ * - domain: Set in production if needed for subdomain sharing
+ */
+const cookieOptions = (maxAgeDays = REFRESH_TOKEN_EXPIRES_DAYS) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isLocalhost = process.env.CORS_ORIGIN?.includes('localhost') || !process.env.CORS_ORIGIN;
+  
+  return {
+    httpOnly: true,
+    secure: isProduction || !isLocalhost, // Secure in production, allow http on localhost
+    sameSite: isProduction && !isLocalhost ? 'none' : 'lax', // 'none' for cross-origin in production
+    path: '/api',
+    maxAge: maxAgeDays * 24 * 60 * 60 * 1000,
+    ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
+  };
+};
 
-const clearCookieOptions = () => ({
-  httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  path: '/api',
-  maxAge: 0,
-});
+const clearCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isLocalhost = process.env.CORS_ORIGIN?.includes('localhost') || !process.env.CORS_ORIGIN;
+  
+  return {
+    httpOnly: true,
+    secure: isProduction || !isLocalhost,
+    sameSite: isProduction && !isLocalhost ? 'none' : 'lax',
+    path: '/api',
+    maxAge: 0,
+    ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
+  };
+};
 
 /** Clear refresh cookie at path '/' (legacy default); use so we remove any old cookie and only one remains after login. */
 const clearCookieOptionsLegacyPath = () => ({
@@ -145,19 +164,48 @@ const authUserFrom = `users u
   LEFT JOIN profiles p ON p.user_id = u.id
   LEFT JOIN departments d ON d.id = u.department_id`;
 
-/** POST /api/auth/login */
+/** POST /api/auth/login - Production-ready with rate limiting, validation, and security */
 export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    // Input validation
+    if (!email || typeof email !== 'string' || !email.trim()) {
       return res.status(400).json({
-        error: 'Email and password are required',
+        error: 'Email is required.',
+        code: 'VALIDATION_ERROR',
       });
     }
 
-    if (!isAllowedEmailDomain(email)) {
+    if (!password || typeof password !== 'string' || password.length < 1) {
+      return res.status(400).json({
+        error: 'Password is required.',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        error: 'Invalid email format.',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    // Password length check (prevent DoS with extremely long passwords)
+    if (password.length > 1000) {
+      return res.status(400).json({
+        error: 'Password is too long.',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    // Domain whitelist check
+    if (!isAllowedEmailDomain(normalizedEmail)) {
       const domains = ALLOWED_LOGIN_DOMAINS.map((d) => `@${d}`).join(', ');
+      authLogger.loginFail(req, 'domain_not_allowed', 'DOMAIN_NOT_ALLOWED');
       return res.status(403).json({
         error: `Only office emails are allowed: ${domains}`,
         code: 'DOMAIN_NOT_ALLOWED',
@@ -166,7 +214,7 @@ export async function login(req, res, next) {
 
     const result = await query(
       `SELECT ${authUserSelect}, u.password_hash FROM ${authUserFrom} WHERE u.email = $1`,
-      [email.toLowerCase().trim()]
+      [normalizedEmail]
     );
 
     const user = result.rows[0];
@@ -190,16 +238,33 @@ export async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
+    // Generate access token with minimal payload
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { 
+        userId: user.id, 
+        email: user.email,
+        role: user.role,
+        departmentId: user.department_id,
+      },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      { 
+        expiresIn: JWT_EXPIRES_IN,
+        issuer: process.env.JWT_ISSUER || 'task-tracker-api',
+        audience: process.env.JWT_AUDIENCE || 'task-tracker-client',
+      }
     );
+
+    // Create refresh token and set secure cookie
     const { token: refreshToken } = await createRefreshToken(user.id, req);
     res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, cookieOptions());
 
     authLogger.loginSuccess(req, user.id, user.email);
     delete user.password_hash;
+    
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    
     res.json({
       message: 'Login successful',
       token,
@@ -220,25 +285,52 @@ export async function me(req, res, next) {
 }
 
 /** POST /api/auth/refresh - HTTP-only cookie sent; validates against sessions (refresh_tokens) table; returns new access token.
+ *  Production-ready with token rotation and security checks.
  *  When no valid cookie/session: 200 with token/user null (avoids 401 noise on initial session check when not logged in). */
 export async function refresh(req, res, next) {
   try {
     const token = req.cookies?.[REFRESH_TOKEN_COOKIE];
+    
+    // Validate refresh token
     const userRow = await validateRefreshToken(token, req);
     if (!userRow) {
       authLogger.refreshFail(req, 'invalid_or_expired', 'REFRESH_INVALID');
+      // Clear invalid cookie
+      res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptions());
+      res.clearCookie(REFRESH_TOKEN_COOKIE, clearCookieOptionsLegacyPath());
       return res.status(200).json({ token: null, user: null });
     }
+
+    // Token rotation: revoke old refresh token before issuing new one
     await revokeRefreshToken(token);
+    
+    // Generate new access token
     const accessToken = jwt.sign(
-      { userId: userRow.id, email: userRow.email },
+      { 
+        userId: userRow.id, 
+        email: userRow.email,
+        role: userRow.role,
+        departmentId: userRow.department_id,
+      },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      { 
+        expiresIn: JWT_EXPIRES_IN,
+        issuer: process.env.JWT_ISSUER || 'task-tracker-api',
+        audience: process.env.JWT_AUDIENCE || 'task-tracker-client',
+      }
     );
+    
+    // Issue new refresh token (rotation)
     const { token: newRefreshToken } = await createRefreshToken(userRow.id, req);
     res.cookie(REFRESH_TOKEN_COOKIE, newRefreshToken, cookieOptions());
+    
     authLogger.refreshSuccess(req, userRow.id, userRow.email);
     const user = toAuthUser(userRow);
+    
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    
     res.json({
       message: 'Token refreshed',
       token: accessToken,

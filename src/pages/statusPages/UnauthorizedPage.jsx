@@ -18,7 +18,7 @@ const UnauthorizedPage = () => {
 
   const title = "Access denied";
   const message = isDepartmentMismatch
-    ? `This section is for ${attemptedApp} only. You're in the ${userApp} app—use the button below to open your dashboard.`
+    ? `This section is for the ${attemptedApp} department only. You're assigned to the ${userApp} department—use the button below to open your dashboard.`
     : isAdmin
       ? "You don't have permission to view this page. Contact your administrator if you think this is a mistake."
       : "You don't have permission to view this page. Check your role or go back to your dashboard.";

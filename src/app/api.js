@@ -151,12 +151,27 @@ export async function apiRequest(path, options = {}, retried = false) {
     return data;
   } catch (err) {
     if (timeoutId) clearTimeout(timeoutId);
+    
+    // Handle network errors with better messages
+    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+      const networkErr = new Error(
+        `Network error: Unable to connect to server at ${API_CONFIG.BASE_URL}. ` +
+        `Please check if the server is running and CORS is configured correctly.`
+      );
+      networkErr.name = 'NetworkError';
+      networkErr.status = 0;
+      networkErr.originalError = err;
+      networkErr.url = url;
+      throw networkErr;
+    }
+    
     if (err.name === 'AbortError') {
       const timeoutErr = new Error('Request timeout');
       timeoutErr.status = 408;
       timeoutErr.name = 'AbortError';
       throw timeoutErr;
     }
+    
     throw err;
   }
 }
@@ -166,6 +181,9 @@ export const authApi = {
   login: (email, password) =>
     apiRequest(`${API_CONFIG.AUTH_PREFIX}/login`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ email, password }),
     }),
 

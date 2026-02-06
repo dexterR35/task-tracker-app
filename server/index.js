@@ -14,12 +14,16 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import pool from './config/db.js';
 import { getUserFromToken } from './middleware/auth.js';
 import { authLogger } from './utils/authLogger.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { logger } from './utils/logger.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import departmentsRoutes from './routes/departments.js';
@@ -50,14 +54,44 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 
+/** Request logging - must be early in middleware chain */
+app.use(requestLogger);
+
 /** CORS: production = explicit origins (comma-separated); dev = allow all */
 const corsOrigin = process.env.CORS_ORIGIN;
 const origin = isProduction && corsOrigin
   ? corsOrigin.split(',').map((o) => o.trim()).filter(Boolean)
   : (corsOrigin || true);
-app.use(cors({ origin, credentials: true }));
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(express.json());
+
+// Enhanced CORS configuration for production
+app.use(cors({
+  origin: origin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Type'],
+  maxAge: 86400, // 24 hours
+}));
+
+/** Security headers */
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
+}));
+
+/** Compression - reduce response size */
+app.use(compression({ level: 6, threshold: 1024 }));
+
+/** Body parsing with size limits to prevent DoS */
+app.use(express.json({
+  limit: process.env.MAX_BODY_SIZE || '10mb',
+  strict: true,
+}));
+app.use(express.urlencoded({
+  extended: true,
+  limit: process.env.MAX_BODY_SIZE || '10mb',
+}));
 app.use(cookieParser());
 
 /** Optional: redirect HTTP to HTTPS in production (or use reverse proxy) */
@@ -77,21 +111,13 @@ const generalApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/** Rate limiter for auth (login): per-email when body has email, else per-IP (limits brute force and targeted attacks) */
+/** Rate limiter for auth routes - general protection (specific limiters in auth routes) */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 20,
-  message: { error: 'Too many attempts. Try again in 15 minutes.', code: 'RATE_LIMIT' },
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 100,
+  message: { error: 'Too many authentication requests. Try again later.', code: 'RATE_LIMIT' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const email = req.body?.email;
-    if (email && typeof email === 'string') {
-      return `email:${email.toLowerCase().trim()}`;
-    }
-    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-    return ipKeyGenerator(ip);
-  },
 });
 
 /** Health: liveness. For readiness (DB up), use GET /health/db or call it from your load balancer. */
@@ -114,6 +140,7 @@ app.get('/health/db', async (_, res) => {
   }
 });
 
+/** Rate limiting */
 app.use('/api', generalApiLimiter);
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
@@ -123,18 +150,11 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/order-boards', orderBoardsRoutes);
 app.use('/api/orders', ordersRoutes);
 
-app.use('/api', (_, res) => res.status(404).json({ error: 'Not found.', code: 'NOT_FOUND' }));
-app.use((err, _req, res, _next) => {
-  const status = err.status || 500;
-  const payload = { error: err.message || 'Internal server error' };
-  if (err.code) payload.code = err.code;
-  if (isProduction) {
-    console.error('[server]', payload.error, payload.code ? `(${payload.code})` : '');
-  } else {
-    console.error(err);
-  }
-  res.status(status).json(payload);
-});
+/** 404 handler for API routes */
+app.use('/api', notFoundHandler);
+
+/** Global error handler - must be last */
+app.use(errorHandler);
 
 const server = http.createServer(app);
 
@@ -230,7 +250,13 @@ app.set('io', io);
 export { io };
 
 server.listen(PORT, () => {
-  console.log(`[server] Running at http://localhost:${PORT}`);
-  console.log(`[server] Auth API: POST /api/auth/login, GET /api/auth/me, POST /api/auth/refresh, POST /api/auth/logout, POST /api/auth/logout-all`);
-  console.log(`[server] Socket.io: authenticated with same JWT (auth.token or query.token)`);
+  logger.info('Server started', {
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development',
+    nodeVersion: process.version,
+  });
+  logger.info('API endpoints available', {
+    auth: 'POST /api/auth/login, GET /api/auth/me, POST /api/auth/refresh, POST /api/auth/logout, POST /api/auth/logout-all',
+    socket: 'authenticated with same JWT (auth.token or query.token)',
+  });
 });

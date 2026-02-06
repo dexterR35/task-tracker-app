@@ -1,5 +1,5 @@
 /**
- * Department layout + guard (component only). Wrong app → /unauthorized.
+ * Department layout + guard (component only). Wrong department → /unauthorized.
  * Otherwise: sidebar + TopNavbar + main content. Nav from config/navConfig.
  */
 import React from "react";
@@ -7,37 +7,59 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import AppSidebar from "@/components/layout/navigation/AppSidebar";
 import TopNavbar from "@/components/layout/navigation/TopNavbar";
 import { useDepartmentApp } from "@/hooks/useDepartmentApp";
+import { useAuth } from "@/context/AuthContext";
 import { designNavConfig, NAV_CONFIG_BY_PATH } from "@/config/navConfig";
 
 const DepartmentLayout = () => {
   const location = useLocation();
   const pathname = location.pathname;
-  const { isFoodApp, loginRedirectPath } = useDepartmentApp();
+  const { user } = useAuth();
+  const { departmentSlug, loginRedirectPath } = useDepartmentApp();
 
-  if (isFoodApp && pathname.startsWith("/design")) {
-    return (
-      <Navigate
-        to="/unauthorized"
-        replace
-        state={{
-          reason: "department",
-          attemptedApp: "Design",
-          userApp: "Food",
-          toDashboard: loginRedirectPath,
-        }}
-      />
-    );
+  // Extract department slug from pathname (e.g., "/design/profile" → "design", "/food/dashboard" → "food")
+  const pathParts = pathname.split("/").filter(Boolean);
+  const pathDepartmentSlug = pathParts[0] || null;
+
+  // Check if user is trying to access a different department's routes
+  // Only check if both user has a department and path has a department prefix
+  if (user && departmentSlug && pathDepartmentSlug && pathDepartmentSlug !== "settings") {
+    // Map department slugs to display names
+    const departmentDisplayNames = {
+      design: "Design",
+      food: "Food",
+    };
+
+    const userDepartmentDisplayName = departmentDisplayNames[departmentSlug] || departmentSlug;
+    const attemptedDepartmentDisplayName = departmentDisplayNames[pathDepartmentSlug] || pathDepartmentSlug;
+
+    // If the path department doesn't match user's department, deny access
+    if (pathDepartmentSlug !== departmentSlug) {
+      return (
+        <Navigate
+          to="/unauthorized"
+          replace
+          state={{
+            reason: "department",
+            attemptedApp: attemptedDepartmentDisplayName,
+            userApp: userDepartmentDisplayName,
+            toDashboard: loginRedirectPath,
+          }}
+        />
+      );
+    }
   }
-  if (!isFoodApp && pathname.startsWith("/food")) {
+
+  // If user doesn't have a department but is trying to access department routes, deny access
+  if (user && !departmentSlug && pathDepartmentSlug && pathDepartmentSlug !== "settings") {
     return (
       <Navigate
         to="/unauthorized"
         replace
         state={{
           reason: "department",
-          attemptedApp: "Food",
-          userApp: "Design",
-          toDashboard: loginRedirectPath,
+          attemptedApp: pathDepartmentSlug,
+          userApp: "No department assigned",
+          toDashboard: "/",
         }}
       />
     );

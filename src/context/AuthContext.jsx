@@ -10,6 +10,8 @@ import { authApi, setToken, clearAuth, connectSocket, disconnectSocket, reconnec
 import { logger } from '@/utils/logger';
 import { showLogoutSuccess, showAuthError } from '@/utils/toast';
 import { canAccess as canAccessUser } from '@/utils/authUtils';
+import { API_CONFIG } from '@/constants';
+import { checkApiHealth, getApiDiagnostics } from '@/utils/apiHealthCheck';
 
 const AuthContext = createContext();
 
@@ -109,6 +111,7 @@ export const AuthProvider = ({ children }) => {
   }, [user, logout]);
 
   const login = useCallback(async (credentials) => {
+    let userData = null;
     try {
       setIsLoading(true);
       setError(null);
@@ -118,15 +121,47 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Email and password are required');
       }
 
-      const data = await authApi.login(email, password);
+      try {
+        const data = await authApi.login(email, password);
 
-      if (data.token) setToken(data.token);
+        if (data.token) setToken(data.token);
 
-      const userData = data?.user;
-      if (!userData) throw new Error('Login failed - no user returned');
+        userData = data?.user;
+        if (!userData) throw new Error('Login failed - no user returned');
 
-      setUser(userData);
-      setIsLoading(false);
+        setUser(userData);
+        setIsLoading(false);
+      } catch (error) {
+        setIsLoading(false);
+        // Provide better error messages for network issues
+        if (error.name === 'NetworkError' || error.message?.includes('Failed to fetch')) {
+          const diagnostics = getApiDiagnostics();
+          logger.error('[Auth] Network error during login', {
+            error: error.message,
+            url: error.url,
+            diagnostics,
+          });
+
+          // Try to check server health for better diagnostics
+          const healthCheck = await checkApiHealth().catch(() => ({ ok: false, message: 'Health check failed' }));
+          
+          const errorMessage = healthCheck.ok
+            ? `Network error: ${error.message}. Server is reachable but login request failed.`
+            : `Cannot connect to server at ${API_CONFIG.BASE_URL}.\n\n` +
+              `Diagnostics:\n` +
+              `- Server URL: ${diagnostics.baseUrl}\n` +
+              `- Environment: ${diagnostics.envVar}\n` +
+              `- Health check: ${healthCheck.message}\n\n` +
+              `Please check:\n` +
+              `1. Server is running (cd server && npm run dev)\n` +
+              `2. Server is listening on port 5000\n` +
+              `3. CORS is configured correctly\n` +
+              `4. Network connectivity`;
+
+          throw new Error(errorMessage);
+        }
+        throw error;
+      }
 
       return { success: true, user: userData };
     } catch (err) {

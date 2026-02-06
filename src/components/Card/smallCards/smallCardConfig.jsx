@@ -278,6 +278,268 @@ export const SMALL_CARD_CONFIGS = {
     getDetails: () => [{ label: "Section", value: "History" }],
     getHref: () => ROUTES.FOOD_HISTORY,
   },
+
+  // Design Department Cards
+  [SMALL_CARD_TYPES.TOTAL_TASKS]: {
+    title: "Total Tasks",
+    subtitle: "This month",
+    description: "All tasks",
+    icon: Icons.generic.task,
+    color: "blue",
+    getValue: (data) => (data.tasks?.length ?? 0).toString(),
+    getStatus: () => "Current month",
+    getDetails: (data) => [
+      { label: "Total", value: `${data.tasks?.length ?? 0} tasks` },
+    ],
+  },
+
+  [SMALL_CARD_TYPES.COMPLETED_TASKS]: {
+    title: "Completed Tasks",
+    subtitle: "This month",
+    description: "Tasks completed",
+    icon: Icons.generic.check,
+    color: "green",
+    getValue: (data) => {
+      const tasks = data.tasks ?? [];
+      return tasks.filter((t) => t.status === "completed" || t.status === "done").length.toString();
+    },
+    getStatus: () => "Done",
+    getDetails: (data) => {
+      const tasks = data.tasks ?? [];
+      const completed = tasks.filter((t) => t.status === "completed" || t.status === "done");
+      return [
+        { label: "Completed", value: `${completed.length} tasks` },
+        { label: "Total", value: `${tasks.length} tasks` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.PENDING_TASKS]: {
+    title: "Pending Tasks",
+    subtitle: "This month",
+    description: "Tasks pending",
+    icon: Icons.generic.clock,
+    color: "amber",
+    getValue: (data) => {
+      const tasks = data.tasks ?? [];
+      return tasks.filter((t) => t.status === "todo" || t.status === "in-progress").length.toString();
+    },
+    getStatus: () => "Pending",
+    getDetails: (data) => {
+      const tasks = data.tasks ?? [];
+      const pending = tasks.filter((t) => t.status === "todo" || t.status === "in-progress");
+      return [
+        { label: "Pending", value: `${pending.length} tasks` },
+        { label: "Total", value: `${tasks.length} tasks` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.ACTIVE_REPORTERS]: {
+    title: "Active Reporters",
+    subtitle: "This month",
+    description: "Reporters assigned",
+    icon: Icons.admin.reporters,
+    color: "purple",
+    getValue: (data) => {
+      // Placeholder - would need to count unique reporters from tasks
+      const reporterCount = data.reporterCount ?? data.reporters?.length ?? 0;
+      return reporterCount.toString();
+    },
+    getStatus: () => "Active",
+    getDetails: (data) => [
+      { label: "Reporters", value: `${data.reporterCount ?? data.reporters?.length ?? 0} active` },
+    ],
+  },
+
+  [SMALL_CARD_TYPES.DELIVERABLES]: {
+    title: "Deliverables",
+    subtitle: "This month",
+    description: "Deliverables linked",
+    icon: Icons.generic.deliverable,
+    color: "soft_purple",
+    getValue: (data) => {
+      // Placeholder - would need to count deliverables from tasks
+      const deliverableCount = data.deliverableCount ?? data.deliverables?.length ?? 0;
+      return deliverableCount.toString();
+    },
+    getStatus: () => "Linked",
+    getDetails: (data) => [
+      { label: "Deliverables", value: `${data.deliverableCount ?? data.deliverables?.length ?? 0} linked` },
+    ],
+  },
+
+  // Food Department Cards
+  [SMALL_CARD_TYPES.TOTAL_ORDERS]: {
+    title: "Total Orders",
+    subtitle: "This month",
+    description: "All orders",
+    icon: Icons.generic.calendar,
+    color: "blue",
+    getValue: (data) => (data.orders?.length ?? data.ordersCount ?? 0).toString(),
+    getStatus: () => "Current month",
+    getDetails: (data) => [
+      { label: "Total", value: `${data.orders?.length ?? data.ordersCount ?? 0} orders` },
+    ],
+  },
+
+  [SMALL_CARD_TYPES.PENDING_ORDERS]: {
+    title: "Pending Orders",
+    subtitle: "This month",
+    description: "Orders pending",
+    icon: Icons.generic.clock,
+    color: "amber",
+    getValue: (data) => {
+      const orders = data.orders ?? [];
+      return orders.filter((o) => o.status === "pending").length.toString();
+    },
+    getStatus: () => "Pending",
+    getDetails: (data) => {
+      const orders = data.orders ?? [];
+      const pending = orders.filter((o) => o.status === "pending");
+      return [
+        { label: "Pending", value: `${pending.length} orders` },
+        { label: "Total", value: `${orders.length} orders` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.COMPLETED_ORDERS]: {
+    title: "Completed Orders",
+    subtitle: "This month",
+    description: "Orders completed",
+    icon: Icons.generic.check,
+    color: "green",
+    getValue: (data) => {
+      const orders = data.orders ?? [];
+      return orders.filter((o) => o.status === "completed" || o.status === "delivered").length.toString();
+    },
+    getStatus: () => "Completed",
+    getDetails: (data) => {
+      const orders = data.orders ?? [];
+      const completed = orders.filter((o) => o.status === "completed" || o.status === "delivered");
+      return [
+        { label: "Completed", value: `${completed.length} orders` },
+        { label: "Total", value: `${orders.length} orders` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.MY_ORDERS]: {
+    title: "My Orders",
+    subtitle: "This month",
+    description: "Your orders",
+    icon: Icons.generic.user,
+    color: "pink",
+    getValue: (data) => {
+      const orders = data.orders ?? [];
+      const currentUserId = data.currentUser?.id;
+      if (!currentUserId) return "0";
+      return orders.filter((o) => o.userId === currentUserId || o.user_id === currentUserId).length.toString();
+    },
+    getStatus: () => "Your orders",
+    getDetails: (data) => {
+      const orders = data.orders ?? [];
+      const currentUserId = data.currentUser?.id;
+      const myOrders = currentUserId
+        ? orders.filter((o) => o.userId === currentUserId || o.user_id === currentUserId)
+        : [];
+      return [
+        { label: "Your orders", value: `${myOrders.length} orders` },
+        { label: "Total", value: `${orders.length} orders` },
+      ];
+    },
+  },
+
+  // Customer Support Cards (similar to Design but with different labels)
+  [SMALL_CARD_TYPES.OPEN_TICKETS]: {
+    title: "Open Tickets",
+    subtitle: "All time",
+    description: "Tasks with status todo",
+    icon: Icons.generic.task,
+    color: "red",
+    getValue: (data) => {
+      const tasks = data.tasks ?? [];
+      return tasks.filter((t) => t.status === "todo").length.toString();
+    },
+    getStatus: () => "Open",
+    getDetails: (data) => {
+      const tasks = data.tasks ?? [];
+      const open = tasks.filter((t) => t.status === "todo");
+      return [
+        { label: "Open", value: `${open.length} tickets` },
+        { label: "Total", value: `${tasks.length} tasks` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.RESOLVED]: {
+    title: "Resolved",
+    subtitle: "All time",
+    description: "Tasks completed",
+    icon: Icons.generic.check,
+    color: "green",
+    getValue: (data) => {
+      const tasks = data.tasks ?? [];
+      return tasks.filter((t) => t.status === "completed" || t.status === "done").length.toString();
+    },
+    getStatus: () => "Resolved",
+    getDetails: (data) => {
+      const tasks = data.tasks ?? [];
+      const resolved = tasks.filter((t) => t.status === "completed" || t.status === "done");
+      return [
+        { label: "Resolved", value: `${resolved.length} tickets` },
+        { label: "Total", value: `${tasks.length} tasks` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.IN_PROGRESS]: {
+    title: "In Progress",
+    subtitle: "All time",
+    description: "Tasks in progress",
+    icon: Icons.generic.clock,
+    color: "amber",
+    getValue: (data) => {
+      const tasks = data.tasks ?? [];
+      return tasks.filter((t) => t.status === "in-progress").length.toString();
+    },
+    getStatus: () => "In progress",
+    getDetails: (data) => {
+      const tasks = data.tasks ?? [];
+      const inProgress = tasks.filter((t) => t.status === "in-progress");
+      return [
+        { label: "In progress", value: `${inProgress.length} tickets` },
+        { label: "Total", value: `${tasks.length} tasks` },
+      ];
+    },
+  },
+
+  [SMALL_CARD_TYPES.ASSIGNED_TO_ME]: {
+    title: "Assigned to Me",
+    subtitle: "All time",
+    description: "Your tasks",
+    icon: Icons.generic.user,
+    color: "pink",
+    getValue: (data) => {
+      const tasks = data.tasks ?? [];
+      const currentUserId = data.currentUser?.id;
+      if (!currentUserId) return "0";
+      return tasks.filter((t) => t.assigneeId === currentUserId || t.assignee_id === currentUserId).length.toString();
+    },
+    getStatus: () => "Your tasks",
+    getDetails: (data) => {
+      const tasks = data.tasks ?? [];
+      const currentUserId = data.currentUser?.id;
+      const myTasks = currentUserId
+        ? tasks.filter((t) => t.assigneeId === currentUserId || t.assignee_id === currentUserId)
+        : [];
+      return [
+        { label: "Your tasks", value: `${myTasks.length} tasks` },
+        { label: "Total", value: `${tasks.length} tasks` },
+      ];
+    },
+  },
 };
 
 /** Resolve config field: function(data) or static value. */
@@ -297,21 +559,33 @@ export const createCards = (data, mode = "main") => {
   } else {
     switch (mode) {
       case "main":
+        // Design Department Cards (per architecture doc)
         cardTypes = [
-          SMALL_CARD_TYPES.USER_PROFILE,
-          SMALL_CARD_TYPES.ACTIONS,
-          SMALL_CARD_TYPES.USER_FILTER,
-          SMALL_CARD_TYPES.PERFORMANCE,
-          SMALL_CARD_TYPES.EFFICIENCY,
+          SMALL_CARD_TYPES.TOTAL_TASKS,
+          SMALL_CARD_TYPES.COMPLETED_TASKS,
+          SMALL_CARD_TYPES.PENDING_TASKS,
+          SMALL_CARD_TYPES.ACTIVE_REPORTERS,
+          SMALL_CARD_TYPES.DELIVERABLES,
         ];
         break;
       case "food":
+        // Food Department Cards (per architecture doc)
         cardTypes = [
-          SMALL_CARD_TYPES.USER_PROFILE,
-          SMALL_CARD_TYPES.FOOD_ORDER_BOARD,
-          SMALL_CARD_TYPES.FOOD_ORDERS,
+          SMALL_CARD_TYPES.TOTAL_ORDERS,
+          SMALL_CARD_TYPES.PENDING_ORDERS,
+          SMALL_CARD_TYPES.COMPLETED_ORDERS,
+          SMALL_CARD_TYPES.MY_ORDERS,
           SMALL_CARD_TYPES.FOOD_HISTORY,
-          SMALL_CARD_TYPES.PERFORMANCE,
+        ];
+        break;
+      case "customer-support":
+        // Customer Support Cards (per architecture doc)
+        cardTypes = [
+          SMALL_CARD_TYPES.TOTAL_TASKS,
+          SMALL_CARD_TYPES.OPEN_TICKETS,
+          SMALL_CARD_TYPES.RESOLVED,
+          SMALL_CARD_TYPES.IN_PROGRESS,
+          SMALL_CARD_TYPES.ASSIGNED_TO_ME,
         ];
         break;
       default:

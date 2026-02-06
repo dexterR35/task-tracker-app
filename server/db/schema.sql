@@ -3,20 +3,22 @@
 -- Run: psql -d task_tracker -f server/db/schema.sql  (or psql "$DATABASE_URL" -f server/db/schema.sql)
 -- WARNING: Drops all tables and recreates them, then seeds departments + users + profiles. All data is lost.
 --
--- Tables (order matters for DROP):
---   departments  – Departments (Design, Food, etc.); id, name only (no slug); users belong to one via users.department_id
---   users        – Auth + department (email, password_hash, role, department_id, is_active)
---   profiles     – One per user (name, office, job_position, etc.); no department (lives in users)
---   refresh_tokens – Sessions: SHA-256 hash of refresh token, user_id, expires_at, user_agent, ip
---   task_boards  – Monthly Board (parent bucket): id, department_id, year, month, month_name, created_at
---   tasks        – Child of task_boards: id, board_id (FK), title, status, assignee_id, …
---   order_boards – Monthly Board (parent bucket): id, department_id, year, month, month_name, created_at
---   orders       – Child of order_boards: id, board_id (FK), user_id, order_date, summary, status, …
---   task_history – History of task actions; references auth user (user_id); Design department
---   order_history – History of order actions; references auth user (user_id); Food department
+-- Database Structure:
+--   - Users with manager hierarchy (manager_id self-reference)
+--   - Roles: admin, user, super-user (super-user sees all departments)
+--   - Departments: Design, Food, Customer Support
+--   - Monthly boards: task_boards, order_boards, dashboard_boards
+--   - Tasks with reporters and deliverables
+--   - Orders (Food department only, no reporters, no deliverables)
+--   - Scalable structure for easy table additions and relations
 -- =============================================================================
 
 -- Drop existing tables (reverse dependency order)
+DROP TABLE IF EXISTS task_deliverables;
+DROP TABLE IF EXISTS task_reporters;
+DROP TABLE IF EXISTS deliverables_settings;
+DROP TABLE IF EXISTS reporters;
+DROP TABLE IF EXISTS dashboard_boards;
 DROP TABLE IF EXISTS task_history;
 DROP TABLE IF EXISTS order_history;
 DROP TABLE IF EXISTS orders;
@@ -29,7 +31,7 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS departments;
 
 -- =============================================================================
--- DEPARTMENTS: Design, Customer Support, Food, etc. (users belong to one); name only (no slug)
+-- DEPARTMENTS: Design, Customer Support, Food, etc. (users belong to one)
 -- =============================================================================
 CREATE TABLE departments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,22 +49,46 @@ INSERT INTO departments (name) VALUES
   ('Customer Support');
 
 -- =============================================================================
--- AUTH: users (login + department; set department when creating user)
+-- AUTH: users (login + department + manager hierarchy)
+-- Roles: 
+--   - 'admin' (sees all data in their department)
+--   - 'user' (sees own data)
+--   - 'super-user' (sees ALL data in the app - ALL departments, ALL users, ALL tasks, ALL orders, etc.)
+-- Manager: manager_id references users(id) - self-referential for hierarchy
+-- IMPORTANT: manager_id is MANDATORY for 'admin' role - admins must have a manager
+-- If manager_id is set and user is admin, they can see all department data where they manage
+-- Super-user has NO restrictions - full access to everything in the application
+--
+-- DEPARTMENT ASSIGNMENT:
+--   - department_id is MANDATORY (NOT NULL) - every user MUST be assigned to a department
+--   - When creating a user, you MUST select/assign a department (department_id)
+--   - The user will be REFERENCED to that department via department_id FK
+--   - The user will be AUTHENTICATED in that department - login requires department_id
+--   - After login, user's access is SCOPED to their assigned department
+--   - User's dashboard, sidebar, and data are filtered by their department_id
+--   - Cannot delete a department if users reference it (ON DELETE RESTRICT)
 -- =============================================================================
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+  role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user', 'super-user')),
   department_id UUID NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+  manager_id UUID REFERENCES users(id) ON DELETE SET NULL,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT check_manager_not_self CHECK (manager_id != id),
+  CONSTRAINT check_admin_has_manager CHECK (
+    (role = 'admin' AND manager_id IS NOT NULL) OR 
+    (role != 'admin')
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_department_id ON users(department_id);
+CREATE INDEX IF NOT EXISTS idx_users_manager_id ON users(manager_id);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
 -- =============================================================================
@@ -107,8 +133,45 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expir
 CREATE UNIQUE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 
 -- =============================================================================
+-- REPORTERS: People assigned to tasks (when task is added)
+-- Scalable: Can be extended with additional fields (email, department, etc.)
+-- =============================================================================
+CREATE TABLE reporters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reporters_name ON reporters(name);
+CREATE INDEX IF NOT EXISTS idx_reporters_department_id ON reporters(department_id);
+CREATE INDEX IF NOT EXISTS idx_reporters_is_active ON reporters(is_active);
+
+-- =============================================================================
+-- DELIVERABLES SETTINGS: Name and time settings, related to tasks
+-- Scalable: Can be extended with additional fields (description, priority, etc.)
+-- =============================================================================
+CREATE TABLE deliverables_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  estimated_time_hours DECIMAL(10, 2),
+  description TEXT,
+  department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_deliverables_settings_name ON deliverables_settings(name);
+CREATE INDEX IF NOT EXISTS idx_deliverables_settings_department_id ON deliverables_settings(department_id);
+CREATE INDEX IF NOT EXISTS idx_deliverables_settings_is_active ON deliverables_settings(is_active);
+
+-- =============================================================================
 -- TASK BOARDS: Monthly Board (parent "bucket" per department per month)
--- id, department_id, year, month, month_name, created_by, status, start_date, end_date, created_at
+-- Each department has a task board for each month/year
 -- =============================================================================
 CREATE TABLE task_boards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -132,11 +195,12 @@ CREATE INDEX IF NOT EXISTS idx_task_boards_status ON task_boards(status);
 
 -- =============================================================================
 -- TASKS: child of task_boards (board_id FK); work item tied to a specific month
--- id, board_id, title, status, assignee_id, description, due_date, position
+-- Each user can put/create tasks
 -- =============================================================================
 CREATE TABLE tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   board_id UUID NOT NULL REFERENCES task_boards(id) ON DELETE CASCADE,
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   assignee_id UUID REFERENCES users(id) ON DELETE SET NULL,
   title VARCHAR(255) NOT NULL,
   description TEXT,
@@ -148,12 +212,74 @@ CREATE TABLE tasks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_board_id ON tasks(board_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by);
 CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
 -- =============================================================================
+-- TASK_REPORTERS: Junction table - Many-to-Many relationship
+-- Links tasks to reporters (people assigned when task is added)
+-- Scalable: Easy to add additional fields (assigned_at, role, etc.)
+-- =============================================================================
+CREATE TABLE task_reporters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  reporter_id UUID NOT NULL REFERENCES reporters(id) ON DELETE CASCADE,
+  assigned_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (task_id, reporter_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_reporters_task_id ON task_reporters(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_reporters_reporter_id ON task_reporters(reporter_id);
+CREATE INDEX IF NOT EXISTS idx_task_reporters_assigned_at ON task_reporters(assigned_at);
+
+-- =============================================================================
+-- TASK_DELIVERABLES: Junction table - Many-to-Many relationship
+-- Links tasks to deliverables_settings (name and time)
+-- Scalable: Easy to add additional fields (completed_at, actual_time, etc.)
+-- =============================================================================
+CREATE TABLE task_deliverables (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  deliverable_id UUID NOT NULL REFERENCES deliverables_settings(id) ON DELETE CASCADE,
+  actual_time_hours DECIMAL(10, 2),
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (task_id, deliverable_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_deliverables_task_id ON task_deliverables(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_deliverables_deliverable_id ON task_deliverables(deliverable_id);
+CREATE INDEX IF NOT EXISTS idx_task_deliverables_completed_at ON task_deliverables(completed_at);
+
+-- =============================================================================
+-- DASHBOARD BOARDS: Monthly Dashboard Board (per department per month)
+-- Shared dashboard board for all departments, filtered by auth/department
+-- =============================================================================
+CREATE TABLE dashboard_boards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+  year SMALLINT NOT NULL,
+  month SMALLINT NOT NULL,
+  month_name VARCHAR(100),
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  status VARCHAR(50) NOT NULL DEFAULT 'active',
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (department_id, year, month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dashboard_boards_department_id ON dashboard_boards(department_id);
+CREATE INDEX IF NOT EXISTS idx_dashboard_boards_year_month ON dashboard_boards(year, month);
+CREATE INDEX IF NOT EXISTS idx_dashboard_boards_created_by ON dashboard_boards(created_by);
+CREATE INDEX IF NOT EXISTS idx_dashboard_boards_status ON dashboard_boards(status);
+
+-- =============================================================================
 -- ORDER BOARDS: Monthly Board (parent "bucket" per department per month) – Food
--- id, department_id, year, month, month_name, created_by, status, start_date, end_date, created_at
+-- Only for Food department
 -- =============================================================================
 CREATE TABLE order_boards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -177,7 +303,8 @@ CREATE INDEX IF NOT EXISTS idx_order_boards_status ON order_boards(status);
 
 -- =============================================================================
 -- ORDERS: child of order_boards (board_id FK); order tied to a specific month
--- id, board_id, user_id, order_date, summary, items, status
+-- Food department only - no reporters, no deliverables relation
+-- Only users with department Food and managers/admins can access
 -- =============================================================================
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -232,19 +359,32 @@ CREATE INDEX IF NOT EXISTS idx_order_history_created_at ON order_history(created
 
 -- =============================================================================
 -- SEED: departments (above) + users + profiles (bcrypt via pgcrypto)
--- Passwords: admin123 (admins), user123 (users). One admin + one user per department.
+-- Passwords: admin123 (admins), user123 (users), super123 (super-user)
+-- One admin + one user per department + one super-user
 -- =============================================================================
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-INSERT INTO users (email, password_hash, role, department_id)
+-- Insert users (super-user first, then admins, then regular users)
+-- Super-user has no manager (top level)
+INSERT INTO users (email, password_hash, role, department_id, manager_id)
 VALUES
-  ('admin-design@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Design')),
-  ('user-design@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Design')),
-  ('admin-customer-support@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Customer Support')),
-  ('user-customer-support@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Customer Support')),
-  ('admin-food@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Food')),
-  ('user-food@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Food'));
+  ('super-user@netbet.ro', crypt('super123', gen_salt('bf')), 'super-user', (SELECT id FROM departments WHERE name = 'Design'), NULL);
 
+-- Admins must have a manager_id (they report to super-user)
+INSERT INTO users (email, password_hash, role, department_id, manager_id)
+VALUES
+  ('admin-design@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Design'), (SELECT id FROM users WHERE email = 'super-user@netbet.ro')),
+  ('admin-customer-support@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Customer Support'), (SELECT id FROM users WHERE email = 'super-user@netbet.ro')),
+  ('admin-food@netbet.ro', crypt('admin123', gen_salt('bf')), 'admin', (SELECT id FROM departments WHERE name = 'Food'), (SELECT id FROM users WHERE email = 'super-user@netbet.ro'));
+
+-- Regular users report to their department admin
+INSERT INTO users (email, password_hash, role, department_id, manager_id)
+VALUES
+  ('user-design@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Design'), (SELECT id FROM users WHERE email = 'admin-design@netbet.ro' AND role = 'admin')),
+  ('user-customer-support@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Customer Support'), (SELECT id FROM users WHERE email = 'admin-customer-support@netbet.ro' AND role = 'admin')),
+  ('user-food@netbet.ro', crypt('user123', gen_salt('bf')), 'user', (SELECT id FROM departments WHERE name = 'Food'), (SELECT id FROM users WHERE email = 'admin-food@netbet.ro' AND role = 'admin'));
+
+-- Insert profiles
 INSERT INTO profiles (user_id, name)
 SELECT u.id, v.display_name
 FROM (VALUES
@@ -253,6 +393,35 @@ FROM (VALUES
   ('admin-customer-support@netbet.ro', 'Admin (customer-support)'),
   ('user-customer-support@netbet.ro', 'User (customer-support)'),
   ('admin-food@netbet.ro', 'Admin (food)'),
-  ('user-food@netbet.ro', 'User (food)')
+  ('user-food@netbet.ro', 'User (food)'),
+  ('super-user@netbet.ro', 'Super User')
 ) AS v(email, display_name)
 JOIN users u ON u.email = v.email;
+
+-- Seed sample reporters
+INSERT INTO reporters (name, email, department_id)
+SELECT 
+  v.name,
+  v.email,
+  d.id
+FROM (VALUES
+  ('John Reporter', 'john.reporter@netbet.ro', 'Design'),
+  ('Jane Reporter', 'jane.reporter@netbet.ro', 'Design'),
+  ('Bob Reporter', 'bob.reporter@netbet.ro', 'Customer Support')
+) AS v(name, email, dept_name)
+JOIN departments d ON d.name = v.dept_name;
+
+-- Seed sample deliverables settings
+INSERT INTO deliverables_settings (name, estimated_time_hours, description, department_id)
+SELECT 
+  v.name,
+  v.hours,
+  v.description,
+  d.id
+FROM (VALUES
+  ('Design Mockup', 8.0, 'Create design mockup', 'Design'),
+  ('Code Review', 2.0, 'Review code changes', 'Design'),
+  ('Testing', 4.0, 'Perform testing', 'Design'),
+  ('Documentation', 3.0, 'Write documentation', 'Customer Support')
+) AS v(name, hours, description, dept_name)
+JOIN departments d ON d.name = v.dept_name;

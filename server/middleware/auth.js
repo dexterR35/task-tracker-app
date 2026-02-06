@@ -8,28 +8,52 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 import { authLogger } from '../utils/authLogger.js';
 import { toAuthUser } from '../utils/userMappers.js';
+import { logger } from '../utils/logger.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_SECRET_PREVIOUS = process.env.JWT_SECRET_PREVIOUS;
 
 const LOG_JWT_FAILURES = process.env.LOG_JWT_FAILURES === 'true' || process.env.LOG_JWT_FAILURES === '1';
 
-/** Shared JWT verification (key rotation supported). Used by HTTP middleware and Socket.IO. */
+/**
+ * Production-ready JWT verification with key rotation support
+ * Validates issuer and audience for additional security
+ */
 export function verifyToken(token, options = {}) {
+  if (!token || typeof token !== 'string') {
+    throw new Error('Token is required');
+  }
+
+  // Production security: validate issuer and audience
+  const verifyOptions = {
+    ...options,
+    issuer: process.env.JWT_ISSUER || 'task-tracker-api',
+    audience: process.env.JWT_AUDIENCE || 'task-tracker-client',
+  };
+
   try {
-    return jwt.verify(token, JWT_SECRET, options);
+    return jwt.verify(token, JWT_SECRET, verifyOptions);
   } catch (err) {
     if (LOG_JWT_FAILURES) {
-      console.warn('[auth] JWT verification failed', { reason: err.message, name: err.name });
+      logger.warn('[auth] JWT verification failed', { 
+        reason: err.message, 
+        name: err.name,
+        code: err.code,
+      });
     }
+    
+    // Key rotation: try previous secret if current fails
     if (JWT_SECRET_PREVIOUS && (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError')) {
       try {
-        return jwt.verify(token, JWT_SECRET_PREVIOUS, options);
+        return jwt.verify(token, JWT_SECRET_PREVIOUS, verifyOptions);
       } catch (prevErr) {
         if (LOG_JWT_FAILURES) {
-          console.warn('[auth] JWT verification with previous secret also failed', { reason: prevErr.message });
+          logger.warn('[auth] JWT verification with previous secret also failed', { 
+            reason: prevErr.message,
+            code: prevErr.code,
+          });
         }
-        throw err;
+        throw err; // Throw original error
       }
     }
     throw err;
@@ -72,37 +96,107 @@ export async function getUserFromToken(token, opts = {}) {
   return toAuthUser(row);
 }
 
+/**
+ * Production-ready authentication middleware
+ * Validates JWT token, sets req.user, enforces department requirement
+ */
 export const authenticate = async (req, res, next) => {
   try {
+    // Extract token from Authorization header
     const authHeader = req.headers.authorization;
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) {
+    if (!authHeader || typeof authHeader !== 'string') {
       authLogger.authenticateFail(req, 'NO_TOKEN', 'Access denied. No token provided.');
-      return res.status(401).json({ error: 'Access denied. No token provided.', code: 'NO_TOKEN' });
+      return res.status(401).json({ 
+        error: 'Access denied. No token provided.', 
+        code: 'NO_TOKEN' 
+      });
     }
+
+    // Validate Bearer format
+    if (!authHeader.startsWith('Bearer ')) {
+      authLogger.authenticateFail(req, 'INVALID_FORMAT', 'Invalid authorization header format.');
+      return res.status(401).json({ 
+        error: 'Invalid authorization header format. Use: Bearer <token>', 
+        code: 'INVALID_FORMAT' 
+      });
+    }
+
+    const token = authHeader.slice(7).trim();
+    
+    // Basic token validation
+    if (!token || token.length < 10) {
+      authLogger.authenticateFail(req, 'TOKEN_INVALID', 'Token is too short or invalid.');
+      return res.status(401).json({ 
+        error: 'Invalid token.', 
+        code: 'TOKEN_INVALID' 
+      });
+    }
+
+    // Get user from token (validates JWT and fetches user from DB)
     req.user = await getUserFromToken(token);
+    
+    // Security: Ensure user has department (mandatory)
+    if (!req.user.departmentId) {
+      authLogger.authenticateFail(req, 'NO_DEPARTMENT', 'User must have a department.');
+      return res.status(403).json({ 
+        error: 'Account must be assigned to a department. Contact admin.', 
+        code: 'NO_DEPARTMENT' 
+      });
+    }
+
     next();
   } catch (err) {
+    // Handle specific JWT errors
     if (err.name === 'JsonWebTokenError') {
       authLogger.authenticateFail(req, 'TOKEN_INVALID', err.message);
-      return res.status(401).json({ error: 'Invalid token.', code: 'TOKEN_INVALID' });
+      return res.status(401).json({ 
+        error: 'Invalid token.', 
+        code: 'TOKEN_INVALID' 
+      });
     }
+    
     if (err.name === 'TokenExpiredError') {
       authLogger.authenticateFail(req, 'TOKEN_EXPIRED', err.message);
-      return res.status(401).json({ error: 'Token expired.', code: 'TOKEN_EXPIRED' });
+      return res.status(401).json({ 
+        error: 'Token expired.', 
+        code: 'TOKEN_EXPIRED' 
+      });
     }
+
+    if (err.name === 'NotBeforeError') {
+      authLogger.authenticateFail(req, 'TOKEN_NOT_ACTIVE', err.message);
+      return res.status(401).json({ 
+        error: 'Token not yet active.', 
+        code: 'TOKEN_NOT_ACTIVE' 
+      });
+    }
+
+    // Handle custom errors
     if (err.message === 'Authentication not configured.') {
       authLogger.authenticateFail(req, 'AUTH_NOT_CONFIGURED', err.message);
-      return res.status(503).json({ error: 'Authentication not configured.', code: 'AUTH_NOT_CONFIGURED' });
+      return res.status(503).json({ 
+        error: 'Authentication not configured.', 
+        code: 'AUTH_NOT_CONFIGURED' 
+      });
     }
+
     if (err.message === 'User not found or inactive.') {
       authLogger.authenticateFail(req, 'USER_INACTIVE', err.message);
-      return res.status(401).json({ error: 'User not found or inactive.', code: 'USER_INACTIVE' });
+      return res.status(401).json({ 
+        error: 'User not found or inactive.', 
+        code: 'USER_INACTIVE' 
+      });
     }
+
     if (err.message === 'User must have a department.') {
       authLogger.authenticateFail(req, 'NO_DEPARTMENT', err.message);
-      return res.status(403).json({ error: 'Account must be assigned to a department. Contact admin.', code: 'NO_DEPARTMENT' });
+      return res.status(403).json({ 
+        error: 'Account must be assigned to a department. Contact admin.', 
+        code: 'NO_DEPARTMENT' 
+      });
     }
+
+    // Pass unknown errors to error handler
     next(err);
   }
 };
@@ -132,7 +226,7 @@ export const optionalAuthenticate = async (req, res, next) => {
     const row = result.rows[0];
     if (!row || !row.is_active) return next();
     if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-      console.warn('[optionalAuth] Expired token used', {
+      logger.warn('[optionalAuth] Expired token used', {
         userId: row.id,
         role: row.role,
         exp: new Date(decoded.exp * 1000).toISOString(),
@@ -163,35 +257,72 @@ export const requireRole = (...roles) => (req, res, next) => {
  * Use after authenticate. req.user.departmentSlug must be set.
  */
 
-/** Allow only users whose department slug matches. E.g. requireDepartmentSlug('food') for orders API. */
+/**
+ * Production-ready department slug guard
+ * Allow only users whose department slug matches
+ * E.g. requireDepartmentSlug('food') for orders API
+ */
 export const requireDepartmentSlug = (slug) => (req, res, next) => {
   if (!req.user) {
     authLogger.authorizeFail(req, 'UNAUTHORIZED', null, null);
-    return res.status(401).json({ error: 'Unauthorized.', code: 'UNAUTHORIZED' });
+    return res.status(401).json({ 
+      error: 'Unauthorized.', 
+      code: 'UNAUTHORIZED' 
+    });
   }
+
+  // Validate slug parameter
+  if (!slug || typeof slug !== 'string') {
+    logger.error('[requireDepartmentSlug] Invalid slug parameter', { slug });
+    return res.status(500).json({ 
+      error: 'Server configuration error.', 
+      code: 'SERVER_ERROR' 
+    });
+  }
+
   const userSlug = req.user.departmentSlug ?? '';
-  if (userSlug !== slug) {
+  if (userSlug !== slug.toLowerCase().trim()) {
     authLogger.authorizeFail(req, 'WRONG_DEPARTMENT', req.user.id, req.user.role);
     return res.status(403).json({
       error: 'Access allowed only for this department.',
       code: 'WRONG_DEPARTMENT',
+      requiredDepartment: slug,
+      userDepartment: userSlug || 'none',
     });
   }
   next();
 };
 
-/** Reject users whose department slug matches. E.g. rejectDepartmentSlug('food') for task-boards/tasks API. */
+/**
+ * Production-ready department slug rejection guard
+ * Reject users whose department slug matches
+ * E.g. rejectDepartmentSlug('food') for task-boards/tasks API
+ */
 export const rejectDepartmentSlug = (slug) => (req, res, next) => {
   if (!req.user) {
     authLogger.authorizeFail(req, 'UNAUTHORIZED', null, null);
-    return res.status(401).json({ error: 'Unauthorized.', code: 'UNAUTHORIZED' });
+    return res.status(401).json({ 
+      error: 'Unauthorized.', 
+      code: 'UNAUTHORIZED' 
+    });
   }
+
+  // Validate slug parameter
+  if (!slug || typeof slug !== 'string') {
+    logger.error('[rejectDepartmentSlug] Invalid slug parameter', { slug });
+    return res.status(500).json({ 
+      error: 'Server configuration error.', 
+      code: 'SERVER_ERROR' 
+    });
+  }
+
   const userSlug = req.user.departmentSlug ?? '';
-  if (userSlug === slug) {
+  if (userSlug === slug.toLowerCase().trim()) {
     authLogger.authorizeFail(req, 'WRONG_DEPARTMENT', req.user.id, req.user.role);
     return res.status(403).json({
-      error: 'This department uses a different app (orders).',
+      error: 'This department uses a different app. Please use the correct department interface.',
       code: 'WRONG_DEPARTMENT',
+      userDepartment: userSlug,
     });
   }
   next();
