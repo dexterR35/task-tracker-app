@@ -21,9 +21,9 @@ const HomePage = () => {
   const categories = [
     { name: "Manage Deparments", type: "Kaban_Boards", status: "Connected" },
     { name: "Monthly Analytics", type: "calculated_reports", status: "LIVE" },
-    { name: "Performance Reports", type: "active_sessions", status: "STABLE" },
-    { name: "Task Tracker", type: "operation_boards", status: "STABLE" },
-    { name: "Food Orders", type: "fulfillment_stream", status: "ACTIVE" },
+    { name: "Performance Reports", type: "active_sessions", status: "Pending" },
+    { name: "Task Tracker", type: "operation_boards", status: "Pending" },
+    { name: "Food Orders", type: "fulfillment_stream", status: "In Progress" },
     { name: "Export Data", type: "pdf_generator", status: "READY" },
   ];
 
@@ -118,7 +118,7 @@ const app_config_name = "Xync"
               </button>
             </div>
            
-            <div className="flex flex-col gap-4 mt-16">
+            <div className="flex flex-col gap-4 mt-16 invisible">
             <span className="text-slate-300 font-black uppercase tracking-[0.2em] text-[11px]">Community Information:</span>
             <div className="space-y-2 text-[10px]">
                 <div className="flex justify-between border-b border-white/5 pb-1">

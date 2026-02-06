@@ -1,11 +1,11 @@
 
 export const APP_CONFIG = {
-  NAME: 'SYNC', // App name - change this to sync across all titles and meta tags
-  FULL_NAME: 'SYNC Task Management & Analytics', // Full app name for titles
+  NAME: 'Xync', // App name - change this to sync across all titles and meta tags
+  FULL_NAME: 'Xync Hub', // Full app name for titles
   VERSION: '1.0.0',
-  DESCRIPTION: 'A modern task tracking application with advanced analytics, team collaboration, and performance monitoring.',
-  COMPANY: 'NetBet',
-  SUPPORT_EMAIL: 'support@netbet.ro',
+  DESCRIPTION: 'Connected people like Nokia',
+  COMPANY: 'IC',
+  SUPPORT_EMAIL: 'support@ic.ro',
   DEFAULT_LOCALE: 'en-US', // US language
   DEFAULT_TIMEZONE: 'Europe/Bucharest', // Romanian timezone
   CALENDAR_WEEK_START: 1, // Monday (Romanian calendar behavior)
