@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
+import { Provider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import createRouter from '@/app/router';
+import { store } from '@/store/store';
 import { DarkModeProvider } from '@/context/DarkModeProvider';
 import { AppDataProvider } from '@/context/AppDataContext';
 import { SelectedDepartmentProvider } from '@/context/SelectedDepartmentContext';
@@ -22,20 +24,22 @@ const RouterWrapper = () => {
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <DarkModeProvider>
-        <AppDataProvider>
-          <SelectedDepartmentProvider>
-            <RouterWrapper />
-            <Toaster
-              position="top-center"
-              toastOptions={{ duration: 3000 }}
-              containerStyle={{ zIndex: 9999 }}
-            />
-          </SelectedDepartmentProvider>
-        </AppDataProvider>
-      </DarkModeProvider>
-    </ErrorBoundary>
+    <Provider store={store}>
+      <ErrorBoundary>
+        <DarkModeProvider>
+          <AppDataProvider>
+            <SelectedDepartmentProvider>
+              <RouterWrapper />
+              <Toaster
+                position="top-center"
+                toastOptions={{ duration: 3000 }}
+                containerStyle={{ zIndex: 9999 }}
+              />
+            </SelectedDepartmentProvider>
+          </AppDataProvider>
+        </DarkModeProvider>
+      </ErrorBoundary>
+    </Provider>
   );
 };
 

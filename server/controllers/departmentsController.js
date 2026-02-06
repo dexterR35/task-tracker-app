@@ -1,7 +1,3 @@
-/**
- * Departments API - list (PERN)
- * Used for Departments page and dropdowns.
- */
 
 import { query } from '../config/db.js';
 

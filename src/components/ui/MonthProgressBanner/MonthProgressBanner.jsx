@@ -6,7 +6,7 @@ import React, { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
-// APIs imported dynamically to avoid circular dependencies
+import { useGetOrderBoardsQuery, useGetOrdersQuery } from "@/store/api";
 import { Icons } from "@/components/icons";
 import Loader from "@/components/ui/Loader/Loader";
 
@@ -14,109 +14,68 @@ const MonthProgressBanner = ({ variant = "design" }) => {
   const { user } = useAuth();
   const { viewingDepartmentId } = useSelectedDepartment();
   const appData = useAppDataContext();
-  const [data, setData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
 
   const now = useMemo(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth() + 1 };
   }, []);
 
-  // Fetch progress data based on variant
-  React.useEffect(() => {
-    if (!user?.departmentId) {
-      setLoading(false);
-      return;
-    }
+  // RTK Query hooks for food variant
+  const {
+    data: orderBoardsData,
+    isLoading: orderBoardsLoading,
+  } = useGetOrderBoardsQuery(
+    { year: now.year, month: now.month },
+    { skip: variant !== "food" || !user?.departmentId }
+  );
 
-    let cancelled = false;
-    setLoading(true);
+  const firstBoardId = orderBoardsData?.boards?.[0]?.id;
+  const {
+    data: ordersData,
+    isLoading: ordersLoading,
+  } = useGetOrdersQuery(
+    firstBoardId ?? '',
+    { skip: variant !== "food" || !firstBoardId }
+  );
 
-    const fetchProgress = async () => {
-      try {
-        if (variant === "food") {
-          // Food: Fetch order boards for current month, then orders
-          try {
-            const { orderBoardsApi, ordersApi: ordersApiImport } = await import("@/app/api");
-            const boardsData = await orderBoardsApi.list({ year: now.year, month: now.month });
-            const boards = boardsData?.boards ?? [];
-            
-            if (boards.length === 0) {
-              if (!cancelled) {
-                setData({ total: 0, completed: 0, pending: 0, completionRate: 0 });
-                setLoading(false);
-              }
-              return;
-            }
-
-            // Fetch orders from first board
-            const boardId = boards[0].id;
-            const ordersData = await ordersApiImport.list(boardId);
-            const orders = ordersData?.orders ?? [];
-            const completedOrders = orders.filter((o) => o.status === "completed" || o.status === "delivered");
-            const pendingOrders = orders.filter((o) => o.status === "pending");
-            
-            if (!cancelled) {
-              setData({
-                total: orders.length,
-                completed: completedOrders.length,
-                pending: pendingOrders.length,
-                completionRate: orders.length > 0 ? Math.round((completedOrders.length / orders.length) * 100) : 0,
-              });
-            }
-          } catch (err) {
-            console.error("Error fetching food progress:", err);
-            if (!cancelled) {
-              setData({ total: 0, completed: 0, pending: 0, completionRate: 0 });
-            }
-          }
-        } else {
-          // Design/Customer Support: Use tasks from appData or fetch from boards
-          if (appData?.tasks && Array.isArray(appData.tasks)) {
-            const currentMonthTasks = appData.tasks;
-            const completedTasks = currentMonthTasks.filter((t) => t.status === "completed" || t.status === "done");
-            const pendingTasks = currentMonthTasks.filter((t) => t.status === "todo" || t.status === "in-progress");
-            
-            if (!cancelled) {
-              setData({
-                total: currentMonthTasks.length,
-                completed: completedTasks.length,
-                pending: pendingTasks.length,
-                completionRate: currentMonthTasks.length > 0 ? Math.round((completedTasks.length / currentMonthTasks.length) * 100) : 0,
-              });
-            }
-          } else {
-            // Fallback: use empty data
-            if (!cancelled) {
-              setData({
-                total: 0,
-                completed: 0,
-                pending: 0,
-                completionRate: 0,
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching progress data:", error);
-        if (!cancelled) {
-          setData({
-            total: 0,
-            completed: 0,
-            pending: 0,
-            completionRate: 0,
-          });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+  // Compute progress data
+  const data = useMemo(() => {
+    if (variant === "food") {
+      if (orderBoardsLoading || ordersLoading) return null;
+      const orders = ordersData?.orders ?? [];
+      if (orders.length === 0 && orderBoardsData?.boards?.length === 0) {
+        return { total: 0, completed: 0, pending: 0, completionRate: 0 };
       }
-    };
+      const completedOrders = orders.filter((o) => o.status === "completed" || o.status === "delivered");
+      const pendingOrders = orders.filter((o) => o.status === "pending");
+      return {
+        total: orders.length,
+        completed: completedOrders.length,
+        pending: pendingOrders.length,
+        completionRate: orders.length > 0 ? Math.round((completedOrders.length / orders.length) * 100) : 0,
+      };
+    } else {
+      // Design/Customer Support: Use tasks from appData
+      if (appData?.tasks && Array.isArray(appData.tasks)) {
+        const currentMonthTasks = appData.tasks;
+        const completedTasks = currentMonthTasks.filter((t) => t.status === "completed" || t.status === "done");
+        const pendingTasks = currentMonthTasks.filter((t) => t.status === "todo" || t.status === "in-progress");
+        return {
+          total: currentMonthTasks.length,
+          completed: completedTasks.length,
+          pending: pendingTasks.length,
+          completionRate: currentMonthTasks.length > 0 ? Math.round((completedTasks.length / currentMonthTasks.length) * 100) : 0,
+        };
+      }
+      return { total: 0, completed: 0, pending: 0, completionRate: 0 };
+    }
+  }, [variant, orderBoardsLoading, ordersLoading, orderBoardsData, ordersData, appData?.tasks]);
 
-    fetchProgress();
-    return () => { cancelled = true; };
-  }, [variant, user?.departmentId, now.year, now.month, appData?.tasks]);
+  const loading = variant === "food" 
+    ? (orderBoardsLoading || ordersLoading)
+    : false;
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="month-progress-bar mb-6">
         <div className="month-progress-bar-inner">

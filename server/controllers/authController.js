@@ -130,7 +130,7 @@ async function validateRefreshToken(token, _req) {
      JOIN users u ON u.id = rt.user_id
      LEFT JOIN profiles p ON p.user_id = u.id
      LEFT JOIN departments d ON d.id = u.department_id
-     WHERE rt.token = $1 AND rt.expires_at > NOW() AND u.is_active = true AND u.department_id IS NOT NULL`,
+     WHERE rt.token = $1 AND rt.expires_at > NOW() AND u.is_active = true AND (u.department_id IS NOT NULL OR u.role = 'super-user')`,
     [tokenHash]
   );
   const row = r.rows[0];

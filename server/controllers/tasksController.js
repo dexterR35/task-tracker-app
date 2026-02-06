@@ -47,13 +47,22 @@ export async function list(req, res, next) {
 /** GET /api/tasks/:id – get one task (board must belong to department) */
 export async function getOne(req, res, next) {
   try {
-    const taskResult = await query(
-      `SELECT t.id, t.board_id, t.assignee_id, t.title, t.description, t.status, t.due_date, t.position, t.created_at, t.updated_at
+    const departmentId = resolveDepartmentId(req);
+    const isSuperUser = req.user?.role === 'super-user';
+    
+    let sql = `SELECT t.id, t.board_id, t.assignee_id, t.title, t.description, t.status, t.due_date, t.position, t.created_at, t.updated_at
        FROM tasks t
        INNER JOIN task_boards b ON b.id = t.board_id
-       WHERE t.id = $1 AND b.department_id = $2`,
-      [req.params.id, resolveDepartmentId(req)]
-    );
+       WHERE t.id = $1`;
+    const params = [req.params.id];
+    
+    // Only filter by department if not super-user
+    if (!isSuperUser && departmentId) {
+      sql += ` AND b.department_id = $2`;
+      params.push(departmentId);
+    }
+    
+    const taskResult = await query(sql, params);
     const row = taskResult.rows[0];
     if (!row) {
       return res.status(404).json({ error: 'Task not found.', code: 'NOT_FOUND' });
@@ -67,10 +76,7 @@ export async function getOne(req, res, next) {
 /** POST /api/tasks – create task. Body: { boardId, title, description?, status?, dueDate?, position?, assigneeId? } */
 export async function create(req, res, next) {
   try {
-    const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
-    }
+    // getBoardIfAllowed handles super-user check, so we don't need to check departmentId here
     const { boardId, title, description, status, dueDate, position, assigneeId } = req.body ?? {};
     if (!boardId || !title?.trim()) {
       return res.status(400).json({ error: 'boardId and title required.', code: 'INVALID_INPUT' });
@@ -114,9 +120,7 @@ export async function create(req, res, next) {
 export async function update(req, res, next) {
   try {
     const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
-    }
+    const isSuperUser = req.user?.role === 'super-user';
     const { title, description, status, dueDate, position, assigneeId } = req.body ?? {};
     const updates = [];
     const values = [];
@@ -150,25 +154,31 @@ export async function update(req, res, next) {
       values.push(assigneeId ?? null);
     }
     if (updates.length === 0) {
-      const existing = await query(
-        `SELECT t.id, t.board_id, t.assignee_id, t.title, t.description, t.status, t.due_date, t.position, t.created_at, t.updated_at
+      // No updates, just fetch existing task
+      let sql = `SELECT t.id, t.board_id, t.assignee_id, t.title, t.description, t.status, t.due_date, t.position, t.created_at, t.updated_at
          FROM tasks t INNER JOIN task_boards b ON b.id = t.board_id
-         WHERE t.id = $1 AND b.department_id = $2`,
-        [req.params.id, departmentId]
-      );
+         WHERE t.id = $1`;
+      const params = [req.params.id];
+      if (!isSuperUser && departmentId) {
+        sql += ` AND b.department_id = $2`;
+        params.push(departmentId);
+      }
+      const existing = await query(sql, params);
       if (!existing.rows[0]) {
         return res.status(404).json({ error: 'Task not found.', code: 'NOT_FOUND' });
       }
       return res.json(toTask(existing.rows[0]));
     }
     updates.push(`updated_at = NOW()`);
-    values.push(req.params.id, departmentId);
-    const result = await query(
-      `UPDATE tasks t SET ${updates.join(', ')}
-       FROM task_boards b WHERE b.id = t.board_id AND t.id = $${idx} AND b.department_id = $${idx + 1}
-       RETURNING t.id, t.board_id, t.assignee_id, t.title, t.description, t.status, t.due_date, t.position, t.created_at, t.updated_at`,
-      values
-    );
+    values.push(req.params.id);
+    let sql = `UPDATE tasks t SET ${updates.join(', ')}
+       FROM task_boards b WHERE b.id = t.board_id AND t.id = $${idx}`;
+    if (!isSuperUser && departmentId) {
+      sql += ` AND b.department_id = $${idx + 1}`;
+      values.push(departmentId);
+    }
+    sql += ` RETURNING t.id, t.board_id, t.assignee_id, t.title, t.description, t.status, t.due_date, t.position, t.created_at, t.updated_at`;
+    const result = await query(sql, values);
     const row = result.rows[0];
     if (!row) {
       return res.status(404).json({ error: 'Task not found.', code: 'NOT_FOUND' });
@@ -185,15 +195,16 @@ export async function update(req, res, next) {
 export async function remove(req, res, next) {
   try {
     const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
+    const isSuperUser = req.user?.role === 'super-user';
+    let sql = `DELETE FROM tasks t USING task_boards b
+       WHERE b.id = t.board_id AND t.id = $1`;
+    const params = [req.params.id];
+    if (!isSuperUser && departmentId) {
+      sql += ` AND b.department_id = $2`;
+      params.push(departmentId);
     }
-    const result = await query(
-      `DELETE FROM tasks t USING task_boards b
-       WHERE b.id = t.board_id AND t.id = $1 AND b.department_id = $2
-       RETURNING t.board_id`,
-      [req.params.id, departmentId]
-    );
+    sql += ` RETURNING t.board_id`;
+    const result = await query(sql, params);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Task not found.', code: 'NOT_FOUND' });
     }

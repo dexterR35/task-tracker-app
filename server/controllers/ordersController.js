@@ -48,16 +48,21 @@ export async function list(req, res, next) {
 export async function getOne(req, res, next) {
   try {
     const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
-    }
-    const result = await query(
-      `SELECT o.id, o.board_id, o.user_id, o.order_date, o.summary, o.items, o.status, o.created_at, o.updated_at
+    const isSuperUser = req.user?.role === 'super-user';
+    
+    let sql = `SELECT o.id, o.board_id, o.user_id, o.order_date, o.summary, o.items, o.status, o.created_at, o.updated_at
        FROM orders o
        INNER JOIN order_boards b ON b.id = o.board_id
-       WHERE o.id = $1 AND b.department_id = $2`,
-      [req.params.id, departmentId]
-    );
+       WHERE o.id = $1`;
+    const params = [req.params.id];
+    
+    // Only filter by department if not super-user
+    if (!isSuperUser && departmentId) {
+      sql += ` AND b.department_id = $2`;
+      params.push(departmentId);
+    }
+    
+    const result = await query(sql, params);
     const row = result.rows[0];
     if (!row) {
       return res.status(404).json({ error: 'Order not found.', code: 'NOT_FOUND' });
@@ -71,10 +76,7 @@ export async function getOne(req, res, next) {
 /** POST /api/orders – create order. Body: { boardId, summary?, items?, status?, orderDate? } */
 export async function create(req, res, next) {
   try {
-    const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
-    }
+    // getBoardIfAllowed handles super-user check, so we don't need to check departmentId here
     const { boardId, summary, items, status, orderDate } = req.body ?? {};
     if (!boardId) {
       return res.status(400).json({ error: 'boardId required.', code: 'INVALID_INPUT' });
@@ -110,9 +112,7 @@ export async function create(req, res, next) {
 export async function update(req, res, next) {
   try {
     const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
-    }
+    const isSuperUser = req.user?.role === 'super-user';
     const { summary, items, status, orderDate } = req.body ?? {};
     const updates = [];
     const values = [];
@@ -134,25 +134,31 @@ export async function update(req, res, next) {
       values.push(orderDate ?? null);
     }
     if (updates.length === 0) {
-      const existing = await query(
-        `SELECT o.id, o.board_id, o.user_id, o.order_date, o.summary, o.items, o.status, o.created_at, o.updated_at
+      // No updates, just fetch existing order
+      let sql = `SELECT o.id, o.board_id, o.user_id, o.order_date, o.summary, o.items, o.status, o.created_at, o.updated_at
          FROM orders o INNER JOIN order_boards b ON b.id = o.board_id
-         WHERE o.id = $1 AND b.department_id = $2`,
-        [req.params.id, departmentId]
-      );
+         WHERE o.id = $1`;
+      const params = [req.params.id];
+      if (!isSuperUser && departmentId) {
+        sql += ` AND b.department_id = $2`;
+        params.push(departmentId);
+      }
+      const existing = await query(sql, params);
       if (!existing.rows[0]) {
         return res.status(404).json({ error: 'Order not found.', code: 'NOT_FOUND' });
       }
       return res.json(toOrder(existing.rows[0]));
     }
     updates.push(`updated_at = NOW()`);
-    values.push(req.params.id, departmentId);
-    const result = await query(
-      `UPDATE orders o SET ${updates.join(', ')}
-       FROM order_boards b WHERE b.id = o.board_id AND o.id = $${idx} AND b.department_id = $${idx + 1}
-       RETURNING o.id, o.board_id, o.user_id, o.order_date, o.summary, o.items, o.status, o.created_at, o.updated_at`,
-      values
-    );
+    values.push(req.params.id);
+    let sql = `UPDATE orders o SET ${updates.join(', ')}
+       FROM order_boards b WHERE b.id = o.board_id AND o.id = $${idx}`;
+    if (!isSuperUser && departmentId) {
+      sql += ` AND b.department_id = $${idx + 1}`;
+      values.push(departmentId);
+    }
+    sql += ` RETURNING o.id, o.board_id, o.user_id, o.order_date, o.summary, o.items, o.status, o.created_at, o.updated_at`;
+    const result = await query(sql, values);
     const row = result.rows[0];
     if (!row) {
       return res.status(404).json({ error: 'Order not found.', code: 'NOT_FOUND' });
@@ -169,15 +175,16 @@ export async function update(req, res, next) {
 export async function remove(req, res, next) {
   try {
     const departmentId = resolveDepartmentId(req);
-    if (!departmentId) {
-      return res.status(403).json({ error: 'Department required.', code: 'NO_DEPARTMENT' });
+    const isSuperUser = req.user?.role === 'super-user';
+    let sql = `DELETE FROM orders o USING order_boards b
+       WHERE b.id = o.board_id AND o.id = $1`;
+    const params = [req.params.id];
+    if (!isSuperUser && departmentId) {
+      sql += ` AND b.department_id = $2`;
+      params.push(departmentId);
     }
-    const result = await query(
-      `DELETE FROM orders o USING order_boards b
-       WHERE b.id = o.board_id AND o.id = $1 AND b.department_id = $2
-       RETURNING o.board_id`,
-      [req.params.id, departmentId]
-    );
+    sql += ` RETURNING o.board_id`;
+    const result = await query(sql, params);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Order not found.', code: 'NOT_FOUND' });
     }

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/context/AuthContext';
-import { usersApi } from '@/app/api';
+import { useGetUserByIdQuery, useUpdateUserMutation } from '@/store/api';
 import { TextField, SelectField } from '@/components/forms/components/FormFields';
 import DynamicButton from '@/components/ui/Button/DynamicButton';
 import SectionHeader from '@/components/ui/SectionHeader';
@@ -25,11 +25,20 @@ const editFields = [
 
 const ProfilePage = () => {
   const { user: authUser, logout } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [avatarImgError, setAvatarImgError] = useState(false);
   const [editPanelOpen, setEditPanelOpen] = useState(false);
+
+  // RTK Query hooks
+  const {
+    data: userData,
+    isLoading,
+    error: queryError,
+  } = useGetUserByIdQuery(authUser?.id ?? '', { skip: !authUser?.id });
+
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+
+  const profile = userData?.user ?? null;
+  const error = queryError ? (queryError.data?.error || queryError.message || 'Failed to load profile.') : null;
 
   const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, reset, watch, setValue } = useForm({
     resolver: yupResolver(profileSchema),
@@ -62,34 +71,11 @@ const ProfilePage = () => {
     }
   }, [profile, reset]);
 
-  const fetchProfile = useCallback(async () => {
-    if (!authUser?.id) {
-      setError('Not authenticated.');
-      setIsLoading(false);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await usersApi.getById(authUser.id);
-      setProfile(data.user);
-      setAvatarImgError(false);
-    } catch (err) {
-      setError(err.message || 'Failed to load profile.');
-      if (err.code === 'TOKEN_EXPIRED') logout();
-    } finally {
-      setIsLoading(false);
-    }
-  }, [authUser?.id, logout]);
-
-  useEffect(() => { fetchProfile(); }, [fetchProfile]);
-
   const onSubmit = useCallback(async (data) => {
     if (!authUser?.id) return;
     try {
-      setError(null);
-      const { user } = await usersApi.update(authUser.id, data);
-      setProfile(user);
+      const result = await updateUser({ id: authUser.id, ...data }).unwrap();
+      const user = result.user;
       reset({
         name: user.name ?? '',
         username: user.username ?? '',
@@ -104,12 +90,12 @@ const ProfilePage = () => {
       showSuccess('Profile saved.');
       setEditPanelOpen(false);
     } catch (err) {
-      setError(err.message || 'Failed to save.');
+      const errorMessage = err.data?.error || err.message || 'Failed to save.';
       handleValidationError(errors, 'Profile');
-      showError(err.message || 'Failed to save.');
-      if (err.code === 'TOKEN_EXPIRED') logout();
+      showError(errorMessage);
+      if (err.status === 401) logout();
     }
-  }, [authUser?.id, errors, logout, reset]);
+  }, [authUser?.id, errors, logout, reset, updateUser]);
 
   const openEditPanel = useCallback(() => {
     if (profile) {
@@ -264,7 +250,7 @@ const ProfilePage = () => {
               type="submit"
               variant="primary"
               size="sm"
-              loading={isSubmitting}
+              loading={isSubmitting || isUpdating}
               disabled={!isDirty}
             >
               Save

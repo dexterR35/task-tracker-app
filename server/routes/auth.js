@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import * as authController from '../controllers/authController.js';
 import { authenticate, optionalAuthenticate } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validation.js';
@@ -25,7 +25,7 @@ const loginLimiter = rateLimit({
     if (email && typeof email === 'string') {
       return `login:${email.toLowerCase().trim()}`;
     }
-    return req.ip || req.socket?.remoteAddress || 'unknown';
+    return ipKeyGenerator(req);
   },
 });
 

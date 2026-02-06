@@ -60,12 +60,12 @@ INSERT INTO departments (name) VALUES
 -- Super-user has NO restrictions - full access to everything in the application
 --
 -- DEPARTMENT ASSIGNMENT:
---   - department_id is MANDATORY (NOT NULL) - every user MUST be assigned to a department
---   - When creating a user, you MUST select/assign a department (department_id)
---   - The user will be REFERENCED to that department via department_id FK
---   - The user will be AUTHENTICATED in that department - login requires department_id
---   - After login, user's access is SCOPED to their assigned department
---   - User's dashboard, sidebar, and data are filtered by their department_id
+--   - department_id is REQUIRED for 'admin' and 'user' roles (NOT NULL)
+--   - department_id is OPTIONAL (NULL) for 'super-user' role - super-users see ALL departments
+--   - When creating a user, you MUST select/assign a department (department_id) UNLESS role is 'super-user'
+--   - The user will be REFERENCED to that department via department_id FK (if set)
+--   - After login, user's access is SCOPED to their assigned department (or ALL if super-user)
+--   - User's dashboard, sidebar, and data are filtered by their department_id (or ALL if super-user)
 --   - Cannot delete a department if users reference it (ON DELETE RESTRICT)
 -- =============================================================================
 CREATE TABLE users (
@@ -73,7 +73,7 @@ CREATE TABLE users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user', 'super-user')),
-  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+  department_id UUID REFERENCES departments(id) ON DELETE RESTRICT,
   manager_id UUID REFERENCES users(id) ON DELETE SET NULL,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -82,6 +82,10 @@ CREATE TABLE users (
   CONSTRAINT check_admin_has_manager CHECK (
     (role = 'admin' AND manager_id IS NOT NULL) OR 
     (role != 'admin')
+  ),
+  CONSTRAINT check_department_required CHECK (
+    (role IN ('admin', 'user') AND department_id IS NOT NULL) OR
+    (role = 'super-user')
   )
 );
 
@@ -368,7 +372,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Super-user has no manager (top level)
 INSERT INTO users (email, password_hash, role, department_id, manager_id)
 VALUES
-  ('super-user@netbet.ro', crypt('super123', gen_salt('bf')), 'super-user', (SELECT id FROM departments WHERE name = 'Design'), NULL);
+  ('super-user@netbet.ro', crypt('super123', gen_salt('bf')), 'super-user', NULL, NULL);
 
 -- Admins must have a manager_id (they report to super-user)
 INSERT INTO users (email, password_hash, role, department_id, manager_id)

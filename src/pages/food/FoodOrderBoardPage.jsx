@@ -2,69 +2,54 @@
  * Food app – Order board (monthly board for office food orders).
  * User is always in Food department when on this page (route guarded).
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { orderBoardsApi, ordersApi } from "@/app/api";
+import { useGetOrderBoardsQuery, useGetOrdersQuery } from "@/store/api";
 import { DEPARTMENT_APP } from "@/constants";
 import Loader from "@/components/ui/Loader/Loader";
 
 const FoodOrderBoardPage = () => {
   const { user } = useAuth();
-  const [boards, setBoards] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
 
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  useEffect(() => {
-    if (!user?.departmentId) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    orderBoardsApi
-      .list({ year: currentYear, month: currentMonth })
-      .then((data) => {
-        if (!cancelled) {
-          setBoards(data.boards ?? []);
-          const first = (data.boards ?? [])[0];
-          if (first) setSelectedBoardId(first.id);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setBoards([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [currentYear, currentMonth, user?.departmentId]);
+  // RTK Query hooks
+  const {
+    data: boardsData,
+    isLoading: loading,
+    error: boardsError,
+  } = useGetOrderBoardsQuery(
+    { year: currentYear, month: currentMonth },
+    { skip: !user?.departmentId }
+  );
 
+  const {
+    data: ordersData,
+    isLoading: ordersLoading,
+  } = useGetOrdersQuery(
+    selectedBoardId ?? '',
+    { skip: !selectedBoardId }
+  );
+
+  // Process boards data
+  const boards = useMemo(() => {
+    return boardsData?.boards ?? [];
+  }, [boardsData]);
+
+  // Set selected board when boards load
   useEffect(() => {
-    if (!selectedBoardId) {
-      setOrders([]);
-      return;
+    if (boards.length > 0 && !selectedBoardId) {
+      setSelectedBoardId(boards[0]?.id ?? null);
     }
-    let cancelled = false;
-    setOrdersLoading(true);
-    ordersApi
-      .list(selectedBoardId)
-      .then((data) => {
-        if (!cancelled) setOrders(data.orders ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setOrders([]);
-      })
-      .finally(() => {
-        if (!cancelled) setOrdersLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [selectedBoardId]);
+  }, [boards, selectedBoardId]);
+
+  // Process orders data
+  const orders = useMemo(() => {
+    return ordersData?.orders ?? [];
+  }, [ordersData]);
 
   if (loading) {
     return (

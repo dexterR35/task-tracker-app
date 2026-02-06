@@ -10,18 +10,40 @@ const BOARD_QUERIES = {
   order_boards: 'SELECT id FROM order_boards WHERE id = $1 AND department_id = $2',
 };
 
+/**
+ * Resolve department ID for filtering queries.
+ * Returns null for super-users (meaning "all departments").
+ * Returns department_id for admin/user roles.
+ */
 export function resolveDepartmentId(req) {
-  return req.user?.departmentId ?? null;
+  if (!req.user) return null;
+  // Super-users see all departments - return null to bypass filtering
+  if (req.user.role === 'super-user') {
+    return null;
+  }
+  return req.user.departmentId ?? null;
 }
 
 /** Ensure board exists and belongs to resolved department. tableName must be 'task_boards' or 'order_boards'. */
 export async function getBoardIfAllowed(req, boardId, tableName) {
+  const departmentId = resolveDepartmentId(req);
+  const isSuperUser = req.user?.role === 'super-user';
+  
+  // Super-users can access any board (no department filter)
+  if (isSuperUser) {
+    const result = await query(
+      `SELECT id FROM ${tableName} WHERE id = $1`,
+      [boardId]
+    );
+    return result.rows[0] ?? null;
+  }
+  
+  // Admin/user roles: must match department
+  if (!departmentId) return null;
   const sql = BOARD_QUERIES[tableName];
   if (!sql) {
     throw new Error(`Invalid board table: ${tableName}`);
   }
-  const departmentId = resolveDepartmentId(req);
-  if (!departmentId) return null;
   const result = await query(sql, [boardId, departmentId]);
   return result.rows[0] ?? null;
 }

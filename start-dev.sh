@@ -1,50 +1,58 @@
 #!/bin/bash
-# Development startup script - starts both server and frontend
+set -e
 
-echo "🚀 Starting Task Tracker App..."
+echo "🚀 Starting Task Tracker App (DEV)..."
 echo ""
 
-# Check if server directory exists
+ROOT_DIR=$(pwd)
+
+# ---- Backend checks ----
 if [ ! -d "server" ]; then
     echo "❌ Error: server directory not found"
     exit 1
 fi
 
-# Check if server .env exists
+# Backend .env
 if [ ! -f "server/.env" ]; then
     echo "⚠️  Warning: server/.env not found"
     echo "   Creating from env.example..."
     if [ -f "server/env.example" ]; then
         cp server/env.example server/.env
-        echo "   ✅ Created server/.env - Please update DATABASE_URL and JWT_SECRET"
+        echo "   ✅ Created server/.env (update DATABASE_URL & JWT_SECRET)"
     else
         echo "   ❌ server/env.example not found"
         exit 1
     fi
 fi
 
-# Start server in background
-echo "📦 Starting server..."
+# ---- Start backend ----
+echo "📦 Starting backend..."
 cd server
+npm install
 npm run dev &
 SERVER_PID=$!
-cd ..
+cd "$ROOT_DIR"
 
-# Wait a bit for server to start
+# Give backend time
 sleep 3
 
-# Check if server is running
+# Health check
 if curl -s http://localhost:5000/health > /dev/null 2>&1; then
-    echo "✅ Server is running on http://localhost:5000"
+    echo "✅ Backend running on http://localhost:5000"
 else
-    echo "⚠️  Server may not be ready yet. Check server logs."
+    echo "⚠️  Backend not ready yet (check server logs)"
 fi
 
+# ---- Start frontend ----
 echo ""
 echo "🌐 Starting frontend..."
-echo "   Frontend will be available at http://localhost:5173"
+npm install
+npm run dev &
+FRONTEND_PID=$!
+
+echo "   Frontend running at http://localhost:5173"
 echo ""
-echo "📝 Test accounts (after running: cd server && npm run db:seed):"
+echo "📝 Test accounts (after: cd server && npm run db:seed):"
 echo "   - admin-design@netbet.ro / admin123"
 echo "   - user-design@netbet.ro / user123"
 echo "   - admin-food@netbet.ro / admin123"
@@ -52,6 +60,6 @@ echo "   - user-food@netbet.ro / user123"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 
-# Wait for user interrupt
-trap "kill $SERVER_PID 2>/dev/null; exit" INT TERM
-wait $SERVER_PID
+# ---- Cleanup ----
+trap "echo '🛑 Stopping servers...'; kill $SERVER_PID $FRONTEND_PID 2>/dev/null; exit" INT TERM
+wait $SERVER_PID $FRONTEND_PID

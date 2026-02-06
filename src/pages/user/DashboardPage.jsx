@@ -5,16 +5,18 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
+import { useDispatch } from "react-redux";
 import { useAppDataContext } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectedDepartment } from "@/context/SelectedDepartmentContext";
+import { getSocket } from "@/app/api";
 import {
-  taskBoardsApi,
-  tasksApi,
-  orderBoardsApi,
-  ordersApi,
-  getSocket,
-} from "@/app/api";
+  useGetTaskBoardsQuery,
+  useGetTasksQuery,
+  useGetOrderBoardsQuery,
+  useGetOrdersQuery,
+  api,
+} from "@/store/api";
 import SmallCard from "@/components/Card/smallCards/SmallCard";
 import { createCards } from "@/components/Card/smallCards/smallCardConfig";
 import { SkeletonCard } from "@/components/ui/Skeleton/Skeleton";
@@ -178,8 +180,6 @@ const HARDCODED_ORDERS = [
 
 const DASHBOARD_CONFIG = {
   design: {
-    boardsApi: taskBoardsApi,
-    itemsApi: tasksApi,
     createColumns: createTaskColumns, // Function to create columns with user context
     boardTitle: "Task board",
     emptyBoardsMessage: "No task board for this month. Create one via API or add a Get or create board action.",
@@ -193,8 +193,6 @@ const DASHBOARD_CONFIG = {
     cardMode: "main",
   },
   food: {
-    boardsApi: orderBoardsApi,
-    itemsApi: ordersApi,
     createColumns: createOrderColumns, // Function to create columns with user context
     boardTitle: "Order board",
     emptyBoardsMessage: "No order board for this month. Create one via API or add a Get or create board action.",
@@ -212,6 +210,7 @@ const DASHBOARD_CONFIG = {
 const CARD_CACHE_MAX_SIZE = 50;
 
 export default function DashboardPage({ variant = "design" }) {
+  const dispatch = useDispatch();
   const config = useMemo(
     () => DASHBOARD_CONFIG[variant] ?? DASHBOARD_CONFIG.design,
     [variant]
@@ -221,11 +220,7 @@ export default function DashboardPage({ variant = "design" }) {
   const isUserAdmin = canAccess("admin");
   const appData = useAppDataContext();
 
-  const [boards, setBoards] = useState([]);
-  const [items, setItems] = useState([]);
-  const [boardsLoading, setBoardsLoading] = useState(true);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
-  const [itemsLoading, setItemsLoading] = useState(false);
   const [addPanelOpen, setAddPanelOpen] = useState(false);
 
   const now = new Date();
@@ -240,82 +235,97 @@ export default function DashboardPage({ variant = "design" }) {
     [appData?.users, viewingDepartmentId]
   );
 
-  // Fetch boards
-  useEffect(() => {
-    if (!user?.departmentId) {
-      setBoardsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setBoardsLoading(true);
-    config.boardsApi
-      .list({ year, month })
-      .then((data) => {
-        if (cancelled) return;
-        const list = data.boards ?? [];
-        if (list.length === 0) {
-          const demoBoard = getHardcodedBoardForMonth(year, month);
-          setBoards([demoBoard]);
-          setSelectedBoardId(demoBoard.id);
-        } else {
-          setBoards(list);
-          setSelectedBoardId(list[0]?.id ?? null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          const demoBoard = getHardcodedBoardForMonth(year, month);
-          setBoards([demoBoard]);
-          setSelectedBoardId(demoBoard.id);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setBoardsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [config, year, month, user?.departmentId]);
+  // RTK Query hooks for boards (conditional based on variant)
+  const {
+    data: taskBoardsData,
+    isLoading: taskBoardsLoading,
+    error: taskBoardsError,
+  } = useGetTaskBoardsQuery(
+    { year, month },
+    { skip: variant !== 'design' || !user?.departmentId }
+  );
 
-  // Fetch items for selected board (or use hardcoded items for demo board)
+  const {
+    data: orderBoardsData,
+    isLoading: orderBoardsLoading,
+    error: orderBoardsError,
+  } = useGetOrderBoardsQuery(
+    { year, month },
+    { skip: variant !== 'food' || !user?.departmentId }
+  );
+
+  // Determine which boards data to use
+  const boardsData = variant === 'food' ? orderBoardsData : taskBoardsData;
+  const boardsLoading = variant === 'food' ? orderBoardsLoading : taskBoardsLoading;
+  const boardsError = variant === 'food' ? orderBoardsError : taskBoardsError;
+
+  // Process boards and set selected board
+  const boards = useMemo(() => {
+    if (boardsLoading || !user?.departmentId) return [];
+    const list = boardsData?.boards ?? [];
+    if (list.length === 0) {
+      const demoBoard = getHardcodedBoardForMonth(year, month);
+      return [demoBoard];
+    }
+    return list;
+  }, [boardsData, boardsLoading, user?.departmentId, year, month]);
+
+  // Set selected board when boards change
+  useEffect(() => {
+    if (boards.length > 0 && !selectedBoardId) {
+      setSelectedBoardId(boards[0]?.id ?? null);
+    }
+  }, [boards, selectedBoardId]);
+
+  // RTK Query hooks for items (conditional based on variant and selectedBoardId)
   const demoBoardId = getHardcodedBoardForMonth(year, month).id;
   const isDemoBoard = selectedBoardId === demoBoardId;
 
-  useEffect(() => {
-    if (!selectedBoardId) {
-      setItems([]);
-      return;
-    }
-    if (isDemoBoard) {
-      setItemsLoading(false);
-      setItems(variant === "food" ? HARDCODED_ORDERS : HARDCODED_TASKS);
-      return;
-    }
-    let cancelled = false;
-    setItemsLoading(true);
-    config.itemsApi
-      .list(selectedBoardId)
-      .then((data) => {
-        if (!cancelled) setItems(config.getItems(data));
-      })
-      .catch(() => {
-        if (!cancelled) setItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setItemsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [config, selectedBoardId, variant, isDemoBoard]);
+  const {
+    data: tasksData,
+    isLoading: tasksLoading,
+  } = useGetTasksQuery(
+    selectedBoardId ?? '',
+    { skip: variant !== 'design' || !selectedBoardId || isDemoBoard }
+  );
 
-  // Real-time: refetch items on socket event
+  const {
+    data: ordersData,
+    isLoading: ordersLoading,
+  } = useGetOrdersQuery(
+    selectedBoardId ?? '',
+    { skip: variant !== 'food' || !selectedBoardId || isDemoBoard }
+  );
+
+  // Determine which items data to use
+  const itemsData = variant === 'food' ? ordersData : tasksData;
+  const itemsLoading = variant === 'food' ? ordersLoading : tasksLoading;
+
+  // Process items
+  const items = useMemo(() => {
+    if (isDemoBoard) {
+      return variant === "food" ? HARDCODED_ORDERS : HARDCODED_TASKS;
+    }
+    if (!selectedBoardId || itemsLoading) return [];
+    return config.getItems(itemsData ?? {});
+  }, [isDemoBoard, variant, selectedBoardId, itemsLoading, itemsData, config]);
+
+  // Real-time: invalidate cache on socket event
   useEffect(() => {
     const socket = getSocket();
     if (!socket || !selectedBoardId) return;
     const handler = ({ boardId }) => {
       if (boardId !== selectedBoardId) return;
-      config.itemsApi.list(selectedBoardId).then((data) => setItems(config.getItems(data)));
+      // Invalidate the relevant cache to trigger refetch
+      if (variant === 'food') {
+        dispatch(api.util.invalidateTags([{ type: 'Orders', id: boardId }, 'Orders']));
+      } else {
+        dispatch(api.util.invalidateTags([{ type: 'Tasks', id: boardId }, 'Tasks']));
+      }
     };
     socket.on(config.socketEvent, handler);
     return () => socket.off(config.socketEvent, handler);
-  }, [config, selectedBoardId]);
+  }, [dispatch, config, selectedBoardId, variant]);
 
   const efficiencyData = {
     averageTaskCompletion: 2.3,
