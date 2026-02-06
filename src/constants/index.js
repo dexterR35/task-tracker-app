@@ -67,14 +67,14 @@ export const AUTH = {
 export const VALIDATION = {
   PATTERNS: {
     ALPHANUMERIC_SPACES: /^[a-zA-Z0-9\s]+$/,
-    NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(netbet\.[a-zA-Z0-9.-]+|gimo\.co\.uk)$/,
+    NETBET_EMAIL: /^[a-zA-Z0-9.!#$%&'*+/=?^_{|}~-]+@(netbet\.[a-zA-Z0-9.-]+|gimo\.co\.uk|rei-d-services\.com)$/,
     JIRA_URL_ONLY: /^https:\/\/gmrd\.atlassian\.net\/browse\/[A-Z]+-\d+$/,
     URL: /^https?:\/\/.+/,
     PHONE: /^\+?[\d\s\-()]+$/,
   },
   MESSAGES: {
     REQUIRED: 'This field is required',
-    NETBET_EMAIL: 'Please enter a valid email address (@netbet.* or @gimo.co.uk)',
+    NETBET_EMAIL: 'Please enter a valid email address (@netbet.* or @gimo.co.uk,@rei-d-services)',
     JIRA_URL_FORMAT: 'Invalid Jira URL format. Must be: https://gmrd.atlassian.net/browse/{PROJECT}-{number}',
     MIN_LENGTH: (min) => `Must be at least ${min} characters`,
     MAX_LENGTH: (max) => `Must be no more than ${max} characters`,
