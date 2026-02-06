@@ -1,7 +1,7 @@
 
 export const APP_CONFIG = {
   NAME: 'Xync', // App name - change this to sync across all titles and meta tags
-  FULL_NAME: 'Xync Hub', // Full app name for titles
+  FULL_NAME: 'Xync LAB', // Full app name for titles
   VERSION: '1.0.0',
   DESCRIPTION: 'Connected people like Nokia',
   COMPANY: 'IC',

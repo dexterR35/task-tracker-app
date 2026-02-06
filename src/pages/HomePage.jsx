@@ -1,18 +1,12 @@
-import React from "react";
-import DynamicButton from "@/components/ui/Button/DynamicButton";
-import netbetLogo from "@/assets/netbet-logo.png";
-import logo from "@/assets/logo.webp";
-import { APP_CONFIG } from "@/constants";
 
+import { APP_CONFIG } from "@/constants";
 import { useNavigate } from 'react-router-dom';
 
-// Inside your component function:
 
 const HomePage = () => {
   const navigate = useNavigate();
 
   const handleLoginClick = () => {
-    // Note: ensure handleLinkClick is defined or passed as a prop
     if (typeof handleLinkClick !== 'undefined') handleLinkClick();
     
     navigate('/login');
@@ -39,8 +33,8 @@ const app_config_name = "Xync"
               {APP_CONFIG.NAME.charAt(0)}y
             </div>
             <div className="flex flex-col">
-              <span className="font-black tracking-tighter text-medium capitalize leading-6">{APP_CONFIG.NAME} HUB</span>
-              <span className="text-[9px] font-mono text-[#52c45d] font-bold uppercase tracking-[0.15em]">Community Center</span>
+              <span className="font-black tracking-tighter text-medium capitalize leading-6"> LAB</span>
+              <span className="text-[9px] font-mono text-[#52c45d] font-bold uppercase tracking-[0.15em]">Center</span>
             </div>
           </div>
 
@@ -89,14 +83,14 @@ const app_config_name = "Xync"
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#52c45d]"></span>
               </div>
               <span className="text-[10px] font-mono text-slate-300 uppercase tracking-[0.3em] font-black">
-                SFWC // Safe For Work Community
+                SFWE // Safe For Work Environment
               </span>
             </div>
-            <div className='flex items-center text-[8rem] font-black mb-6'>
+            <div className='flex items-center text-[8rem] font-black mb-2'>
               <span className="text-white">Xync</span>
-              <p className="bg-[#52c45d] px-3 rounded-md ml-2 leading-tight"><span className='text-black'>HUB</span></p>
+              <p className="bg-[#52c45d] px-3 rounded-md ml-4 leading-tight tracking-wide"><span className='text-black'>LAB</span></p>
             </div>
-            <p className="text-lg text-slate-400 max-w-[100%] mb-12 leading-relaxed font-medium initial tracking-[0.12em]">
+            <p className="text-lg text-slate-400 max-w-[100%] mb-8 leading-relaxed font-medium initial tracking-[0.12em]">
             A central space for real-time operations, team insights, and daily order management, 
             powered by monthly analytics plus performance tracking.
             </p>
@@ -184,7 +178,6 @@ const app_config_name = "Xync"
         </div>
       </main>
 
-      {/* --- ENHANCED FOOTER --- */}
       <footer className="w-full bg-[#080808] border-t border-white/5 px-8 py-10 text-[10px] font-mono text-slate-500 ">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
           
@@ -217,7 +210,7 @@ const app_config_name = "Xync"
              <p className="mt-6 text-right leading-relaxed opacity-50 uppercase">
                Xync Internal Community <br />
                Ref: LIVE-ADMIN-SESSION <br />
-               © {new Date().getFullYear()} {APP_CONFIG.NAME} HUB 
+               © {new Date().getFullYear()} {APP_CONFIG.NAME} LAB 
              </p>
           </div>
         </div>
